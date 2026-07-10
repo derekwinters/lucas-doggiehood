@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Plain NUnit harness for the Unity-independent Core assembly (#72).
+    Compiles the Core sources directly from Assets/Scripts/Core so the same
+    code Unity ships is what gets tested here, with no Unity install needed:
+
+        dotnet test CoreTests
+
+    LangVersion is pinned to 9.0 to stay within what Unity's compiler
+    supports, so code that passes here cannot use newer syntax that would
+    then fail inside Unity.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Doggiehood.Core.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>
