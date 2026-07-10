@@ -22,6 +22,7 @@ namespace Doggiehood.Core.World
             var builder = new StringBuilder();
             builder.Append("version=").Append(Version).Append('\n');
             builder.Append("coins=").Append(state.Wallet.Coins.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            builder.Append("onboarded=").Append(state.OnboardingComplete ? "1" : "0").Append('\n');
 
             foreach (var item in state.PlacedItems)
             {
@@ -68,7 +69,14 @@ namespace Doggiehood.Core.World
                 var key = line.Substring(0, separator);
                 var value = line.Substring(separator + 1);
 
-                if (key == "coins")
+                if (key == "onboarded")
+                {
+                    if (value == "1")
+                    {
+                        state.MarkOnboardingComplete();
+                    }
+                }
+                else if (key == "coins")
                 {
                     var coins = int.Parse(value, CultureInfo.InvariantCulture);
                     if (coins > 0)

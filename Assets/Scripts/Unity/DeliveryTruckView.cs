@@ -109,6 +109,8 @@ namespace Doggiehood.Unity
             package.transform.position = new Vector3(doorPosition.x, 0.3f, doorPosition.z);
 
             HasDelivered = true;
+            Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.TruckArrival);
+            Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.ItemDelivered);
             var callback = onDelivered;
             onDelivered = null;
             callback?.Invoke();

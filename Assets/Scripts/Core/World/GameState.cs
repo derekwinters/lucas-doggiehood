@@ -57,5 +57,13 @@ namespace Doggiehood.Core.World
         {
             decorations.Add(decoration);
         }
+
+        /// <summary>First-launch tutorial flag (#44); persists in the save.</summary>
+        public bool OnboardingComplete { get; private set; }
+
+        public void MarkOnboardingComplete()
+        {
+            OnboardingComplete = true;
+        }
     }
 }

@@ -63,6 +63,8 @@ namespace Doggiehood.Unity
 
         public void OnTapped()
         {
+            Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.Bark);
+
             var presenter = FindFirstObjectByType<ConversationPresenter>();
             if (presenter != null)
             {

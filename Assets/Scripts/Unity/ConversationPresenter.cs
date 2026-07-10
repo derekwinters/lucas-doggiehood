@@ -19,6 +19,12 @@ namespace Doggiehood.Unity
 
         private Doggiehood.Core.Quests.Quest currentQuest;
 
+        /// <summary>Raised when a conversation opens (onboarding listens, #44).</summary>
+        public event System.Action<Dog> Opened;
+
+        /// <summary>Raised when a quest is accepted/completed via this panel.</summary>
+        public event System.Action<Doggiehood.Core.Quests.Quest> QuestAccepted;
+
         public bool IsOpen
         {
             get { return Current != null; }
@@ -37,6 +43,7 @@ namespace Doggiehood.Unity
                 if (currentQuest != null)
                 {
                     Current = new Conversation(currentQuest.DialogueLines, ConversationEnding.Accept);
+                    Opened?.Invoke(dog);
                     return true;
                 }
             }
@@ -48,6 +55,7 @@ namespace Doggiehood.Unity
             }
 
             Current = conversation;
+            Opened?.Invoke(dog);
             return true;
         }
 
@@ -56,10 +64,13 @@ namespace Doggiehood.Unity
         {
             if (currentQuest != null && State != null && State.Quests.Accept(currentQuest))
             {
+                Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.UiConfirm);
                 if (Director != null)
                 {
                     Director.OnQuestAccepted(currentQuest);
                 }
+
+                QuestAccepted?.Invoke(currentQuest);
             }
 
             Close();
@@ -72,10 +83,13 @@ namespace Doggiehood.Unity
             if (currentQuest != null && State != null
                 && State.Quests.AcceptWithChoice(currentQuest, chosenItem))
             {
+                Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.UiConfirm);
                 if (Director != null)
                 {
                     Director.OnQuestAccepted(currentQuest);
                 }
+
+                QuestAccepted?.Invoke(currentQuest);
             }
 
             Close();

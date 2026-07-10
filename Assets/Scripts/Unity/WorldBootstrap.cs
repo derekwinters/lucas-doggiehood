@@ -30,6 +30,18 @@ namespace Doggiehood.Unity
             {
                 state.Quests.StartNewDay(new System.Random());
             }
+
+            gameObject.AddComponent<SfxPlayer>();
+
+            // First launch only (#44): tutorial prompts over live gameplay.
+            if (Doggiehood.Core.Onboarding.OnboardingSequence.ShouldRun(state))
+            {
+                var rig = FindFirstObjectByType<CameraRig>();
+                if (rig != null)
+                {
+                    gameObject.AddComponent<OnboardingOverlay>().Init(state, rig, presenter);
+                }
+            }
         }
     }
 }
