@@ -1,0 +1,106 @@
+name: rc-build
+
+# Builds a release-candidate APK whenever the open release-please release PR
+# is created or its branch is rebased/pushed (#76).
+#
+# RC numbering — spike conclusion (#76): release-please's native prerelease
+# support ("prerelease": true / prerelease versioning strategies) bumps the
+# prerelease number when RELEASES happen, not when the open release PR is
+# rebased, so it cannot produce rc1 -> rc2 across pushes to the same open PR.
+# Instead the RC number is derived here: count this workflow's runs on the
+# release PR's branch since that PR was opened (the current run included).
+#   - Each push to the open release PR creates a new run  -> rc increments.
+#   - A fresh release PR after a release ships has a later created-at
+#     watermark, so the count starts over                  -> resets to rc1.
+#
+# The release PR's VERSION file already contains the next version (it is a
+# release-please extra-file), so the APK version is v<VERSION>-rc<N>.
+# Debug signing, artifact-only distribution — same as PR builds (#75).
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rc-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-rc-apk:
+    name: Release-candidate APK
+    if: startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Check for Unity license secret
+        id: license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=RC APK build skipped::UNITY_LICENSE secret is not configured, so no release-candidate APK was built. Generate a Unity Personal activation file and add it as the UNITY_LICENSE repo secret (issue #71)."
+          fi
+
+      - name: Compute RC number and version
+        if: steps.license.outputs.present == 'true'
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
+        run: |
+          BASE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          # Runs of this workflow on this branch since the release PR was
+          # opened, current run included -> rc1, rc2, ... per push.
+          RC="$(gh api "repos/${{ github.repository }}/actions/workflows/rc-build.yml/runs?branch=${HEAD_BRANCH}&event=pull_request&created=>=${PR_CREATED_AT}" --jq '.total_count')"
+          if [ "$RC" -lt 1 ]; then RC=1; fi
+          VERSION_NAME="${BASE_VERSION}-rc${RC}"
+          VERSION_CODE="$(git rev-list --count HEAD)"
+          echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "Building v${VERSION_NAME} (versionCode ${VERSION_CODE})"
+
+      - name: Cache Unity Library
+        if: steps.license.outputs.present == 'true'
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-android-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-android-
+
+      - name: Build Android RC APK
+        if: steps.license.outputs.present == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildName: Doggiehood
+          versioning: Custom
+          version: ${{ steps.version.outputs.name }}
+          androidVersionCode: ${{ steps.version.outputs.code }}
+          androidExportType: androidPackage
+
+      - name: Upload APK artifact
+        if: steps.license.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: doggiehood-v${{ steps.version.outputs.name }}
+          path: build/Android

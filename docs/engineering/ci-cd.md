@@ -14,8 +14,8 @@ Every PR builds a debug APK via CI:
 
 When a release-please release PR is open, CI builds a release-candidate APK versioned like `v1.0.0-rc1`. Each time the release PR branch is rebased (new commits land on `main` while it's open), the RC number increments (`rc2`, `rc3`, ...). Once that release ships, the next release-please PR starts over at `rc1`. ([#76](https://github.com/derekwinters/lucas-doggiehood/issues/76))
 
-!!! warning "Needs verification before implementing"
-    release-please has some built-in prerelease/versioning support, but its exact behavior for resetting and incrementing prerelease numbers across PR rebases needs to be checked against current release-please docs/source before relying on it — it may need a small custom Actions step layered on top (e.g. deriving the RC number from the number of pushes to the open release PR) rather than trusting the native prerelease handling to match this spec exactly.
+!!! note "RC numbering design (resolved)"
+    release-please's native prerelease support bumps prerelease numbers when *releases* happen, not when the open release PR is rebased, so it can't produce `rc1` → `rc2` across pushes to the same open PR. Instead, `rc-build.yml` derives the RC number itself: it counts that workflow's runs on the release PR's branch since the PR was opened (current run included). Every push to the open release PR adds a run, incrementing the RC; a fresh release PR after a release ships has a later created-at watermark, so the count — and the RC number — starts over at `rc1`. The release PR's `VERSION` file already carries the next version (it's a release-please extra-file), so builds are versioned `v<VERSION>-rc<N>`.
 
 Both PR debug builds and RC builds use debug signing and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.
 
