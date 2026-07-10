@@ -65,6 +65,22 @@ namespace Doggiehood.Unity
             Close();
         }
 
+        /// <summary>#50: accept a generic decoration request with the chosen
+        /// option — still one linear action, just parameterized.</summary>
+        public void AcceptChoice(string chosenItem)
+        {
+            if (currentQuest != null && State != null
+                && State.Quests.AcceptWithChoice(currentQuest, chosenItem))
+            {
+                if (Director != null)
+                {
+                    Director.OnQuestAccepted(currentQuest);
+                }
+            }
+
+            Close();
+        }
+
         public void Close()
         {
             Current = null;
@@ -85,7 +101,19 @@ namespace Doggiehood.Unity
                 GUILayout.Label(line);
             }
 
-            if (GUILayout.Button(Current.Ending == ConversationEnding.Accept ? "Accept" : "Complete"))
+            if (currentQuest != null && currentQuest.Options.Count > 0)
+            {
+                // Generic decoration request (#50): one button per option.
+                foreach (var option in currentQuest.Options)
+                {
+                    if (GUILayout.Button(option))
+                    {
+                        AcceptChoice(option);
+                        break;
+                    }
+                }
+            }
+            else if (GUILayout.Button(Current.Ending == ConversationEnding.Accept ? "Accept" : "Complete"))
             {
                 AcceptCurrent();
             }

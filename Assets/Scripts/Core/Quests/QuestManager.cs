@@ -78,9 +78,14 @@ namespace Doggiehood.Core.Quests
                     cost = ItemCatalog.Get(item).Cost;
                     break;
                 case QuestType.DecorationRequest:
-                    item = DecorationItems[rng.Next(DecorationItems.Length)];
-                    cost = ItemCatalog.Get(item).Cost;
-                    break;
+                    // Generic request (#50): no pre-named item — the player
+                    // chooses from the comfort options at acceptance.
+                    var decoQuest = new Quest(nextQuestId++, type, dog.Name, null,
+                        QuestTemplates.For(type).Render(dog, "something comfy"),
+                        null, null, null, Decorations.ComfortDecorations.ItemNames);
+                    quests.Add(decoQuest);
+                    dog.GiveQuest();
+                    return decoQuest;
                 default:
                     item = "bug spray";
                     targetHouse = dog.HouseId;
@@ -104,17 +109,48 @@ namespace Doggiehood.Core.Quests
                 return false;
             }
 
+            if (quest.Type == QuestType.DecorationRequest)
+            {
+                // Generic requests need a chosen option (#50).
+                return false;
+            }
+
             if (quest.Cost.HasValue && !state.Wallet.TrySpend(quest.Cost.Value))
             {
                 return false;
             }
 
             quest.Status = QuestStatus.Accepted;
-            if (quest.Type == QuestType.BuyGift || quest.Type == QuestType.DecorationRequest)
+            if (quest.Type == QuestType.BuyGift)
             {
                 quest.DeliveryPhase = DeliveryPhase.HeadingHome;
             }
 
+            return true;
+        }
+
+        /// <summary>#50: accept a generic decoration request with the
+        /// player's chosen option — that item's specific cost is deducted
+        /// and that item is what the truck will deliver.</summary>
+        public bool AcceptWithChoice(Quest quest, string chosenItem)
+        {
+            if (quest.Status != QuestStatus.Available
+                || quest.Type != QuestType.DecorationRequest
+                || !quest.Options.Contains(chosenItem))
+            {
+                return false;
+            }
+
+            var cost = ItemCatalog.Get(chosenItem).Cost;
+            if (!state.Wallet.TrySpend(cost))
+            {
+                return false;
+            }
+
+            quest.ItemName = chosenItem;
+            quest.Cost = cost;
+            quest.Status = QuestStatus.Accepted;
+            quest.DeliveryPhase = DeliveryPhase.HeadingHome;
             return true;
         }
 
@@ -141,7 +177,22 @@ namespace Doggiehood.Core.Quests
 
             quest.DeliveryPhase = DeliveryPhase.Delivered;
             var dog = FindDog(quest);
-            state.AddPlacedItem(dog.HouseId, quest.ItemName);
+
+            if (quest.Type == QuestType.DecorationRequest)
+            {
+                // Automatic yard placement (#48); decorations raise the
+                // requesting dog's happiness (#47) — flavor only.
+                var slot = state.Decorations.Count(d => d.HouseId == dog.HouseId);
+                state.AddDecoration(new Decorations.Decoration(
+                    quest.ItemName, dog.HouseId,
+                    Decorations.YardPlacement.PositionFor(dog.HouseId, slot)));
+                dog.IncreaseHappiness(1);
+            }
+            else
+            {
+                state.AddPlacedItem(dog.HouseId, quest.ItemName);
+            }
+
             dog.PlaceOnStreet();
             Complete(quest);
         }

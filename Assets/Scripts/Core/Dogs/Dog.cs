@@ -20,6 +20,11 @@ namespace Doggiehood.Core.Dogs
         public DogState State { get; private set; }
         public bool HasActiveQuest { get; private set; }
 
+        /// <summary>Visual/flavor only (#47): read by animation and dialogue
+        /// tone. Never gates quests, rewards, or any other logic — a guard
+        /// test asserts quest behavior is identical across its range.</summary>
+        public int Happiness { get; private set; }
+
         /// <summary>Only street dogs wander (#8, #9).</summary>
         public bool WantsToWander
         {
@@ -37,6 +42,18 @@ namespace Doggiehood.Core.Dogs
             Coat = coat;
             Location = DogLocation.Street;
             State = DogState.IdleWander;
+        }
+
+        public void IncreaseHappiness(int amount)
+        {
+            Happiness += amount;
+        }
+
+        /// <summary>Test/flavor hook: happiness is informational, so setting
+        /// it directly is safe by design.</summary>
+        public void SetHappinessForFlavor(int value)
+        {
+            Happiness = value;
         }
 
         public void GiveQuest()

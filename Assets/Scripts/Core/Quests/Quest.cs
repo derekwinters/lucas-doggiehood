@@ -36,14 +36,22 @@ namespace Doggiehood.Core.Quests
         public int Id { get; }
         public QuestType Type { get; }
         public string DogName { get; }
-        public string ItemName { get; }
+
+        /// <summary>Null for a generic DecorationRequest until the player
+        /// chooses from Options (#50).</summary>
+        public string ItemName { get; internal set; }
+
+        /// <summary>DecorationRequest only (#50): the 2+ selectable options.
+        /// Empty for quests that name one specific item.</summary>
+        public IReadOnlyList<string> Options { get; }
+
         public IReadOnlyList<string> DialogueLines { get; }
 
         /// <summary>LostItem only: where the item is hidden (#31).</summary>
         public GridPoint? HiddenItemPosition { get; }
 
         /// <summary>BuyGift/DecorationRequest only: catalog cost (#62).</summary>
-        public int? Cost { get; }
+        public int? Cost { get; internal set; }
 
         /// <summary>PestControl only: the afflicted house (#53).</summary>
         public int? TargetHouseId { get; }
@@ -53,12 +61,13 @@ namespace Doggiehood.Core.Quests
 
         public Quest(int id, QuestType type, string dogName, string itemName,
             IReadOnlyList<string> dialogueLines, GridPoint? hiddenItemPosition,
-            int? cost, int? targetHouseId)
+            int? cost, int? targetHouseId, IReadOnlyList<string> options = null)
         {
             Id = id;
             Type = type;
             DogName = dogName;
             ItemName = itemName;
+            Options = options ?? System.Array.Empty<string>();
             DialogueLines = dialogueLines;
             HiddenItemPosition = hiddenItemPosition;
             Cost = cost;

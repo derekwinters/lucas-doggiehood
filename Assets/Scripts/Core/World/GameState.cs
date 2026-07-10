@@ -12,6 +12,7 @@ namespace Doggiehood.Core.World
     public sealed class GameState
     {
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
+        private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
 
         public IReadOnlyList<House> Houses { get; }
         public IReadOnlyList<Dog> Dogs { get; }
@@ -22,6 +23,12 @@ namespace Doggiehood.Core.World
         public IReadOnlyList<PlacedItem> PlacedItems
         {
             get { return placedItems; }
+        }
+
+        /// <summary>Yard decorations, permanent once delivered (#27, #46).</summary>
+        public IReadOnlyList<Decorations.Decoration> Decorations
+        {
+            get { return decorations; }
         }
 
         private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> dogs)
@@ -44,6 +51,11 @@ namespace Doggiehood.Core.World
         public void AddPlacedItem(int houseId, string itemName)
         {
             placedItems.Add(new PlacedItem(houseId, itemName));
+        }
+
+        public void AddDecoration(Decorations.Decoration decoration)
+        {
+            decorations.Add(decoration);
         }
     }
 }

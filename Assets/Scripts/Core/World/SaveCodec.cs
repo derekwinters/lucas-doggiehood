@@ -32,6 +32,19 @@ namespace Doggiehood.Core.World
                     .Append('\n');
             }
 
+            foreach (var decoration in state.Decorations)
+            {
+                builder.Append("deco=")
+                    .Append(decoration.HouseId.ToString(CultureInfo.InvariantCulture))
+                    .Append('|')
+                    .Append(decoration.ItemName)
+                    .Append('|')
+                    .Append(decoration.YardPosition.X.ToString(CultureInfo.InvariantCulture))
+                    .Append('|')
+                    .Append(decoration.YardPosition.Z.ToString(CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             return builder.ToString();
         }
 
@@ -68,6 +81,16 @@ namespace Doggiehood.Core.World
                     var pipe = value.IndexOf('|');
                     var houseId = int.Parse(value.Substring(0, pipe), CultureInfo.InvariantCulture);
                     state.AddPlacedItem(houseId, value.Substring(pipe + 1));
+                }
+                else if (key == "deco")
+                {
+                    var parts = value.Split('|');
+                    state.AddDecoration(new Decorations.Decoration(
+                        parts[1],
+                        int.Parse(parts[0], CultureInfo.InvariantCulture),
+                        new GridPoint(
+                            float.Parse(parts[2], CultureInfo.InvariantCulture),
+                            float.Parse(parts[3], CultureInfo.InvariantCulture))));
                 }
             }
 

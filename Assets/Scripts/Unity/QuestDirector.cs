@@ -15,10 +15,13 @@ namespace Doggiehood.Unity
     public sealed class QuestDirector : MonoBehaviour
     {
         private const float WalkHomeSpeed = 1.6f;
+        private const float RestTickInterval = 2f;
 
         public GameState State { get; private set; }
 
         private Transform worldRoot;
+        private readonly System.Random restRng = new System.Random();
+        private float restTickTimer;
 
         public void Init(GameState state, Transform worldRoot)
         {
@@ -29,6 +32,25 @@ namespace Doggiehood.Unity
             {
                 var houseId = house.HouseId;
                 house.Tapped += () => State.Quests.SprayHouse(houseId);
+            }
+
+            RefreshDecorations();
+        }
+
+        /// <summary>Ensures every Core decoration has a scene view — spawns
+        /// loaded-save decorations at Init and new deliveries as they land.</summary>
+        public void RefreshDecorations()
+        {
+            var existing = Object.FindObjectsByType<DecorationView>(FindObjectsSortMode.None)
+                .Select(v => v.Decoration)
+                .ToHashSet();
+
+            foreach (var decoration in State.Decorations)
+            {
+                if (!existing.Contains(decoration))
+                {
+                    DecorationView.Spawn(decoration, worldRoot);
+                }
             }
         }
 
@@ -50,6 +72,17 @@ namespace Doggiehood.Unity
                 if (quest.DeliveryPhase == DeliveryPhase.HeadingHome)
                 {
                     WalkDogHome(quest);
+                }
+            }
+
+            // Autonomous comfort use (#52): Core decides who rests and when.
+            restTickTimer += Time.deltaTime;
+            if (restTickTimer >= RestTickInterval)
+            {
+                restTickTimer = 0f;
+                foreach (var dog in State.Dogs)
+                {
+                    Doggiehood.Core.Decorations.RestBehavior.Tick(dog, State, restRng);
                 }
             }
         }
@@ -75,6 +108,7 @@ namespace Doggiehood.Unity
                 DeliveryTruckView.Spawn(worldRoot).DeliverTo(home, () =>
                 {
                     State.Quests.DeliverPackage(quest);
+                    RefreshDecorations();
                     SaveStore.Save(State);
                 });
             }
