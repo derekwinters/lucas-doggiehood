@@ -11,13 +11,25 @@ namespace Doggiehood.Core.World
     /// </summary>
     public sealed class GameState
     {
+        private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
+
         public IReadOnlyList<House> Houses { get; }
         public IReadOnlyList<Dog> Dogs { get; }
+        public Economy.Wallet Wallet { get; }
+        public Quests.QuestManager Quests { get; }
+
+        /// <summary>Permanent world changes from completed quests (#27).</summary>
+        public IReadOnlyList<PlacedItem> PlacedItems
+        {
+            get { return placedItems; }
+        }
 
         private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> dogs)
         {
             Houses = houses;
             Dogs = dogs;
+            Wallet = new Economy.Wallet();
+            Quests = new Quests.QuestManager(this);
         }
 
         public static GameState CreateNew()
@@ -27,6 +39,11 @@ namespace Doggiehood.Core.World
                 .ToList();
 
             return new GameState(houses, DogRoster.CreateStartingDogs());
+        }
+
+        public void AddPlacedItem(int houseId, string itemName)
+        {
+            placedItems.Add(new PlacedItem(houseId, itemName));
         }
     }
 }
