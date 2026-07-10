@@ -75,7 +75,16 @@ namespace Doggiehood.Unity
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);
             houseRoot.transform.position = new Vector3(lot.Position.X, 0f, lot.Position.Z);
-            houseRoot.AddComponent<HouseView>().Init(house.Id);
+            var view = houseRoot.AddComponent<HouseView>();
+            view.Init(house.Id);
+
+            // Window anchor on the wall facing the intersection (#9).
+            var anchor = new GameObject("WindowAnchor").transform;
+            anchor.SetParent(houseRoot.transform);
+            var facing = new Vector3(-Mathf.Sign(lot.Position.X), 0f, -Mathf.Sign(lot.Position.Z)).normalized;
+            anchor.localPosition = new Vector3(facing.x * 2.1f, 1.5f, facing.z * 2.1f);
+            anchor.localRotation = Quaternion.LookRotation(facing, Vector3.up);
+            view.WindowAnchor = anchor;
 
             var walls = GameObject.CreatePrimitive(PrimitiveType.Cube);
             walls.name = "Walls";

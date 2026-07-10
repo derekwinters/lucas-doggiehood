@@ -3,12 +3,19 @@ using UnityEngine;
 
 namespace Doggiehood.Unity
 {
-    /// <summary>Builds the neighborhood when the scene starts.</summary>
+    /// <summary>Builds the neighborhood and its dogs when the scene starts.</summary>
     public sealed class WorldBootstrap : MonoBehaviour
     {
         private void Awake()
         {
-            WorldBuilder.Build(GameState.CreateNew());
+            var state = GameState.CreateNew();
+            var root = WorldBuilder.Build(state);
+            DogSpawner.SpawnDogs(state, root.transform);
+
+            if (FindFirstObjectByType<ConversationPresenter>() == null)
+            {
+                gameObject.AddComponent<ConversationPresenter>();
+            }
         }
     }
 }

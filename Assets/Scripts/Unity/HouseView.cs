@@ -12,6 +12,9 @@ namespace Doggiehood.Unity
         public int HouseId { get; private set; }
         public int TapCount { get; private set; }
 
+        /// <summary>Where a window-watching dog renders (#9).</summary>
+        public Transform WindowAnchor { get; set; }
+
         public void Init(int houseId)
         {
             HouseId = houseId;
