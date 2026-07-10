@@ -15,6 +15,9 @@ namespace Doggiehood.Unity
         /// <summary>Where a window-watching dog renders (#9).</summary>
         public Transform WindowAnchor { get; set; }
 
+        /// <summary>Raised on tap so quest wiring (e.g. spray, #53) can react.</summary>
+        public event System.Action Tapped;
+
         public void Init(int houseId)
         {
             HouseId = houseId;
@@ -23,6 +26,7 @@ namespace Doggiehood.Unity
         public void OnTapped()
         {
             TapCount++;
+            Tapped?.Invoke();
         }
     }
 }

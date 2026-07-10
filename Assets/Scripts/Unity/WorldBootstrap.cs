@@ -8,13 +8,27 @@ namespace Doggiehood.Unity
     {
         private void Awake()
         {
-            var state = GameState.CreateNew();
+            var state = SaveStore.LoadOrCreate();
             var root = WorldBuilder.Build(state);
             DogSpawner.SpawnDogs(state, root.transform);
 
-            if (FindFirstObjectByType<ConversationPresenter>() == null)
+            var director = gameObject.AddComponent<QuestDirector>();
+            director.Init(state, root.transform);
+
+            var presenter = FindFirstObjectByType<ConversationPresenter>();
+            if (presenter == null)
             {
-                gameObject.AddComponent<ConversationPresenter>();
+                presenter = gameObject.AddComponent<ConversationPresenter>();
+            }
+
+            presenter.State = state;
+            presenter.Director = director;
+
+            // Day-one rotation. Real once-per-calendar-day gating lands with
+            // the vertical-slice integration (milestone 08).
+            if (!System.Linq.Enumerable.Any(state.Quests.ActiveQuests))
+            {
+                state.Quests.StartNewDay(new System.Random());
             }
         }
     }

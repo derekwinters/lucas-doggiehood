@@ -12,6 +12,13 @@ namespace Doggiehood.Unity
     {
         public Conversation Current { get; private set; }
 
+        /// <summary>Set by WorldBootstrap; when present, conversations use
+        /// the dog's real quest instance and Accept flows into Core.</summary>
+        public Doggiehood.Core.World.GameState State { get; set; }
+        public QuestDirector Director { get; set; }
+
+        private Doggiehood.Core.Quests.Quest currentQuest;
+
         public bool IsOpen
         {
             get { return Current != null; }
@@ -21,6 +28,19 @@ namespace Doggiehood.Unity
         /// an active quest (Core returns null for those).</summary>
         public bool TryOpen(Dog dog)
         {
+            if (State != null)
+            {
+                currentQuest = System.Linq.Enumerable.FirstOrDefault(
+                    State.Quests.ActiveQuests,
+                    q => q.DogName == dog.Name && q.Status == Doggiehood.Core.Quests.QuestStatus.Available);
+
+                if (currentQuest != null)
+                {
+                    Current = new Conversation(currentQuest.DialogueLines, ConversationEnding.Accept);
+                    return true;
+                }
+            }
+
             var conversation = ConversationStarter.TryOpen(dog);
             if (conversation == null)
             {
@@ -31,9 +51,24 @@ namespace Doggiehood.Unity
             return true;
         }
 
+        /// <summary>The single closing action (#33): accept the quest.</summary>
+        public void AcceptCurrent()
+        {
+            if (currentQuest != null && State != null && State.Quests.Accept(currentQuest))
+            {
+                if (Director != null)
+                {
+                    Director.OnQuestAccepted(currentQuest);
+                }
+            }
+
+            Close();
+        }
+
         public void Close()
         {
             Current = null;
+            currentQuest = null;
         }
 
         private void OnGUI()
@@ -52,7 +87,7 @@ namespace Doggiehood.Unity
 
             if (GUILayout.Button(Current.Ending == ConversationEnding.Accept ? "Accept" : "Complete"))
             {
-                Close();
+                AcceptCurrent();
             }
 
             GUILayout.EndArea();
