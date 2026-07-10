@@ -2,7 +2,7 @@
 
 *Issues: [#72](https://github.com/derekwinters/lucas-doggiehood/issues/72) (architecture), [#77](https://github.com/derekwinters/lucas-doggiehood/issues/77) (agent enforcement)*
 
-The goal is thorough test coverage **without needing an emulator, device, or even the Unity Editor** for most of it. This is possible because of the [Core/Unity split](tech-stack.md#code-architecture-core--unity-split): almost all real game logic lives in plain C# with no engine dependency.
+The goal is thorough test coverage **without needing an emulator, device, or even the Unity Editor** for most of it. This is possible because of the [Core/Unity split](tech-stack.md#code-architecture-core-unity-split): almost all real game logic lives in plain C# with no engine dependency.
 
 ## Red-green-refactor, strictly enforced
 

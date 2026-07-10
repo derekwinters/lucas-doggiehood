@@ -10,7 +10,7 @@ You view the neighborhood from an angled, isometric top-down camera — like loo
 
 Dogs live at houses around the neighborhood and wander the streets nearby. Some are inside, looking out a window. Each dog has a breed, a name, and a personality — a Brave dog acts differently than a Shy one, and (eventually) even walks differently. *(Spec: [Dog Behavior](../specs/dogs/behavior.md), [Dog Roster & Names](../specs/dogs/roster-names.md))*
 
-A dog with something to say shows a speech bubble above it. Tap the bubble to start a short conversation — the dog explains what it needs, you tap to help, done. No branching conversation trees, no quest log to check — the speech bubble is the only signal you need. *(Spec: [Conversation System](../specs/world/conversation-system.md))*
+A dog with something to say shows a speech bubble above it. Tap the bubble to start a short conversation — the dog explains what it needs, you tap to help, done. No branching conversation trees, no quest log to check — the speech bubble is the only signal you need. *(Spec: [Conversation System](../specs/quests/conversation-system.md))*
 
 ## Helping out
 

@@ -7,7 +7,7 @@
 A dedicated Claude Code agent (`.claude/agents/`), not ad-hoc chat sessions, does the actual Unity/C# implementation work. It:
 
 - Enforces strict [TDD](testing.md) — red, green, refactor, every time, no exceptions.
-- Defaults new logic to the Unity-independent Core assembly (see [Tech Stack](tech-stack.md#code-architecture-core--unity-split)).
+- Defaults new logic to the Unity-independent Core assembly (see [Tech Stack](tech-stack.md#code-architecture-core-unity-split)).
 - Follows Conventional Commits for everything it commits, since [release-please](versioning.md) depends on them.
 - Works from one GitHub issue at a time, using that issue's build checklist as its acceptance criteria.
 
