@@ -1,0 +1,78 @@
+site_name: Doggiehood Docs
+site_description: Design contract and engineering docs for Doggiehood
+repo_url: https://github.com/derekwinters/lucas-doggiehood
+repo_name: derekwinters/lucas-doggiehood
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - content.action.edit
+    - content.code.copy
+    - toc.follow
+
+extra:
+  version:
+    provider: mike
+    default: latest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Introduction:
+      - Vision: intro/vision.md
+      - How to Play: intro/how-to-play.md
+      - Project Conventions: intro/conventions.md
+  - Design & Architecture Specs:
+      - Overview: specs/index.md
+      - World:
+          - World & Neighborhood: specs/world/world.md
+          - Camera, Navigation & Controls: specs/world/camera-controls.md
+          - Art & UI Style: specs/world/art-style.md
+      - Dogs:
+          - Dog Behavior: specs/dogs/behavior.md
+          - Dog Roster & Names: specs/dogs/roster-names.md
+      - Conversation & Quests:
+          - Conversation System: specs/quests/conversation-system.md
+          - Quest & Economy: specs/quests/economy.md
+          - Quest Content: specs/quests/quest-content.md
+      - Decorations: specs/decorations.md
+      - Neighborhood Expansion (Post-MVP): specs/expansion.md
+      - Audio: specs/audio.md
+      - Onboarding: specs/onboarding.md
+      - Product Scope & Constraints: specs/product-scope.md
+      - Future Ideas: specs/future-ideas.md
+  - Engineering:
+      - Tech Stack: engineering/tech-stack.md
+      - Testing Strategy: engineering/testing.md
+      - Versioning & Releases: engineering/versioning.md
+      - CI/CD: engineering/ci-cd.md
+      - Development Agent & Workflow: engineering/agent-workflow.md
