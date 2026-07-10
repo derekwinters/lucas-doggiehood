@@ -20,7 +20,7 @@ If an issue and the docs ever disagree, or something needed isn't covered by eit
 
 1. **Strict TDD.** Write a failing test, run it, show the failure, implement the minimum to pass, run it, show the pass, refactor if needed. Never write implementation before its failing test exists. See `docs/engineering/testing.md`.
 2. **Core/Unity split.** New game logic defaults to a Unity-independent Core C# assembly (plain NUnit, no engine dependency). Only the thin `MonoBehaviour`/scene-wiring layer touches UnityEngine. See `docs/engineering/tech-stack.md`.
-3. **Conventional Commits.** Every commit message follows Conventional Commits (`feat:`, `fix:`, `chore:`, etc.) — release-please's versioning depends on this. See `docs/engineering/versioning.md`.
+3. **Conventional Commits — every commit, every PR title, no exceptions.** Every commit message *and* every pull request title follows [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, etc.), going forward from this point on. This isn't optional or best-effort — release-please's versioning depends on it, and a non-conforming commit or PR title should be corrected (amended/retitled) before merging, not left as-is. See `docs/engineering/versioning.md`.
 4. **Version lives in `/VERSION`.** Don't hand-edit Unity's `ProjectSettings.asset` version fields; release-please owns `/VERSION`.
 
 ## What not to do
