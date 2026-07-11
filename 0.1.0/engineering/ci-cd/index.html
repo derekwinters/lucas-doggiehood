@@ -1285,9 +1285,9 @@
 </ul>
 <h2 id="release-candidate-builds">Release-candidate builds<a class="headerlink" href="#release-candidate-builds" title="Permanent link">&para;</a></h2>
 <p>When a release-please release PR is open, CI builds a release-candidate APK versioned like <code>v1.0.0-rc1</code>. Each time the release PR branch is rebased (new commits land on <code>main</code> while it's open), the RC number increments (<code>rc2</code>, <code>rc3</code>, ...). Once that release ships, the next release-please PR starts over at <code>rc1</code>. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/76">#76</a>)</p>
-<div class="admonition warning">
-<p class="admonition-title">Needs verification before implementing</p>
-<p>release-please has some built-in prerelease/versioning support, but its exact behavior for resetting and incrementing prerelease numbers across PR rebases needs to be checked against current release-please docs/source before relying on it — it may need a small custom Actions step layered on top (e.g. deriving the RC number from the number of pushes to the open release PR) rather than trusting the native prerelease handling to match this spec exactly.</p>
+<div class="admonition note">
+<p class="admonition-title">RC numbering design (resolved)</p>
+<p>release-please's native prerelease support bumps prerelease numbers when <em>releases</em> happen, not when the open release PR is rebased, so it can't produce <code>rc1</code> → <code>rc2</code> across pushes to the same open PR. Instead, <code>rc-build.yml</code> derives the RC number itself: it counts that workflow's runs on the release PR's branch since the PR was opened (current run included). Every push to the open release PR adds a run, incrementing the RC; a fresh release PR after a release ships has a later created-at watermark, so the count — and the RC number — starts over at <code>rc1</code>. The release PR's <code>VERSION</code> file already carries the next version (it's a release-please extra-file), so builds are versioned <code>v&lt;VERSION&gt;-rc&lt;N&gt;</code>.</p>
 </div>
 <p>Both PR debug builds and RC builds use debug signing and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.</p>
 <h2 id="commit-linting">Commit linting<a class="headerlink" href="#commit-linting" title="Permanent link">&para;</a></h2>
