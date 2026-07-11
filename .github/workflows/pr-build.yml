@@ -1,0 +1,94 @@
+name: pr-build
+
+# Builds a debug Android APK for every PR that touches app/build files (#75).
+#   - versionName = VERSION file + short commit SHA, e.g. 0.1.0-a1b2c3d
+#   - versionCode = total commit count (git rev-list --count HEAD) (#81) —
+#     deterministic, strictly increasing as commits land, and independent of
+#     both versionName and any CI run-number state
+#   - Android default debug signing (no keystore secrets — deliberate)
+#   - APK uploaded as a workflow artifact only (no store/Firebase distribution)
+#
+# Requires the UNITY_LICENSE secret (#71). Until it exists the build job
+# emits a loud warning instead of failing every PR.
+
+on:
+  pull_request:
+    paths:
+      - "Assets/**"
+      - "Packages/**"
+      - "ProjectSettings/**"
+      - "VERSION"
+      - ".github/workflows/pr-build.yml"
+
+concurrency:
+  group: pr-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          # Full history so `git rev-list --count` reflects the real commit
+          # count rather than a shallow-clone depth (#81).
+          fetch-depth: 0
+
+      - name: Check for Unity license secret
+        id: license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=PR APK build skipped::UNITY_LICENSE secret is not configured, so no debug APK was built. Generate a Unity Personal activation file and add it as the UNITY_LICENSE repo secret (issue #71)."
+          fi
+
+      - name: Compute versionName and versionCode
+        if: steps.license.outputs.present == 'true'
+        id: version
+        run: |
+          BASE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          # github.sha on a PR is the synthetic merge commit; use the real
+          # head commit so the APK is traceable to what's in the PR.
+          SHORT_SHA="$(git rev-parse --short "${{ github.event.pull_request.head.sha }}")"
+          VERSION_NAME="${BASE_VERSION}-${SHORT_SHA}"
+          VERSION_CODE="$(git rev-list --count HEAD)"
+          echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "Building versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
+
+      - name: Cache Unity Library
+        if: steps.license.outputs.present == 'true'
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-android-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-android-
+
+      - name: Build Android debug APK
+        if: steps.license.outputs.present == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildName: Doggiehood
+          versioning: Custom
+          version: ${{ steps.version.outputs.name }}
+          androidVersionCode: ${{ steps.version.outputs.code }}
+          androidExportType: androidPackage
+
+      - name: Upload APK artifact
+        if: steps.license.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: doggiehood-debug-${{ steps.version.outputs.name }}
+          path: build/Android
