@@ -10,7 +10,21 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class NeighborhoodLayout
     {
-        public const float StreetWidth = 6f;
+        /// <summary>
+        /// Same concept as <see cref="WorldDimensions.RoadWidth"/> (#105) —
+        /// referencing it here keeps the 6m value defined in exactly one
+        /// place while preserving this map's own public API/name, which
+        /// other Core and Unity code already depends on.
+        /// </summary>
+        public const float StreetWidth = WorldDimensions.RoadWidth;
+
+        /// <summary>
+        /// This map's own lot-placement choice, not one of the locked
+        /// standard dimensions (#105) — it's specific to this starting
+        /// neighborhood instance, not a road/sidewalk/crosswalk measurement,
+        /// so it intentionally stays a standalone constant rather than
+        /// being derived from <see cref="WorldDimensions"/>.
+        /// </summary>
         public const float LotDistanceFromCenter = 14f;
 
         public static readonly GridPoint Intersection = new GridPoint(0f, 0f);
