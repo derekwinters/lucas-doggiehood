@@ -13,6 +13,8 @@ The first playable neighborhood is deliberately small: **one intersection of two
 
 Streets are lined with houses that the player views and explores from above ([#7](https://github.com/derekwinters/lucas-doggiehood/issues/7)). There is no player-character traversal — see [Camera, Navigation & Controls](camera-controls.md) for how the player actually moves through the space.
 
+The world is structured as a grid of tiles — the starting neighborhood is one tile — with a defined catalog of tile types, standard dimensions, and sidewalks along every road. See [Map Grid & Sidewalks](map-grid.md).
+
 ## Lighting & time
 
 Static, pleasant daytime lighting — always sunny/mid-day. **No day/night cycle and no weather system for MVP.** ([#39](https://github.com/derekwinters/lucas-doggiehood/issues/39))

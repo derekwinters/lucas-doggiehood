@@ -55,6 +55,7 @@ nav:
       - Overview: specs/index.md
       - World:
           - World & Neighborhood: specs/world/world.md
+          - Map Grid & Sidewalks: specs/world/map-grid.md
           - Camera, Navigation & Controls: specs/world/camera-controls.md
           - Art & UI Style: specs/world/art-style.md
       - Dogs:
