@@ -82,12 +82,57 @@ namespace Doggiehood.Unity.EditModeTests
         public void BuildsAVergeAndSidewalkOnBothSidesOfEveryRoad()
         {
             // #106: symmetric placement — every road gets a grass verge and
-            // a sidewalk on both sides.
+            // a sidewalk on both sides, each split into two arm segments
+            // (one per direction from the intersection) so the strip can
+            // stop at the crossing road's own footprint instead of running
+            // through it as one continuous piece.
             var verges = Children().Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix)).ToList();
             var sidewalks = Children().Where(t => t.name.StartsWith(WorldBuilder.SidewalkNamePrefix)).ToList();
 
-            Assert.That(verges.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2));
-            Assert.That(sidewalks.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2));
+            Assert.That(verges.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2));
+            Assert.That(sidewalks.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2));
+        }
+
+        [Test]
+        public void VergeAndSidewalkArms_NeverPaintOverTheCrossingRoadsOwnPavement()
+        {
+            // Regression: verge/sidewalk strips used to run as one
+            // continuous piece straight through the intersection, painting
+            // over the crossing road's own pavement — visible in-game as a
+            // stray grass ring around the crosswalk box (Derek's
+            // playtest). Every road's verge/sidewalk line, sampled at the
+            // crossing road's own centerline (squarely inside the crossing
+            // road's pavement footprint), must now be covered by nothing.
+            var strips = Children()
+                .Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix) || t.name.StartsWith(WorldBuilder.SidewalkNamePrefix))
+                .ToList();
+
+            foreach (var road in NeighborhoodLayout.Roads)
+            {
+                foreach (var sidewalk in road.Sidewalks)
+                {
+                    var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
+
+                    AssertNothingCovers(strips, road.PointAt(0f, vergeOffset), $"verge of {road.Orientation} {sidewalk.Side}");
+                    AssertNothingCovers(strips, road.PointAt(0f, sidewalk.CenterOffset), $"sidewalk of {road.Orientation} {sidewalk.Side}");
+                }
+            }
+        }
+
+        private static void AssertNothingCovers(IEnumerable<Transform> strips, GridPoint point, string description)
+        {
+            var worldPoint = new Vector3(point.X, 0f, point.Z);
+
+            foreach (var strip in strips)
+            {
+                var halfX = strip.localScale.x / 2f;
+                var halfZ = strip.localScale.z / 2f;
+                var covers = Mathf.Abs(worldPoint.x - strip.position.x) < halfX - 0.001f
+                    && Mathf.Abs(worldPoint.z - strip.position.z) < halfZ - 0.001f;
+
+                Assert.That(covers, Is.False,
+                    $"{strip.name} paints over the crossing road's pavement at {worldPoint} ({description})");
+            }
         }
 
         [Test]

@@ -80,39 +80,59 @@ namespace Doggiehood.Unity
 
             foreach (var sidewalk in road.Sidewalks)
             {
-                BuildVerge(parent, road, sidewalk, length, isNorthSouth);
-                BuildSidewalk(parent, road, sidewalk, length, isNorthSouth);
+                var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
+                BuildStripArms(parent, road, vergeOffset, sidewalk.VergeWidth, isNorthSouth,
+                    VergeNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.GrassVergeHex, 0.06f);
+                BuildStripArms(parent, road, sidewalk.CenterOffset, sidewalk.Width, isNorthSouth,
+                    SidewalkNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.SidewalkHex, 0.07f);
             }
         }
 
-        private static void BuildVerge(Transform parent, Road road, Sidewalk sidewalk, float length, bool isNorthSouth)
+        /// <summary>
+        /// A verge/sidewalk strip on one side of a road, split into its two
+        /// arm segments so it stops at the crossing road's own half-width
+        /// from the intersection center instead of running through it as
+        /// one continuous piece. Without this, the strip painted over the
+        /// crossing road's own pavement (visible in-game as a stray grass
+        /// ring around the crosswalk box). NeighborhoodLayout only ever
+        /// has today's one origin-centered crossing (#109's multi-tile
+        /// grid stays deferred), so the gap is computed directly from
+        /// WorldDimensions.RoadWidth rather than via general multi-crossing
+        /// detection (that generality already lives in WalkNetwork).
+        /// </summary>
+        private static void BuildStripArms(Transform parent, Road road, float perpendicularOffset, float stripWidth,
+            bool isNorthSouth, string namePrefix, string colorHex, float height)
         {
-            var sign = sidewalk.Side == RoadSide.Positive ? 1f : -1f;
-            var vergeOffset = sign * (road.Width / 2f + sidewalk.VergeWidth / 2f);
-            var center = road.PointAt(0f, vergeOffset);
+            var gapHalfWidth = WorldDimensions.RoadWidth / 2f;
+            var armLength = road.HalfLength - gapHalfWidth;
+            if (armLength <= 0f)
+            {
+                return;
+            }
 
-            var verge = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            verge.name = VergeNamePrefix + road.Orientation + " " + sidewalk.Side;
-            verge.transform.SetParent(parent);
-            verge.transform.localScale = isNorthSouth
-                ? new Vector3(sidewalk.VergeWidth, 0.1f, length)
-                : new Vector3(length, 0.1f, sidewalk.VergeWidth);
-            verge.transform.position = new Vector3(center.X, 0.06f, center.Z);
-            Paint(verge, Palette.GrassVergeHex);
+            BuildStripArm(parent, road, perpendicularOffset, stripWidth, isNorthSouth,
+                namePrefix, colorHex, height, -road.HalfLength, -gapHalfWidth, armLength, positiveAlong: false);
+            BuildStripArm(parent, road, perpendicularOffset, stripWidth, isNorthSouth,
+                namePrefix, colorHex, height, gapHalfWidth, road.HalfLength, armLength, positiveAlong: true);
         }
 
-        private static void BuildSidewalk(Transform parent, Road road, Sidewalk sidewalk, float length, bool isNorthSouth)
+        private static void BuildStripArm(Transform parent, Road road, float perpendicularOffset, float stripWidth,
+            bool isNorthSouth, string namePrefix, string colorHex, float height, float from, float to,
+            float armLength, bool positiveAlong)
         {
-            var center = road.PointAt(0f, sidewalk.CenterOffset);
+            var armLabel = isNorthSouth
+                ? (positiveAlong ? "North" : "South")
+                : (positiveAlong ? "East" : "West");
+            var center = road.PointAt((from + to) / 2f, perpendicularOffset);
 
-            var walk = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            walk.name = SidewalkNamePrefix + road.Orientation + " " + sidewalk.Side;
-            walk.transform.SetParent(parent);
-            walk.transform.localScale = isNorthSouth
-                ? new Vector3(sidewalk.Width, 0.1f, length)
-                : new Vector3(length, 0.1f, sidewalk.Width);
-            walk.transform.position = new Vector3(center.X, 0.07f, center.Z);
-            Paint(walk, Palette.SidewalkHex);
+            var arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arm.name = namePrefix + " " + armLabel;
+            arm.transform.SetParent(parent);
+            arm.transform.localScale = isNorthSouth
+                ? new Vector3(stripWidth, 0.1f, armLength)
+                : new Vector3(armLength, 0.1f, stripWidth);
+            arm.transform.position = new Vector3(center.X, height, center.Z);
+            Paint(arm, colorHex);
         }
 
         /// <summary>The standard 4-crosswalk box at the intersection
