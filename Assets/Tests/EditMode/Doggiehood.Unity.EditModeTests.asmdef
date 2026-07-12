@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Doggiehood.Core",
-        "Doggiehood.Unity"
+        "Doggiehood.Unity",
+        "Doggiehood.Unity.Editor"
     ],
     "includePlatforms": [
         "Editor"
