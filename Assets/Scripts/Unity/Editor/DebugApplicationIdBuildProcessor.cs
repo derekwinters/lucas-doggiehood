@@ -31,11 +31,13 @@ namespace Doggiehood.Unity.Editor
 
         /// <summary>
         /// Appends the debug suffix to the Android application id if
-        /// <see cref="DebugBuildEnvironmentVariable"/> is truthy. Internal
+        /// <see cref="DebugBuildEnvironmentVariable"/> is truthy. Public
         /// (rather than private) so EditMode tests can drive it directly
-        /// without constructing a <see cref="BuildReport"/>.
+        /// without constructing a <see cref="BuildReport"/> — Unity's Bee
+        /// build strips non-public members from an assembly's ref.dll, so
+        /// `internal` isn't visible to the separate EditMode test assembly.
         /// </summary>
-        internal static void ApplyIfRequested()
+        public static void ApplyIfRequested()
         {
             var envValue = Environment.GetEnvironmentVariable(DebugBuildEnvironmentVariable);
             var isDebugBuild = ApplicationIdSuffix.IsDebugBuildRequested(envValue);
@@ -58,7 +60,7 @@ namespace Doggiehood.Unity.Editor
         /// Restores the identifier captured by <see cref="ApplyIfRequested"/>,
         /// if a suffix was applied. A no-op otherwise.
         /// </summary>
-        internal static void RestoreIfApplied()
+        public static void RestoreIfApplied()
         {
             if (!_suffixApplied)
             {
