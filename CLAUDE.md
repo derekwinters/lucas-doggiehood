@@ -16,6 +16,10 @@ Build the docs site locally with `pip install -r docs/requirements.txt && mkdocs
 
 If an issue and the docs ever disagree, or something needed isn't covered by either, stop and flag it — don't invent a rule. Decisions get made in conversation with Derek and Lucas, captured as GitHub issues, then reflected in `/docs`.
 
+## Tasks that need Derek or Lucas
+
+Anything an agent cannot complete autonomously — repo settings, secrets, asset creation, unanswered design questions, on-device playtesting — goes in the **`Direct Involvement Needed`** milestone as **one small issue per task**, assigned to Derek, stating the single action needed and how to verify it's done. Never collect human follow-ups into one big multi-section checklist issue.
+
 ## Non-negotiable engineering rules
 
 1. **Strict TDD.** Write a failing test, run it, show the failure, implement the minimum to pass, run it, show the pass, refactor if needed. Never write implementation before its failing test exists. See `docs/engineering/testing.md`.
