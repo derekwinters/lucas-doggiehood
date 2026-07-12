@@ -1,6 +1,6 @@
 # CI/CD
 
-*Issues: [#75](https://github.com/derekwinters/lucas-doggiehood/issues/75), [#76](https://github.com/derekwinters/lucas-doggiehood/issues/76), [#82](https://github.com/derekwinters/lucas-doggiehood/issues/82)*
+*Issues: [#75](https://github.com/derekwinters/lucas-doggiehood/issues/75), [#76](https://github.com/derekwinters/lucas-doggiehood/issues/76), [#80](https://github.com/derekwinters/lucas-doggiehood/issues/80), [#82](https://github.com/derekwinters/lucas-doggiehood/issues/82)*
 
 ## PR debug builds
 
@@ -8,6 +8,7 @@ Every PR builds a debug APK via CI:
 
 - Uses Android's default debug signing (no real keystore yet — deliberate, see [#75](https://github.com/derekwinters/lucas-doggiehood/issues/75))
 - Embeds the short commit SHA in the version name (e.g. `0.1.0-a1b2c3d`) so every build is uniquely identifiable
+- Applies the `.debug` applicationId suffix ([#80](https://github.com/derekwinters/lucas-doggiehood/issues/80)) via the `DOGGIEHOOD_DEBUG_BUILD` env var, so it can install side-by-side with a release build on the same device
 - Uploaded as a GitHub Actions artifact only — no Firebase/Play distribution for now
 
 ## Release-candidate builds
@@ -17,7 +18,7 @@ When a release-please release PR is open, CI builds a release-candidate APK vers
 !!! note "RC numbering design (resolved)"
     release-please's native prerelease support bumps prerelease numbers when *releases* happen, not when the open release PR is rebased, so it can't produce `rc1` → `rc2` across pushes to the same open PR. Instead, `rc-build.yml` derives the RC number itself: it counts that workflow's runs on the release PR's branch since the PR was opened (current run included). Every push to the open release PR adds a run, incrementing the RC; a fresh release PR after a release ships has a later created-at watermark, so the count — and the RC number — starts over at `rc1`. The release PR's `VERSION` file already carries the next version (it's a release-please extra-file), so builds are versioned `v<VERSION>-rc<N>`.
 
-Both PR debug builds and RC builds use debug signing and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.
+Both PR debug builds and RC builds use debug signing, apply the same `.debug` applicationId suffix ([#80](https://github.com/derekwinters/lucas-doggiehood/issues/80)), and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.
 
 ## Release builds
 
