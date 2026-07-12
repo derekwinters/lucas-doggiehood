@@ -71,11 +71,70 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildsBothStreets()
+        public void BuildsBothRoads()
         {
-            var streets = Children().Where(t => t.name.StartsWith(WorldBuilder.StreetNamePrefix)).ToList();
+            var roads = Children().Where(t => t.name.StartsWith(WorldBuilder.RoadNamePrefix)).ToList();
 
-            Assert.That(streets.Count, Is.EqualTo(2));
+            Assert.That(roads.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void BuildsAVergeAndSidewalkOnBothSidesOfEveryRoad()
+        {
+            // #106: symmetric placement — every road gets a grass verge and
+            // a sidewalk on both sides.
+            var verges = Children().Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix)).ToList();
+            var sidewalks = Children().Where(t => t.name.StartsWith(WorldBuilder.SidewalkNamePrefix)).ToList();
+
+            Assert.That(verges.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2));
+            Assert.That(sidewalks.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2));
+        }
+
+        [Test]
+        public void BuildsTheFourCrosswalks_OnePerRoadArm()
+        {
+            var crosswalks = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
+
+            Assert.That(crosswalks.Count, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void Road_Verge_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
+        {
+            // #106: placeholder flat-colored surfaces, no literal striping,
+            // but road/verge/sidewalk/crosswalk must each read as its own
+            // distinct surface.
+            Color ColorOf(string prefix) => Children().First(t => t.name.StartsWith(prefix))
+                .GetComponent<Renderer>().sharedMaterial.color;
+
+            var road = ColorOf(WorldBuilder.RoadNamePrefix);
+            var verge = ColorOf(WorldBuilder.VergeNamePrefix);
+            var sidewalk = ColorOf(WorldBuilder.SidewalkNamePrefix);
+            var crosswalk = ColorOf(WorldBuilder.CrosswalkNamePrefix);
+
+            Assert.That(road, Is.EqualTo(CoreColors.FromHex(Palette.StreetHex)));
+            Assert.That(verge, Is.EqualTo(CoreColors.FromHex(Palette.GrassVergeHex)));
+            Assert.That(sidewalk, Is.EqualTo(CoreColors.FromHex(Palette.SidewalkHex)));
+            Assert.That(crosswalk, Is.EqualTo(CoreColors.FromHex(Palette.CrosswalkHex)));
+
+            var colors = new[] { road, verge, sidewalk, crosswalk };
+            Assert.That(colors, Is.Unique);
+        }
+
+        [Test]
+        public void SpawnedDogs_StandOnSidewalks_NeverOnARoadOrItsVerge()
+        {
+            // #106: dogs spawn outside both roads' pavement + grass verge
+            // band — i.e. on a sidewalk, never on the road itself.
+            DogSpawner.SpawnDogs(GameState.CreateNew(), root.transform);
+            var roadAndVergeHalfWidth = NeighborhoodLayout.StreetWidth / 2f + WorldDimensions.GrassVergeWidth;
+
+            foreach (var view in root.GetComponentsInChildren<DogView>())
+            {
+                var p = view.transform.position;
+                Assert.That(Mathf.Abs(p.x) > roadAndVergeHalfWidth && Mathf.Abs(p.z) > roadAndVergeHalfWidth, Is.True,
+                    $"{view.Dog.Name} spawned on the road or its verge at {p}");
+            }
         }
 
         [Test]

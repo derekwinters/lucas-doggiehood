@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -7,17 +8,22 @@ namespace Doggiehood.Unity
 {
     /// <summary>
     /// Builds the graybox starting neighborhood from Core data (#7, #38,
-    /// #39, #64): ground, two streets, four styled houses, and the fixed
-    /// daytime sun. Geometry is Unity primitives colored from the palette —
-    /// placeholder art until real low-poly models land (#6) — but all
-    /// positions, counts, styles, and lighting values come from Core, so
-    /// swapping in real models later doesn't change any logic.
+    /// #39, #64, #106): ground, roads with a symmetric grass verge and
+    /// sidewalk on both sides, the intersection's crosswalk box, four
+    /// styled houses, and the fixed daytime sun. Geometry is Unity
+    /// primitives colored from the palette — placeholder art until real
+    /// low-poly models land (#6) — but all positions, counts, styles, and
+    /// lighting values come from Core, so swapping in real models later
+    /// doesn't change any logic.
     /// </summary>
     public static class WorldBuilder
     {
         public const string RootName = "Neighborhood";
         public const string HouseNamePrefix = "House ";
-        public const string StreetNamePrefix = "Street - ";
+        public const string RoadNamePrefix = "Road - ";
+        public const string VergeNamePrefix = "Verge - ";
+        public const string SidewalkNamePrefix = "Sidewalk - ";
+        public const string CrosswalkNamePrefix = "Crosswalk - ";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
 
@@ -26,10 +32,12 @@ namespace Doggiehood.Unity
             var root = new GameObject(RootName);
 
             BuildGround(root.transform);
-            foreach (var street in NeighborhoodLayout.Streets)
+            foreach (var road in NeighborhoodLayout.Roads)
             {
-                BuildStreet(root.transform, street);
+                BuildRoad(root.transform, road);
             }
+
+            BuildCrosswalks(root.transform);
 
             foreach (var house in state.Houses)
             {
@@ -53,18 +61,84 @@ namespace Doggiehood.Unity
             Paint(ground, Palette.GrassHex);
         }
 
-        private static void BuildStreet(Transform parent, Street street)
+        /// <summary>Road surface plus a grass verge and sidewalk on both
+        /// sides (#106), all sized from Road/Sidewalk — which are in turn
+        /// built purely from the locked #105 WorldDimensions constants.</summary>
+        private static void BuildRoad(Transform parent, Road road)
         {
-            var strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            strip.name = StreetNamePrefix + street.Orientation;
-            strip.transform.SetParent(parent);
+            var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
+            var length = road.HalfLength * 2f;
 
-            var length = GroundExtent * 2f;
-            strip.transform.localScale = street.Orientation == StreetOrientation.NorthSouth
-                ? new Vector3(NeighborhoodLayout.StreetWidth, 0.1f, length)
-                : new Vector3(length, 0.1f, NeighborhoodLayout.StreetWidth);
-            strip.transform.position = new Vector3(0f, 0.05f, 0f);
-            Paint(strip, Palette.StreetHex);
+            var surface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            surface.name = RoadNamePrefix + road.Orientation;
+            surface.transform.SetParent(parent);
+            surface.transform.localScale = isNorthSouth
+                ? new Vector3(road.Width, 0.1f, length)
+                : new Vector3(length, 0.1f, road.Width);
+            surface.transform.position = new Vector3(road.Center.X, 0.05f, road.Center.Z);
+            Paint(surface, Palette.StreetHex);
+
+            foreach (var sidewalk in road.Sidewalks)
+            {
+                BuildVerge(parent, road, sidewalk, length, isNorthSouth);
+                BuildSidewalk(parent, road, sidewalk, length, isNorthSouth);
+            }
+        }
+
+        private static void BuildVerge(Transform parent, Road road, Sidewalk sidewalk, float length, bool isNorthSouth)
+        {
+            var sign = sidewalk.Side == RoadSide.Positive ? 1f : -1f;
+            var vergeOffset = sign * (road.Width / 2f + sidewalk.VergeWidth / 2f);
+            var center = road.PointAt(0f, vergeOffset);
+
+            var verge = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            verge.name = VergeNamePrefix + road.Orientation + " " + sidewalk.Side;
+            verge.transform.SetParent(parent);
+            verge.transform.localScale = isNorthSouth
+                ? new Vector3(sidewalk.VergeWidth, 0.1f, length)
+                : new Vector3(length, 0.1f, sidewalk.VergeWidth);
+            verge.transform.position = new Vector3(center.X, 0.06f, center.Z);
+            Paint(verge, Palette.GrassVergeHex);
+        }
+
+        private static void BuildSidewalk(Transform parent, Road road, Sidewalk sidewalk, float length, bool isNorthSouth)
+        {
+            var center = road.PointAt(0f, sidewalk.CenterOffset);
+
+            var walk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            walk.name = SidewalkNamePrefix + road.Orientation + " " + sidewalk.Side;
+            walk.transform.SetParent(parent);
+            walk.transform.localScale = isNorthSouth
+                ? new Vector3(sidewalk.Width, 0.1f, length)
+                : new Vector3(length, 0.1f, sidewalk.Width);
+            walk.transform.position = new Vector3(center.X, 0.07f, center.Z);
+            Paint(walk, Palette.SidewalkHex);
+        }
+
+        /// <summary>The standard 4-crosswalk box at the intersection
+        /// (#106), one per road arm — taken straight from the walk
+        /// network's Crosswalk edges rather than re-deriving the geometry.</summary>
+        private static void BuildCrosswalks(Transform parent)
+        {
+            var crosswalks = NeighborhoodLayout.WalkNetwork.Edges
+                .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
+                .ToList();
+
+            for (var i = 0; i < crosswalks.Count; i++)
+            {
+                var edge = crosswalks[i];
+                var alongX = Mathf.Abs(edge.A.Z - edge.B.Z) < 0.01f;
+
+                var crosswalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                crosswalk.name = CrosswalkNamePrefix + i;
+                crosswalk.transform.SetParent(parent);
+                crosswalk.transform.position = new Vector3(
+                    (edge.A.X + edge.B.X) / 2f, 0.08f, (edge.A.Z + edge.B.Z) / 2f);
+                crosswalk.transform.localScale = alongX
+                    ? new Vector3(edge.Length, 0.1f, edge.Width)
+                    : new Vector3(edge.Width, 0.1f, edge.Length);
+                Paint(crosswalk, Palette.CrosswalkHex);
+            }
         }
 
         private static void BuildHouse(Transform parent, House house)

@@ -5,13 +5,16 @@ using UnityEngine;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// Spawns a DogView for every dog in game state (#8): street dogs start
-    /// on the street stretch nearest their house (staggered so housemates
-    /// don't overlap); window dogs render at their house's window anchor.
+    /// Spawns a DogView for every dog in game state (#8, #106): street dogs
+    /// start on the sidewalk nearest their house — the same attach point
+    /// their driveway stub connects to on the walk network — staggered
+    /// along that sidewalk so housemates don't overlap; window dogs render
+    /// at their house's window anchor.
     /// </summary>
     public static class DogSpawner
     {
         public const string DogNamePrefix = "Dog - ";
+        private const float StaggerDistance = 2.5f;
 
         public static void SpawnDogs(GameState state, Transform parent)
         {
@@ -25,15 +28,44 @@ namespace Doggiehood.Unity
                 var go = new GameObject(DogNamePrefix + dog.Name);
                 go.transform.SetParent(parent);
 
-                var lot = NeighborhoodLayout.GetHouseLot(dog.HouseId);
-                var stagger = perHouseIndex[dog.HouseId]++ * 2.5f;
-                // Nearest north-south street point to the house, staggered
-                // along the street for multi-dog households.
-                go.transform.position = new Vector3(0f, 0f, lot.Position.Z + stagger - 2.5f);
+                var index = perHouseIndex[dog.HouseId]++;
+                go.transform.position = SidewalkSpawnPoint(dog.HouseId, index);
 
                 houses.TryGetValue(dog.HouseId, out var house);
                 go.AddComponent<DogView>().Init(dog, house != null ? house.WindowAnchor : null);
             }
+        }
+
+        /// <summary>The house's driveway attach point on the walk network,
+        /// staggered along whichever sidewalk arm it sits on so multiple
+        /// housemates don't spawn on top of each other.</summary>
+        private static Vector3 SidewalkSpawnPoint(int houseId, int indexAtHouse)
+        {
+            var lot = NeighborhoodLayout.GetHouseLot(houseId);
+            var network = NeighborhoodLayout.WalkNetwork;
+
+            var driveway = network.Edges.First(e => e.Kind == WalkEdgeKind.DrivewayStub
+                && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
+            var attach = driveway.Other(lot.Position);
+
+            var direction = new Vector3(1f, 0f, 0f);
+            var sidewalkEdge = network.EdgesFrom(attach)
+                .Where(e => e.Kind == WalkEdgeKind.Sidewalk)
+                .Select(e => (WalkEdge?)e)
+                .FirstOrDefault();
+
+            if (sidewalkEdge.HasValue)
+            {
+                var other = sidewalkEdge.Value.Other(attach);
+                var toOther = new Vector3(other.X - attach.X, 0f, other.Z - attach.Z);
+                if (toOther.sqrMagnitude > 0.0001f)
+                {
+                    direction = toOther.normalized;
+                }
+            }
+
+            var stagger = indexAtHouse * StaggerDistance;
+            return new Vector3(attach.X, 0f, attach.Z) + direction * stagger;
         }
     }
 }
