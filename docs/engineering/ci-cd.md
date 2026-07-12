@@ -19,6 +19,10 @@ When a release-please release PR is open, CI builds a release-candidate APK vers
 
 Both PR debug builds and RC builds use debug signing and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.
 
+## Release builds
+
+When a release ships (release-please publishes the `vX.Y.Z` GitHub release), `release-build.yml` builds the APK for that tag and **attaches it to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in MVP scope.
+
 ## Commit linting
 
 A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. ([#82](https://github.com/derekwinters/lucas-doggiehood/issues/82))
