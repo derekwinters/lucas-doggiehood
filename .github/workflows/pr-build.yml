@@ -52,7 +52,10 @@ jobs:
         if: steps.license.outputs.present == 'true'
         id: version
         run: |
-          BASE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          # VERSION's first field is the bare semver; anything after it is the
+          # "# x-release-please-version" marker comment release-please's
+          # generic extra-files updater needs to find the line to rewrite (#114).
+          BASE_VERSION="$(cut -d'#' -f1 < VERSION | tr -d '[:space:]')"
           # github.sha on a PR is the synthetic merge commit; use the real
           # head commit so the APK is traceable to what's in the PR.
           SHORT_SHA="$(git rev-parse --short "${{ github.event.pull_request.head.sha }}")"
