@@ -124,6 +124,11 @@ namespace Doggiehood.Unity
                 return;
             }
 
+            // Snap exactly onto the waypoint on arrival — MoveTowards only
+            // guarantees landing within WaypointArriveDistance, and that
+            // slack must not leak into the dog's final resting position.
+            view.transform.position = target;
+
             if (index + 1 < route.Count)
             {
                 homeRouteProgress[quest.Id] = index + 1;
