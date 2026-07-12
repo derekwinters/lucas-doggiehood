@@ -64,5 +64,22 @@ namespace Doggiehood.Core.Tests.World
         {
             Assert.That(() => NeighborhoodLayout.GetHouseLot(999), Throws.ArgumentException);
         }
+
+        [Test]
+        public void Roads_ContainsOneRoadPerStreet_CenteredOnTheIntersection()
+        {
+            // #106: NeighborhoodLayout exposes real Road geometry built
+            // from its own Streets, so downstream code (WalkNetwork,
+            // WorldBuilder) never has to re-derive it.
+            Assert.That(NeighborhoodLayout.Roads.Count, Is.EqualTo(NeighborhoodLayout.Streets.Count));
+
+            foreach (var road in NeighborhoodLayout.Roads)
+            {
+                Assert.That(road.Center, Is.EqualTo(NeighborhoodLayout.Intersection));
+                Assert.That(road.HalfLength, Is.EqualTo(NeighborhoodLayout.StreetHalfLength));
+            }
+
+            Assert.That(NeighborhoodLayout.Roads.Select(r => r.Orientation), Is.Unique);
+        }
     }
 }
