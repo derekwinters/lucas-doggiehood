@@ -6,7 +6,10 @@
       "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false,
       "extra-files": [
-        "VERSION"
+        {
+          "type": "generic",
+          "path": "VERSION"
+        }
       ]
     }
   }

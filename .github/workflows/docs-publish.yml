@@ -36,7 +36,10 @@ jobs:
 
       - name: Read game version
         id: game_version
-        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+        # VERSION's first field is the bare semver; anything after it is the
+        # "# x-release-please-version" marker comment release-please's
+        # generic extra-files updater needs to find the line to rewrite (#114).
+        run: echo "version=$(cut -d'#' -f1 VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
 
       - name: Deploy versioned docs with mike
         run: |

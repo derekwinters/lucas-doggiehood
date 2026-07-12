@@ -63,7 +63,10 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
         run: |
-          BASE_VERSION="$(tr -d '[:space:]' < VERSION)"
+          # VERSION's first field is the bare semver; anything after it is the
+          # "# x-release-please-version" marker comment release-please's
+          # generic extra-files updater needs to find the line to rewrite (#114).
+          BASE_VERSION="$(cut -d'#' -f1 < VERSION | tr -d '[:space:]')"
           # Runs of this workflow on this branch since the release PR was
           # opened, current run included -> rc1, rc2, ... per push.
           RC="$(gh api "repos/${{ github.repository }}/actions/workflows/rc-build.yml/runs?branch=${HEAD_BRANCH}&event=pull_request&created=>=${PR_CREATED_AT}" --jq '.total_count')"
