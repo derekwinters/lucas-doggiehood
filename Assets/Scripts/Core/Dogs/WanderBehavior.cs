@@ -10,9 +10,13 @@ namespace Doggiehood.Core.Dogs
     /// the sidewalk+crosswalk walk network (#8, #106). Driveway stubs are
     /// never entered — general wander stays off house lots/yards. At each
     /// node the choice between continuing straight and deviating/turning
-    /// is weighted; callers that pass no weights get even/uniform
-    /// randomness. Deterministic for a seed, matching the existing
-    /// seeded-<see cref="Random"/> convention.
+    /// is weighted; the parameterless overload derives that weighting from
+    /// the dog's own <see cref="MovementProfile.TurnProbability"/> (#89) —
+    /// a low TurnProbability (Excited) means a high continue-weight, i.e.
+    /// long straight stretches — while the explicit-weight overload is
+    /// still available for callers that want to override it outright.
+    /// Deterministic for a seed, matching the existing seeded-
+    /// <see cref="Random"/> convention.
     /// </summary>
     public sealed class WanderBehavior
     {
@@ -36,11 +40,13 @@ namespace Doggiehood.Core.Dogs
             this.network = network;
         }
 
-        /// <summary>Next node, choosing evenly between continuing straight
-        /// and deviating/turning.</summary>
+        /// <summary>Next node, weighting continue-straight-vs-deviate/turn
+        /// by this dog's own MovementProfile.TurnProbability (#89): a
+        /// lower TurnProbability means a higher chance of continuing
+        /// straight, i.e. longer stretches before a turn.</summary>
         public GridPoint NextTarget(GridPoint current)
         {
-            return NextTarget(current, continueWeight: 1f, deviateWeight: 1f);
+            return NextTarget(current, continueWeight: 1f - profile.TurnProbability, deviateWeight: profile.TurnProbability);
         }
 
         /// <summary>

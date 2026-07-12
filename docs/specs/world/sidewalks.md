@@ -38,7 +38,7 @@ Construction, generically:
 
 `WanderBehavior` ([Dog Behavior](../dogs/behavior.md)) no longer does centerline-bounce math on the streets directly. It now random-walks node to node over the sidewalk+crosswalk portion of the network — **driveway stubs are never entered**, so general wander never crosses onto a house lot or into a yard.
 
-At each node, the choice between continuing straight and deviating/turning is weighted (`WanderBehavior.NextTarget(current, continueWeight, deviateWeight)`); the parameterless overload — what every caller uses today — defaults to even/uniform randomness between the two. The mechanism exists so a future issue can bias it per personality; **that wiring is explicitly not done yet**. This means the per-personality `MovementProfile.TurnProbability` distinction from [Dog Behavior](../dogs/behavior.md#movement-conveys-personality) (Excited's long straight stretches) is temporarily not reflected in wander's actual path shape — `Speed` still applies, so Excited dogs are still faster, but the "long straight stretches" pacing is dormant until a follow-up issue passes personality-derived weights through `DogView`.
+At each node, the choice between continuing straight and deviating/turning is weighted. Two overloads exist: `WanderBehavior.NextTarget(current, continueWeight, deviateWeight)` takes an explicit override, while the parameterless `WanderBehavior.NextTarget(current)` — what every caller (`DogView`) uses today — derives `continueWeight = 1 - TurnProbability` and `deviateWeight = TurnProbability` from the dog's own `MovementProfile.TurnProbability` (#89). A lower `TurnProbability` (Excited) means a higher continue-weight, i.e. longer straight stretches before a turn, so the per-personality distinction from [Dog Behavior](../dogs/behavior.md#movement-conveys-personality) carries all the way through to wander's actual path shape — both `Speed` and turn pacing now differ for Excited dogs, not just Speed.
 
 ## Walking home routes over the network
 
@@ -56,7 +56,7 @@ Walking home after accepting a "buy me X" quest ([Quest Content](../quests/quest
 - [x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm
 - [x] The walk network graph (sidewalks + crosswalks + driveway stubs) is generated from `NeighborhoodLayout`'s roads and house lots, and is fully connected
 - [x] `WanderBehavior` only ever produces positions on the sidewalk/crosswalk network — never a road surface, never a driveway stub
-- [x] `WanderBehavior`'s node choice supports weighted continue-vs-deviate decisions, defaulting to even randomness
+- [x] `WanderBehavior`'s node choice supports weighted continue-vs-deviate decisions, defaulting to a per-personality split derived from `MovementProfile.TurnProbability` (#89)
 - [x] Walking home paths over the sidewalk/crosswalk/driveway-stub network to the destination lot
 - [x] `WorldBuilder` renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces; spawned dogs stand on sidewalks
 - [ ] On-device visual check (human task, not attempted here)

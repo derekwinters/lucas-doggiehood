@@ -19,14 +19,51 @@ namespace Doggiehood.Core.Tests.Dogs
         [Test]
         public void ExcitedDogs_TurnLessOften()
         {
-            // #89: Excited = long straight stretches. WanderBehavior (#106)
-            // doesn't consult TurnProbability directly yet — wiring
-            // per-personality weights into the new weighted continue/
-            // deviate mechanism is deferred (issue explicitly scopes that
-            // out) — but the profile value itself must stay in place ready
-            // for that follow-up.
+            // #89: Excited = long straight stretches.
             Assert.That(MovementProfile.ForPersonality(Personality.Excited).TurnProbability,
                 Is.LessThan(MovementProfile.Base.TurnProbability));
+        }
+
+        [Test]
+        public void ExcitedProfile_ProducesMeasurablyFewerTurns_ThroughTheDefaultNextTargetOverload()
+        {
+            // #89/#106: MovementProfile.TurnProbability must actually shape
+            // wander's path through the network-based WanderBehavior, via
+            // the parameterless NextTarget(current) overload every caller
+            // (DogView) uses today — not just sit unread on the struct.
+            // Excited's low TurnProbability should produce measurably
+            // longer straight stretches (fewer direction changes) than
+            // Base's higher one, over the same seeded roll sequence.
+            Assert.That(CountTurns(MovementProfile.ForPersonality(Personality.Excited), seed: 99),
+                Is.LessThan(CountTurns(MovementProfile.Base, seed: 99)));
+        }
+
+        private static int CountTurns(MovementProfile profile, int seed)
+        {
+            var wander = new WanderBehavior(seed, profile, NeighborhoodLayout.WalkNetwork);
+            var position = NeighborhoodLayout.Intersection;
+            var turns = 0;
+            var lastDirection = default(GridPoint);
+            var first = true;
+
+            for (var step = 0; step < 400; step++)
+            {
+                var next = wander.NextTarget(position);
+                var direction = new GridPoint(
+                    System.Math.Sign(next.X - position.X),
+                    System.Math.Sign(next.Z - position.Z));
+
+                if (!first && !direction.Equals(lastDirection))
+                {
+                    turns++;
+                }
+
+                first = false;
+                lastDirection = direction;
+                position = next;
+            }
+
+            return turns;
         }
 
         [Test]
@@ -148,12 +185,12 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [Test]
-        public void NextTarget_NoWeightsPassed_DefaultsToEvenRandomnessBetweenContinueAndDeviate()
+        public void NextTarget_NoWeightsPassed_DerivesTheSplitFromMovementProfileTurnProbability()
         {
-            // #106: callers today (DogView) pass nothing; that must yield
-            // roughly a coin flip between the one "continue" edge and the
-            // three "deviate" edges, not a personality- or route-biased
-            // split.
+            // #89/#106: callers today (DogView) pass no explicit weights;
+            // that must land on the dog's own MovementProfile.TurnProbability
+            // rather than a flat/uniform split — Base's continue-fraction
+            // should track (1 - TurnProbability), i.e. ~0.65 for Base.
             var network = NeighborhoodLayout.WalkNetwork;
             const int trials = 300;
             var continueCount = 0;
@@ -171,8 +208,9 @@ namespace Doggiehood.Core.Tests.Dogs
             }
 
             var fraction = continueCount / (float)trials;
-            Assert.That(fraction, Is.InRange(0.35f, 0.65f),
-                $"expected roughly a 50/50 split between continue and deviate, got {continueCount}/{trials}");
+            var expected = 1f - MovementProfile.Base.TurnProbability;
+            Assert.That(fraction, Is.InRange(expected - 0.15f, expected + 0.15f),
+                $"expected roughly a {expected:P0} continue split (1 - Base.TurnProbability), got {continueCount}/{trials}");
         }
 
         [Test]
