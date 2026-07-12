@@ -144,6 +144,40 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Crosswalks_NeverPaintOverSidewalkPavement()
+        {
+            // Regression (Derek's playtest, follow-up to the verge/sidewalk
+            // intersection fix): each Crosswalk edge in the walk network
+            // runs sidewalk-center to sidewalk-center (+-5.5m) — that's the
+            // real distance a dog covers crossing the road, and moving it
+            // would break graph connectivity. But visually, the rendered
+            // crosswalk quad must stop at the verge/sidewalk boundary
+            // (RoadWidth/2 + GrassVergeWidth = 4.5m) and never cover the
+            // sidewalk pavement itself (4.5m-6.5m band). Sample a point in
+            // the inner half of that band (between the verge boundary and
+            // the sidewalk's own centerline) at each crosswalk's position.
+            var crosswalkObjects = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
+            var vergeEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 4.5
+
+            foreach (var edge in NeighborhoodLayout.WalkNetwork.Edges.Where(e => e.Kind == WalkEdgeKind.Crosswalk))
+            {
+                var alongX = Mathf.Abs(edge.A.Z - edge.B.Z) < 0.01f;
+                var sidewalkCenterMagnitude = Mathf.Abs(alongX ? edge.A.X : edge.A.Z);
+                var sampleMagnitude = (vergeEdge + sidewalkCenterMagnitude) / 2f;
+                var alongPosition = alongX ? (edge.A.Z + edge.B.Z) / 2f : (edge.A.X + edge.B.X) / 2f;
+
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    var point = alongX
+                        ? new GridPoint(sign * sampleMagnitude, alongPosition)
+                        : new GridPoint(alongPosition, sign * sampleMagnitude);
+
+                    AssertNothingCovers(crosswalkObjects, point, $"crosswalk sidewalk-band sample at {point}");
+                }
+            }
+        }
+
+        [Test]
         public void Road_Verge_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
         {
             // #106: placeholder flat-colored surfaces, no literal striping,

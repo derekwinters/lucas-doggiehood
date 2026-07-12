@@ -20,6 +20,8 @@ At the starting intersection, the two crossing roads produce four box corners (o
 
 This is placeholder geometry: crosswalks render as a flat, distinctly colored rectangular patch (no zebra-stripe markings) — see [Art & UI Style](art-style.md) for the palette and [Build checklist](#build-checklist) below for what's actually implemented.
 
+Visually, each crosswalk only covers the road and its two grass verges — `RoadWidth + 2 × GrassVergeWidth` (9m) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's `Crosswalk` edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in `WorldBuilder`, not a change to the graph.
+
 ## The walk network graph
 
 `WalkNetwork` (Core) is a generic, data-driven graph over nodes (points) and edges — sidewalk segments, crosswalks, and driveway stubs — built from whatever `Road`s and house lots are passed to `WalkNetwork.BuildFrom`. It is **not** a `TileType` enum or a multi-tile adjacency grid — that system is explicitly deferred to [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) (`06 - Neighborhood Expansion`, post-MVP). Today it happens to describe exactly the starting tile's one intersection, because that's all `NeighborhoodLayout` produces; the same algorithm would extend to more roads without changes.
@@ -59,4 +61,5 @@ Walking home after accepting a "buy me X" quest ([Quest Content](../quests/quest
 - [x] `WanderBehavior`'s node choice supports weighted continue-vs-deviate decisions, defaulting to a per-personality split derived from `MovementProfile.TurnProbability` (#89)
 - [x] Walking home paths over the sidewalk/crosswalk/driveway-stub network to the destination lot
 - [x] `WorldBuilder` renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces; spawned dogs stand on sidewalks
+- [x] Crosswalks render only over the road and its verges, never over sidewalk pavement
 - [ ] On-device visual check (human task, not attempted here)

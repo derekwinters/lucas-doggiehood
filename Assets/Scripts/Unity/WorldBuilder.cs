@@ -135,14 +135,24 @@ namespace Doggiehood.Unity
             Paint(arm, colorHex);
         }
 
-        /// <summary>The standard 4-crosswalk box at the intersection
-        /// (#106), one per road arm — taken straight from the walk
-        /// network's Crosswalk edges rather than re-deriving the geometry.</summary>
+        /// <summary>
+        /// The standard 4-crosswalk box at the intersection (#106), one
+        /// per road arm — positioned from the walk network's Crosswalk
+        /// edges, but visually clipped to just the road and its two grass
+        /// verges (RoadWidth + 2 * GrassVergeWidth) rather than the edge's
+        /// full sidewalk-center-to-sidewalk-center length. The WalkNetwork
+        /// edge itself stays sidewalk-center to sidewalk-center — that's
+        /// the real distance a dog covers crossing the road, and moving it
+        /// would break graph connectivity — this is purely a rendering
+        /// clip so the crosswalk never paints over sidewalk pavement.
+        /// </summary>
         private static void BuildCrosswalks(Transform parent)
         {
             var crosswalks = NeighborhoodLayout.WalkNetwork.Edges
                 .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
                 .ToList();
+
+            var crossRoadSpan = WorldDimensions.RoadWidth + 2f * WorldDimensions.GrassVergeWidth;
 
             for (var i = 0; i < crosswalks.Count; i++)
             {
@@ -155,8 +165,8 @@ namespace Doggiehood.Unity
                 crosswalk.transform.position = new Vector3(
                     (edge.A.X + edge.B.X) / 2f, 0.08f, (edge.A.Z + edge.B.Z) / 2f);
                 crosswalk.transform.localScale = alongX
-                    ? new Vector3(edge.Length, 0.1f, edge.Width)
-                    : new Vector3(edge.Width, 0.1f, edge.Length);
+                    ? new Vector3(crossRoadSpan, 0.1f, edge.Width)
+                    : new Vector3(edge.Width, 0.1f, crossRoadSpan);
                 Paint(crosswalk, Palette.CrosswalkHex);
             }
         }
