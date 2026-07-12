@@ -78,6 +78,9 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          # Applies the .debug applicationId suffix (#80) so this build can
+          # install side-by-side with a release build on the same device.
+          DOGGIEHOOD_DEBUG_BUILD: "true"
         with:
           targetPlatform: Android
           buildName: Doggiehood
