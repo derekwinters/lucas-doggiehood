@@ -6,15 +6,14 @@ namespace Doggiehood.Core.World
         EastWest,
     }
 
-    /// <summary>An axis-aligned street through the neighborhood (#7).</summary>
+    /// <summary>An axis-aligned street through the neighborhood (#7).
+    /// Streets have no display names — decided in #101.</summary>
     public sealed class Street
     {
-        public string Name { get; }
         public StreetOrientation Orientation { get; }
 
-        public Street(string name, StreetOrientation orientation)
+        public Street(StreetOrientation orientation)
         {
-            Name = name;
             Orientation = orientation;
         }
     }

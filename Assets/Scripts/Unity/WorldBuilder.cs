@@ -56,7 +56,7 @@ namespace Doggiehood.Unity
         private static void BuildStreet(Transform parent, Street street)
         {
             var strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            strip.name = StreetNamePrefix + street.Name;
+            strip.name = StreetNamePrefix + street.Orientation;
             strip.transform.SetParent(parent);
 
             var length = GroundExtent * 2f;

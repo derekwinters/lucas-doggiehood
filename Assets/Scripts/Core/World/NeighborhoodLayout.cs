@@ -17,8 +17,8 @@ namespace Doggiehood.Core.World
 
         public static IReadOnlyList<Street> Streets { get; } = new[]
         {
-            new Street("North-South Street", StreetOrientation.NorthSouth),
-            new Street("East-West Street", StreetOrientation.EastWest),
+            new Street(StreetOrientation.NorthSouth),
+            new Street(StreetOrientation.EastWest),
         };
 
         public static IReadOnlyList<HouseLot> HouseLots { get; } = new[]

@@ -31,7 +31,7 @@ As new houses fill up over time (post-MVP expansion), new dogs need names. The g
 
 **Classic (softer)**: Bella, Luna, Daisy, Coco, Molly, Sadie, Ruby, Rosie, Lucy, Zoe, Maggie, Penny, Roxy, Willow, Ginger, Honey
 
-66 names total. `Hank` and `Stella` are deliberately excluded from this pool — see easter eggs below.
+68 names total. `Hank` and `Stella` are deliberately excluded from this pool — see easter eggs below. *(The count was originally misstated as 66; corrected to match the enumerated list — see [#67](https://github.com/derekwinters/lucas-doggiehood/issues/67).)*
 
 ## Easter egg dogs
 
