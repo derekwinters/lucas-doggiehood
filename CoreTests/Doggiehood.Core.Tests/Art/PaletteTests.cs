@@ -22,5 +22,18 @@ namespace Doggiehood.Core.Tests.Art
             Assert.That(() => ColorRgb.Parse(Palette.StreetHex), Throws.Nothing);
             Assert.That(() => ColorRgb.Parse(Palette.SidewalkHex), Throws.Nothing);
         }
+
+        [Test]
+        public void GrassVergeAndCrosswalk_AreValidColors_DistinctFromEveryOtherSurface()
+        {
+            // #106: WorldBuilder renders road/verge/sidewalk/crosswalk as
+            // visually distinct placeholder surfaces — the palette must
+            // actually give it four distinct hex values to draw from.
+            Assert.That(() => ColorRgb.Parse(Palette.GrassVergeHex), Throws.Nothing);
+            Assert.That(() => ColorRgb.Parse(Palette.CrosswalkHex), Throws.Nothing);
+
+            var surfaces = new[] { Palette.StreetHex, Palette.GrassVergeHex, Palette.SidewalkHex, Palette.CrosswalkHex };
+            Assert.That(surfaces, Is.Unique);
+        }
     }
 }
