@@ -7,11 +7,14 @@ namespace Doggiehood.Core.World
     /// should reference these rather than re-declaring the literal.
     ///
     /// These values are the geometric basis for the deferred tile catalog
-    /// and multi-tile grid/placement system (#109) and future road/sidewalk
-    /// rendering (#106) — see docs/specs/world/tile-catalog.md. Nothing in
-    /// Core consumes GrassVergeWidth, SidewalkWidth, CrosswalkWidth,
-    /// CulDeSacBulbRadius, or OpposingTurnArchRadius yet; only RoadWidth is
-    /// wired up today, via NeighborhoodLayout.StreetWidth.
+    /// and multi-tile grid/placement system (#109) — see
+    /// docs/specs/world/tile-catalog.md — and for today's Road/Sidewalk
+    /// geometry and walk network (#106) — see
+    /// docs/specs/world/sidewalks.md. RoadWidth, GrassVergeWidth, and
+    /// SidewalkWidth are wired up via Road/Sidewalk/WalkNetwork;
+    /// CrosswalkWidth is wired up via WalkNetwork's Crosswalk edges.
+    /// CulDeSacBulbRadius and OpposingTurnArchRadius remain unconsumed —
+    /// they're only meaningful once the multi-tile grid (#109) exists.
     /// </summary>
     public static class WorldDimensions
     {

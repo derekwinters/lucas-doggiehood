@@ -57,6 +57,7 @@ nav:
           - World & Neighborhood: specs/world/world.md
           - Camera, Navigation & Controls: specs/world/camera-controls.md
           - Art & UI Style: specs/world/art-style.md
+          - Sidewalks & Walk Network: specs/world/sidewalks.md
           - Tile Catalog (Design Reference): specs/world/tile-catalog.md
       - Dogs:
           - Dog Behavior: specs/dogs/behavior.md
