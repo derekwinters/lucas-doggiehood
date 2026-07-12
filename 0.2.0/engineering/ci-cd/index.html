@@ -1335,12 +1335,13 @@
 
 
 <h1 id="cicd">CI/CD<a class="headerlink" href="#cicd" title="Permanent link">&para;</a></h1>
-<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/75">#75</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/76">#76</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a></em></p>
+<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/75">#75</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/76">#76</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/80">#80</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a></em></p>
 <h2 id="pr-debug-builds">PR debug builds<a class="headerlink" href="#pr-debug-builds" title="Permanent link">&para;</a></h2>
 <p>Every PR builds a debug APK via CI:</p>
 <ul>
 <li>Uses Android's default debug signing (no real keystore yet — deliberate, see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/75">#75</a>)</li>
 <li>Embeds the short commit SHA in the version name (e.g. <code>0.1.0-a1b2c3d</code>) so every build is uniquely identifiable</li>
+<li>Applies the <code>.debug</code> applicationId suffix (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/80">#80</a>) via the <code>DOGGIEHOOD_DEBUG_BUILD</code> env var, so it can install side-by-side with a release build on the same device</li>
 <li>Uploaded as a GitHub Actions artifact only — no Firebase/Play distribution for now</li>
 </ul>
 <h2 id="release-candidate-builds">Release-candidate builds<a class="headerlink" href="#release-candidate-builds" title="Permanent link">&para;</a></h2>
@@ -1349,7 +1350,7 @@
 <p class="admonition-title">RC numbering design (resolved)</p>
 <p>release-please's native prerelease support bumps prerelease numbers when <em>releases</em> happen, not when the open release PR is rebased, so it can't produce <code>rc1</code> → <code>rc2</code> across pushes to the same open PR. Instead, <code>rc-build.yml</code> derives the RC number itself: it counts that workflow's runs on the release PR's branch since the PR was opened (current run included). Every push to the open release PR adds a run, incrementing the RC; a fresh release PR after a release ships has a later created-at watermark, so the count — and the RC number — starts over at <code>rc1</code>. The release PR's <code>VERSION</code> file already carries the next version (it's a release-please extra-file), so builds are versioned <code>v&lt;VERSION&gt;-rc&lt;N&gt;</code>.</p>
 </div>
-<p>Both PR debug builds and RC builds use debug signing and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.</p>
+<p>Both PR debug builds and RC builds use debug signing, apply the same <code>.debug</code> applicationId suffix (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/80">#80</a>), and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.</p>
 <h2 id="release-builds">Release builds<a class="headerlink" href="#release-builds" title="Permanent link">&para;</a></h2>
 <p>When a release ships (release-please publishes the <code>vX.Y.Z</code> GitHub release), <code>release-build.yml</code> builds the APK for that tag and <strong>attaches it to the release page</strong> as <code>doggiehood-vX.Y.Z.apk</code> — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in MVP scope.</p>
 <h2 id="commit-linting">Commit linting<a class="headerlink" href="#commit-linting" title="Permanent link">&para;</a></h2>
