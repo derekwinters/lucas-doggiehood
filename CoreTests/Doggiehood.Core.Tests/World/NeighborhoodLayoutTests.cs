@@ -81,5 +81,22 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(NeighborhoodLayout.Roads.Select(r => r.Orientation), Is.Unique);
         }
+
+        [Test]
+        public void WalkNetwork_IsBuiltFromThisLayoutsRoadsAndHouseLots()
+        {
+            // #106: a single cached network, built the same way callers
+            // could build their own via WalkNetwork.BuildFrom.
+            var expected = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, NeighborhoodLayout.HouseLots);
+
+            Assert.That(NeighborhoodLayout.WalkNetwork.Edges.Count, Is.EqualTo(expected.Edges.Count));
+            Assert.That(NeighborhoodLayout.WalkNetwork.IsFullyConnected(), Is.True);
+        }
+
+        [Test]
+        public void WalkNetwork_IsCachedAcrossCalls()
+        {
+            Assert.That(NeighborhoodLayout.WalkNetwork, Is.SameAs(NeighborhoodLayout.WalkNetwork));
+        }
     }
 }

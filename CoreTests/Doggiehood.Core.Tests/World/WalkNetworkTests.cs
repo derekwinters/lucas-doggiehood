@@ -150,6 +150,20 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void NearestWalkableNode_NeverReturnsAHouseLotNode()
+        {
+            // #106: wander must never snap onto a driveway-only node (a
+            // house lot's own position), even if queried from right next
+            // to one.
+            var network = BuildStartingNetwork();
+            var lot = NeighborhoodLayout.GetHouseLot(1);
+
+            var nearest = network.NearestWalkableNode(lot.Position);
+
+            Assert.That(nearest, Is.Not.EqualTo(lot.Position));
+        }
+
+        [Test]
         public void FindPath_NeverRoutesThroughAnotherHouseLot()
         {
             var network = BuildStartingNetwork();

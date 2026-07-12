@@ -118,18 +118,34 @@ namespace Doggiehood.Core.World
         /// onto the network.</summary>
         public GridPoint NearestNode(GridPoint from)
         {
-            var best = nodeOrder[0];
-            var bestDistance = float.MaxValue;
+            return NearestNodeAmong(nodeOrder, from);
+        }
 
-            foreach (var node in nodeOrder)
+        /// <summary>The nearest node reachable by a Sidewalk or Crosswalk
+        /// edge (#106) — excludes house-lot nodes, which only ever have a
+        /// DrivewayStub edge. General wander must never snap onto one.</summary>
+        public GridPoint NearestWalkableNode(GridPoint from)
+        {
+            var walkable = nodeOrder.Where(n => adjacency[n].Any(e => e.Kind != WalkEdgeKind.DrivewayStub));
+            return NearestNodeAmong(walkable, from);
+        }
+
+        private static GridPoint NearestNodeAmong(IEnumerable<GridPoint> candidates, GridPoint from)
+        {
+            var best = default(GridPoint);
+            var bestDistance = float.MaxValue;
+            var found = false;
+
+            foreach (var node in candidates)
             {
                 var dx = node.X - from.X;
                 var dz = node.Z - from.Z;
                 var distance = dx * dx + dz * dz;
-                if (distance < bestDistance)
+                if (!found || distance < bestDistance)
                 {
                     bestDistance = distance;
                     best = node;
+                    found = true;
                 }
             }
 

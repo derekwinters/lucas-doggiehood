@@ -60,6 +60,18 @@ namespace Doggiehood.Core.World
             new HouseLot(4, Quadrant.SouthWest, new GridPoint(-LotDistanceFromCenter, -LotDistanceFromCenter)),
         };
 
+        private static WalkNetwork walkNetwork;
+
+        /// <summary>
+        /// The cached sidewalk+crosswalk+driveway-stub network (#106) for
+        /// this starting neighborhood — built once from <see cref="Roads"/>
+        /// and <see cref="HouseLots"/>.
+        /// </summary>
+        public static WalkNetwork WalkNetwork
+        {
+            get { return walkNetwork ?? (walkNetwork = WalkNetwork.BuildFrom(Roads, HouseLots)); }
+        }
+
         public static HouseLot GetHouseLot(int houseId)
         {
             foreach (var lot in HouseLots)
