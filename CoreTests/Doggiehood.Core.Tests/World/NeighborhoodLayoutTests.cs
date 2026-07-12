@@ -64,5 +64,39 @@ namespace Doggiehood.Core.Tests.World
         {
             Assert.That(() => NeighborhoodLayout.GetHouseLot(999), Throws.ArgumentException);
         }
+
+        [Test]
+        public void Roads_ContainsOneRoadPerStreet_CenteredOnTheIntersection()
+        {
+            // #106: NeighborhoodLayout exposes real Road geometry built
+            // from its own Streets, so downstream code (WalkNetwork,
+            // WorldBuilder) never has to re-derive it.
+            Assert.That(NeighborhoodLayout.Roads.Count, Is.EqualTo(NeighborhoodLayout.Streets.Count));
+
+            foreach (var road in NeighborhoodLayout.Roads)
+            {
+                Assert.That(road.Center, Is.EqualTo(NeighborhoodLayout.Intersection));
+                Assert.That(road.HalfLength, Is.EqualTo(NeighborhoodLayout.StreetHalfLength));
+            }
+
+            Assert.That(NeighborhoodLayout.Roads.Select(r => r.Orientation), Is.Unique);
+        }
+
+        [Test]
+        public void WalkNetwork_IsBuiltFromThisLayoutsRoadsAndHouseLots()
+        {
+            // #106: a single cached network, built the same way callers
+            // could build their own via WalkNetwork.BuildFrom.
+            var expected = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, NeighborhoodLayout.HouseLots);
+
+            Assert.That(NeighborhoodLayout.WalkNetwork.Edges.Count, Is.EqualTo(expected.Edges.Count));
+            Assert.That(NeighborhoodLayout.WalkNetwork.IsFullyConnected(), Is.True);
+        }
+
+        [Test]
+        public void WalkNetwork_IsCachedAcrossCalls()
+        {
+            Assert.That(NeighborhoodLayout.WalkNetwork, Is.SameAs(NeighborhoodLayout.WalkNetwork));
+        }
     }
 }

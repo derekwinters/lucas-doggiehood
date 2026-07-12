@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -7,17 +8,22 @@ namespace Doggiehood.Unity
 {
     /// <summary>
     /// Builds the graybox starting neighborhood from Core data (#7, #38,
-    /// #39, #64): ground, two streets, four styled houses, and the fixed
-    /// daytime sun. Geometry is Unity primitives colored from the palette —
-    /// placeholder art until real low-poly models land (#6) — but all
-    /// positions, counts, styles, and lighting values come from Core, so
-    /// swapping in real models later doesn't change any logic.
+    /// #39, #64, #106): ground, roads with a symmetric grass verge and
+    /// sidewalk on both sides, the intersection's crosswalk box, four
+    /// styled houses, and the fixed daytime sun. Geometry is Unity
+    /// primitives colored from the palette — placeholder art until real
+    /// low-poly models land (#6) — but all positions, counts, styles, and
+    /// lighting values come from Core, so swapping in real models later
+    /// doesn't change any logic.
     /// </summary>
     public static class WorldBuilder
     {
         public const string RootName = "Neighborhood";
         public const string HouseNamePrefix = "House ";
-        public const string StreetNamePrefix = "Street - ";
+        public const string RoadNamePrefix = "Road - ";
+        public const string VergeNamePrefix = "Verge - ";
+        public const string SidewalkNamePrefix = "Sidewalk - ";
+        public const string CrosswalkNamePrefix = "Crosswalk - ";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
 
@@ -26,10 +32,12 @@ namespace Doggiehood.Unity
             var root = new GameObject(RootName);
 
             BuildGround(root.transform);
-            foreach (var street in NeighborhoodLayout.Streets)
+            foreach (var road in NeighborhoodLayout.Roads)
             {
-                BuildStreet(root.transform, street);
+                BuildRoad(root.transform, road);
             }
+
+            BuildCrosswalks(root.transform);
 
             foreach (var house in state.Houses)
             {
@@ -53,18 +61,114 @@ namespace Doggiehood.Unity
             Paint(ground, Palette.GrassHex);
         }
 
-        private static void BuildStreet(Transform parent, Street street)
+        /// <summary>Road surface plus a grass verge and sidewalk on both
+        /// sides (#106), all sized from Road/Sidewalk — which are in turn
+        /// built purely from the locked #105 WorldDimensions constants.</summary>
+        private static void BuildRoad(Transform parent, Road road)
         {
-            var strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            strip.name = StreetNamePrefix + street.Orientation;
-            strip.transform.SetParent(parent);
+            var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
+            var length = road.HalfLength * 2f;
 
-            var length = GroundExtent * 2f;
-            strip.transform.localScale = street.Orientation == StreetOrientation.NorthSouth
-                ? new Vector3(NeighborhoodLayout.StreetWidth, 0.1f, length)
-                : new Vector3(length, 0.1f, NeighborhoodLayout.StreetWidth);
-            strip.transform.position = new Vector3(0f, 0.05f, 0f);
-            Paint(strip, Palette.StreetHex);
+            var surface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            surface.name = RoadNamePrefix + road.Orientation;
+            surface.transform.SetParent(parent);
+            surface.transform.localScale = isNorthSouth
+                ? new Vector3(road.Width, 0.1f, length)
+                : new Vector3(length, 0.1f, road.Width);
+            surface.transform.position = new Vector3(road.Center.X, 0.05f, road.Center.Z);
+            Paint(surface, Palette.StreetHex);
+
+            foreach (var sidewalk in road.Sidewalks)
+            {
+                var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
+                BuildStripArms(parent, road, vergeOffset, sidewalk.VergeWidth, isNorthSouth,
+                    VergeNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.GrassVergeHex, 0.06f);
+                BuildStripArms(parent, road, sidewalk.CenterOffset, sidewalk.Width, isNorthSouth,
+                    SidewalkNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.SidewalkHex, 0.07f);
+            }
+        }
+
+        /// <summary>
+        /// A verge/sidewalk strip on one side of a road, split into its two
+        /// arm segments so it stops at the crossing road's own half-width
+        /// from the intersection center instead of running through it as
+        /// one continuous piece. Without this, the strip painted over the
+        /// crossing road's own pavement (visible in-game as a stray grass
+        /// ring around the crosswalk box). NeighborhoodLayout only ever
+        /// has today's one origin-centered crossing (#109's multi-tile
+        /// grid stays deferred), so the gap is computed directly from
+        /// WorldDimensions.RoadWidth rather than via general multi-crossing
+        /// detection (that generality already lives in WalkNetwork).
+        /// </summary>
+        private static void BuildStripArms(Transform parent, Road road, float perpendicularOffset, float stripWidth,
+            bool isNorthSouth, string namePrefix, string colorHex, float height)
+        {
+            var gapHalfWidth = WorldDimensions.RoadWidth / 2f;
+            var armLength = road.HalfLength - gapHalfWidth;
+            if (armLength <= 0f)
+            {
+                return;
+            }
+
+            BuildStripArm(parent, road, perpendicularOffset, stripWidth, isNorthSouth,
+                namePrefix, colorHex, height, -road.HalfLength, -gapHalfWidth, armLength, positiveAlong: false);
+            BuildStripArm(parent, road, perpendicularOffset, stripWidth, isNorthSouth,
+                namePrefix, colorHex, height, gapHalfWidth, road.HalfLength, armLength, positiveAlong: true);
+        }
+
+        private static void BuildStripArm(Transform parent, Road road, float perpendicularOffset, float stripWidth,
+            bool isNorthSouth, string namePrefix, string colorHex, float height, float from, float to,
+            float armLength, bool positiveAlong)
+        {
+            var armLabel = isNorthSouth
+                ? (positiveAlong ? "North" : "South")
+                : (positiveAlong ? "East" : "West");
+            var center = road.PointAt((from + to) / 2f, perpendicularOffset);
+
+            var arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arm.name = namePrefix + " " + armLabel;
+            arm.transform.SetParent(parent);
+            arm.transform.localScale = isNorthSouth
+                ? new Vector3(stripWidth, 0.1f, armLength)
+                : new Vector3(armLength, 0.1f, stripWidth);
+            arm.transform.position = new Vector3(center.X, height, center.Z);
+            Paint(arm, colorHex);
+        }
+
+        /// <summary>
+        /// The standard 4-crosswalk box at the intersection (#106), one
+        /// per road arm — positioned from the walk network's Crosswalk
+        /// edges, but visually clipped to just the road and its two grass
+        /// verges (RoadWidth + 2 * GrassVergeWidth) rather than the edge's
+        /// full sidewalk-center-to-sidewalk-center length. The WalkNetwork
+        /// edge itself stays sidewalk-center to sidewalk-center — that's
+        /// the real distance a dog covers crossing the road, and moving it
+        /// would break graph connectivity — this is purely a rendering
+        /// clip so the crosswalk never paints over sidewalk pavement.
+        /// </summary>
+        private static void BuildCrosswalks(Transform parent)
+        {
+            var crosswalks = NeighborhoodLayout.WalkNetwork.Edges
+                .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
+                .ToList();
+
+            var crossRoadSpan = WorldDimensions.RoadWidth + 2f * WorldDimensions.GrassVergeWidth;
+
+            for (var i = 0; i < crosswalks.Count; i++)
+            {
+                var edge = crosswalks[i];
+                var alongX = Mathf.Abs(edge.A.Z - edge.B.Z) < 0.01f;
+
+                var crosswalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                crosswalk.name = CrosswalkNamePrefix + i;
+                crosswalk.transform.SetParent(parent);
+                crosswalk.transform.position = new Vector3(
+                    (edge.A.X + edge.B.X) / 2f, 0.08f, (edge.A.Z + edge.B.Z) / 2f);
+                crosswalk.transform.localScale = alongX
+                    ? new Vector3(crossRoadSpan, 0.1f, edge.Width)
+                    : new Vector3(edge.Width, 0.1f, crossRoadSpan);
+                Paint(crosswalk, Palette.CrosswalkHex);
+            }
         }
 
         private static void BuildHouse(Transform parent, House house)

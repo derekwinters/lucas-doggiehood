@@ -15,6 +15,7 @@ The MVP is the **`08 - Vertical Slice Release Candidate`** milestone: everything
 - [World & Neighborhood](world/world.md) — the physical setting
 - [Camera, Navigation & Controls](world/camera-controls.md) — how the player sees and moves
 - [Art & UI Style](world/art-style.md) — palette, architecture, and interface chrome
+- [Sidewalks & Walk Network](world/sidewalks.md) — sidewalk placement, crosswalks, and how dogs pathfind
 
 **Dogs**
 

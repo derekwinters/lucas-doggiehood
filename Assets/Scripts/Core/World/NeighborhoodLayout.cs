@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Doggiehood.Core.World
 {
@@ -27,6 +28,14 @@ namespace Doggiehood.Core.World
         /// </summary>
         public const float LotDistanceFromCenter = 14f;
 
+        /// <summary>
+        /// How far each street extends from the intersection (#106). Like
+        /// <see cref="LotDistanceFromCenter"/>, this is a placement choice
+        /// specific to this starting map instance, not one of the locked
+        /// #105 standard dimensions.
+        /// </summary>
+        public const float StreetHalfLength = 26f;
+
         public static readonly GridPoint Intersection = new GridPoint(0f, 0f);
 
         public static IReadOnlyList<Street> Streets { get; } = new[]
@@ -35,6 +44,14 @@ namespace Doggiehood.Core.World
             new Street(StreetOrientation.EastWest),
         };
 
+        /// <summary>
+        /// Real Road geometry (#106) built from <see cref="Streets"/>: one
+        /// Road per Street, centered on <see cref="Intersection"/>.
+        /// </summary>
+        public static IReadOnlyList<Road> Roads { get; } = Streets
+            .Select(street => new Road(street.Orientation, Intersection, StreetHalfLength))
+            .ToList();
+
         public static IReadOnlyList<HouseLot> HouseLots { get; } = new[]
         {
             new HouseLot(1, Quadrant.NorthEast, new GridPoint(LotDistanceFromCenter, LotDistanceFromCenter)),
@@ -42,6 +59,18 @@ namespace Doggiehood.Core.World
             new HouseLot(3, Quadrant.SouthEast, new GridPoint(LotDistanceFromCenter, -LotDistanceFromCenter)),
             new HouseLot(4, Quadrant.SouthWest, new GridPoint(-LotDistanceFromCenter, -LotDistanceFromCenter)),
         };
+
+        private static WalkNetwork walkNetwork;
+
+        /// <summary>
+        /// The cached sidewalk+crosswalk+driveway-stub network (#106) for
+        /// this starting neighborhood — built once from <see cref="Roads"/>
+        /// and <see cref="HouseLots"/>.
+        /// </summary>
+        public static WalkNetwork WalkNetwork
+        {
+            get { return walkNetwork ?? (walkNetwork = WalkNetwork.BuildFrom(Roads, HouseLots)); }
+        }
 
         public static HouseLot GetHouseLot(int houseId)
         {

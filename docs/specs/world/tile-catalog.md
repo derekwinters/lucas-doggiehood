@@ -1,9 +1,9 @@
 # Tile Catalog (Design Reference)
 
-*Related: [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105) (this page), [#106](https://github.com/derekwinters/lucas-doggiehood/issues/106) (sidewalks, next up, not started), [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) (deferred multi-tile grid/placement system, milestone `06 - Neighborhood Expansion`), [#86](https://github.com/derekwinters/lucas-doggiehood/issues/86) (open map-shape question this catalog partially informs)*
+*Related: [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105) (this page), [#106](https://github.com/derekwinters/lucas-doggiehood/issues/106) (sidewalks and the walk network, implemented — see [Sidewalks & Walk Network](sidewalks.md)), [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) (deferred multi-tile grid/placement system, milestone `06 - Neighborhood Expansion`), [#86](https://github.com/derekwinters/lucas-doggiehood/issues/86) (open map-shape question this catalog partially informs)*
 
 !!! note "Status: design reference only, not implemented"
-    This catalog is a design reference for the deferred multi-tile grid/placement system ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)) — it is **not implemented in Core by this issue**. Today the codebase contains exactly one tile: the `FourWay` starting intersection, built as [`NeighborhoodLayout`](world.md). No `TileType` enum, adjacency validation, or per-type lot logic exists yet.
+    This catalog is a design reference for the deferred multi-tile grid/placement system ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)) — it is **not implemented in Core by this issue**. Today the codebase contains exactly one tile: the `FourWay` starting intersection, built as [`NeighborhoodLayout`](world.md). No `TileType` enum, adjacency validation, or per-type lot logic exists yet. Its sidewalks, crosswalks, and walk network graph **are** implemented ([#106](https://github.com/derekwinters/lucas-doggiehood/issues/106)) — see [Sidewalks & Walk Network](sidewalks.md) — using a generic, data-driven graph rather than any tile/adjacency system, so that implementation doesn't presuppose an answer to this catalog's open questions.
 
 ## Standard dimensions
 

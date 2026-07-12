@@ -32,21 +32,23 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void SpawnsAllEightRosterDogs_OnTheStreets()
+        public void SpawnsAllEightRosterDogs_OnSidewalks_NeverOnARoad()
         {
-            // #8/#63: every roster dog is in the world, on a street.
+            // #8/#63/#106: every roster dog is in the world, standing on a
+            // sidewalk (outside both roads' pavement + grass verge band),
+            // never on the road itself.
             var views = worldRoot.GetComponentsInChildren<DogView>();
 
             Assert.That(views.Length, Is.EqualTo(8));
             Assert.That(views.Select(v => v.Dog.Name),
                 Is.EquivalentTo(new[] { "Zeus", "Nala", "Bailey", "Sunny", "Pepper", "Duke", "Scout", "Waffles" }));
 
-            var halfWidth = NeighborhoodLayout.StreetWidth / 2f;
+            var roadAndVergeHalfWidth = NeighborhoodLayout.StreetWidth / 2f + WorldDimensions.GrassVergeWidth;
             foreach (var view in views)
             {
                 var p = view.transform.position;
-                Assert.That(Mathf.Abs(p.x) <= halfWidth || Mathf.Abs(p.z) <= halfWidth, Is.True,
-                    $"{view.Dog.Name} spawned off-street at {p}");
+                Assert.That(Mathf.Abs(p.x) > roadAndVergeHalfWidth && Mathf.Abs(p.z) > roadAndVergeHalfWidth, Is.True,
+                    $"{view.Dog.Name} spawned on the road or its verge at {p}");
             }
         }
 
