@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../art-style/">
+        <link rel="prev" href="../sidewalks/">
       
       
         <link rel="next" href="../../dogs/behavior/">
@@ -618,6 +618,27 @@
   
   <span class="md-ellipsis">
     Art & UI Style
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sidewalks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sidewalks & Walk Network
   </span>
   
 
@@ -1280,10 +1301,10 @@
 
 
 <h1 id="tile-catalog-design-reference">Tile Catalog (Design Reference)<a class="headerlink" href="#tile-catalog-design-reference" title="Permanent link">&para;</a></h1>
-<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks, next up, not started), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid/placement system, milestone <code>06 - Neighborhood Expansion</code>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (open map-shape question this catalog partially informs)</em></p>
+<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid/placement system, milestone <code>06 - Neighborhood Expansion</code>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (open map-shape question this catalog partially informs)</em></p>
 <div class="admonition note">
 <p class="admonition-title">Status: design reference only, not implemented</p>
-<p>This catalog is a design reference for the deferred multi-tile grid/placement system (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>) — it is <strong>not implemented in Core by this issue</strong>. Today the codebase contains exactly one tile: the <code>FourWay</code> starting intersection, built as <a href="../world/"><code>NeighborhoodLayout</code></a>. No <code>TileType</code> enum, adjacency validation, or per-type lot logic exists yet.</p>
+<p>This catalog is a design reference for the deferred multi-tile grid/placement system (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>) — it is <strong>not implemented in Core by this issue</strong>. Today the codebase contains exactly one tile: the <code>FourWay</code> starting intersection, built as <a href="../world/"><code>NeighborhoodLayout</code></a>. No <code>TileType</code> enum, adjacency validation, or per-type lot logic exists yet. Its sidewalks, crosswalks, and walk network graph <strong>are</strong> implemented (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than any tile/adjacency system, so that implementation doesn't presuppose an answer to this catalog's open questions.</p>
 </div>
 <h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
 <p>These 7 measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) as the geometric basis every tile type below will eventually be built from.</p>
