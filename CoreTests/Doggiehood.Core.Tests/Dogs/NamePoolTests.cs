@@ -10,11 +10,8 @@ namespace Doggiehood.Core.Tests.Dogs
         [Test]
         public void PoolContainsExactlyTheDocumentedNames()
         {
-            // #67 / docs/specs/dogs/roster-names.md. NOTE: the spec says
-            // "66 names total" but actually enumerates 68 (33 classic + 19
-            // food-themed + 16 softer). The enumerated list is implemented
-            // verbatim; the count discrepancy is flagged on #67 for Derek
-            // to resolve.
+            // #67 / docs/specs/dogs/roster-names.md: 68 names (33 classic +
+            // 19 food-themed + 16 softer). Derek confirmed 68 as the spec.
             Assert.That(NamePool.Names.Count, Is.EqualTo(68));
             Assert.That(NamePool.Names, Is.Unique);
             Assert.That(NamePool.Names, Does.Contain("Buddy"));
