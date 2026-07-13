@@ -16,16 +16,32 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void BuildWorld()
         {
+            WorldBuilder.ForcePrimitiveFallback = false;
             root = WorldBuilder.Build(GameState.CreateNew());
         }
 
         [TearDown]
         public void DestroyWorld()
         {
+            WorldBuilder.ForcePrimitiveFallback = false;
             if (root != null)
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// Rebuilds the world through the graybox primitive path. The tests
+        /// that assert primitive-specific geometry (verge/sidewalk strips,
+        /// crosswalk quads, roof blocks, palette colors) now pin the
+        /// fallback contract for when the Kenney kit assets can't be loaded
+        /// — the kit path's equivalent contract lives in WorldKitArtTests.
+        /// </summary>
+        private void RebuildWithPrimitiveFallback()
+        {
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            root = WorldBuilder.Build(GameState.CreateNew());
         }
 
         private IEnumerable<Transform> Children()
@@ -53,6 +69,9 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void EveryHouse_HasAViewWithItsIdAndDistinctStyleGeometry()
         {
+            // Roof/porch blocks only exist in the graybox primitive path;
+            // the kit-model equivalent is covered by WorldKitArtTests.
+            RebuildWithPrimitiveFallback();
             var views = root.GetComponentsInChildren<HouseView>();
 
             Assert.That(views.Length, Is.EqualTo(4));
@@ -85,7 +104,9 @@ namespace Doggiehood.Unity.EditModeTests
             // a sidewalk on both sides, each split into two arm segments
             // (one per direction from the intersection) so the strip can
             // stop at the crossing road's own footprint instead of running
-            // through it as one continuous piece.
+            // through it as one continuous piece. Primitive-fallback
+            // contract — the kit tiles model their own sidewalks.
+            RebuildWithPrimitiveFallback();
             var verges = Children().Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix)).ToList();
             var sidewalks = Children().Where(t => t.name.StartsWith(WorldBuilder.SidewalkNamePrefix)).ToList();
 
@@ -103,6 +124,8 @@ namespace Doggiehood.Unity.EditModeTests
             // playtest). Every road's verge/sidewalk line, sampled at the
             // crossing road's own centerline (squarely inside the crossing
             // road's pavement footprint), must now be covered by nothing.
+            // Primitive-fallback contract (no strips exist in the kit path).
+            RebuildWithPrimitiveFallback();
             var strips = Children()
                 .Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix) || t.name.StartsWith(WorldBuilder.SidewalkNamePrefix))
                 .ToList();
@@ -138,6 +161,9 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void BuildsTheFourCrosswalks_OnePerRoadArm()
         {
+            // Primitive-fallback contract — in the kit path the crosswalks
+            // are road-crossing tiles (WorldKitArtTests).
+            RebuildWithPrimitiveFallback();
             var crosswalks = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
 
             Assert.That(crosswalks.Count, Is.EqualTo(4));
@@ -156,6 +182,8 @@ namespace Doggiehood.Unity.EditModeTests
             // sidewalk pavement itself (4.5m-6.5m band). Sample a point in
             // the inner half of that band (between the verge boundary and
             // the sidewalk's own centerline) at each crosswalk's position.
+            // Primitive-fallback contract.
+            RebuildWithPrimitiveFallback();
             var crosswalkObjects = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
             var vergeEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 4.5
 
@@ -182,7 +210,9 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // #106: placeholder flat-colored surfaces, no literal striping,
             // but road/verge/sidewalk/crosswalk must each read as its own
-            // distinct surface.
+            // distinct surface. Primitive-fallback contract — kit tiles
+            // bring their own colormap texture instead.
+            RebuildWithPrimitiveFallback();
             Color ColorOf(string prefix) => Children().First(t => t.name.StartsWith(prefix))
                 .GetComponent<Renderer>().sharedMaterial.color;
 

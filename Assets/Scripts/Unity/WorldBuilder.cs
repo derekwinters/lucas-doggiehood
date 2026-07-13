@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
@@ -7,14 +8,15 @@ using UnityEngine.Rendering;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// Builds the graybox starting neighborhood from Core data (#7, #38,
-    /// #39, #64, #106): ground, roads with a symmetric grass verge and
-    /// sidewalk on both sides, the intersection's crosswalk box, four
-    /// styled houses, and the fixed daytime sun. Geometry is Unity
-    /// primitives colored from the palette — placeholder art until real
-    /// low-poly models land (#6) — but all positions, counts, styles, and
-    /// lighting values come from Core, so swapping in real models later
-    /// doesn't change any logic.
+    /// Builds the starting neighborhood from Core data (#7, #38, #39, #64,
+    /// #106): ground, roads, crosswalks, four houses, and the fixed daytime
+    /// sun. Road surfaces and houses render as Kenney City Kit Roads /
+    /// City Kit Suburban models when importable (#121, #122, toward #6),
+    /// falling back to the original graybox primitives otherwise — the same
+    /// pattern DogView uses for the Cube Pets model (#119). All positions,
+    /// counts, styles, and lighting values come from Core either way, so
+    /// the art swap changes no logic: WalkNetwork, Sidewalk geometry, and
+    /// dog spawn positions are untouched.
     /// </summary>
     public static class WorldBuilder
     {
@@ -24,20 +26,99 @@ namespace Doggiehood.Unity
         public const string VergeNamePrefix = "Verge - ";
         public const string SidewalkNamePrefix = "Sidewalk - ";
         public const string CrosswalkNamePrefix = "Crosswalk - ";
+        public const string RoadTileNamePrefix = "RoadTile - ";
+        public const string IntersectionTileName = RoadTileNamePrefix + "Intersection";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
+
+        /// <summary>
+        /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
+        /// tile covers 10x10 m and its 0.6-unit road band becomes 6 m —
+        /// exactly WorldDimensions.RoadWidth. The tile's modeled sidewalk
+        /// (outer 4-5 m after scaling) is cosmetic; Core's logical sidewalk
+        /// band (4.5-6.5 m from the centerline) is what dogs actually walk
+        /// and intentionally stays as-is (#121).
+        /// </summary>
+        public const float RoadTileScale = 10f;
+
+        /// <summary>Resources keys for the City Kit Roads tiles (#121),
+        /// staged under Assets/Art/Roads/CityKitRoads/Resources/ — load
+        /// keys are relative to the Resources folder, so they are the bare
+        /// file names (see 505278e).</summary>
+        private const string RoadStraightResource = "road-straight";
+        private const string RoadCrossroadResource = "road-crossroad";
+        private const string RoadCrossingResource = "road-crossing";
+
+        /// <summary>Target maximum horizontal footprint for a scaled house
+        /// model, close to the graybox's 4x4 walls plus a little trim.</summary>
+        private const float HouseTargetFootprint = 4.2f;
+
+        /// <summary>
+        /// Yaw correction applied after pointing a house model at the
+        /// intersection. The City Kit Suburban models face either local +Z
+        /// or -Z — unverifiable without rendering, so this assumes +Z
+        /// (door toward the model's LookRotation forward). If the Editor
+        /// shows the houses' backs toward the intersection, flip this
+        /// single constant to 180.
+        /// </summary>
+        private const float HouseModelYawOffsetDegrees = 0f;
+
+        /// <summary>
+        /// House id -> City Kit Suburban model (#122), with each model's
+        /// authored max horizontal footprint (units, from the FBX geometry)
+        /// used to derive the per-model uniform scale. PLACEHOLDER PICKS:
+        /// Derek and Lucas are expected to re-pick the letters once they
+        /// have seen the models rendered in the Editor.
+        /// </summary>
+        private static readonly (int HouseId, string ResourcePath, float ModelMaxFootprint)[] HouseModels =
+        {
+            (1, "building-type-b", 1.828f),
+            (2, "building-type-g", 1.45f),
+            (3, "building-type-k", 1.02f),
+            (4, "building-type-m", 1.428f),
+        };
+
+        /// <summary>
+        /// EditMode test seam: forces the graybox primitive path even when
+        /// the Kenney kit assets are importable, by routing through the
+        /// same branch a null Resources.Load takes. A project that has the
+        /// assets staged can't otherwise exercise the fallback. Never set
+        /// in production code.
+        /// </summary>
+        public static bool ForcePrimitiveFallback { get; set; }
+
+        public static string HouseModelResourcePath(int houseId)
+        {
+            foreach (var entry in HouseModels)
+            {
+                if (entry.HouseId == houseId)
+                {
+                    return entry.ResourcePath;
+                }
+            }
+
+            throw new System.ArgumentException($"No house model mapped for id {houseId}.", nameof(houseId));
+        }
 
         public static GameObject Build(GameState state)
         {
             var root = new GameObject(RootName);
 
             BuildGround(root.transform);
-            foreach (var road in NeighborhoodLayout.Roads)
-            {
-                BuildRoad(root.transform, road);
-            }
 
-            BuildCrosswalks(root.transform);
+            if (TryLoadRoadTiles(out var straight, out var crossroad, out var crossing))
+            {
+                BuildKitRoads(root.transform, straight, crossroad, crossing);
+            }
+            else
+            {
+                foreach (var road in NeighborhoodLayout.Roads)
+                {
+                    BuildRoad(root.transform, road);
+                }
+
+                BuildCrosswalks(root.transform);
+            }
 
             foreach (var house in state.Houses)
             {
@@ -48,6 +129,101 @@ namespace Doggiehood.Unity
             ApplyAmbientLighting();
 
             return root;
+        }
+
+        /// <summary>All-or-nothing load of the three City Kit Roads tiles —
+        /// a partial kit would render a broken corridor, so any missing
+        /// tile falls back to the full primitive road path.</summary>
+        private static bool TryLoadRoadTiles(out GameObject straight, out GameObject crossroad, out GameObject crossing)
+        {
+            straight = null;
+            crossroad = null;
+            crossing = null;
+            if (ForcePrimitiveFallback)
+            {
+                return false;
+            }
+
+            straight = Resources.Load<GameObject>(RoadStraightResource);
+            crossroad = Resources.Load<GameObject>(RoadCrossroadResource);
+            crossing = Resources.Load<GameObject>(RoadCrossingResource);
+            return straight != null && crossroad != null && crossing != null;
+        }
+
+        /// <summary>
+        /// The visual road corridor as City Kit Roads tiles (#121): one
+        /// crossroad tile on the intersection, then straight tiles every
+        /// RoadTileScale meters along each street arm — except where the
+        /// WalkNetwork defines a Crosswalk edge inside a tile's span, which
+        /// gets the road-crossing tile instead (replacing the primitive
+        /// crosswalk quads). Tiles have ground-level pivots (y = 0) and
+        /// their road runs along local X, so north-south streets rotate 90°.
+        /// The kit tiles model their own sidewalks and curbs, so none of
+        /// the primitive verge/sidewalk/crosswalk strips are built in this
+        /// path. Each street keeps a "Road - Orientation" container object
+        /// — the logical scene contract other systems and tests rely on.
+        /// </summary>
+        private static void BuildKitRoads(Transform parent, GameObject straight, GameObject crossroad,
+            GameObject crossing)
+        {
+            var intersection = Object.Instantiate(crossroad, parent);
+            intersection.name = IntersectionTileName;
+            intersection.transform.position = new Vector3(
+                NeighborhoodLayout.Intersection.X, 0f, NeighborhoodLayout.Intersection.Z);
+            intersection.transform.rotation = Quaternion.identity;
+            intersection.transform.localScale = Vector3.one * RoadTileScale;
+
+            foreach (var road in NeighborhoodLayout.Roads)
+            {
+                var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
+                var roadParent = new GameObject(RoadNamePrefix + road.Orientation);
+                roadParent.transform.SetParent(parent);
+                roadParent.transform.position = Vector3.zero;
+
+                // The tile's road runs along local X; a north-south street
+                // runs along world Z.
+                var rotation = isNorthSouth ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
+                var crosswalkAlongs = CrosswalkAlongPositions(road);
+                var halfTile = RoadTileScale / 2f;
+
+                // Whole tiles per arm outward from the intersection tile's
+                // edge (StreetHalfLength 26 - 5 -> 2 tiles, centers 10, 20).
+                // The last (26 - 25 = 1 m) sliver of each arm stays untiled
+                // rather than overshooting the street end and ground plane.
+                var armTileCount = (int)((road.HalfLength - halfTile) / RoadTileScale);
+
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    for (var i = 1; i <= armTileCount; i++)
+                    {
+                        var along = sign * i * RoadTileScale;
+                        var isCrossing = crosswalkAlongs.Any(a => Mathf.Abs(a - along) <= halfTile);
+                        var tile = Object.Instantiate(isCrossing ? crossing : straight, roadParent.transform);
+                        tile.name = RoadTileNamePrefix + road.Orientation
+                            + (isCrossing ? " Crossing " : " Straight ") + (sign * i);
+                        var point = road.PointAt(along, 0f);
+                        tile.transform.position = new Vector3(point.X, 0f, point.Z);
+                        tile.transform.rotation = rotation;
+                        tile.transform.localScale = Vector3.one * RoadTileScale;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Signed along-axis positions (relative to the road's
+        /// center) of the WalkNetwork Crosswalk edges that cross this road
+        /// — an edge crossing a north-south road spans X at constant Z,
+        /// and vice versa.</summary>
+        private static List<float> CrosswalkAlongPositions(Road road)
+        {
+            var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
+            return NeighborhoodLayout.WalkNetwork.Edges
+                .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
+                .Where(e => isNorthSouth
+                    ? Mathf.Abs(e.A.Z - e.B.Z) < 0.01f
+                    : Mathf.Abs(e.A.X - e.B.X) < 0.01f)
+                .Select(e => isNorthSouth ? e.A.Z - road.Center.Z : e.A.X - road.Center.X)
+                .ToList();
         }
 
         private static void BuildGround(Transform parent)
@@ -174,7 +350,6 @@ namespace Doggiehood.Unity
         private static void BuildHouse(Transform parent, House house)
         {
             var lot = NeighborhoodLayout.GetHouseLot(house.Id);
-            var style = HouseStyleTable.ForHouse(house.Id);
 
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);
@@ -182,7 +357,10 @@ namespace Doggiehood.Unity
             var view = houseRoot.AddComponent<HouseView>();
             view.Init(house.Id);
 
-            // Window anchor on the wall facing the intersection (#9).
+            // Window anchor on the wall facing the intersection (#9). The
+            // anchor's local pose is identical in both art paths — dogs'
+            // window-watching depends on it; fine-tuning it to each kit
+            // model's actual wall is a follow-up.
             var anchor = new GameObject("WindowAnchor").transform;
             anchor.SetParent(houseRoot.transform);
             var facing = new Vector3(-Mathf.Sign(lot.Position.X), 0f, -Mathf.Sign(lot.Position.Z)).normalized;
@@ -190,6 +368,16 @@ namespace Doggiehood.Unity
             anchor.localRotation = Quaternion.LookRotation(facing, Vector3.up);
             view.WindowAnchor = anchor;
 
+            var model = ForcePrimitiveFallback
+                ? null
+                : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
+            if (model != null)
+            {
+                BuildHouseModel(houseRoot, house.Id, model, facing);
+                return;
+            }
+
+            var style = HouseStyleTable.ForHouse(house.Id);
             var walls = GameObject.CreatePrimitive(PrimitiveType.Cube);
             walls.name = "Walls";
             walls.transform.SetParent(houseRoot.transform);
@@ -203,6 +391,59 @@ namespace Doggiehood.Unity
             {
                 BuildPorch(houseRoot.transform, lot, style);
             }
+        }
+
+        /// <summary>
+        /// The house as its mapped City Kit Suburban model (#122): placed
+        /// directly on the lot (the models have ground-level pivots),
+        /// uniformly scaled so the model's max horizontal footprint lands
+        /// on HouseTargetFootprint, and yawed to face the intersection —
+        /// the same facing the graybox porch used. The imported FBX carries
+        /// no collider, so a BoxCollider fitted to the combined renderer
+        /// bounds goes on the HouseView object to keep tap interaction
+        /// (TapRouter raycasts, then GetComponentInParent) working. None of
+        /// the primitive walls/roof/porch are built in this path.
+        /// </summary>
+        private static void BuildHouseModel(GameObject houseRoot, int houseId, GameObject model, Vector3 facing)
+        {
+            var maxFootprint = 1f;
+            foreach (var entry in HouseModels)
+            {
+                if (entry.HouseId == houseId)
+                {
+                    maxFootprint = entry.ModelMaxFootprint;
+                }
+            }
+
+            var visual = Object.Instantiate(model, houseRoot.transform);
+            visual.name = "Model";
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localRotation = Quaternion.LookRotation(facing, Vector3.up)
+                * Quaternion.Euler(0f, HouseModelYawOffsetDegrees, 0f);
+            visual.transform.localScale = Vector3.one * (HouseTargetFootprint / maxFootprint);
+
+            AddFittedTapCollider(houseRoot, visual);
+        }
+
+        private static void AddFittedTapCollider(GameObject houseRoot, GameObject visual)
+        {
+            var renderers = visual.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0)
+            {
+                return;
+            }
+
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            // houseRoot has identity rotation and unit scale, so the
+            // world-space AABB converts to local space by translation only.
+            var collider = houseRoot.AddComponent<BoxCollider>();
+            collider.center = houseRoot.transform.InverseTransformPoint(bounds.center);
+            collider.size = bounds.size;
         }
 
         private static void BuildRoof(Transform houseRoot, HouseStyle style)
