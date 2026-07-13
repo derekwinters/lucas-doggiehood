@@ -34,10 +34,11 @@ namespace Doggiehood.Unity
         /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
         /// tile covers 10x10 m and its 0.6-unit road band becomes 6 m —
-        /// exactly WorldDimensions.RoadWidth. The tile's modeled sidewalk
-        /// (outer 4-5 m after scaling) is cosmetic; Core's logical sidewalk
-        /// band (4.5-6.5 m from the centerline) is what dogs actually walk
-        /// and intentionally stays as-is (#121).
+        /// exactly WorldDimensions.RoadWidth. With GrassVergeWidth at 0m
+        /// (Derek's 2026-07-13 decision) Core's logical sidewalk band
+        /// (3-5 m from the centerline) lands exactly on the tile's modeled
+        /// raised curb+sidewalk band (also 3-5 m after scaling), so dogs
+        /// walk centered on the kit's pavement (#121).
         /// </summary>
         public const float RoadTileScale = 10f;
 
@@ -237,9 +238,12 @@ namespace Doggiehood.Unity
             Paint(ground, Palette.GrassHex);
         }
 
-        /// <summary>Road surface plus a grass verge and sidewalk on both
-        /// sides (#106), all sized from Road/Sidewalk — which are in turn
-        /// built purely from the locked #105 WorldDimensions constants.</summary>
+        /// <summary>Road surface plus a sidewalk on both sides (#106), all
+        /// sized from Road/Sidewalk — which are in turn built purely from
+        /// the locked #105 WorldDimensions constants. Verge strips are only
+        /// built when GrassVergeWidth is non-zero — it has been 0m since
+        /// Derek's 2026-07-13 decision (sidewalks abut the road, #121/#122),
+        /// and a 0-width cube would be degenerate geometry.</summary>
         private static void BuildRoad(Transform parent, Road road)
         {
             var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
@@ -256,9 +260,13 @@ namespace Doggiehood.Unity
 
             foreach (var sidewalk in road.Sidewalks)
             {
-                var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
-                BuildStripArms(parent, road, vergeOffset, sidewalk.VergeWidth, isNorthSouth,
-                    VergeNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.GrassVergeHex, 0.06f);
+                if (sidewalk.VergeWidth > 0.001f)
+                {
+                    var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
+                    BuildStripArms(parent, road, vergeOffset, sidewalk.VergeWidth, isNorthSouth,
+                        VergeNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.GrassVergeHex, 0.06f);
+                }
+
                 BuildStripArms(parent, road, sidewalk.CenterOffset, sidewalk.Width, isNorthSouth,
                     SidewalkNamePrefix + road.Orientation + " " + sidewalk.Side, Palette.SidewalkHex, 0.07f);
             }
@@ -314,9 +322,10 @@ namespace Doggiehood.Unity
         /// <summary>
         /// The standard 4-crosswalk box at the intersection (#106), one
         /// per road arm — positioned from the walk network's Crosswalk
-        /// edges, but visually clipped to just the road and its two grass
-        /// verges (RoadWidth + 2 * GrassVergeWidth) rather than the edge's
-        /// full sidewalk-center-to-sidewalk-center length. The WalkNetwork
+        /// edges, but visually clipped to just the road's own span
+        /// (RoadWidth + 2 * GrassVergeWidth; the verge is 0m since the
+        /// 2026-07-13 decision) rather than the edge's full
+        /// sidewalk-center-to-sidewalk-center length. The WalkNetwork
         /// edge itself stays sidewalk-center to sidewalk-center — that's
         /// the real distance a dog covers crossing the road, and moving it
         /// would break graph connectivity — this is purely a rendering

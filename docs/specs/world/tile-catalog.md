@@ -13,7 +13,7 @@ These 7 measurements are locked in Core (`WorldDimensions`, [#105](https://githu
 |---|---|
 | Tile size | 60m x 60m |
 | Road width | 6m |
-| Grass verge (road edge -> sidewalk) | 1.5m |
+| Grass verge (road edge -> sidewalk) | 0m — removed 2026-07-13 (Derek, in conversation; originally 1.5m): sidewalks abut the road directly, aligning Core's walk geometry with the City Kit road tiles ([#121](https://github.com/derekwinters/lucas-doggiehood/issues/121)/[#122](https://github.com/derekwinters/lucas-doggiehood/issues/122)) — see [Sidewalks & Walk Network](sidewalks.md) |
 | Sidewalk width | 2m |
 | Crosswalk width | 3m |
 | Cul-de-sac bulb radius | 9m |

@@ -154,13 +154,21 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void CrossingTiles_SitWhereTheWalkNetworkDefinesCrosswalkEdges()
+        public void EveryCrosswalkEdge_IsCoveredByTheCrossroadTileOrACrossingTile()
         {
-            // #121: every WalkNetwork Crosswalk edge adjacent to the
-            // intersection must fall inside the span of a road-crossing
-            // tile of the road it crosses (the tile replacing the plain
-            // straight there). The edge sits at ±5.5m; the first tile of
-            // each arm spans 5..15, so it is the crossing tile.
+            // #121: every WalkNetwork Crosswalk edge must fall inside the
+            // span of a road tile that models a pedestrian crossing — the
+            // intersection's own crossroad tile (whose corner sidewalks are
+            // where crossings meet) or a dedicated road-crossing tile on an
+            // arm. Since GrassVergeWidth became 0m (Derek's 2026-07-13
+            // decision, sidewalks abut the road), the crosswalk edges sit
+            // at ±4m — inside the crossroad tile's own ±5m span and its
+            // modeled corner sidewalks (4-5m), so no arm tile needs to be
+            // a road-crossing tile and none should be built.
+            var halfTile = WorldBuilder.RoadTileScale / 2f;
+            var intersection = root.transform.Find(WorldBuilder.IntersectionTileName);
+            Assert.That(intersection, Is.Not.Null, "sanity: intersection crossroad tile exists");
+
             foreach (var road in NeighborhoodLayout.Roads)
             {
                 var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
@@ -178,20 +186,30 @@ namespace Doggiehood.Unity.EditModeTests
                         : Mathf.Abs(e.A.X - e.B.X) < 0.01f)
                     .ToList();
                 Assert.That(edges, Is.Not.Empty, "sanity: each road has crosswalk edges");
-                Assert.That(crossingTiles.Count, Is.EqualTo(edges.Count),
-                    $"{parent.name} should have one crossing tile per crosswalk edge");
 
+                var expectedCrossingTiles = 0;
                 foreach (var edge in edges)
                 {
                     var edgeAlong = isNorthSouth ? edge.A.Z : edge.A.X;
+                    var intersectionAlong = isNorthSouth ? intersection.position.z : intersection.position.x;
+
+                    if (Mathf.Abs(edgeAlong - intersectionAlong) <= halfTile + 0.001f)
+                    {
+                        continue; // covered by the crossroad tile itself
+                    }
+
+                    expectedCrossingTiles++;
                     var covered = crossingTiles.Any(t =>
                     {
                         var tileAlong = isNorthSouth ? t.position.z : t.position.x;
-                        return Mathf.Abs(edgeAlong - tileAlong) <= 5f + 0.001f;
+                        return Mathf.Abs(edgeAlong - tileAlong) <= halfTile + 0.001f;
                     });
                     Assert.That(covered, Is.True,
                         $"crosswalk edge at along={edgeAlong} on {road.Orientation} has no crossing tile");
                 }
+
+                Assert.That(crossingTiles.Count, Is.EqualTo(expectedCrossingTiles),
+                    $"{parent.name} should only have crossing tiles where a crosswalk edge is outside the crossroad tile");
             }
         }
 

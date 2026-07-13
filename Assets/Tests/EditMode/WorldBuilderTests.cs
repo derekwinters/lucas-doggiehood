@@ -98,33 +98,41 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildsAVergeAndSidewalkOnBothSidesOfEveryRoad()
+        public void BuildsSidewalksOnBothSidesOfEveryRoad_AndNoVergeStrips()
         {
-            // #106: symmetric placement — every road gets a grass verge and
-            // a sidewalk on both sides, each split into two arm segments
-            // (one per direction from the intersection) so the strip can
-            // stop at the crossing road's own footprint instead of running
-            // through it as one continuous piece. Primitive-fallback
-            // contract — the kit tiles model their own sidewalks.
+            // #106: symmetric placement — every road gets a sidewalk on
+            // both sides, each split into two arm segments (one per
+            // direction from the intersection) so the strip can stop at
+            // the crossing road's own footprint instead of running through
+            // it as one continuous piece. Primitive-fallback contract —
+            // the kit tiles model their own sidewalks.
+            //
+            // No verge strips: GrassVergeWidth is 0m (Derek's 2026-07-13
+            // decision, superseding the #106 1.5m verge, so sidewalks abut
+            // the road — aligning Core's sidewalk band with the City Kit
+            // road tiles' modeled curb, #121/#122). A 0-width cube is
+            // degenerate geometry, so WorldBuilder must skip building
+            // verge objects entirely.
             RebuildWithPrimitiveFallback();
             var verges = Children().Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix)).ToList();
             var sidewalks = Children().Where(t => t.name.StartsWith(WorldBuilder.SidewalkNamePrefix)).ToList();
 
-            Assert.That(verges.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2));
+            Assert.That(verges, Is.Empty, "no verge strips when GrassVergeWidth is 0");
             Assert.That(sidewalks.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2));
         }
 
         [Test]
-        public void VergeAndSidewalkArms_NeverPaintOverTheCrossingRoadsOwnPavement()
+        public void SidewalkArms_NeverPaintOverTheCrossingRoadsOwnPavement()
         {
-            // Regression: verge/sidewalk strips used to run as one
-            // continuous piece straight through the intersection, painting
-            // over the crossing road's own pavement — visible in-game as a
-            // stray grass ring around the crosswalk box (Derek's
-            // playtest). Every road's verge/sidewalk line, sampled at the
-            // crossing road's own centerline (squarely inside the crossing
-            // road's pavement footprint), must now be covered by nothing.
-            // Primitive-fallback contract (no strips exist in the kit path).
+            // Regression: sidewalk strips used to run as one continuous
+            // piece straight through the intersection, painting over the
+            // crossing road's own pavement (Derek's playtest). Every
+            // road's sidewalk line, sampled at the crossing road's own
+            // centerline (squarely inside the crossing road's pavement
+            // footprint), must now be covered by nothing.
+            // Primitive-fallback contract (no strips exist in the kit
+            // path). Verge strips no longer exist at all — GrassVergeWidth
+            // is 0m (2026-07-13 decision).
             RebuildWithPrimitiveFallback();
             var strips = Children()
                 .Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix) || t.name.StartsWith(WorldBuilder.SidewalkNamePrefix))
@@ -134,9 +142,6 @@ namespace Doggiehood.Unity.EditModeTests
             {
                 foreach (var sidewalk in road.Sidewalks)
                 {
-                    var vergeOffset = Mathf.Sign(sidewalk.CenterOffset) * (road.Width / 2f + sidewalk.VergeWidth / 2f);
-
-                    AssertNothingCovers(strips, road.PointAt(0f, vergeOffset), $"verge of {road.Orientation} {sidewalk.Side}");
                     AssertNothingCovers(strips, road.PointAt(0f, sidewalk.CenterOffset), $"sidewalk of {road.Orientation} {sidewalk.Side}");
                 }
             }
@@ -172,26 +177,27 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void Crosswalks_NeverPaintOverSidewalkPavement()
         {
-            // Regression (Derek's playtest, follow-up to the verge/sidewalk
+            // Regression (Derek's playtest, follow-up to the sidewalk
             // intersection fix): each Crosswalk edge in the walk network
-            // runs sidewalk-center to sidewalk-center (+-5.5m) — that's the
-            // real distance a dog covers crossing the road, and moving it
-            // would break graph connectivity. But visually, the rendered
-            // crosswalk quad must stop at the verge/sidewalk boundary
-            // (RoadWidth/2 + GrassVergeWidth = 4.5m) and never cover the
-            // sidewalk pavement itself (4.5m-6.5m band). Sample a point in
-            // the inner half of that band (between the verge boundary and
-            // the sidewalk's own centerline) at each crosswalk's position.
+            // runs sidewalk-center to sidewalk-center (+-4m now that the
+            // verge is 0m) — that's the real distance a dog covers
+            // crossing the road, and moving it would break graph
+            // connectivity. But visually, the rendered crosswalk quad must
+            // stop at the road/sidewalk boundary
+            // (RoadWidth/2 + GrassVergeWidth = 3m) and never cover the
+            // sidewalk pavement itself (3m-5m band). Sample a point in
+            // the inner half of that band (between the road edge and the
+            // sidewalk's own centerline) at each crosswalk's position.
             // Primitive-fallback contract.
             RebuildWithPrimitiveFallback();
             var crosswalkObjects = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
-            var vergeEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 4.5
+            var roadEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 3
 
             foreach (var edge in NeighborhoodLayout.WalkNetwork.Edges.Where(e => e.Kind == WalkEdgeKind.Crosswalk))
             {
                 var alongX = Mathf.Abs(edge.A.Z - edge.B.Z) < 0.01f;
                 var sidewalkCenterMagnitude = Mathf.Abs(alongX ? edge.A.X : edge.A.Z);
-                var sampleMagnitude = (vergeEdge + sidewalkCenterMagnitude) / 2f;
+                var sampleMagnitude = (roadEdge + sidewalkCenterMagnitude) / 2f;
                 var alongPosition = alongX ? (edge.A.Z + edge.B.Z) / 2f : (edge.A.X + edge.B.X) / 2f;
 
                 foreach (var sign in new[] { 1f, -1f })
@@ -206,27 +212,26 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void Road_Verge_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
+        public void Road_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
         {
             // #106: placeholder flat-colored surfaces, no literal striping,
-            // but road/verge/sidewalk/crosswalk must each read as its own
+            // but road/sidewalk/crosswalk must each read as its own
             // distinct surface. Primitive-fallback contract — kit tiles
-            // bring their own colormap texture instead.
+            // bring their own colormap texture instead. (Verge strips no
+            // longer exist: GrassVergeWidth is 0m, 2026-07-13 decision.)
             RebuildWithPrimitiveFallback();
             Color ColorOf(string prefix) => Children().First(t => t.name.StartsWith(prefix))
                 .GetComponent<Renderer>().sharedMaterial.color;
 
             var road = ColorOf(WorldBuilder.RoadNamePrefix);
-            var verge = ColorOf(WorldBuilder.VergeNamePrefix);
             var sidewalk = ColorOf(WorldBuilder.SidewalkNamePrefix);
             var crosswalk = ColorOf(WorldBuilder.CrosswalkNamePrefix);
 
             Assert.That(road, Is.EqualTo(CoreColors.FromHex(Palette.StreetHex)));
-            Assert.That(verge, Is.EqualTo(CoreColors.FromHex(Palette.GrassVergeHex)));
             Assert.That(sidewalk, Is.EqualTo(CoreColors.FromHex(Palette.SidewalkHex)));
             Assert.That(crosswalk, Is.EqualTo(CoreColors.FromHex(Palette.CrosswalkHex)));
 
-            var colors = new[] { road, verge, sidewalk, crosswalk };
+            var colors = new[] { road, sidewalk, crosswalk };
             Assert.That(colors, Is.Unique);
         }
 

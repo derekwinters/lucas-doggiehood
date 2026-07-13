@@ -27,8 +27,17 @@ namespace Doggiehood.Core.World
         /// </summary>
         public const float RoadWidth = 6f;
 
-        /// <summary>Grass verge between the road edge and the sidewalk.</summary>
-        public const float GrassVergeWidth = 1.5f;
+        /// <summary>
+        /// Grass verge between the road edge and the sidewalk. 0m since
+        /// Derek's decision (2026-07-13, in conversation, superseding the
+        /// original #106 1.5m verge): the sidewalk abuts the road directly,
+        /// with grass only outside the sidewalk. This puts the sidewalk
+        /// centerline at RoadWidth/2 + SidewalkWidth/2 = 4m, exactly
+        /// centered on the City Kit road tiles' modeled raised
+        /// curb+sidewalk band (3-5m from the centerline at tile scale 10)
+        /// — so dogs walk on the kit art's pavement (#121/#122).
+        /// </summary>
+        public const float GrassVergeWidth = 0f;
 
         /// <summary>Sidewalk width.</summary>
         public const float SidewalkWidth = 2f;
