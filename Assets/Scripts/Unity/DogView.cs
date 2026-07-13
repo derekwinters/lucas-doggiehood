@@ -21,8 +21,10 @@ namespace Doggiehood.Unity
         /// <summary>Resources-relative path to the shared Kenney Cube Pets
         /// placeholder model (#119) — a single low-poly model used for every
         /// roster dog until breed-distinct modeling (#35) lands. Lives under
-        /// Assets/Art/Dogs/CubePets/Resources/ so Resources.Load can find it.</summary>
-        private const string CubePetsModelResourcePath = "Dogs/CubePets/animal-dog";
+        /// Assets/Art/Dogs/CubePets/Resources/, and Resources.Load paths are
+        /// relative to the Resources folder itself, so the asset's own file
+        /// name is the whole path.</summary>
+        private const string CubePetsModelResourcePath = "animal-dog";
 
         public Dog Dog { get; private set; }
 
