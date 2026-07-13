@@ -63,20 +63,26 @@ namespace Doggiehood.Unity.EditModeTests
                 "the Unity logo is not hidden — the splash should show only the cover art");
         }
 
-        [Test]
-        public void SplashBackground_ReferencesTheCoverArtSprite_ForBothOrientations()
+        // Unity persists the splash background in TWO field pairs: the
+        // editor-facing source slots (splashScreenBackgroundSource*) and the
+        // m_SplashScreenBackground* fields the built player actually reads —
+        // the Editor UI copies source → runtime on assignment. Hand-authoring
+        // only the source pair shipped a build whose splash fell back to the
+        // solid background color (v0.3 playtest), so both pairs are pinned.
+        [TestCase("splashScreenBackgroundSourceLandscape")]
+        [TestCase("splashScreenBackgroundSourcePortrait")]
+        [TestCase("m_SplashScreenBackgroundLandscape")]
+        [TestCase("m_SplashScreenBackgroundPortrait")]
+        public void SplashBackground_ReferencesTheCoverArtSprite(string settingsKey)
         {
             var settingsYaml = System.IO.File.ReadAllText(ProjectSettingsPath);
 
             // \s+ tolerates Unity re-wrapping the line on a future resave.
             Assert.That(settingsYaml, Does.Match(
-                @"splashScreenBackgroundSourceLandscape: \{fileID: " + SpriteFileId
+                settingsKey + @": \{fileID: " + SpriteFileId
                 + @",\s+guid: " + SplashGuid + @",\s+type: 3\}"),
-                "the landscape splash background does not reference the cover art sprite");
-            Assert.That(settingsYaml, Does.Match(
-                @"splashScreenBackgroundSourcePortrait: \{fileID: " + SpriteFileId
-                + @",\s+guid: " + SplashGuid + @",\s+type: 3\}"),
-                "the portrait splash background does not reference the cover art sprite");
+                $"{settingsKey} does not reference the cover art sprite — " +
+                "the built player's splash would fall back to the solid background color");
         }
     }
 }

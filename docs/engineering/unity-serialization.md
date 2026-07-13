@@ -40,7 +40,15 @@ A texture asset exposes different sub-assets with different fileIDs:
 
 See `Assets/Art/Splash/cover-art.png.meta` for the working example.
 
-### 3. EditMode tests must assert serialization, not `PlayerSettings` object references
+### 3. Some settings persist in editor-source AND runtime field pairs — set both
+
+Unity sometimes stores the same value twice: an editor-facing "source" field and the field the **built player actually reads**, with the Editor UI copying source → runtime when you assign it. Hand-authoring only the source half produces a build where the feature silently falls back to its default.
+
+**Case study:** the splash background. `splashScreenBackgroundSourceLandscape/Portrait` are the editor source slots; the runtime reads `m_SplashScreenBackgroundLandscape/Portrait`. Setting only the source pair passed every editor-level test and shipped a splash that showed just the solid background color. Both pairs must carry the same Sprite reference (and the guard test now pins all four keys).
+
+If a real-world file shows the same reference under two key names, that's this pattern — author both.
+
+### 4. EditMode tests must assert serialization, not `PlayerSettings` object references
 
 `PlayerSettings` deserializes once at editor startup. On a fresh Library rebuild (every CI run), assets referenced by nothing in a scene are imported **lazily, after startup** — so `PlayerSettings.GetIconsForTargetGroup(...)` style APIs return null texture references for the whole session even when the serialized wiring is correct. A test asserting those references passes locally (warm Library) and fails on CI, or worse, can't ever pass on CI.
 
@@ -52,7 +60,7 @@ Instead:
 
 `Assets/Tests/EditMode/AppIconTests.cs` and `SplashScreenTests.cs` are the reference implementations.
 
-### 4. Simulate the assertions before pushing
+### 5. Simulate the assertions before pushing
 
 The sandbox can't run Unity, but every serialization-level assertion is plain text matching — simulate the exact regexes/contains-checks against the final files with a quick Python script before committing. This proves red→green locally-in-spirit and catches regex/formatting mistakes without burning a ~5-minute CI round trip. (YAML formatting details matter: e.g. Unity writes a trailing space after empty scalar keys like `m_SubKind: ` — copy formatting exactly.)
 
