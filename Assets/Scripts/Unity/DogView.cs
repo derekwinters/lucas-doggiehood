@@ -1,6 +1,8 @@
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 namespace Doggiehood.Unity
 {
@@ -8,7 +10,10 @@ namespace Doggiehood.Unity
     /// Scene-side dog (#8, #9, #10): body rendered as the shared Kenney
     /// Cube Pets placeholder model when importable (#119), falling back to
     /// graybox capsule+sphere primitives otherwise — both tinted to the
-    /// breed coat color. Also owns the speech bubble bound to
+    /// breed coat color. The imported model additionally plays the pack's
+    /// walk/idle takes via the Playables API (walk while wandering, idle
+    /// otherwise); the primitive fallback stays animation-free. Also owns
+    /// the speech bubble bound to
     /// HasActiveQuest, wander movement driven by Core's
     /// WanderBehavior/MovementProfile, and pose application per DogState
     /// (#66). Tapping forwards to the conversation presenter (#11) — Core
@@ -37,6 +42,28 @@ namespace Doggiehood.Unity
         private bool hasTarget;
         private bool usingImportedModel;
 
+        // Cube Pets animation state: the pack's takes (idle/walk/...) are
+        // clip sub-assets of the FBX, played through a PlayableGraph because
+        // the FBX's .meta (and thus its GUID) is generated locally — no
+        // AnimatorController asset can reference the clips from the repo.
+        private PlayableGraph playableGraph;
+        private AnimationPlayableOutput animationOutput;
+        private AnimationClipPlayable clipPlayable;
+        private AnimationClip idleClip;
+        private AnimationClip walkClip;
+        private AnimationClip currentClip;
+        private bool hasAnimation;
+
+        /// <summary>Name of the animation clip currently playing, or null
+        /// when no animation is wired (primitive fallback, or the walk/idle
+        /// takes weren't found). Exposed for EditMode tests, which can't run
+        /// the Play-mode Update loop.</summary>
+        public string CurrentAnimationClipName => currentClip != null ? currentClip.name : null;
+
+        /// <summary>Local time of the playing clip, for asserting manual
+        /// looping in EditMode tests. 0 when no animation is wired.</summary>
+        public double CurrentAnimationTime => clipPlayable.IsValid() ? clipPlayable.GetTime() : 0.0;
+
         public void Init(Dog dog, Transform windowAnchor)
         {
             Dog = dog;
@@ -58,6 +85,7 @@ namespace Doggiehood.Unity
                 body.localScale = Vector3.one * scale;
                 body.localPosition = Vector3.zero;
                 PaintModel(body.gameObject, coat);
+                SetupAnimation();
             }
             else
             {
@@ -152,29 +180,144 @@ namespace Doggiehood.Unity
                 ApplyPose(null);
             }
 
-            if (!Dog.WantsToWander)
+            var moving = false;
+            if (Dog.WantsToWander)
+            {
+                if (!hasTarget)
+                {
+                    var next = wander.NextTarget(new GridPoint(transform.position.x, transform.position.z));
+                    currentTarget = new Vector3(next.X, 0f, next.Z);
+                    hasTarget = true;
+                }
+
+                var step = profile.Speed * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, currentTarget, step);
+                var toward = currentTarget - transform.position;
+                if (toward.sqrMagnitude > 0.001f)
+                {
+                    transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
+                    moving = true;
+                }
+                else
+                {
+                    hasTarget = false;
+                }
+            }
+
+            TickAnimation(Time.deltaTime, moving);
+        }
+
+        /// <summary>Advances the Cube Pets animation by one frame: walk take
+        /// while actively moving toward a wander target, idle take otherwise,
+        /// with manual looping (imported FBX takes default to non-looping
+        /// because loop-time lives in importer settings the repo doesn't
+        /// control). Public so EditMode tests can drive frames
+        /// deterministically — they can't run the Play-mode Update loop. A
+        /// silent no-op when no animation is wired (primitive fallback, or
+        /// the walk/idle takes weren't found in the FBX).</summary>
+        public void TickAnimation(float deltaTime, bool isMoving)
+        {
+            if (!hasAnimation)
             {
                 return;
             }
 
-            if (!hasTarget)
+            var desired = isMoving ? walkClip : idleClip;
+            if (desired != currentClip)
             {
-                var next = wander.NextTarget(new GridPoint(transform.position.x, transform.position.z));
-                currentTarget = new Vector3(next.X, 0f, next.Z);
-                hasTarget = true;
+                PlayClip(desired);
             }
 
-            var step = profile.Speed * Time.deltaTime;
-            transform.position = Vector3.MoveTowards(transform.position, currentTarget, step);
-            var toward = currentTarget - transform.position;
-            if (toward.sqrMagnitude > 0.001f)
+            playableGraph.Evaluate(deltaTime);
+
+            var length = currentClip.length;
+            if (length > 0f && clipPlayable.GetTime() >= length)
             {
-                transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
+                clipPlayable.SetTime(clipPlayable.GetTime() % length);
             }
-            else
+        }
+
+        private void OnDestroy()
+        {
+            // Leaked PlayableGraphs spam errors on domain reload/exit.
+            if (playableGraph.IsValid())
             {
-                hasTarget = false;
+                playableGraph.Destroy();
             }
+        }
+
+        /// <summary>Wires the Cube Pets walk/idle takes (clip sub-assets of
+        /// the FBX, loaded via Resources.LoadAll on the same
+        /// Resources-relative path as the model) into a manually-evaluated
+        /// PlayableGraph on the Body's Animator. Degrades silently to the
+        /// un-animated behavior if either take can't be found — never throws,
+        /// never logs per-frame.</summary>
+        private void SetupAnimation()
+        {
+            var clips = Resources.LoadAll<AnimationClip>(CubePetsModelResourcePath);
+            idleClip = FindClip(clips, "idle");
+            walkClip = FindClip(clips, "walk");
+            if (idleClip == null || walkClip == null)
+            {
+                return;
+            }
+
+            var animator = body.GetComponent<Animator>();
+            if (animator == null)
+            {
+                animator = body.gameObject.AddComponent<Animator>();
+            }
+
+            playableGraph = PlayableGraph.Create($"DogView.{Dog.Name}");
+            // Manual mode: Update (Play mode) and tests (EditMode) both
+            // advance time through TickAnimation, so behavior is identical
+            // and deterministic in both.
+            playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+            animationOutput = AnimationPlayableOutput.Create(playableGraph, "Animation", animator);
+            hasAnimation = true;
+            PlayClip(idleClip);
+            playableGraph.Play();
+            playableGraph.Evaluate(0f);
+        }
+
+        private void PlayClip(AnimationClip clip)
+        {
+            if (clipPlayable.IsValid())
+            {
+                clipPlayable.Destroy();
+            }
+
+            clipPlayable = AnimationClipPlayable.Create(playableGraph, clip);
+            animationOutput.SetSourcePlayable(clipPlayable);
+            currentClip = clip;
+        }
+
+        /// <summary>Finds an FBX take by name: exact case-insensitive match,
+        /// or importer-decorated form ("animal-dog|walk") matched by
+        /// "|"-prefixed suffix. Editor-only "__preview__" clips are skipped —
+        /// they'd otherwise satisfy the suffix match.</summary>
+        private static AnimationClip FindClip(AnimationClip[] clips, string takeName)
+        {
+            foreach (var clip in clips)
+            {
+                if (clip == null)
+                {
+                    continue;
+                }
+
+                var name = clip.name.ToLowerInvariant();
+                if (name.StartsWith("__preview__"))
+                {
+                    continue;
+                }
+
+                if (name == takeName || name.EndsWith("|" + takeName))
+                {
+                    return clip;
+                }
+            }
+
+            return null;
         }
 
         private static int StableSeed(string name)
