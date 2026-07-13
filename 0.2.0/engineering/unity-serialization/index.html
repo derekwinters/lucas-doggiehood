@@ -11,10 +11,8 @@
       
       
       
-        <link rel="prev" href="../ci-cd/">
+        <link rel="prev" href="../agent-workflow/">
       
-      
-        <link rel="next" href="../unity-serialization/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +20,7 @@
     
     
       
-        <title>Development Agent & Workflow - Doggiehood Docs</title>
+        <title>Hand-Authoring Unity Serialized Assets - Doggiehood Docs</title>
       
     
     
@@ -74,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#development-agent-workflow" class="md-skip">
+        <a href="#hand-authoring-unity-serialized-assets" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Development Agent & Workflow
+              Hand-Authoring Unity Serialized Assets
             
           </span>
         </div>
@@ -1131,6 +1129,27 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1147,7 +1166,7 @@
           
   
   <span class="md-ellipsis">
-    Development Agent & Workflow
+    Hand-Authoring Unity Serialized Assets
   </span>
   
 
@@ -1158,7 +1177,7 @@
         
   
   <span class="md-ellipsis">
-    Development Agent & Workflow
+    Hand-Authoring Unity Serialized Assets
   </span>
   
 
@@ -1180,36 +1199,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#who-writes-the-code" class="md-nav__link">
+  <a href="#the-golden-rule-never-guess-verify-against-real-project-files" class="md-nav__link">
     <span class="md-ellipsis">
-      Who writes the code
+      The golden rule: never guess — verify against real project files
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#supporting-skills" class="md-nav__link">
+  <a href="#known-traps" class="md-nav__link">
     <span class="md-ellipsis">
-      Supporting skills
+      Known traps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known traps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-guid-references-require-committed-meta-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. GUID references require committed .meta files
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#claudemd" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#2-sprite-references-use-fileid-21300000-and-sprite-ids-must-be-pinned" class="md-nav__link">
     <span class="md-ellipsis">
-      CLAUDE.md
+      2. Sprite references use fileID: 21300000 — and sprite IDs must be pinned
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#3-some-settings-persist-in-editor-source-and-runtime-field-pairs-set-both" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Some settings persist in editor-source AND runtime field pairs — set both
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-editmode-tests-must-assert-serialization-not-playersettings-object-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. EditMode tests must assert serialization, not PlayerSettings object references
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-simulate-the-assertions-before-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Simulate the assertions before pushing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#how-an-issue-gets-worked" class="md-nav__link">
+  <a href="#checklist-for-a-new-hand-authored-block" class="md-nav__link">
     <span class="md-ellipsis">
-      How an issue gets worked
+      Checklist for a new hand-authored block
     </span>
   </a>
   
@@ -1219,27 +1280,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../unity-serialization/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Hand-Authoring Unity Serialized Assets
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1279,36 +1319,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#who-writes-the-code" class="md-nav__link">
+  <a href="#the-golden-rule-never-guess-verify-against-real-project-files" class="md-nav__link">
     <span class="md-ellipsis">
-      Who writes the code
+      The golden rule: never guess — verify against real project files
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#supporting-skills" class="md-nav__link">
+  <a href="#known-traps" class="md-nav__link">
     <span class="md-ellipsis">
-      Supporting skills
+      Known traps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known traps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-guid-references-require-committed-meta-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. GUID references require committed .meta files
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#claudemd" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#2-sprite-references-use-fileid-21300000-and-sprite-ids-must-be-pinned" class="md-nav__link">
     <span class="md-ellipsis">
-      CLAUDE.md
+      2. Sprite references use fileID: 21300000 — and sprite IDs must be pinned
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#3-some-settings-persist-in-editor-source-and-runtime-field-pairs-set-both" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Some settings persist in editor-source AND runtime field pairs — set both
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-editmode-tests-must-assert-serialization-not-playersettings-object-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. EditMode tests must assert serialization, not PlayerSettings object references
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-simulate-the-assertions-before-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Simulate the assertions before pushing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#how-an-issue-gets-worked" class="md-nav__link">
+  <a href="#checklist-for-a-new-hand-authored-block" class="md-nav__link">
     <span class="md-ellipsis">
-      How an issue gets worked
+      Checklist for a new hand-authored block
     </span>
   </a>
   
@@ -1329,7 +1411,7 @@
                   
 
   
-    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/engineering/agent-workflow.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/engineering/unity-serialization.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1337,34 +1419,69 @@
   
 
 
-<h1 id="development-agent-workflow">Development Agent &amp; Workflow<a class="headerlink" href="#development-agent-workflow" title="Permanent link">&para;</a></h1>
-<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/77">#77</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/78">#78</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/84">#84</a></em></p>
-<h2 id="who-writes-the-code">Who writes the code<a class="headerlink" href="#who-writes-the-code" title="Permanent link">&para;</a></h2>
-<p>A dedicated Claude Code agent (<code>.claude/agents/</code>), not ad-hoc chat sessions, does the actual Unity/C# implementation work. It:</p>
+<h1 id="hand-authoring-unity-serialized-assets">Hand-Authoring Unity Serialized Assets<a class="headerlink" href="#hand-authoring-unity-serialized-assets" title="Permanent link">&para;</a></h1>
+<p>Development agents work in sandboxes <strong>without a Unity Editor</strong>, so <code>.meta</code> files and <code>ProjectSettings.asset</code> edits are written by hand as YAML. Unity's serialization has several silent failure modes that cost real debugging rounds when the app icon and splash screen were wired up (PRs <a href="https://github.com/derekwinters/lucas-doggiehood/pull/132">#132</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/pull/133">#133</a>). This page is the accumulated field guide — read it before hand-authoring any Unity YAML.</p>
+<h2 id="the-golden-rule-never-guess-verify-against-real-project-files">The golden rule: never guess — verify against real project files<a class="headerlink" href="#the-golden-rule-never-guess-verify-against-real-project-files" title="Permanent link">&para;</a></h2>
+<p>Unity ignores serialized entries it doesn't understand <strong>silently, at build time</strong>. There is no error, no warning, no failing import — the feature just doesn't exist in the build. Guessed key names and enum values are therefore worse than compile errors: they ship.</p>
+<p>Before writing a block you haven't written before, find real-world <code>ProjectSettings.asset</code> / <code>.meta</code> examples in public repos (web search for the key name) and copy the exact key names, value shapes, sibling keys, and ordering.</p>
+<p><strong>Case study:</strong> the Android adaptive icon was first serialized with a guessed <code>m_Kind: 5</code>. Unity ignored the entry and shipped the raw square legacy icon. Real files revealed the actual enum: <code>Legacy = 0</code>, <code>Round = 1</code>, <code>Adaptive = 2</code> — and that Unity expects all six density entries (432/324/216/162/108/81), not one.</p>
+<h2 id="known-traps">Known traps<a class="headerlink" href="#known-traps" title="Permanent link">&para;</a></h2>
+<h3 id="1-guid-references-require-committed-meta-files">1. GUID references require committed <code>.meta</code> files<a class="headerlink" href="#1-guid-references-require-committed-meta-files" title="Permanent link">&para;</a></h3>
+<p>The repo convention for <strong>art models</strong> (FBX/PNG under <code>Assets/Art/</code>) is to <em>not</em> commit <code>.meta</code> files for binaries — Unity generates them locally and nothing depends on the GUID.</p>
+<p>That convention <strong>inverts</strong> the moment anything references the asset by GUID (<code>ProjectSettings.asset</code>, a scene, another asset): the <code>.meta</code> must be hand-authored with a <strong>pinned GUID</strong> and committed, or every machine generates a different GUID and the reference breaks. Current pinned-GUID assets: the app icon, its adaptive layers, and the splash cover art (all under <code>Assets/Art/Icon/</code> and <code>Assets/Art/Splash/</code>).</p>
+<h3 id="2-sprite-references-use-fileid-21300000-and-sprite-ids-must-be-pinned">2. Sprite references use <code>fileID: 21300000</code> — and sprite IDs must be pinned<a class="headerlink" href="#2-sprite-references-use-fileid-21300000-and-sprite-ids-must-be-pinned" title="Permanent link">&para;</a></h3>
+<p>A texture asset exposes different sub-assets with different fileIDs:</p>
+<table>
+<thead>
+<tr>
+<th>Reference</th>
+<th>fileID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Texture2D</code> (e.g. app icons)</td>
+<td><code>2800000</code></td>
+</tr>
+<tr>
+<td><code>Sprite</code> sub-asset (e.g. <strong>splash backgrounds</strong>)</td>
+<td><code>21300000</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>PlayerSettings.SplashScreen.background</code> is typed <code>Sprite</code>, so the splash background must reference <code>{fileID: 21300000, guid: ..., type: 3}</code> and the PNG's importer must produce a Sprite (<code>textureType: 8</code>, <code>spriteMode: 1</code>).</p>
+<p><strong>The trap inside the trap:</strong> modern Unity <em>randomizes</em> sprite internal IDs on fresh import. A hand-authored reference to <code>21300000</code> only survives a from-scratch Library rebuild (i.e. CI, or any fresh clone) if the <code>.meta</code> pins the ID via <code>internalIDToNameTable</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">internalIDToNameTable</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">first</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">213</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">21300000</span>
+<span class="w">    </span><span class="nt">second</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cover-art</span>
+</code></pre></div>
+<p>See <code>Assets/Art/Splash/cover-art.png.meta</code> for the working example.</p>
+<h3 id="3-some-settings-persist-in-editor-source-and-runtime-field-pairs-set-both">3. Some settings persist in editor-source AND runtime field pairs — set both<a class="headerlink" href="#3-some-settings-persist-in-editor-source-and-runtime-field-pairs-set-both" title="Permanent link">&para;</a></h3>
+<p>Unity sometimes stores the same value twice: an editor-facing "source" field and the field the <strong>built player actually reads</strong>, with the Editor UI copying source → runtime when you assign it. Hand-authoring only the source half produces a build where the feature silently falls back to its default.</p>
+<p><strong>Case study:</strong> the splash background. <code>splashScreenBackgroundSourceLandscape/Portrait</code> are the editor source slots; <code>m_SplashScreenBackgroundLandscape/Portrait</code> are the runtime-facing pair. Setting only the source pair shipped a splash that showed just the solid background color.</p>
+<p>If a real-world file shows the same reference under two key names, that's this pattern — author both.</p>
+<p><strong>Honest status:</strong> authoring both pairs was verified correct at the Editor level (Player Settings UI showed the sprite in both slots; the splash Preview rendered it), but the Android CI build <em>still</em> rendered only the background color — the residual failure sits in the build stage, not serialization, and the feature was parked. Full evidence and resume instructions: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/136">#136</a>.</p>
+<h3 id="4-editmode-tests-must-assert-serialization-not-playersettings-object-references">4. EditMode tests must assert serialization, not <code>PlayerSettings</code> object references<a class="headerlink" href="#4-editmode-tests-must-assert-serialization-not-playersettings-object-references" title="Permanent link">&para;</a></h3>
+<p><code>PlayerSettings</code> deserializes once at editor startup. On a fresh Library rebuild (every CI run), assets referenced by nothing in a scene are imported <strong>lazily, after startup</strong> — so <code>PlayerSettings.GetIconsForTargetGroup(...)</code> style APIs return null texture references for the whole session even when the serialized wiring is correct. A test asserting those references passes locally (warm Library) and fails on CI, or worse, can't ever pass on CI.</p>
+<p>Instead:</p>
 <ul>
-<li>Enforces strict <a href="../testing/">TDD</a> — red, green, refactor, every time, no exceptions.</li>
-<li>Defaults new logic to the Unity-independent Core assembly (see <a href="../tech-stack/#code-architecture-core-unity-split">Tech Stack</a>).</li>
-<li>Follows Conventional Commits for everything it commits, since <a href="../versioning/">release-please</a> depends on them.</li>
-<li>Works from one GitHub issue at a time, using that issue's build checklist as its acceptance criteria.</li>
+<li>Assert on the <strong>YAML text</strong> of <code>ProjectSettings.asset</code> (regex the block, check pinned GUIDs and exact enum values — pin values like <code>m_Kind: 2</code> so a bad edit can't ship silently).</li>
+<li>Assert asset existence with <code>AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport)</code> followed by <code>LoadAssetAtPath</code> — never rely on something else having imported it first.</li>
+<li>For pinned sub-asset IDs, <code>AssetDatabase.TryGetGUIDAndLocalFileIdentifier</code> verifies both GUID and fileID.</li>
 </ul>
-<h2 id="supporting-skills">Supporting skills<a class="headerlink" href="#supporting-skills" title="Permanent link">&para;</a></h2>
-<p>Skills back the agent's day-to-day workflow:</p>
+<p><code>Assets/Tests/EditMode/AppIconTests.cs</code> and <code>SplashScreenTests.cs</code> are the reference implementations.</p>
+<h3 id="5-simulate-the-assertions-before-pushing">5. Simulate the assertions before pushing<a class="headerlink" href="#5-simulate-the-assertions-before-pushing" title="Permanent link">&para;</a></h3>
+<p>The sandbox can't run Unity, but every serialization-level assertion is plain text matching — simulate the exact regexes/contains-checks against the final files with a quick Python script before committing. This proves red→green locally-in-spirit and catches regex/formatting mistakes without burning a ~5-minute CI round trip. (YAML formatting details matter: e.g. Unity writes a trailing space after empty scalar keys like <code>m_SubKind:</code> — copy formatting exactly.)</p>
+<h2 id="checklist-for-a-new-hand-authored-block">Checklist for a new hand-authored block<a class="headerlink" href="#checklist-for-a-new-hand-authored-block" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Running Core (plain NUnit) and Unity EditMode tests headlessly and reporting results.</li>
-<li>Scaffolding a new Core class + matching test file following project conventions.</li>
-<li>A reference for Unity project/assembly-definition conventions — what belongs in Core vs. the Unity layer.</li>
+<li>[ ] Found ≥1 real-world file containing the same block; copied key names, value shapes, sibling keys, ordering</li>
+<li>[ ] Every enum value confirmed from a real file (not guessed, not from memory)</li>
+<li>[ ] Any GUID-referenced asset has a committed <code>.meta</code> with pinned GUID (and pinned sprite internal ID if referenced as a Sprite)</li>
+<li>[ ] Serialization-level EditMode guard test written first, asserting exact values</li>
+<li>[ ] Assertions simulated against the final files before pushing</li>
+<li>[ ] Report states plainly what only CI / a device can confirm</li>
 </ul>
-<p>The exact skill list is refined as the agent and initial project structure come online.</p>
-<h2 id="claudemd">CLAUDE.md<a class="headerlink" href="#claudemd" title="Permanent link">&para;</a></h2>
-<p>A <code>CLAUDE.md</code> at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: the Core/Unity split, the TDD workflow, the Conventional Commit requirement, <code>VERSION</code> file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).</p>
-<h2 id="how-an-issue-gets-worked">How an issue gets worked<a class="headerlink" href="#how-an-issue-gets-worked" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Pick the next open issue in build-order (milestones <code>02</code> → <code>08</code>, lowest number first within a milestone).</li>
-<li>Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.</li>
-<li>Work test-first per <a href="../testing/">Testing Strategy</a>, checking off checklist items as they're satisfied.</li>
-<li>Commit with a Conventional Commit message; open a PR.</li>
-<li>If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.</li>
-</ol>
 
 
 
