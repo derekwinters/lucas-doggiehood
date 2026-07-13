@@ -44,9 +44,11 @@ See `Assets/Art/Splash/cover-art.png.meta` for the working example.
 
 Unity sometimes stores the same value twice: an editor-facing "source" field and the field the **built player actually reads**, with the Editor UI copying source → runtime when you assign it. Hand-authoring only the source half produces a build where the feature silently falls back to its default.
 
-**Case study:** the splash background. `splashScreenBackgroundSourceLandscape/Portrait` are the editor source slots; the runtime reads `m_SplashScreenBackgroundLandscape/Portrait`. Setting only the source pair passed every editor-level test and shipped a splash that showed just the solid background color. Both pairs must carry the same Sprite reference (and the guard test now pins all four keys).
+**Case study:** the splash background. `splashScreenBackgroundSourceLandscape/Portrait` are the editor source slots; `m_SplashScreenBackgroundLandscape/Portrait` are the runtime-facing pair. Setting only the source pair shipped a splash that showed just the solid background color.
 
 If a real-world file shows the same reference under two key names, that's this pattern — author both.
+
+**Honest status:** authoring both pairs was verified correct at the Editor level (Player Settings UI showed the sprite in both slots; the splash Preview rendered it), but the Android CI build *still* rendered only the background color — the residual failure sits in the build stage, not serialization, and the feature was parked. Full evidence and resume instructions: [#136](https://github.com/derekwinters/lucas-doggiehood/issues/136).
 
 ### 4. EditMode tests must assert serialization, not `PlayerSettings` object references
 

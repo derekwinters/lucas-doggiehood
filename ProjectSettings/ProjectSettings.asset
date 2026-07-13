@@ -13,32 +13,6 @@ PlayerSettings:
   allowedAutorotateToPortraitUpsideDown: 0
   allowedAutorotateToLandscapeRight: 1
   allowedAutorotateToLandscapeLeft: 1
-  m_SplashScreenBackgroundColor: {r: 0.5264717, g: 0.638422, b: 0.6324668, a: 1}
-  m_ShowUnitySplashScreen: 1
-  m_ShowUnitySplashLogo: 0
-  m_SplashScreenOverlayOpacity: 0
-  m_SplashScreenAnimation: 0
-  m_SplashScreenLogoStyle: 1
-  m_SplashScreenDrawMode: 0
-  m_SplashScreenBackgroundAnimationZoom: 1
-  m_SplashScreenLogoAnimationZoom: 1
-  m_SplashScreenBackgroundLandscapeAspect: 1
-  m_SplashScreenBackgroundPortraitAspect: 1
-  m_SplashScreenBackgroundLandscapeUvs:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  m_SplashScreenBackgroundPortraitUvs:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  m_SplashScreenBackgroundLandscape: {fileID: 21300000, guid: de77c4a46f2441dfa4bdebeccd7eaa25, type: 3}
-  m_SplashScreenBackgroundPortrait: {fileID: 21300000, guid: de77c4a46f2441dfa4bdebeccd7eaa25, type: 3}
-  m_SplashScreenLogos: []
   applicationIdentifier:
     Android: com.derekwinters.doggiehood
   AndroidBundleVersionCode: 1
@@ -98,8 +72,5 @@ PlayerSettings:
       m_Height: 81
       m_Kind: 2
       m_SubKind: 
-  splashScreenBackgroundSourceLandscape: {fileID: 21300000, guid: de77c4a46f2441dfa4bdebeccd7eaa25, type: 3}
-  splashScreenBackgroundSourcePortrait: {fileID: 21300000, guid: de77c4a46f2441dfa4bdebeccd7eaa25, type: 3}
-  blurSplashScreenBackground: 0
   scriptingBackend:
     Android: 1
