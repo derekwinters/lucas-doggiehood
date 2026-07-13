@@ -98,7 +98,7 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildsSidewalksOnBothSidesOfEveryRoad_AndNoVergeStrips()
+        public void BuildsSidewalkAndVergeStripsOnBothSidesOfEveryRoad()
         {
             // #106: symmetric placement — every road gets a sidewalk on
             // both sides, each split into two arm segments (one per
@@ -107,17 +107,20 @@ namespace Doggiehood.Unity.EditModeTests
             // it as one continuous piece. Primitive-fallback contract —
             // the kit tiles model their own sidewalks.
             //
-            // No verge strips: GrassVergeWidth is 0m (Derek's 2026-07-13
-            // decision, superseding the #106 1.5m verge, so sidewalks abut
-            // the road — aligning Core's sidewalk band with the City Kit
-            // road tiles' modeled curb, #121/#122). A 0-width cube is
-            // degenerate geometry, so WorldBuilder must skip building
-            // verge objects entirely.
+            // Verge strips are back: GrassVergeWidth is 0.75m (Derek's
+            // 2026-07-13 midpoint request — dogs at 4m sat "a little too
+            // close to the road", so the walk line moved to 4.75m, between
+            // the original 5.5m and the abutting 4m). In the kit path the
+            // verge is a purely logical setback (the tiles render their
+            // own pavement, no grass strip), but in THIS primitive
+            // fallback the 0.75m grass strip legitimately renders again —
+            // WorldBuilder's degenerate-geometry skip only applies at 0.
             RebuildWithPrimitiveFallback();
             var verges = Children().Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix)).ToList();
             var sidewalks = Children().Where(t => t.name.StartsWith(WorldBuilder.SidewalkNamePrefix)).ToList();
 
-            Assert.That(verges, Is.Empty, "no verge strips when GrassVergeWidth is 0");
+            Assert.That(verges.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2),
+                "verge strips render again in the fallback now that GrassVergeWidth is nonzero");
             Assert.That(sidewalks.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count * 2 * 2));
         }
 
@@ -131,8 +134,8 @@ namespace Doggiehood.Unity.EditModeTests
             // centerline (squarely inside the crossing road's pavement
             // footprint), must now be covered by nothing.
             // Primitive-fallback contract (no strips exist in the kit
-            // path). Verge strips no longer exist at all — GrassVergeWidth
-            // is 0m (2026-07-13 decision).
+            // path). Verge strips are back (GrassVergeWidth 0.75m, Derek's
+            // 2026-07-13 midpoint request) and are covered here too.
             RebuildWithPrimitiveFallback();
             var strips = Children()
                 .Where(t => t.name.StartsWith(WorldBuilder.VergeNamePrefix) || t.name.StartsWith(WorldBuilder.SidewalkNamePrefix))
@@ -179,19 +182,19 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // Regression (Derek's playtest, follow-up to the sidewalk
             // intersection fix): each Crosswalk edge in the walk network
-            // runs sidewalk-center to sidewalk-center (+-4m now that the
-            // verge is 0m) — that's the real distance a dog covers
+            // runs sidewalk-center to sidewalk-center (+-4.75m at the
+            // 0.75m verge) — that's the real distance a dog covers
             // crossing the road, and moving it would break graph
             // connectivity. But visually, the rendered crosswalk quad must
-            // stop at the road/sidewalk boundary
-            // (RoadWidth/2 + GrassVergeWidth = 3m) and never cover the
-            // sidewalk pavement itself (3m-5m band). Sample a point in
-            // the inner half of that band (between the road edge and the
-            // sidewalk's own centerline) at each crosswalk's position.
-            // Primitive-fallback contract.
+            // stop at the verge/sidewalk boundary
+            // (RoadWidth/2 + GrassVergeWidth = 3.75m) and never cover the
+            // sidewalk pavement itself (3.75m-5.75m band). Sample a point
+            // in the inner half of that band (between the verge's outer
+            // edge and the sidewalk's own centerline) at each crosswalk's
+            // position. Primitive-fallback contract.
             RebuildWithPrimitiveFallback();
             var crosswalkObjects = Children().Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)).ToList();
-            var roadEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 3
+            var roadEdge = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth; // 3.75
 
             foreach (var edge in NeighborhoodLayout.WalkNetwork.Edges.Where(e => e.Kind == WalkEdgeKind.Crosswalk))
             {
@@ -212,26 +215,29 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void Road_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
+        public void Road_Verge_Sidewalk_AndCrosswalk_AreVisuallyDistinctColors()
         {
             // #106: placeholder flat-colored surfaces, no literal striping,
-            // but road/sidewalk/crosswalk must each read as its own
+            // but road/verge/sidewalk/crosswalk must each read as its own
             // distinct surface. Primitive-fallback contract — kit tiles
-            // bring their own colormap texture instead. (Verge strips no
-            // longer exist: GrassVergeWidth is 0m, 2026-07-13 decision.)
+            // bring their own colormap texture instead. (Verge strips are
+            // back: GrassVergeWidth is 0.75m, Derek's 2026-07-13 midpoint
+            // request.)
             RebuildWithPrimitiveFallback();
             Color ColorOf(string prefix) => Children().First(t => t.name.StartsWith(prefix))
                 .GetComponent<Renderer>().sharedMaterial.color;
 
             var road = ColorOf(WorldBuilder.RoadNamePrefix);
+            var verge = ColorOf(WorldBuilder.VergeNamePrefix);
             var sidewalk = ColorOf(WorldBuilder.SidewalkNamePrefix);
             var crosswalk = ColorOf(WorldBuilder.CrosswalkNamePrefix);
 
             Assert.That(road, Is.EqualTo(CoreColors.FromHex(Palette.StreetHex)));
+            Assert.That(verge, Is.EqualTo(CoreColors.FromHex(Palette.GrassVergeHex)));
             Assert.That(sidewalk, Is.EqualTo(CoreColors.FromHex(Palette.SidewalkHex)));
             Assert.That(crosswalk, Is.EqualTo(CoreColors.FromHex(Palette.CrosswalkHex)));
 
-            var colors = new[] { road, sidewalk, crosswalk };
+            var colors = new[] { road, verge, sidewalk, crosswalk };
             Assert.That(colors, Is.Unique);
         }
 

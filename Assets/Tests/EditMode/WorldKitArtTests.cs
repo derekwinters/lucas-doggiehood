@@ -163,11 +163,12 @@ namespace Doggiehood.Unity.EditModeTests
             // span of a road tile that models a pedestrian crossing — the
             // intersection's own crossroad tile (whose corner sidewalks are
             // where crossings meet) or a dedicated road-crossing tile on an
-            // arm. Since GrassVergeWidth became 0m (Derek's 2026-07-13
-            // decision, sidewalks abut the road), the crosswalk edges sit
-            // at ±4m — inside the crossroad tile's own ±5m span and its
-            // modeled corner sidewalks (4-5m), so no arm tile needs to be
-            // a road-crossing tile and none should be built.
+            // arm. At GrassVergeWidth 0.75m (Derek's 2026-07-13 midpoint
+            // request) the crosswalk edges sit at ±4.75m — inside the
+            // crossroad tile's own ±5m span, on its modeled pavement band
+            // (3-5m) where the road-crossroad-path variant paints its
+            // zebra stripes, so no arm tile needs to be a road-crossing
+            // tile and none should be built.
             var halfTile = WorldBuilder.RoadTileScale / 2f;
             var intersection = root.transform.Find(WorldBuilder.IntersectionTileName);
             Assert.That(intersection, Is.Not.Null, "sanity: intersection crossroad tile exists");
@@ -254,8 +255,9 @@ namespace Doggiehood.Unity.EditModeTests
             // Derek's Editor feedback on the first kit-house pass: at the
             // old 4.2m target the models read far too small against the
             // kit roads. New target is 8m: lots sit at +-14 and the
-            // sidewalk's outer edge is now at 5m (0m verge), so an 8m-wide
-            // house spans 10-18 on its lot — a sensible front yard.
+            // logical sidewalk's outer edge is at 5.75m (0.75m verge), so
+            // an 8m-wide house spans 10-18 on its lot — a sensible front
+            // yard.
             foreach (var view in root.GetComponentsInChildren<HouseView>())
             {
                 var model = view.transform.Find("Model");

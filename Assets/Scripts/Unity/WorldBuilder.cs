@@ -34,11 +34,12 @@ namespace Doggiehood.Unity
         /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
         /// tile covers 10x10 m and its 0.6-unit road band becomes 6 m —
-        /// exactly WorldDimensions.RoadWidth. With GrassVergeWidth at 0m
-        /// (Derek's 2026-07-13 decision) Core's logical sidewalk band
-        /// (3-5 m from the centerline) lands exactly on the tile's modeled
-        /// raised curb+sidewalk band (also 3-5 m after scaling), so dogs
-        /// walk centered on the kit's pavement (#121).
+        /// exactly WorldDimensions.RoadWidth. With GrassVergeWidth at
+        /// 0.75m (Derek's 2026-07-13 midpoint request) Core's logical
+        /// sidewalk band (3.75-5.75 m from the centerline) overlaps the
+        /// tile's modeled raised curb+sidewalk band (3-5 m after scaling),
+        /// so dogs walk at 4.75 m — on the kit's pavement, near its outer
+        /// edge (#121).
         /// </summary>
         public const float RoadTileScale = 10f;
 
@@ -59,9 +60,9 @@ namespace Doggiehood.Unity
         /// <summary>Target maximum horizontal footprint for a scaled house
         /// model. 8m (up from the original 4.2m graybox-sized target,
         /// which Derek's Editor check showed reading far too small against
-        /// the kit roads): lots sit at +-14 and the sidewalk's outer edge
-        /// is at 5m (0m verge), so an 8m-wide house spans 10-18 on its
-        /// lot, leaving a sensible front yard.</summary>
+        /// the kit roads): lots sit at +-14 and the logical sidewalk's
+        /// outer edge is at 5.75m (0.75m verge), so an 8m-wide house spans
+        /// 10-18 on its lot, leaving a sensible front yard.</summary>
         private const float HouseTargetFootprint = 8f;
 
         /// <summary>
@@ -251,9 +252,12 @@ namespace Doggiehood.Unity
         /// <summary>Road surface plus a sidewalk on both sides (#106), all
         /// sized from Road/Sidewalk — which are in turn built purely from
         /// the locked #105 WorldDimensions constants. Verge strips are only
-        /// built when GrassVergeWidth is non-zero — it has been 0m since
-        /// Derek's 2026-07-13 decision (sidewalks abut the road, #121/#122),
-        /// and a 0-width cube would be degenerate geometry.</summary>
+        /// built when GrassVergeWidth is non-zero (a 0-width cube would be
+        /// degenerate geometry) — at today's 0.75m (Derek's 2026-07-13
+        /// midpoint request) the grass strip legitimately renders in this
+        /// fallback path, even though the kit path shows no grass there
+        /// (the kit tiles pave 3-5m; the verge is a logical setback for
+        /// dog placement in that path).</summary>
         private static void BuildRoad(Transform parent, Road road)
         {
             var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
@@ -333,8 +337,8 @@ namespace Doggiehood.Unity
         /// The standard 4-crosswalk box at the intersection (#106), one
         /// per road arm — positioned from the walk network's Crosswalk
         /// edges, but visually clipped to just the road's own span
-        /// (RoadWidth + 2 * GrassVergeWidth; the verge is 0m since the
-        /// 2026-07-13 decision) rather than the edge's full
+        /// (RoadWidth + 2 * GrassVergeWidth = 7.5m at the 0.75m verge)
+        /// rather than the edge's full
         /// sidewalk-center-to-sidewalk-center length. The WalkNetwork
         /// edge itself stays sidewalk-center to sidewalk-center — that's
         /// the real distance a dog covers crossing the road, and moving it

@@ -72,7 +72,7 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(point.X, Is.EqualTo(positive.CenterOffset).Within(0.0001f));
             Assert.That(point.Z, Is.EqualTo(10f).Within(0.0001f));
             Assert.That(point.X, Is.GreaterThan(road.Width / 2f + WorldDimensions.GrassVergeWidth),
-                "sidewalk centerline must sit beyond the road edge (verge is 0m since 2026-07-13)");
+                "sidewalk centerline must sit beyond the road edge and verge setback (0.75m since the 2026-07-13 midpoint decision)");
         }
     }
 }

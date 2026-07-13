@@ -13,14 +13,16 @@ namespace Doggiehood.Core.Tests.World
             // and future rendering (#106, #109) are built from.
             Assert.That(WorldDimensions.TileSize, Is.EqualTo(60f));
             Assert.That(WorldDimensions.RoadWidth, Is.EqualTo(6f));
-            // The grass verge was removed (0m) by Derek's decision
-            // (2026-07-13, in conversation, superseding the original #106
-            // 1.5m verge): with the City Kit Roads tiles (#121/#122) the
-            // sidewalk abuts the road directly, putting Core's sidewalk
-            // centerline at 4m — exactly on the kit tile's modeled raised
-            // curb+sidewalk band (3-5m from the road centerline at tile
-            // scale 10).
-            Assert.That(WorldDimensions.GrassVergeWidth, Is.EqualTo(0f));
+            // 0.75m: Derek's midpoint request (2026-07-13, in conversation,
+            // Editor review). At 0m verge (his earlier same-day decision,
+            // superseding the original #106 1.5m) the dogs walked at 4m —
+            // "a little too close to the road"; at the original 1.5m they
+            // walked at 5.5m. The midpoint puts the sidewalk centerline at
+            // RoadWidth/2 + 0.75 + SidewalkWidth/2 = 4.75m — still inside
+            // the kit tile's modeled 3-5m pavement band, near its outer
+            // edge. This is a logical setback for dog placement; the kit
+            // tiles render no grass strip (visuals unchanged).
+            Assert.That(WorldDimensions.GrassVergeWidth, Is.EqualTo(0.75f));
             Assert.That(WorldDimensions.SidewalkWidth, Is.EqualTo(2f));
             Assert.That(WorldDimensions.CrosswalkWidth, Is.EqualTo(3f));
             Assert.That(WorldDimensions.CulDeSacBulbRadius, Is.EqualTo(9f));

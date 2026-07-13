@@ -40,16 +40,16 @@ namespace Doggiehood.Core.Tests.World
     /// </summary>
     public class WorldDimensionsGuardTests
     {
-        // GrassVergeWidth (0m since Derek's 2026-07-13 decision to drop the
-        // verge so sidewalks abut roads, aligning with the City Kit tiles
-        // — #121/#122) is intentionally absent: a locked value of 0 would
-        // make every ordinary `float x = 0f` initializer in the World
-        // folder a false-positive duplicate, and "0" carries no dimension
-        // to duplicate in the first place.
+        // GrassVergeWidth is back in the locked list: it was intentionally
+        // absent while Derek's first 2026-07-13 decision put it at 0m (a
+        // locked 0 would false-positive every ordinary `float x = 0f`
+        // initializer), but his same-day midpoint follow-up made it 0.75m
+        // — a real dimension again, so the duplicate-literal guard applies.
         private static readonly float[] LockedValues =
         {
             WorldDimensions.TileSize,
             WorldDimensions.RoadWidth,
+            WorldDimensions.GrassVergeWidth,
             WorldDimensions.SidewalkWidth,
             WorldDimensions.CrosswalkWidth,
             WorldDimensions.CulDeSacBulbRadius,
