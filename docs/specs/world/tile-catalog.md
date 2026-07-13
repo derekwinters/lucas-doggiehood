@@ -13,7 +13,7 @@ These 7 measurements are locked in Core (`WorldDimensions`, [#105](https://githu
 |---|---|
 | Tile size | 60m x 60m |
 | Road width | 6m |
-| Grass verge (road edge -> sidewalk) | 1.5m |
+| Grass verge (road edge -> sidewalk) | 0.75m — Derek's 2026-07-13 midpoint decision (in conversation; originally 1.5m, briefly 0m the same day): a logical setback that puts the dogs' walk line at 4.75m from the road centerline, within the City Kit road tiles' paved band ([#121](https://github.com/derekwinters/lucas-doggiehood/issues/121)/[#122](https://github.com/derekwinters/lucas-doggiehood/issues/122)); no visual grass strip in the kit-art path — see [Sidewalks & Walk Network](sidewalks.md) |
 | Sidewalk width | 2m |
 | Crosswalk width | 3m |
 | Cul-de-sac bulb radius | 9m |

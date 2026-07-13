@@ -5,8 +5,10 @@ namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
     /// #106: a Road is a finite straight road segment. Every road declares
-    /// a sidewalk (with grass verge) on both sides, built purely from the
-    /// locked #105 WorldDimensions constants.
+    /// a sidewalk on both sides, built purely from the locked #105
+    /// WorldDimensions constants. (The grass verge between road and
+    /// sidewalk is 0m since Derek's 2026-07-13 decision — sidewalks abut
+    /// the road directly, aligning with the City Kit tiles, #121/#122.)
     /// </summary>
     public class RoadTests
     {
@@ -58,7 +60,7 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Sidewalk_PointsSitOutsideTheRoadAndItsVerge_OnTheCorrectAxis()
+        public void Sidewalk_PointsSitOutsideTheRoad_OnTheCorrectAxis()
         {
             // North-south road: sidewalk offset is on X; a point at the
             // sidewalk's along-axis coordinate 0 sits at (offset, 0).
@@ -70,7 +72,7 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(point.X, Is.EqualTo(positive.CenterOffset).Within(0.0001f));
             Assert.That(point.Z, Is.EqualTo(10f).Within(0.0001f));
             Assert.That(point.X, Is.GreaterThan(road.Width / 2f + WorldDimensions.GrassVergeWidth),
-                "sidewalk centerline must sit beyond the road edge and its verge");
+                "sidewalk centerline must sit beyond the road edge and verge setback (0.75m since the 2026-07-13 midpoint decision)");
         }
     }
 }

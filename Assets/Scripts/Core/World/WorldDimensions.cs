@@ -27,8 +27,23 @@ namespace Doggiehood.Core.World
         /// </summary>
         public const float RoadWidth = 6f;
 
-        /// <summary>Grass verge between the road edge and the sidewalk.</summary>
-        public const float GrassVergeWidth = 1.5f;
+        /// <summary>
+        /// Setback between the road edge and the sidewalk. 0.75m since
+        /// Derek's midpoint request (2026-07-13, in conversation, Editor
+        /// review): at 0m (his earlier same-day decision, superseding the
+        /// original #106 1.5m verge) the dogs' walk line sat at 4m —
+        /// "a little too close to the road"; at 1.5m it sat at 5.5m. The
+        /// midpoint puts the sidewalk centerline at
+        /// RoadWidth/2 + 0.75 + SidewalkWidth/2 = 4.75m — still within the
+        /// City Kit road tiles' modeled raised curb+sidewalk band (3-5m
+        /// from the centerline at tile scale 10), near its outer edge
+        /// (#121/#122). Note this is now a LOGICAL setback for dog
+        /// placement: the kit tiles cover 3-5m with pavement, so no visual
+        /// grass strip appears in the kit path — Derek's "no grass verge"
+        /// decision was about visuals and stands. Only WorldBuilder's
+        /// primitive fallback renders it as an actual grass strip.
+        /// </summary>
+        public const float GrassVergeWidth = 0.75f;
 
         /// <summary>Sidewalk width.</summary>
         public const float SidewalkWidth = 2f;

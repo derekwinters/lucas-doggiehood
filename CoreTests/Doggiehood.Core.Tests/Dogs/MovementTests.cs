@@ -130,11 +130,11 @@ namespace Doggiehood.Core.Tests.Dogs
         // The following tests drive a fully controlled two-hop scenario on
         // the real starting network: a WanderBehavior placed at the far,
         // driveway-free tip of the EW road's north sidewalk east arm
-        // (26, 5.5) always takes its only exit — the NE box corner
-        // (5.5, 5.5) — on the first hop (nothing to weigh, only one
+        // (26, 4) always takes its only exit — the NE box corner
+        // (4, 4) — on the first hop (nothing to weigh, only one
         // candidate). Arriving there heading west (-1, 0), the corner has
         // exactly one "continue straight" edge (the north crosswalk, to
-        // (-5.5, 5.5) — crossing the NS road continues the EW road's
+        // (-4, 4) — crossing the NS road continues the EW road's
         // line) and three "deviate" edges (back the way it came, up the
         // NS road's sidewalk, and across the east crosswalk). That makes
         // the second hop a clean, known-shape test of the weighted
@@ -150,8 +150,8 @@ namespace Doggiehood.Core.Tests.Dogs
             return new GridPoint(NeighborhoodLayout.StreetHalfLength, Offset(0f, 1f).Z);
         }
 
-        private static readonly GridPoint Corner = Offset(1f, 1f); // NE box corner: (5.5, 5.5)
-        private static readonly GridPoint ContinueTarget = Offset(-1f, 1f); // north crosswalk destination: (-5.5, 5.5)
+        private static readonly GridPoint Corner = Offset(1f, 1f); // NE box corner: (4, 4)
+        private static readonly GridPoint ContinueTarget = Offset(-1f, 1f); // north crosswalk destination: (-4, 4)
 
         [Test]
         public void NextTarget_ContinueWeightOnly_AlwaysTakesTheStraightEdge()

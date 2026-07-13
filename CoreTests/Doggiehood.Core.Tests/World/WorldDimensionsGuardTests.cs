@@ -40,6 +40,11 @@ namespace Doggiehood.Core.Tests.World
     /// </summary>
     public class WorldDimensionsGuardTests
     {
+        // GrassVergeWidth is back in the locked list: it was intentionally
+        // absent while Derek's first 2026-07-13 decision put it at 0m (a
+        // locked 0 would false-positive every ordinary `float x = 0f`
+        // initializer), but his same-day midpoint follow-up made it 0.75m
+        // — a real dimension again, so the duplicate-literal guard applies.
         private static readonly float[] LockedValues =
         {
             WorldDimensions.TileSize,

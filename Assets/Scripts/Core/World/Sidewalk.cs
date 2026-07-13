@@ -8,9 +8,13 @@ namespace Doggiehood.Core.World
     }
 
     /// <summary>
-    /// One side's sidewalk for a <see cref="Road"/> (#106): a grass verge
-    /// then the sidewalk strip, offset from the road centerline using only
-    /// the locked #105 <see cref="WorldDimensions"/> constants.
+    /// One side's sidewalk for a <see cref="Road"/> (#106): the sidewalk
+    /// strip offset from the road centerline using only the locked #105
+    /// <see cref="WorldDimensions"/> constants. The grass verge between
+    /// road and sidewalk is 0m (Derek's 2026-07-13 decision — sidewalks
+    /// abut the road directly, #121/#122); <see cref="VergeWidth"/> stays
+    /// in the formula so the geometry keeps deriving from
+    /// <see cref="WorldDimensions"/> alone.
     /// </summary>
     public sealed class Sidewalk
     {
