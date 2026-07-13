@@ -5,15 +5,24 @@ using UnityEngine;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// Scene-side dog (#8, #9, #10): graybox body/head primitives in the
-    /// breed coat color, a speech bubble bound to HasActiveQuest, wander
-    /// movement driven by Core's WanderBehavior/MovementProfile, and pose
-    /// application per DogState (#66). Tapping forwards to the conversation
-    /// presenter (#11) — Core decides whether anything opens.
+    /// Scene-side dog (#8, #9, #10): body rendered as the shared Kenney
+    /// Cube Pets placeholder model when importable (#119), falling back to
+    /// graybox capsule+sphere primitives otherwise — both tinted to the
+    /// breed coat color. Also owns the speech bubble bound to
+    /// HasActiveQuest, wander movement driven by Core's
+    /// WanderBehavior/MovementProfile, and pose application per DogState
+    /// (#66). Tapping forwards to the conversation presenter (#11) — Core
+    /// decides whether anything opens.
     /// </summary>
     public sealed class DogView : MonoBehaviour, IInteractable
     {
         public const string BubbleName = "SpeechBubble";
+
+        /// <summary>Resources-relative path to the shared Kenney Cube Pets
+        /// placeholder model (#119) — a single low-poly model used for every
+        /// roster dog until breed-distinct modeling (#35) lands. Lives under
+        /// Assets/Art/Dogs/CubePets/Resources/ so Resources.Load can find it.</summary>
+        private const string CubePetsModelResourcePath = "Dogs/CubePets/animal-dog";
 
         public Dog Dog { get; private set; }
 
@@ -34,20 +43,35 @@ namespace Doggiehood.Unity
             var scale = dog.IsPuppy ? 0.55f : 1f;
             var coat = BreedCoats.ForDog(dog);
 
-            body = GameObject.CreatePrimitive(PrimitiveType.Capsule).transform;
-            body.name = "Body";
-            body.SetParent(transform);
-            body.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            body.localScale = new Vector3(0.5f * scale, 0.7f * scale, 0.6f * scale);
-            body.localPosition = new Vector3(0f, 0.5f * scale, 0f);
-            Paint(body.gameObject, coat);
+            var cubePetsModel = Resources.Load<GameObject>(CubePetsModelResourcePath);
+            if (cubePetsModel != null)
+            {
+                // #119: shared Cube Pets placeholder — a single imported
+                // model stands in for body+head together, so there is no
+                // separate Head sibling in this path.
+                body = Object.Instantiate(cubePetsModel, transform).transform;
+                body.name = "Body";
+                body.localScale = Vector3.one * scale;
+                body.localPosition = Vector3.zero;
+                PaintModel(body.gameObject, coat);
+            }
+            else
+            {
+                body = GameObject.CreatePrimitive(PrimitiveType.Capsule).transform;
+                body.name = "Body";
+                body.SetParent(transform);
+                body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                body.localScale = new Vector3(0.5f * scale, 0.7f * scale, 0.6f * scale);
+                body.localPosition = new Vector3(0f, 0.5f * scale, 0f);
+                Paint(body.gameObject, coat);
 
-            var head = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
-            head.name = "Head";
-            head.SetParent(transform);
-            head.localScale = Vector3.one * 0.45f * scale;
-            head.localPosition = new Vector3(0f, 0.75f * scale, 0.6f * scale);
-            Paint(head.gameObject, coat);
+                var head = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
+                head.name = "Head";
+                head.SetParent(transform);
+                head.localScale = Vector3.one * 0.45f * scale;
+                head.localPosition = new Vector3(0f, 0.75f * scale, 0.6f * scale);
+                Paint(head.gameObject, coat);
+            }
 
             bubble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bubble.name = BubbleName;
@@ -156,6 +180,22 @@ namespace Doggiehood.Unity
             var material = new Material(Shader.Find("Standard"));
             material.color = color;
             target.GetComponent<Renderer>().sharedMaterial = material;
+        }
+
+        /// <summary>Tints every renderer on an imported model (#119) by
+        /// cloning its existing material and overwriting .color, so the
+        /// model's colormap texture (base color white) is preserved and
+        /// multiplies cleanly with the breed coat tint.</summary>
+        private static void PaintModel(GameObject root, Color color)
+        {
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.color = color;
+                renderer.sharedMaterial = material;
+            }
         }
     }
 }

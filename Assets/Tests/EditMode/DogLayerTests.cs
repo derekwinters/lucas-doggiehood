@@ -139,6 +139,39 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void CubePetsAssetPresent_BodyUsesImportedModelInsteadOfPrimitives()
+        {
+            // #119: the shared Kenney Cube Pets placeholder (CC0) replaces
+            // the graybox capsule+sphere rig for every roster dog once the
+            // model is importable via Resources.Load. This is a pure
+            // Unity-layer visual swap — Core's Breed data model is
+            // untouched, and every breed still renders the same shared
+            // model until breed-distinct modeling (#35) lands.
+            var dog = new Dog("Modely", Breed.Beagle, Personality.Brave, 1, false);
+            var go = new GameObject("model-dog");
+            go.transform.SetParent(worldRoot.transform);
+            var view = go.AddComponent<DogView>();
+            view.Init(dog, null);
+
+            var body = go.transform.Find("Body");
+            Assert.That(body, Is.Not.Null, "DogView must still expose a child named 'Body'");
+
+            var head = go.transform.Find("Head");
+            Assert.That(head, Is.Null,
+                "Cube Pets model already includes a head; no separate Head sibling should be created");
+
+            var meshFilter = body.GetComponentInChildren<MeshFilter>();
+            Assert.That(meshFilter, Is.Not.Null,
+                "Body should be (or contain) the imported Cube Pets mesh, not a primitive capsule");
+            Assert.That(meshFilter.sharedMesh, Is.Not.Null);
+
+            var renderer = body.GetComponentInChildren<MeshRenderer>();
+            Assert.That(renderer, Is.Not.Null);
+            Assert.That(renderer.sharedMaterial.color, Is.EqualTo(BreedCoats.ForDog(dog)),
+                "the imported model's material should be tinted with the dog's breed coat color");
+        }
+
+        [Test]
         public void OnlyDogsAndHouses_AreInteractable()
         {
             // #37: no other interactable character exists in the world.
