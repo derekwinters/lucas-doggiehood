@@ -51,18 +51,22 @@ namespace Doggiehood.Unity
         private const string RoadCrossingResource = "road-crossing";
 
         /// <summary>Target maximum horizontal footprint for a scaled house
-        /// model, close to the graybox's 4x4 walls plus a little trim.</summary>
-        private const float HouseTargetFootprint = 4.2f;
+        /// model. 8m (up from the original 4.2m graybox-sized target,
+        /// which Derek's Editor check showed reading far too small against
+        /// the kit roads): lots sit at +-14 and the sidewalk's outer edge
+        /// is at 5m (0m verge), so an 8m-wide house spans 10-18 on its
+        /// lot, leaving a sensible front yard.</summary>
+        private const float HouseTargetFootprint = 8f;
 
         /// <summary>
-        /// Yaw correction applied after pointing a house model at the
-        /// intersection. The City Kit Suburban models face either local +Z
-        /// or -Z — unverifiable without rendering, so this assumes +Z
-        /// (door toward the model's LookRotation forward). If the Editor
-        /// shows the houses' backs toward the intersection, flip this
-        /// single constant to 180.
+        /// Yaw correction applied after pointing a house model at its
+        /// street-front facing. 180: Derek's Editor screenshot showed the
+        /// doors pointing opposite the look direction at 0, so the City
+        /// Kit Suburban models face local -Z. Kept a single public
+        /// constant (read by WorldKitArtTests) so one flip fixes all four
+        /// houses if it's ever still wrong.
         /// </summary>
-        private const float HouseModelYawOffsetDegrees = 0f;
+        public const float HouseModelYawOffsetDegrees = 180f;
 
         /// <summary>
         /// House id -> City Kit Suburban model (#122), with each model's
@@ -366,10 +370,13 @@ namespace Doggiehood.Unity
             var view = houseRoot.AddComponent<HouseView>();
             view.Init(house.Id);
 
-            // Window anchor on the wall facing the intersection (#9). The
+            // Window anchor on the intersection-facing side (#9). The
             // anchor's local pose is identical in both art paths — dogs'
-            // window-watching depends on it; fine-tuning it to each kit
-            // model's actual wall is a follow-up.
+            // window-watching depends on it — and it intentionally keeps
+            // this diagonal facing even though the kit model itself now
+            // faces its driveway's road squarely (HouseFrontFacing);
+            // fine-tuning the anchor to each kit model's actual wall is a
+            // follow-up.
             var anchor = new GameObject("WindowAnchor").transform;
             anchor.SetParent(houseRoot.transform);
             var facing = new Vector3(-Mathf.Sign(lot.Position.X), 0f, -Mathf.Sign(lot.Position.Z)).normalized;
@@ -382,7 +389,7 @@ namespace Doggiehood.Unity
                 : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
             if (model != null)
             {
-                BuildHouseModel(houseRoot, house.Id, model, facing);
+                BuildHouseModel(houseRoot, house.Id, model, HouseFrontFacing(lot));
                 return;
             }
 
@@ -403,11 +410,46 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
+        /// The direction a house model's front should face (Derek's Editor
+        /// feedback on the first kit pass: diagonal toward-origin yaws
+        /// looked scattered): squarely toward the road the lot's driveway
+        /// connects to. The WalkNetwork's DrivewayStub edge for the lot IS
+        /// that association — its far endpoint is the sidewalk attach
+        /// point, and for this map's axis-aligned roads the stub runs
+        /// exactly cardinal (the lot projects perpendicularly onto the
+        /// sidewalk); snapping to the dominant axis is just defensive. If
+        /// a lot ever had no stub, fall back to squarely facing the
+        /// east-west road (north-side houses face south and vice versa —
+        /// the classic street-front look).
+        /// </summary>
+        private static Vector3 HouseFrontFacing(HouseLot lot)
+        {
+            foreach (var edge in NeighborhoodLayout.WalkNetwork.Edges)
+            {
+                if (edge.Kind != WalkEdgeKind.DrivewayStub
+                    || (!edge.A.Equals(lot.Position) && !edge.B.Equals(lot.Position)))
+                {
+                    continue;
+                }
+
+                var attach = edge.Other(lot.Position);
+                var dx = attach.X - lot.Position.X;
+                var dz = attach.Z - lot.Position.Z;
+                return Mathf.Abs(dx) >= Mathf.Abs(dz)
+                    ? new Vector3(Mathf.Sign(dx), 0f, 0f)
+                    : new Vector3(0f, 0f, Mathf.Sign(dz));
+            }
+
+            return new Vector3(0f, 0f, -Mathf.Sign(lot.Position.Z));
+        }
+
+        /// <summary>
         /// The house as its mapped City Kit Suburban model (#122): placed
         /// directly on the lot (the models have ground-level pivots),
         /// uniformly scaled so the model's max horizontal footprint lands
-        /// on HouseTargetFootprint, and yawed to face the intersection —
-        /// the same facing the graybox porch used. The imported FBX carries
+        /// on HouseTargetFootprint, and yawed squarely toward the road its
+        /// driveway connects to (see HouseFrontFacing) plus the art-side
+        /// HouseModelYawOffsetDegrees correction. The imported FBX carries
         /// no collider, so a BoxCollider fitted to the combined renderer
         /// bounds goes on the HouseView object to keep tap interaction
         /// (TapRouter raycasts, then GetComponentInParent) working. None of

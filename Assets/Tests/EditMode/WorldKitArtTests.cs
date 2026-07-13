@@ -246,6 +246,79 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void HouseModels_ScaleToAnEightMeterFootprint()
+        {
+            // Derek's Editor feedback on the first kit-house pass: at the
+            // old 4.2m target the models read far too small against the
+            // kit roads. New target is 8m: lots sit at +-14 and the
+            // sidewalk's outer edge is now at 5m (0m verge), so an 8m-wide
+            // house spans 10-18 on its lot — a sensible front yard.
+            foreach (var view in root.GetComponentsInChildren<HouseView>())
+            {
+                var model = view.transform.Find("Model");
+                Assert.That(model, Is.Not.Null, $"house {view.HouseId} has no kit model child");
+
+                var renderers = model.GetComponentsInChildren<Renderer>();
+                Assert.That(renderers, Is.Not.Empty, $"house {view.HouseId} model renders nothing");
+
+                var bounds = renderers[0].bounds;
+                foreach (var renderer in renderers)
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+
+                // Rotation is cardinal (see the facing test), so the AABB's
+                // max horizontal extent is the model's true footprint.
+                var footprint = Mathf.Max(bounds.size.x, bounds.size.z);
+                Assert.That(footprint, Is.EqualTo(8f).Within(0.25f),
+                    $"house {view.HouseId} footprint should land on the 8m target");
+            }
+        }
+
+        [Test]
+        public void HouseModels_FaceTheirDrivewayRoad_SquarelyAtACardinalYaw()
+        {
+            // Derek's Editor feedback on the first kit-house pass: houses
+            // yawed diagonally toward the world origin looked scattered,
+            // and the assumed model-forward was wrong (the SW house's door
+            // faced away from the neighborhood). Each house must now face
+            // SQUARELY toward the road its driveway connects to — the
+            // WalkNetwork's DrivewayStub edge for the lot is that
+            // association, and its far endpoint is the sidewalk attach
+            // point. HouseModelYawOffsetDegrees (180, per the screenshot
+            // evidence that doors pointed opposite the look direction at 0)
+            // is the single art-side correction on top of that logical
+            // facing — one flip fixes all four houses if it's still wrong.
+            foreach (var view in root.GetComponentsInChildren<HouseView>())
+            {
+                var lot = NeighborhoodLayout.GetHouseLot(view.HouseId);
+                var model = view.transform.Find("Model");
+                Assert.That(model, Is.Not.Null, $"house {view.HouseId} has no kit model child");
+
+                // Undo the art-side yaw correction to recover the logical
+                // look direction the builder aimed at.
+                var look = model.localRotation
+                    * Quaternion.Euler(0f, -WorldBuilder.HouseModelYawOffsetDegrees, 0f)
+                    * Vector3.forward;
+
+                // Square to the street grid: exactly one horizontal axis.
+                Assert.That(Mathf.Abs(look.x) < 0.001f || Mathf.Abs(look.z) < 0.001f, Is.True,
+                    $"house {view.HouseId} look direction {look} is not cardinal");
+                Assert.That(Mathf.Abs(look.y), Is.LessThan(0.001f),
+                    $"house {view.HouseId} look direction {look} is not horizontal");
+
+                var stub = NeighborhoodLayout.WalkNetwork.Edges.Single(e =>
+                    e.Kind == WalkEdgeKind.DrivewayStub
+                    && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
+                var attach = stub.Other(lot.Position);
+                var toAttach = new Vector3(attach.X - lot.Position.X, 0f, attach.Z - lot.Position.Z).normalized;
+
+                Assert.That(Vector3.Dot(look, toAttach), Is.GreaterThan(0.99f),
+                    $"house {view.HouseId} must face its driveway attach point {attach} (look {look})");
+            }
+        }
+
+        [Test]
         public void Houses_KeepATapCollider_CoveringTheCameraRigTapPoint()
         {
             // #122: the imported FBX carries no collider, so HouseView's
