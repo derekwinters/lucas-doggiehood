@@ -27,7 +27,7 @@ unaffected.
 ## City Kit Roads (Kenney)
 
 - **Files:** `Assets/Art/Roads/CityKitRoads/Resources/road-straight.fbx`,
-  `Assets/Art/Roads/CityKitRoads/Resources/road-crossroad.fbx`,
+  `Assets/Art/Roads/CityKitRoads/Resources/road-crossroad-path.fbx`,
   `Assets/Art/Roads/CityKitRoads/Resources/road-crossing.fbx`,
   `Assets/Art/Roads/CityKitRoads/Resources/colormap.png`
 - **Asset:** City Kit Roads (2.0)

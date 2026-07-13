@@ -47,7 +47,13 @@ namespace Doggiehood.Unity
         /// keys are relative to the Resources folder, so they are the bare
         /// file names (see 505278e).</summary>
         private const string RoadStraightResource = "road-straight";
-        private const string RoadCrossroadResource = "road-crossroad";
+        // road-crossroad-path is the crosswalk-striped 4-way variant —
+        // Derek's 2026-07-13 Editor review asked for painted crosswalks at
+        // the intersection. Same 1x1 ground-pivot tile as the plain
+        // road-crossroad it replaced, with zebra-stripe geometry across all
+        // four arms at ~3-5m from center (tile scale 10) — right on the
+        // WalkNetwork's crosswalk edges.
+        private const string RoadCrossroadResource = "road-crossroad-path";
         private const string RoadCrossingResource = "road-crossing";
 
         /// <summary>Target maximum horizontal footprint for a scaled house

@@ -50,7 +50,10 @@ namespace Doggiehood.Unity.EditModeTests
             // tests here must not silently pass through the primitive
             // fallback. Load keys are relative to each Resources folder
             // (the exact mistake fixed in 505278e), so they are bare names.
-            foreach (var key in new[] { "road-straight", "road-crossroad", "road-crossing" })
+            // road-crossroad-path is the crosswalk-striped 4-way variant
+            // (Derek's 2026-07-13 Editor review: the intersection should
+            // have painted crosswalks; the plain road-crossroad is gone).
+            foreach (var key in new[] { "road-straight", "road-crossroad-path", "road-crossing" })
             {
                 Assert.That(Resources.Load<GameObject>(key), Is.Not.Null,
                     $"City Kit Roads tile '{key}' must be loadable from Resources");
