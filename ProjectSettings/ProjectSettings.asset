@@ -19,6 +19,8 @@ PlayerSettings:
   AndroidMinSdkVersion: 23
   AndroidTargetSdkVersion: 0
   AndroidTargetArchitectures: 2
+  androidSplashScreen: {fileID: 2800000, guid: de77c4a46f2441dfa4bdebeccd7eaa25, type: 3}
+  AndroidSplashScreenScale: 2
   m_BuildTargetIcons:
   - m_BuildTarget: 
     m_Icons:

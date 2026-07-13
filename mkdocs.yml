@@ -78,3 +78,4 @@ nav:
       - Versioning & Releases: engineering/versioning.md
       - CI/CD: engineering/ci-cd.md
       - Development Agent & Workflow: engineering/agent-workflow.md
+      - Hand-Authoring Unity Serialized Assets: engineering/unity-serialization.md
