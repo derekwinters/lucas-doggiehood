@@ -1375,7 +1375,7 @@
 <h1 id="sidewalks-walk-network">Sidewalks &amp; Walk Network<a class="headerlink" href="#sidewalks-walk-network" title="Permanent link">&para;</a></h1>
 <p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (locked world dimensions this page consumes), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid, out of scope here), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a> (deferred approach-to-rest movement, out of scope here)</em></p>
 <h2 id="symmetric-sidewalk-placement">Symmetric sidewalk placement<a class="headerlink" href="#symmetric-sidewalk-placement" title="Permanent link">&para;</a></h2>
-<p>Every road gets a grass verge and a sidewalk on <strong>both</strong> sides — not just one edge. Moving outward from the road centerline: road → grass verge → sidewalk, mirrored on the other side. All three widths are the locked <a href="../tile-catalog/#standard-dimensions">standard dimensions</a> (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) — nothing on this page introduces a new measurement:</p>
+<p>Every road gets a sidewalk on <strong>both</strong> sides — not just one edge. Moving outward from the road centerline: road → verge setback → sidewalk, mirrored on the other side, with grass outside the sidewalk. The widths are the locked <a href="../tile-catalog/#standard-dimensions">standard dimensions</a> (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) — nothing on this page introduces a new measurement:</p>
 <table>
 <thead>
 <tr>
@@ -1390,7 +1390,7 @@
 </tr>
 <tr>
 <td>Grass verge (road edge → sidewalk)</td>
-<td>1.5m</td>
+<td>0.75m — a logical setback, see below</td>
 </tr>
 <tr>
 <td>Sidewalk width</td>
@@ -1398,11 +1398,15 @@
 </tr>
 </tbody>
 </table>
-<p>A sidewalk's centerline sits <code>RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 2</code> from the road's own centerline — <code>5.5m</code> for the starting intersection's two roads. <code>Road</code> and <code>Sidewalk</code> (Core, <code>Assets/Scripts/Core/World/</code>) express this purely as that formula over <code>WorldDimensions</code>; a guard test (<code>WorldDimensionsGuardTests</code>) fails the build if any of the locked values is ever re-declared as a literal outside <code>WorldDimensions.cs</code>.</p>
+<blockquote>
+<p><strong>Decision (2026-07-13, Derek, in conversation):</strong> the grass verge between road and sidewalk no longer exists — <code>GrassVergeWidth</code> went from <code>1.5m</code> to <code>0m</code>. This supersedes the original <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> verge. Context: aligning Core's walk geometry with the Kenney City Kit Roads art (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/121">#121</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/122">#122</a>). At tile scale 10, a kit road tile has road surface 0–3m from the centerline and a raised curb+sidewalk band spanning 3–5m; with a 0m verge, Core's sidewalk centerline lands at exactly 4m — dogs walk centered on the kit's modeled pavement, and the crosswalk edges (±4m) land inside the crossroad tile's own corner sidewalks (4–5m). The constant stays in <code>WorldDimensions</code> (and in the offset formula) so the geometry keeps deriving from one place.</p>
+<p><strong>Decision (2026-07-13, Derek, in conversation — follow-up to the above, same day):</strong> <code>GrassVergeWidth</code> is now <code>0.75m</code>. After seeing the kit world in the Editor, Derek found the dogs at 4m "a little too close to the road" and asked for the midpoint between the previous distance (5.5m at the 1.5m verge) and the current one (4m at the 0m verge) — putting the dogs' walk line at <code>4.75m</code>. This is a <strong>logical setback for dog placement</strong>, not a return of the visual grass strip: the kit tiles pave 3–5m from the centerline, so in the kit-art path nothing visually changes and the earlier "no grass verge" decision (a visual call) stands — 4.75m sits within the paved band, near its outer edge. Only <code>WorldBuilder</code>'s primitive graybox fallback renders the 0.75m verge as an actual grass strip.</p>
+</blockquote>
+<p>A sidewalk's centerline sits <code>RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 2</code> from the road's own centerline — <code>4.75m</code> for the starting intersection's two roads. <code>Road</code> and <code>Sidewalk</code> (Core, <code>Assets/Scripts/Core/World/</code>) express this purely as that formula over <code>WorldDimensions</code>; a guard test (<code>WorldDimensionsGuardTests</code>) fails the build if any of the locked values is ever re-declared as a literal outside <code>WorldDimensions.cs</code>.</p>
 <h2 id="the-crosswalk-box">The crosswalk box<a class="headerlink" href="#the-crosswalk-box" title="Permanent link">&para;</a></h2>
 <p>At the starting intersection, the two crossing roads produce four box corners (one per compass direction the roads' sidewalks meet). Each of the 4 road arms — N, S, E, W — gets one crosswalk, <code>CrosswalkWidth</code> (3m) wide, connecting the two box corners on either side of that arm and letting a pedestrian cross straight over that road instead of going the long way around through both corners.</p>
 <p>This is placeholder geometry: crosswalks render as a flat, distinctly colored rectangular patch (no zebra-stripe markings) — see <a href="../art-style/">Art &amp; UI Style</a> for the palette and <a href="#build-checklist">Build checklist</a> below for what's actually implemented.</p>
-<p>Visually, each crosswalk only covers the road and its two grass verges — <code>RoadWidth + 2 × GrassVergeWidth</code> (9m) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's <code>Crosswalk</code> edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in <code>WorldBuilder</code>, not a change to the graph.</p>
+<p>Visually, each crosswalk only covers the road and verge band — <code>RoadWidth + 2 × GrassVergeWidth</code> (7.5m at the 0.75m verge) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's <code>Crosswalk</code> edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in <code>WorldBuilder</code>, not a change to the graph.</p>
 <h2 id="the-walk-network-graph">The walk network graph<a class="headerlink" href="#the-walk-network-graph" title="Permanent link">&para;</a></h2>
 <p><code>WalkNetwork</code> (Core) is a generic, data-driven graph over nodes (points) and edges — sidewalk segments, crosswalks, and driveway stubs — built from whatever <code>Road</code>s and house lots are passed to <code>WalkNetwork.BuildFrom</code>. It is <strong>not</strong> a <code>TileType</code> enum or a multi-tile adjacency grid — that system is explicitly deferred to <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (<code>06 - Neighborhood Expansion</code>, post-MVP). Today it happens to describe exactly the starting tile's one intersection, because that's all <code>NeighborhoodLayout</code> produces; the same algorithm would extend to more roads without changes.</p>
 <p>Construction, generically:</p>
@@ -1426,14 +1430,14 @@
 </ul>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
-<li>[x] Every road declares a grass verge and sidewalk on both sides, sized from <code>WorldDimensions</code> only</li>
+<li>[x] Every road declares a sidewalk on both sides, set back 0.75m from the road edge (2026-07-13 midpoint decision — a logical setback for dog placement, no visual grass strip in the kit-art path), sized from <code>WorldDimensions</code> only</li>
 <li>[x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm</li>
 <li>[x] The walk network graph (sidewalks + crosswalks + driveway stubs) is generated from <code>NeighborhoodLayout</code>'s roads and house lots, and is fully connected</li>
 <li>[x] <code>WanderBehavior</code> only ever produces positions on the sidewalk/crosswalk network — never a road surface, never a driveway stub</li>
 <li>[x] <code>WanderBehavior</code>'s node choice supports weighted continue-vs-deviate decisions, defaulting to a per-personality split derived from <code>MovementProfile.TurnProbability</code> (#89)</li>
 <li>[x] Walking home paths over the sidewalk/crosswalk/driveway-stub network to the destination lot</li>
-<li>[x] <code>WorldBuilder</code> renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces; spawned dogs stand on sidewalks</li>
-<li>[x] Crosswalks render only over the road and its verges, never over sidewalk pavement</li>
+<li>[x] <code>WorldBuilder</code> renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces in the primitive fallback (the kit tiles bring their own art); spawned dogs stand on sidewalks</li>
+<li>[x] Crosswalks render only over the road itself, never over sidewalk pavement</li>
 <li>[ ] On-device visual check (human task, not attempted here)</li>
 </ul>
 
