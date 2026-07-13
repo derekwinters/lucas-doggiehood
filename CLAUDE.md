@@ -26,6 +26,7 @@ Anything an agent cannot complete autonomously — repo settings, secrets, asset
 2. **Core/Unity split.** New game logic defaults to a Unity-independent Core C# assembly (plain NUnit, no engine dependency). Only the thin `MonoBehaviour`/scene-wiring layer touches UnityEngine. See `docs/engineering/tech-stack.md`.
 3. **Conventional Commits — every commit, every PR title, no exceptions.** Every commit message *and* every pull request title follows [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, etc.), going forward from this point on. This isn't optional or best-effort — release-please's versioning depends on it, and a non-conforming commit or PR title should be corrected (amended/retitled) before merging, not left as-is. See `docs/engineering/versioning.md`.
 4. **Version lives in `/VERSION`.** Don't hand-edit Unity's `ProjectSettings.asset` version fields; release-please owns `/VERSION`.
+5. **Never guess Unity serialization.** Before hand-authoring `.meta` files or `ProjectSettings.asset` blocks, read `docs/engineering/unity-serialization.md` — verify key names and enum values against real project files (Unity silently ignores unknown entries at build time), pin GUIDs (and Sprite internal IDs) for anything referenced by GUID, and guard the wiring with serialization-level EditMode tests.
 
 ## What not to do
 
