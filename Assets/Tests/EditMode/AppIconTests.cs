@@ -12,28 +12,41 @@ namespace Doggiehood.Unity.EditModeTests
     public class AppIconTests
     {
         private const string IconAssetPath = "Assets/Art/Icon/app-icon.png";
+        private const string IconGuid = "98dccd106d954b90b1d9c604ed43c329";
+        private const string ProjectSettingsPath = "ProjectSettings/ProjectSettings.asset";
+
+        // Deliberately NOT asserted via PlayerSettings.GetIconsForTargetGroup's
+        // texture references: PlayerSettings deserializes at editor startup,
+        // and on a fresh Library rebuild (CI) the icon texture — referenced by
+        // nothing else — is imported lazily afterwards, so the in-memory
+        // reference resolves null for that whole session even though the
+        // serialized wiring is correct. Asserting at the serialization level
+        // is order-independent and guards the same contract.
 
         [Test]
-        public void DefaultIcon_IsConfigured_SoTheUnityLogoNeverShips()
+        public void IconTexture_ExistsAtItsPinnedPathAndGuid()
         {
-            // Nothing in any scene references the icon texture, so on a
-            // fresh Library rebuild (CI) it may not have been imported yet
-            // when this test runs, leaving PlayerSettings' reference
-            // transiently null. Force the import first — this also pins
-            // that the asset actually lives at the expected path.
             AssetDatabase.ImportAsset(IconAssetPath, ImportAssetOptions.ForceSynchronousImport);
             var iconTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(IconAssetPath);
             Assert.That(iconTexture, Is.Not.Null,
                 $"the app icon texture is missing or unimportable at {IconAssetPath}");
 
-            // BuildTargetGroup.Unknown is the "default icon" slot that
-            // applies to every platform without an explicit override.
-            var icons = PlayerSettings.GetIconsForTargetGroup(BuildTargetGroup.Unknown);
+            Assert.That(AssetDatabase.AssetPathToGUID(IconAssetPath), Is.EqualTo(IconGuid),
+                "the icon's GUID changed — ProjectSettings' m_BuildTargetIcons reference would break");
+        }
 
-            Assert.That(icons, Is.Not.Null.And.Not.Empty,
-                "no default app icon is configured in PlayerSettings — the build would ship the Unity logo");
-            Assert.That(icons.Any(icon => icon == iconTexture), Is.True,
-                "the default app icon slot does not reference the Doggiehood icon texture");
+        [Test]
+        public void DefaultIcon_IsConfigured_SoTheUnityLogoNeverShips()
+        {
+            var settingsYaml = System.IO.File.ReadAllText(ProjectSettingsPath);
+
+            var iconsBlock = System.Text.RegularExpressions.Regex.Match(
+                settingsYaml,
+                @"m_BuildTargetIcons:\s*\n(?:.*\n)*?(?=  \w|\w)");
+            Assert.That(iconsBlock.Success, Is.True,
+                "no m_BuildTargetIcons block in ProjectSettings — the build would ship the Unity logo");
+            Assert.That(iconsBlock.Value, Does.Contain(IconGuid),
+                "the default app icon slot does not reference the Doggiehood icon texture's GUID");
         }
     }
 }
