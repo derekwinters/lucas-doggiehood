@@ -40,7 +40,7 @@ namespace Doggiehood.Unity.EditModeTests
             AssertTextureAtPinnedPathAndGuid(assetPath, guid, "m_BuildTargetPlatformIcons");
         }
 
-        private static void AssertTextureAtPinnedPathAndGuid(
+        internal static void AssertTextureAtPinnedPathAndGuid(
             string assetPath, string guid, string referencingSettingsKey)
         {
             AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
