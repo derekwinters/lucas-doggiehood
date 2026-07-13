@@ -13,6 +13,10 @@ namespace Doggiehood.Unity.EditModeTests
     {
         private const string IconAssetPath = "Assets/Art/Icon/app-icon.png";
         private const string IconGuid = "98dccd106d954b90b1d9c604ed43c329";
+        private const string AdaptiveBackgroundAssetPath = "Assets/Art/Icon/app-icon-background.png";
+        private const string AdaptiveBackgroundGuid = "95336c4f55af42bc934e304cddd1d017";
+        private const string AdaptiveForegroundAssetPath = "Assets/Art/Icon/app-icon-foreground.png";
+        private const string AdaptiveForegroundGuid = "edb4eaefd10543289c324d86831fb595";
         private const string ProjectSettingsPath = "ProjectSettings/ProjectSettings.asset";
 
         // Deliberately NOT asserted via PlayerSettings.GetIconsForTargetGroup's
@@ -26,13 +30,26 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void IconTexture_ExistsAtItsPinnedPathAndGuid()
         {
-            AssetDatabase.ImportAsset(IconAssetPath, ImportAssetOptions.ForceSynchronousImport);
-            var iconTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(IconAssetPath);
-            Assert.That(iconTexture, Is.Not.Null,
-                $"the app icon texture is missing or unimportable at {IconAssetPath}");
+            AssertTextureAtPinnedPathAndGuid(IconAssetPath, IconGuid, "m_BuildTargetIcons");
+        }
 
-            Assert.That(AssetDatabase.AssetPathToGUID(IconAssetPath), Is.EqualTo(IconGuid),
-                "the icon's GUID changed — ProjectSettings' m_BuildTargetIcons reference would break");
+        [TestCase(AdaptiveBackgroundAssetPath, AdaptiveBackgroundGuid)]
+        [TestCase(AdaptiveForegroundAssetPath, AdaptiveForegroundGuid)]
+        public void AdaptiveIconLayer_ExistsAtItsPinnedPathAndGuid(string assetPath, string guid)
+        {
+            AssertTextureAtPinnedPathAndGuid(assetPath, guid, "m_BuildTargetPlatformIcons");
+        }
+
+        private static void AssertTextureAtPinnedPathAndGuid(
+            string assetPath, string guid, string referencingSettingsKey)
+        {
+            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
+            var iconTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+            Assert.That(iconTexture, Is.Not.Null,
+                $"the app icon texture is missing or unimportable at {assetPath}");
+
+            Assert.That(AssetDatabase.AssetPathToGUID(assetPath), Is.EqualTo(guid),
+                $"the icon's GUID changed — ProjectSettings' {referencingSettingsKey} reference would break");
         }
 
         [Test]
@@ -47,6 +64,25 @@ namespace Doggiehood.Unity.EditModeTests
                 "no m_BuildTargetIcons block in ProjectSettings — the build would ship the Unity logo");
             Assert.That(iconsBlock.Value, Does.Contain(IconGuid),
                 "the default app icon slot does not reference the Doggiehood icon texture's GUID");
+        }
+
+        [Test]
+        public void AndroidAdaptiveIcon_IsConfigured_WithBackgroundAndForegroundLayers()
+        {
+            var settingsYaml = System.IO.File.ReadAllText(ProjectSettingsPath);
+
+            var platformIconsBlock = System.Text.RegularExpressions.Regex.Match(
+                settingsYaml,
+                @"m_BuildTargetPlatformIcons:\s*\n(?:.*\n)*?(?=  \w|\w)");
+            Assert.That(platformIconsBlock.Success, Is.True,
+                "no m_BuildTargetPlatformIcons block in ProjectSettings — Android would fall back to the square legacy icon");
+
+            Assert.That(platformIconsBlock.Value, Does.Contain("m_BuildTarget: Android"),
+                "m_BuildTargetPlatformIcons has no Android entry — the adaptive icon is not wired");
+            Assert.That(platformIconsBlock.Value, Does.Contain(AdaptiveBackgroundGuid),
+                "the Android adaptive icon does not reference the background layer texture's GUID");
+            Assert.That(platformIconsBlock.Value, Does.Contain(AdaptiveForegroundGuid),
+                "the Android adaptive icon does not reference the foreground layer texture's GUID");
         }
     }
 }

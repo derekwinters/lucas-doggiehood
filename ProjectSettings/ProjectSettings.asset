@@ -27,5 +27,15 @@ PlayerSettings:
       m_Width: 1024
       m_Height: 1024
       m_Kind: 0
+  m_BuildTargetPlatformIcons:
+  - m_BuildTarget: Android
+    m_Icons:
+    - m_Textures:
+      - {fileID: 2800000, guid: 95336c4f55af42bc934e304cddd1d017, type: 3}
+      - {fileID: 2800000, guid: edb4eaefd10543289c324d86831fb595, type: 3}
+      m_Width: 432
+      m_Height: 432
+      m_Kind: 5
+      m_SubKind: 
   scriptingBackend:
     Android: 1
