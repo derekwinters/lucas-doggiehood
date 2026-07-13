@@ -83,6 +83,12 @@ namespace Doggiehood.Unity.EditModeTests
                 "the Android adaptive icon does not reference the background layer texture's GUID");
             Assert.That(platformIconsBlock.Value, Does.Contain(AdaptiveForegroundGuid),
                 "the Android adaptive icon does not reference the foreground layer texture's GUID");
+            // Unity serializes Android icon kinds as Legacy=0, Round=1,
+            // Adaptive=2 (verified against real projects after an initial
+            // wrong guess of 5 shipped a raw square icon). Entries with an
+            // unknown kind are silently ignored at build time, so pin it.
+            Assert.That(platformIconsBlock.Value, Does.Contain("m_Kind: 2"),
+                "the Android icon entries are not marked as Adaptive (m_Kind: 2) — launchers would fall back to the square legacy icon");
         }
     }
 }
