@@ -169,6 +169,12 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(renderer, Is.Not.Null);
             Assert.That(renderer.sharedMaterial.color, Is.EqualTo(BreedCoats.ForDog(dog)),
                 "the imported model's material should be tinted with the dog's breed coat color");
+
+            // The model is authored standing upright on a ground-level pivot,
+            // so idle must not inherit the capsule rig's 90° pitch — that
+            // pitch is what tipped dogs face-down and half-underground.
+            Assert.That(Quaternion.Angle(body.localRotation, Quaternion.identity), Is.LessThan(1f),
+                "imported model should stand upright at idle (no capsule-rig pitch)");
         }
 
         [Test]

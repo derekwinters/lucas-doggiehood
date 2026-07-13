@@ -35,6 +35,7 @@ namespace Doggiehood.Unity
         private Vector3 currentTarget;
         private DogState appliedState;
         private bool hasTarget;
+        private bool usingImportedModel;
 
         public void Init(Dog dog, Transform windowAnchor)
         {
@@ -46,7 +47,8 @@ namespace Doggiehood.Unity
             var coat = BreedCoats.ForDog(dog);
 
             var cubePetsModel = Resources.Load<GameObject>(CubePetsModelResourcePath);
-            if (cubePetsModel != null)
+            usingImportedModel = cubePetsModel != null;
+            if (usingImportedModel)
             {
                 // #119: shared Cube Pets placeholder — a single imported
                 // model stands in for body+head together, so there is no
@@ -99,10 +101,17 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>Applies the pose for the dog's current state (#66); each
-        /// state produces a visually distinct transform on the graybox rig.</summary>
+        /// state produces a visually distinct rotation on the body. Rotations
+        /// are rig-specific: the graybox capsule is authored standing on end
+        /// (its idle is a 90° pitch to lay it flat), while the imported Cube
+        /// Pets model already stands on its feet with a ground-level pivot
+        /// (its idle is identity — pitching it tips it face-down and below
+        /// ground).</summary>
         public void ApplyPose(Transform windowAnchor)
         {
             appliedState = Dog.State;
+
+            var idle = usingImportedModel ? Quaternion.identity : Quaternion.Euler(90f, 0f, 0f);
 
             switch (Dog.State)
             {
@@ -113,16 +122,18 @@ namespace Doggiehood.Unity
                         transform.rotation = windowAnchor.rotation;
                     }
 
-                    body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                    body.localRotation = idle;
                     break;
                 case DogState.Rest:
                     body.localRotation = Quaternion.Euler(0f, 0f, 90f);
                     break;
                 case DogState.Sit:
-                    body.localRotation = Quaternion.Euler(45f, 0f, 0f);
+                    body.localRotation = usingImportedModel
+                        ? Quaternion.Euler(-30f, 0f, 0f)
+                        : Quaternion.Euler(45f, 0f, 0f);
                     break;
                 default:
-                    body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                    body.localRotation = idle;
                     break;
             }
         }
