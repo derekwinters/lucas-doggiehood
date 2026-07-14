@@ -70,6 +70,10 @@ namespace Doggiehood.Unity.EditModeTests
             // City Kit Suburban kit as the houses.
             Assert.That(Resources.Load<GameObject>(WorldBuilder.WalkwayPieceResource), Is.Not.Null,
                 $"City Kit Suburban piece '{WorldBuilder.WalkwayPieceResource}' must be loadable from Resources");
+
+            // #129: the lot-fence piece, from the same kit.
+            Assert.That(Resources.Load<GameObject>(WorldBuilder.FencePieceResource), Is.Not.Null,
+                $"City Kit Suburban piece '{WorldBuilder.FencePieceResource}' must be loadable from Resources");
         }
 
         [Test]
@@ -378,6 +382,70 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void LotFences_AreTiledFromKitFencePieces_AlongTheCoreRuns()
+        {
+            // #129: each fenced lot gets a "Fence - N" container whose
+            // children are instantiated City Kit Suburban fence pieces,
+            // placed exactly where Core's LotFence + FenceTiling say —
+            // ground pivots at y=0, yawed down each run, length compressed
+            // so runs end precisely on lot corners and gate-gap edges.
+            var source = Resources.Load<GameObject>(WorldBuilder.FencePieceResource);
+            Assert.That(source, Is.Not.Null, "sanity: fence piece staged");
+            var sourceMeshes = source.GetComponentsInChildren<MeshFilter>()
+                .Select(f => f.sharedMesh)
+                .Where(m => m != null)
+                .ToList();
+            Assert.That(sourceMeshes, Is.Not.Empty, "sanity: fence piece has meshes");
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var expected = LotFence.RunsFor(lot)
+                    .SelectMany(run => FenceTiling.PiecesAlong(run))
+                    .ToList();
+                Assert.That(expected, Is.Not.Empty, $"sanity: lot {lot.HouseId} has fence pieces");
+
+                var container = root.transform.Find(WorldBuilder.FenceNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null, $"missing fence container for lot {lot.HouseId}");
+
+                var pieces = container.Cast<Transform>().ToList();
+                Assert.That(pieces.Count, Is.EqualTo(expected.Count),
+                    $"lot {lot.HouseId} fence piece count");
+
+                for (var i = 0; i < pieces.Count; i++)
+                {
+                    var piece = pieces[i];
+                    Assert.That(piece.position.x, Is.EqualTo(expected[i].Position.X).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} X");
+                    Assert.That(piece.position.z, Is.EqualTo(expected[i].Position.Z).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} Z");
+                    Assert.That(piece.position.y, Is.EqualTo(0f).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} must sit on the ground");
+
+                    Assert.That(Quaternion.Angle(piece.rotation,
+                            Quaternion.Euler(0f, expected[i].YawDegrees, 0f)),
+                        Is.LessThan(0.1f), $"lot {lot.HouseId} fence piece {i} yaw");
+
+                    // Length (local X) compressed per Core; height and
+                    // thickness at the uniform fence scale.
+                    Assert.That(piece.localScale.x, Is.EqualTo(expected[i].LengthScale).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} length scale");
+                    Assert.That(piece.localScale.y, Is.EqualTo(FenceTiling.Scale).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} height scale");
+                    Assert.That(piece.localScale.z, Is.EqualTo(FenceTiling.Scale).Within(0.001f),
+                        $"lot {lot.HouseId} fence piece {i} thickness scale");
+
+                    var pieceMeshes = piece.GetComponentsInChildren<MeshFilter>()
+                        .Select(f => f.sharedMesh)
+                        .Where(m => m != null)
+                        .ToList();
+                    Assert.That(pieceMeshes, Is.Not.Empty, $"lot {lot.HouseId} fence piece {i} renders no mesh");
+                    Assert.That(pieceMeshes, Is.SubsetOf(sourceMeshes),
+                        $"lot {lot.HouseId} fence piece {i} must render the kit fence piece");
+                }
+            }
+        }
+
+        [Test]
         public void Houses_KeepATapCollider_CoveringTheCameraRigTapPoint()
         {
             // #122: the imported FBX carries no collider, so HouseView's
@@ -455,6 +523,18 @@ namespace Doggiehood.Unity.EditModeTests
                     $"missing fallback walkway for house {lot.HouseId}");
                 Assert.That(container.GetComponentsInChildren<MeshRenderer>(), Is.Not.Empty,
                     $"house {lot.HouseId} fallback walkway renders nothing");
+            }
+
+            // #129: the lot fences stay too — one thin primitive rail per
+            // Core fence run instead of kit pieces.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var container = root.transform.Find(WorldBuilder.FenceNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null,
+                    $"missing fallback fence for lot {lot.HouseId}");
+                Assert.That(container.GetComponentsInChildren<MeshRenderer>().Length,
+                    Is.EqualTo(LotFence.RunsFor(lot).Count),
+                    $"lot {lot.HouseId} fallback fence should render one rail per Core run");
             }
         }
     }
