@@ -46,6 +46,17 @@ namespace Doggiehood.Unity
         public const string FencePieceResource = "fence";
 
         /// <summary>
+        /// Editor-check/test seam (#146): builds every lot's backyard
+        /// fence even though HouseLot.HasFence defaults false (fences are
+        /// hidden until a future quest purchases them, #147). To eyeball
+        /// the enclosures in the Editor, set this to true at the top of
+        /// WorldBootstrap.Awake (one temporary line:
+        /// <c>WorldBuilder.ForceFencesVisible = true;</c>), enter Play
+        /// mode, then remove the line. Never set in production code.
+        /// </summary>
+        public static bool ForceFencesVisible { get; set; }
+
+        /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
         /// tile covers 10x10 m and its 0.6-unit road band becomes 6 m —
         /// exactly WorldDimensions.RoadWidth. With GrassVergeWidth at
@@ -446,16 +457,19 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// The lot fences (#129): one "Fence - N" container per fenced lot
-        /// (a lot with HouseLot.HasFence off contributes nothing),
-        /// rendering Core's LotFence boundary runs — the lot rectangle
-        /// with a gate gap where the #128 front walkway crosses. In the
-        /// kit path it's tiled City Kit Suburban fence pieces at the exact
+        /// The backyard fences (#129, reshaped by #146): one "Fence - N"
+        /// container per fenced lot, rendering Core's LotFence runs —
+        /// anchored at the house's side-wall midpoints and wrapping the
+        /// back yard only, no gate gap (the front stays open for the #128
+        /// walkway). Lots are UNFENCED by default (HouseLot.HasFence off
+        /// until a future quest purchases fences, #147), so the default
+        /// world renders no fences; ForceFencesVisible is the
+        /// Editor-check/test seam that builds them anyway. In the kit path
+        /// it's tiled City Kit Suburban fence pieces at the exact
         /// positions/yaws/scales Core's FenceTiling computes; when the
         /// piece can't be loaded it falls back to one thin graybox rail
-        /// per run (same pattern as the walkways), so the fences always
-        /// exist visually. All geometry comes from Core either way —
-        /// nothing here decides where a fence goes.
+        /// per run (same pattern as the walkways). All geometry comes from
+        /// Core either way — nothing here decides where a fence goes.
         /// </summary>
         private static void BuildFences(Transform parent)
         {
@@ -465,7 +479,7 @@ namespace Doggiehood.Unity
 
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                var runs = LotFence.RunsFor(lot);
+                var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot);
                 if (runs.Count == 0)
                 {
                     continue;
@@ -520,7 +534,8 @@ namespace Doggiehood.Unity
                 rail.transform.position = new Vector3(
                     (run.A.X + run.B.X) / 2f, height / 2f, (run.A.Z + run.B.Z) / 2f);
 
-                // Fence runs are axis-aligned (sides of the lot rectangle).
+                // Fence runs are axis-aligned (houses face a cardinal
+                // street direction, and the runs follow the house axes).
                 var alongX = Mathf.Abs(run.A.Z - run.B.Z) < 0.01f;
                 rail.transform.localScale = alongX
                     ? new Vector3(run.Length, height, thickness)

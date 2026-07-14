@@ -25,6 +25,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void BuildWorld()
         {
             WorldBuilder.ForcePrimitiveFallback = false;
+            WorldBuilder.ForceFencesVisible = false;
             root = WorldBuilder.Build(GameState.CreateNew());
         }
 
@@ -32,6 +33,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void DestroyWorld()
         {
             WorldBuilder.ForcePrimitiveFallback = false;
+            WorldBuilder.ForceFencesVisible = false;
             if (root != null)
             {
                 Object.DestroyImmediate(root);
@@ -397,13 +399,30 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void LotFences_AreTiledFromKitFencePieces_AlongTheCoreRuns()
+        public void LotFences_AreHiddenByDefault_NothingFenceRendersInTheBuiltWorld()
         {
-            // #129: each fenced lot gets a "Fence - N" container whose
-            // children are instantiated City Kit Suburban fence pieces,
-            // placed exactly where Core's LotFence + FenceTiling say —
-            // ground pivots at y=0, yawed down each run, length compressed
-            // so runs end precisely on lot corners and gate-gap edges.
+            // #146: fences are defined for every lot but hidden by default
+            // (HouseLot.HasFence defaults false; a future quest, #147,
+            // purchases them) — the default built world renders NO fences.
+            Assert.That(root.GetComponentsInChildren<Transform>()
+                    .Any(t => t.name.StartsWith(WorldBuilder.FenceNamePrefix)),
+                Is.False, "no fence containers may exist in the default built world");
+        }
+
+        [Test]
+        public void LotFences_WhenForcedVisible_AreTiledFromKitFencePieces_AlongTheCoreGeometry()
+        {
+            // #146: with fences force-enabled (the Editor-check/test seam —
+            // the same geometry a purchased fence would build), each lot
+            // gets a "Fence - N" container whose children are instantiated
+            // City Kit Suburban fence pieces, placed exactly where Core's
+            // LotFence + FenceTiling say — ground pivots at y=0, yawed down
+            // each run, length compressed so runs end precisely on the
+            // side-wall anchors and back-yard corners.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForceFencesVisible = true;
+            root = WorldBuilder.Build(GameState.CreateNew());
+
             var source = Resources.Load<GameObject>(WorldBuilder.FencePieceResource);
             Assert.That(source, Is.Not.Null, "sanity: fence piece staged");
             var sourceMeshes = source.GetComponentsInChildren<MeshFilter>()
@@ -414,7 +433,7 @@ namespace Doggiehood.Unity.EditModeTests
 
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                var expected = LotFence.RunsFor(lot)
+                var expected = LotFence.GeometryFor(lot)
                     .SelectMany(run => FenceTiling.PiecesAlong(run))
                     .ToList();
                 Assert.That(expected, Is.Not.Empty, $"sanity: lot {lot.HouseId} has fence pieces");
@@ -540,15 +559,24 @@ namespace Doggiehood.Unity.EditModeTests
                     $"house {lot.HouseId} fallback walkway renders nothing");
             }
 
-            // #129: the lot fences stay too — one thin primitive rail per
-            // Core fence run instead of kit pieces.
+            // #146: fences are hidden by default in the graybox world too...
+            Assert.That(root.GetComponentsInChildren<Transform>().Any(
+                    t => t.name.StartsWith(WorldBuilder.FenceNamePrefix)),
+                Is.False, "no fence containers in the default fallback world");
+
+            // ...and a force-enabled fence still degrades safely — one thin
+            // primitive rail per Core backyard run instead of kit pieces.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForceFencesVisible = true;
+            root = WorldBuilder.Build(GameState.CreateNew());
+
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var container = root.transform.Find(WorldBuilder.FenceNamePrefix + lot.HouseId);
                 Assert.That(container, Is.Not.Null,
                     $"missing fallback fence for lot {lot.HouseId}");
                 Assert.That(container.GetComponentsInChildren<MeshRenderer>().Length,
-                    Is.EqualTo(LotFence.RunsFor(lot).Count),
+                    Is.EqualTo(LotFence.GeometryFor(lot).Count),
                     $"lot {lot.HouseId} fallback fence should render one rail per Core run");
             }
         }
