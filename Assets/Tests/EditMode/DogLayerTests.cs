@@ -457,6 +457,31 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SpeechBubble_AlwaysFacesTheCamera_RegardlessOfDogFacing()
+        {
+            // #148 follow-up: the bubble is a billboard. As a child of the
+            // dog root it inherits the dog's rotation (wander steering,
+            // window anchors), so DogView must re-assert the Core-defined
+            // camera-facing orientation — at Init and every frame.
+            var view = worldRoot.GetComponentsInChildren<DogView>()[0];
+            var bubble = view.transform.Find(DogView.BubbleName);
+            var expected = Quaternion.Euler(
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.PitchDegrees,
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.YawDegrees,
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.RollDegrees);
+
+            Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
+                "bubble must face the camera straight out of Init");
+
+            // The dog turns while wandering; the bubble must not turn with it.
+            view.transform.rotation = Quaternion.Euler(0f, 123f, 0f);
+            view.FaceBubbleToCamera();
+
+            Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
+                "bubble world rotation must stay camera-facing whatever the dog's facing");
+        }
+
+        [Test]
         public void OnlyDogsAndHouses_AreInteractable()
         {
             // #37: no other interactable character exists in the world.

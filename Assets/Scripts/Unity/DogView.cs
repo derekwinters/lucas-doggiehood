@@ -1,3 +1,4 @@
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -153,6 +154,22 @@ namespace Doggiehood.Unity
 
             ApplyPose(windowAnchor);
             RefreshBubble();
+            FaceBubbleToCamera();
+        }
+
+        /// <summary>#148 follow-up: billboards the bubble at the
+        /// Core-defined camera-facing orientation (SpeechBubbleBillboard —
+        /// the fixed rig angles, since the orthographic camera never
+        /// rotates). The bubble inherits the dog's rotation as a child, so
+        /// this world-space re-assert runs at Init and every frame. Purely
+        /// rotational: the collider stays a sphere and the tap routing is
+        /// unaffected.</summary>
+        public void FaceBubbleToCamera()
+        {
+            bubble.transform.rotation = Quaternion.Euler(
+                SpeechBubbleBillboard.PitchDegrees,
+                SpeechBubbleBillboard.YawDegrees,
+                SpeechBubbleBillboard.RollDegrees);
         }
 
         public void OnTapped()
@@ -243,6 +260,7 @@ namespace Doggiehood.Unity
             }
 
             TickAnimation(Time.deltaTime, moving);
+            FaceBubbleToCamera();
         }
 
         /// <summary>Advances the Cube Pets animation by one frame: walk take
