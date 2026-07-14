@@ -115,8 +115,14 @@ namespace Doggiehood.Unity
             bubble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bubble.name = BubbleName;
             bubble.transform.SetParent(transform);
-            bubble.transform.localScale = new Vector3(0.5f, 0.4f, 0.15f);
-            bubble.transform.localPosition = new Vector3(0f, 1.6f * scale, 0f);
+            // #148: sized for the x7 kit-scale world — at DefaultZoom the
+            // camera shows 36 world units of height, so the bubble needs ~2
+            // world units to project to a readable >=40 px tap target on a
+            // 1080p-reference view (guarded by an EditMode test). The size
+            // is fixed for all dogs (readability), only the hover height
+            // scales down for puppies.
+            bubble.transform.localScale = new Vector3(2.4f, 2f, 0.6f);
+            bubble.transform.localPosition = new Vector3(0f, 2.5f * scale, 0f);
             Paint(bubble, Color.white);
             // #148: the bubble keeps its primitive collider — it is the sole
             // quest-discovery tap surface (conversation-system.md), and a hit

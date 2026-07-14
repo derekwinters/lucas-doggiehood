@@ -345,6 +345,64 @@ namespace Doggiehood.Unity.EditModeTests
             }
         }
 
+        [Test]
+        public void SpeechBubble_ProjectsToAReadableTapTargetAtDefaultZoom()
+        {
+            // #148: Derek's editor check found bubbles rendering tiny — the
+            // 0.5-unit graybox bubble was ~1% of screen height once the
+            // world moved to the x7 kit scale (#150) with the camera showing
+            // 2*DefaultZoom = 36 world units vertically. The bubble is the
+            // sole quest-discovery surface, so through the real rig at
+            // DefaultZoom on a 1080p-reference view it must project to at
+            // least 40 px in both screen axes (minimum-tap-target
+            // territory).
+            var view = worldRoot.GetComponentsInChildren<DogView>()[0];
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            var rigObject = new GameObject("rig-under-test", typeof(Camera));
+            var cam = rigObject.GetComponent<Camera>();
+            var rig = rigObject.AddComponent<CameraRig>();
+            rig.ApplyConfiguration();
+            Assert.That(rig.Controller.Zoom,
+                Is.EqualTo(Doggiehood.Core.Cameras.CameraController.DefaultZoom),
+                "sanity: the rig starts at the default zoom");
+
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var bounds = CombinedRendererBounds(view.transform.Find(DogView.BubbleName));
+                var minX = float.MaxValue;
+                var maxX = float.MinValue;
+                var minY = float.MaxValue;
+                var maxY = float.MinValue;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                        (i & 1) == 0 ? -1f : 1f,
+                        (i & 2) == 0 ? -1f : 1f,
+                        (i & 4) == 0 ? -1f : 1f));
+                    var screen = cam.WorldToScreenPoint(corner);
+                    minX = Mathf.Min(minX, screen.x);
+                    maxX = Mathf.Max(maxX, screen.x);
+                    minY = Mathf.Min(minY, screen.y);
+                    maxY = Mathf.Max(maxY, screen.y);
+                }
+
+                Assert.That(maxX - minX, Is.GreaterThanOrEqualTo(40f),
+                    "speech bubble is too narrow on screen at default zoom to read or tap");
+                Assert.That(maxY - minY, Is.GreaterThanOrEqualTo(40f),
+                    "speech bubble is too short on screen at default zoom to read or tap");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(rigObject);
+            }
+        }
+
         private static Bounds CombinedRendererBounds(Transform root)
         {
             var renderers = root.GetComponentsInChildren<Renderer>();
