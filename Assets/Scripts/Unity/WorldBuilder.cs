@@ -29,6 +29,7 @@ namespace Doggiehood.Unity
         public const string RoadTileNamePrefix = "RoadTile - ";
         public const string IntersectionTileName = RoadTileNamePrefix + "Intersection";
         public const string WalkwayNamePrefix = "Walkway - ";
+        public const string FenceNamePrefix = "Fence - ";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
 
@@ -36,6 +37,13 @@ namespace Doggiehood.Unity
         /// — the clean square-paver look from the same City Kit Suburban
         /// kit as the houses, staged alongside them.</summary>
         public const string WalkwayPieceResource = "path-short";
+
+        /// <summary>Resources key for the lot-fence piece (#129) — the
+        /// straight City Kit Suburban fence segment, staged alongside the
+        /// houses. (The kit's fence-low.fbx is an L-shaped low-wall corner
+        /// piece, not a straight run — plain fence segments tile every run
+        /// and meet at the corners on their own.)</summary>
+        public const string FencePieceResource = "fence";
 
         /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
@@ -134,6 +142,7 @@ namespace Doggiehood.Unity
             }
 
             BuildWalkways(root.transform);
+            BuildFences(root.transform);
 
             BuildSun(root.transform);
             ApplyAmbientLighting();
@@ -437,6 +446,90 @@ namespace Doggiehood.Unity
                 ? new Vector3(walkway.Length, 0.1f, walkway.Width)
                 : new Vector3(walkway.Width, 0.1f, walkway.Length);
             Paint(strip, Palette.SidewalkHex);
+        }
+
+        /// <summary>
+        /// The lot fences (#129): one "Fence - N" container per fenced lot
+        /// (a lot with HouseLot.HasFence off contributes nothing),
+        /// rendering Core's LotFence boundary runs — the lot rectangle
+        /// with a gate gap where the #128 front walkway crosses. In the
+        /// kit path it's tiled City Kit Suburban fence pieces at the exact
+        /// positions/yaws/scales Core's FenceTiling computes; when the
+        /// piece can't be loaded it falls back to one thin graybox rail
+        /// per run (same pattern as the walkways), so the fences always
+        /// exist visually. All geometry comes from Core either way —
+        /// nothing here decides where a fence goes.
+        /// </summary>
+        private static void BuildFences(Transform parent)
+        {
+            var piece = ForcePrimitiveFallback
+                ? null
+                : Resources.Load<GameObject>(FencePieceResource);
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var runs = LotFence.RunsFor(lot);
+                if (runs.Count == 0)
+                {
+                    continue;
+                }
+
+                var container = new GameObject(FenceNamePrefix + lot.HouseId);
+                container.transform.SetParent(parent);
+                container.transform.position = Vector3.zero;
+
+                if (piece != null)
+                {
+                    BuildKitFence(container.transform, runs, piece);
+                }
+                else
+                {
+                    BuildPrimitiveFence(container.transform, runs);
+                }
+            }
+        }
+
+        private static void BuildKitFence(Transform container, IReadOnlyList<FenceRun> runs, GameObject piece)
+        {
+            var index = 0;
+            foreach (var run in runs)
+            {
+                foreach (var placement in FenceTiling.PiecesAlong(run))
+                {
+                    var segment = Object.Instantiate(piece, container);
+                    segment.name = "Fence " + index++;
+                    segment.transform.position = new Vector3(placement.Position.X, 0f, placement.Position.Z);
+                    segment.transform.rotation = Quaternion.Euler(0f, placement.YawDegrees, 0f);
+                    // Height (y) and thickness (z) at the uniform fence
+                    // scale; the length axis (local x) compressed so the
+                    // pieces cover the run exactly.
+                    segment.transform.localScale = new Vector3(
+                        placement.LengthScale, FenceTiling.Scale, FenceTiling.Scale);
+                }
+            }
+        }
+
+        private static void BuildPrimitiveFence(Transform container, IReadOnlyList<FenceRun> runs)
+        {
+            var height = FenceTiling.Scale * FenceTiling.PieceModelHeight;
+            const float thickness = 0.3f;
+
+            for (var i = 0; i < runs.Count; i++)
+            {
+                var run = runs[i];
+                var rail = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                rail.name = "Rail " + i;
+                rail.transform.SetParent(container);
+                rail.transform.position = new Vector3(
+                    (run.A.X + run.B.X) / 2f, height / 2f, (run.A.Z + run.B.Z) / 2f);
+
+                // Fence runs are axis-aligned (sides of the lot rectangle).
+                var alongX = Mathf.Abs(run.A.Z - run.B.Z) < 0.01f;
+                rail.transform.localScale = alongX
+                    ? new Vector3(run.Length, height, thickness)
+                    : new Vector3(thickness, height, run.Length);
+                Paint(rail, Palette.SidewalkHex);
+            }
         }
 
         private static void BuildHouse(Transform parent, House house)
