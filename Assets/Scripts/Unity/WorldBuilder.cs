@@ -76,21 +76,6 @@ namespace Doggiehood.Unity
         public const float HouseModelYawOffsetDegrees = 180f;
 
         /// <summary>
-        /// House id -> City Kit Suburban model (#122), with each model's
-        /// authored max horizontal footprint (units, from the FBX geometry)
-        /// used to derive the per-model uniform scale. PLACEHOLDER PICKS:
-        /// Derek and Lucas are expected to re-pick the letters once they
-        /// have seen the models rendered in the Editor.
-        /// </summary>
-        private static readonly (int HouseId, string ResourcePath, float ModelMaxFootprint)[] HouseModels =
-        {
-            (1, "building-type-b", 1.828f),
-            (2, "building-type-g", 1.45f),
-            (3, "building-type-k", 1.02f),
-            (4, "building-type-m", 1.428f),
-        };
-
-        /// <summary>
         /// EditMode test seam: forces the graybox primitive path even when
         /// the Kenney kit assets are importable, by routing through the
         /// same branch a null Resources.Load takes. A project that has the
@@ -99,17 +84,15 @@ namespace Doggiehood.Unity
         /// </summary>
         public static bool ForcePrimitiveFallback { get; set; }
 
+        /// <summary>
+        /// Resources load key for a house's kit model. The houseId ->
+        /// model assignment and each model's authored footprint/door data
+        /// moved into Core as HouseModelCatalog (#125) — this stays as the
+        /// Unity-side accessor existing callers and EditMode tests use.
+        /// </summary>
         public static string HouseModelResourcePath(int houseId)
         {
-            foreach (var entry in HouseModels)
-            {
-                if (entry.HouseId == houseId)
-                {
-                    return entry.ResourcePath;
-                }
-            }
-
-            throw new System.ArgumentException($"No house model mapped for id {houseId}.", nameof(houseId));
+            return HouseModelCatalog.ForHouse(houseId).ModelName;
         }
 
         public static GameObject Build(GameState state)
@@ -467,14 +450,7 @@ namespace Doggiehood.Unity
         /// </summary>
         private static void BuildHouseModel(GameObject houseRoot, int houseId, GameObject model, Vector3 facing)
         {
-            var maxFootprint = 1f;
-            foreach (var entry in HouseModels)
-            {
-                if (entry.HouseId == houseId)
-                {
-                    maxFootprint = entry.ModelMaxFootprint;
-                }
-            }
+            var maxFootprint = HouseModelCatalog.ForHouse(houseId).MaxFootprint;
 
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
