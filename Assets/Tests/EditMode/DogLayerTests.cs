@@ -416,6 +416,47 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SpeechBubble_HoversAFixedClearanceAboveTheDogsHead_ForAdultsAndPuppies()
+        {
+            // #148 follow-up: Derek wants the bubble clearly above the
+            // dog's head. The hover height is derived from the dog's
+            // measured renderer bounds — the bubble's bottom sits
+            // BubbleClearanceAboveHead above the tallest body renderer for
+            // adults and puppies alike (the old fixed 2.5*scale center
+            // ignored the body entirely and left puppy bubbles overlapping
+            // the dog). Measured via localPosition minus the bubble's own
+            // half height so the assertion is independent of the billboard
+            // rotation.
+            foreach (var isPuppy in new[] { false, true })
+            {
+                var dog = new Dog(isPuppy ? "Pup" : "Grown", Breed.Beagle, Personality.Brave, 1, isPuppy);
+                var go = new GameObject("hover-dog");
+                go.transform.SetParent(worldRoot.transform);
+                var view = go.AddComponent<DogView>();
+                view.Init(dog, null);
+
+                var bubble = go.transform.Find(DogView.BubbleName);
+                var dogTop = float.MinValue;
+                foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (renderer.transform.IsChildOf(bubble))
+                    {
+                        continue;
+                    }
+
+                    dogTop = Mathf.Max(dogTop, renderer.bounds.max.y);
+                }
+
+                var bubbleBottom = bubble.position.y - bubble.localScale.y / 2f;
+                Assert.That(bubbleBottom - dogTop,
+                    Is.EqualTo(DogView.BubbleClearanceAboveHead).Within(0.05f),
+                    $"{(isPuppy ? "puppy" : "adult")} bubble must hover the fixed clearance above the head");
+
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
         public void OnlyDogsAndHouses_AreInteractable()
         {
             // #37: no other interactable character exists in the world.

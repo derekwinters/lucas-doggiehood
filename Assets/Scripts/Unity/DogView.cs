@@ -23,6 +23,18 @@ namespace Doggiehood.Unity
     {
         public const string BubbleName = "SpeechBubble";
 
+        /// <summary>#148 follow-up: world-unit gap between the top of the
+        /// dog's tallest renderer and the bottom of the speech bubble, so
+        /// the bubble reads clearly above the head for adults and puppies
+        /// alike. Guarded by an EditMode test.</summary>
+        public const float BubbleClearanceAboveHead = 1f;
+
+        /// <summary>#148: bubble size fixed for all dogs (readability at
+        /// DefaultZoom in the x7 kit-scale world — see the readable-tap-
+        /// target EditMode test); only the hover height adapts, via the
+        /// measured body bounds.</summary>
+        private static readonly Vector3 BubbleScale = new Vector3(2.4f, 2f, 0.6f);
+
         /// <summary>Resources-relative path to the shared Kenney Cube Pets
         /// placeholder model (#119) — a single low-poly model used for every
         /// roster dog until breed-distinct modeling (#35) lands. Lives under
@@ -112,17 +124,26 @@ namespace Doggiehood.Unity
                 Paint(head.gameObject, coat);
             }
 
+            // #148 follow-up: hover height derived from the measured body
+            // (bubble not created yet, so only body/head renderers count).
+            // The root still has identity rotation and unit scale here, so
+            // world bounds convert to local by subtracting the position.
+            var dogTopLocalY = 0f;
+            foreach (var bodyRenderer in GetComponentsInChildren<Renderer>())
+            {
+                dogTopLocalY = Mathf.Max(dogTopLocalY, bodyRenderer.bounds.max.y - transform.position.y);
+            }
+
             bubble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bubble.name = BubbleName;
             bubble.transform.SetParent(transform);
             // #148: sized for the x7 kit-scale world — at DefaultZoom the
             // camera shows 36 world units of height, so the bubble needs ~2
             // world units to project to a readable >=40 px tap target on a
-            // 1080p-reference view (guarded by an EditMode test). The size
-            // is fixed for all dogs (readability), only the hover height
-            // scales down for puppies.
-            bubble.transform.localScale = new Vector3(2.4f, 2f, 0.6f);
-            bubble.transform.localPosition = new Vector3(0f, 2.5f * scale, 0f);
+            // 1080p-reference view (guarded by an EditMode test).
+            bubble.transform.localScale = BubbleScale;
+            bubble.transform.localPosition = new Vector3(
+                0f, dogTopLocalY + BubbleClearanceAboveHead + BubbleScale.y / 2f, 0f);
             Paint(bubble, Color.white);
             // #148: the bubble keeps its primitive collider — it is the sole
             // quest-discovery tap surface (conversation-system.md), and a hit
