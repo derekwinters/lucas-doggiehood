@@ -60,25 +60,23 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TryGetDoorWorldPosition_PointsTheDoorTowardTheDrivewaySidewalk()
+        public void TryGetDoorWorldPosition_PointsTheDoorTowardTheWalkwaySidewalk()
         {
             // Behavioral check that the yaw handling is right: the game
-            // faces each house squarely at its driveway's road, so the door
-            // must be strictly closer to the driveway's sidewalk attach
-            // point than the house center is.
+            // faces each house squarely at its walkway's road (#128 — the
+            // walkway replaced the driveway stub), so the door must be
+            // strictly closer to the walkway's sidewalk attach point than
+            // the house center is.
             foreach (var view in root.GetComponentsInChildren<HouseView>())
             {
-                var lot = NeighborhoodLayout.GetHouseLot(view.HouseId);
-                var stub = NeighborhoodLayout.WalkNetwork.Edges.Single(e =>
-                    e.Kind == WalkEdgeKind.DrivewayStub
-                    && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
-                var attachPoint = stub.Other(lot.Position);
-                var attach = new Vector3(attachPoint.X, 0f, attachPoint.Z);
+                Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(view.HouseId, out var walkway),
+                    Is.True, $"house {view.HouseId} has no front walkway");
+                var attach = new Vector3(walkway.B.X, 0f, walkway.B.Z);
 
                 Assert.That(HouseViewGizmos.TryGetDoorWorldPosition(view, out var door), Is.True);
                 Assert.That(Vector3.Distance(door, attach),
                     Is.LessThan(Vector3.Distance(view.transform.position, attach)),
-                    $"house {view.HouseId} door should face its driveway");
+                    $"house {view.HouseId} door should face its walkway");
             }
         }
 

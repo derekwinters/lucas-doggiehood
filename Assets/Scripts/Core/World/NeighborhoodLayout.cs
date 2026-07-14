@@ -63,7 +63,7 @@ namespace Doggiehood.Core.World
         private static WalkNetwork walkNetwork;
 
         /// <summary>
-        /// The cached sidewalk+crosswalk+driveway-stub network (#106) for
+        /// The cached sidewalk+crosswalk+front-walkway network (#106, #128) for
         /// this starting neighborhood — built once from <see cref="Roads"/>
         /// and <see cref="HouseLots"/>.
         /// </summary>

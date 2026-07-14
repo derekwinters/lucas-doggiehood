@@ -40,14 +40,16 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void WalkingHomeQuest_RoutesOverTheNetwork_RatherThanBeeliningHome()
         {
-            // #30/#106: WalkDogHome used to be a straight-line
+            // #30/#106/#128: WalkDogHome used to be a straight-line
             // Vector3.MoveTowards ignoring streets entirely. Now Core
-            // computes the route over the sidewalk/crosswalk/driveway-stub
-            // network and this layer only walks the waypoints. Place the
-            // dog far from home (as if it had been out wandering) so the
-            // real route has to detour via the network instead of cutting
-            // the direct diagonal — a straight-line bug would show zero
-            // deviation from that diagonal.
+            // computes the route over the sidewalk/crosswalk/front-walkway
+            // network and this layer only walks the waypoints — ending at
+            // the house's actual FRONT DOOR (the walkway's lot-side node),
+            // not the old lot-center stub anchor. Place the dog far from
+            // home (as if it had been out wandering) so the real route has
+            // to detour via the network instead of cutting the direct
+            // diagonal — a straight-line bug would show zero deviation
+            // from that diagonal.
             state.Wallet.Deposit(1000);
             var dog = state.Dogs.First(d => d.HouseId == 3); // SouthEast house, (14, -14)
             var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
@@ -59,8 +61,9 @@ namespace Doggiehood.Unity.EditModeTests
             var farAway = new Vector3(-half, 0f, NeighborhoodLayout.StreetHalfLength); // far NW sidewalk tip
             view.transform.position = farAway;
 
-            var lot = NeighborhoodLayout.GetHouseLot(dog.HouseId);
-            var home = new Vector3(lot.Position.X, 0f, lot.Position.Z);
+            Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(dog.HouseId, out var walkway),
+                Is.True, "the dog's house must have a front walkway");
+            var home = new Vector3(walkway.A.X, 0f, walkway.A.Z); // the front door
 
             var maxDeviation = 0f;
             var reachedWaitingPhase = false;

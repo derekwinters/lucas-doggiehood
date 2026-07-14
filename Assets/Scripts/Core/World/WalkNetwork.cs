@@ -4,12 +4,14 @@ using System.Linq;
 
 namespace Doggiehood.Core.World
 {
-    /// <summary>What kind of walkable connection a <see cref="WalkEdge"/> is (#106).</summary>
+    /// <summary>What kind of walkable connection a <see cref="WalkEdge"/> is
+    /// (#106; FrontWalkway replaced DrivewayStub in #128 — Derek's decision:
+    /// the neighborhood has no driveways).</summary>
     public enum WalkEdgeKind
     {
         Sidewalk,
         Crosswalk,
-        DrivewayStub,
+        FrontWalkway,
     }
 
     /// <summary>
@@ -23,7 +25,7 @@ namespace Doggiehood.Core.World
         public GridPoint B { get; }
         public WalkEdgeKind Kind { get; }
 
-        /// <summary>Surface width: SidewalkWidth for Sidewalk/DrivewayStub
+        /// <summary>Surface width: SidewalkWidth for Sidewalk/FrontWalkway
         /// edges, CrosswalkWidth for Crosswalk edges (#105).</summary>
         public float Width { get; }
 
@@ -57,12 +59,13 @@ namespace Doggiehood.Core.World
     /// <summary>
     /// The walkable graph of the neighborhood (#106): sidewalks on both
     /// sides of every road, crosswalks connecting those sidewalks wherever
-    /// a road needs to be crossed, and driveway stubs connecting each house
-    /// lot to its nearest sidewalk edge. Generic and data-driven — built
-    /// from whatever <see cref="Road"/>s and <see cref="HouseLot"/>s are
-    /// passed in, not hardcoded to today's single intersection. Supports
-    /// real shortest-path queries (Dijkstra; the graph is tiny, so a
-    /// priority queue would be overkill).
+    /// a road needs to be crossed, and front walkways (#128) connecting
+    /// each house's FRONT DOOR to the nearest point on its street-facing
+    /// sidewalk. Generic and data-driven — built from whatever
+    /// <see cref="Road"/>s and <see cref="HouseLot"/>s are passed in, not
+    /// hardcoded to today's single intersection. Supports real
+    /// shortest-path queries (Dijkstra; the graph is tiny, so a priority
+    /// queue would be overkill).
     /// </summary>
     public sealed class WalkNetwork
     {
@@ -71,6 +74,7 @@ namespace Doggiehood.Core.World
         private readonly List<WalkEdge> edges;
         private readonly List<GridPoint> nodeOrder;
         private readonly Dictionary<GridPoint, List<WalkEdge>> adjacency;
+        private readonly Dictionary<int, WalkEdge> frontWalkways;
 
         public IReadOnlyList<WalkEdge> Edges
         {
@@ -82,9 +86,10 @@ namespace Doggiehood.Core.World
             get { return nodeOrder; }
         }
 
-        private WalkNetwork(List<WalkEdge> edges)
+        private WalkNetwork(List<WalkEdge> edges, Dictionary<int, WalkEdge> frontWalkways)
         {
             this.edges = edges;
+            this.frontWalkways = frontWalkways;
             nodeOrder = new List<GridPoint>();
             adjacency = new Dictionary<GridPoint, List<WalkEdge>>();
 
@@ -113,6 +118,16 @@ namespace Doggiehood.Core.World
             return adjacency.TryGetValue(node, out var list) ? list : Array.Empty<WalkEdge>();
         }
 
+        /// <summary>
+        /// The house's front walkway edge (#128): A is the front-door node
+        /// on the lot, B is the sidewalk attach point. The lot's ONLY
+        /// connection to the rest of the network.
+        /// </summary>
+        public bool TryGetFrontWalkway(int houseId, out WalkEdge walkway)
+        {
+            return frontWalkways.TryGetValue(houseId, out walkway);
+        }
+
         /// <summary>The graph node nearest an arbitrary point — used to
         /// snap loosely-known positions (e.g. a dog's current transform)
         /// onto the network.</summary>
@@ -122,11 +137,11 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>The nearest node reachable by a Sidewalk or Crosswalk
-        /// edge (#106) — excludes house-lot nodes, which only ever have a
-        /// DrivewayStub edge. General wander must never snap onto one.</summary>
+        /// edge (#106) — excludes front-door nodes, which only ever have a
+        /// FrontWalkway edge. General wander must never snap onto one.</summary>
         public GridPoint NearestWalkableNode(GridPoint from)
         {
-            var walkable = nodeOrder.Where(n => adjacency[n].Any(e => e.Kind != WalkEdgeKind.DrivewayStub));
+            var walkable = nodeOrder.Where(n => adjacency[n].Any(e => e.Kind != WalkEdgeKind.FrontWalkway));
             return NearestNodeAmong(walkable, from);
         }
 
@@ -153,7 +168,7 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>True if every node can reach every other node (#106) —
-        /// the starting tile's sidewalk+crosswalk+driveway network must
+        /// the starting tile's sidewalk+crosswalk+walkway network must
         /// form one connected graph.</summary>
         public bool IsFullyConnected()
         {
@@ -253,8 +268,11 @@ namespace Doggiehood.Core.World
         /// (#106). Generic over any axis-aligned road layout: finds every
         /// crossing between roads of different orientation, splits each
         /// road's sidewalks into arms around those crossings, adds the
-        /// 4-crosswalk box at each crossing, and stubs a driveway from
-        /// every house lot to its nearest sidewalk edge.
+        /// 4-crosswalk box at each crossing, and runs a front walkway
+        /// (#128) from every house's door to its street-facing sidewalk —
+        /// consulting <see cref="HousePlacement"/>'s pure helpers and the
+        /// #125 <see cref="HouseModelCatalog"/> for the door position, so
+        /// dogs can path to actual front doors.
         /// </summary>
         public static WalkNetwork BuildFrom(IReadOnlyList<Road> roads, IReadOnlyList<HouseLot> houseLots)
         {
@@ -267,12 +285,17 @@ namespace Doggiehood.Core.World
                 BuildCrosswalks(road, crossings, edges);
             }
 
+            var frontWalkways = new Dictionary<int, WalkEdge>();
             foreach (var lot in houseLots)
             {
-                AttachDrivewayStub(lot, edges);
+                var walkway = AttachFrontWalkway(lot, edges);
+                if (walkway.HasValue)
+                {
+                    frontWalkways[lot.HouseId] = walkway.Value;
+                }
             }
 
-            return new WalkNetwork(edges);
+            return new WalkNetwork(edges, frontWalkways);
         }
 
         private readonly struct Crossing
@@ -374,7 +397,17 @@ namespace Doggiehood.Core.World
             }
         }
 
-        private static void AttachDrivewayStub(HouseLot lot, List<WalkEdge> edges)
+        /// <summary>
+        /// The lot's front walkway (#128, replacing the old lot-center
+        /// driveway stub): find the sidewalk edge nearest the LOT CENTER
+        /// (that still decides which street the house faces, exactly as
+        /// the stub did), derive the house's front-setback position and
+        /// its catalog door from it, then run the walkway from the DOOR
+        /// perpendicular onto that sidewalk — splitting the sidewalk edge
+        /// at the attach point if needed. The door becomes the lot-side
+        /// node: dogs path to actual front doors now.
+        /// </summary>
+        private static WalkEdge? AttachFrontWalkway(HouseLot lot, List<WalkEdge> edges)
         {
             var bestDistance = float.MaxValue;
             var bestIndex = -1;
@@ -402,19 +435,30 @@ namespace Doggiehood.Core.World
 
             if (bestIndex < 0)
             {
-                return;
+                return null;
             }
 
+            var facing = HousePlacement.FacingToward(lot.Position, bestPoint);
+            var housePosition = HousePlacement.PositionFor(lot, HousePlacement.HouseTargetFootprint, bestPoint);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
+            var door = model.FrontDoorWorldPosition(
+                housePosition, HousePlacement.ModelYawDegrees(facing), scale);
+
             var original = edges[bestIndex];
-            if (!PointsNearlyEqual(bestPoint, original.A) && !PointsNearlyEqual(bestPoint, original.B))
+            var attach = ProjectOntoSegment(door, original.A, original.B);
+
+            if (!PointsNearlyEqual(attach, original.A) && !PointsNearlyEqual(attach, original.B))
             {
                 // Split the sidewalk edge at the attach point.
                 edges.RemoveAt(bestIndex);
-                edges.Add(new WalkEdge(original.A, bestPoint, WalkEdgeKind.Sidewalk, original.Width));
-                edges.Add(new WalkEdge(bestPoint, original.B, WalkEdgeKind.Sidewalk, original.Width));
+                edges.Add(new WalkEdge(original.A, attach, WalkEdgeKind.Sidewalk, original.Width));
+                edges.Add(new WalkEdge(attach, original.B, WalkEdgeKind.Sidewalk, original.Width));
             }
 
-            edges.Add(new WalkEdge(lot.Position, bestPoint, WalkEdgeKind.DrivewayStub, WorldDimensions.SidewalkWidth));
+            var walkway = new WalkEdge(door, attach, WalkEdgeKind.FrontWalkway, WorldDimensions.SidewalkWidth);
+            edges.Add(walkway);
+            return walkway;
         }
 
         private static GridPoint ProjectOntoSegment(GridPoint point, GridPoint a, GridPoint b)

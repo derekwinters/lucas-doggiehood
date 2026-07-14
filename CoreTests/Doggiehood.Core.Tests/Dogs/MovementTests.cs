@@ -88,25 +88,30 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [Test]
-        public void Wander_PositionsAlwaysLieOnTheWalkNetwork_NeverOnARoadOrDriveway()
+        public void Wander_PositionsAlwaysLieOnTheWalkNetwork_NeverOnAFrontWalkway()
         {
-            // #106: the rewritten WanderBehavior is a node-to-node random
-            // walk over the sidewalk+crosswalk graph — positions are
-            // always real network nodes, and driveway stubs (which lead
-            // only to house lots) are never entered.
+            // #106/#128: the network-based WanderBehavior is a node-to-node
+            // random walk over the sidewalk+crosswalk graph — positions are
+            // always real network nodes, and front walkways (which lead
+            // only to house front doors; they replaced the old driveway
+            // stubs per Derek's decision on #128) are never entered.
             var network = NeighborhoodLayout.WalkNetwork;
             var wander = new WanderBehavior(seed: 1234, MovementProfile.Base, network);
             var position = NeighborhoodLayout.Intersection;
             var nodes = new HashSet<GridPoint>(network.Nodes);
-            var houseLotPositions = new HashSet<GridPoint>(NeighborhoodLayout.HouseLots.Select(l => l.Position));
+            var doorNodes = new HashSet<GridPoint>(NeighborhoodLayout.HouseLots.Select(l =>
+            {
+                network.TryGetFrontWalkway(l.HouseId, out var walkway);
+                return walkway.A;
+            }));
 
             for (var step = 0; step < 500; step++)
             {
                 position = wander.NextTarget(position);
 
                 Assert.That(nodes.Contains(position), Is.True, $"step {step}: {position} is not a network node");
-                Assert.That(houseLotPositions.Contains(position), Is.False,
-                    $"step {step}: {position} is a house lot / driveway endpoint");
+                Assert.That(doorNodes.Contains(position), Is.False,
+                    $"step {step}: {position} is a front-door / walkway endpoint");
             }
         }
 
@@ -129,7 +134,7 @@ namespace Doggiehood.Core.Tests.Dogs
 
         // The following tests drive a fully controlled two-hop scenario on
         // the real starting network: a WanderBehavior placed at the far,
-        // driveway-free tip of the EW road's north sidewalk east arm
+        // walkway-free tip of the EW road's north sidewalk east arm
         // (26, 4) always takes its only exit — the NE box corner
         // (4, 4) — on the first hop (nothing to weigh, only one
         // candidate). Arriving there heading west (-1, 0), the corner has

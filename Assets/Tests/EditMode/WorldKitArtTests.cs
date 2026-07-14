@@ -65,6 +65,11 @@ namespace Doggiehood.Unity.EditModeTests
                 Assert.That(Resources.Load<GameObject>(key), Is.Not.Null,
                     $"City Kit Suburban model '{key}' (house {houseId}) must be loadable from Resources");
             }
+
+            // #128: the front-walkway paver piece, staged from the same
+            // City Kit Suburban kit as the houses.
+            Assert.That(Resources.Load<GameObject>(WorldBuilder.WalkwayPieceResource), Is.Not.Null,
+                $"City Kit Suburban piece '{WorldBuilder.WalkwayPieceResource}' must be loadable from Resources");
         }
 
         [Test]
@@ -281,19 +286,20 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void HouseModels_FaceTheirDrivewayRoad_SquarelyAtACardinalYaw()
+        public void HouseModels_FaceTheirWalkwayRoad_SquarelyAtACardinalYaw()
         {
             // Derek's Editor feedback on the first kit-house pass: houses
             // yawed diagonally toward the world origin looked scattered,
             // and the assumed model-forward was wrong (the SW house's door
             // faced away from the neighborhood). Each house must now face
-            // SQUARELY toward the road its driveway connects to — the
-            // WalkNetwork's DrivewayStub edge for the lot is that
-            // association, and its far endpoint is the sidewalk attach
-            // point. HouseModelYawOffsetDegrees (180, per the screenshot
-            // evidence that doors pointed opposite the look direction at 0)
-            // is the single art-side correction on top of that logical
-            // facing — one flip fixes all four houses if it's still wrong.
+            // SQUARELY toward the road its front walkway (#128 — it
+            // replaced the driveway stub) attaches to — the WalkNetwork's
+            // FrontWalkway edge for the lot is that association, and its B
+            // endpoint is the sidewalk attach point.
+            // HouseModelYawOffsetDegrees (180, per the screenshot evidence
+            // that doors pointed opposite the look direction at 0) is the
+            // single art-side correction on top of that logical facing —
+            // one flip fixes all four houses if it's still wrong.
             foreach (var view in root.GetComponentsInChildren<HouseView>())
             {
                 var lot = NeighborhoodLayout.GetHouseLot(view.HouseId);
@@ -312,14 +318,62 @@ namespace Doggiehood.Unity.EditModeTests
                 Assert.That(Mathf.Abs(look.y), Is.LessThan(0.001f),
                     $"house {view.HouseId} look direction {look} is not horizontal");
 
-                var stub = NeighborhoodLayout.WalkNetwork.Edges.Single(e =>
-                    e.Kind == WalkEdgeKind.DrivewayStub
-                    && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
-                var attach = stub.Other(lot.Position);
+                Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(view.HouseId, out var walkway),
+                    Is.True, $"house {view.HouseId} has no front walkway");
+                var attach = walkway.B;
                 var toAttach = new Vector3(attach.X - lot.Position.X, 0f, attach.Z - lot.Position.Z).normalized;
 
                 Assert.That(Vector3.Dot(look, toAttach), Is.GreaterThan(0.99f),
-                    $"house {view.HouseId} must face its driveway attach point {attach} (look {look})");
+                    $"house {view.HouseId} must face its walkway attach point {attach} (look {look})");
+            }
+        }
+
+        [Test]
+        public void FrontWalkways_AreTiledFromKitPathPieces_AlongTheCoreSegment()
+        {
+            // #128: each house gets a "Walkway - N" container whose
+            // children are instantiated City Kit Suburban path pieces,
+            // placed exactly where Core's WalkwayTiling says — flat on the
+            // ground, tiling the door -> sidewalk walkway edge.
+            var source = Resources.Load<GameObject>(WorldBuilder.WalkwayPieceResource);
+            Assert.That(source, Is.Not.Null, "sanity: walkway piece staged");
+            var sourceMeshes = source.GetComponentsInChildren<MeshFilter>()
+                .Select(f => f.sharedMesh)
+                .Where(m => m != null)
+                .ToList();
+            Assert.That(sourceMeshes, Is.Not.Empty, "sanity: walkway piece has meshes");
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway),
+                    Is.True, $"house {lot.HouseId} has no front walkway");
+                var expected = WalkwayTiling.PiecesAlong(walkway);
+
+                var container = root.transform.Find(WorldBuilder.WalkwayNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null, $"missing walkway container for house {lot.HouseId}");
+
+                var pieces = container.Cast<Transform>().ToList();
+                Assert.That(pieces.Count, Is.EqualTo(expected.Count),
+                    $"house {lot.HouseId} walkway piece count");
+
+                for (var i = 0; i < pieces.Count; i++)
+                {
+                    var piece = pieces[i];
+                    Assert.That(piece.position.x, Is.EqualTo(expected[i].Position.X).Within(0.001f),
+                        $"house {lot.HouseId} piece {i} X");
+                    Assert.That(piece.position.z, Is.EqualTo(expected[i].Position.Z).Within(0.001f),
+                        $"house {lot.HouseId} piece {i} Z");
+                    Assert.That(piece.position.y, Is.EqualTo(0f).Within(0.001f),
+                        $"house {lot.HouseId} piece {i} must sit on the ground");
+
+                    var pieceMeshes = piece.GetComponentsInChildren<MeshFilter>()
+                        .Select(f => f.sharedMesh)
+                        .Where(m => m != null)
+                        .ToList();
+                    Assert.That(pieceMeshes, Is.Not.Empty, $"house {lot.HouseId} piece {i} renders no mesh");
+                    Assert.That(pieceMeshes, Is.SubsetOf(sourceMeshes),
+                        $"house {lot.HouseId} piece {i} must render the kit path piece");
+                }
             }
         }
 
@@ -390,6 +444,17 @@ namespace Doggiehood.Unity.EditModeTests
             {
                 Assert.That(view.transform.Find("Walls"), Is.Not.Null,
                     $"house {view.HouseId} should be primitive walls in the fallback");
+            }
+
+            // #128: the front walkways stay in the graybox world too — as
+            // one flat primitive strip per house instead of kit pieces.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var container = root.transform.Find(WorldBuilder.WalkwayNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null,
+                    $"missing fallback walkway for house {lot.HouseId}");
+                Assert.That(container.GetComponentsInChildren<MeshRenderer>(), Is.Not.Empty,
+                    $"house {lot.HouseId} fallback walkway renders nothing");
             }
         }
     }

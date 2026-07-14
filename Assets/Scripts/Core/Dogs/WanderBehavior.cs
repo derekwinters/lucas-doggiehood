@@ -7,8 +7,9 @@ namespace Doggiehood.Core.Dogs
 {
     /// <summary>
     /// Produces wander movement targets as a node-to-node random walk over
-    /// the sidewalk+crosswalk walk network (#8, #106). Driveway stubs are
-    /// never entered — general wander stays off house lots/yards. At each
+    /// the sidewalk+crosswalk walk network (#8, #106). Front walkways (#128,
+    /// replacing the old driveway stubs) are never entered — general
+    /// wander stays off house lots/yards. At each
     /// node the choice between continuing straight and deviating/turning
     /// is weighted; the parameterless overload derives that weighting from
     /// the dog's own <see cref="MovementProfile.TurnProbability"/> (#89) —
@@ -57,7 +58,7 @@ namespace Doggiehood.Core.Dogs
         {
             var node = network.NearestWalkableNode(current);
             var candidates = network.EdgesFrom(node)
-                .Where(e => e.Kind != WalkEdgeKind.DrivewayStub)
+                .Where(e => e.Kind != WalkEdgeKind.FrontWalkway)
                 .ToList();
 
             var next = candidates.Count == 0
