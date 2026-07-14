@@ -62,21 +62,24 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void TryGetDoorWorldPosition_PointsTheDoorTowardTheWalkwaySidewalk()
         {
-            // Behavioral check that the yaw handling is right: the game
-            // faces each house squarely at its walkway's road (#128 — the
-            // walkway replaced the driveway stub), so the door must be
-            // strictly closer to the walkway's sidewalk attach point than
-            // the house center is.
+            // Behavioral check that the yaw handling is right: the gizmo
+            // reads the placed Unity transform, and Core's walkway edge
+            // (#128) starts at the catalog door — a wrong yaw would put
+            // the transform-derived door somewhere else entirely, so the
+            // two must coincide. (Doors can be recessed or lateral since
+            // the gallery pass, so no closer-than-the-center geometry
+            // assumption survives — equality with the walkway's door node
+            // is the exact contract.)
             foreach (var view in root.GetComponentsInChildren<HouseView>())
             {
                 Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(view.HouseId, out var walkway),
                     Is.True, $"house {view.HouseId} has no front walkway");
-                var attach = new Vector3(walkway.B.X, 0f, walkway.B.Z);
+                var doorNode = new Vector3(walkway.A.X, 0f, walkway.A.Z);
 
                 Assert.That(HouseViewGizmos.TryGetDoorWorldPosition(view, out var door), Is.True);
-                Assert.That(Vector3.Distance(door, attach),
-                    Is.LessThan(Vector3.Distance(view.transform.position, attach)),
-                    $"house {view.HouseId} door should face its walkway");
+                Assert.That(Vector3.Distance(new Vector3(door.x, 0f, door.z), doorNode),
+                    Is.LessThan(0.001f),
+                    $"house {view.HouseId} gizmo door {door} must sit on the walkway's door node {doorNode}");
             }
         }
 
