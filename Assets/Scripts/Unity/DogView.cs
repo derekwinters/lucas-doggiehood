@@ -86,6 +86,13 @@ namespace Doggiehood.Unity
                 body.localPosition = Vector3.zero;
                 PaintModel(body.gameObject, coat);
                 SetupAnimation();
+
+                // #148: the imported FBX has no collider (the primitive
+                // fallback rig gets them for free from CreatePrimitive), so
+                // without this fitted box TapRouter's raycast passes straight
+                // through the dog and taps never register. Added while the
+                // root still has identity rotation — ApplyPose runs later.
+                TapColliders.AddFitted(gameObject, body.gameObject);
             }
             else
             {
@@ -111,7 +118,11 @@ namespace Doggiehood.Unity
             bubble.transform.localScale = new Vector3(0.5f, 0.4f, 0.15f);
             bubble.transform.localPosition = new Vector3(0f, 1.6f * scale, 0f);
             Paint(bubble, Color.white);
-            Object.DestroyImmediate(bubble.GetComponent<Collider>());
+            // #148: the bubble keeps its primitive collider — it is the sole
+            // quest-discovery tap surface (conversation-system.md), and a hit
+            // on it routes to this DogView via GetComponentInParent. Inactive
+            // bubble (no quest) means inactive collider, so it never
+            // intercepts taps meant for the dog underneath.
 
             ApplyPose(windowAnchor);
             RefreshBubble();

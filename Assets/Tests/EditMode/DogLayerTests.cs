@@ -253,6 +253,111 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void TapRaycast_OnADogsBody_OpensItsConversation()
+        {
+            // #148 regression: the imported Cube Pets FBX carries no
+            // collider (unlike the primitive fallback rig, whose capsule and
+            // sphere brought their own), so TapRouter's Physics.Raycast
+            // sailed straight through every dog and taps were dead in the
+            // editor. A DogView must be physically hittable end-to-end:
+            // camera ray at the body -> collider -> OnTapped -> conversation.
+            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
+            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Pepper");
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            // Isolate the dog so no house/fence can intercept the ray.
+            view.transform.position = new Vector3(400f, 0f, 400f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 3f;
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var target = CombinedRendererBounds(view.transform.Find("Body")).center;
+                cam.transform.position = target + new Vector3(0f, 6f, -6f);
+                cam.transform.LookAt(target);
+                Physics.SyncTransforms();
+
+                var routed = TapRouter.RouteTap(cam, cam.WorldToScreenPoint(target));
+
+                Assert.That(routed, Is.True,
+                    "a raycast tap at the dog's body must hit a collider that routes to its DogView");
+                Assert.That(presenter.IsOpen, Is.True,
+                    "tapping a bubbled dog opens its conversation");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        [Test]
+        public void TapRaycast_OnTheSpeechBubbleItself_RoutesToTheDog()
+        {
+            // #148 regression: DogView.Init used to destroy the bubble's
+            // collider, so the speech bubble — the sole quest-discovery
+            // surface (conversation-system.md) — was never clickable. A ray
+            // at the bubble alone (horizontal, above the body) must route to
+            // the owning dog via GetComponentInParent.
+            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
+            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Duke");
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            view.transform.position = new Vector3(400f, 0f, -400f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 3f;
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var bubble = view.transform.Find(DogView.BubbleName);
+                var target = CombinedRendererBounds(bubble).center;
+                cam.transform.position = target + new Vector3(0f, 0f, -8f);
+                cam.transform.LookAt(target);
+                Physics.SyncTransforms();
+
+                var routed = TapRouter.RouteTap(cam, cam.WorldToScreenPoint(target));
+
+                Assert.That(routed, Is.True,
+                    "a raycast tap at the speech bubble must hit a collider that routes to the dog");
+                Assert.That(presenter.IsOpen, Is.True,
+                    "tapping the speech bubble opens the dog's conversation");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        private static Bounds CombinedRendererBounds(Transform root)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>();
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            return bounds;
+        }
+
+        [Test]
         public void OnlyDogsAndHouses_AreInteractable()
         {
             // #37: no other interactable character exists in the world.
