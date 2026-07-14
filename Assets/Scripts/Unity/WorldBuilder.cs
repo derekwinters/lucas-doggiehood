@@ -62,8 +62,10 @@ namespace Doggiehood.Unity
         /// which Derek's Editor check showed reading far too small against
         /// the kit roads): lots sit at +-14 and the logical sidewalk's
         /// outer edge is at 5.75m (0.75m verge), so an 8m-wide house spans
-        /// 10-18 on its lot, leaving a sensible front yard.</summary>
-        private const float HouseTargetFootprint = 8f;
+        /// 10-18 on its lot, leaving a sensible front yard. Public since
+        /// #126: the editor-only catalog gallery must scale models by the
+        /// exact number the game uses so it can never drift.</summary>
+        public const float HouseTargetFootprint = 8f;
 
         /// <summary>
         /// Yaw correction applied after pointing a house model at its
