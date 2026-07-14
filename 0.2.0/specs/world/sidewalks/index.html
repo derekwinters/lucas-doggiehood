@@ -725,6 +725,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#walkway-visuals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Walkway visuals
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#explicitly-out-of-scope-here" class="md-nav__link">
     <span class="md-ellipsis">
       Explicitly out of scope here
@@ -1353,6 +1362,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#walkway-visuals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Walkway visuals
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#explicitly-out-of-scope-here" class="md-nav__link">
     <span class="md-ellipsis">
       Explicitly out of scope here
@@ -1394,7 +1412,7 @@
 
 
 <h1 id="sidewalks-walk-network">Sidewalks &amp; Walk Network<a class="headerlink" href="#sidewalks-walk-network" title="Permanent link">&para;</a></h1>
-<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (locked world dimensions this page consumes), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid, out of scope here), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a> (deferred approach-to-rest movement, out of scope here)</em></p>
+<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (locked world dimensions this page consumes), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a> (front walkways, which replaced the driveway stubs on this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid, out of scope here), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a> (deferred approach-to-rest movement, out of scope here)</em></p>
 <h2 id="symmetric-sidewalk-placement">Symmetric sidewalk placement<a class="headerlink" href="#symmetric-sidewalk-placement" title="Permanent link">&para;</a></h2>
 <p>Every road gets a sidewalk on <strong>both</strong> sides — not just one edge. Moving outward from the road centerline: road → verge setback → sidewalk, mirrored on the other side, with grass outside the sidewalk. The widths are the locked <a href="../tile-catalog/#standard-dimensions">standard dimensions</a> (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) — nothing on this page introduces a new measurement:</p>
 <table>
@@ -1429,20 +1447,25 @@
 <p>This is placeholder geometry: crosswalks render as a flat, distinctly colored rectangular patch (no zebra-stripe markings) — see <a href="../art-style/">Art &amp; UI Style</a> for the palette and <a href="#build-checklist">Build checklist</a> below for what's actually implemented.</p>
 <p>Visually, each crosswalk only covers the road and verge band — <code>RoadWidth + 2 × GrassVergeWidth</code> (7.5m at the 0.75m verge) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's <code>Crosswalk</code> edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in <code>WorldBuilder</code>, not a change to the graph.</p>
 <h2 id="the-walk-network-graph">The walk network graph<a class="headerlink" href="#the-walk-network-graph" title="Permanent link">&para;</a></h2>
-<p><code>WalkNetwork</code> (Core) is a generic, data-driven graph over nodes (points) and edges — sidewalk segments, crosswalks, and driveway stubs — built from whatever <code>Road</code>s and house lots are passed to <code>WalkNetwork.BuildFrom</code>. It is <strong>not</strong> a <code>TileType</code> enum or a multi-tile adjacency grid — that system is explicitly deferred to <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (<code>06 - Neighborhood Expansion</code>, post-MVP). Today it happens to describe exactly the starting tile's one intersection, because that's all <code>NeighborhoodLayout</code> produces; the same algorithm would extend to more roads without changes.</p>
+<p><code>WalkNetwork</code> (Core) is a generic, data-driven graph over nodes (points) and edges — sidewalk segments, crosswalks, and front walkways — built from whatever <code>Road</code>s and house lots are passed to <code>WalkNetwork.BuildFrom</code>. It is <strong>not</strong> a <code>TileType</code> enum or a multi-tile adjacency grid — that system is explicitly deferred to <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (<code>06 - Neighborhood Expansion</code>, post-MVP). Today it happens to describe exactly the starting tile's one intersection, because that's all <code>NeighborhoodLayout</code> produces; the same algorithm would extend to more roads without changes.</p>
+<blockquote>
+<p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>):</strong> the neighborhood has <strong>no driveways</strong> — front walkways <em>replaced</em> the <code>DrivewayStub</code> edges (<code>WalkEdgeKind.FrontWalkway</code>; the enum member was renamed, not duplicated) as each lot's connection to the sidewalk. A walkway runs from the house's actual <strong>front door</strong> — the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/125">#125</a> catalog door position at the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/127">#127</a> front-setback house position — perpendicular to the street onto the sidewalk, so dogs path to real front doors. It keeps the stub's two contracts: general wander never enters it, and it is the only way on/off a lot. The lot-side node of the connection is therefore the <strong>door</strong>, not the lot center; house lot centers (±14) remain as data anchoring the deferred expansion geometry, but no walk-network edge touches them anymore.</p>
+</blockquote>
 <p>Construction, generically:</p>
 <ol>
 <li><strong>Sidewalk arms.</strong> Every road's two sidewalks are split into arms wherever another road crosses them, so a sidewalk never runs through another road's own footprint.</li>
 <li><strong>Crosswalks.</strong> At each crossing, the four box-corner nodes are connected pairwise into the 4-crosswalk box described above.</li>
-<li><strong>Driveway stubs.</strong> Each house lot gets one stub edge to the nearest point on the nearest sidewalk edge (perpendicular projection, clamped to the segment) — splitting that sidewalk edge at the attach point if needed.</li>
+<li><strong>Front walkways.</strong> Each house lot gets one walkway edge from its front door to its street-facing sidewalk. The sidewalk edge nearest the <em>lot center</em> still decides which street the house faces (unchanged from the stub, and still what <code>HousePlacement.FrontFacing</code> keys off); from that facing, <code>WalkNetwork.BuildFrom</code> derives the house's front-setback position (<code>HousePlacement</code>'s pure helpers) and its catalog door (<code>HouseModel.FrontDoorWorldPosition</code>), then projects the door perpendicularly onto that sidewalk (clamped to the segment) — splitting the sidewalk edge at the attach point if needed. The per-lot edge is queryable via <code>WalkNetwork.TryGetFrontWalkway(houseId)</code> (A = door node, B = sidewalk attach).</li>
 </ol>
-<p><code>NeighborhoodLayout.WalkNetwork</code> caches one instance built from <code>NeighborhoodLayout.Roads</code> and <code>NeighborhoodLayout.HouseLots</code>. The resulting network is fully connected — every node can reach every other node, including every house lot via its driveway stub — which a Core test asserts directly (BFS reachability from any starting node).</p>
+<p><code>NeighborhoodLayout.WalkNetwork</code> caches one instance built from <code>NeighborhoodLayout.Roads</code> and <code>NeighborhoodLayout.HouseLots</code>. The resulting network is fully connected — every node can reach every other node, including every house's front door via its walkway — which a Core test asserts directly (BFS reachability from any starting node).</p>
 <p><code>WalkNetwork.FindPath</code> is a small Dijkstra shortest-path over the graph (a priority-queue implementation would be overkill for a graph this size) — used by both wander and walking-home.</p>
 <h2 id="wander-a-node-to-node-walk-over-the-network">Wander: a node-to-node walk over the network<a class="headerlink" href="#wander-a-node-to-node-walk-over-the-network" title="Permanent link">&para;</a></h2>
-<p><code>WanderBehavior</code> (<a href="../../dogs/behavior/">Dog Behavior</a>) no longer does centerline-bounce math on the streets directly. It now random-walks node to node over the sidewalk+crosswalk portion of the network — <strong>driveway stubs are never entered</strong>, so general wander never crosses onto a house lot or into a yard.</p>
+<p><code>WanderBehavior</code> (<a href="../../dogs/behavior/">Dog Behavior</a>) no longer does centerline-bounce math on the streets directly. It now random-walks node to node over the sidewalk+crosswalk portion of the network — <strong>front walkways are never entered</strong>, so general wander never crosses onto a house lot, into a yard, or up to a door.</p>
 <p>At each node, the choice between continuing straight and deviating/turning is weighted. Two overloads exist: <code>WanderBehavior.NextTarget(current, continueWeight, deviateWeight)</code> takes an explicit override, while the parameterless <code>WanderBehavior.NextTarget(current)</code> — what every caller (<code>DogView</code>) uses today — derives <code>continueWeight = 1 - TurnProbability</code> and <code>deviateWeight = TurnProbability</code> from the dog's own <code>MovementProfile.TurnProbability</code> (#89). A lower <code>TurnProbability</code> (Excited) means a higher continue-weight, i.e. longer straight stretches before a turn, so the per-personality distinction from <a href="../../dogs/behavior/#movement-conveys-personality">Dog Behavior</a> carries all the way through to wander's actual path shape — both <code>Speed</code> and turn pacing now differ for Excited dogs, not just Speed.</p>
 <h2 id="walking-home-routes-over-the-network">Walking home routes over the network<a class="headerlink" href="#walking-home-routes-over-the-network" title="Permanent link">&para;</a></h2>
-<p>Walking home after accepting a "buy me X" quest (<a href="../../quests/quest-content/">Quest Content</a>) used to move in a straight line, ignoring streets entirely. Core now computes the actual route with <code>WalkNetwork.FindPath</code> from the dog's current position to its house lot, ending via that lot's driveway stub; the Unity layer (<code>QuestDirector</code>) only consumes the returned waypoint list and walks it frame by frame (<code>Vector3.MoveTowards</code> hop to hop) — the Core/Unity split stays intact, per <a href="../../../engineering/testing/">Testing Strategy</a>.</p>
+<p>Walking home after accepting a "buy me X" quest (<a href="../../quests/quest-content/">Quest Content</a>) used to move in a straight line, ignoring streets entirely. Core now computes the actual route with <code>WalkNetwork.FindPath</code> from the dog's current position to its house's <strong>front door</strong>, ending via that lot's front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a> — the dog arrives at the actual door, which also feeds future quest arrivals); the Unity layer (<code>QuestDirector</code>) only consumes the returned waypoint list and walks it frame by frame (<code>Vector3.MoveTowards</code> hop to hop) — the Core/Unity split stays intact, per <a href="../../../engineering/testing/">Testing Strategy</a>. Dogs also spawn at their walkway's sidewalk attach point (<code>DogSpawner</code>), staggered along the sidewalk so housemates don't overlap.</p>
+<h2 id="walkway-visuals">Walkway visuals<a class="headerlink" href="#walkway-visuals" title="Permanent link">&para;</a></h2>
+<p>A front walkway renders as tiled Kenney City Kit Suburban <code>path-short</code> pieces — the clean square-paver look, matching the kit sidewalk aesthetic (the kit's stone variants remain an available re-pick for Derek and Lucas). The math lives in Core (<code>WalkwayTiling</code>): pieces scale ×10 in width — the same derivation as <code>WorldBuilder.RoadTileScale</code>, landing the paver's 0.2 model width exactly on <code>SidewalkWidth</code> (2m), which is also the walkway edge's declared width — and along the walkway a whole number of pieces is compressed to cover door → sidewalk exactly (no gap at the door, no overshoot onto the kit road tile's raised sidewalk band). <code>WorldBuilder</code> instantiates the pieces verbatim, and falls back to one flat graybox strip when the kit piece can't be loaded — the same primitive-fallback pattern as the roads and houses.</p>
 <h2 id="explicitly-out-of-scope-here">Explicitly out of scope here<a class="headerlink" href="#explicitly-out-of-scope-here" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Approach-to-rest movement</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a>) — <code>RestBehavior</code> stays a pure probabilistic state flip with no movement of its own; it doesn't touch the walk network.</li>
@@ -1453,10 +1476,12 @@
 <ul>
 <li>[x] Every road declares a sidewalk on both sides, set back 0.75m from the road edge (2026-07-13 midpoint decision — a logical setback for dog placement, no visual grass strip in the kit-art path), sized from <code>WorldDimensions</code> only</li>
 <li>[x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm</li>
-<li>[x] The walk network graph (sidewalks + crosswalks + driveway stubs) is generated from <code>NeighborhoodLayout</code>'s roads and house lots, and is fully connected</li>
-<li>[x] <code>WanderBehavior</code> only ever produces positions on the sidewalk/crosswalk network — never a road surface, never a driveway stub</li>
+<li>[x] The walk network graph (sidewalks + crosswalks + front walkways) is generated from <code>NeighborhoodLayout</code>'s roads and house lots, and is fully connected</li>
+<li>[x] Each front walkway runs from the house's catalog door position to its street-facing sidewalk, perpendicular to the street (#128)</li>
+<li>[x] <code>WanderBehavior</code> only ever produces positions on the sidewalk/crosswalk network — never a road surface, never a front walkway</li>
 <li>[x] <code>WanderBehavior</code>'s node choice supports weighted continue-vs-deviate decisions, defaulting to a per-personality split derived from <code>MovementProfile.TurnProbability</code> (#89)</li>
-<li>[x] Walking home paths over the sidewalk/crosswalk/driveway-stub network to the destination lot</li>
+<li>[x] Walking home paths over the sidewalk/crosswalk/front-walkway network to the destination house's front door</li>
+<li>[x] Front walkways render as tiled City Kit Suburban path pieces along the Core segment, with a graybox strip fallback when the assets are absent (#128)</li>
 <li>[x] <code>WorldBuilder</code> renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces in the primitive fallback (the kit tiles bring their own art); spawned dogs stand on sidewalks</li>
 <li>[x] Crosswalks render only over the road itself, never over sidewalk pavement</li>
 <li>[ ] On-device visual check (human task, not attempted here)</li>
