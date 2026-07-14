@@ -153,6 +153,33 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void FrontWalkways_LengthsVaryPerHouse_ByTheDoorsRecessBehindTheFacade()
+        {
+            // Gallery pass 1 (2026-07-14): the authored doors are recessed
+            // behind the front facade (porches), so walkway lengths are no
+            // longer a uniform 3.75m — each runs FrontSetback +
+            // SidewalkWidth/2 (facade to sidewalk centerline) PLUS the
+            // model's scaled door recess depth. Guards against anything
+            // quietly re-pinning the old uniform length.
+            var network = BuildStartingNetwork();
+            var baseLength = HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f;
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var walkway), Is.True);
+
+                var model = HouseModelCatalog.ForHouse(lot.HouseId);
+                var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
+                var recess = scale * (model.FrontDoorLocalZ + model.FootprintZ / 2f);
+
+                Assert.That(recess, Is.GreaterThan(0f),
+                    $"house {lot.HouseId}'s authored door should be recessed behind the facade");
+                Assert.That(walkway.Length, Is.EqualTo(baseLength + recess).Within(0.001f),
+                    $"house {lot.HouseId} walkway length");
+            }
+        }
+
+        [Test]
         public void BuildFrom_TheDrivewayStubIsGone_ReplacedByTheFrontWalkway()
         {
             // Decision (Derek, #128): the neighborhood has NO driveways —

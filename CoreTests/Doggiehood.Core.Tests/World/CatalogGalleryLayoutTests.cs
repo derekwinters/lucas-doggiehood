@@ -74,65 +74,76 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_FrontsFaceMinusZ_SoTheDoorSitsOnTheScaledFrontFacadePlane()
+        public void Compute_AtGalleryYawZero_TheDoorIsTheScaledAuthoredLocalPoint()
         {
-            // Gallery convention: yaw 0, so the model-local front facade
-            // plane (z = -FootprintZ / 2) lands at
-            // entry.Z - scale * FootprintZ / 2 in world space — every door
-            // marker must sit exactly on it.
+            // Gallery convention: yaw 0, so container axes == model axes
+            // and the door marker lands exactly at the entry position plus
+            // the scaled authored 2D local door point. (This is the very
+            // relationship Derek's gallery pass 1 measurements rely on —
+            // Inspector local position / uniform scale = model-local door.)
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
             {
                 Assert.That(entry.YawDegrees, Is.EqualTo(0f), entry.Model.ModelName + " yaw");
-                Assert.That(entry.DoorPosition.Z,
-                    Is.EqualTo(entry.Position.Z - entry.UniformScale * entry.Model.FootprintZ / 2f)
+                Assert.That(entry.DoorPosition.X,
+                    Is.EqualTo(entry.Position.X + entry.UniformScale * entry.Model.FrontDoorLocalX)
                         .Within(0.0001f),
-                    entry.Model.ModelName + " door facade plane");
+                    entry.Model.ModelName + " door X");
+                Assert.That(entry.DoorPosition.Z,
+                    Is.EqualTo(entry.Position.Z + entry.UniformScale * entry.Model.FrontDoorLocalZ)
+                        .Within(0.0001f),
+                    entry.Model.ModelName + " door Z");
             }
         }
 
         [Test]
-        public void WalkwayLength_MatchesTheRealInGameWalkwayLength()
+        public void WalkwayEndBeyondFacade_MatchesTheRealInGameEndpointRule()
         {
-            // #128: the gallery has no streets, so its walkway stays a
-            // straight-out-the-front placeholder — but its length now
-            // reuses the real walkway geometry: the in-game walkway runs
-            // from the door (on the facade, FrontSetback beyond the
-            // sidewalk's OUTER edge) to the sidewalk CENTERLINE, i.e.
-            // FrontSetback + SidewalkWidth / 2 = 3.75m.
-            Assert.That(CatalogGalleryLayout.WalkwayLength,
+            // #128: the in-game walkway ends on the sidewalk CENTERLINE,
+            // which sits FrontSetback + SidewalkWidth / 2 = 3.75m beyond
+            // the scaled front facade. Since gallery pass 1 the doors are
+            // recessed, so this is an ENDPOINT rule, not a length: the
+            // walkway's length varies per model with the door's recess
+            // depth behind the facade, exactly as in the game.
+            Assert.That(CatalogGalleryLayout.WalkwayEndBeyondFacade,
                 Is.EqualTo(HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f).Within(0.0001f));
         }
 
         [Test]
-        public void Compute_WalkwayPlaceholder_RunsFromTheDoorStraightOutTheFront()
+        public void Compute_WalkwayPlaceholder_RunsFromTheDoorToTheGameEndpointBeyondTheScaledFacade()
         {
             // The gallery walkway is a marker line from the door toward
             // where the sidewalk would be — straight out the front (world
-            // -Z at yaw 0) by WalkwayLength (the real #128 walkway length;
-            // the gallery itself has no streets to attach to).
+            // -Z at yaw 0), ENDING WalkwayEndBeyondFacade past the scaled
+            // front facade plane (the sidewalk-centerline endpoint the real
+            // #128 walkway has; the gallery itself has no streets to attach
+            // to). With recessed doors the run is longer than 3.75m by each
+            // model's own recess depth.
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
             {
+                var scaledFacadeZ = entry.Position.Z - entry.UniformScale * entry.Model.FootprintZ / 2f;
+
                 Assert.That(entry.WalkwayStart, Is.EqualTo(entry.DoorPosition),
                     entry.Model.ModelName + " walkway start");
                 Assert.That(entry.WalkwayEnd.X, Is.EqualTo(entry.DoorPosition.X).Within(0.0001f),
                     entry.Model.ModelName + " walkway end X");
                 Assert.That(entry.WalkwayEnd.Z,
-                    Is.EqualTo(entry.DoorPosition.Z - CatalogGalleryLayout.WalkwayLength).Within(0.0001f),
+                    Is.EqualTo(scaledFacadeZ - CatalogGalleryLayout.WalkwayEndBeyondFacade).Within(0.0001f),
                     entry.Model.ModelName + " walkway end Z");
             }
         }
 
         [Test]
-        public void Compute_FencePlaceholder_IsTheScaledFootprintRectangle_WithTheDoorOnItsFrontEdge()
+        public void Compute_FencePlaceholder_IsTheScaledFootprintRectangle_WithTheDoorStrictlyInsideIt()
         {
             // #129 fences don't exist yet; the placeholder outlines the
             // scaled footprint so Derek can judge the authored numbers
-            // against the rendered model. The door must sit on the rect's
-            // front (min-Z) edge, within its X extent.
+            // against the rendered model. Since gallery pass 1 the doors
+            // are recessed (porches), so the marker sits strictly INSIDE
+            // the footprint rectangle, no longer on its front edge.
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
@@ -145,11 +156,12 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(entry.FenceMax.X, Is.EqualTo(entry.Position.X + halfX).Within(0.0001f));
                 Assert.That(entry.FenceMax.Z, Is.EqualTo(entry.Position.Z + halfZ).Within(0.0001f));
 
-                Assert.That(entry.DoorPosition.Z, Is.EqualTo(entry.FenceMin.Z).Within(0.0001f),
-                    entry.Model.ModelName + " door on the front fence edge");
                 Assert.That(entry.DoorPosition.X,
-                    Is.InRange(entry.FenceMin.X - 0.0001f, entry.FenceMax.X + 0.0001f),
-                    entry.Model.ModelName + " door within the facade extent");
+                    Is.GreaterThan(entry.FenceMin.X).And.LessThan(entry.FenceMax.X),
+                    entry.Model.ModelName + " door strictly within the footprint (X)");
+                Assert.That(entry.DoorPosition.Z,
+                    Is.GreaterThan(entry.FenceMin.Z).And.LessThan(entry.FenceMax.Z),
+                    entry.Model.ModelName + " door strictly within the footprint (Z)");
             }
         }
 

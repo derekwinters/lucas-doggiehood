@@ -67,11 +67,15 @@ namespace Doggiehood.Unity.Editor
         private static void BuildEntry(Transform parent, CatalogGalleryEntry entry)
         {
             var model = entry.Model;
+            // Label numbers are all MODEL-LOCAL authored values (matching
+            // the footprint pair): the door is the 2D local point Derek
+            // measured in gallery pass 1, not the scaled world offset.
             var container = new GameObject(
                 model.ModelName
                 + " — " + model.FootprintX.ToString("0.000")
                 + " x " + model.FootprintZ.ToString("0.000")
-                + ", door " + model.FrontDoorOffset.ToString("0.000"));
+                + ", door (" + model.FrontDoorLocalX.ToString("0.000")
+                + ", " + model.FrontDoorLocalZ.ToString("0.000") + ")");
             container.transform.SetParent(parent);
             container.transform.position = new Vector3(entry.Position.X, 0f, entry.Position.Z);
 

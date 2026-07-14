@@ -69,15 +69,18 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void ModelYawDegrees_PlacesTheDoorOnTheStreetSideOfTheHouse()
+        public void ModelYawDegrees_PlacesTheDoorAtItsAuthoredDepthAndLateralOffset()
         {
             // #128: the yaw the game applies to a kit model (look toward
             // the facing direction, plus the art-side 180° correction for
-            // the kits' -Z-facing fronts) now lives in Core, because the
+            // the kits' -Z-facing fronts) lives in Core, because the
             // walkway needs the door's world position engine-free. Fed to
-            // FrontDoorWorldPosition, it must put the door exactly the
-            // scaled facade half-depth in FRONT of the house position,
-            // along the facing direction.
+            // FrontDoorWorldPosition, it must map the model-local -Z axis
+            // onto the facing direction: the door's displacement from the
+            // house position, measured ALONG facing, is the scaled authored
+            // door depth (-FrontDoorLocalZ — recessed doors since gallery
+            // pass 1, no longer the facade half-depth), and ACROSS facing
+            // it is the scaled authored lateral offset.
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
@@ -88,15 +91,17 @@ namespace Doggiehood.Core.Tests.World
                 var door = model.FrontDoorWorldPosition(
                     position, HousePlacement.ModelYawDegrees(facing), scale);
 
-                var expectedX = position.X + facing.X * scale * model.FootprintZ / 2f
-                    // door offset is lateral; with a 0 offset it contributes nothing
-                    + 0f;
-                var expectedZ = position.Z + facing.Z * scale * model.FootprintZ / 2f;
+                var dx = door.X - position.X;
+                var dz = door.Z - position.Z;
+                var alongFacing = dx * facing.X + dz * facing.Z;
+                var acrossFacing = dx * facing.Z - dz * facing.X;
 
-                Assert.That(door.X, Is.EqualTo(expectedX).Within(0.001f),
-                    $"house {lot.HouseId} door X should sit on the front facade");
-                Assert.That(door.Z, Is.EqualTo(expectedZ).Within(0.001f),
-                    $"house {lot.HouseId} door Z should sit on the front facade");
+                Assert.That(alongFacing,
+                    Is.EqualTo(scale * -model.FrontDoorLocalZ).Within(0.001f),
+                    $"house {lot.HouseId} door depth along its facing direction");
+                Assert.That(Math.Abs(acrossFacing),
+                    Is.EqualTo(scale * Math.Abs(model.FrontDoorLocalX)).Within(0.001f),
+                    $"house {lot.HouseId} door lateral offset across its facing direction");
             }
         }
 

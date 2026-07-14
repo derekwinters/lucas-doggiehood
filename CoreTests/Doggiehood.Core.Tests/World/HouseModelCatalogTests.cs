@@ -36,7 +36,7 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Models_HaveUniqueNames_AndPositiveFootprintsWithDoorsOnTheFrontFacade()
+        public void Models_HaveUniqueNames_AndPositiveFootprints()
         {
             Assert.That(HouseModelCatalog.Models, Is.Not.Empty);
             Assert.That(HouseModelCatalog.Models.Select(m => m.ModelName), Is.Unique);
@@ -45,12 +45,6 @@ namespace Doggiehood.Core.Tests.World
             {
                 Assert.That(model.FootprintX, Is.GreaterThan(0f), $"{model.ModelName} FootprintX");
                 Assert.That(model.FootprintZ, Is.GreaterThan(0f), $"{model.ModelName} FootprintZ");
-
-                // The door must sit somewhere on the front facade, not
-                // beyond the model's own width.
-                Assert.That(System.Math.Abs(model.FrontDoorOffset),
-                    Is.LessThanOrEqualTo(model.FootprintX / 2f),
-                    $"{model.ModelName} door offset falls outside the facade");
             }
         }
 
@@ -79,29 +73,35 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Models_FirstPassDoorOffsets_AreCenteredOnTheFacade()
+        public void Models_DoorLocalPoints_AreDereksGalleryPass1Measurements()
         {
-            // First pass (#125): no door node exists in the fused kit
-            // meshes, so the door is recorded horizontally centered on the
-            // front facade for all four models. Refinement happens via the
-            // #126 debug gallery with Derek.
-            foreach (var model in HouseModelCatalog.Models)
-            {
-                Assert.That(model.FrontDoorOffset, Is.EqualTo(0f), model.ModelName);
-            }
+            // Derek's gallery pass 1 (2026-07-14): each DoorMarker moved
+            // onto the visible door of the rendered mesh, Inspector local
+            // position read in the entry container (gallery yaw 0, so
+            // container axes == model axes), divided back by the entry's
+            // uniform scale (8 / MaxFootprint) and rounded to 4 decimals.
+            AssertDoor("building-type-b", -0.2612f, 0.0446f);
+            AssertDoor("building-type-g", 0.0769f, -0.3382f);
+            AssertDoor("building-type-k", 0.1900f, -0.3672f);
+            AssertDoor("building-type-m", -0.0464f, -0.6105f);
         }
 
         [Test]
-        public void Models_DoorLocalPosition_SitsOnTheFrontFacadePlane()
+        public void Models_DoorLocalPoints_LieStrictlyWithinTheFootprint()
         {
-            // #126 numeric guardrail: every catalog door must sit exactly
-            // on the model-local front facade plane z = -FootprintZ / 2
-            // (the kit models face local -Z; see HouseModel's convention).
+            // Guardrail (replacing the pre-gallery facade-plane rule): a
+            // real kit door is recessed somewhere INSIDE the model's
+            // footprint rectangle — never on or beyond its bounds. Catches
+            // sign flips, axis swaps, and scaled-vs-local mixups in future
+            // authoring passes.
             foreach (var model in HouseModelCatalog.Models)
             {
-                Assert.That(model.FrontDoorLocalPosition.Z,
-                    Is.EqualTo(-model.FootprintZ / 2f).Within(0.0001f),
-                    model.ModelName);
+                Assert.That(System.Math.Abs(model.FrontDoorLocalX),
+                    Is.LessThan(model.FootprintX / 2f),
+                    $"{model.ModelName} door X outside the footprint");
+                Assert.That(System.Math.Abs(model.FrontDoorLocalZ),
+                    Is.LessThan(model.FootprintZ / 2f),
+                    $"{model.ModelName} door Z outside the footprint");
             }
         }
 
@@ -122,6 +122,13 @@ namespace Doggiehood.Core.Tests.World
             var model = HouseModelCatalog.ForModel(modelName);
             Assert.That(model.FootprintX, Is.EqualTo(footprintX).Within(0.0001f), modelName + " FootprintX");
             Assert.That(model.FootprintZ, Is.EqualTo(footprintZ).Within(0.0001f), modelName + " FootprintZ");
+        }
+
+        private static void AssertDoor(string modelName, float localX, float localZ)
+        {
+            var model = HouseModelCatalog.ForModel(modelName);
+            Assert.That(model.FrontDoorLocalX, Is.EqualTo(localX).Within(0.00001f), modelName + " door local X");
+            Assert.That(model.FrontDoorLocalZ, Is.EqualTo(localZ).Within(0.00001f), modelName + " door local Z");
         }
     }
 }

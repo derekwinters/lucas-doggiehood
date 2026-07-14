@@ -322,13 +322,16 @@ namespace Doggiehood.Unity.EditModeTests
                 Assert.That(Mathf.Abs(look.y), Is.LessThan(0.001f),
                     $"house {view.HouseId} look direction {look} is not horizontal");
 
-                Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(view.HouseId, out var walkway),
-                    Is.True, $"house {view.HouseId} has no front walkway");
-                var attach = walkway.B;
-                var toAttach = new Vector3(attach.X - lot.Position.X, 0f, attach.Z - lot.Position.Z).normalized;
+                // Core's FrontFacing IS the walkway-road association (#128
+                // derives it from the same edge), so compare to it directly.
+                // The old center-to-attach-point proxy broke once doors
+                // gained lateral offsets: the attach point follows the
+                // door, so that direction is no longer cardinal.
+                var facingPoint = HousePlacement.FrontFacing(lot);
+                var facing = new Vector3(facingPoint.X, 0f, facingPoint.Z);
 
-                Assert.That(Vector3.Dot(look, toAttach), Is.GreaterThan(0.99f),
-                    $"house {view.HouseId} must face its walkway attach point {attach} (look {look})");
+                Assert.That(Vector3.Dot(look, facing), Is.GreaterThan(0.999f),
+                    $"house {view.HouseId} must face its walkway road (facing {facing}, look {look})");
             }
         }
 

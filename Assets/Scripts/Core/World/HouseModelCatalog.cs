@@ -13,19 +13,24 @@ namespace Doggiehood.Core.World
     /// makes forgetting the row impossible.
     ///
     /// Footprints are parsed from the kit GLB geometry (model-local units).
-    /// Front-door offsets are a FIRST PASS: the fused meshes expose no door
-    /// node, so every door is recorded horizontally centered on the front
-    /// facade (offset 0) until the #126 debug gallery review with Derek
-    /// refines them.
+    /// Door points are AUTHORED DATA from Derek's #126 gallery review,
+    /// pass 1 (2026-07-14): he moved each gallery DoorMarker sphere onto
+    /// the visible door of the rendered mesh and read the Inspector local
+    /// position in the entry container (gallery yaw is 0, so container
+    /// axes == model axes); dividing by the entry's uniform scale
+    /// (8 / MaxFootprint) gives these model-local values, rounded to 4
+    /// decimals. The doors are recessed behind the front facade (porches;
+    /// building-type-b's is near its footprint center) — that observation
+    /// is what turned the door datum from a facade scalar into a 2D point.
     /// </summary>
     public static class HouseModelCatalog
     {
         public static IReadOnlyList<HouseModel> Models { get; } = new[]
         {
-            new HouseModel("building-type-b", 1.828f, 1.140f, 0f),
-            new HouseModel("building-type-g", 1.450f, 1.178f, 0f),
-            new HouseModel("building-type-k", 0.921f, 1.020f, 0f),
-            new HouseModel("building-type-m", 1.428f, 1.428f, 0f),
+            new HouseModel("building-type-b", 1.828f, 1.140f, -0.2612f, 0.0446f),
+            new HouseModel("building-type-g", 1.450f, 1.178f, 0.0769f, -0.3382f),
+            new HouseModel("building-type-k", 0.921f, 1.020f, 0.1900f, -0.3672f),
+            new HouseModel("building-type-m", 1.428f, 1.428f, -0.0464f, -0.6105f),
         };
 
         /// <summary>
