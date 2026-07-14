@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -10,20 +9,22 @@ namespace Doggiehood.Core.Tests.World
     /// lot center toward the street it faces, so its front facade sits
     /// exactly <see cref="HousePlacement.FrontSetback"/> from the
     /// sidewalk's OUTER edge. The lot center itself stays where it is —
-    /// it anchors the walk network's driveway stub and the deferred
-    /// expansion geometry — only the house visual moves, and only along
-    /// the facing axis.
+    /// it anchors the deferred expansion geometry — only the house visual
+    /// moves, and only along the facing axis. Since #128 the facing rule
+    /// is keyed to the lot's front walkway (which replaced the driveway
+    /// stub): squarely toward the road the walkway attaches to.
     /// </summary>
     public class HousePlacementTests
     {
-        /// <summary>Same target the game uses (WorldBuilder.HouseTargetFootprint).</summary>
-        private const float TargetFootprint = 8f;
+        /// <summary>Same target the game uses (WorldBuilder.HouseTargetFootprint
+        /// aliases this Core constant since #128).</summary>
+        private const float TargetFootprint = HousePlacement.HouseTargetFootprint;
 
-        private static WalkEdge DrivewayStubFor(HouseLot lot)
+        private static WalkEdge FrontWalkwayFor(HouseLot lot)
         {
-            return NeighborhoodLayout.WalkNetwork.Edges.Single(e =>
-                e.Kind == WalkEdgeKind.DrivewayStub
-                && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
+            Assert.That(NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway),
+                Is.True, $"house {lot.HouseId} has no front walkway");
+            return walkway;
         }
 
         private static float SidewalkOuterEdgeOffset()
@@ -35,11 +36,20 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void FrontFacing_IsAUnitCardinalDirection_TowardTheDrivewayAttachPoint()
+        public void HouseTargetFootprint_IsTheGamesEightMeterTarget()
         {
-            // The facing rule moves into Core from WorldBuilder (#127
-            // needs it for the setback math): squarely toward the road the
-            // lot's driveway stub connects to.
+            // Moved into Core from WorldBuilder (#128): WalkNetwork's
+            // walkway construction needs the door position, which depends
+            // on the game's uniform house scale — so the canonical target
+            // lives engine-free and WorldBuilder aliases it.
+            Assert.That(HousePlacement.HouseTargetFootprint, Is.EqualTo(8f));
+        }
+
+        [Test]
+        public void FrontFacing_IsAUnitCardinalDirection_TowardTheWalkwayAttachPoint()
+        {
+            // The facing rule (#127, retargeted by #128): squarely toward
+            // the road the lot's front walkway attaches to.
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var facing = HousePlacement.FrontFacing(lot);
@@ -49,12 +59,44 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(Math.Abs(facing.X) + Math.Abs(facing.Z), Is.EqualTo(1f).Within(0.0001f),
                     $"house {lot.HouseId} facing {facing} is not a unit direction");
 
-                var attach = DrivewayStubFor(lot).Other(lot.Position);
+                var attach = FrontWalkwayFor(lot).B;
                 var towardAttach = facing.X != 0f
                     ? (attach.X - lot.Position.X) * facing.X
                     : (attach.Z - lot.Position.Z) * facing.Z;
                 Assert.That(towardAttach, Is.GreaterThan(0f),
-                    $"house {lot.HouseId} must face its driveway attach point {attach}");
+                    $"house {lot.HouseId} must face its walkway attach point {attach}");
+            }
+        }
+
+        [Test]
+        public void ModelYawDegrees_PlacesTheDoorOnTheStreetSideOfTheHouse()
+        {
+            // #128: the yaw the game applies to a kit model (look toward
+            // the facing direction, plus the art-side 180° correction for
+            // the kits' -Z-facing fronts) now lives in Core, because the
+            // walkway needs the door's world position engine-free. Fed to
+            // FrontDoorWorldPosition, it must put the door exactly the
+            // scaled facade half-depth in FRONT of the house position,
+            // along the facing direction.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var model = HouseModelCatalog.ForHouse(lot.HouseId);
+                var scale = TargetFootprint / model.MaxFootprint;
+                var facing = HousePlacement.FrontFacing(lot);
+                var position = HousePlacement.Position(lot, TargetFootprint);
+
+                var door = model.FrontDoorWorldPosition(
+                    position, HousePlacement.ModelYawDegrees(facing), scale);
+
+                var expectedX = position.X + facing.X * scale * model.FootprintZ / 2f
+                    // door offset is lateral; with a 0 offset it contributes nothing
+                    + 0f;
+                var expectedZ = position.Z + facing.Z * scale * model.FootprintZ / 2f;
+
+                Assert.That(door.X, Is.EqualTo(expectedX).Within(0.001f),
+                    $"house {lot.HouseId} door X should sit on the front facade");
+                Assert.That(door.Z, Is.EqualTo(expectedZ).Within(0.001f),
+                    $"house {lot.HouseId} door Z should sit on the front facade");
             }
         }
 
@@ -126,11 +168,13 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Position_LeavesTheLotCenterAndItsWalkNetworkAnchorsUntouched()
+        public void Position_LeavesTheLotCenterUntouched_AndTheWalkwayEndsAtTheDoor()
         {
-            // The lot center is the anchor for the driveway stub (and the
-            // deferred expansion geometry) — computing the setback position
-            // must not move it.
+            // The lot center still anchors the deferred expansion geometry
+            // — computing the setback position must not move it. The walk
+            // network anchor, though, moved with #128: the lot-side node
+            // of the lot's connection IS the front door now (decision on
+            // #128 — the old stub's lot-center node is gone).
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 HousePlacement.Position(lot, TargetFootprint);
@@ -140,9 +184,18 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(Math.Abs(lot.Position.Z),
                     Is.EqualTo(NeighborhoodLayout.LotDistanceFromCenter).Within(0.0001f));
 
-                // The stub still attaches at the lot center itself.
-                Assert.That(() => DrivewayStubFor(lot), Throws.Nothing,
-                    $"house {lot.HouseId} lost its lot-center driveway stub anchor");
+                var walkway = FrontWalkwayFor(lot);
+                var model = HouseModelCatalog.ForHouse(lot.HouseId);
+                var scale = TargetFootprint / model.MaxFootprint;
+                var door = model.FrontDoorWorldPosition(
+                    HousePlacement.Position(lot, TargetFootprint),
+                    HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot)),
+                    scale);
+
+                Assert.That(walkway.A.X, Is.EqualTo(door.X).Within(0.001f),
+                    $"house {lot.HouseId}'s walkway lot-side node must be its front door (X)");
+                Assert.That(walkway.A.Z, Is.EqualTo(door.Z).Within(0.001f),
+                    $"house {lot.HouseId}'s walkway lot-side node must be its front door (Z)");
             }
         }
 
