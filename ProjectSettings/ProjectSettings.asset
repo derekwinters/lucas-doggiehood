@@ -76,3 +76,4 @@ PlayerSettings:
       m_SubKind: 
   scriptingBackend:
     Android: 1
+  activeInputHandler: 0
