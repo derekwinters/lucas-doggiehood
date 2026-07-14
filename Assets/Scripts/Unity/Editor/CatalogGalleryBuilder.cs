@@ -9,7 +9,8 @@ namespace Doggiehood.Unity.Editor
     /// <summary>
     /// #126: procedurally builds the house-catalog authoring gallery —
     /// every HouseModelCatalog model in a row, annotated with its door
-    /// marker, walkway placeholder, and fence placeholder. All numbers come
+    /// marker, walkway placeholder, and real backyard fence outline
+    /// (#146). All numbers come
     /// from Core's CatalogGalleryLayout (which itself only calls the APIs
     /// the game path uses), so what Derek sees is exactly what the game
     /// would do with the authored catalog values.
@@ -25,7 +26,7 @@ namespace Doggiehood.Unity.Editor
         public const string RootName = "CatalogGallery";
         public const string DoorMarkerName = "DoorMarker";
         public const string WalkwayName = "WalkwayPlaceholder";
-        public const string FenceName = "FencePlaceholder";
+        public const string FenceName = "BackyardFence";
 
         /// <summary>Row spacing: at the fixed ×7 kit scale (#145) the
         /// widest model (building-type-b) is 12.80m wide, so 16m keeps a
@@ -84,7 +85,7 @@ namespace Doggiehood.Unity.Editor
             BuildModelVisual(container.transform, entry);
             BuildDoorMarker(container.transform, entry);
             BuildWalkwayPlaceholder(container.transform, entry);
-            BuildFencePlaceholder(container.transform, entry);
+            BuildBackyardFence(container.transform, entry);
         }
 
         /// <summary>The model exactly as the game would place it: same
@@ -142,37 +143,37 @@ namespace Doggiehood.Unity.Editor
             Tint(walkway, CoreColors.FromHex(Palette.SidewalkHex));
         }
 
-        /// <summary>Fence line placeholder: thin rails outlining the scaled
-        /// footprint rectangle (#129 fences don't exist yet), so Derek can
-        /// judge the authored footprint numbers against the rendered
-        /// model's actual silhouette.</summary>
-        private static void BuildFencePlaceholder(Transform container, CatalogGalleryEntry entry)
+        /// <summary>The model's REAL backyard fence outline (#146): one
+        /// thin rail per Core FenceRun (the entry's FenceRuns come from
+        /// LotFence.BackyardRuns, the exact API the game path uses —
+        /// side-wall midpoint anchors wrapping the back yard, front open),
+        /// at the real in-game fence height (FenceTiling), so Derek can
+        /// judge each model's enclosure. Replaces the old
+        /// authored-footprint-outline placeholder — the rendered model
+        /// itself shows the silhouette now.</summary>
+        private static void BuildBackyardFence(Transform container, CatalogGalleryEntry entry)
         {
             var fence = new GameObject(FenceName);
             fence.transform.SetParent(container);
             fence.transform.position = Vector3.zero;
 
-            var midX = (entry.FenceMin.X + entry.FenceMax.X) / 2f;
-            var midZ = (entry.FenceMin.Z + entry.FenceMax.Z) / 2f;
-            var sizeX = entry.FenceMax.X - entry.FenceMin.X;
-            var sizeZ = entry.FenceMax.Z - entry.FenceMin.Z;
+            var height = FenceTiling.Scale * FenceTiling.PieceModelHeight;
+            for (var i = 0; i < entry.FenceRuns.Count; i++)
+            {
+                var run = entry.FenceRuns[i];
+                var rail = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                rail.name = "Rail " + i;
+                rail.transform.SetParent(fence.transform);
+                rail.transform.position = new Vector3(
+                    (run.A.X + run.B.X) / 2f, height / 2f, (run.A.Z + run.B.Z) / 2f);
 
-            BuildFenceRail(fence.transform, new Vector3(midX, entry.FenceMin.Z), new Vector3(sizeX, 0.08f), "South");
-            BuildFenceRail(fence.transform, new Vector3(midX, entry.FenceMax.Z), new Vector3(sizeX, 0.08f), "North");
-            BuildFenceRail(fence.transform, new Vector3(entry.FenceMin.X, midZ), new Vector3(0.08f, sizeZ), "West");
-            BuildFenceRail(fence.transform, new Vector3(entry.FenceMax.X, midZ), new Vector3(0.08f, sizeZ), "East");
-        }
-
-        /// <summary>One fence rail; groundPoint/groundSize pack (X, Z) into
-        /// a Vector3's x and y for brevity.</summary>
-        private static void BuildFenceRail(Transform fence, Vector3 groundPoint, Vector3 groundSize, string label)
-        {
-            var rail = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rail.name = "Rail " + label;
-            rail.transform.SetParent(fence);
-            rail.transform.position = new Vector3(groundPoint.x, 0.25f, groundPoint.y);
-            rail.transform.localScale = new Vector3(groundSize.x, 0.5f, groundSize.y);
-            Tint(rail, new Color(0.55f, 0.4f, 0.25f));
+                // Runs are axis-aligned at gallery yaw 0.
+                var alongX = Mathf.Abs(run.A.Z - run.B.Z) < 0.001f;
+                rail.transform.localScale = alongX
+                    ? new Vector3(run.Length, height, 0.15f)
+                    : new Vector3(0.15f, height, run.Length);
+                Tint(rail, new Color(0.55f, 0.4f, 0.25f));
+            }
         }
 
         private static void BuildGround(Transform parent, int entryCount)

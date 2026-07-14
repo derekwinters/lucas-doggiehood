@@ -13,7 +13,10 @@ namespace Doggiehood.Core.Tests.World
     /// footprints). Same Core-computes/Unity-instantiates pattern as
     /// WalkwayTiling: a whole number of pieces per run, compressed (never
     /// stretched past a full piece) to cover the run exactly, so fence
-    /// ends land precisely on the lot corners and the gate-gap edges.
+    /// ends land precisely on the back-yard corners and the side-wall
+    /// anchors (#146 — lots are unfenced by default, so the tiling math is
+    /// exercised on LotFence.GeometryFor, which stays queryable while a
+    /// lot's fence is hidden).
     /// </summary>
     public class FenceTilingTests
     {
@@ -34,7 +37,7 @@ namespace Doggiehood.Core.Tests.World
 
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                var runs = LotFence.RunsFor(lot);
+                var runs = LotFence.GeometryFor(lot);
                 Assert.That(runs, Is.Not.Empty, $"lot {lot.HouseId} has no fence runs");
 
                 foreach (var run in runs)
@@ -85,7 +88,7 @@ namespace Doggiehood.Core.Tests.World
             // must equal the run's A → B direction.
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                foreach (var run in LotFence.RunsFor(lot))
+                foreach (var run in LotFence.GeometryFor(lot))
                 {
                     var dirX = (run.B.X - run.A.X) / run.Length;
                     var dirZ = (run.B.Z - run.A.Z) / run.Length;

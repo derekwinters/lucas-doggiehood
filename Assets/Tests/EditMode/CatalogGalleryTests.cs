@@ -55,7 +55,7 @@ namespace Doggiehood.Unity.EditModeTests
                 Assert.That(entry.Find(CatalogGalleryBuilder.WalkwayName), Is.Not.Null,
                     model.ModelName + " walkway placeholder");
                 Assert.That(entry.Find(CatalogGalleryBuilder.FenceName), Is.Not.Null,
-                    model.ModelName + " fence placeholder");
+                    model.ModelName + " backyard fence outline");
             }
         }
 
@@ -100,6 +100,43 @@ namespace Doggiehood.Unity.EditModeTests
                     entry.Model.ModelName + " door X");
                 Assert.That(marker.position.z, Is.EqualTo(expected.Z).Within(0.001f),
                     entry.Model.ModelName + " door Z");
+            }
+        }
+
+        [Test]
+        public void Build_BackyardFenceOutline_RendersOneRailPerCoreFenceRun()
+        {
+            // #146: the gallery shows the model's REAL backyard fence
+            // (side-wall midpoint anchors + rear line) straight from the
+            // Core entry's FenceRuns — one rail per run, centered on the
+            // run's midpoint. Same-API guardrail as the door marker: the
+            // gallery renders Core numbers, it does not re-derive them.
+            root = CatalogGalleryBuilder.Build();
+
+            var layout = CatalogGalleryLayout.Compute(
+                WorldBuilder.HouseKitScale, CatalogGalleryBuilder.EntrySpacing);
+
+            foreach (var entry in layout)
+            {
+                var container = root.transform.Cast<Transform>()
+                    .Single(t => t.name.StartsWith(entry.Model.ModelName));
+                var fence = container.Find(CatalogGalleryBuilder.FenceName);
+                Assert.That(fence, Is.Not.Null, entry.Model.ModelName + " fence outline");
+
+                var rails = fence.Cast<Transform>().ToList();
+                Assert.That(rails.Count, Is.EqualTo(entry.FenceRuns.Count),
+                    entry.Model.ModelName + " one rail per Core fence run");
+
+                for (var i = 0; i < rails.Count; i++)
+                {
+                    var run = entry.FenceRuns[i];
+                    Assert.That(rails[i].position.x,
+                        Is.EqualTo((run.A.X + run.B.X) / 2f).Within(0.001f),
+                        entry.Model.ModelName + $" rail {i} X");
+                    Assert.That(rails[i].position.z,
+                        Is.EqualTo((run.A.Z + run.B.Z) / 2f).Within(0.001f),
+                        entry.Model.ModelName + $" rail {i} Z");
+                }
             }
         }
 

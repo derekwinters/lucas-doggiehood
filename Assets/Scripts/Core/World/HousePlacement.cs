@@ -49,9 +49,12 @@ namespace Doggiehood.Core.World
         /// (none today). It replaced the 8m max-footprint normalization
         /// (#122/#128), which gave each model a different scale factor —
         /// houses weren't at the same scale, so doors read different
-        /// sizes. ×8 was rejected: building-type-b would be 14.6m wide
-        /// against the 15m fence square, failing #129's 0.5m margin
-        /// guard; at ×7 it is 12.8m with 1.1m margin. Lives in Core
+        /// sizes. ×8 was rejected: building-type-b would have been 14.6m
+        /// wide against #129's then-current 15m fence square, failing its
+        /// 0.5m margin guard; at ×7 it was 12.8m with 1.1m margin. (#146
+        /// replaced that square with house-anchored backyard fences whose
+        /// guard is the 0.5m rear-wall clearance — the ×7 decision stands
+        /// on its own.) Lives in Core
         /// because the walk network's front walkways start at each
         /// house's door, and the door's world position depends on this
         /// scale — WorldBuilder.HouseKitScale aliases it.
