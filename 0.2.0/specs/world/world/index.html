@@ -644,9 +644,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lot-fences" class="md-nav__link">
+  <a href="#backyard-fences" class="md-nav__link">
     <span class="md-ellipsis">
-      Lot fences
+      Backyard fences
     </span>
   </a>
   
@@ -1335,9 +1335,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lot-fences" class="md-nav__link">
+  <a href="#backyard-fences" class="md-nav__link">
     <span class="md-ellipsis">
-      Lot fences
+      Backyard fences
     </span>
   </a>
   
@@ -1407,14 +1407,14 @@
 <blockquote>
 <p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/145">#145</a>):</strong> every City Kit Suburban house model renders at <strong>one fixed uniform scale: ×7</strong> — the kit-wide default unless a specific model gets a documented exception (none today). This replaces the earlier rule that normalized each model's max horizontal footprint to a uniform 8m, which gave every model a <em>different</em> scale factor — houses weren't actually at the same scale, so doors read different sizes house to house.</p>
 </blockquote>
-<p>The constant lives in Core as <code>HousePlacement.KitScale</code> (<code>WorldBuilder.HouseKitScale</code> is the Unity-side alias), and everything downstream — front-setback placement, door world positions, walkway starts, the catalog gallery — derives from it. At ×7 the four starting models' footprints are: building-type-b <strong>12.80×7.98m</strong>, building-type-g <strong>10.15×8.25m</strong>, building-type-k <strong>6.45×7.14m</strong>, building-type-m <strong>10.00×10.00m</strong>. ×8 was rejected: building-type-b would be 14.6m wide against the 15m lot-fence square, failing the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a> guard that keeps every house corner at least 0.5m inside its fence; at ×7 it keeps a 1.1m margin.</p>
-<h2 id="lot-fences">Lot fences<a class="headerlink" href="#lot-fences" title="Permanent link">&para;</a></h2>
+<p>The constant lives in Core as <code>HousePlacement.KitScale</code> (<code>WorldBuilder.HouseKitScale</code> is the Unity-side alias), and everything downstream — front-setback placement, door world positions, walkway starts, the catalog gallery — derives from it. At ×7 the four starting models' footprints are: building-type-b <strong>12.80×7.98m</strong>, building-type-g <strong>10.15×8.25m</strong>, building-type-k <strong>6.45×7.14m</strong>, building-type-m <strong>10.00×10.00m</strong>. ×8 was rejected at the time because building-type-b would have been 14.6m wide against <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>'s then-current 15m lot-fence square (a 0.5m-margin guard); at ×7 it kept a 1.1m margin. That square is gone — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/146">#146</a> reshaped fences to anchor on the house itself (see <a href="#backyard-fences">Backyard fences</a>), whose own guard is the 0.5m rear-wall clearance — but the ×7 decision stands on its own.</p>
+<h2 id="backyard-fences">Backyard fences<a class="headerlink" href="#backyard-fences" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Decision (2026-07-13, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>):</strong> each house lot is bounded by a fence with a <strong>gate gap where the front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>) crosses</strong>, so the walkway always passes through the gate.</p>
+<p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/146">#146</a>, reshaping <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>):</strong> each fence starts at the <strong>midpoint of each side wall of the house</strong> and wraps around the <strong>back yard</strong> only — the <strong>front yard stays open</strong>. No fence line crosses the front, so #129's gate-gap design is gone: the front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>) runs door → sidewalk through the open front and never meets a fence. Fences are <strong>defined for every lot but hidden by default</strong> — a future quest purchases them (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/147">#147</a>).</p>
 </blockquote>
-<p>The geometry lives in Core (<code>LotFence</code>): an axis-aligned square of half-extent <strong>7.5m</strong> around the lot center — strictly clear of the sidewalk (8.25m away on both streets of a corner lot, leaving a 0.75m grass strip) and containing every setback-shifted house footprint with margin (the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/127">#127</a> facade sits 5.5m street-side of the lot center), all test-enforced. The gate gap is <strong>3m</strong> wide (the walkway's 2m visual width plus 0.5m clearance per side), centered on the walkway line.</p>
-<p>Fencing is <strong>per lot</strong> — <code>HouseLot.HasFence</code>, default <strong>on</strong> for all four starting lots — so a later design decision can make fences a buyable decoration or house-level upgrade without reshaping the geometry; that decision is explicitly <em>not</em> made yet. A lot with the flag off contributes no fence geometry.</p>
-<p>Visually, fences render as tiled Kenney City Kit Suburban <code>fence</code> pieces at uniform scale ×5 (1.35m tall — half the ground-tile scale, which would read as a 2.7m wall). Core's <code>FenceTiling</code> compresses a whole number of pieces to cover each run exactly (the same compress-to-fit rule as the walkway pavers), so fence ends land precisely on lot corners and gate-gap edges; <code>WorldBuilder</code> instantiates the pieces verbatim and falls back to one thin graybox rail per run when the kit piece can't be loaded.</p>
+<p>The geometry lives in Core (<code>LotFence</code>): three continuous runs — side-wall midpoint → rear corner, rear line, rear corner → side-wall midpoint — that rotate with the house facing (a house facing +X has its side walls along Z). Fence width follows the house: the side anchors sit at the scaled side walls' midpoints, so the width is each model's scaled <code>FootprintX</code> at the fixed ×7 kit scale (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/145">#145</a>). The rear line reuses #129's 7.5m boundary constant (<code>RearBoundaryFromLotCenter</code>) <strong>for the rear only</strong>: lot center + 7.5m away from the faced street, which every model's setback-shifted rear wall clears by at least 3.0m at ×7 (test-enforced at ≥ 0.5m; the deepest model, building-type-m at 10.00m, keeps 3.004m). Its house-relative equivalent is <strong>13m behind the scaled front facade</strong> (<code>RearLineBehindFacade</code> — the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/127">#127</a> setback puts every facade 5.5m street-side of its lot center), which is the form the catalog gallery uses. Exact alignment with property layouts is deferred to <a href="https://github.com/derekwinters/lucas-doggiehood/issues/147">#147</a>.</p>
+<p>Fencing is <strong>per lot</strong> — <code>HouseLot.HasFence</code>, default <strong>off</strong> since #146 — so the built world renders <strong>no fences</strong> today. The geometry stays queryable for a disabled lot: <code>LotFence.GeometryFor</code> always describes the fence (the #147 purchase flow and the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/126">#126</a> gallery need it), while the flag-respecting <code>LotFence.RunsFor</code> — empty while hidden — is what <code>WorldBuilder</code> consumes. <code>WorldBuilder.ForceFencesVisible</code> is the Editor-check/test seam that builds every fence anyway.</p>
+<p>Visually, fences render as tiled Kenney City Kit Suburban <code>fence</code> pieces at uniform scale ×5 (1.35m tall — half the ground-tile scale, which would read as a 2.7m wall). Core's <code>FenceTiling</code> compresses a whole number of pieces to cover each run exactly (the same compress-to-fit rule as the walkway pavers), so fence ends land precisely on the side-wall anchors and back-yard corners; <code>WorldBuilder</code> instantiates the pieces verbatim and falls back to one thin graybox rail per run when the kit piece can't be loaded. The catalog gallery shows each model's real backyard fence outline from the same Core API (<code>LotFence.BackyardRuns</code>).</p>
 <h2 id="lighting-time">Lighting &amp; time<a class="headerlink" href="#lighting-time" title="Permanent link">&para;</a></h2>
 <p>Static, pleasant daytime lighting — always sunny/mid-day. <strong>No day/night cycle and no weather system for MVP.</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/39">#39</a>)</p>
 <p>This is a deliberate simplification: it avoids needing lighting variants for every asset, and a future weather/day-night system is tracked separately as an explicit future idea — see <a href="../../future-ideas/">Future Ideas</a>.</p>
@@ -1425,7 +1425,7 @@
 <ul>
 <li>[ ] One intersection, two streets, 4 house lots (one per quadrant)</li>
 <li>[ ] Houses placed per <a href="../art-style/">Art &amp; UI Style</a> (cottage silhouettes, one per house)</li>
-<li>[x] Each lot fenced (per-lot flag, all four on) with the gate gap centered on its front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>)</li>
+<li>[x] Backyard fence defined per lot (anchored at the house's side-wall midpoints, front yard open), hidden by default until purchased (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/146">#146</a>; purchase quest: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/147">#147</a>)</li>
 <li>[ ] Static daytime lighting setup, no day/night or weather systems present</li>
 <li>[ ] Scene readable and navigable at the isometric camera angle (see <a href="../camera-controls/">Camera, Navigation &amp; Controls</a>)</li>
 </ul>
