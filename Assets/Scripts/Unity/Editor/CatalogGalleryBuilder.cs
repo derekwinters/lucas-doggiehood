@@ -163,7 +163,7 @@ namespace Doggiehood.Unity.Editor
                 var run = entry.FenceRuns[i];
                 var rail = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 rail.name = "Rail " + i;
-                rail.transform.SetParent(fence);
+                rail.transform.SetParent(fence.transform);
                 rail.transform.position = new Vector3(
                     (run.A.X + run.B.X) / 2f, height / 2f, (run.A.Z + run.B.Z) / 2f);
 
