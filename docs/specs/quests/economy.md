@@ -22,7 +22,13 @@ The overall goal is helping dogs around the neighborhood by completing their req
 - A completed quest pays a **flat 10 coins**, regardless of quest type.
 - A typical gift/decoration item costs **roughly 30-50 coins** (3-5 quests' worth of saving).
 
-These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build.
+Post-MVP expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Expansion](../expansion.md#pricing))*:
+
+- Zone unlock: **100 coins** for the first zone, **+100 per subsequent zone** (100, 200, 300, …).
+- Building a house: **50 coins**, flat.
+- House upgrades: **100 / 200 / 400 coins** for levels 2 / 3 / 4.
+
+These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build. Every one of them is a named constant in Core so playtesting adjustments are one-line changes.
 
 ## Quest authoring
 

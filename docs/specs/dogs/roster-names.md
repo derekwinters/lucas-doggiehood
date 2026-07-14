@@ -25,6 +25,8 @@ French Bulldog and Puggle are unused in the starting roster — reserved for the
 
 As new houses fill up over time (post-MVP expansion), new dogs need names. The game randomly picks an unused name from a curated pool, avoiding duplicates with dogs currently in the neighborhood.
 
+How move-in dogs are assembled (households, the reserved-breeds-first rule, count-weighted breed selection, personalities, and the easter-egg chance) is specified in [Neighborhood Expansion — Move-in system](../expansion.md#move-in-system) *(decisions 2026-07-14, Derek, on [#54](https://github.com/derekwinters/lucas-doggiehood/issues/54))*. In short: after the reserved French Bulldog and Puggle arrive, breeds are chosen with weights inversely proportional to each breed's current count in the neighborhood.
+
 **Classic**: Buddy, Max, Charlie, Rocky, Cooper, Bear, Tucker, Jack, Toby, Milo, Oliver, Leo, Winston, Baxter, Bentley, Gus, Murphy, Finn, Otis, Chase, Rusty, Sam, Boomer, Ollie, Louie, Bruno, Diesel, Sarge, Ranger, Frank, Gordon, Reggie, Wally
 
 **Playful/food-themed**: Biscuit, Pretzel, Peanut, Nugget, Ziggy, Mochi, Taco, Noodle, Pickles, Beans, Cricket, Marshmallow, Biscotti, Nutmeg, Cinnamon, Pumpkin, Buttercup, Petunia, Juniper
@@ -36,6 +38,8 @@ As new houses fill up over time (post-MVP expansion), new dogs need names. The g
 ## Easter egg dogs
 
 A set of names reserved for family/friends Lucas knows. Unlike the general pool, these names always pair with one specific fixed breed (and coat color, where noted) whenever selected — they are never assigned randomly to a different breed, and are excluded from the general name pool above.
+
+Each expansion move-in has a **5% chance** its household head is drawn from this table instead of the general pool (the breed roll is skipped — the fixed breed/coat applies). Once used, a name is **permanently removed from the reserve**, so each easter-egg dog appears exactly once. *(Decision 2026-07-14, Derek, on [#54](https://github.com/derekwinters/lucas-doggiehood/issues/54).)*
 
 | Name | Breed | Coat |
 |---|---|---|
@@ -50,6 +54,6 @@ A set of names reserved for family/friends Lucas knows. Unlike the general pool,
 ## Build checklist
 
 - [ ] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above
-- [ ] General name pool (66 names) exists as data, excluding `Hank` and `Stella`
+- [ ] General name pool (68 names) exists as data, excluding `Hank` and `Stella`
 - [ ] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs
 - [ ] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment
