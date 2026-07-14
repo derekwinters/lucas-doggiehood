@@ -1,48 +1,50 @@
-# Git LFS tracking for binary game assets (#79).
-# Keep this in place BEFORE any real art/audio assets are committed.
+# Binary game assets are committed as regular git blobs (decided in #131 —
+# Git LFS rules from #79 were never active in agent environments and all
+# existing art is already raw blobs). "binary" marks them -text -diff -merge
+# so git never EOL-normalizes or line-diffs them.
 
 # Images
-*.png filter=lfs diff=lfs merge=lfs -text
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpeg filter=lfs diff=lfs merge=lfs -text
-*.gif filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
-*.tif filter=lfs diff=lfs merge=lfs -text
-*.tiff filter=lfs diff=lfs merge=lfs -text
-*.exr filter=lfs diff=lfs merge=lfs -text
-*.hdr filter=lfs diff=lfs merge=lfs -text
-*.psd filter=lfs diff=lfs merge=lfs -text
-*.ai filter=lfs diff=lfs merge=lfs -text
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.tga binary
+*.tif binary
+*.tiff binary
+*.exr binary
+*.hdr binary
+*.psd binary
+*.ai binary
 
 # 3D models
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.FBX filter=lfs diff=lfs merge=lfs -text
-*.obj filter=lfs diff=lfs merge=lfs -text
-*.blend filter=lfs diff=lfs merge=lfs -text
-*.glb filter=lfs diff=lfs merge=lfs -text
-*.gltf filter=lfs diff=lfs merge=lfs -text
+*.fbx binary
+*.FBX binary
+*.obj binary
+*.blend binary
+*.glb binary
+*.gltf binary
 
 # Audio
-*.wav filter=lfs diff=lfs merge=lfs -text
-*.mp3 filter=lfs diff=lfs merge=lfs -text
-*.ogg filter=lfs diff=lfs merge=lfs -text
-*.aif filter=lfs diff=lfs merge=lfs -text
-*.aiff filter=lfs diff=lfs merge=lfs -text
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.aif binary
+*.aiff binary
 
 # Video
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.mov filter=lfs diff=lfs merge=lfs -text
-*.webm filter=lfs diff=lfs merge=lfs -text
+*.mp4 binary
+*.mov binary
+*.webm binary
 
 # Fonts
-*.ttf filter=lfs diff=lfs merge=lfs -text
-*.otf filter=lfs diff=lfs merge=lfs -text
+*.ttf binary
+*.otf binary
 
 # Archives / misc binaries
-*.zip filter=lfs diff=lfs merge=lfs -text
-*.7z filter=lfs diff=lfs merge=lfs -text
-*.unitypackage filter=lfs diff=lfs merge=lfs -text
-*.a filter=lfs diff=lfs merge=lfs -text
-*.so filter=lfs diff=lfs merge=lfs -text
-*.dll filter=lfs diff=lfs merge=lfs -text
-*.dylib filter=lfs diff=lfs merge=lfs -text
+*.zip binary
+*.7z binary
+*.unitypackage binary
+*.a binary
+*.so binary
+*.dll binary
+*.dylib binary
