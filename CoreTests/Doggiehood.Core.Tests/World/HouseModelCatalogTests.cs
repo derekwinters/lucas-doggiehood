@@ -92,6 +92,20 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Models_DoorLocalPosition_SitsOnTheFrontFacadePlane()
+        {
+            // #126 numeric guardrail: every catalog door must sit exactly
+            // on the model-local front facade plane z = -FootprintZ / 2
+            // (the kit models face local -Z; see HouseModel's convention).
+            foreach (var model in HouseModelCatalog.Models)
+            {
+                Assert.That(model.FrontDoorLocalPosition.Z,
+                    Is.EqualTo(-model.FootprintZ / 2f).Within(0.0001f),
+                    model.ModelName);
+            }
+        }
+
+        [Test]
         public void ForHouse_KeepsThePlaceholderModelPicks()
         {
             // The houseId -> model assignment moved here from
