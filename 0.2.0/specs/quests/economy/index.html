@@ -1389,7 +1389,13 @@
 <li>A completed quest pays a <strong>flat 10 coins</strong>, regardless of quest type.</li>
 <li>A typical gift/decoration item costs <strong>roughly 30-50 coins</strong> (3-5 quests' worth of saving).</li>
 </ul>
-<p>These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build.</p>
+<p>Post-MVP expansion sinks <em>(decisions 2026-07-14, Derek — see <a href="../../expansion/#pricing">Neighborhood Expansion</a>)</em>:</p>
+<ul>
+<li>Zone unlock: <strong>100 coins</strong> for the first zone, <strong>+100 per subsequent zone</strong> (100, 200, 300, …).</li>
+<li>Building a house: <strong>50 coins</strong>, flat.</li>
+<li>House upgrades: <strong>100 / 200 / 400 coins</strong> for levels 2 / 3 / 4.</li>
+</ul>
+<p>These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build. Every one of them is a named constant in Core so playtesting adjustments are one-line changes.</p>
 <h2 id="quest-authoring">Quest authoring<a class="headerlink" href="#quest-authoring" title="Permanent link">&para;</a></h2>
 <p><em>Source: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/61">#61</a>, implementation tracked in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/69">#69</a></em></p>
 <p>Quests are authored as reusable <strong>templates</strong>, not hand-written per dog. Each quest type (see <a href="../quest-content/">Quest Content</a>) has a dialogue template with variable slots:</p>

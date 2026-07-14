@@ -955,18 +955,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#open-question-overall-map-shape" class="md-nav__link">
+  <a href="#map-shape" class="md-nav__link">
     <span class="md-ellipsis">
-      Open question: overall map shape
+      Map shape
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-checklist-for-when-milestone-06-starts-not-now" class="md-nav__link">
+  <a href="#pricing" class="md-nav__link">
     <span class="md-ellipsis">
-      Build checklist (for when milestone 06 starts — not now)
+      Pricing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#move-in-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Move-in system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#house-leveling" class="md-nav__link">
+    <span class="md-ellipsis">
+      House leveling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-for-sale-sign" class="md-nav__link">
+    <span class="md-ellipsis">
+      The "for sale" sign
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist-for-when-milestone-06-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist (for when milestone 06 starts)
     </span>
   </a>
   
@@ -1279,18 +1315,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#open-question-overall-map-shape" class="md-nav__link">
+  <a href="#map-shape" class="md-nav__link">
     <span class="md-ellipsis">
-      Open question: overall map shape
+      Map shape
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-checklist-for-when-milestone-06-starts-not-now" class="md-nav__link">
+  <a href="#pricing" class="md-nav__link">
     <span class="md-ellipsis">
-      Build checklist (for when milestone 06 starts — not now)
+      Pricing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#move-in-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Move-in system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#house-leveling" class="md-nav__link">
+    <span class="md-ellipsis">
+      House leveling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-for-sale-sign" class="md-nav__link">
+    <span class="md-ellipsis">
+      The "for sale" sign
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist-for-when-milestone-06-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist (for when milestone 06 starts)
     </span>
   </a>
   
@@ -1323,27 +1395,69 @@
 <p><em>Epic: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/55">#55</a></em></p>
 <div class="admonition note">
 <p class="admonition-title">Post-MVP</p>
-<p>This entire system is fully designed but <strong>explicitly excluded from the MVP vertical slice</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/88">#88</a>). Milestone <code>08 - Vertical Slice Release Candidate</code> ships with just the 4 starting houses (see <a href="../world/world/">World &amp; Neighborhood</a>). Nothing on this page needs to be built for MVP — it's documented now so the design isn't lost before its milestone (<code>06 - Neighborhood Expansion</code>) starts.</p>
+<p>This entire system is fully designed but <strong>explicitly excluded from the MVP vertical slice</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/88">#88</a>). Milestone <code>08 - Vertical Slice Release Candidate</code> ships with just the 4 starting houses (see <a href="../world/world/">World &amp; Neighborhood</a>). Nothing on this page gets built before its milestone (<code>06 - Neighborhood Expansion</code>) starts.</p>
 </div>
 <h2 id="the-loop">The loop<a class="headerlink" href="#the-loop" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Unlock a zone</strong>: the player pays a currency cost to unlock a new zone/area of the map. Newly unlocked zones start with no houses at all — just empty land. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>)</li>
 <li><strong>Build houses</strong>: the player spends currency to construct individual houses within an unlocked zone. Houses don't appear automatically — building each one is its own purchase. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/57">#57</a>)</li>
 <li><strong>Vacancy</strong>: a freshly built house is empty and displays a "for sale" sign until a dog eventually moves in. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>)</li>
-<li><strong>Occupancy over time</strong>: new dogs arrive and move into empty houses gradually over time, rather than all at once. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>) New dogs are drawn from the <a href="../dogs/roster-names/#general-name-pool-for-dogs-that-move-in-later">name pool</a> and assigned breeds from the remaining pool (French Bulldog, Puggle reserved — see <a href="../dogs/roster-names/">Dog Roster &amp; Names</a>).</li>
+<li><strong>Occupancy over time</strong>: new dogs arrive and move into empty houses gradually over time, rather than all at once. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>) See <a href="#move-in-system">Move-in system</a> below for the full mechanism, and <a href="../dogs/roster-names/">Dog Roster &amp; Names</a> for how names and breeds are drawn.</li>
 <li><strong>House leveling</strong>: every house starts at level 1 and can be upgraded up to level 4. Upgrading makes the house visually bigger/nicer and increases how many decorations its yard can hold. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>)</li>
 </ol>
-<h2 id="open-question-overall-map-shape">Open question: overall map shape<a class="headerlink" href="#open-question-overall-map-shape" title="Permanent link">&para;</a></h2>
-<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> — genuinely unresolved, does not block MVP</em></p>
-<p>Still undecided: whether the overall map is a fixed finite layout or open-ended, what shape expansion takes (grid, branching streets, a loop), roughly how many zones are planned, and whether there's any landmark variety (a park, a cul-de-sac) versus uniform intersections. This needs an answer before work on milestone <code>06</code> begins, but not before MVP work starts.</p>
-<h2 id="build-checklist-for-when-milestone-06-starts-not-now">Build checklist (for when milestone <code>06</code> starts — not now)<a class="headerlink" href="#build-checklist-for-when-milestone-06-starts-not-now" title="Permanent link">&para;</a></h2>
+<h2 id="map-shape">Map shape<a class="headerlink" href="#map-shape" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a>):</strong> the map is <strong>hand-picked expansion with no fixed end</strong> — zones are authored and added over time, and procedural generation stays out of scope (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). A <strong>zone is a hand-authored group of tiles</strong> from the <a href="../world/tile-catalog/">tile catalog</a> (60m grid), pre-authored by Derek and Lucas; the player unlocks zones in sequence but never places tiles. Initial zones use only <strong>cul-de-sac, straight, tee, and turn</strong> tiles — more variety (including the OpposingTurns/park-island tiles, whose arch-loop question stays deferred on #109) comes later.</p>
+</blockquote>
+<p><strong>First zone:</strong> a cul-de-sac street to the northwest of the starting intersection. The confirmed layout (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>): from the starting <code>FourWay</code> at grid (0,0), <code>TurnSW</code> at (0,1), <code>CulDeSacEast</code> at (−1,1) — the road runs north from the intersection, turns west, and ends in the bulb.</p>
+<p>The tile-grid placement/adjacency system this all sits on is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, the milestone's geometric prerequisite.</p>
+<h2 id="pricing">Pricing<a class="headerlink" href="#pricing" title="Permanent link">&para;</a></h2>
+<p><em>Decisions 2026-07-14 (Derek, in conversation). All values are named, tunable constants in Core — expect adjustment during playtesting; see also <a href="../quests/economy/#numbers-placeholder-expect-tuning">Quest &amp; Economy</a>.</em></p>
+<table>
+<thead>
+<tr>
+<th>Purchase</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zone unlock</td>
+<td>100 coins for the first zone, +100 per subsequent zone (100, 200, 300, …)</td>
+</tr>
+<tr>
+<td>Build a house</td>
+<td>50 coins, flat</td>
+</tr>
+<tr>
+<td>House upgrade to L2 / L3 / L4</td>
+<td>100 / 200 / 400 coins (doubles per level)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="move-in-system">Move-in system<a class="headerlink" href="#move-in-system" title="Permanent link">&para;</a></h2>
+<p><em>Decision 2026-07-14 (Derek, in conversation), detailed on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>. All values named, tunable constants; RNG injectable for deterministic tests.</em></p>
 <ul>
-<li>[ ] Currency-gated zone unlock reveals an empty zone</li>
-<li>[ ] Currency-gated house building places a house in an unlocked zone</li>
-<li>[ ] Newly built houses show a "for sale" sign</li>
-<li>[ ] A gradual, time-based system moves dogs into empty houses (drawing from the name pool + remaining breed pool)</li>
-<li>[ ] Houses support 4 discrete levels, each with a bigger footprint and more decoration slots</li>
-<li>[ ] Overall map shape/pattern is decided (resolve <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> first)</li>
+<li><strong>Trigger — quest-completion pity counter, shared:</strong> every completed quest rolls a single shared move-in chance: base <strong>5%</strong>, <strong>+5%</strong> per completed quest without a move-in, reset to base on success. One counter for the whole neighborhood; on success one vacant house is chosen at random (uniform). The counter only advances while at least one vacant house exists.</li>
+<li><strong>Households:</strong> roster-style mix from day one — <strong>70% single / 25% parent+puppy / 5% three-dog</strong>. Parent+puppy pairs share a breed; every dog gets its own personality, randomly drawn from the <a href="../dogs/behavior/">behavior</a> set.</li>
+<li><strong>Breeds:</strong> the reserved French Bulldog and Puggle are the first two move-ins; afterwards breeds are chosen by <strong>count-weighted randomness</strong> — each breed weighted inversely by how many currently live in the neighborhood, so variety self-adapts to the existing distribution.</li>
+<li><strong>Easter eggs:</strong> each move-in has a <strong>5%</strong> chance the household head is an <a href="../dogs/roster-names/#easter-egg-dogs">easter-egg dog</a> (fixed breed/coat, breed roll skipped); once used, an easter-egg name is permanently removed from the reserve — each appears exactly once.</li>
+<li><strong>Names</strong> come from the <a href="../dogs/roster-names/#general-name-pool-for-dogs-that-move-in-later">general name pool</a>, no duplicates among active dogs.</li>
+<li>New dogs <strong>join the daily quest rotation immediately</strong>.</li>
+</ul>
+<h2 id="house-leveling">House leveling<a class="headerlink" href="#house-leveling" title="Permanent link">&para;</a></h2>
+<p>Levels 1–4. Decoration slots equal the house level (<strong>1/2/3/4</strong>); upgrade costs are in <a href="#pricing">Pricing</a>. The MVP decoration flow auto-places with no cap, so the cap is introduced with <a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a> (already-placed decorations are never removed). Per-level <em>visuals</em> are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.</p>
+<h2 id="the-for-sale-sign">The "for sale" sign<a class="headerlink" href="#the-for-sale-sign" title="Permanent link">&para;</a></h2>
+<p>Vacancy is Core state; the sign is purely its visual. No sign 3D asset exists yet — sourcing one is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/154">#154</a> (Direct Involvement Needed). Until it lands, a graybox placeholder is used via <code>WorldBuilder</code>'s existing missing-kit-piece fallback, so the asset does not block <a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>.</p>
+<h2 id="build-checklist-for-when-milestone-06-starts">Build checklist (for when milestone <code>06</code> starts)<a class="headerlink" href="#build-checklist-for-when-milestone-06-starts" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] Tile grid placement + adjacency validation exists (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> — build first)</li>
+<li>[ ] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street</li>
+<li>[ ] Currency-gated house building (50 flat) places a level-1, vacant house on an empty lot in an unlocked zone</li>
+<li>[ ] Newly built houses show a "for sale" sign (graybox until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/154">#154</a>) that clears on move-in</li>
+<li>[ ] The shared pity-counter move-in system (5% base, +5% per quest, reset on success) fills vacant houses per the household/breed/easter-egg rules above</li>
+<li>[ ] Houses support 4 discrete levels (upgrades 100/200/400) with decoration slots equal to level</li>
+<li>[ ] Every tuning value above is a named constant adjustable for playtesting</li>
 </ul>
 
 

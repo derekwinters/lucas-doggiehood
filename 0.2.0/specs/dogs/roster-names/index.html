@@ -1407,12 +1407,14 @@
 <p>French Bulldog and Puggle are unused in the starting roster — reserved for the first expansion zone (post-MVP, see <a href="../../expansion/">Neighborhood Expansion</a>).</p>
 <h2 id="general-name-pool-for-dogs-that-move-in-later">General name pool (for dogs that move in later)<a class="headerlink" href="#general-name-pool-for-dogs-that-move-in-later" title="Permanent link">&para;</a></h2>
 <p>As new houses fill up over time (post-MVP expansion), new dogs need names. The game randomly picks an unused name from a curated pool, avoiding duplicates with dogs currently in the neighborhood.</p>
+<p>How move-in dogs are assembled (households, the reserved-breeds-first rule, count-weighted breed selection, personalities, and the easter-egg chance) is specified in <a href="../../expansion/#move-in-system">Neighborhood Expansion — Move-in system</a> <em>(decisions 2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>)</em>. In short: after the reserved French Bulldog and Puggle arrive, breeds are chosen with weights inversely proportional to each breed's current count in the neighborhood.</p>
 <p><strong>Classic</strong>: Buddy, Max, Charlie, Rocky, Cooper, Bear, Tucker, Jack, Toby, Milo, Oliver, Leo, Winston, Baxter, Bentley, Gus, Murphy, Finn, Otis, Chase, Rusty, Sam, Boomer, Ollie, Louie, Bruno, Diesel, Sarge, Ranger, Frank, Gordon, Reggie, Wally</p>
 <p><strong>Playful/food-themed</strong>: Biscuit, Pretzel, Peanut, Nugget, Ziggy, Mochi, Taco, Noodle, Pickles, Beans, Cricket, Marshmallow, Biscotti, Nutmeg, Cinnamon, Pumpkin, Buttercup, Petunia, Juniper</p>
 <p><strong>Classic (softer)</strong>: Bella, Luna, Daisy, Coco, Molly, Sadie, Ruby, Rosie, Lucy, Zoe, Maggie, Penny, Roxy, Willow, Ginger, Honey</p>
 <p>68 names total. <code>Hank</code> and <code>Stella</code> are deliberately excluded from this pool — see easter eggs below. <em>(The count was originally misstated as 66; corrected to match the enumerated list — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/67">#67</a>.)</em></p>
 <h2 id="easter-egg-dogs">Easter egg dogs<a class="headerlink" href="#easter-egg-dogs" title="Permanent link">&para;</a></h2>
 <p>A set of names reserved for family/friends Lucas knows. Unlike the general pool, these names always pair with one specific fixed breed (and coat color, where noted) whenever selected — they are never assigned randomly to a different breed, and are excluded from the general name pool above.</p>
+<p>Each expansion move-in has a <strong>5% chance</strong> its household head is drawn from this table instead of the general pool (the breed roll is skipped — the fixed breed/coat applies). Once used, a name is <strong>permanently removed from the reserve</strong>, so each easter-egg dog appears exactly once. <em>(Decision 2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>.)</em></p>
 <table>
 <thead>
 <tr>
@@ -1462,7 +1464,7 @@
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above</li>
-<li>[ ] General name pool (66 names) exists as data, excluding <code>Hank</code> and <code>Stella</code></li>
+<li>[ ] General name pool (68 names) exists as data, excluding <code>Hank</code> and <code>Stella</code></li>
 <li>[ ] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs</li>
 <li>[ ] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment</li>
 </ul>
