@@ -1215,6 +1215,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#pr-reflection-deviations-and-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      PR reflection: Deviations and Decisions
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1314,6 +1323,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#pr-reflection-deviations-and-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      PR reflection: Deviations and Decisions
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1338,7 +1356,7 @@
 
 
 <h1 id="development-agent-workflow">Development Agent &amp; Workflow<a class="headerlink" href="#development-agent-workflow" title="Permanent link">&para;</a></h1>
-<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/77">#77</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/78">#78</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/84">#84</a></em></p>
+<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/77">#77</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/78">#78</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/84">#84</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/135">#135</a></em></p>
 <h2 id="who-writes-the-code">Who writes the code<a class="headerlink" href="#who-writes-the-code" title="Permanent link">&para;</a></h2>
 <p>A dedicated Claude Code agent (<code>.claude/agents/</code>), not ad-hoc chat sessions, does the actual Unity/C# implementation work. It:</p>
 <ul>
@@ -1362,9 +1380,16 @@
 <li>Pick the next open issue in build-order (milestones <code>02</code> → <code>08</code>, lowest number first within a milestone).</li>
 <li>Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.</li>
 <li>Work test-first per <a href="../testing/">Testing Strategy</a>, checking off checklist items as they're satisfied.</li>
-<li>Commit with a Conventional Commit message; open a PR.</li>
+<li><strong>Reflect</strong>: review the run for deviations and mid-run decisions (see below).</li>
+<li>Commit with a Conventional Commit message; open a PR whose body starts with the <code>Deviations and Decisions</code> section.</li>
 <li>If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.</li>
 </ol>
+<h2 id="pr-reflection-deviations-and-decisions">PR reflection: Deviations and Decisions<a class="headerlink" href="#pr-reflection-deviations-and-decisions" title="Permanent link">&para;</a></h2>
+<p>Every agent PR body begins with a <code>## Deviations and Decisions</code> header — present even when there are no findings.</p>
+<ul>
+<li><strong>Deviations</strong> are changes the agent made that were not fully compliant with the prompt, specs, or docs. Undesired in general, but a possible outcome of a valid test/development flow. The agent identifies each one and explains why in a sentence or two, so the reviewer can confirm the deviation is still acceptable.</li>
+<li><strong>Decisions</strong> are judgment calls the agent had to make mid-run. Major logic and implementation decisions should already live in documentation, specs, or the prompt — the agent should be able to run without weighing options in nearly all scenarios. When a decision was unavoidable, the agent documents what information or instructions were not as clear as expected, explains the choice in a sentence or two, and identifies how the gap could be prevented in the future.</li>
+</ul>
 
 
 
