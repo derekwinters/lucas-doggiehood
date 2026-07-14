@@ -93,11 +93,25 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void WalkwayLength_MatchesTheRealInGameWalkwayLength()
+        {
+            // #128: the gallery has no streets, so its walkway stays a
+            // straight-out-the-front placeholder — but its length now
+            // reuses the real walkway geometry: the in-game walkway runs
+            // from the door (on the facade, FrontSetback beyond the
+            // sidewalk's OUTER edge) to the sidewalk CENTERLINE, i.e.
+            // FrontSetback + SidewalkWidth / 2 = 3.75m.
+            Assert.That(CatalogGalleryLayout.WalkwayLength,
+                Is.EqualTo(HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f).Within(0.0001f));
+        }
+
+        [Test]
         public void Compute_WalkwayPlaceholder_RunsFromTheDoorStraightOutTheFront()
         {
-            // #128 walkways don't exist yet; the placeholder is a marker
-            // line from the door toward where the sidewalk would be —
-            // straight out the front (world -Z at yaw 0) by WalkwayLength.
+            // The gallery walkway is a marker line from the door toward
+            // where the sidewalk would be — straight out the front (world
+            // -Z at yaw 0) by WalkwayLength (the real #128 walkway length;
+            // the gallery itself has no streets to attach to).
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)

@@ -16,10 +16,12 @@ namespace Doggiehood.Core.World
     public static class CatalogGalleryLayout
     {
         /// <summary>Length of the walkway placeholder line, from the door
-        /// straight out the front (#128 walkways don't exist yet). 2.5
-        /// rather than 3 partly to stay clear of the #105 guard: 3 is the
-        /// locked CrosswalkWidth, and this length is not a road dimension.</summary>
-        public const float WalkwayLength = 2.5f;
+        /// straight out the front. Since #128 real walkways exist, and
+        /// this reuses their exact length — door (on the facade,
+        /// FrontSetback beyond the sidewalk's outer edge) to the sidewalk
+        /// CENTERLINE — so the gallery preview matches the game even
+        /// though the gallery itself has no streets to attach to.</summary>
+        public const float WalkwayLength = HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f;
 
         /// <summary>Gallery yaw: 0 leaves the model-local -Z front facade
         /// facing world -Z, so a viewer south of the row sees every
