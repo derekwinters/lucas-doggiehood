@@ -439,11 +439,10 @@ namespace Doggiehood.Core.World
             }
 
             var facing = HousePlacement.FacingToward(lot.Position, bestPoint);
-            var housePosition = HousePlacement.PositionFor(lot, HousePlacement.HouseTargetFootprint, bestPoint);
+            var housePosition = HousePlacement.PositionFor(lot, HousePlacement.KitScale, bestPoint);
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
-            var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
             var door = model.FrontDoorWorldPosition(
-                housePosition, HousePlacement.ModelYawDegrees(facing), scale);
+                housePosition, HousePlacement.ModelYawDegrees(facing), HousePlacement.KitScale);
 
             var original = edges[bestIndex];
             var attach = ProjectOntoSegment(door, original.A, original.B);

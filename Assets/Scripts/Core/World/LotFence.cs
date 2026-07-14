@@ -49,8 +49,9 @@ namespace Doggiehood.Core.World
         /// 8.25m, on BOTH streets of a corner lot; 7.5 leaves a 0.75m grass
         /// strip against the sidewalk) while containing every
         /// setback-shifted house: the #127 facade sits 5.5m street-side of
-        /// the lot center (2m clearance) and the widest model spans ±4m
-        /// (3.5m clearance) — all test-enforced. Derek tunes it visually
+        /// the lot center (2m clearance) and the widest model at the fixed
+        /// ×7 kit scale (#145, building-type-b, 12.80m) spans ±6.4m
+        /// (1.1m clearance) — all test-enforced. Derek tunes it visually
         /// in the Editor check afterwards.
         /// </summary>
         public const float HalfExtent = 7.5f;

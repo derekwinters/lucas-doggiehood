@@ -86,7 +86,7 @@ namespace Doggiehood.Unity.EditModeTests
             root = CatalogGalleryBuilder.Build();
 
             var layout = CatalogGalleryLayout.Compute(
-                WorldBuilder.HouseTargetFootprint, CatalogGalleryBuilder.EntrySpacing);
+                WorldBuilder.HouseKitScale, CatalogGalleryBuilder.EntrySpacing);
 
             foreach (var entry in layout)
             {

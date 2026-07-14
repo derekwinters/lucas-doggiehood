@@ -17,9 +17,10 @@ namespace Doggiehood.Core.World
     /// pass 1 (2026-07-14): he moved each gallery DoorMarker sphere onto
     /// the visible door of the rendered mesh and read the Inspector local
     /// position in the entry container (gallery yaw is 0, so container
-    /// axes == model axes); dividing by the entry's uniform scale
-    /// (8 / MaxFootprint) gives these model-local values, rounded to 4
-    /// decimals. The doors are recessed behind the front facade (porches;
+    /// axes == model axes); dividing by the entry's then-current uniform
+    /// scale (8 / the model's max footprint — the pre-#145 normalization
+    /// rule) gives these model-local values, rounded to 4 decimals. The
+    /// doors are recessed behind the front facade (porches;
     /// building-type-b's is near its footprint center) — that observation
     /// is what turned the door datum from a facade scalar into a 2D point.
     /// </summary>

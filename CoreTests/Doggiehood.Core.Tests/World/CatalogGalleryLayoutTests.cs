@@ -13,13 +13,13 @@ namespace Doggiehood.Core.Tests.World
     /// </summary>
     public class CatalogGalleryLayoutTests
     {
-        private const float TargetFootprint = 8f;
-        private const float Spacing = 12f;
+        private const float Scale = HousePlacement.KitScale;
+        private const float Spacing = 16f;
 
         [Test]
         public void Compute_ReturnsOneEntryPerCatalogModel_InCatalogOrder()
         {
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             Assert.That(entries.Count, Is.EqualTo(HouseModelCatalog.Models.Count));
             Assert.That(entries.Select(e => e.Model.ModelName),
@@ -29,7 +29,7 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void Compute_PlacesEntriesInARowAlongX_SpacedApart()
         {
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             for (var i = 0; i < entries.Count; i++)
             {
@@ -39,16 +39,18 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_UsesTheGameScalingRule_TargetFootprintOverMaxFootprint()
+        public void Compute_AppliesTheSameFixedScaleToEveryModel_NoPerModelNormalization()
         {
-            // Same rule WorldBuilder.BuildHouseModel applies:
-            // uniform scale = HouseTargetFootprint / model.MaxFootprint.
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            // Same rule WorldBuilder.BuildHouseModel applies since #145:
+            // ONE fixed uniform scale for every City Kit house model — the
+            // scale passed in, verbatim. No per-model footprint math may
+            // creep back in (the old 8m/MaxFootprint rule made every model
+            // a different size, so doors read at different scales).
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
-                Assert.That(entry.UniformScale,
-                    Is.EqualTo(TargetFootprint / entry.Model.MaxFootprint).Within(0.0001f),
+                Assert.That(entry.UniformScale, Is.EqualTo(Scale).Within(0.0001f),
                     entry.Model.ModelName);
             }
         }
@@ -59,7 +61,7 @@ namespace Doggiehood.Core.Tests.World
             // Same-API guardrail: the annotated door must be exactly what
             // HouseModel.FrontDoorWorldPosition returns for the entry's
             // placement — no duplicated math allowed to drift.
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
@@ -81,7 +83,7 @@ namespace Doggiehood.Core.Tests.World
             // the scaled authored 2D local door point. (This is the very
             // relationship Derek's gallery pass 1 measurements rely on —
             // Inspector local position / uniform scale = model-local door.)
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
@@ -120,7 +122,7 @@ namespace Doggiehood.Core.Tests.World
             // #128 walkway has; the gallery itself has no streets to attach
             // to). With recessed doors the run is longer than 3.75m by each
             // model's own recess depth.
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
@@ -144,7 +146,7 @@ namespace Doggiehood.Core.Tests.World
             // against the rendered model. Since gallery pass 1 the doors
             // are recessed (porches), so the marker sits strictly INSIDE
             // the footprint rectangle, no longer on its front edge.
-            var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
@@ -166,10 +168,10 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_RejectsNonPositiveTargetFootprintOrSpacing()
+        public void Compute_RejectsNonPositiveScaleOrSpacing()
         {
             Assert.That(() => CatalogGalleryLayout.Compute(0f, Spacing), Throws.ArgumentException);
-            Assert.That(() => CatalogGalleryLayout.Compute(TargetFootprint, 0f), Throws.ArgumentException);
+            Assert.That(() => CatalogGalleryLayout.Compute(Scale, 0f), Throws.ArgumentException);
         }
     }
 }

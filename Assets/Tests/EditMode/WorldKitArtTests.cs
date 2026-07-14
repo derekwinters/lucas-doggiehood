@@ -259,18 +259,26 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void HouseModels_ScaleToAnEightMeterFootprint()
+        public void HouseModels_AllUseTheOneFixedKitScale_NoPerModelNormalization()
         {
-            // Derek's Editor feedback on the first kit-house pass: at the
-            // old 4.2m target the models read far too small against the
-            // kit roads. New target is 8m: lots sit at +-14 and the
-            // logical sidewalk's outer edge is at 5.75m (0.75m verge), so
-            // an 8m-wide house spans 10-18 on its lot — a sensible front
-            // yard.
+            // Decision (Derek, 2026-07-14, #145): one fixed uniform scale
+            // — ×7 — for every City Kit house model, replacing the old
+            // 8m max-footprint normalization (which gave each model a
+            // different scale factor, so houses and their doors read at
+            // different sizes). Each house's rendered footprint is now its
+            // own catalog footprint times the kit scale: b 12.80×7.98m,
+            // g 10.15×8.25m, k 6.45×7.14m, m 10.00×10.00m.
             foreach (var view in root.GetComponentsInChildren<HouseView>())
             {
                 var model = view.transform.Find("Model");
                 Assert.That(model, Is.Not.Null, $"house {view.HouseId} has no kit model child");
+
+                Assert.That(model.localScale.x, Is.EqualTo(WorldBuilder.HouseKitScale).Within(0.001f),
+                    $"house {view.HouseId} must use the fixed kit scale, not a per-model factor");
+                Assert.That(model.localScale.y, Is.EqualTo(model.localScale.x).Within(0.001f),
+                    $"house {view.HouseId} scale must be uniform");
+                Assert.That(model.localScale.z, Is.EqualTo(model.localScale.x).Within(0.001f),
+                    $"house {view.HouseId} scale must be uniform");
 
                 var renderers = model.GetComponentsInChildren<Renderer>();
                 Assert.That(renderers, Is.Not.Empty, $"house {view.HouseId} model renders nothing");
@@ -282,10 +290,14 @@ namespace Doggiehood.Unity.EditModeTests
                 }
 
                 // Rotation is cardinal (see the facing test), so the AABB's
-                // max horizontal extent is the model's true footprint.
+                // max horizontal extent is the model's true footprint —
+                // the catalog's larger axis at the fixed kit scale.
+                var catalog = HouseModelCatalog.ForHouse(view.HouseId);
+                var expected = WorldBuilder.HouseKitScale
+                    * Mathf.Max(catalog.FootprintX, catalog.FootprintZ);
                 var footprint = Mathf.Max(bounds.size.x, bounds.size.z);
-                Assert.That(footprint, Is.EqualTo(8f).Within(0.25f),
-                    $"house {view.HouseId} footprint should land on the 8m target");
+                Assert.That(footprint, Is.EqualTo(expected).Within(0.25f),
+                    $"house {view.HouseId} footprint should be its catalog footprint at the fixed kit scale");
             }
         }
 

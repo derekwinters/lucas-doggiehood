@@ -16,9 +16,9 @@ namespace Doggiehood.Core.Tests.World
     /// </summary>
     public class HousePlacementTests
     {
-        /// <summary>Same target the game uses (WorldBuilder.HouseTargetFootprint
-        /// aliases this Core constant since #128).</summary>
-        private const float TargetFootprint = HousePlacement.HouseTargetFootprint;
+        /// <summary>Same fixed kit scale the game uses (WorldBuilder.HouseKitScale
+        /// aliases this Core constant since #145).</summary>
+        private const float KitScale = HousePlacement.KitScale;
 
         private static WalkEdge FrontWalkwayFor(HouseLot lot)
         {
@@ -36,13 +36,16 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void HouseTargetFootprint_IsTheGamesEightMeterTarget()
+        public void KitScale_IsTheFixedTimesSevenScale_AppliedToEveryCityKitHouseModel()
         {
-            // Moved into Core from WorldBuilder (#128): WalkNetwork's
-            // walkway construction needs the door position, which depends
-            // on the game's uniform house scale — so the canonical target
-            // lives engine-free and WorldBuilder aliases it.
-            Assert.That(HousePlacement.HouseTargetFootprint, Is.EqualTo(8f));
+            // Decision (Derek, 2026-07-14, #145): ONE fixed uniform scale
+            // for ALL City Kit house models — ×7 — replacing the old 8m
+            // max-footprint normalization, which gave each model a
+            // different scale factor so houses (and their doors) read at
+            // different sizes. ×8 was rejected: building-type-b would be
+            // 14.6m wide against the 15m fence square, failing #129's
+            // 0.5m margin guard; at ×7 it is 12.8m with 1.1m margin.
+            Assert.That(HousePlacement.KitScale, Is.EqualTo(7f));
         }
 
         [Test]
@@ -84,9 +87,9 @@ namespace Doggiehood.Core.Tests.World
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scale = TargetFootprint / model.MaxFootprint;
+                var scale = KitScale;
                 var facing = HousePlacement.FrontFacing(lot);
-                var position = HousePlacement.Position(lot, TargetFootprint);
+                var position = HousePlacement.Position(lot, KitScale);
 
                 var door = model.FrontDoorWorldPosition(
                     position, HousePlacement.ModelYawDegrees(facing), scale);
@@ -117,11 +120,10 @@ namespace Doggiehood.Core.Tests.World
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scale = TargetFootprint / model.MaxFootprint;
-                var facadeHalfDepth = scale * model.FootprintZ / 2f;
+                var facadeHalfDepth = KitScale * model.FootprintZ / 2f;
 
                 var facing = HousePlacement.FrontFacing(lot);
-                var position = HousePlacement.Position(lot, TargetFootprint);
+                var position = HousePlacement.Position(lot, KitScale);
 
                 var facadeCoordinate = facing.X != 0f
                     ? position.X + facing.X * facadeHalfDepth
@@ -139,7 +141,7 @@ namespace Doggiehood.Core.Tests.World
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var facing = HousePlacement.FrontFacing(lot);
-                var position = HousePlacement.Position(lot, TargetFootprint);
+                var position = HousePlacement.Position(lot, KitScale);
 
                 if (facing.X != 0f)
                 {
@@ -160,7 +162,7 @@ namespace Doggiehood.Core.Tests.World
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var facing = HousePlacement.FrontFacing(lot);
-                var position = HousePlacement.Position(lot, TargetFootprint);
+                var position = HousePlacement.Position(lot, KitScale);
 
                 var lotCoordinate = facing.X != 0f ? lot.Position.X : lot.Position.Z;
                 var houseCoordinate = facing.X != 0f ? position.X : position.Z;
@@ -182,7 +184,7 @@ namespace Doggiehood.Core.Tests.World
             // #128 — the old stub's lot-center node is gone).
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                HousePlacement.Position(lot, TargetFootprint);
+                HousePlacement.Position(lot, KitScale);
 
                 Assert.That(Math.Abs(lot.Position.X),
                     Is.EqualTo(NeighborhoodLayout.LotDistanceFromCenter).Within(0.0001f));
@@ -191,9 +193,9 @@ namespace Doggiehood.Core.Tests.World
 
                 var walkway = FrontWalkwayFor(lot);
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scale = TargetFootprint / model.MaxFootprint;
+                var scale = KitScale;
                 var door = model.FrontDoorWorldPosition(
-                    HousePlacement.Position(lot, TargetFootprint),
+                    HousePlacement.Position(lot, KitScale),
                     HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot)),
                     scale);
 

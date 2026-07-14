@@ -27,9 +27,11 @@ namespace Doggiehood.Unity.Editor
         public const string WalkwayName = "WalkwayPlaceholder";
         public const string FenceName = "FencePlaceholder";
 
-        /// <summary>Row spacing: 8m scaled houses with a 4m gap so
-        /// footprint differences read side by side.</summary>
-        public const float EntrySpacing = 12f;
+        /// <summary>Row spacing: at the fixed ×7 kit scale (#145) the
+        /// widest model (building-type-b) is 12.80m wide, so 16m keeps a
+        /// clear gap between entries and footprint differences read side
+        /// by side.</summary>
+        public const float EntrySpacing = 16f;
 
         [MenuItem("Doggiehood/Build Catalog Gallery")]
         public static void OpenSceneAndBuild()
@@ -51,7 +53,7 @@ namespace Doggiehood.Unity.Editor
 
             var root = new GameObject(RootName);
 
-            var entries = CatalogGalleryLayout.Compute(WorldBuilder.HouseTargetFootprint, EntrySpacing);
+            var entries = CatalogGalleryLayout.Compute(WorldBuilder.HouseKitScale, EntrySpacing);
 
             BuildGround(root.transform, entries.Count);
             BuildLight(root.transform);

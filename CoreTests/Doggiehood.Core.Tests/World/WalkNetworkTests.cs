@@ -35,11 +35,10 @@ namespace Doggiehood.Core.Tests.World
         private static GridPoint ExpectedDoor(HouseLot lot)
         {
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
-            var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
             return model.FrontDoorWorldPosition(
-                HousePlacement.Position(lot, HousePlacement.HouseTargetFootprint),
+                HousePlacement.Position(lot, HousePlacement.KitScale),
                 HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot)),
-                scale);
+                HousePlacement.KitScale);
         }
 
         [Test]
@@ -169,8 +168,7 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var walkway), Is.True);
 
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
-                var recess = scale * (model.FrontDoorLocalZ + model.FootprintZ / 2f);
+                var recess = HousePlacement.KitScale * (model.FrontDoorLocalZ + model.FootprintZ / 2f);
 
                 Assert.That(recess, Is.GreaterThan(0f),
                     $"house {lot.HouseId}'s authored door should be recessed behind the facade");

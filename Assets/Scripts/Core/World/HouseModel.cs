@@ -52,14 +52,6 @@ namespace Doggiehood.Core.World
             FrontDoorLocalZ = frontDoorLocalZ;
         }
 
-        /// <summary>The larger horizontal extent — what uniform scaling
-        /// targets (WorldBuilder scales so this lands on its 8m
-        /// HouseTargetFootprint).</summary>
-        public float MaxFootprint
-        {
-            get { return Math.Max(FootprintX, FootprintZ); }
-        }
-
         /// <summary>The door point in model-local ground-plane coordinates:
         /// the authored (<see cref="FrontDoorLocalX"/>,
         /// <see cref="FrontDoorLocalZ"/>) pair.</summary>

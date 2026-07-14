@@ -71,18 +71,15 @@ namespace Doggiehood.Unity
         private const string RoadCrossroadResource = "road-crossroad-path";
         private const string RoadCrossingResource = "road-crossing";
 
-        /// <summary>Target maximum horizontal footprint for a scaled house
-        /// model. 8m (up from the original 4.2m graybox-sized target,
-        /// which Derek's Editor check showed reading far too small against
-        /// the kit roads): lots sit at +-14 and the logical sidewalk's
-        /// outer edge is at 5.75m (0.75m verge), so an 8m-wide house spans
-        /// 10-18 on its lot, leaving a sensible front yard. Public since
+        /// <summary>The ONE fixed uniform scale applied to every City Kit
+        /// house model (#145, replacing the 8m max-footprint normalization
+        /// that gave each model a different scale factor). Public since
         /// #126: the editor-only catalog gallery must scale models by the
         /// exact number the game uses so it can never drift. The canonical
-        /// value moved into Core with #128 (the walk network's front
-        /// walkways need each door's world position engine-free); this
-        /// stays as the Unity-side alias existing callers and tests use.</summary>
-        public const float HouseTargetFootprint = HousePlacement.HouseTargetFootprint;
+        /// value lives in Core (the walk network's front walkways need
+        /// each door's world position engine-free); this is the Unity-side
+        /// alias existing callers and tests use.</summary>
+        public const float HouseKitScale = HousePlacement.KitScale;
 
         /// <summary>
         /// Yaw correction applied after pointing a house model at its
@@ -542,7 +539,7 @@ namespace Doggiehood.Unity
             // the sidewalk's outer edge. The lot center itself is not
             // moved (it still anchors the deferred expansion geometry);
             // since #128 the walk network connects at the front DOOR.
-            var position = HousePlacement.Position(lot, HouseTargetFootprint);
+            var position = HousePlacement.Position(lot, HouseKitScale);
 
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);
@@ -569,7 +566,7 @@ namespace Doggiehood.Unity
                 : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
             if (model != null)
             {
-                BuildHouseModel(houseRoot, house.Id, model, HouseFrontFacing(lot));
+                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot));
                 return;
             }
 
@@ -608,8 +605,8 @@ namespace Doggiehood.Unity
         /// The house as its mapped City Kit Suburban model (#122): placed
         /// directly at the house root's front-setback position (#127; the
         /// models have ground-level pivots),
-        /// uniformly scaled so the model's max horizontal footprint lands
-        /// on HouseTargetFootprint, and yawed squarely toward the road its
+        /// uniformly scaled by the one fixed kit-wide HouseKitScale
+        /// (#145), and yawed squarely toward the road its
         /// walkway attaches to (see HouseFrontFacing) plus the art-side
         /// HouseModelYawOffsetDegrees correction. The imported FBX carries
         /// no collider, so a BoxCollider fitted to the combined renderer
@@ -617,16 +614,14 @@ namespace Doggiehood.Unity
         /// (TapRouter raycasts, then GetComponentInParent) working. None of
         /// the primitive walls/roof/porch are built in this path.
         /// </summary>
-        private static void BuildHouseModel(GameObject houseRoot, int houseId, GameObject model, Vector3 facing)
+        private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing)
         {
-            var maxFootprint = HouseModelCatalog.ForHouse(houseId).MaxFootprint;
-
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
             visual.transform.localPosition = Vector3.zero;
             visual.transform.localRotation = Quaternion.LookRotation(facing, Vector3.up)
                 * Quaternion.Euler(0f, HouseModelYawOffsetDegrees, 0f);
-            visual.transform.localScale = Vector3.one * (HouseTargetFootprint / maxFootprint);
+            visual.transform.localScale = Vector3.one * HouseKitScale;
 
             AddFittedTapCollider(houseRoot, visual);
         }
