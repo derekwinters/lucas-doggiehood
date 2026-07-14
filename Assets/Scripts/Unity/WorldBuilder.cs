@@ -359,9 +359,16 @@ namespace Doggiehood.Unity
         {
             var lot = NeighborhoodLayout.GetHouseLot(house.Id);
 
+            // #127: the house stands at Core's front-setback position —
+            // pulled from the lot center toward its facing street so the
+            // scaled front facade sits HousePlacement.FrontSetback from
+            // the sidewalk's outer edge. The lot center itself stays the
+            // walk-network/driveway anchor and is not moved.
+            var position = HousePlacement.Position(lot, HouseTargetFootprint);
+
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);
-            houseRoot.transform.position = new Vector3(lot.Position.X, 0f, lot.Position.Z);
+            houseRoot.transform.position = new Vector3(position.X, 0f, position.Z);
             var view = houseRoot.AddComponent<HouseView>();
             view.Init(house.Id);
 
@@ -408,39 +415,21 @@ namespace Doggiehood.Unity
         /// The direction a house model's front should face (Derek's Editor
         /// feedback on the first kit pass: diagonal toward-origin yaws
         /// looked scattered): squarely toward the road the lot's driveway
-        /// connects to. The WalkNetwork's DrivewayStub edge for the lot IS
-        /// that association — its far endpoint is the sidewalk attach
-        /// point, and for this map's axis-aligned roads the stub runs
-        /// exactly cardinal (the lot projects perpendicularly onto the
-        /// sidewalk); snapping to the dominant axis is just defensive. If
-        /// a lot ever had no stub, fall back to squarely facing the
-        /// east-west road (north-side houses face south and vice versa —
-        /// the classic street-front look).
+        /// connects to. The rule itself lives in Core since #127
+        /// (HousePlacement.FrontFacing — the front-setback math needs it
+        /// engine-free); this is just the Vector3 conversion at the Unity
+        /// boundary.
         /// </summary>
         private static Vector3 HouseFrontFacing(HouseLot lot)
         {
-            foreach (var edge in NeighborhoodLayout.WalkNetwork.Edges)
-            {
-                if (edge.Kind != WalkEdgeKind.DrivewayStub
-                    || (!edge.A.Equals(lot.Position) && !edge.B.Equals(lot.Position)))
-                {
-                    continue;
-                }
-
-                var attach = edge.Other(lot.Position);
-                var dx = attach.X - lot.Position.X;
-                var dz = attach.Z - lot.Position.Z;
-                return Mathf.Abs(dx) >= Mathf.Abs(dz)
-                    ? new Vector3(Mathf.Sign(dx), 0f, 0f)
-                    : new Vector3(0f, 0f, Mathf.Sign(dz));
-            }
-
-            return new Vector3(0f, 0f, -Mathf.Sign(lot.Position.Z));
+            var facing = HousePlacement.FrontFacing(lot);
+            return new Vector3(facing.X, 0f, facing.Z);
         }
 
         /// <summary>
         /// The house as its mapped City Kit Suburban model (#122): placed
-        /// directly on the lot (the models have ground-level pivots),
+        /// directly at the house root's front-setback position (#127; the
+        /// models have ground-level pivots),
         /// uniformly scaled so the model's max horizontal footprint lands
         /// on HouseTargetFootprint, and yawed squarely toward the road its
         /// driveway connects to (see HouseFrontFacing) plus the art-side

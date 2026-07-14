@@ -50,9 +50,15 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildsExactlyFourHouses_OnTheirLayoutLots()
+        public void BuildsExactlyFourHouses_AtTheirCoreFrontSetbackPositions()
         {
-            // #38: the scene contains exactly 4 houses positioned per #7.
+            // #38: the scene contains exactly 4 houses on the #7 lots —
+            // and since #127 each stands at Core's front-setback position
+            // (pulled from the lot center toward its facing street so the
+            // facade sits FrontSetback from the sidewalk's outer edge),
+            // not on the raw lot center. The setback math itself is pinned
+            // by HousePlacementTests in the Core suite; this pins that
+            // WorldBuilder consumes it rather than lot.Position.
             var houses = Children().Where(t => t.name.StartsWith(WorldBuilder.HouseNamePrefix)).ToList();
 
             Assert.That(houses.Count, Is.EqualTo(4));
@@ -61,8 +67,15 @@ namespace Doggiehood.Unity.EditModeTests
             {
                 var house = houses.SingleOrDefault(h => h.name == WorldBuilder.HouseNamePrefix + lot.HouseId);
                 Assert.That(house, Is.Not.Null, $"missing house {lot.HouseId}");
-                Assert.That(house.position.x, Is.EqualTo(lot.Position.X).Within(0.001f));
-                Assert.That(house.position.z, Is.EqualTo(lot.Position.Z).Within(0.001f));
+
+                var expected = HousePlacement.Position(lot, WorldBuilder.HouseTargetFootprint);
+                Assert.That(house.position.x, Is.EqualTo(expected.X).Within(0.001f));
+                Assert.That(house.position.z, Is.EqualTo(expected.Z).Within(0.001f));
+
+                // Sanity that the contract is really the moved-toward-the-
+                // street position, not the lot center it used to be.
+                Assert.That(new Vector2(expected.X - lot.Position.X, expected.Z - lot.Position.Z).magnitude,
+                    Is.GreaterThan(0.5f), $"house {lot.HouseId} should not sit on its lot center anymore");
             }
         }
 

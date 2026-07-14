@@ -57,13 +57,16 @@ namespace Doggiehood.Core.World
 
         /// <summary>
         /// Where the front door sits on the world ground plane for a house
-        /// placed at <paramref name="lotPosition"/> with the given world yaw
-        /// and uniform scale — pure geometry, no engine. Yaw follows Unity's
-        /// convention (degrees, clockwise seen from above, 0 = local axes
-        /// aligned with world axes), so the value WorldBuilder computes for
-        /// the model transform can be passed straight through.
+        /// placed at <paramref name="housePosition"/> — the model pivot's
+        /// actual world position, which since #127 is the front-setback
+        /// position (HousePlacement.Position), NOT the lot center — with
+        /// the given world yaw and uniform scale. Pure geometry, no engine.
+        /// Yaw follows Unity's convention (degrees, clockwise seen from
+        /// above, 0 = local axes aligned with world axes), so the value
+        /// WorldBuilder computes for the model transform can be passed
+        /// straight through.
         /// </summary>
-        public GridPoint FrontDoorWorldPosition(GridPoint lotPosition, float yawDegrees, float uniformScale)
+        public GridPoint FrontDoorWorldPosition(GridPoint housePosition, float yawDegrees, float uniformScale)
         {
             var local = FrontDoorLocalPosition;
             var radians = yawDegrees * Math.PI / 180.0;
@@ -75,8 +78,8 @@ namespace Doggiehood.Core.World
             var rotatedZ = -local.X * sin + local.Z * cos;
 
             return new GridPoint(
-                lotPosition.X + uniformScale * rotatedX,
-                lotPosition.Z + uniformScale * rotatedZ);
+                housePosition.X + uniformScale * rotatedX,
+                housePosition.Z + uniformScale * rotatedZ);
         }
     }
 }
