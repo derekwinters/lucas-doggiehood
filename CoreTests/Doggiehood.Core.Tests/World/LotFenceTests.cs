@@ -132,13 +132,16 @@ namespace Doggiehood.Core.Tests.World
 
             // Every lot's setback-shifted house (#127) — its full scaled
             // #125 catalog footprint at the game's placement and yaw —
-            // stays inside the fence with margin.
+            // stays inside the fence with margin. This is the guard that
+            // sized #145's fixed kit scale: at ×7 the widest model
+            // (building-type-b, 12.80m) keeps a 1.1m margin; ×8 (14.6m)
+            // would fail here.
             const float requiredMargin = 0.5f;
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scale = HousePlacement.HouseTargetFootprint / model.MaxFootprint;
-                var position = HousePlacement.Position(lot, HousePlacement.HouseTargetFootprint);
+                var scale = HousePlacement.KitScale;
+                var position = HousePlacement.Position(lot, HousePlacement.KitScale);
                 var yaw = HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot));
 
                 foreach (var corner in FootprintWorldCorners(model, position, yaw, scale))

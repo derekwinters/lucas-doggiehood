@@ -68,7 +68,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var house = houses.SingleOrDefault(h => h.name == WorldBuilder.HouseNamePrefix + lot.HouseId);
                 Assert.That(house, Is.Not.Null, $"missing house {lot.HouseId}");
 
-                var expected = HousePlacement.Position(lot, WorldBuilder.HouseTargetFootprint);
+                var expected = HousePlacement.Position(lot, WorldBuilder.HouseKitScale);
                 Assert.That(house.position.x, Is.EqualTo(expected.X).Within(0.001f));
                 Assert.That(house.position.z, Is.EqualTo(expected.Z).Within(0.001f));
 

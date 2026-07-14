@@ -43,22 +43,28 @@ namespace Doggiehood.Core.World
         public const float FrontSetback = 2.75f;
 
         /// <summary>
-        /// Target maximum horizontal footprint for a scaled house model,
-        /// in meters. Moved into Core from WorldBuilder (#128): the walk
-        /// network's front walkways start at each house's door, and the
-        /// door's world position depends on this uniform scale target —
-        /// so the canonical value lives engine-free and
-        /// WorldBuilder.HouseTargetFootprint aliases it. 8m per Derek's
-        /// Editor check on the first kit-house pass (#122).
+        /// The ONE fixed uniform scale applied to every City Kit house
+        /// model. Decision (Derek, 2026-07-14, #145): ×7, the kit-wide
+        /// default unless a specific model gets a documented exception
+        /// (none today). It replaced the 8m max-footprint normalization
+        /// (#122/#128), which gave each model a different scale factor —
+        /// houses weren't at the same scale, so doors read different
+        /// sizes. ×8 was rejected: building-type-b would be 14.6m wide
+        /// against the 15m fence square, failing #129's 0.5m margin
+        /// guard; at ×7 it is 12.8m with 1.1m margin. Lives in Core
+        /// because the walk network's front walkways start at each
+        /// house's door, and the door's world position depends on this
+        /// scale — WorldBuilder.HouseKitScale aliases it.
         /// </summary>
-        public const float HouseTargetFootprint = 8f;
+        public const float KitScale = 7f;
 
         /// <summary>
         /// Yaw correction applied after pointing a house model at its
         /// street-front facing: the City Kit Suburban models face model
         /// local -Z (Derek's #122 Editor screenshot evidence), so the
         /// look-at yaw needs a 180° flip. Moved into Core from WorldBuilder
-        /// (#128) together with <see cref="HouseTargetFootprint"/> — the
+        /// (#128) together with the uniform house scale (now
+        /// <see cref="KitScale"/>) — the
         /// door position math needs it engine-free — and still a single
         /// constant (WorldBuilder aliases it) so one flip fixes all
         /// houses if it's ever still wrong.
@@ -108,19 +114,19 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
-        /// The house's world position for the game's uniform scaling rule
-        /// (scale = <paramref name="targetFootprint"/> / MaxFootprint —
-        /// the same rule WorldBuilder.BuildHouseModel and the #126 gallery
-        /// apply): the lot position shifted along the facing axis only, so
-        /// the scaled front facade lands <see cref="FrontSetback"/> beyond
+        /// The house's world position at the given uniform scale
+        /// (<see cref="KitScale"/> in the game — the same fixed scale
+        /// WorldBuilder.BuildHouseModel and the #126 gallery apply, #145):
+        /// the lot position shifted along the facing axis only, so the
+        /// scaled front facade lands <see cref="FrontSetback"/> beyond
         /// the sidewalk's outer edge. A lot with no front walkway has no
         /// street to set back from and keeps its lot-center position.
         /// </summary>
-        public static GridPoint Position(HouseLot lot, float targetFootprint)
+        public static GridPoint Position(HouseLot lot, float uniformScale)
         {
-            if (targetFootprint <= 0f)
+            if (uniformScale <= 0f)
             {
-                throw new ArgumentException("Target footprint must be positive.", nameof(targetFootprint));
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
             if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
@@ -128,7 +134,7 @@ namespace Doggiehood.Core.World
                 return lot.Position;
             }
 
-            return PositionFor(lot, targetFootprint, walkway.B);
+            return PositionFor(lot, uniformScale, walkway.B);
         }
 
         /// <summary>
@@ -137,16 +143,15 @@ namespace Doggiehood.Core.World
         /// — no network lookup, so WalkNetwork.BuildFrom can use it
         /// mid-build to place each house before its walkway edge exists.
         /// </summary>
-        public static GridPoint PositionFor(HouseLot lot, float targetFootprint, GridPoint sidewalkAttach)
+        public static GridPoint PositionFor(HouseLot lot, float uniformScale, GridPoint sidewalkAttach)
         {
-            if (targetFootprint <= 0f)
+            if (uniformScale <= 0f)
             {
-                throw new ArgumentException("Target footprint must be positive.", nameof(targetFootprint));
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
-            var scale = targetFootprint / model.MaxFootprint;
-            var facadeHalfDepth = scale * model.FootprintZ / 2f;
+            var facadeHalfDepth = uniformScale * model.FootprintZ / 2f;
 
             // The attach point sits on the sidewalk CENTERLINE, so the
             // outer edge is half a sidewalk width back toward the lot, and

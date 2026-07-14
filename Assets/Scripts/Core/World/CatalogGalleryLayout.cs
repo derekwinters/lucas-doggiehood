@@ -9,9 +9,10 @@ namespace Doggiehood.Core.World
     /// annotated with its door marker, walkway placeholder, and fence
     /// placeholder. Lives in Core so the numbers are dotnet-testable and
     /// come from the exact APIs the game path uses
-    /// (<see cref="HouseModel.FrontDoorWorldPosition"/>, the
-    /// target-footprint / MaxFootprint scaling rule) — the Editor builder
-    /// renders these entries verbatim and adds no math of its own.
+    /// (<see cref="HouseModel.FrontDoorWorldPosition"/>, the fixed
+    /// kit-wide uniform scale <see cref="HousePlacement.KitScale"/>, #145)
+    /// — the Editor builder renders these entries verbatim and adds no
+    /// math of its own.
     /// </summary>
     public static class CatalogGalleryLayout
     {
@@ -32,11 +33,11 @@ namespace Doggiehood.Core.World
         /// front door.</summary>
         public const float GalleryYawDegrees = 0f;
 
-        public static IReadOnlyList<CatalogGalleryEntry> Compute(float targetFootprint, float spacing)
+        public static IReadOnlyList<CatalogGalleryEntry> Compute(float uniformScale, float spacing)
         {
-            if (targetFootprint <= 0f)
+            if (uniformScale <= 0f)
             {
-                throw new ArgumentException("Target footprint must be positive.", nameof(targetFootprint));
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
             if (spacing <= 0f)
@@ -49,7 +50,7 @@ namespace Doggiehood.Core.World
             {
                 var model = HouseModelCatalog.Models[i];
                 var position = new GridPoint(i * spacing, 0f);
-                var scale = targetFootprint / model.MaxFootprint;
+                var scale = uniformScale;
                 var door = model.FrontDoorWorldPosition(position, GalleryYawDegrees, scale);
                 var scaledFacadeZ = position.Z - scale * model.FootprintZ / 2f;
 

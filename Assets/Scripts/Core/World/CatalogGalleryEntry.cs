@@ -21,7 +21,9 @@ namespace Doggiehood.Core.World
         public float YawDegrees { get; }
 
         /// <summary>Uniform scale, by the same rule WorldBuilder applies:
-        /// target footprint / <see cref="HouseModel.MaxFootprint"/>.</summary>
+        /// the one fixed kit-wide scale
+        /// (<see cref="HousePlacement.KitScale"/>, #145) for every
+        /// model.</summary>
         public float UniformScale { get; }
 
         /// <summary>Door marker position — exactly

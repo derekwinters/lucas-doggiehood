@@ -60,26 +60,14 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Models_MaxFootprint_MatchesTheValuesWorldBuilderScaledBy()
-        {
-            // The pre-#125 WorldBuilder.HouseModels tuple recorded each
-            // model's max horizontal footprint; the catalog's per-axis
-            // footprints must reduce to the same numbers so house scaling
-            // is unchanged by the move into Core.
-            Assert.That(HouseModelCatalog.ForModel("building-type-b").MaxFootprint, Is.EqualTo(1.828f).Within(0.0001f));
-            Assert.That(HouseModelCatalog.ForModel("building-type-g").MaxFootprint, Is.EqualTo(1.45f).Within(0.0001f));
-            Assert.That(HouseModelCatalog.ForModel("building-type-k").MaxFootprint, Is.EqualTo(1.02f).Within(0.0001f));
-            Assert.That(HouseModelCatalog.ForModel("building-type-m").MaxFootprint, Is.EqualTo(1.428f).Within(0.0001f));
-        }
-
-        [Test]
         public void Models_DoorLocalPoints_AreDereksGalleryPass1Measurements()
         {
             // Derek's gallery pass 1 (2026-07-14): each DoorMarker moved
             // onto the visible door of the rendered mesh, Inspector local
             // position read in the entry container (gallery yaw 0, so
             // container axes == model axes), divided back by the entry's
-            // uniform scale (8 / MaxFootprint) and rounded to 4 decimals.
+            // then-current uniform scale (8 / the model's max footprint,
+            // the pre-#145 normalization rule) and rounded to 4 decimals.
             AssertDoor("building-type-b", -0.2612f, 0.0446f);
             AssertDoor("building-type-g", 0.0769f, -0.3382f);
             AssertDoor("building-type-k", 0.1900f, -0.3672f);

@@ -21,13 +21,6 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void MaxFootprint_IsTheLargerHorizontalExtent()
-        {
-            Assert.That(new HouseModel("a", 2f, 1.5f, 0f, 0f).MaxFootprint, Is.EqualTo(2f).Within(0.0001f));
-            Assert.That(new HouseModel("b", 1.1f, 3f, 0f, 0f).MaxFootprint, Is.EqualTo(3f).Within(0.0001f));
-        }
-
-        [Test]
         public void FrontDoorWorldPosition_AtYawZero_ScalesAndTranslatesTheLocalDoor()
         {
             // Yaw 0 leaves the model front on world -Z: the door is the
