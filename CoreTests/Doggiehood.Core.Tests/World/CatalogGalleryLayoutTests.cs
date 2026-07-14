@@ -98,35 +98,40 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void WalkwayLength_MatchesTheRealInGameWalkwayLength()
+        public void WalkwayEndBeyondFacade_MatchesTheRealInGameEndpointRule()
         {
-            // #128: the gallery has no streets, so its walkway stays a
-            // straight-out-the-front placeholder — but its length now
-            // reuses the real walkway geometry: the in-game walkway runs
-            // from the door (on the facade, FrontSetback beyond the
-            // sidewalk's OUTER edge) to the sidewalk CENTERLINE, i.e.
-            // FrontSetback + SidewalkWidth / 2 = 3.75m.
-            Assert.That(CatalogGalleryLayout.WalkwayLength,
+            // #128: the in-game walkway ends on the sidewalk CENTERLINE,
+            // which sits FrontSetback + SidewalkWidth / 2 = 3.75m beyond
+            // the scaled front facade. Since gallery pass 1 the doors are
+            // recessed, so this is an ENDPOINT rule, not a length: the
+            // walkway's length varies per model with the door's recess
+            // depth behind the facade, exactly as in the game.
+            Assert.That(CatalogGalleryLayout.WalkwayEndBeyondFacade,
                 Is.EqualTo(HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f).Within(0.0001f));
         }
 
         [Test]
-        public void Compute_WalkwayPlaceholder_RunsFromTheDoorStraightOutTheFront()
+        public void Compute_WalkwayPlaceholder_RunsFromTheDoorToTheGameEndpointBeyondTheScaledFacade()
         {
             // The gallery walkway is a marker line from the door toward
             // where the sidewalk would be — straight out the front (world
-            // -Z at yaw 0) by WalkwayLength (the real #128 walkway length;
-            // the gallery itself has no streets to attach to).
+            // -Z at yaw 0), ENDING WalkwayEndBeyondFacade past the scaled
+            // front facade plane (the sidewalk-centerline endpoint the real
+            // #128 walkway has; the gallery itself has no streets to attach
+            // to). With recessed doors the run is longer than 3.75m by each
+            // model's own recess depth.
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
             {
+                var scaledFacadeZ = entry.Position.Z - entry.UniformScale * entry.Model.FootprintZ / 2f;
+
                 Assert.That(entry.WalkwayStart, Is.EqualTo(entry.DoorPosition),
                     entry.Model.ModelName + " walkway start");
                 Assert.That(entry.WalkwayEnd.X, Is.EqualTo(entry.DoorPosition.X).Within(0.0001f),
                     entry.Model.ModelName + " walkway end X");
                 Assert.That(entry.WalkwayEnd.Z,
-                    Is.EqualTo(entry.DoorPosition.Z - CatalogGalleryLayout.WalkwayLength).Within(0.0001f),
+                    Is.EqualTo(scaledFacadeZ - CatalogGalleryLayout.WalkwayEndBeyondFacade).Within(0.0001f),
                     entry.Model.ModelName + " walkway end Z");
             }
         }

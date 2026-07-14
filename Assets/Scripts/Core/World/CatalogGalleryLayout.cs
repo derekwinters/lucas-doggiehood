@@ -15,13 +15,17 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class CatalogGalleryLayout
     {
-        /// <summary>Length of the walkway placeholder line, from the door
-        /// straight out the front. Since #128 real walkways exist, and
-        /// this reuses their exact length — door (on the facade,
-        /// FrontSetback beyond the sidewalk's outer edge) to the sidewalk
-        /// CENTERLINE — so the gallery preview matches the game even
-        /// though the gallery itself has no streets to attach to.</summary>
-        public const float WalkwayLength = HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f;
+        /// <summary>Where the walkway placeholder ENDS: this far beyond
+        /// the scaled front facade plane, straight out the front. Reuses
+        /// the real #128 endpoint — the in-game walkway ends on the
+        /// sidewalk CENTERLINE, FrontSetback + SidewalkWidth / 2 past the
+        /// facade — so the gallery preview matches the game even though
+        /// the gallery has no streets to attach to. An endpoint rule
+        /// rather than a length since gallery pass 1 (2026-07-14): the
+        /// authored doors are recessed behind the facade, so each model's
+        /// walkway run is longer than 3.75m by its own recess depth.</summary>
+        public const float WalkwayEndBeyondFacade =
+            HousePlacement.FrontSetback + WorldDimensions.SidewalkWidth / 2f;
 
         /// <summary>Gallery yaw: 0 leaves the model-local -Z front facade
         /// facing world -Z, so a viewer south of the row sees every
@@ -47,6 +51,7 @@ namespace Doggiehood.Core.World
                 var position = new GridPoint(i * spacing, 0f);
                 var scale = targetFootprint / model.MaxFootprint;
                 var door = model.FrontDoorWorldPosition(position, GalleryYawDegrees, scale);
+                var scaledFacadeZ = position.Z - scale * model.FootprintZ / 2f;
 
                 entries.Add(new CatalogGalleryEntry(
                     model,
@@ -55,7 +60,7 @@ namespace Doggiehood.Core.World
                     scale,
                     door,
                     walkwayStart: door,
-                    walkwayEnd: new GridPoint(door.X, door.Z - WalkwayLength),
+                    walkwayEnd: new GridPoint(door.X, scaledFacadeZ - WalkwayEndBeyondFacade),
                     fenceMin: new GridPoint(
                         position.X - scale * model.FootprintX / 2f,
                         position.Z - scale * model.FootprintZ / 2f),
