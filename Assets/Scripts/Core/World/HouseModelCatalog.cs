@@ -22,10 +22,10 @@ namespace Doggiehood.Core.World
     {
         public static IReadOnlyList<HouseModel> Models { get; } = new[]
         {
-            new HouseModel("building-type-b", 1.828f, 1.140f, 0f),
-            new HouseModel("building-type-g", 1.450f, 1.178f, 0f),
-            new HouseModel("building-type-k", 0.921f, 1.020f, 0f),
-            new HouseModel("building-type-m", 1.428f, 1.428f, 0f),
+            new HouseModel("building-type-b", 1.828f, 1.140f, 0f, -0.570f),
+            new HouseModel("building-type-g", 1.450f, 1.178f, 0f, -0.589f),
+            new HouseModel("building-type-k", 0.921f, 1.020f, 0f, -0.510f),
+            new HouseModel("building-type-m", 1.428f, 1.428f, 0f, -0.714f),
         };
 
         /// <summary>

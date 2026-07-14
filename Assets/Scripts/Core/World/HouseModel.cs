@@ -13,9 +13,14 @@ namespace Doggiehood.Core.World
     /// Front-facade convention: the kit models face model-local -Z — the
     /// fact WorldBuilder.HouseModelYawOffsetDegrees (180) already encodes
     /// from Derek's Editor screenshot evidence. The front facade is
-    /// therefore the local plane z = -FootprintZ / 2, and
-    /// <see cref="FrontDoorOffset"/> runs along local +X on that plane
-    /// (0 = horizontally centered).
+    /// therefore the local plane z = -FootprintZ / 2.
+    ///
+    /// The door is a full 2D model-local ground-plane point
+    /// (<see cref="FrontDoorLocalX"/>, <see cref="FrontDoorLocalZ"/>), NOT
+    /// a scalar along the facade: Derek's gallery pass 1 (2026-07-14)
+    /// showed the real kit doors are recessed behind the facade plane
+    /// (porches; building-type-b's door sits near its footprint center),
+    /// so pinning them to z = -FootprintZ / 2 was wrong.
     /// </summary>
     public sealed class HouseModel
     {
@@ -28,16 +33,23 @@ namespace Doggiehood.Core.World
         /// <summary>Model-local footprint size along local Z (units).</summary>
         public float FootprintZ { get; }
 
-        /// <summary>Door position along the front facade (local +X,
-        /// 0 = centered), in model-local units.</summary>
-        public float FrontDoorOffset { get; }
+        /// <summary>Door position along local +X (0 = centered), in
+        /// model-local units.</summary>
+        public float FrontDoorLocalX { get; }
 
-        public HouseModel(string modelName, float footprintX, float footprintZ, float frontDoorOffset)
+        /// <summary>Door position along local +Z (front facade is
+        /// -FootprintZ / 2; real kit doors sit behind it), in model-local
+        /// units.</summary>
+        public float FrontDoorLocalZ { get; }
+
+        public HouseModel(string modelName, float footprintX, float footprintZ,
+            float frontDoorLocalX, float frontDoorLocalZ)
         {
             ModelName = modelName;
             FootprintX = footprintX;
             FootprintZ = footprintZ;
-            FrontDoorOffset = frontDoorOffset;
+            FrontDoorLocalX = frontDoorLocalX;
+            FrontDoorLocalZ = frontDoorLocalZ;
         }
 
         /// <summary>The larger horizontal extent — what uniform scaling
@@ -49,10 +61,11 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>The door point in model-local ground-plane coordinates:
-        /// on the -Z front facade, <see cref="FrontDoorOffset"/> along +X.</summary>
+        /// the authored (<see cref="FrontDoorLocalX"/>,
+        /// <see cref="FrontDoorLocalZ"/>) pair.</summary>
         public GridPoint FrontDoorLocalPosition
         {
-            get { return new GridPoint(FrontDoorOffset, -FootprintZ / 2f); }
+            get { return new GridPoint(FrontDoorLocalX, FrontDoorLocalZ); }
         }
 
         /// <summary>

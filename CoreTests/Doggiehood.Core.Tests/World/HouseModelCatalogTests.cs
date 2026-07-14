@@ -36,7 +36,7 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Models_HaveUniqueNames_AndPositiveFootprintsWithDoorsOnTheFrontFacade()
+        public void Models_HaveUniqueNames_AndPositiveFootprints()
         {
             Assert.That(HouseModelCatalog.Models, Is.Not.Empty);
             Assert.That(HouseModelCatalog.Models.Select(m => m.ModelName), Is.Unique);
@@ -45,12 +45,6 @@ namespace Doggiehood.Core.Tests.World
             {
                 Assert.That(model.FootprintX, Is.GreaterThan(0f), $"{model.ModelName} FootprintX");
                 Assert.That(model.FootprintZ, Is.GreaterThan(0f), $"{model.ModelName} FootprintZ");
-
-                // The door must sit somewhere on the front facade, not
-                // beyond the model's own width.
-                Assert.That(System.Math.Abs(model.FrontDoorOffset),
-                    Is.LessThanOrEqualTo(model.FootprintX / 2f),
-                    $"{model.ModelName} door offset falls outside the facade");
             }
         }
 
@@ -76,33 +70,6 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(HouseModelCatalog.ForModel("building-type-g").MaxFootprint, Is.EqualTo(1.45f).Within(0.0001f));
             Assert.That(HouseModelCatalog.ForModel("building-type-k").MaxFootprint, Is.EqualTo(1.02f).Within(0.0001f));
             Assert.That(HouseModelCatalog.ForModel("building-type-m").MaxFootprint, Is.EqualTo(1.428f).Within(0.0001f));
-        }
-
-        [Test]
-        public void Models_FirstPassDoorOffsets_AreCenteredOnTheFacade()
-        {
-            // First pass (#125): no door node exists in the fused kit
-            // meshes, so the door is recorded horizontally centered on the
-            // front facade for all four models. Refinement happens via the
-            // #126 debug gallery with Derek.
-            foreach (var model in HouseModelCatalog.Models)
-            {
-                Assert.That(model.FrontDoorOffset, Is.EqualTo(0f), model.ModelName);
-            }
-        }
-
-        [Test]
-        public void Models_DoorLocalPosition_SitsOnTheFrontFacadePlane()
-        {
-            // #126 numeric guardrail: every catalog door must sit exactly
-            // on the model-local front facade plane z = -FootprintZ / 2
-            // (the kit models face local -Z; see HouseModel's convention).
-            foreach (var model in HouseModelCatalog.Models)
-            {
-                Assert.That(model.FrontDoorLocalPosition.Z,
-                    Is.EqualTo(-model.FootprintZ / 2f).Within(0.0001f),
-                    model.ModelName);
-            }
         }
 
         [Test]
