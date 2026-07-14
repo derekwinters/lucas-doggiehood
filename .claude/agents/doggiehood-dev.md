@@ -76,6 +76,25 @@ implementation, write the test, show it red, then restore the minimum code.
   (docs/specs/product-scope.md). No `06 - Neighborhood Expansion` content
   in MVP work. No new quest types, breeds, or mechanics beyond the specs.
 
+## Reflect — required final step before opening a PR
+
+After implementation is complete, run an explicit **reflect** pass over the
+whole run. Every PR body you write MUST begin with a `## Deviations and
+Decisions` header, and the section must be present even when there are no
+findings (write "None." under an empty category).
+
+- **Deviations** — anything you did that was not fully compliant with the
+  prompt, the issue checklist, or the docs/specs. Undesirable in general,
+  but it can legitimately happen in a valid test/development flow. For each
+  one, explain in a simple sentence or two what deviated and why, so the
+  reader can confirm the deviation is still acceptable.
+- **Decisions** — judgment calls you had to make mid-run because the
+  documentation, specs, or prompt were less clear than expected. Nearly all
+  runs should need none; when one happens, document what information or
+  instructions weren't as clear as expected, the decision you made (a
+  sentence or two), and how the gap could be prevented in the future (e.g.
+  a spec/docs addition or an issue correction).
+
 ## Definition of done for an issue
 
 - Every checklist item on the issue is satisfied (or explicitly flagged
