@@ -17,7 +17,7 @@
 
 > **Decision (2026-07-14, Derek, on [#86](https://github.com/derekwinters/lucas-doggiehood/issues/86)):** the map is **hand-picked expansion with no fixed end** — zones are authored and added over time, and procedural generation stays out of scope ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)). A **zone is a hand-authored group of tiles** from the [tile catalog](world/tile-catalog.md) (60m grid), pre-authored by Derek and Lucas; the player unlocks zones in sequence but never places tiles. Initial zones use only **cul-de-sac, straight, tee, and turn** tiles — more variety (including the OpposingTurns/park-island tiles, whose arch-loop question stays deferred on #109) comes later.
 
-**First zone:** a cul-de-sac street to the northwest of the starting intersection. The proposed concrete layout (derived, to be confirmed on [#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)): from the starting `FourWay` at grid (0,0), `TurnSW` at (0,1), `CulDeSacEast` at (−1,1) — the road runs north from the intersection, turns west, and ends in the bulb.
+**First zone:** a cul-de-sac street to the northwest of the starting intersection. The confirmed layout (2026-07-14, Derek, on [#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)): from the starting `FourWay` at grid (0,0), `TurnSW` at (0,1), `CulDeSacEast` at (−1,1) — the road runs north from the intersection, turns west, and ends in the bulb.
 
 The tile-grid placement/adjacency system this all sits on is [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), the milestone's geometric prerequisite.
 
