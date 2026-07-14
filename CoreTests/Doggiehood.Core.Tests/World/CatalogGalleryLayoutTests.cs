@@ -74,21 +74,26 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_FrontsFaceMinusZ_SoTheDoorSitsOnTheScaledFrontFacadePlane()
+        public void Compute_AtGalleryYawZero_TheDoorIsTheScaledAuthoredLocalPoint()
         {
-            // Gallery convention: yaw 0, so the model-local front facade
-            // plane (z = -FootprintZ / 2) lands at
-            // entry.Z - scale * FootprintZ / 2 in world space — every door
-            // marker must sit exactly on it.
+            // Gallery convention: yaw 0, so container axes == model axes
+            // and the door marker lands exactly at the entry position plus
+            // the scaled authored 2D local door point. (This is the very
+            // relationship Derek's gallery pass 1 measurements rely on —
+            // Inspector local position / uniform scale = model-local door.)
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
             {
                 Assert.That(entry.YawDegrees, Is.EqualTo(0f), entry.Model.ModelName + " yaw");
-                Assert.That(entry.DoorPosition.Z,
-                    Is.EqualTo(entry.Position.Z - entry.UniformScale * entry.Model.FootprintZ / 2f)
+                Assert.That(entry.DoorPosition.X,
+                    Is.EqualTo(entry.Position.X + entry.UniformScale * entry.Model.FrontDoorLocalX)
                         .Within(0.0001f),
-                    entry.Model.ModelName + " door facade plane");
+                    entry.Model.ModelName + " door X");
+                Assert.That(entry.DoorPosition.Z,
+                    Is.EqualTo(entry.Position.Z + entry.UniformScale * entry.Model.FrontDoorLocalZ)
+                        .Within(0.0001f),
+                    entry.Model.ModelName + " door Z");
             }
         }
 
@@ -127,12 +132,13 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_FencePlaceholder_IsTheScaledFootprintRectangle_WithTheDoorOnItsFrontEdge()
+        public void Compute_FencePlaceholder_IsTheScaledFootprintRectangle_WithTheDoorStrictlyInsideIt()
         {
             // #129 fences don't exist yet; the placeholder outlines the
             // scaled footprint so Derek can judge the authored numbers
-            // against the rendered model. The door must sit on the rect's
-            // front (min-Z) edge, within its X extent.
+            // against the rendered model. Since gallery pass 1 the doors
+            // are recessed (porches), so the marker sits strictly INSIDE
+            // the footprint rectangle, no longer on its front edge.
             var entries = CatalogGalleryLayout.Compute(TargetFootprint, Spacing);
 
             foreach (var entry in entries)
@@ -145,11 +151,12 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(entry.FenceMax.X, Is.EqualTo(entry.Position.X + halfX).Within(0.0001f));
                 Assert.That(entry.FenceMax.Z, Is.EqualTo(entry.Position.Z + halfZ).Within(0.0001f));
 
-                Assert.That(entry.DoorPosition.Z, Is.EqualTo(entry.FenceMin.Z).Within(0.0001f),
-                    entry.Model.ModelName + " door on the front fence edge");
                 Assert.That(entry.DoorPosition.X,
-                    Is.InRange(entry.FenceMin.X - 0.0001f, entry.FenceMax.X + 0.0001f),
-                    entry.Model.ModelName + " door within the facade extent");
+                    Is.GreaterThan(entry.FenceMin.X).And.LessThan(entry.FenceMax.X),
+                    entry.Model.ModelName + " door strictly within the footprint (X)");
+                Assert.That(entry.DoorPosition.Z,
+                    Is.GreaterThan(entry.FenceMin.Z).And.LessThan(entry.FenceMax.Z),
+                    entry.Model.ModelName + " door strictly within the footprint (Z)");
             }
         }
 
