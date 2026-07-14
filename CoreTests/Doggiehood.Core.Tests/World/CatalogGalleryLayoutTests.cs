@@ -139,31 +139,64 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_FencePlaceholder_IsTheScaledFootprintRectangle_WithTheDoorStrictlyInsideIt()
+        public void Compute_FenceRuns_AreTheRealBackyardFence_FromTheGamePathApi()
         {
-            // #129 fences don't exist yet; the placeholder outlines the
-            // scaled footprint so Derek can judge the authored numbers
-            // against the rendered model. Since gallery pass 1 the doors
-            // are recessed (porches), so the marker sits strictly INSIDE
-            // the footprint rectangle, no longer on its front edge.
+            // #146: the fence derives from house geometry (side-wall
+            // midpoints + rear line), so the gallery shows the REAL
+            // backyard fence outline per model — exactly what
+            // LotFence.BackyardRuns returns for the entry's placement (the
+            // same API the game path uses), replacing the old authored-
+            // footprint-outline placeholder.
+            var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
+
+            foreach (var entry in entries)
+            {
+                var expected = LotFence.BackyardRuns(entry.Model, entry.Position,
+                    new GridPoint(0f, -1f), entry.UniformScale, LotFence.RearLineBehindFacade);
+
+                Assert.That(entry.FenceRuns.Count, Is.EqualTo(expected.Count),
+                    entry.Model.ModelName + " fence run count");
+                for (var i = 0; i < expected.Count; i++)
+                {
+                    Assert.That(entry.FenceRuns[i].A.X, Is.EqualTo(expected[i].A.X).Within(0.0001f),
+                        entry.Model.ModelName + $" fence run {i} A.X");
+                    Assert.That(entry.FenceRuns[i].A.Z, Is.EqualTo(expected[i].A.Z).Within(0.0001f),
+                        entry.Model.ModelName + $" fence run {i} A.Z");
+                    Assert.That(entry.FenceRuns[i].B.X, Is.EqualTo(expected[i].B.X).Within(0.0001f),
+                        entry.Model.ModelName + $" fence run {i} B.X");
+                    Assert.That(entry.FenceRuns[i].B.Z, Is.EqualTo(expected[i].B.Z).Within(0.0001f),
+                        entry.Model.ModelName + $" fence run {i} B.Z");
+                }
+            }
+        }
+
+        [Test]
+        public void Compute_FenceRuns_AnchorAtTheScaledSideWallMidpoints_AndTheRearLine()
+        {
+            // Geometric sanity at gallery yaw 0 (front facade faces -Z, so
+            // the back yard extends toward +Z): the side anchors sit at
+            // ±(scaled width / 2) on the entry's X, at the entry's Z (the
+            // side walls' depth midpoint), and the rear line sits
+            // RearLineBehindFacade beyond the scaled front facade plane.
             var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
                 var halfX = entry.UniformScale * entry.Model.FootprintX / 2f;
                 var halfZ = entry.UniformScale * entry.Model.FootprintZ / 2f;
+                var rearZ = entry.Position.Z - halfZ + LotFence.RearLineBehindFacade;
 
-                Assert.That(entry.FenceMin.X, Is.EqualTo(entry.Position.X - halfX).Within(0.0001f));
-                Assert.That(entry.FenceMin.Z, Is.EqualTo(entry.Position.Z - halfZ).Within(0.0001f));
-                Assert.That(entry.FenceMax.X, Is.EqualTo(entry.Position.X + halfX).Within(0.0001f));
-                Assert.That(entry.FenceMax.Z, Is.EqualTo(entry.Position.Z + halfZ).Within(0.0001f));
+                var xs = entry.FenceRuns.SelectMany(r => new[] { r.A.X, r.B.X }).ToList();
+                var zs = entry.FenceRuns.SelectMany(r => new[] { r.A.Z, r.B.Z }).ToList();
 
-                Assert.That(entry.DoorPosition.X,
-                    Is.GreaterThan(entry.FenceMin.X).And.LessThan(entry.FenceMax.X),
-                    entry.Model.ModelName + " door strictly within the footprint (X)");
-                Assert.That(entry.DoorPosition.Z,
-                    Is.GreaterThan(entry.FenceMin.Z).And.LessThan(entry.FenceMax.Z),
-                    entry.Model.ModelName + " door strictly within the footprint (Z)");
+                Assert.That(xs.Min(), Is.EqualTo(entry.Position.X - halfX).Within(0.0001f),
+                    entry.Model.ModelName + " left side anchor");
+                Assert.That(xs.Max(), Is.EqualTo(entry.Position.X + halfX).Within(0.0001f),
+                    entry.Model.ModelName + " right side anchor");
+                Assert.That(zs.Min(), Is.EqualTo(entry.Position.Z).Within(0.0001f),
+                    entry.Model.ModelName + " side anchors at the side walls' depth midpoint");
+                Assert.That(zs.Max(), Is.EqualTo(rearZ).Within(0.0001f),
+                    entry.Model.ModelName + " rear line");
             }
         }
 

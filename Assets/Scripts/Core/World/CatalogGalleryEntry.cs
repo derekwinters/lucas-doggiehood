@@ -1,13 +1,17 @@
+using System.Collections.Generic;
+
 namespace Doggiehood.Core.World
 {
     /// <summary>
     /// One annotated row of the #126 debug catalog gallery: where a
     /// <see cref="HouseModel"/> sits in the gallery, how it is scaled and
     /// yawed, and the annotation geometry (door marker, walkway
-    /// placeholder, fence placeholder) — all derived from the same Core
-    /// APIs the game path uses so the Editor rendering can never drift
-    /// from reality. Walkways (#128) and fences (#129) don't exist yet;
-    /// their placeholders here are authoring aids only.
+    /// placeholder, backyard fence outline) — all derived from the same
+    /// Core APIs the game path uses so the Editor rendering can never
+    /// drift from reality. Since #146 the fence annotation is the REAL
+    /// backyard fence (<see cref="LotFence.BackyardRuns"/>: side-wall
+    /// midpoint anchors + rear line), no longer an authored-footprint
+    /// placeholder.
     /// </summary>
     public sealed class CatalogGalleryEntry
     {
@@ -38,17 +42,14 @@ namespace Doggiehood.Core.World
         /// sidewalk would be.</summary>
         public GridPoint WalkwayEnd { get; }
 
-        /// <summary>Fence placeholder: min corner of the scaled footprint
-        /// rectangle.</summary>
-        public GridPoint FenceMin { get; }
-
-        /// <summary>Fence placeholder: max corner of the scaled footprint
-        /// rectangle.</summary>
-        public GridPoint FenceMax { get; }
+        /// <summary>The model's real backyard fence outline (#146) —
+        /// exactly <see cref="LotFence.BackyardRuns"/> for this entry's
+        /// placement.</summary>
+        public IReadOnlyList<FenceRun> FenceRuns { get; }
 
         public CatalogGalleryEntry(HouseModel model, GridPoint position, float yawDegrees,
             float uniformScale, GridPoint doorPosition, GridPoint walkwayStart, GridPoint walkwayEnd,
-            GridPoint fenceMin, GridPoint fenceMax)
+            IReadOnlyList<FenceRun> fenceRuns)
         {
             Model = model;
             Position = position;
@@ -57,8 +58,7 @@ namespace Doggiehood.Core.World
             DoorPosition = doorPosition;
             WalkwayStart = walkwayStart;
             WalkwayEnd = walkwayEnd;
-            FenceMin = fenceMin;
-            FenceMax = fenceMax;
+            FenceRuns = fenceRuns;
         }
     }
 }

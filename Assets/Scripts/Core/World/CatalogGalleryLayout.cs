@@ -6,8 +6,9 @@ namespace Doggiehood.Core.World
     /// <summary>
     /// Layout math for the #126 editor-only debug gallery: every
     /// <see cref="HouseModelCatalog"/> model in a row along +X, each
-    /// annotated with its door marker, walkway placeholder, and fence
-    /// placeholder. Lives in Core so the numbers are dotnet-testable and
+    /// annotated with its door marker, walkway placeholder, and real
+    /// backyard fence outline (#146). Lives in Core so the numbers are
+    /// dotnet-testable and
     /// come from the exact APIs the game path uses
     /// (<see cref="HouseModel.FrontDoorWorldPosition"/>, the fixed
     /// kit-wide uniform scale <see cref="HousePlacement.KitScale"/>, #145)
@@ -62,12 +63,12 @@ namespace Doggiehood.Core.World
                     door,
                     walkwayStart: door,
                     walkwayEnd: new GridPoint(door.X, scaledFacadeZ - WalkwayEndBeyondFacade),
-                    fenceMin: new GridPoint(
-                        position.X - scale * model.FootprintX / 2f,
-                        position.Z - scale * model.FootprintZ / 2f),
-                    fenceMax: new GridPoint(
-                        position.X + scale * model.FootprintX / 2f,
-                        position.Z + scale * model.FootprintZ / 2f)));
+                    // #146: the REAL backyard fence outline — the same Core
+                    // API the game path uses, at the gallery placement
+                    // (yaw 0 = facing world -Z) and the derived in-game
+                    // rear line distance behind the facade.
+                    fenceRuns: LotFence.BackyardRuns(model, position,
+                        new GridPoint(0f, -1f), scale, LotFence.RearLineBehindFacade)));
             }
 
             return entries;

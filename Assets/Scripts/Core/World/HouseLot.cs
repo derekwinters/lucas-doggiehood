@@ -7,15 +7,14 @@ namespace Doggiehood.Core.World
         public Quadrant Quadrant { get; }
         public GridPoint Position { get; }
 
-        /// <summary>Whether this lot renders a boundary fence (#129).
-        /// Defaults on — Derek's request has all four starting lots fenced
-        /// — but exists per lot so fences can later become a buyable
-        /// decoration or house-level upgrade (a separate design decision,
-        /// not built yet). A lot with the flag off contributes no fence
-        /// geometry (see LotFence).</summary>
+        /// <summary>Whether this lot renders its backyard fence (#129,
+        /// reshaped by #146). Defaults OFF since #146 — every lot's fence
+        /// is defined but hidden until a future quest purchases it (#147).
+        /// A lot with the flag off contributes no built fence, but its
+        /// geometry stays queryable (see LotFence.GeometryFor).</summary>
         public bool HasFence { get; }
 
-        public HouseLot(int houseId, Quadrant quadrant, GridPoint position, bool hasFence = true)
+        public HouseLot(int houseId, Quadrant quadrant, GridPoint position, bool hasFence = false)
         {
             HouseId = houseId;
             Quadrant = quadrant;

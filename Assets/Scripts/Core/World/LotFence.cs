@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace Doggiehood.Core.World
 {
-    /// <summary>One straight fence line (#129): a segment of a lot's
-    /// boundary rectangle, on the ground plane. Purely geometric — the
-    /// tiling into kit pieces is <see cref="FenceTiling"/>'s job.</summary>
+    /// <summary>One straight fence line (#129, reshaped by #146): a
+    /// segment of a lot's backyard fence, on the ground plane. Purely
+    /// geometric — the tiling into kit pieces is
+    /// <see cref="FenceTiling"/>'s job.</summary>
     public readonly struct FenceRun
     {
         public GridPoint A { get; }
@@ -30,136 +31,141 @@ namespace Doggiehood.Core.World
     }
 
     /// <summary>
-    /// Per-lot fence boundary geometry (#129): an axis-aligned square of
-    /// <see cref="HalfExtent"/> around the lot center, with a
-    /// <see cref="GateGapWidth"/> gate gap centered exactly where the lot's
-    /// front walkway (#128) crosses the street-facing side — so the walkway
-    /// always passes through the gate. Fencing is per-lot
-    /// (<see cref="HouseLot.HasFence"/>, default on): a lot with the flag
-    /// off contributes no fence geometry, which is the hook a later
-    /// buyable-fence / house-upgrade design decision would use.
+    /// Per-lot backyard fence geometry (#146, replacing #129's boundary
+    /// square with a gate gap): three continuous runs anchored at the
+    /// midpoint of each side wall of the HOUSE, wrapping around the back
+    /// yard only. The front yard stays open — no fence line ever crosses
+    /// the front, so the walkway (#128, door → sidewalk) needs no gate.
+    /// The fence rotates with the house facing: side anchors sit
+    /// ±(scaled FootprintX / 2) perpendicular to
+    /// <see cref="HousePlacement.FrontFacing"/> at the house's depth
+    /// midpoint, and the rear line sits
+    /// <see cref="RearBoundaryFromLotCenter"/> behind the lot center, away
+    /// from the faced street.
+    ///
+    /// Fences are defined for every lot but HIDDEN by default
+    /// (<see cref="HouseLot.HasFence"/> defaults false since #146; a
+    /// future quest, #147, purchases them). The flag-respecting
+    /// <see cref="RunsFor"/> is what WorldBuilder consumes — empty while
+    /// hidden — while <see cref="GeometryFor"/> keeps the geometry
+    /// queryable for a disabled lot.
     /// </summary>
     public static class LotFence
     {
         /// <summary>
-        /// Half the fence square's side, in meters from the lot center.
-        /// Decision (#129, 2026-07-14): 7.5m — the widest sensible square.
-        /// It must stay strictly inside the lot's street clearance
-        /// (LotDistanceFromCenter 14 minus the sidewalk outer edge 5.75 =
-        /// 8.25m, on BOTH streets of a corner lot; 7.5 leaves a 0.75m grass
-        /// strip against the sidewalk) while containing every
-        /// setback-shifted house: the #127 facade sits 5.5m street-side of
-        /// the lot center (2m clearance) and the widest model at the fixed
-        /// ×7 kit scale (#145, building-type-b, 12.80m) spans ±6.4m
-        /// (1.1m clearance) — all test-enforced. Derek tunes it visually
-        /// in the Editor check afterwards.
+        /// Distance from the lot center to the rear fence line, in meters
+        /// away from the street the house faces. Decision (#146,
+        /// 2026-07-14): reuses #129's 7.5m boundary half-extent for the
+        /// REAR ONLY — it stays inside the starting tile quadrant
+        /// (14 + 7.5 &lt; 30) and clears every model's setback-shifted rear
+        /// wall at the fixed ×7 kit scale (#145) by at least 3m (the
+        /// deepest model, building-type-m at 10.00m, keeps 3.0m;
+        /// test-enforced at ≥ 0.5m). Exact alignment with property layouts
+        /// is deferred to #147.
         /// </summary>
-        public const float HalfExtent = 7.5f;
-
-        /// <summary>
-        /// Width of the gate gap the front walkway passes through.
-        /// Decision (#129, 2026-07-14): the walkway's visual width
-        /// (SidewalkWidth, 2m) plus 0.5m clearance per side, so the fence
-        /// ends read as gate posts flanking the walkway instead of
-        /// touching the pavers.
-        /// </summary>
-        public const float GateGapWidth = WorldDimensions.SidewalkWidth + 1f;
+        public const float RearBoundaryFromLotCenter = 7.5f;
 
         private const float Epsilon = 0.001f;
 
         /// <summary>
-        /// The fence lines for <paramref name="lot"/>: empty when the lot's
-        /// fence is disabled; otherwise the four boundary sides, with the
-        /// side the lot's front walkway crosses split around the gate gap
-        /// (centered on the walkway line). A lot with no front walkway —
-        /// which no starting lot is — gets the full ungated rectangle.
-        /// Reads <see cref="NeighborhoodLayout.WalkNetwork"/> for the
-        /// walkway, like <see cref="HousePlacement.Position"/> does; it is
-        /// only ever called after the network is built.
+        /// The rear fence line's distance behind the scaled FRONT FACADE
+        /// plane — the house-relative form of
+        /// <see cref="RearBoundaryFromLotCenter"/>, and the one the #126
+        /// gallery (which has no lots or streets) feeds to
+        /// <see cref="BackyardRuns"/>. Derived, identical for every lot
+        /// and model: the #127 setback puts every facade
+        /// LotDistanceFromCenter − sidewalk outer edge − FrontSetback =
+        /// 5.5m street-ward of its lot center, so the rear line lands
+        /// 5.5 + 7.5 = 13m behind the facade.
+        /// </summary>
+        public static float RearLineBehindFacade
+        {
+            get
+            {
+                var sidewalkOuterEdge = WorldDimensions.RoadWidth / 2f
+                    + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
+                return NeighborhoodLayout.LotDistanceFromCenter - sidewalkOuterEdge
+                    - HousePlacement.FrontSetback + RearBoundaryFromLotCenter;
+            }
+        }
+
+        /// <summary>
+        /// The fence lines <paramref name="lot"/> contributes to the built
+        /// world: empty while the lot's fence is hidden
+        /// (<see cref="HouseLot.HasFence"/> off — every starting lot's
+        /// default), otherwise <see cref="GeometryFor"/>.
         /// </summary>
         public static IReadOnlyList<FenceRun> RunsFor(HouseLot lot)
         {
-            if (!lot.HasFence)
-            {
-                return Array.Empty<FenceRun>();
-            }
-
-            var minX = lot.Position.X - HalfExtent;
-            var maxX = lot.Position.X + HalfExtent;
-            var minZ = lot.Position.Z - HalfExtent;
-            var maxZ = lot.Position.Z + HalfExtent;
-
-            var hasGate = NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway);
-
-            var runs = new List<FenceRun>();
-
-            // South and north sides (along X at constant Z), then west and
-            // east sides (along Z at constant X).
-            AddSide(runs, new GridPoint(minX, minZ), new GridPoint(maxX, minZ),
-                hasGate && GateIsOnZSide(walkway, lot, minZ) ? walkway.A.X : (float?)null);
-            AddSide(runs, new GridPoint(minX, maxZ), new GridPoint(maxX, maxZ),
-                hasGate && GateIsOnZSide(walkway, lot, maxZ) ? walkway.A.X : (float?)null);
-            AddSide(runs, new GridPoint(minX, minZ), new GridPoint(minX, maxZ),
-                hasGate && GateIsOnXSide(walkway, lot, minX) ? walkway.A.Z : (float?)null);
-            AddSide(runs, new GridPoint(maxX, minZ), new GridPoint(maxX, maxZ),
-                hasGate && GateIsOnXSide(walkway, lot, maxX) ? walkway.A.Z : (float?)null);
-
-            return runs;
+            return lot.HasFence ? GeometryFor(lot) : Array.Empty<FenceRun>();
         }
 
-        /// <summary>True when the walkway (door → sidewalk) runs along Z
-        /// and exits the rectangle through the side at
-        /// <paramref name="sideZ"/>.</summary>
-        private static bool GateIsOnZSide(WalkEdge walkway, HouseLot lot, float sideZ)
+        /// <summary>
+        /// The lot's backyard fence geometry regardless of the
+        /// <see cref="HouseLot.HasFence"/> flag — queryable for a disabled
+        /// lot (the #147 purchase flow needs to describe what it sells).
+        /// Reads <see cref="NeighborhoodLayout.WalkNetwork"/> via
+        /// HousePlacement, like #129's version did; it is only ever called
+        /// after the network is built.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot)
         {
-            if (Math.Abs(walkway.A.X - walkway.B.X) > Epsilon)
-            {
-                return false; // walkway runs along X, crosses an X side
-            }
-
-            return Math.Sign(walkway.B.Z - lot.Position.Z) == Math.Sign(sideZ - lot.Position.Z);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var facing = HousePlacement.FrontFacing(lot);
+            var position = HousePlacement.Position(lot, HousePlacement.KitScale);
+            return BackyardRuns(model, position, facing, HousePlacement.KitScale, RearLineBehindFacade);
         }
 
-        /// <summary>True when the walkway runs along X and exits the
-        /// rectangle through the side at <paramref name="sideX"/>.</summary>
-        private static bool GateIsOnXSide(WalkEdge walkway, HouseLot lot, float sideX)
+        /// <summary>
+        /// Pure form (no network lookup — the #126 gallery reuses it with
+        /// its own placement): the three backyard fence runs for a house
+        /// model at <paramref name="housePosition"/> facing the unit
+        /// cardinal <paramref name="facing"/> at
+        /// <paramref name="uniformScale"/>, with the rear line
+        /// <paramref name="rearLineBehindFacade"/> meters behind the scaled
+        /// front facade plane. Runs chain side anchor → rear corner → rear
+        /// corner → side anchor, continuous with no gap.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> BackyardRuns(HouseModel model, GridPoint housePosition,
+            GridPoint facing, float uniformScale, float rearLineBehindFacade)
         {
-            if (Math.Abs(walkway.A.X - walkway.B.X) <= Epsilon)
+            if (uniformScale <= 0f)
             {
-                return false;
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
-            return Math.Sign(walkway.B.X - lot.Position.X) == Math.Sign(sideX - lot.Position.X);
-        }
+            var halfWidth = uniformScale * model.FootprintX / 2f;
+            var halfDepth = uniformScale * model.FootprintZ / 2f;
 
-        /// <summary>One rectangle side from <paramref name="a"/> to
-        /// <paramref name="b"/> (axis-aligned, min → max), whole — or split
-        /// around the gate gap centered at <paramref name="gateCenter"/>
-        /// (a coordinate on the side's own axis) when one is given.</summary>
-        private static void AddSide(List<FenceRun> runs, GridPoint a, GridPoint b, float? gateCenter)
-        {
-            if (!gateCenter.HasValue)
+            // The facade sits halfDepth in FRONT of the house center, so
+            // the rear line sits (rearLineBehindFacade - halfDepth) behind
+            // the center along the facing axis.
+            var rearBehindCenter = rearLineBehindFacade - halfDepth;
+            if (rearBehindCenter <= Epsilon)
             {
-                runs.Add(new FenceRun(a, b));
-                return;
+                throw new ArgumentException(
+                    "Rear line must sit behind the house center.", nameof(rearLineBehindFacade));
             }
 
-            var alongX = Math.Abs(a.Z - b.Z) <= Epsilon;
-            var gapMin = gateCenter.Value - GateGapWidth / 2f;
-            var gapMax = gateCenter.Value + GateGapWidth / 2f;
+            // Perpendicular to the facing on the ground plane; the side
+            // walls run along the facing (depth) axis at ±halfWidth.
+            var perp = new GridPoint(-facing.Z, facing.X);
 
-            var first = alongX ? new GridPoint(gapMin, a.Z) : new GridPoint(a.X, gapMin);
-            var second = alongX ? new GridPoint(gapMax, a.Z) : new GridPoint(a.X, gapMax);
+            var sideA = new GridPoint(
+                housePosition.X + perp.X * halfWidth, housePosition.Z + perp.Z * halfWidth);
+            var sideB = new GridPoint(
+                housePosition.X - perp.X * halfWidth, housePosition.Z - perp.Z * halfWidth);
+            var rearA = new GridPoint(
+                sideA.X - facing.X * rearBehindCenter, sideA.Z - facing.Z * rearBehindCenter);
+            var rearB = new GridPoint(
+                sideB.X - facing.X * rearBehindCenter, sideB.Z - facing.Z * rearBehindCenter);
 
-            if ((alongX ? first.X - a.X : first.Z - a.Z) > Epsilon)
+            return new[]
             {
-                runs.Add(new FenceRun(a, first));
-            }
-
-            if ((alongX ? b.X - second.X : b.Z - second.Z) > Epsilon)
-            {
-                runs.Add(new FenceRun(second, b));
-            }
+                new FenceRun(sideA, rearA),
+                new FenceRun(rearA, rearB),
+                new FenceRun(rearB, sideB),
+            };
         }
     }
 }
