@@ -7,9 +7,9 @@ namespace Doggiehood.Unity
     /// <summary>
     /// Spawns a DogView for every dog in game state (#8, #106): street dogs
     /// start on the sidewalk nearest their house — the same attach point
-    /// their driveway stub connects to on the walk network — staggered
-    /// along that sidewalk so housemates don't overlap; window dogs render
-    /// at their house's window anchor.
+    /// their front walkway (#128, replacing the driveway stub) connects to
+    /// on the walk network — staggered along that sidewalk so housemates
+    /// don't overlap; window dogs render at their house's window anchor.
     /// </summary>
     public static class DogSpawner
     {
@@ -36,17 +36,23 @@ namespace Doggiehood.Unity
             }
         }
 
-        /// <summary>The house's driveway attach point on the walk network,
-        /// staggered along whichever sidewalk arm it sits on so multiple
-        /// housemates don't spawn on top of each other.</summary>
+        /// <summary>The house's walkway attach point on the walk network
+        /// (#128 — the sidewalk end of its front walkway), staggered along
+        /// whichever sidewalk arm it sits on so multiple housemates don't
+        /// spawn on top of each other.</summary>
         private static Vector3 SidewalkSpawnPoint(int houseId, int indexAtHouse)
         {
             var lot = NeighborhoodLayout.GetHouseLot(houseId);
             var network = NeighborhoodLayout.WalkNetwork;
 
-            var driveway = network.Edges.First(e => e.Kind == WalkEdgeKind.DrivewayStub
-                && (e.A.Equals(lot.Position) || e.B.Equals(lot.Position)));
-            var attach = driveway.Other(lot.Position);
+            if (!network.TryGetFrontWalkway(houseId, out var walkway))
+            {
+                // A lot with no walkway (no sidewalk to attach to) keeps
+                // the old lot-center spawn.
+                return new Vector3(lot.Position.X, 0f, lot.Position.Z);
+            }
+
+            var attach = walkway.B;
 
             var direction = new Vector3(1f, 0f, 0f);
             var sidewalkEdge = network.EdgesFrom(attach)

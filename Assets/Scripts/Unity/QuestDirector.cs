@@ -148,9 +148,11 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// Core computes the actual route (#106): shortest path over the
-        /// sidewalk/crosswalk/driveway-stub network from the dog's current
-        /// position to its house lot, ending via that lot's driveway stub.
+        /// Core computes the actual route (#106, #128): shortest path over
+        /// the sidewalk/crosswalk/front-walkway network from the dog's
+        /// current position to its house's FRONT DOOR — the lot-side node
+        /// of the lot's front walkway (the walkway replaced the old
+        /// lot-center driveway stub, so "home" is now the actual door).
         /// Computed once per quest and cached — this layer only walks it.
         /// </summary>
         private List<Vector3> GetOrComputeRoute(Quest quest, DogView view)
@@ -160,13 +162,18 @@ namespace Doggiehood.Unity
                 return existing;
             }
 
+            var network = NeighborhoodLayout.WalkNetwork;
             var lot = NeighborhoodLayout.GetHouseLot(view.Dog.HouseId);
+            var home = network.TryGetFrontWalkway(view.Dog.HouseId, out var walkway)
+                ? walkway.A // the front door
+                : lot.Position; // no walkway to arrive by — lot center fallback
+
             var start = new GridPoint(view.transform.position.x, view.transform.position.z);
-            var waypoints = NeighborhoodLayout.WalkNetwork.FindPath(start, lot.Position);
+            var waypoints = network.FindPath(start, home);
 
             var route = waypoints.Count > 0
                 ? waypoints.Select(p => new Vector3(p.X, 0f, p.Z)).ToList()
-                : new List<Vector3> { new Vector3(lot.Position.X, 0f, lot.Position.Z) };
+                : new List<Vector3> { new Vector3(home.X, 0f, home.Z) };
 
             homeRoutes[quest.Id] = route;
             homeRouteProgress[quest.Id] = 0;

@@ -28,8 +28,14 @@ namespace Doggiehood.Unity
         public const string CrosswalkNamePrefix = "Crosswalk - ";
         public const string RoadTileNamePrefix = "RoadTile - ";
         public const string IntersectionTileName = RoadTileNamePrefix + "Intersection";
+        public const string WalkwayNamePrefix = "Walkway - ";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
+
+        /// <summary>Resources key for the front-walkway paver piece (#128)
+        /// — the clean square-paver look from the same City Kit Suburban
+        /// kit as the houses, staged alongside them.</summary>
+        public const string WalkwayPieceResource = "path-short";
 
         /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
@@ -64,8 +70,11 @@ namespace Doggiehood.Unity
         /// outer edge is at 5.75m (0.75m verge), so an 8m-wide house spans
         /// 10-18 on its lot, leaving a sensible front yard. Public since
         /// #126: the editor-only catalog gallery must scale models by the
-        /// exact number the game uses so it can never drift.</summary>
-        public const float HouseTargetFootprint = 8f;
+        /// exact number the game uses so it can never drift. The canonical
+        /// value moved into Core with #128 (the walk network's front
+        /// walkways need each door's world position engine-free); this
+        /// stays as the Unity-side alias existing callers and tests use.</summary>
+        public const float HouseTargetFootprint = HousePlacement.HouseTargetFootprint;
 
         /// <summary>
         /// Yaw correction applied after pointing a house model at its
@@ -73,9 +82,11 @@ namespace Doggiehood.Unity
         /// doors pointing opposite the look direction at 0, so the City
         /// Kit Suburban models face local -Z. Kept a single public
         /// constant (read by WorldKitArtTests) so one flip fixes all four
-        /// houses if it's ever still wrong.
+        /// houses if it's ever still wrong — canonical in Core since #128
+        /// (HousePlacement.ModelYawOffsetDegrees, needed for the door
+        /// math); this is the Unity-side alias.
         /// </summary>
-        public const float HouseModelYawOffsetDegrees = 180f;
+        public const float HouseModelYawOffsetDegrees = HousePlacement.ModelYawOffsetDegrees;
 
         /// <summary>
         /// EditMode test seam: forces the graybox primitive path even when
@@ -121,6 +132,8 @@ namespace Doggiehood.Unity
             {
                 BuildHouse(root.transform, house);
             }
+
+            BuildWalkways(root.transform);
 
             BuildSun(root.transform);
             ApplyAmbientLighting();
@@ -355,6 +368,77 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>
+        /// The front walkways (#128): one "Walkway - N" container per
+        /// house, rendering the Core WalkNetwork's FrontWalkway edge (door
+        /// -> sidewalk). In the kit path it's tiled City Kit Suburban
+        /// path-short pavers at the exact positions/scales Core's
+        /// WalkwayTiling computes; when the piece can't be loaded it falls
+        /// back to one flat graybox strip (same pattern as the roads), so
+        /// the walkway always exists visually. All geometry comes from
+        /// Core either way — nothing here decides where a walkway goes.
+        /// </summary>
+        private static void BuildWalkways(Transform parent)
+        {
+            var piece = ForcePrimitiveFallback
+                ? null
+                : Resources.Load<GameObject>(WalkwayPieceResource);
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
+                {
+                    continue;
+                }
+
+                var container = new GameObject(WalkwayNamePrefix + lot.HouseId);
+                container.transform.SetParent(parent);
+                container.transform.position = Vector3.zero;
+
+                if (piece != null)
+                {
+                    BuildKitWalkway(container.transform, walkway, piece);
+                }
+                else
+                {
+                    BuildPrimitiveWalkway(container.transform, walkway);
+                }
+            }
+        }
+
+        private static void BuildKitWalkway(Transform container, WalkEdge walkway, GameObject piece)
+        {
+            var pieces = WalkwayTiling.PiecesAlong(walkway);
+            for (var i = 0; i < pieces.Count; i++)
+            {
+                var tile = Object.Instantiate(piece, container);
+                tile.name = "Path " + i;
+                tile.transform.position = new Vector3(pieces[i].Position.X, 0f, pieces[i].Position.Z);
+                tile.transform.rotation = Quaternion.Euler(0f, pieces[i].YawDegrees, 0f);
+                // Width (x) and height (y) at the uniform kit scale; the
+                // length axis (local z) compressed so the pieces cover the
+                // walkway exactly.
+                tile.transform.localScale = new Vector3(
+                    WalkwayTiling.WidthScale, WalkwayTiling.WidthScale, pieces[i].LengthScale);
+            }
+        }
+
+        private static void BuildPrimitiveWalkway(Transform container, WalkEdge walkway)
+        {
+            var strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            strip.name = "Strip";
+            strip.transform.SetParent(container);
+            strip.transform.position = new Vector3(
+                (walkway.A.X + walkway.B.X) / 2f, 0.07f, (walkway.A.Z + walkway.B.Z) / 2f);
+
+            // The walkway is axis-aligned (perpendicular to its street).
+            var alongX = Mathf.Abs(walkway.A.Z - walkway.B.Z) < 0.01f;
+            strip.transform.localScale = alongX
+                ? new Vector3(walkway.Length, 0.1f, walkway.Width)
+                : new Vector3(walkway.Width, 0.1f, walkway.Length);
+            Paint(strip, Palette.SidewalkHex);
+        }
+
         private static void BuildHouse(Transform parent, House house)
         {
             var lot = NeighborhoodLayout.GetHouseLot(house.Id);
@@ -362,8 +446,9 @@ namespace Doggiehood.Unity
             // #127: the house stands at Core's front-setback position —
             // pulled from the lot center toward its facing street so the
             // scaled front facade sits HousePlacement.FrontSetback from
-            // the sidewalk's outer edge. The lot center itself stays the
-            // walk-network/driveway anchor and is not moved.
+            // the sidewalk's outer edge. The lot center itself is not
+            // moved (it still anchors the deferred expansion geometry);
+            // since #128 the walk network connects at the front DOOR.
             var position = HousePlacement.Position(lot, HouseTargetFootprint);
 
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
@@ -376,7 +461,7 @@ namespace Doggiehood.Unity
             // anchor's local pose is identical in both art paths — dogs'
             // window-watching depends on it — and it intentionally keeps
             // this diagonal facing even though the kit model itself now
-            // faces its driveway's road squarely (HouseFrontFacing);
+            // faces its walkway's road squarely (HouseFrontFacing);
             // fine-tuning the anchor to each kit model's actual wall is a
             // follow-up.
             var anchor = new GameObject("WindowAnchor").transform;
@@ -414,8 +499,8 @@ namespace Doggiehood.Unity
         /// <summary>
         /// The direction a house model's front should face (Derek's Editor
         /// feedback on the first kit pass: diagonal toward-origin yaws
-        /// looked scattered): squarely toward the road the lot's driveway
-        /// connects to. The rule itself lives in Core since #127
+        /// looked scattered): squarely toward the road the lot's front
+        /// walkway attaches to. The rule itself lives in Core since #127
         /// (HousePlacement.FrontFacing — the front-setback math needs it
         /// engine-free); this is just the Vector3 conversion at the Unity
         /// boundary.
@@ -432,7 +517,7 @@ namespace Doggiehood.Unity
         /// models have ground-level pivots),
         /// uniformly scaled so the model's max horizontal footprint lands
         /// on HouseTargetFootprint, and yawed squarely toward the road its
-        /// driveway connects to (see HouseFrontFacing) plus the art-side
+        /// walkway attaches to (see HouseFrontFacing) plus the art-side
         /// HouseModelYawOffsetDegrees correction. The imported FBX carries
         /// no collider, so a BoxCollider fitted to the combined renderer
         /// bounds goes on the HouseView object to keep tap interaction
