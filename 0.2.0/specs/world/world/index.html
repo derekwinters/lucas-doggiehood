@@ -635,6 +635,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lot-fences" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lot fences
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#lighting-time" class="md-nav__link">
     <span class="md-ellipsis">
       Lighting &amp; time
@@ -1308,6 +1317,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lot-fences" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lot fences
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#lighting-time" class="md-nav__link">
     <span class="md-ellipsis">
       Lighting &amp; time
@@ -1367,6 +1385,13 @@
 </ul>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <p>Streets are lined with houses that the player views and explores from above (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>). There is no player-character traversal — see <a href="../camera-controls/">Camera, Navigation &amp; Controls</a> for how the player actually moves through the space.</p>
+<h2 id="lot-fences">Lot fences<a class="headerlink" href="#lot-fences" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Decision (2026-07-13, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>):</strong> each house lot is bounded by a fence with a <strong>gate gap where the front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>) crosses</strong>, so the walkway always passes through the gate.</p>
+</blockquote>
+<p>The geometry lives in Core (<code>LotFence</code>): an axis-aligned square of half-extent <strong>7.5m</strong> around the lot center — strictly clear of the sidewalk (8.25m away on both streets of a corner lot, leaving a 0.75m grass strip) and containing every setback-shifted house footprint with margin (the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/127">#127</a> facade sits 5.5m street-side of the lot center), all test-enforced. The gate gap is <strong>3m</strong> wide (the walkway's 2m visual width plus 0.5m clearance per side), centered on the walkway line.</p>
+<p>Fencing is <strong>per lot</strong> — <code>HouseLot.HasFence</code>, default <strong>on</strong> for all four starting lots — so a later design decision can make fences a buyable decoration or house-level upgrade without reshaping the geometry; that decision is explicitly <em>not</em> made yet. A lot with the flag off contributes no fence geometry.</p>
+<p>Visually, fences render as tiled Kenney City Kit Suburban <code>fence</code> pieces at uniform scale ×5 (1.35m tall — half the ground-tile scale, which would read as a 2.7m wall). Core's <code>FenceTiling</code> compresses a whole number of pieces to cover each run exactly (the same compress-to-fit rule as the walkway pavers), so fence ends land precisely on lot corners and gate-gap edges; <code>WorldBuilder</code> instantiates the pieces verbatim and falls back to one thin graybox rail per run when the kit piece can't be loaded.</p>
 <h2 id="lighting-time">Lighting &amp; time<a class="headerlink" href="#lighting-time" title="Permanent link">&para;</a></h2>
 <p>Static, pleasant daytime lighting — always sunny/mid-day. <strong>No day/night cycle and no weather system for MVP.</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/39">#39</a>)</p>
 <p>This is a deliberate simplification: it avoids needing lighting variants for every asset, and a future weather/day-night system is tracked separately as an explicit future idea — see <a href="../../future-ideas/">Future Ideas</a>.</p>
@@ -1377,6 +1402,7 @@
 <ul>
 <li>[ ] One intersection, two streets, 4 house lots (one per quadrant)</li>
 <li>[ ] Houses placed per <a href="../art-style/">Art &amp; UI Style</a> (cottage silhouettes, one per house)</li>
+<li>[x] Each lot fenced (per-lot flag, all four on) with the gate gap centered on its front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>)</li>
 <li>[ ] Static daytime lighting setup, no day/night or weather systems present</li>
 <li>[ ] Scene readable and navigable at the isometric camera angle (see <a href="../camera-controls/">Camera, Navigation &amp; Controls</a>)</li>
 </ul>
