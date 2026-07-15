@@ -44,7 +44,7 @@ A cover art concept for the game exists at [#90](https://github.com/derekwinters
 ## Build checklist
 
 - [ ] One intersection, two streets, 4 house lots (one per quadrant)
-- [ ] Houses placed per [Art & UI Style](art-style.md) (cottage silhouettes, one per house)
+- [x] Houses placed per [Art & UI Style](art-style.md) (cottage silhouettes, one per house)
 - [x] Backyard fence defined per lot (anchored at the house's side-wall midpoints, front yard open), hidden by default until purchased ([#146](https://github.com/derekwinters/lucas-doggiehood/issues/146); purchase quest: [#147](https://github.com/derekwinters/lucas-doggiehood/issues/147))
 - [ ] Static daytime lighting setup, no day/night or weather systems present
 - [ ] Scene readable and navigable at the isometric camera angle (see [Camera, Navigation & Controls](camera-controls.md))
