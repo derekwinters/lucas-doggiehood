@@ -12,6 +12,10 @@ namespace Doggiehood.Unity
     /// </summary>
     public sealed class HudOverlay : MonoBehaviour
     {
+        private const float ChipWidth = 140f;
+        private const float ChipHeight = 32f;
+        private const float ChipMargin = 16f;
+
         private GameState state;
 
         public void Init(GameState state)
@@ -32,8 +36,9 @@ namespace Doggiehood.Unity
                 return;
             }
 
-            const float width = 140f;
-            GUI.Box(new Rect(Screen.width - width - 16f, 16f, width, 32f), Label);
+            GUI.Box(
+                new Rect(Screen.width - ChipWidth - ChipMargin, ChipMargin, ChipWidth, ChipHeight),
+                Label);
         }
     }
 }
