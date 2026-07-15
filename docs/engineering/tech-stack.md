@@ -24,6 +24,12 @@ Unity Test Framework (EditMode tests, run headless via `-batchmode -nographics` 
 
 **Default new logic to Core** unless it genuinely requires Unity APIs (rendering, input, physics, scene management). See [Testing Strategy](testing.md) for how this plays into TDD.
 
+### Geometry, layout, and tuning values are named variables
+
+*[#161](https://github.com/derekwinters/lucas-doggiehood/issues/161) — applies to every feature, graybox included*
+
+Every geometry, layout, and tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — is declared as a named constant, static field, or serialized field at the top of its type (or in a shared Core numbers class where one exists, e.g. `EconomyNumbers`). Inline numeric literals in method bodies are not acceptable for these values, in either Core or the Unity wiring layer. Graybox code is not exempt: interim UI gets restyled, and named values are what make that a one-line change.
+
 ## Repo hygiene
 
 - **Git LFS** tracks common binary asset types (`.png`, `.psd`, `.fbx`, `.wav`, `.mp3`, `.ttf`, etc.) from the first commit. ([#79](https://github.com/derekwinters/lucas-doggiehood/issues/79))

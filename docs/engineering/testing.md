@@ -30,3 +30,13 @@ When implementing anything from the [specs](../specs/index.md), default to:
 3. Only once the logic is proven, wire a thin Unity-side adapter to it, with an EditMode test if the wiring itself has meaningful logic (event subscriptions, etc.) — not just a pass-through.
 
 If a feature seems to *require* Unity APIs to even express the logic (e.g. actual physics-based movement), isolate the engine-dependent part as narrowly as possible and keep decision logic (what to do) separate from execution (how Unity does it).
+
+## Known limitation: EditMode tests run in CI, not in agent environments
+
+Agent execution environments do not have the Unity Editor installed, so EditMode tests cannot be run locally during an agent session. The sanctioned flow is:
+
+1. Write the EditMode test first, before the implementation exists — the red phase is the test referencing a type or member that doesn't exist yet (a compile error).
+2. Implement the minimum to satisfy it.
+3. CI runs the EditMode suite headlessly (`-batchmode -nographics`) on the PR and is the authoritative green.
+
+This is the expected, documented workflow — **not** a deviation. Agent PRs should not list "EditMode tests were not executed locally" in their `## Deviations and Decisions` section; it's only reportable if CI itself fails or the test-first ordering wasn't followed.

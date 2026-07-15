@@ -33,6 +33,9 @@ namespace Doggiehood.Unity
 
             gameObject.AddComponent<SfxPlayer>();
 
+            // Persistent HUD (#159): graybox currency chip, restyled by #65.
+            gameObject.AddComponent<HudOverlay>().Init(state);
+
             // First launch only (#44): tutorial prompts over live gameplay.
             if (Doggiehood.Core.Onboarding.OnboardingSequence.ShouldRun(state))
             {

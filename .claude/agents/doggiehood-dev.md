@@ -57,6 +57,13 @@ implementation, write the test, show it red, then restore the minimum code.
 - Every new file under `Assets/` needs a Unity `.meta` file with a fresh
   GUID (copy the pattern of an existing sibling `.meta`).
 
+- **No inline geometry/layout/tuning literals** (#161): sizes, offsets,
+  margins, positions, durations, speeds, payouts — declare each as a named
+  constant, static field, or serialized field at the top of its type (or in
+  a shared Core numbers class like `EconomyNumbers`), never as a bare
+  number in a method body. Applies to Core and Unity layers alike,
+  graybox code included.
+
 - C# language level is pinned to what Unity supports (`LangVersion` 9.0 in
   the Core test csproj) — if it doesn't compile under `dotnet test`, it
   won't ship.
@@ -87,7 +94,10 @@ findings (write "None." under an empty category).
   prompt, the issue checklist, or the docs/specs. Undesirable in general,
   but it can legitimately happen in a valid test/development flow. For each
   one, explain in a simple sentence or two what deviated and why, so the
-  reader can confirm the deviation is still acceptable.
+  reader can confirm the deviation is still acceptable. Known limitations
+  documented in docs/engineering (e.g. EditMode tests running in CI rather
+  than locally, per docs/engineering/testing.md) are the sanctioned
+  workflow, NOT deviations — do not report them.
 - **Decisions** — judgment calls you had to make mid-run because the
   documentation, specs, or prompt were less clear than expected. Nearly all
   runs should need none; when one happens, document what information or
