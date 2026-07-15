@@ -4,18 +4,25 @@ using System.Collections.Generic;
 namespace Doggiehood.Core.Art
 {
     /// <summary>
-    /// The four cottage silhouette variants and their assignment to the
-    /// starting houses (#64): suburban cottage-style, varied per house, in
-    /// the bright &amp; saturated palette (docs/specs/world/art-style.md).
+    /// The four starting-house variants: which City Kit Suburban model
+    /// each house renders as, and which kit texture variant tints it
+    /// (#64). Single source of truth for "what does this house look
+    /// like" — model + tint together, rather than the model assignment
+    /// living separately on HouseModelCatalog (pre-#64) while the palette
+    /// lived here disconnected from it. HouseModelCatalog still owns the
+    /// per-model footprint/door geometry (#125), keyed by ModelName.
     /// </summary>
     public static class HouseStyleTable
     {
         public static IReadOnlyList<HouseStyle> Styles { get; } = new[]
         {
-            new HouseStyle(1, RoofShape.Gable, true, "#FF6F61", "#D64550"),
-            new HouseStyle(2, RoofShape.Hip, false, "#FFD23F", "#F28F3B"),
-            new HouseStyle(3, RoofShape.Gambrel, true, "#3FA7D6", "#2D89AD"),
-            new HouseStyle(4, RoofShape.Shed, false, "#59CD90", "#6C4FC4"),
+            // Same 4 letter picks as the pre-#64 HouseModelCatalog
+            // assignment (#122 placeholder pending Derek/Lucas visual
+            // review) — consolidated here, not re-picked.
+            new HouseStyle(1, "building-type-b", HouseTintVariant.Colormap),
+            new HouseStyle(2, "building-type-g", HouseTintVariant.VariationA),
+            new HouseStyle(3, "building-type-k", HouseTintVariant.VariationB),
+            new HouseStyle(4, "building-type-m", HouseTintVariant.VariationC),
         };
 
         /// <summary>Starting assignment: house id N gets style N.</summary>

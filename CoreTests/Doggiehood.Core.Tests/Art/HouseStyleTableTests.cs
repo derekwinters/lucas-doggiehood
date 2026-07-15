@@ -8,12 +8,16 @@ namespace Doggiehood.Core.Tests.Art
     public class HouseStyleTableTests
     {
         [Test]
-        public void DefinesFourDistinctSilhouetteVariants()
+        public void DefinesFourDistinctModelAndTintVariants()
         {
-            // #64: each starting house gets its own cottage silhouette.
+            // #64: each starting house gets its own kit model + tint
+            // variant. Colors now live in the kit's real textures, not as
+            // Core-owned hex data, so the old HSV-brightness coverage
+            // (AllHouseColors_AreBrightAndSaturated) is retired — nothing
+            // in Core represents color any more.
             Assert.That(HouseStyleTable.Styles.Count, Is.EqualTo(4));
-            Assert.That(HouseStyleTable.Styles.Select(s => s.RoofShape), Is.Unique);
-            Assert.That(HouseStyleTable.Styles.Select(s => s.WallColorHex), Is.Unique);
+            Assert.That(HouseStyleTable.Styles.Select(s => s.TintVariant), Is.Unique);
+            Assert.That(HouseStyleTable.Styles.Select(s => s.ModelName), Is.Unique);
         }
 
         [Test]
@@ -46,22 +50,24 @@ namespace Doggiehood.Core.Tests.Art
         }
 
         [Test]
-        public void AllHouseColors_AreBrightAndSaturated()
+        public void ForHouse_MatchesThePlaceholderModelPicks()
         {
-            // The documented palette direction (#64,
-            // docs/specs/world/art-style.md): bold, punchy colors — not
-            // muted/earthy, not pastel. Enforced as HSV thresholds.
-            foreach (var style in HouseStyleTable.Styles)
-            {
-                foreach (var hex in new[] { style.WallColorHex, style.RoofColorHex })
-                {
-                    var color = ColorRgb.Parse(hex);
-                    Assert.That(color.Saturation, Is.GreaterThanOrEqualTo(0.5f),
-                        $"{hex} on style {style.StyleId} is under-saturated for the bright palette");
-                    Assert.That(color.Value, Is.GreaterThanOrEqualTo(0.6f),
-                        $"{hex} on style {style.StyleId} is too dark for the bright palette");
-                }
-            }
+            // Same 4 letter picks as the pre-#64 HouseModelCatalog
+            // assignment (#122 placeholder, pending Derek/Lucas visual
+            // review in #125/#122) — consolidated here, not re-picked.
+            Assert.That(HouseStyleTable.ForHouse(1).ModelName, Is.EqualTo("building-type-b"));
+            Assert.That(HouseStyleTable.ForHouse(2).ModelName, Is.EqualTo("building-type-g"));
+            Assert.That(HouseStyleTable.ForHouse(3).ModelName, Is.EqualTo("building-type-k"));
+            Assert.That(HouseStyleTable.ForHouse(4).ModelName, Is.EqualTo("building-type-m"));
+        }
+
+        [Test]
+        public void DefaultTintVariant_IsColormap()
+        {
+            // At least one house keeps the kit's base colormap texture
+            // rather than a tint-variant swap.
+            Assert.That(HouseStyleTable.Styles.Select(s => s.TintVariant),
+                Does.Contain(HouseTintVariant.Colormap));
         }
     }
 }

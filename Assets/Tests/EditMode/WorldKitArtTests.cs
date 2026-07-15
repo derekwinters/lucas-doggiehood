@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -257,6 +258,42 @@ namespace Doggiehood.Unity.EditModeTests
                 Assert.That(childNames, Has.No.Member("Walls"));
                 Assert.That(childNames, Has.No.Member("Roof"));
                 Assert.That(childNames, Has.No.Member("Porch"));
+            }
+        }
+
+        [Test]
+        public void Houses_WithANonDefaultTintVariant_HaveTheVariantTextureAppliedToEveryRenderer()
+        {
+            // #64: each house's HouseStyle.TintVariant is applied to the
+            // real rendered kit model as a texture swap (never a color
+            // multiply — these are hand-painted kit textures, not a white
+            // base to tint). Houses left at the kit's own default
+            // "Colormap" texture keep whatever material the FBX import
+            // gave them, so they are skipped here (nothing to compare
+            // against — WorldBuilder never touches their material).
+            foreach (var view in root.GetComponentsInChildren<HouseView>())
+            {
+                var style = HouseStyleTable.ForHouse(view.HouseId);
+                if (style.TintVariant == HouseTintVariant.Colormap)
+                {
+                    continue;
+                }
+
+                var expectedTexture = Resources.Load<Texture2D>(WorldBuilder.TintTextureResourceName(style.TintVariant));
+                Assert.That(expectedTexture, Is.Not.Null,
+                    $"sanity: tint variant texture for house {view.HouseId} ({style.TintVariant}) must be staged");
+
+                var model = view.transform.Find("Model");
+                Assert.That(model, Is.Not.Null, $"house {view.HouseId} has no kit model child");
+
+                var renderers = model.GetComponentsInChildren<Renderer>();
+                Assert.That(renderers, Is.Not.Empty, $"house {view.HouseId} model renders nothing");
+
+                foreach (var renderer in renderers)
+                {
+                    Assert.That(renderer.sharedMaterial.mainTexture, Is.EqualTo(expectedTexture),
+                        $"house {view.HouseId} renderer {renderer.name} must use its {style.TintVariant} texture");
+                }
             }
         }
 

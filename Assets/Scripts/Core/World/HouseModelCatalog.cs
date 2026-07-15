@@ -1,16 +1,22 @@
 using System;
 using System.Collections.Generic;
+using Doggiehood.Core.Art;
 
 namespace Doggiehood.Core.World
 {
     /// <summary>
     /// The house-model catalog (#125): every City Kit Suburban model the
     /// game can place, with its authored footprint and front-door data
-    /// (<see cref="HouseModel"/>), plus the houseId -> model assignment
-    /// that used to live in WorldBuilder.HouseModels. Adding a house model
-    /// is one FBX + one catalog row here; the completeness test
+    /// (<see cref="HouseModel"/>). Adding a house model is one FBX + one
+    /// catalog row here; the completeness test
     /// (HouseModelCatalogTests.ForHouse_HasACatalogEntryForEveryHouseLot)
     /// makes forgetting the row impossible.
+    ///
+    /// The houseId -> model assignment itself lives on
+    /// <see cref="HouseStyleTable"/> (#64), alongside which kit texture
+    /// variant tints that house — model + tint are one styling decision
+    /// with one source of truth. <see cref="ForHouse"/> here just resolves
+    /// that assignment down to the geometry entry.
     ///
     /// Footprints are parsed from the kit GLB geometry (model-local units).
     /// Door points are AUTHORED DATA from Derek's #126 gallery review,
@@ -34,19 +40,6 @@ namespace Doggiehood.Core.World
             new HouseModel("building-type-m", 1.428f, 1.428f, -0.0464f, -0.6105f),
         };
 
-        /// <summary>
-        /// House id -> model assignment, moved from WorldBuilder (#122's
-        /// PLACEHOLDER PICKS — Derek and Lucas re-pick the letters once
-        /// they have seen the models rendered in the Editor).
-        /// </summary>
-        private static readonly (int HouseId, string ModelName)[] Assignments =
-        {
-            (1, "building-type-b"),
-            (2, "building-type-g"),
-            (3, "building-type-k"),
-            (4, "building-type-m"),
-        };
-
         public static HouseModel ForModel(string modelName)
         {
             foreach (var model in Models)
@@ -60,17 +53,18 @@ namespace Doggiehood.Core.World
             throw new ArgumentException($"No catalog entry for model '{modelName}'.", nameof(modelName));
         }
 
+        /// <summary>
+        /// House id -> model, via Doggiehood.Core.Art.HouseStyleTable
+        /// (#64): the houseId -> model assignment that used to live here
+        /// as a separate hardcoded list moved to HouseStyleTable so
+        /// model + tint selection has one source of truth instead of two
+        /// disconnected tables. HouseStyleTable.ForHouse throws the same
+        /// ArgumentException shape for an unknown id, so this delegation
+        /// changes no caller-visible behavior.
+        /// </summary>
         public static HouseModel ForHouse(int houseId)
         {
-            foreach (var assignment in Assignments)
-            {
-                if (assignment.HouseId == houseId)
-                {
-                    return ForModel(assignment.ModelName);
-                }
-            }
-
-            throw new ArgumentException($"No house model mapped for id {houseId}.", nameof(houseId));
+            return ForModel(HouseStyleTable.ForHouse(houseId).ModelName);
         }
     }
 }

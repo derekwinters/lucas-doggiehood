@@ -33,6 +33,14 @@ namespace Doggiehood.Unity
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
 
+        /// <summary>Ground footprint (local X/Z) of the graybox fallback
+        /// house's single "Walls" box (#64) — only ever built when the
+        /// kit model itself fails to load.</summary>
+        private const float HouseFallbackWallsFootprint = 4f;
+
+        /// <summary>Height of the graybox fallback house's "Walls" box.</summary>
+        private const float HouseFallbackWallsHeight = 2.5f;
+
         /// <summary>Resources key for the front-walkway paver piece (#128)
         /// — the clean square-paver look from the same City Kit Suburban
         /// kit as the houses, staged alongside them.</summary>
@@ -581,24 +589,24 @@ namespace Doggiehood.Unity
                 : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
             if (model != null)
             {
-                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot));
+                var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
+                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant);
                 return;
             }
 
-            var style = HouseStyleTable.ForHouse(house.Id);
+            // Graybox fallback (only reached when the kit model itself
+            // can't load): a single plain box. Pre-#64 this branch also
+            // built a procedural roof shape and an optional porch keyed on
+            // HouseStyle.RoofShape/HasPorch — both removed (#64) along with
+            // their per-house hex colors, since real per-house visual
+            // identity now comes from the kit model + BuildHouseModel's
+            // tint-variant texture swap, which this fallback never reaches.
             var walls = GameObject.CreatePrimitive(PrimitiveType.Cube);
             walls.name = "Walls";
             walls.transform.SetParent(houseRoot.transform);
-            walls.transform.localScale = new Vector3(4f, 2.5f, 4f);
-            walls.transform.localPosition = new Vector3(0f, 1.25f, 0f);
-            Paint(walls, style.WallColorHex);
-
-            BuildRoof(houseRoot.transform, style);
-
-            if (style.HasPorch)
-            {
-                BuildPorch(houseRoot.transform, lot, style);
-            }
+            walls.transform.localScale = new Vector3(HouseFallbackWallsFootprint, HouseFallbackWallsHeight, HouseFallbackWallsFootprint);
+            walls.transform.localPosition = new Vector3(0f, HouseFallbackWallsHeight / 2f, 0f);
+            Paint(walls, Palette.HouseFallbackHex);
         }
 
         /// <summary>
@@ -623,13 +631,16 @@ namespace Doggiehood.Unity
         /// uniformly scaled by the one fixed kit-wide HouseKitScale
         /// (#145), and yawed squarely toward the road its
         /// walkway attaches to (see HouseFrontFacing) plus the art-side
-        /// HouseModelYawOffsetDegrees correction. The imported FBX carries
-        /// no collider, so a BoxCollider fitted to the combined renderer
-        /// bounds goes on the HouseView object to keep tap interaction
-        /// (TapRouter raycasts, then GetComponentInParent) working. None of
-        /// the primitive walls/roof/porch are built in this path.
+        /// HouseModelYawOffsetDegrees correction, then painted with its
+        /// HouseStyle.TintVariant kit texture (#64, see ApplyTintVariant).
+        /// The imported FBX carries no collider, so a BoxCollider fitted
+        /// to the combined renderer bounds goes on the HouseView object to
+        /// keep tap interaction (TapRouter raycasts, then
+        /// GetComponentInParent) working. None of the primitive
+        /// walls/roof/porch are built in this path.
         /// </summary>
-        private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing)
+        private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing,
+            HouseTintVariant tintVariant)
         {
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
@@ -638,60 +649,68 @@ namespace Doggiehood.Unity
                 * Quaternion.Euler(0f, HouseModelYawOffsetDegrees, 0f);
             visual.transform.localScale = Vector3.one * HouseKitScale;
 
+            ApplyTintVariant(visual, tintVariant);
+
             // houseRoot has identity rotation and unit scale at this point,
             // matching TapColliders.AddFitted's requirement.
             TapColliders.AddFitted(houseRoot, visual);
         }
 
-        private static void BuildRoof(Transform houseRoot, HouseStyle style)
+        /// <summary>
+        /// Resources load key for a HouseTintVariant's texture, staged
+        /// alongside the house models (Assets/Art/Houses/CityKitSuburban/
+        /// Resources/, same bare-filename convention
+        /// HouseModelResourcePath and WalkwayPieceResource use — load keys
+        /// are relative to the Resources folder itself). Colormap is the
+        /// kit's own default texture (already on the imported model's
+        /// material), so it has no separate file to load here; callers
+        /// only need this for the three variation textures.
+        /// </summary>
+        public static string TintTextureResourceName(HouseTintVariant tintVariant)
         {
-            switch (style.RoofShape)
+            switch (tintVariant)
             {
-                case RoofShape.Gable:
-                    // Diamond prism: a cube rotated 45° reads as a peaked roof.
-                    AddRoofBlock(houseRoot, new Vector3(2.9f, 2.9f, 4.4f), new Vector3(0f, 2.5f, 0f),
-                        Quaternion.Euler(0f, 0f, 45f), style.RoofColorHex);
-                    break;
-                case RoofShape.Hip:
-                    AddRoofBlock(houseRoot, new Vector3(3f, 1f, 3f), new Vector3(0f, 3f, 0f),
-                        Quaternion.identity, style.RoofColorHex);
-                    break;
-                case RoofShape.Gambrel:
-                    AddRoofBlock(houseRoot, new Vector3(4.2f, 0.8f, 4.2f), new Vector3(0f, 2.9f, 0f),
-                        Quaternion.identity, style.RoofColorHex);
-                    AddRoofBlock(houseRoot, new Vector3(2.6f, 0.8f, 2.6f), new Vector3(0f, 3.7f, 0f),
-                        Quaternion.identity, style.RoofColorHex);
-                    break;
-                case RoofShape.Shed:
-                    AddRoofBlock(houseRoot, new Vector3(4.4f, 0.4f, 4.6f), new Vector3(0f, 3f, 0f),
-                        Quaternion.Euler(12f, 0f, 0f), style.RoofColorHex);
-                    break;
+                case HouseTintVariant.VariationA:
+                    return "variation-a";
+                case HouseTintVariant.VariationB:
+                    return "variation-b";
+                case HouseTintVariant.VariationC:
+                    return "variation-c";
+                default:
+                    return "colormap";
             }
         }
 
-        private static void AddRoofBlock(Transform houseRoot, Vector3 scale, Vector3 localPosition,
-            Quaternion localRotation, string colorHex)
+        /// <summary>
+        /// Paints a house model with its HouseStyle.TintVariant kit
+        /// texture (#64): a real texture swap, not a color multiply — the
+        /// kit's variation-a/b/c textures are hand-painted alternates for
+        /// the same meshes, so swapping .mainTexture is correct where
+        /// DogView.PaintModel's .color multiply (for the white-base Cube
+        /// Pets coat) is not. Colormap houses keep whatever material the
+        /// FBX import gave them — nothing to swap to.
+        /// </summary>
+        private static void ApplyTintVariant(GameObject visual, HouseTintVariant tintVariant)
         {
-            var block = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            block.name = "Roof";
-            block.transform.SetParent(houseRoot);
-            block.transform.localScale = scale;
-            block.transform.localPosition = localPosition;
-            block.transform.localRotation = localRotation;
-            Paint(block, colorHex);
-        }
+            if (tintVariant == HouseTintVariant.Colormap)
+            {
+                return;
+            }
 
-        private static void BuildPorch(Transform houseRoot, HouseLot lot, HouseStyle style)
-        {
-            // The porch faces the intersection at the world origin.
-            var toCenter = new Vector3(-Mathf.Sign(lot.Position.X), 0f, -Mathf.Sign(lot.Position.Z)) * 0.5f;
+            var texture = Resources.Load<Texture2D>(TintTextureResourceName(tintVariant));
+            if (texture == null)
+            {
+                return;
+            }
 
-            var deck = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            deck.name = "Porch";
-            deck.transform.SetParent(houseRoot);
-            deck.transform.localScale = new Vector3(2.4f, 0.25f, 1.6f);
-            deck.transform.localPosition = new Vector3(toCenter.x * 5.6f, 0.125f, toCenter.z * 5.6f);
-            Paint(deck, Palette.SidewalkHex);
+            foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.mainTexture = texture;
+                renderer.sharedMaterial = material;
+            }
         }
 
         private static void BuildSun(Transform parent)
