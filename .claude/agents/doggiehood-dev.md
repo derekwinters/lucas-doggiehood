@@ -57,6 +57,13 @@ implementation, write the test, show it red, then restore the minimum code.
 - Every new file under `Assets/` needs a Unity `.meta` file with a fresh
   GUID (copy the pattern of an existing sibling `.meta`).
 
+- **No inline geometry/layout/tuning literals** (#161): sizes, offsets,
+  margins, positions, durations, speeds, payouts — declare each as a named
+  constant, static field, or serialized field at the top of its type (or in
+  a shared Core numbers class like `EconomyNumbers`), never as a bare
+  number in a method body. Applies to Core and Unity layers alike,
+  graybox code included.
+
 - C# language level is pinned to what Unity supports (`LangVersion` 9.0 in
   the Core test csproj) — if it doesn't compile under `dotnet test`, it
   won't ship.
