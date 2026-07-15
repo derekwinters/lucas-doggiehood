@@ -80,25 +80,27 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void EveryHouse_HasAViewWithItsIdAndDistinctStyleGeometry()
+        public void EveryHouse_HasAViewWithItsId_AndASinglePlainWallsBlock()
         {
-            // Roof/porch blocks only exist in the graybox primitive path;
-            // the kit-model equivalent is covered by WorldKitArtTests.
+            // #64: RoofShape/HasPorch (and their per-house hex colors) are
+            // gone — the real per-house visual identity now comes from the
+            // kit model + HouseStyleTable.TintVariant texture swap
+            // (WorldKitArtTests), never built in this primitive-fallback
+            // path. The fallback (only reached when the kit model itself
+            // can't load) is simplified to one plain box — no procedural
+            // roof/porch geometry keyed on removed fields.
             RebuildWithPrimitiveFallback();
             var views = root.GetComponentsInChildren<HouseView>();
 
             Assert.That(views.Length, Is.EqualTo(4));
             Assert.That(views.Select(v => v.HouseId), Is.EquivalentTo(new[] { 1, 2, 3, 4 }));
 
-            // #64: gambrel is the only two-block roof; porches only where styled.
             foreach (var view in views)
             {
-                var style = HouseStyleTable.ForHouse(view.HouseId);
-                var roofBlocks = view.GetComponentsInChildren<Transform>().Count(t => t.name == "Roof");
-                Assert.That(roofBlocks, Is.EqualTo(style.RoofShape == RoofShape.Gambrel ? 2 : 1));
-
-                var hasPorch = view.GetComponentsInChildren<Transform>().Any(t => t.name == "Porch");
-                Assert.That(hasPorch, Is.EqualTo(style.HasPorch));
+                var childNames = view.GetComponentsInChildren<Transform>().Select(t => t.name).ToList();
+                Assert.That(childNames, Does.Contain("Walls"), $"house {view.HouseId} missing its fallback Walls block");
+                Assert.That(childNames, Has.No.Member("Roof"), $"house {view.HouseId} still builds a removed Roof block");
+                Assert.That(childNames, Has.No.Member("Porch"), $"house {view.HouseId} still builds a removed Porch block");
             }
         }
 

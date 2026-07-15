@@ -96,13 +96,28 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void ForHouse_KeepsThePlaceholderModelPicks()
         {
-            // The houseId -> model assignment moved here from
-            // WorldBuilder.HouseModels (#122's placeholder picks, still
-            // awaiting Derek and Lucas's re-pick in the Editor).
+            // The houseId -> model assignment (#122's placeholder picks,
+            // still awaiting Derek and Lucas's re-pick in the Editor) now
+            // lives on Doggiehood.Core.Art.HouseStyleTable (#64) as the
+            // single source of truth; HouseModelCatalog.ForHouse delegates
+            // to it rather than keeping its own duplicate assignment list.
             Assert.That(HouseModelCatalog.ForHouse(1).ModelName, Is.EqualTo("building-type-b"));
             Assert.That(HouseModelCatalog.ForHouse(2).ModelName, Is.EqualTo("building-type-g"));
             Assert.That(HouseModelCatalog.ForHouse(3).ModelName, Is.EqualTo("building-type-k"));
             Assert.That(HouseModelCatalog.ForHouse(4).ModelName, Is.EqualTo("building-type-m"));
+        }
+
+        [Test]
+        public void ForHouse_DelegatesToHouseStyleTable_ForTheModelAssignment()
+        {
+            // #64: one source of truth for houseId -> model. Every house
+            // style's ModelName must resolve to the same catalog entry
+            // HouseModelCatalog.ForHouse returns for that house.
+            foreach (var style in Doggiehood.Core.Art.HouseStyleTable.Styles)
+            {
+                Assert.That(HouseModelCatalog.ForHouse(style.StyleId).ModelName,
+                    Is.EqualTo(style.ModelName));
+            }
         }
 
         private static void AssertEntry(string modelName, float footprintX, float footprintZ)

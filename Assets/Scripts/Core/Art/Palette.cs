@@ -2,8 +2,10 @@ namespace Doggiehood.Core.Art
 {
     /// <summary>
     /// Shared world palette (#64, docs/specs/world/art-style.md): bright,
-    /// saturated, playful. House colors live on HouseStyleTable; these are
-    /// the environment colors. Streets stay neutral so the houses pop.
+    /// saturated, playful. Real per-house color now lives in the Kenney
+    /// City Kit Suburban kit's own textures, applied per house via
+    /// HouseStyleTable.TintVariant — these are the environment colors.
+    /// Streets stay neutral so the houses pop.
     /// </summary>
     public static class Palette
     {
@@ -20,5 +22,15 @@ namespace Doggiehood.Core.Art
         /// the neutral sidewalk/street so crossings read clearly, without
         /// literal zebra-stripe geometry (deferred polish).</summary>
         public const string CrosswalkHex = "#FFE066";
+
+        /// <summary>
+        /// Graybox-fallback house wall color (#64) — used only when a
+        /// house's kit model itself fails to load (WorldBuilder.BuildHouse
+        /// falls back to a single plain box). Real per-house color comes
+        /// from the kit's own textures via HouseStyleTable.TintVariant, so
+        /// this single flat color replaces what used to be 4 distinct
+        /// per-house WallColorHex values on HouseStyle.
+        /// </summary>
+        public const string HouseFallbackHex = "#D9A066";
     }
 }
