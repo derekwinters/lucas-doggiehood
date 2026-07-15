@@ -1120,6 +1120,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Code architecture: Core / Unity split">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#geometry-layout-and-tuning-values-are-named-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Geometry, layout, and tuning values are named variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1303,6 +1318,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Code architecture: Core / Unity split">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#geometry-layout-and-tuning-values-are-named-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Geometry, layout, and tuning values are named variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1350,6 +1380,9 @@
 <p>Game logic (quest system, economy, dog state, name-pool selection, house leveling, etc.) lives in <strong>plain C# assemblies with no <code>UnityEngine</code> dependency</strong>, so it runs under plain NUnit instantly, with no Unity runtime, editor, or device needed at all.</p>
 <p>Unity Test Framework (EditMode tests, run headless via <code>-batchmode -nographics</code> in CI) only needs to cover the thin <code>MonoBehaviour</code>/scene-wiring layer that connects Core logic to the actual game. No PlayMode or on-device testing is required for CI to have thorough coverage.</p>
 <p><strong>Default new logic to Core</strong> unless it genuinely requires Unity APIs (rendering, input, physics, scene management). See <a href="../testing/">Testing Strategy</a> for how this plays into TDD.</p>
+<h3 id="geometry-layout-and-tuning-values-are-named-variables">Geometry, layout, and tuning values are named variables<a class="headerlink" href="#geometry-layout-and-tuning-values-are-named-variables" title="Permanent link">&para;</a></h3>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a> — applies to every feature, graybox included</em></p>
+<p>Every geometry, layout, and tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — is declared as a named constant, static field, or serialized field at the top of its type (or in a shared Core numbers class where one exists, e.g. <code>EconomyNumbers</code>). Inline numeric literals in method bodies are not acceptable for these values, in either Core or the Unity wiring layer. Graybox code is not exempt: interim UI gets restyled, and named values are what make that a one-line change.</p>
 <h2 id="repo-hygiene">Repo hygiene<a class="headerlink" href="#repo-hygiene" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Git LFS</strong> tracks common binary asset types (<code>.png</code>, <code>.psd</code>, <code>.fbx</code>, <code>.wav</code>, <code>.mp3</code>, <code>.ttf</code>, etc.) from the first commit. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/79">#79</a>)</li>

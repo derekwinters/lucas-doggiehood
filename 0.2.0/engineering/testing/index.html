@@ -1143,6 +1143,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#known-limitation-editmode-tests-run-in-ci-not-in-agent-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known limitation: EditMode tests run in CI, not in agent environments
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1296,6 +1305,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#known-limitation-editmode-tests-run-in-ci-not-in-agent-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known limitation: EditMode tests run in CI, not in agent environments
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1345,6 +1363,14 @@
 <li>Only once the logic is proven, wire a thin Unity-side adapter to it, with an EditMode test if the wiring itself has meaningful logic (event subscriptions, etc.) — not just a pass-through.</li>
 </ol>
 <p>If a feature seems to <em>require</em> Unity APIs to even express the logic (e.g. actual physics-based movement), isolate the engine-dependent part as narrowly as possible and keep decision logic (what to do) separate from execution (how Unity does it).</p>
+<h2 id="known-limitation-editmode-tests-run-in-ci-not-in-agent-environments">Known limitation: EditMode tests run in CI, not in agent environments<a class="headerlink" href="#known-limitation-editmode-tests-run-in-ci-not-in-agent-environments" title="Permanent link">&para;</a></h2>
+<p>Agent execution environments do not have the Unity Editor installed, so EditMode tests cannot be run locally during an agent session. The sanctioned flow is:</p>
+<ol>
+<li>Write the EditMode test first, before the implementation exists — the red phase is the test referencing a type or member that doesn't exist yet (a compile error).</li>
+<li>Implement the minimum to satisfy it.</li>
+<li>CI runs the EditMode suite headlessly (<code>-batchmode -nographics</code>) on the PR and is the authoritative green.</li>
+</ol>
+<p>This is the expected, documented workflow — <strong>not</strong> a deviation. Agent PRs should not list "EditMode tests were not executed locally" in their <code>## Deviations and Decisions</code> section; it's only reportable if CI itself fails or the test-first ordering wasn't followed.</p>
 
 
 
