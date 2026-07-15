@@ -1,3 +1,4 @@
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -22,6 +23,18 @@ namespace Doggiehood.Unity
     public sealed class DogView : MonoBehaviour, IInteractable
     {
         public const string BubbleName = "SpeechBubble";
+
+        /// <summary>#148 follow-up: world-unit gap between the top of the
+        /// dog's tallest renderer and the bottom of the speech bubble, so
+        /// the bubble reads clearly above the head for adults and puppies
+        /// alike. Guarded by an EditMode test.</summary>
+        public const float BubbleClearanceAboveHead = 1f;
+
+        /// <summary>#148: bubble size fixed for all dogs (readability at
+        /// DefaultZoom in the x7 kit-scale world — see the readable-tap-
+        /// target EditMode test); only the hover height adapts, via the
+        /// measured body bounds.</summary>
+        private static readonly Vector3 BubbleScale = new Vector3(2.4f, 2f, 0.6f);
 
         /// <summary>Resources-relative path to the shared Kenney Cube Pets
         /// placeholder model (#119) — a single low-poly model used for every
@@ -86,6 +99,13 @@ namespace Doggiehood.Unity
                 body.localPosition = Vector3.zero;
                 PaintModel(body.gameObject, coat);
                 SetupAnimation();
+
+                // #148: the imported FBX has no collider (the primitive
+                // fallback rig gets them for free from CreatePrimitive), so
+                // without this fitted box TapRouter's raycast passes straight
+                // through the dog and taps never register. Added while the
+                // root still has identity rotation — ApplyPose runs later.
+                TapColliders.AddFitted(gameObject, body.gameObject);
             }
             else
             {
@@ -105,16 +125,51 @@ namespace Doggiehood.Unity
                 Paint(head.gameObject, coat);
             }
 
+            // #148 follow-up: hover height derived from the measured body
+            // (bubble not created yet, so only body/head renderers count).
+            // The root still has identity rotation and unit scale here, so
+            // world bounds convert to local by subtracting the position.
+            var dogTopLocalY = 0f;
+            foreach (var bodyRenderer in GetComponentsInChildren<Renderer>())
+            {
+                dogTopLocalY = Mathf.Max(dogTopLocalY, bodyRenderer.bounds.max.y - transform.position.y);
+            }
+
             bubble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             bubble.name = BubbleName;
             bubble.transform.SetParent(transform);
-            bubble.transform.localScale = new Vector3(0.5f, 0.4f, 0.15f);
-            bubble.transform.localPosition = new Vector3(0f, 1.6f * scale, 0f);
+            // #148: sized for the x7 kit-scale world — at DefaultZoom the
+            // camera shows 36 world units of height, so the bubble needs ~2
+            // world units to project to a readable >=40 px tap target on a
+            // 1080p-reference view (guarded by an EditMode test).
+            bubble.transform.localScale = BubbleScale;
+            bubble.transform.localPosition = new Vector3(
+                0f, dogTopLocalY + BubbleClearanceAboveHead + BubbleScale.y / 2f, 0f);
             Paint(bubble, Color.white);
-            Object.DestroyImmediate(bubble.GetComponent<Collider>());
+            // #148: the bubble keeps its primitive collider — it is the sole
+            // quest-discovery tap surface (conversation-system.md), and a hit
+            // on it routes to this DogView via GetComponentInParent. Inactive
+            // bubble (no quest) means inactive collider, so it never
+            // intercepts taps meant for the dog underneath.
 
             ApplyPose(windowAnchor);
             RefreshBubble();
+            FaceBubbleToCamera();
+        }
+
+        /// <summary>#148 follow-up: billboards the bubble at the
+        /// Core-defined camera-facing orientation (SpeechBubbleBillboard —
+        /// the fixed rig angles, since the orthographic camera never
+        /// rotates). The bubble inherits the dog's rotation as a child, so
+        /// this world-space re-assert runs at Init and every frame. Purely
+        /// rotational: the collider stays a sphere and the tap routing is
+        /// unaffected.</summary>
+        public void FaceBubbleToCamera()
+        {
+            bubble.transform.rotation = Quaternion.Euler(
+                SpeechBubbleBillboard.PitchDegrees,
+                SpeechBubbleBillboard.YawDegrees,
+                SpeechBubbleBillboard.RollDegrees);
         }
 
         public void OnTapped()
@@ -205,6 +260,7 @@ namespace Doggiehood.Unity
             }
 
             TickAnimation(Time.deltaTime, moving);
+            FaceBubbleToCamera();
         }
 
         /// <summary>Advances the Cube Pets animation by one frame: walk take

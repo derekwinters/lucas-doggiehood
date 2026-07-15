@@ -253,6 +253,235 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void TapRaycast_OnADogsBody_OpensItsConversation()
+        {
+            // #148 regression: the imported Cube Pets FBX carries no
+            // collider (unlike the primitive fallback rig, whose capsule and
+            // sphere brought their own), so TapRouter's Physics.Raycast
+            // sailed straight through every dog and taps were dead in the
+            // editor. A DogView must be physically hittable end-to-end:
+            // camera ray at the body -> collider -> OnTapped -> conversation.
+            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
+            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Pepper");
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            // Isolate the dog so no house/fence can intercept the ray.
+            view.transform.position = new Vector3(400f, 0f, 400f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 3f;
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var target = CombinedRendererBounds(view.transform.Find("Body")).center;
+                cam.transform.position = target + new Vector3(0f, 6f, -6f);
+                cam.transform.LookAt(target);
+                Physics.SyncTransforms();
+
+                var routed = TapRouter.RouteTap(cam, cam.WorldToScreenPoint(target));
+
+                Assert.That(routed, Is.True,
+                    "a raycast tap at the dog's body must hit a collider that routes to its DogView");
+                Assert.That(presenter.IsOpen, Is.True,
+                    "tapping a bubbled dog opens its conversation");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        [Test]
+        public void TapRaycast_OnTheSpeechBubbleItself_RoutesToTheDog()
+        {
+            // #148 regression: DogView.Init used to destroy the bubble's
+            // collider, so the speech bubble — the sole quest-discovery
+            // surface (conversation-system.md) — was never clickable. A ray
+            // at the bubble alone (horizontal, above the body) must route to
+            // the owning dog via GetComponentInParent.
+            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
+            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Duke");
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            view.transform.position = new Vector3(400f, 0f, -400f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 3f;
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var bubble = view.transform.Find(DogView.BubbleName);
+                var target = CombinedRendererBounds(bubble).center;
+                cam.transform.position = target + new Vector3(0f, 0f, -8f);
+                cam.transform.LookAt(target);
+                Physics.SyncTransforms();
+
+                var routed = TapRouter.RouteTap(cam, cam.WorldToScreenPoint(target));
+
+                Assert.That(routed, Is.True,
+                    "a raycast tap at the speech bubble must hit a collider that routes to the dog");
+                Assert.That(presenter.IsOpen, Is.True,
+                    "tapping the speech bubble opens the dog's conversation");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        [Test]
+        public void SpeechBubble_ProjectsToAReadableTapTargetAtDefaultZoom()
+        {
+            // #148: Derek's editor check found bubbles rendering tiny — the
+            // 0.5-unit graybox bubble was ~1% of screen height once the
+            // world moved to the x7 kit scale (#150) with the camera showing
+            // 2*DefaultZoom = 36 world units vertically. The bubble is the
+            // sole quest-discovery surface, so through the real rig at
+            // DefaultZoom on a 1080p-reference view it must project to at
+            // least 40 px in both screen axes (minimum-tap-target
+            // territory).
+            var view = worldRoot.GetComponentsInChildren<DogView>()[0];
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            var rigObject = new GameObject("rig-under-test", typeof(Camera));
+            var cam = rigObject.GetComponent<Camera>();
+            var rig = rigObject.AddComponent<CameraRig>();
+            rig.ApplyConfiguration();
+            Assert.That(rig.Controller.Zoom,
+                Is.EqualTo(Doggiehood.Core.Cameras.CameraController.DefaultZoom),
+                "sanity: the rig starts at the default zoom");
+
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var bounds = CombinedRendererBounds(view.transform.Find(DogView.BubbleName));
+                var minX = float.MaxValue;
+                var maxX = float.MinValue;
+                var minY = float.MaxValue;
+                var maxY = float.MinValue;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                        (i & 1) == 0 ? -1f : 1f,
+                        (i & 2) == 0 ? -1f : 1f,
+                        (i & 4) == 0 ? -1f : 1f));
+                    var screen = cam.WorldToScreenPoint(corner);
+                    minX = Mathf.Min(minX, screen.x);
+                    maxX = Mathf.Max(maxX, screen.x);
+                    minY = Mathf.Min(minY, screen.y);
+                    maxY = Mathf.Max(maxY, screen.y);
+                }
+
+                Assert.That(maxX - minX, Is.GreaterThanOrEqualTo(40f),
+                    "speech bubble is too narrow on screen at default zoom to read or tap");
+                Assert.That(maxY - minY, Is.GreaterThanOrEqualTo(40f),
+                    "speech bubble is too short on screen at default zoom to read or tap");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(rigObject);
+            }
+        }
+
+        private static Bounds CombinedRendererBounds(Transform root)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>();
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            return bounds;
+        }
+
+        [Test]
+        public void SpeechBubble_HoversAFixedClearanceAboveTheDogsHead_ForAdultsAndPuppies()
+        {
+            // #148 follow-up: Derek wants the bubble clearly above the
+            // dog's head. The hover height is derived from the dog's
+            // measured renderer bounds — the bubble's bottom sits
+            // BubbleClearanceAboveHead above the tallest body renderer for
+            // adults and puppies alike (the old fixed 2.5*scale center
+            // ignored the body entirely and left puppy bubbles overlapping
+            // the dog). Measured via localPosition minus the bubble's own
+            // half height so the assertion is independent of the billboard
+            // rotation.
+            foreach (var isPuppy in new[] { false, true })
+            {
+                var dog = new Dog(isPuppy ? "Pup" : "Grown", Breed.Beagle, Personality.Brave, 1, isPuppy);
+                var go = new GameObject("hover-dog");
+                go.transform.SetParent(worldRoot.transform);
+                var view = go.AddComponent<DogView>();
+                view.Init(dog, null);
+
+                var bubble = go.transform.Find(DogView.BubbleName);
+                var dogTop = float.MinValue;
+                foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (renderer.transform.IsChildOf(bubble))
+                    {
+                        continue;
+                    }
+
+                    dogTop = Mathf.Max(dogTop, renderer.bounds.max.y);
+                }
+
+                var bubbleBottom = bubble.position.y - bubble.localScale.y / 2f;
+                Assert.That(bubbleBottom - dogTop,
+                    Is.EqualTo(DogView.BubbleClearanceAboveHead).Within(0.05f),
+                    $"{(isPuppy ? "puppy" : "adult")} bubble must hover the fixed clearance above the head");
+
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SpeechBubble_AlwaysFacesTheCamera_RegardlessOfDogFacing()
+        {
+            // #148 follow-up: the bubble is a billboard. As a child of the
+            // dog root it inherits the dog's rotation (wander steering,
+            // window anchors), so DogView must re-assert the Core-defined
+            // camera-facing orientation — at Init and every frame.
+            var view = worldRoot.GetComponentsInChildren<DogView>()[0];
+            var bubble = view.transform.Find(DogView.BubbleName);
+            var expected = Quaternion.Euler(
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.PitchDegrees,
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.YawDegrees,
+                Doggiehood.Core.Cameras.SpeechBubbleBillboard.RollDegrees);
+
+            Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
+                "bubble must face the camera straight out of Init");
+
+            // The dog turns while wandering; the bubble must not turn with it.
+            view.transform.rotation = Quaternion.Euler(0f, 123f, 0f);
+            view.FaceBubbleToCamera();
+
+            Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
+                "bubble world rotation must stay camera-facing whatever the dog's facing");
+        }
+
+        [Test]
         public void OnlyDogsAndHouses_AreInteractable()
         {
             // #37: no other interactable character exists in the world.

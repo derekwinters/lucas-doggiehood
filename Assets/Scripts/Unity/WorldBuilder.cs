@@ -638,28 +638,9 @@ namespace Doggiehood.Unity
                 * Quaternion.Euler(0f, HouseModelYawOffsetDegrees, 0f);
             visual.transform.localScale = Vector3.one * HouseKitScale;
 
-            AddFittedTapCollider(houseRoot, visual);
-        }
-
-        private static void AddFittedTapCollider(GameObject houseRoot, GameObject visual)
-        {
-            var renderers = visual.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0)
-            {
-                return;
-            }
-
-            var bounds = renderers[0].bounds;
-            for (var i = 1; i < renderers.Length; i++)
-            {
-                bounds.Encapsulate(renderers[i].bounds);
-            }
-
-            // houseRoot has identity rotation and unit scale, so the
-            // world-space AABB converts to local space by translation only.
-            var collider = houseRoot.AddComponent<BoxCollider>();
-            collider.center = houseRoot.transform.InverseTransformPoint(bounds.center);
-            collider.size = bounds.size;
+            // houseRoot has identity rotation and unit scale at this point,
+            // matching TapColliders.AddFitted's requirement.
+            TapColliders.AddFitted(houseRoot, visual);
         }
 
         private static void BuildRoof(Transform houseRoot, HouseStyle style)
