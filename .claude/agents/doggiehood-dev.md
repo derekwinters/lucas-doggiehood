@@ -87,7 +87,10 @@ findings (write "None." under an empty category).
   prompt, the issue checklist, or the docs/specs. Undesirable in general,
   but it can legitimately happen in a valid test/development flow. For each
   one, explain in a simple sentence or two what deviated and why, so the
-  reader can confirm the deviation is still acceptable.
+  reader can confirm the deviation is still acceptable. Known limitations
+  documented in docs/engineering (e.g. EditMode tests running in CI rather
+  than locally, per docs/engineering/testing.md) are the sanctioned
+  workflow, NOT deviations — do not report them.
 - **Decisions** — judgment calls you had to make mid-run because the
   documentation, specs, or prompt were less clear than expected. Nearly all
   runs should need none; when one happens, document what information or
