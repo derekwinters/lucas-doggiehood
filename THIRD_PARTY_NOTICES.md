@@ -68,3 +68,22 @@ No attribution is legally required under CC0, but Kenney is credited here
 as a courtesy. These models replace the graybox primitive house geometry
 for the four starting houses (issue #122, toward the low-poly art style,
 issue #6).
+
+## Game Icons (Kenney)
+
+- **Files:** `Assets/Art/UI/ExpansionIndicator/locked.png`
+- **Asset:** Game Icons
+- **Author:** Kenney (www.kenney.nl)
+- **Source:** https://kenney.nl/assets/game-icons
+- **License:** CC0 1.0 Universal (Public Domain Dedication) —
+  https://creativecommons.org/publicdomain/zero/1.0/
+
+> "Game icon pack by Kenney Vleugels (www.kenney.nl), License: (CC0). You
+> may use these graphics in personal and commercial projects. Credit
+> (Kenney or www.kenney.nl) would be nice but is not mandatory."
+
+No attribution is legally required under CC0, but Kenney is credited here
+as a courtesy. The `locked` icon is the chosen map-expansion indicator —
+the marker that signals an unexplored/expandable zone (issue #178). It is
+staged here for the `06 - Neighborhood Expansion` milestone; nothing wires
+it yet.

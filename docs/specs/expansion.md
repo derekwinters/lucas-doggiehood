@@ -46,6 +46,14 @@ The tile-grid placement/adjacency system this all sits on is [#109](https://gith
 
 Levels 1–4. Decoration slots equal the house level (**1/2/3/4**); upgrade costs are in [Pricing](#pricing). The MVP decoration flow auto-places with no cap, so the cap is introduced with [#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) (already-placed decorations are never removed). Per-level *visuals* are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.
 
+## Expansion indicator (discoverability)
+
+The neighborhood needs a visible signal that it *can* grow — a marker on the map for an unexplored/expandable zone. The broader discoverability gap (how the player learns coins unlock zones, how affordability is shown, where the unlock action lives) is tracked on [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) and still open.
+
+> **Decision (2026-07-16, Derek, on [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178)):** the indicator is a **lock icon** marking the locked/expandable zone. The art is Kenney's `locked` Game Icon (CC0), staged at `Assets/Art/UI/ExpansionIndicator/locked.png`. This resolves the first open question on #178 (how the map shows expandable area exists); the remaining #178 questions (onboarding the coins→zones concept, affordability display, action placement) stay open.
+
+The asset is imported/staged only — nothing is wired to it yet. Like every other art binary in the repo it carries no committed per-file `.meta`; when milestone `06` wires the icon into the map UI, that PR pins its GUID and sprite internal ID and adds the serialization guard test, per [Hand-Authoring Unity Serialized Assets](../engineering/unity-serialization.md).
+
 ## The "for sale" sign
 
 Vacancy is Core state; the sign is purely its visual. No sign 3D asset exists yet — sourcing one is [#154](https://github.com/derekwinters/lucas-doggiehood/issues/154) (Direct Involvement Needed). Until it lands, a graybox placeholder is used via `WorldBuilder`'s existing missing-kit-piece fallback, so the asset does not block [#58](https://github.com/derekwinters/lucas-doggiehood/issues/58).
