@@ -138,6 +138,33 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void HousesAwaitingSpray_ListsOnlyAcceptedUncompletedPestHouses()
+        {
+            // #53/#157: the visible bug state on a house is driven by Core —
+            // a house shows a bug swarm exactly while it holds an accepted,
+            // not-yet-sprayed pest-control quest.
+            var state = NewState();
+            var buggedDog = state.Dogs[4]; // Pepper, house 3
+            var pest = state.Quests.GiveQuestTo(buggedDog, QuestType.PestControl, new System.Random(5));
+
+            // Given but not yet accepted -> not actionable, no swarm yet.
+            Assert.That(state.Quests.HousesAwaitingSpray(), Does.Not.Contain(buggedDog.HouseId));
+
+            state.Quests.Accept(pest);
+            Assert.That(state.Quests.HousesAwaitingSpray(), Is.EqualTo(new[] { buggedDog.HouseId }));
+
+            // Other quest types never register a bug house.
+            state.Wallet.Deposit(100);
+            var buy = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new System.Random(3));
+            state.Quests.Accept(buy);
+            Assert.That(state.Quests.HousesAwaitingSpray(), Is.EqualTo(new[] { buggedDog.HouseId }));
+
+            // Once sprayed (completed) the house drops off the list.
+            Assert.That(state.Quests.SprayHouse(buggedDog.HouseId), Is.True);
+            Assert.That(state.Quests.HousesAwaitingSpray(), Is.Empty);
+        }
+
+        [Test]
         public void QuestSchema_HasNoExpiryOrFailFields()
         {
             // #28: structurally no timers/fail states. (Invariant guard.)

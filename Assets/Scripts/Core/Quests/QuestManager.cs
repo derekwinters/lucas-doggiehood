@@ -216,6 +216,21 @@ namespace Doggiehood.Core.Quests
             return true;
         }
 
+        /// <summary>#53/#157: houses currently showing a bug problem — those
+        /// holding an accepted, not-yet-sprayed PestControl quest. The Unity
+        /// layer asks Core this to decide where a bug swarm is visible; a
+        /// house drops off the list the moment its quest completes.</summary>
+        public IReadOnlyList<int> HousesAwaitingSpray()
+        {
+            return quests
+                .Where(q => q.Type == QuestType.PestControl
+                    && q.Status == QuestStatus.Accepted
+                    && q.TargetHouseId.HasValue)
+                .Select(q => q.TargetHouseId.Value)
+                .Distinct()
+                .ToList();
+        }
+
         /// <summary>#53: spraying the afflicted house completes its accepted
         /// PestControl quest; spraying anything else is a no-op.</summary>
         public bool SprayHouse(int houseId)
