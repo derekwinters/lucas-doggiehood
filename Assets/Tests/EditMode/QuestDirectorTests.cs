@@ -86,6 +86,93 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(view.transform.position.z, Is.EqualTo(home.z).Within(0.01f));
         }
 
+        [Test]
+        public void AcceptingABugQuest_ShowsABugSwarmOnThatHouse_AndSprayingClearsIt()
+        {
+            // #53/#157: the bug-problem flow was invisible — nothing marked
+            // which house needed spraying. Accepting a pest-control quest now
+            // spawns a bug swarm on exactly that house; tapping the house
+            // (the spray) completes the quest and removes the swarm.
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.PestControl, new System.Random(5));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            director.OnQuestAccepted(quest);
+
+            var swarms = Object.FindObjectsByType<BugSwarmView>(FindObjectsSortMode.None);
+            Assert.That(swarms.Length, Is.EqualTo(1), "exactly the bugged house shows a swarm");
+            Assert.That(swarms[0].HouseId, Is.EqualTo(dog.HouseId));
+
+            var houseView = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
+                .Single(h => h.HouseId == dog.HouseId);
+            var swarmXz = new Vector2(swarms[0].transform.position.x, swarms[0].transform.position.z);
+            var houseXz = new Vector2(houseView.transform.position.x, houseView.transform.position.z);
+            Assert.That(Vector2.Distance(swarmXz, houseXz), Is.LessThan(2f),
+                "the swarm hovers over the affected house");
+
+            // Spray via the real tap wiring the director hooked up in Init.
+            var before = state.Wallet.Coins;
+            houseView.OnTapped();
+
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed),
+                "spraying the bugged house completes the quest");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(before + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout),
+                "completion pays the flat quest payout");
+            Assert.That(Object.FindObjectsByType<BugSwarmView>(FindObjectsSortMode.None), Is.Empty,
+                "the swarm is cleared once the house is sprayed");
+        }
+
+        [Test]
+        public void AcceptingALostItemQuest_SpawnsATappableItem_ThatCompletesOnRaycastTap()
+        {
+            // #12/#31/#157: end-to-end lost-item path — accepting spawns a
+            // visible, physically hittable item at the Core-chosen position;
+            // a camera raycast tap on it routes to Core and completes the
+            // quest (guards the collider wiring the way #148 did for dogs).
+            var dog = state.Dogs[0];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(9));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            director.OnQuestAccepted(quest);
+
+            var view = Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None).Single();
+
+            // Isolate the item so no ground/house/fence intercepts the ray.
+            view.transform.position = new Vector3(500f, 0.3f, 500f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 3f;
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var target = view.transform.position;
+                cam.transform.position = target + new Vector3(0f, 6f, -6f);
+                cam.transform.LookAt(target);
+                Physics.SyncTransforms();
+
+                var before = state.Wallet.Coins;
+                var routed = TapRouter.RouteTap(cam, cam.WorldToScreenPoint(target));
+
+                Assert.That(routed, Is.True,
+                    "a raycast tap on the lost item must hit its collider and route to the view");
+                Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed),
+                    "tapping the found item completes the quest");
+                Assert.That(state.Wallet.Coins, Is.EqualTo(before + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout),
+                    "completion pays the flat quest payout");
+                Assert.That(Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None), Is.Empty,
+                    "the found item disappears once collected");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
         private static float PerpendicularDistanceFromLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
         {
             var ab = new Vector2(lineEnd.x - lineStart.x, lineEnd.z - lineStart.z);

@@ -22,7 +22,7 @@ A dog asks the player to buy it something — a toy, or a pool for its house. Re
 
 *[#53](https://github.com/derekwinters/lucas-doggiehood/issues/53)*
 
-A dog's house has a bug problem; the player helps by spraying to clear it out.
+A dog's house has a bug problem; the player helps by spraying to clear it out. While the quest is active, a bug swarm hovers over the affected house so the player can tell which one needs attention; tapping that house sprays it, which clears the swarm and completes the quest. There's no separate spray tool or aiming — the house itself is the tap target. ([#157](https://github.com/derekwinters/lucas-doggiehood/issues/157))
 
 ## Not a quest type: decoration requests
 
