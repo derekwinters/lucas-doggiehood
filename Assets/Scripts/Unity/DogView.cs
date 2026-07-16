@@ -36,9 +36,10 @@ namespace Doggiehood.Unity
         /// measured body bounds.</summary>
         private static readonly Vector3 BubbleScale = new Vector3(2.4f, 2f, 0.6f);
 
-        /// <summary>Resources-relative path to the shared Kenney Cube Pets
-        /// placeholder model (#119) — a single low-poly model used for every
-        /// roster dog until breed-distinct modeling (#35) lands. Lives under
+        /// <summary>Resources-relative path to the Kenney Cube Pets model
+        /// (#119) — the single standard shared model used for every roster dog
+        /// (decision 2026-07-16, #166/#35: Cube Pets is the standard mesh;
+        /// breeds vary by coat/tint, not by a per-breed mesh). Lives under
         /// Assets/Art/Dogs/CubePets/Resources/, and Resources.Load paths are
         /// relative to the Resources folder itself, so the asset's own file
         /// name is the whole path.</summary>
