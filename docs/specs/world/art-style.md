@@ -20,6 +20,8 @@ When the kit model can't be loaded (an EditMode test seam, `WorldBuilder.ForcePr
 
 ## UI chrome direction: "Candy Cottage"
 
+This section owns UI *style* only. UI **layout** — a screen's regions, anchors, and named size/margin constants — lives in the [UI Wireframes](../ui/index.md) section and follows the [UI Design Process](../../engineering/ui-design-process.md) (wireframe approved before any code). The style rules below are pulled forward as the shared baseline on [Shared UI Components](../ui/shared-components.md); every per-screen wireframe references them rather than restating them.
+
 Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and low-poly toy-shelf look. ([#65](https://github.com/derekwinters/lucas-doggiehood/issues/65))
 
 Applies to: the currency chip, the speech bubble indicator, the dialogue box, decoration/gift choice buttons, and should extend to menus/settings for consistency.

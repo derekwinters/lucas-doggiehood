@@ -33,6 +33,7 @@ A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't
 4. **Reflect**: review the run for deviations and mid-run decisions (see below).
 5. Commit with a Conventional Commit message; open a PR whose body starts with the `Deviations and Decisions` section.
 6. If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.
+7. If the issue would touch a UI screen's **structure** (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in [`docs/specs/ui/`](../specs/ui/index.md), stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the [UI Design Process](ui-design-process.md). See its [gate](ui-design-process.md#the-gate).
 
 ## PR reflection: Deviations and Decisions
 
