@@ -991,6 +991,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#expansion-indicator-discoverability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expansion indicator (discoverability)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-for-sale-sign" class="md-nav__link">
     <span class="md-ellipsis">
       The "for sale" sign
@@ -1351,6 +1360,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#expansion-indicator-discoverability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expansion indicator (discoverability)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-for-sale-sign" class="md-nav__link">
     <span class="md-ellipsis">
       The "for sale" sign
@@ -1447,6 +1465,12 @@
 </ul>
 <h2 id="house-leveling">House leveling<a class="headerlink" href="#house-leveling" title="Permanent link">&para;</a></h2>
 <p>Levels 1–4. Decoration slots equal the house level (<strong>1/2/3/4</strong>); upgrade costs are in <a href="#pricing">Pricing</a>. The MVP decoration flow auto-places with no cap, so the cap is introduced with <a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a> (already-placed decorations are never removed). Per-level <em>visuals</em> are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.</p>
+<h2 id="expansion-indicator-discoverability">Expansion indicator (discoverability)<a class="headerlink" href="#expansion-indicator-discoverability" title="Permanent link">&para;</a></h2>
+<p>The neighborhood needs a visible signal that it <em>can</em> grow — a marker on the map for an unexplored/expandable zone. The broader discoverability gap (how the player learns coins unlock zones, how affordability is shown, where the unlock action lives) is tracked on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a> and still open.</p>
+<blockquote>
+<p><strong>Decision (2026-07-16, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a>):</strong> the indicator is a <strong>lock icon</strong> marking the locked/expandable zone. The art is Kenney's <code>locked</code> Game Icon (CC0), staged at <code>Assets/Art/UI/ExpansionIndicator/locked.png</code>. This resolves the first open question on #178 (how the map shows expandable area exists); the remaining #178 questions (onboarding the coins→zones concept, affordability display, action placement) stay open.</p>
+</blockquote>
+<p>The asset is imported/staged only — nothing is wired to it yet. Like every other art binary in the repo it carries no committed per-file <code>.meta</code>; when milestone <code>06</code> wires the icon into the map UI, that PR pins its GUID and sprite internal ID and adds the serialization guard test, per <a href="../../engineering/unity-serialization/">Hand-Authoring Unity Serialized Assets</a>.</p>
 <h2 id="the-for-sale-sign">The "for sale" sign<a class="headerlink" href="#the-for-sale-sign" title="Permanent link">&para;</a></h2>
 <p>Vacancy is Core state; the sign is purely its visual. No sign 3D asset exists yet — sourcing one is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/154">#154</a> (Direct Involvement Needed). Until it lands, a graybox placeholder is used via <code>WorldBuilder</code>'s existing missing-kit-piece fallback, so the asset does not block <a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>.</p>
 <h2 id="build-checklist-for-when-milestone-06-starts">Build checklist (for when milestone <code>06</code> starts)<a class="headerlink" href="#build-checklist-for-when-milestone-06-starts" title="Permanent link">&para;</a></h2>
