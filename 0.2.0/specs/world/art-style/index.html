@@ -956,6 +956,115 @@
   
   
   
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    UI Wireframes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            UI Wireframes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/shared-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shared UI Components
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/mockups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mockups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../decorations/" class="md-nav__link">
         
@@ -1170,6 +1279,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../engineering/ui-design-process/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UI Design Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../engineering/versioning/" class="md-nav__link">
         
   
@@ -1350,6 +1480,7 @@
 <p>Per-house color comes from swapping in one of the kit's own hand-painted texture variants (<code>colormap</code> — the kit's default — plus <code>variation-a</code>/<code>variation-b</code>/<code>variation-c</code>) as the model's main texture, rather than from procedural roof/porch geometry or Core-owned hex colors. <code>Doggiehood.Core.Art.HouseStyleTable</code> is the single source of truth for both which model (<code>HouseStyle.ModelName</code>) and which texture variant (<code>HouseStyle.TintVariant</code>) each starting house gets; <code>WorldBuilder.BuildHouseModel</code> applies the tint by cloning the model's renderer materials and setting <code>.mainTexture</code> to the loaded variant texture — a real texture swap, since the kit's variant textures are distinct hand-painted alternates, not a white base meant to be color-multiplied. The specific 4 model letters currently assigned (b/g/k/m) are a placeholder pending Derek and Lucas's own visual review (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/122">#122</a>) — swapping which of the 21 letters is used is a config change to <code>HouseStyleTable</code>, not a rebuild.</p>
 <p>When the kit model can't be loaded (an EditMode test seam, <code>WorldBuilder.ForcePrimitiveFallback</code>), houses fall back to a single plain graybox primitive with no per-house color or roof/porch detail — the graybox path exists to keep the world buildable/testable without the art assets, not to preserve the style spec on its own.</p>
 <h2 id="ui-chrome-direction-candy-cottage">UI chrome direction: "Candy Cottage"<a class="headerlink" href="#ui-chrome-direction-candy-cottage" title="Permanent link">&para;</a></h2>
+<p>This section owns UI <em>style</em> only. UI <strong>layout</strong> — a screen's regions, anchors, and named size/margin constants — lives in the <a href="../../ui/">UI Wireframes</a> section and follows the <a href="../../../engineering/ui-design-process/">UI Design Process</a> (wireframe approved before any code). The style rules below are pulled forward as the shared baseline on <a href="../../ui/shared-components/">Shared UI Components</a>; every per-screen wireframe references them rather than restating them.</p>
 <p>Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and low-poly toy-shelf look. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>)</p>
 <p>Applies to: the currency chip, the speech bubble indicator, the dialogue box, decoration/gift choice buttons, and should extend to menus/settings for consistency.</p>
 <p>A reference mockup exists at <a href="https://claude.ai/code/artifact/e3f24c36-85e3-4301-a099-c16c8ecc47f0">this artifact</a>, showing both the chosen "Candy Cottage" direction and the rejected "Flat Paper-Craft" alternative for contrast.</p>
