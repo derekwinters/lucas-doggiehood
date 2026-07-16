@@ -33,7 +33,17 @@ namespace Doggiehood.Unity
         {
             if (state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value))
             {
-                Destroy(gameObject);
+                // Match the mode-aware teardown RefreshBugSwarms uses (#157):
+                // Destroy is deferred in edit mode, so EditMode tests (and any
+                // edit-time caller) need DestroyImmediate to see it removed.
+                if (Application.isPlaying)
+                {
+                    Destroy(gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(gameObject);
+                }
             }
         }
     }
