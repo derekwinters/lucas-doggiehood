@@ -31,7 +31,7 @@ New houses (post-MVP expansion) start empty and dogs move in gradually over time
 
 ## Breeds & personality
 
-Each dog is modeled after a recognizable real breed (Lab, Corgi, Dachshund, etc.) rather than a palette-swapped generic model, giving each dog a clear visual identity. ([#35](https://github.com/derekwinters/lucas-doggiehood/issues/35))
+Breed is a **data** attribute (the `Breed` enum), not a distinct mesh. Every dog renders with the same **standard shared model** — the Kenney "Cube Pets" model (`Assets/Art/Dogs/CubePets/Resources/animal-dog.fbx`, wired in `DogView`, [#123](https://github.com/derekwinters/lucas-doggiehood/issues/123)) — and breeds are distinguished visually by **coat color/tint** (see [Art & UI Style](../world/art-style.md)), not by a per-breed mesh. Breed still gives each dog a clear identity through its name, coat, and personality. ([#35](https://github.com/derekwinters/lucas-doggiehood/issues/35), [#166](https://github.com/derekwinters/lucas-doggiehood/issues/166)) *(Decision 2026-07-16, Derek: Cube Pets is the single standard dog model, superseding the earlier "distinct model per breed" direction.)*
 
 Every dog has a defined personality trait that colors its dialogue tone and the kinds of quests it gives. ([#36](https://github.com/derekwinters/lucas-doggiehood/issues/36))
 
@@ -60,7 +60,7 @@ No separate animation is needed for: conversation start (the speech bubble appea
 - [ ] Some dogs are placed inside houses in a static window-watching pose instead of wandering
 - [ ] General speed/turn-pattern movement system exists, with the **Excited** pattern implemented (fast + long straight stretches)
 - [ ] Grumpy personality exists for dialogue/flavor purposes but has no distinct movement pattern yet
-- [ ] Each dog has a breed (distinct model, not a palette swap) and a personality trait
+- [ ] Each dog has a breed (a `Breed`-enum data value, distinguished visually by coat/tint on the shared standard Cube Pets model — not a distinct per-breed mesh) and a personality trait
 - [ ] Only dogs are interactable in the world — no other animal/person NPCs
 - [ ] Rest, sit, idle/wander, and window-watching poses are all implemented
 - [ ] Dog walks home and sits after accepting a "buy me X" quest, until the delivery truck arrives

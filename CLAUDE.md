@@ -28,6 +28,7 @@ Anything an agent cannot complete autonomously — repo settings, secrets, asset
 4. **Version lives in `/VERSION`.** Don't hand-edit Unity's `ProjectSettings.asset` version fields; release-please owns `/VERSION`.
 5. **Every agent PR starts with a `## Deviations and Decisions` section** — present even with no findings. Deviations: anything not fully compliant with the prompt/specs/docs, each explained in a sentence or two so the reader can confirm it's still acceptable. Decisions: judgment calls made mid-run because the prompt/specs/docs were less clear than expected, each with the choice explained and a note on how to prevent the gap next time. See `docs/engineering/agent-workflow.md`.
 6. **Never guess Unity serialization.** Before hand-authoring `.meta` files or `ProjectSettings.asset` blocks, read `docs/engineering/unity-serialization.md` — verify key names and enum values against real project files (Unity silently ignores unknown entries at build time), pin GUIDs (and Sprite internal IDs) for anything referenced by GUID, and guard the wiring with serialization-level EditMode tests.
+7. **Rebase feature branches; don't merge the base back in.** When your working branch's base (e.g. `main`) has moved, bring the branch back into alignment by rebasing it onto the updated base (`git fetch origin main && git rebase origin/main`), not by merging the base into the branch. Keep feature-branch history linear — no `Merge branch 'main' into …` commits.
 
 ## What not to do
 
