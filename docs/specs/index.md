@@ -28,6 +28,11 @@ The MVP is the **`08 - Vertical Slice Release Candidate`** milestone: everything
 - [Quest & Economy](quests/economy.md) — the core play loop and currency
 - [Quest Content](quests/quest-content.md) — the actual quest types
 
+**UI Wireframes**
+
+- [UI Wireframes Overview](ui/index.md) — the layout contract for every screen, panel, and overlay (see the [UI Design Process](../engineering/ui-design-process.md))
+- [Shared UI Components](ui/shared-components.md) — reusable atomic pieces referenced by every screen
+
 **Other systems**
 
 - [Decorations](decorations.md)

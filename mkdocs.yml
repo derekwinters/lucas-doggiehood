@@ -66,6 +66,10 @@ nav:
           - Conversation System: specs/quests/conversation-system.md
           - Quest & Economy: specs/quests/economy.md
           - Quest Content: specs/quests/quest-content.md
+      - UI Wireframes:
+          - Overview: specs/ui/index.md
+          - Shared UI Components: specs/ui/shared-components.md
+          - Mockups: specs/ui/mockups/index.md
       - Decorations: specs/decorations.md
       - Neighborhood Expansion (Post-MVP): specs/expansion.md
       - Audio: specs/audio.md
@@ -75,6 +79,7 @@ nav:
   - Engineering:
       - Tech Stack: engineering/tech-stack.md
       - Testing Strategy: engineering/testing.md
+      - UI Design Process: engineering/ui-design-process.md
       - Versioning & Releases: engineering/versioning.md
       - CI/CD: engineering/ci-cd.md
       - Development Agent & Workflow: engineering/agent-workflow.md
