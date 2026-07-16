@@ -41,10 +41,63 @@ namespace Doggiehood.Unity
             foreach (var house in Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None))
             {
                 var houseId = house.HouseId;
-                house.Tapped += () => State.Quests.SprayHouse(houseId);
+                house.Tapped += () => OnHouseTapped(houseId);
             }
 
             RefreshDecorations();
+            RefreshBugSwarms();
+        }
+
+        /// <summary>#53: a house tap is a spray attempt. When it clears a bug
+        /// quest, the swarm feedback is removed and the world saved.</summary>
+        private void OnHouseTapped(int houseId)
+        {
+            if (State.Quests.SprayHouse(houseId))
+            {
+                RefreshBugSwarms();
+                SaveStore.Save(State);
+            }
+        }
+
+        /// <summary>#53/#157: keeps a bug swarm on exactly the houses Core
+        /// reports as awaiting a spray — spawns one on newly-bugged houses,
+        /// removes it from houses that have been sprayed. Idempotent, so both
+        /// accept-time and spray-time just re-sync.</summary>
+        public void RefreshBugSwarms()
+        {
+            var needed = new HashSet<int>(State.Quests.HousesAwaitingSpray());
+            var existing = Object.FindObjectsByType<BugSwarmView>(FindObjectsSortMode.None);
+
+            foreach (var swarm in existing)
+            {
+                if (needed.Contains(swarm.HouseId))
+                {
+                    needed.Remove(swarm.HouseId);
+                }
+                else if (Application.isPlaying)
+                {
+                    Destroy(swarm.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(swarm.gameObject);
+                }
+            }
+
+            if (needed.Count == 0)
+            {
+                return;
+            }
+
+            var houses = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
+                .ToDictionary(h => h.HouseId, h => h.transform);
+            foreach (var houseId in needed)
+            {
+                if (houses.TryGetValue(houseId, out var houseTransform))
+                {
+                    BugSwarmView.Spawn(houseId, houseTransform, worldRoot);
+                }
+            }
         }
 
         /// <summary>Ensures every Core decoration has a scene view — spawns
@@ -70,6 +123,10 @@ namespace Doggiehood.Unity
             if (quest.Type == QuestType.LostItem)
             {
                 LostItemView.Spawn(State, quest, worldRoot);
+            }
+            else if (quest.Type == QuestType.PestControl)
+            {
+                RefreshBugSwarms();
             }
 
             SaveStore.Save(State);
