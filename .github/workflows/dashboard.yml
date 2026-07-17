@@ -1,0 +1,47 @@
+name: dashboard
+
+# Regenerates the daily pipeline dashboard (issue #193) deterministically from
+# live repo state. No LLM — a Python script fetches state via the GitHub API
+# and PATCHes the issue body. Runs on a schedule (shortly after each AI
+# routine, so it reflects the gatekeeper's fresh label moves) and on demand.
+# See docs/engineering/issue-pipeline.md.
+
+on:
+  schedule:
+    # UTC. Offset ~1h after the AI routines (12:00 AM analysis, 23:00 PM
+    # gatekeeper, 06:00 nightly dev) so labels are up to date. Fixed-UTC cron
+    # drifts 1h across US DST — accepted.
+    - cron: "0 13 * * *" # after the 7 AM CT triage routine
+    - cron: "0 0 * * *"  # after the 6 PM CT review routine
+    - cron: "0 7 * * *"  # after the 1 AM CT development routine
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: dashboard
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compute Central-time timestamp
+        id: ts
+        run: echo "as_of=$(TZ='America/Chicago' date '+%Y-%m-%d %H:%M CT')" >> "$GITHUB_OUTPUT"
+
+      - name: Render and write the dashboard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DASHBOARD_REPO: ${{ github.repository }}
+          DASHBOARD_AS_OF: ${{ steps.ts.outputs.as_of }}
+        run: python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
