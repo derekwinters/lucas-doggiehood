@@ -505,6 +505,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Labels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pipeline labels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1379,6 +1394,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../engineering/issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../engineering/unity-serialization/" class="md-nav__link">
         
   
@@ -1441,6 +1477,21 @@
       Labels
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Labels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pipeline labels
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1509,8 +1560,19 @@
 <h2 id="labels">Labels<a class="headerlink" href="#labels" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>area:*</code></strong> — what part of the game an issue touches: <code>gameplay</code>, <code>art</code>, <code>audio</code>, <code>ui</code>, <code>story</code>, <code>build</code>, <code>ai</code>.</li>
-<li><strong><code>type:*</code></strong> — <code>epic</code> (a tracking issue with sub-issues), <code>task</code>, <code>question</code>.</li>
+<li><strong><code>type:*</code></strong> — <code>epic</code> (a tracking issue with sub-issues), <code>task</code>, <code>question</code>, <code>bug</code>.</li>
 <li>No label for who owns a decision — Derek and Lucas both weigh in on everything; <code>area:</code> is enough to know what kind of decision it is.</li>
+</ul>
+<h3 id="pipeline-labels">Pipeline labels<a class="headerlink" href="#pipeline-labels" title="Permanent link">&para;</a></h3>
+<p>These labels are the state machine for the <a href="../../engineering/issue-pipeline/">AI issue-management pipeline</a> — a routine moves issues between them in response to Derek's issue-comment commands:</p>
+<ul>
+<li><strong><code>ai-triage</code></strong> — admitted for AI analysis.</li>
+<li><strong><code>pending-approval</code></strong> — analysis done; awaiting Derek's <code>/approve</code>.</li>
+<li><strong><code>needs-clarification</code></strong> — analysis posted a question; awaiting an answer.</li>
+<li><strong><code>ready-for-work</code></strong> — approved and milestoned; in the nightly dev queue.</li>
+<li><strong><code>in-progress</code></strong> — a nightly dev run has picked it up.</li>
+<li><strong><code>parked</code></strong> — hidden from every routine and the dashboard.</li>
+<li><strong><code>dashboard</code></strong> — marks the single live dashboard issue; excluded everywhere.</li>
 </ul>
 <h2 id="milestones-define-build-order-not-just-grouping">Milestones define build order, not just grouping<a class="headerlink" href="#milestones-define-build-order-not-just-grouping" title="Permanent link">&para;</a></h2>
 <p>Milestones are numbered so their build order is unambiguous regardless of how GitHub sorts them:</p>

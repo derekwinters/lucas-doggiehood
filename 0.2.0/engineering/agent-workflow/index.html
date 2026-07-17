@@ -14,7 +14,7 @@
         <link rel="prev" href="../ci-cd/">
       
       
-        <link rel="next" href="../unity-serialization/">
+        <link rel="next" href="../issue-pipeline/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -1328,6 +1328,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-ai-issue-management-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      The AI issue-management pipeline
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#claudemd" class="md-nav__link">
     <span class="md-ellipsis">
       CLAUDE.md
@@ -1358,6 +1367,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1436,6 +1466,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-ai-issue-management-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      The AI issue-management pipeline
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#claudemd" class="md-nav__link">
     <span class="md-ellipsis">
       CLAUDE.md
@@ -1503,6 +1542,13 @@
 <li>A reference for Unity project/assembly-definition conventions — what belongs in Core vs. the Unity layer.</li>
 </ul>
 <p>The exact skill list is refined as the agent and initial project structure come online.</p>
+<h2 id="the-ai-issue-management-pipeline">The AI issue-management pipeline<a class="headerlink" href="#the-ai-issue-management-pipeline" title="Permanent link">&para;</a></h2>
+<p>Beyond the single-issue development flow above, a label-driven <strong>pipeline</strong> runs
+on a daily schedule to move issues from raw idea → analysis → Derek's approval →
+nightly development, and to keep a live dashboard current. It wraps this same
+<code>doggiehood-dev</code> agent for the build stage. See the
+<a href="../issue-pipeline/">AI Issue-Management Pipeline</a> for the state machine, command
+vocabulary, routines, and stage behavior.</p>
 <h2 id="claudemd">CLAUDE.md<a class="headerlink" href="#claudemd" title="Permanent link">&para;</a></h2>
 <p>A <code>CLAUDE.md</code> at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: the Core/Unity split, the TDD workflow, the Conventional Commit requirement, <code>VERSION</code> file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).</p>
 <h2 id="how-an-issue-gets-worked">How an issue gets worked<a class="headerlink" href="#how-an-issue-gets-worked" title="Permanent link">&para;</a></h2>

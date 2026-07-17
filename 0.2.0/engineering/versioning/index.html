@@ -1286,6 +1286,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combined nightly PRs squash with raw conventional lines in the body
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#android-version-code" class="md-nav__link">
     <span class="md-ellipsis">
       Android version code
@@ -1345,6 +1354,27 @@
   
   <span class="md-ellipsis">
     Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
   </span>
   
 
@@ -1427,6 +1457,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combined nightly PRs squash with raw conventional lines in the body
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#android-version-code" class="md-nav__link">
     <span class="md-ellipsis">
       Android version code
@@ -1490,6 +1529,24 @@
 </ul>
 <p>Requires <a href="https://www.conventionalcommits.org/">Conventional Commits</a> (<code>feat:</code>, <code>fix:</code>, etc.) to be followed consistently, since release-please's version computation depends on them. A CI check lints PR titles against this (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>) so it doesn't rely on manual discipline alone.</p>
 <p>A Core guard test (<code>CoreTests/Doggiehood.Core.Tests/Versioning/VersionFileGuardTests.cs</code>) asserts <code>VERSION</code> contains a valid bare semver and matches <code>manifest.json</code>'s tracked version, so the two can't silently drift apart again the way they did in #114.</p>
+<h2 id="combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body">Combined nightly PRs squash with raw conventional lines in the body<a class="headerlink" href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" title="Permanent link">&para;</a></h2>
+<p>The <a href="../issue-pipeline/">issue pipeline</a>'s nightly dev run builds several issues
+onto one branch and opens a <strong>single combined PR</strong>. To keep release-please's
+changelog granular despite the single squash-merge, the PR is structured so its
+squash commit carries one Conventional-Commit line per issue:</p>
+<ul>
+<li><strong>PR title</strong> = the lead change's Conventional line (e.g.
+  <code>feat: give approach-to-rest real walk-to-decoration movement</code>). This is what
+  <code>pr-title-lint</code> checks and what names the release.</li>
+<li><strong>PR body</strong> = the remaining issues' Conventional-Commit lines as <strong>raw</strong>
+  lines (no leading <code>*</code>/<code>-</code>), one per issue, so that on squash-merge they land
+  in the squash commit message. release-please parses each as its own entry and
+  emits one changelog line per issue.</li>
+</ul>
+<p>This depends on the repository's squash-merge commit message being set to "Pull
+request title and description" so the body lines survive the squash (a
+Direct-Involvement setup item). Without it, only the title's entry would reach
+the changelog.</p>
 <h2 id="android-version-code">Android version code<a class="headerlink" href="#android-version-code" title="Permanent link">&para;</a></h2>
 <p>Android's <code>versionCode</code> (a plain incrementing integer, separate from the human-readable <code>versionName</code>) is derived at build time as <code>git rev-list --count main</code> — deterministic and always increasing, independent of CI run-number state. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/81">#81</a>)</p>
 <h2 id="docs-versioning">Docs versioning<a class="headerlink" href="#docs-versioning" title="Permanent link">&para;</a></h2>

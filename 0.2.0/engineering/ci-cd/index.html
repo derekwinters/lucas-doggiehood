@@ -1333,6 +1333,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#issue-pipeline-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Issue-pipeline workflows
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1354,6 +1363,27 @@
   
   <span class="md-ellipsis">
     Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
   </span>
   
 
@@ -1462,6 +1492,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#issue-pipeline-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Issue-pipeline workflows
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1513,6 +1552,12 @@
 <li><strong><code>docs-publish.yml</code></strong>: on push to <code>main</code> (when docs changed) or on a release tag, builds the site and publishes it with <code>mike</code>, versioned to match the app's <code>VERSION</code> file, to GitHub Pages.</li>
 </ul>
 <p>See the workflow files at <code>.github/workflows/docs-test.yml</code> and <code>.github/workflows/docs-publish.yml</code>.</p>
+<h2 id="issue-pipeline-workflows">Issue-pipeline workflows<a class="headerlink" href="#issue-pipeline-workflows" title="Permanent link">&para;</a></h2>
+<p>The <a href="../issue-pipeline/">AI issue-management pipeline</a> adds two workflows, both scoped by path so they don't run on unrelated PRs:</p>
+<ul>
+<li><strong><code>pipeline-tests.yml</code></strong>: on any PR touching <code>.claude/skills/pipeline-*</code>, runs the pure-Python unit tests for the deterministic pipeline scripts (the gatekeeper command parser, the dev queue selector, and the dashboard renderer's golden snapshot). Stdlib only — no Unity, no pip dependencies.</li>
+<li><strong><code>dashboard.yml</code></strong>: a scheduled (and <code>workflow_dispatch</code>) job that regenerates the live dashboard issue (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/193">#193</a>) deterministically from repo state, authenticating its headless issue-body PATCH with the built-in <code>GITHUB_TOKEN</code>. It runs a few times a day, shortly after each AI routine.</li>
+</ul>
 
 
 
