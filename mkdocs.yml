@@ -83,4 +83,5 @@ nav:
       - Versioning & Releases: engineering/versioning.md
       - CI/CD: engineering/ci-cd.md
       - Development Agent & Workflow: engineering/agent-workflow.md
+      - AI Issue-Management Pipeline: engineering/issue-pipeline.md
       - Hand-Authoring Unity Serialized Assets: engineering/unity-serialization.md

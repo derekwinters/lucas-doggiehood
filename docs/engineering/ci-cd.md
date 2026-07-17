@@ -36,3 +36,10 @@ Two workflows, both gated to only run on changes under `docs/`, `mkdocs.yml`, or
 - **`docs-publish.yml`**: on push to `main` (when docs changed) or on a release tag, builds the site and publishes it with `mike`, versioned to match the app's `VERSION` file, to GitHub Pages.
 
 See the workflow files at `.github/workflows/docs-test.yml` and `.github/workflows/docs-publish.yml`.
+
+## Issue-pipeline workflows
+
+The [AI issue-management pipeline](issue-pipeline.md) adds two workflows, both scoped by path so they don't run on unrelated PRs:
+
+- **`pipeline-tests.yml`**: on any PR touching `.claude/skills/pipeline-*`, runs the pure-Python unit tests for the deterministic pipeline scripts (the gatekeeper command parser, the dev queue selector, and the dashboard renderer's golden snapshot). Stdlib only — no Unity, no pip dependencies.
+- **`dashboard.yml`**: a scheduled (and `workflow_dispatch`) job that regenerates the live dashboard issue ([#193](https://github.com/derekwinters/lucas-doggiehood/issues/193)) deterministically from repo state, authenticating its headless issue-body PATCH with the built-in `GITHUB_TOKEN`. It runs a few times a day, shortly after each AI routine.

@@ -7,8 +7,20 @@ New ideas, open questions, and brainstorming happen as conversation and get capt
 ## Labels
 
 - **`area:*`** — what part of the game an issue touches: `gameplay`, `art`, `audio`, `ui`, `story`, `build`, `ai`.
-- **`type:*`** — `epic` (a tracking issue with sub-issues), `task`, `question`.
+- **`type:*`** — `epic` (a tracking issue with sub-issues), `task`, `question`, `bug`.
 - No label for who owns a decision — Derek and Lucas both weigh in on everything; `area:` is enough to know what kind of decision it is.
+
+### Pipeline labels
+
+These labels are the state machine for the [AI issue-management pipeline](../engineering/issue-pipeline.md) — a routine moves issues between them in response to Derek's issue-comment commands:
+
+- **`ai-triage`** — admitted for AI analysis.
+- **`pending-approval`** — analysis done; awaiting Derek's `/approve`.
+- **`needs-clarification`** — analysis posted a question; awaiting an answer.
+- **`ready-for-work`** — approved and milestoned; in the nightly dev queue.
+- **`in-progress`** — a nightly dev run has picked it up.
+- **`parked`** — hidden from every routine and the dashboard.
+- **`dashboard`** — marks the single live dashboard issue; excluded everywhere.
 
 ## Milestones define build order, not just grouping
 

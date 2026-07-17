@@ -21,6 +21,15 @@ Skills back the agent's day-to-day workflow:
 
 The exact skill list is refined as the agent and initial project structure come online.
 
+## The AI issue-management pipeline
+
+Beyond the single-issue development flow above, a label-driven **pipeline** runs
+on a daily schedule to move issues from raw idea → analysis → Derek's approval →
+nightly development, and to keep a live dashboard current. It wraps this same
+`doggiehood-dev` agent for the build stage. See the
+[AI Issue-Management Pipeline](issue-pipeline.md) for the state machine, command
+vocabulary, routines, and stage behavior.
+
 ## CLAUDE.md
 
 A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: the Core/Unity split, the TDD workflow, the Conventional Commit requirement, `VERSION` file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).
