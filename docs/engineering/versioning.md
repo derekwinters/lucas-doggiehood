@@ -33,6 +33,26 @@ Requires [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, 
 
 A Core guard test (`CoreTests/Doggiehood.Core.Tests/Versioning/VersionFileGuardTests.cs`) asserts `VERSION` contains a valid bare semver and matches `manifest.json`'s tracked version, so the two can't silently drift apart again the way they did in #114.
 
+## Combined nightly PRs squash with raw conventional lines in the body
+
+The [issue pipeline](issue-pipeline.md)'s nightly dev run builds several issues
+onto one branch and opens a **single combined PR**. To keep release-please's
+changelog granular despite the single squash-merge, the PR is structured so its
+squash commit carries one Conventional-Commit line per issue:
+
+- **PR title** = the lead change's Conventional line (e.g.
+  `feat: give approach-to-rest real walk-to-decoration movement`). This is what
+  `pr-title-lint` checks and what names the release.
+- **PR body** = the remaining issues' Conventional-Commit lines as **raw**
+  lines (no leading `*`/`-`), one per issue, so that on squash-merge they land
+  in the squash commit message. release-please parses each as its own entry and
+  emits one changelog line per issue.
+
+This depends on the repository's squash-merge commit message being set to "Pull
+request title and description" so the body lines survive the squash (a
+Direct-Involvement setup item). Without it, only the title's entry would reach
+the changelog.
+
 ## Android version code
 
 Android's `versionCode` (a plain incrementing integer, separate from the human-readable `versionName`) is derived at build time as `git rev-list --count main` — deterministic and always increasing, independent of CI run-number state. ([#81](https://github.com/derekwinters/lucas-doggiehood/issues/81))

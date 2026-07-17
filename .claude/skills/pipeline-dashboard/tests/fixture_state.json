@@ -1,0 +1,47 @@
+{
+  "repo": "derekwinters/lucas-doggiehood",
+  "as_of": "2026-07-17 07:00 CT",
+  "focus": {
+    "milestone": "03 - Dogs & Conversations",
+    "done": 18,
+    "ready": 0,
+    "remaining": 5,
+    "queue": []
+  },
+  "your_move": {
+    "prs": 0,
+    "release_please": 1,
+    "new_ideas": 2,
+    "approvals": 3,
+    "questions": 1
+  },
+  "prs": {
+    "awaiting": [],
+    "automation": [
+      {"number": 111, "title": "chore(main): release 0.3.0", "state": "release-please — merge to cut the release"}
+    ]
+  },
+  "intake": [
+    {"number": 180, "title": "Dogs playing in yard"},
+    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)"}
+  ],
+  "pending_approval": [
+    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel"},
+    {"number": 181, "title": "Lost Dog"},
+    {"number": 163, "title": "Make EditMode tests required"}
+  ],
+  "needs_clarification": [
+    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
+  ],
+  "other_milestones": [
+    {"title": "04 - Quests & Economy", "done": 18, "open": 3, "post_mvp": false},
+    {"title": "05 - Decorations & Happiness", "done": 8, "open": 1, "post_mvp": false},
+    {"title": "07 - Polish & Onboarding", "done": 3, "open": 11, "post_mvp": false},
+    {"title": "06 - Neighborhood Expansion", "done": 1, "open": 9, "post_mvp": true}
+  ],
+  "open_by_milestone": {
+    "labels": ["m03", "m04", "m05", "m06", "m07"],
+    "values": [5, 3, 1, 9, 11],
+    "ymax": 12
+  }
+}

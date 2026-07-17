@@ -1,0 +1,38 @@
+name: pipeline-tests
+
+# Unit tests for the deterministic pipeline skill scripts (command parser,
+# queue selector, dashboard renderer). Pure Python, stdlib only — no Unity, no
+# pip deps. See docs/engineering/issue-pipeline.md.
+
+on:
+  pull_request:
+    paths:
+      - ".claude/skills/pipeline-*/**"
+      - ".github/workflows/pipeline-tests.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - ".claude/skills/pipeline-*/**"
+      - ".github/workflows/pipeline-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run pipeline skill unit tests
+        run: |
+          set -e
+          for suite in pipeline-gatekeeper pipeline-dev pipeline-dashboard; do
+            echo "== $suite =="
+            python3 -m unittest discover -s ".claude/skills/$suite/tests"
+          done
