@@ -1,13 +1,15 @@
 name: docs-test
 
+# The `build` job runs on EVERY pull request (no path filter) so it can report a
+# status on code-only PRs too. Behavior:
+#   - PR touches docs -> run `mkdocs build --strict` (as before).
+#   - PR touches no docs but carries the `skip-docs` label -> pass (deliberate escape hatch).
+#   - PR touches no docs and has no label -> fail, asking for a docs reconciliation or the label.
+# `labeled`/`unlabeled` are in the trigger list so toggling `skip-docs` re-evaluates the gate
+# without a new push.
 on:
   pull_request:
-    paths:
-      - "docs/**"
-      - "mkdocs.yml"
-      - "docs/requirements.txt"
-      - ".github/workflows/docs-test.yml"
-      - ".github/workflows/docs-publish.yml"
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -17,13 +19,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - name: Determine whether the PR touches docs
+        id: docs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --name-only "$BASE_SHA...$HEAD_SHA" \
+            | grep -qE '^(docs/|mkdocs\.yml|\.github/workflows/docs-(test|publish)\.yml)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Determine whether the skip-docs label is present
+        id: label
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          if printf '%s' "$LABELS" | grep -q '"skip-docs"'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- Docs-touching PR: build the site strictly, exactly as before. ---
+      - name: Set up Python
+        if: steps.docs.outputs.changed == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install docs dependencies
+        if: steps.docs.outputs.changed == 'true'
         run: pip install -r docs/requirements.txt
 
       - name: Build site (strict)
+        if: steps.docs.outputs.changed == 'true'
         run: mkdocs build --strict
+
+      # --- Code-only PR: pass only if the docs decision was made deliberately. ---
+      - name: Docs reconciliation gate
+        if: steps.docs.outputs.changed != 'true'
+        run: |
+          if [ "${{ steps.label.outputs.skip }}" = "true" ]; then
+            echo "skip-docs label present — docs reconciliation gate bypassed for this PR."
+            exit 0
+          fi
+          echo "::error::Documentation changes are almost always needed for a behavior/design change. This PR changes no docs/** page. Reconcile the affected spec in this PR, or — if it truly needs none — add the 'skip-docs' label."
+          exit 1

@@ -38,6 +38,10 @@ Milestones are numbered so their build order is unambiguous regardless of how Gi
 | `07 - Polish & Onboarding` | Audio, first-launch tutorial, art/UI/animation polish |
 | `08 - Vertical Slice Release Candidate` | Everything integrated and playable — this is the MVP |
 
+## Every issue names the spec pages it touches
+
+An issue that changes player-facing behavior, layout, or a design decision should name — in its body or checklist — which [`docs/specs`](../specs/index.md) (or `docs/engineering`) page(s) it expects to update, or note that none apply. This makes the spec reconciliation a planned deliverable rather than an afterthought: the matching page is updated in the **same** PR as the code (a [non-negotiable rule](../engineering/agent-workflow.md#how-an-issue-gets-worked)), and CI's always-on `docs-test` gate forces a conscious decision — a code-only PR fails unless it carries the `skip-docs` label.
+
 ## Epics and sub-issues
 
 A design area gets an **epic** issue (e.g. "Epic: Dog NPC Behavior") whose body is a short overview. Individual decisions are filed as **sub-issues** of that epic, one decision per issue, so the epic's checklist shows progress at a glance.
