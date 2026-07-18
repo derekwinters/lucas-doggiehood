@@ -39,10 +39,11 @@ A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't
 1. Pick the next open issue in build-order (milestones `02` → `08`, lowest number first within a milestone).
 2. Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.
 3. Work test-first per [Testing Strategy](testing.md), checking off checklist items as they're satisfied.
-4. **Reflect**: review the run for deviations and mid-run decisions (see below).
-5. Commit with a Conventional Commit message; open a PR whose body starts with the `Deviations and Decisions` section.
-6. If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.
-7. If the issue would touch a UI screen's **structure** (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in [`docs/specs/ui/`](../specs/ui/index.md), stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the [UI Design Process](ui-design-process.md). See its [gate](ui-design-process.md#the-gate).
+4. **Reconcile the docs/specs the change affects, in the same PR.** If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant [`docs/specs`](../specs/index.md) (or `docs/engineering`) page(s) alongside the code — never leave the spec describing the old behavior. If no doc change is genuinely needed, say so explicitly in the `Deviations and Decisions` section with the reason. This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the `docs-test` `build` job runs on **every** PR and fails a code-only PR unless it carries the `skip-docs` label (see [CI/CD](ci-cd.md)) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass.
+5. **Reflect**: review the run for deviations and mid-run decisions (see below).
+6. Commit with a Conventional Commit message; open a PR whose body starts with the `Deviations and Decisions` section.
+7. If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.
+8. If the issue would touch a UI screen's **structure** (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in [`docs/specs/ui/`](../specs/ui/index.md), stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the [UI Design Process](ui-design-process.md). See its [gate](ui-design-process.md#the-gate).
 
 ## PR reflection: Deviations and Decisions
 

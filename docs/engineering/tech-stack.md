@@ -32,6 +32,15 @@ Every geometry, layout, and tuning value — sizes, offsets, margins, positions,
 
 For **UI layout** values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its [UI wireframe spec](../specs/ui/index.md) first (see the [UI Design Process](ui-design-process.md)); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.
 
+## Editor developer menus
+
+Playtesting/authoring helpers live under the top-level **`Doggiehood`** editor
+menu, in the Editor-only assembly (`Assets/Scripts/Unity/Editor/`) so they are
+stripped from player builds:
+
+- **`Doggiehood ▸ Build Catalog Gallery`** — procedurally rebuilds the house-catalog authoring gallery scene (`CatalogGalleryBuilder`, [#126](https://github.com/derekwinters/lucas-doggiehood/issues/126)).
+- **`Doggiehood ▸ Reset Save Data`** — deletes the local save file (`doggiehood-save.txt` in `Application.persistentDataPath`) after a confirmation dialog, so the next launch starts a fresh game ([#187](https://github.com/derekwinters/lucas-doggiehood/issues/187)). The disk work is the testable `SaveStore.DeleteSave()` seam; the menu only adds the confirmation.
+
 ## Repo hygiene
 
 - **Git LFS** tracks common binary asset types (`.png`, `.psd`, `.fbx`, `.wav`, `.mp3`, `.ttf`, etc.) from the first commit. ([#79](https://github.com/derekwinters/lucas-doggiehood/issues/79))
