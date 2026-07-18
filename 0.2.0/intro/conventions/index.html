@@ -532,6 +532,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#every-issue-names-the-spec-pages-it-touches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Every issue names the spec pages it touches
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#epics-and-sub-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Epics and sub-issues
@@ -1505,6 +1514,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#every-issue-names-the-spec-pages-it-touches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Every issue names the spec pages it touches
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#epics-and-sub-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Epics and sub-issues
@@ -1622,6 +1640,8 @@
 </tr>
 </tbody>
 </table>
+<h2 id="every-issue-names-the-spec-pages-it-touches">Every issue names the spec pages it touches<a class="headerlink" href="#every-issue-names-the-spec-pages-it-touches" title="Permanent link">&para;</a></h2>
+<p>An issue that changes player-facing behavior, layout, or a design decision should name — in its body or checklist — which <a href="../../specs/"><code>docs/specs</code></a> (or <code>docs/engineering</code>) page(s) it expects to update, or note that none apply. This makes the spec reconciliation a planned deliverable rather than an afterthought: the matching page is updated in the <strong>same</strong> PR as the code (a <a href="../../engineering/agent-workflow/#how-an-issue-gets-worked">non-negotiable rule</a>), and CI's always-on <code>docs-test</code> gate forces a conscious decision — a code-only PR fails unless it carries the <code>skip-docs</code> label.</p>
 <h2 id="epics-and-sub-issues">Epics and sub-issues<a class="headerlink" href="#epics-and-sub-issues" title="Permanent link">&para;</a></h2>
 <p>A design area gets an <strong>epic</strong> issue (e.g. "Epic: Dog NPC Behavior") whose body is a short overview. Individual decisions are filed as <strong>sub-issues</strong> of that epic, one decision per issue, so the epic's checklist shows progress at a glance.</p>
 <h2 id="when-a-question-closes-vs-stays-open">When a question closes vs. stays open<a class="headerlink" href="#when-a-question-closes-vs-stays-open" title="Permanent link">&para;</a></h2>

@@ -1247,6 +1247,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#editor-developer-menus" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editor developer menus
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repo-hygiene" class="md-nav__link">
     <span class="md-ellipsis">
       Repo hygiene
@@ -1487,6 +1496,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#editor-developer-menus" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editor developer menus
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repo-hygiene" class="md-nav__link">
     <span class="md-ellipsis">
       Repo hygiene
@@ -1535,6 +1553,14 @@
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a> — applies to every feature, graybox included</em></p>
 <p>Every geometry, layout, and tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — is declared as a named constant, static field, or serialized field at the top of its type (or in a shared Core numbers class where one exists, e.g. <code>EconomyNumbers</code>). Inline numeric literals in method bodies are not acceptable for these values, in either Core or the Unity wiring layer. Graybox code is not exempt: interim UI gets restyled, and named values are what make that a one-line change.</p>
 <p>For <strong>UI layout</strong> values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its <a href="../../specs/ui/">UI wireframe spec</a> first (see the <a href="../ui-design-process/">UI Design Process</a>); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.</p>
+<h2 id="editor-developer-menus">Editor developer menus<a class="headerlink" href="#editor-developer-menus" title="Permanent link">&para;</a></h2>
+<p>Playtesting/authoring helpers live under the top-level <strong><code>Doggiehood</code></strong> editor
+menu, in the Editor-only assembly (<code>Assets/Scripts/Unity/Editor/</code>) so they are
+stripped from player builds:</p>
+<ul>
+<li><strong><code>Doggiehood ▸ Build Catalog Gallery</code></strong> — procedurally rebuilds the house-catalog authoring gallery scene (<code>CatalogGalleryBuilder</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/126">#126</a>).</li>
+<li><strong><code>Doggiehood ▸ Reset Save Data</code></strong> — deletes the local save file (<code>doggiehood-save.txt</code> in <code>Application.persistentDataPath</code>) after a confirmation dialog, so the next launch starts a fresh game (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/187">#187</a>). The disk work is the testable <code>SaveStore.DeleteSave()</code> seam; the menu only adds the confirmation.</li>
+</ul>
 <h2 id="repo-hygiene">Repo hygiene<a class="headerlink" href="#repo-hygiene" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Git LFS</strong> tracks common binary asset types (<code>.png</code>, <code>.psd</code>, <code>.fbx</code>, <code>.wav</code>, <code>.mp3</code>, <code>.ttf</code>, etc.) from the first commit. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/79">#79</a>)</li>
