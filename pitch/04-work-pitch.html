@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Agentic Delivery Pipeline</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --paper:#f6f7f9; --card:#ffffff;
+    --human:#b45309; --human-bg:#fef3c7; --human-line:#f59e0b;
+    --model:#6d28d9; --model-bg:#ede9fe; --model-line:#a78bfa;
+    --det:#0f766e;   --det-bg:#ccfbf1;   --det-line:#2dd4bf;
+    --state:#334155; --state-bg:#f1f5f9; --state-line:#94a3b8;
+    --done:#15803d;  --done-bg:#dcfce7;  --done-line:#4ade80;
+    --park:#525252;  --park-bg:#e5e5e5;  --park-line:#a3a3a3;
+    --plan:#1d4ed8;  --plan-bg:#dbeafe;  --plan-line:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1060px;margin:0 auto;padding:44px 20px 90px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  h1{font-size:32px;line-height:1.15;margin:0 0 10px}
+  h2{font-size:21px;margin:56px 0 8px;padding-top:18px;border-top:1px solid var(--line)}
+  p.lede{font-size:18px;color:#334155;max-width:72ch;margin:6px 0 0}
+  p,li{max-width:76ch}
+  .sub{color:var(--muted);font-size:14px}
+  code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 5px;
+       font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 4px;padding:14px 16px;
+          background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+  .key{display:flex;align-items:center;gap:8px;color:#334155}
+  .sw{width:14px;height:14px;border-radius:4px;border:2px solid}
+  .sw.human{background:var(--human-bg);border-color:var(--human-line)}
+  .sw.model{background:var(--model-bg);border-color:var(--model-line)}
+  .sw.det{background:var(--det-bg);border-color:var(--det-line)}
+  .sw.state{background:var(--state-bg);border-color:var(--state-line)}
+  .sw.plan{background:var(--plan-bg);border-color:var(--plan-line)}
+
+  .diagram{margin:22px 0 8px;padding:26px 22px;background:var(--card);
+           border:1px solid var(--line);border-radius:16px;overflow-x:auto}
+  .diagram .dtitle{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+                   color:var(--muted);font-weight:700;margin:0 0 18px}
+  .flowcol{max-width:780px;margin:0 auto}
+
+  .stage{border:2px solid var(--state-line);border-radius:14px;background:#fbfcfe;overflow:hidden}
+  .stage>header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;
+                background:var(--state-bg);border-bottom:1px solid var(--line)}
+  .stage>header .t{font-weight:800;font-size:15px;letter-spacing:.02em}
+  .stage .body{padding:12px 14px 14px}
+  .stage.model{border-color:var(--model-line)} .stage.model>header{background:var(--model-bg)}
+  .stage.det{border-color:var(--det-line)}     .stage.det>header{background:var(--det-bg)}
+  .stage.done{border-color:var(--done-line)}   .stage.done>header{background:var(--done-bg)}
+  .stage.park{border-color:var(--park-line);border-style:dashed} .stage.park>header{background:var(--park-bg)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;
+        border:1px solid var(--state-line);background:#fff;font-size:13px;color:var(--state);white-space:nowrap}
+  .chip.st{font-weight:700;background:var(--state-bg)}
+  .chip.tag{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--state-bg);font-weight:600}
+  .chip.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--human-bg);border-color:var(--human-line);color:var(--human);font-weight:600}
+  .chip.skill{background:var(--model-bg);border-color:var(--model-line);color:var(--model);font-weight:600}
+  .chip.det{background:var(--det-bg);border-color:var(--det-line);color:var(--det);font-weight:600}
+  .chip.ok{background:var(--done-bg);border-color:var(--done-line);color:var(--done)}
+  .chip.dash{border-style:dashed;color:var(--muted);background:#fafafa}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:99px;text-transform:uppercase}
+  .badge.model{background:var(--model);color:#fff}
+  .badge.det{background:var(--det);color:#fff}
+  .badge.human{background:var(--human);color:#fff}
+
+  .conn{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .conn .bar{width:2px;height:14px;background:var(--state-line)}
+  .conn .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .gate .bar{width:2px;height:12px;background:var(--state-line)}
+  .gatepill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+            border:2px solid;font-size:13px;font-weight:700;background:#fff;margin:2px 0}
+  .gate.human .gatepill{border-color:var(--human-line);color:var(--human);background:var(--human-bg)}
+  .gate.model .gatepill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .gate .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate .loops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 2px}
+
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .fork .lane{display:flex;flex-direction:column}
+  .fork .lane .route{align-self:center;margin:0 0 4px}
+  @media (max-width:720px){.fork{grid-template-columns:1fr}}
+
+  .withrails{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px;align-items:start}
+  .rails{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+  @media (max-width:900px){.withrails{grid-template-columns:1fr}.rails{position:static;flex-direction:row;flex-wrap:wrap}
+    .rails .stage{flex:1 1 240px}}
+
+  .bands{display:flex;flex-direction:column;gap:14px;max-width:800px;margin:0 auto}
+  .band{display:grid;grid-template-columns:160px 1fr;border:2px solid;border-radius:14px;overflow:hidden;background:#fff}
+  .band .who{padding:14px;font-weight:800;font-size:14px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+  .band .who .sub2{font-size:11.5px;font-weight:600;color:var(--muted)}
+  .band .what{padding:12px 14px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .band.human{border-color:var(--human-line)} .band.human .who{background:var(--human-bg);color:var(--human)}
+  .band.model{border-color:var(--model-line)} .band.model .who{background:var(--model-bg);color:var(--model)}
+  .band.det{border-color:var(--det-line)}     .band.det .who{background:var(--det-bg);color:var(--det)}
+  @media (max-width:640px){.band{grid-template-columns:1fr}.band .what{border-left:none;border-top:1px solid var(--line)}}
+
+  .ladder{max-width:800px;margin:0 auto;display:flex;flex-direction:column}
+  .rung{display:grid;grid-template-columns:140px 1fr 190px;border:2px solid var(--plan-line);
+        border-radius:14px;overflow:hidden;background:#fff}
+  .rung .lvl{background:var(--plan-bg);color:var(--plan);font-weight:800;padding:14px;font-size:14.5px;
+             display:flex;flex-direction:column;gap:3px;justify-content:center}
+  .rung .lvl .cad{font-size:11px;font-weight:700;color:#3b5bd0;text-transform:uppercase;letter-spacing:.06em}
+  .rung .mid{padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .rung .own{padding:12px 14px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;
+             align-content:center;background:#fbfcfe}
+  .ladder .conn{align-self:center}
+  @media (max-width:760px){.rung{grid-template-columns:1fr}.rung .own{border-left:none;border-top:1px solid var(--line)}}
+
+  .matrix{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:12px;min-width:860px}
+  .mcol{border:2px solid var(--line);border-radius:12px;background:#fbfcfe;overflow:hidden}
+  .mcol>header{padding:8px 10px;font-size:12.5px;font-weight:800;background:var(--state-bg);
+               border-bottom:1px solid var(--line)}
+  .mcol .body{padding:10px;display:flex;flex-direction:column;gap:7px}
+  .mcol .chip{white-space:normal;justify-content:flex-start}
+
+  .clock{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:12px;min-width:640px}
+  .tick{border:2px solid var(--line);border-radius:12px;background:#fbfcfe;padding:12px}
+  .tick .time{font-weight:800;font-size:17px}
+  .tick .sub3{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+  .tick.model{border-color:var(--model-line)} .tick.det{border-color:var(--det-line)}
+
+  .topo{display:flex;flex-direction:column;max-width:900px;margin:0 auto}
+  .tier{border:2px solid;border-radius:14px;overflow:hidden;background:#fff}
+  .tier>header{padding:9px 14px;font-weight:800;font-size:14px;border-bottom:1px solid var(--line)}
+  .tier .cells{display:grid;gap:12px;padding:12px 14px}
+  .tier.portfolio{border-color:var(--plan-line)} .tier.portfolio>header{background:var(--plan-bg);color:var(--plan)}
+  .tier.teams{border-color:var(--human-line)} .tier.teams>header{background:var(--human-bg);color:var(--human)}
+  .tier.repos{border-color:var(--model-line)} .tier.repos>header{background:var(--model-bg);color:var(--model)}
+  .cell{border:1.5px solid var(--line);border-radius:10px;padding:10px;background:#fbfcfe}
+  .cell .cn{font-weight:800;font-size:13px;margin-bottom:7px}
+  .cell .chips .chip{font-size:12px;padding:4px 8px}
+  .cells.c3{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:760px){.cells.c3{grid-template-columns:1fr}}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:20px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat .n{font-size:25px;font-weight:800;line-height:1.1}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+
+  table{border-collapse:collapse;width:100%;background:var(--card);font-size:14px}
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px}
+  th{background:var(--state-bg);text-align:left;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  th,td{padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;
+          padding:14px 18px;margin:10px 0;max-width:84ch}
+  summary{font-weight:700;cursor:pointer;font-size:15px}
+  details p{margin:10px 0 2px}
+
+  .foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  a{color:#1d4ed8}
+  @media print{
+    body{background:#fff}
+    .diagram,.stage,.legend,.band,.rung,.tier,.stat,table,details{break-inside:avoid}
+    .rails{position:static}
+    .matrix{min-width:0;grid-template-columns:repeat(3,1fr)}
+    .clock{min-width:0;grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kicker">Engineering Operations · Proposal to Scale</p>
+<h1>The Agentic Delivery Pipeline<br>Humans decide. AI executes. Scripts enforce.</h1>
+<p class="lede">
+An operating model for AI-assisted delivery, running in production today: work items flow through our
+standard Azure DevOps states, every consequential decision passes a named human role, and everything
+<em>between</em> those decisions — analysis, planning, test-driven implementation, reporting — runs
+autonomously on a fixed daily schedule. This document is the case for adopting it beyond the teams
+already using it.
+</p>
+
+<div class="legend">
+  <span class="key"><span class="sw human"></span> Human decision (role-gated)</span>
+  <span class="key"><span class="sw model"></span> AI work (skills &amp; agents)</span>
+  <span class="key"><span class="sw det"></span> Deterministic script (unit-tested)</span>
+  <span class="key"><span class="sw state"></span> ADO state / tag</span>
+  <span class="key"><span class="sw plan"></span> Planning structure</span>
+</div>
+
+<h2>1 · The problem this solves</h2>
+<p>
+Three kinds of waste dominate delivery time, and none of them are coding. <strong>Translation
+waste</strong>: turning an idea into work a developer can actually start — requirements churn,
+follow-up questions, re-litigated scope. <strong>Readiness drift</strong>: "Ready" means something
+different on every team and every story, so sprints absorb work that isn't actually buildable.
+<strong>Idle capacity</strong>: decisions queue behind calendars, and nothing at all happens overnight.
+The pipeline attacks all three: it makes readiness a machine-checked fact, compresses every decision
+to a short comment, and moves the labor of building to hours when no one is waiting on it.
+</p>
+
+<h2>2 · The story lifecycle: our six states as gates</h2>
+<p>
+The board's states <em>are</em> the pipeline — no parallel tracking system. A User Story physically
+cannot reach <strong>Develop</strong> without approved acceptance criteria, and cannot reach
+<strong>Done</strong> without a human-merged pull request. Authorized humans move work forward by
+typing short <code>/commands</code> in work-item comments; a gatekeeper translates those commands into
+state moves, honors only allowlisted roles, and marks processed comments so re-runs never double-apply.
+</p>
+
+<div class="diagram">
+<p class="dtitle">User Story lifecycle · large boxes = gating sections · pills = gates</p>
+<div class="withrails">
+<div class="flowcol">
+
+  <div class="stage">
+    <header><span class="t">NEW</span><span class="chip st">intake</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">filed by anyone</span>
+      <span class="chip">team backlog</span>
+      <span class="chip dash">invisible to AI</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ PO or lead · <code>/admit</code></span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">RESEARCH</span><span class="badge model">AI</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip skill">grill-azdo-story</span>
+      <span class="chip skill">grill-with-docs</span>
+      <span class="chip ok">acceptance criteria · TDD-ordered</span>
+      <span class="chip dash">open question → ask, not guess</span>
+    </div></div>
+  </div>
+
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+
+  <div class="fork">
+    <div class="lane">
+      <span class="chip dash route">route: plan complete</span>
+      <div class="stage">
+        <header><span class="t">AWAITING APPROVAL</span><span class="chip tag">tag: pending-approval</span></header>
+        <div class="body"><div class="chips">
+          <span class="chip cmd">/approve</span><span class="chip cmd">/revise</span><span class="chip cmd">/redo</span>
+        </div></div>
+      </div>
+    </div>
+    <div class="lane">
+      <span class="chip dash route">route: open design question</span>
+      <div class="stage">
+        <header><span class="t">AWAITING ANSWER</span><span class="chip tag">tag: needs-clarification</span></header>
+        <div class="body"><div class="chips">
+          <span class="chip">❓ one specific decision</span><span class="chip">answer inline</span>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ team lead · <code>/approve</code> = Definition of Ready met</span>
+    <div class="loops">
+      <span class="chip cmd">/revise ↩ Research</span>
+      <span class="chip cmd">/redo ↩ Research</span>
+    </div>
+    <span class="arrow">▼</span></div>
+
+  <div class="stage det">
+    <header><span class="t">READY</span><span class="badge det">script</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">sprint assigned · repo routed</span>
+      <span class="chip det">deterministic queue / repo</span>
+      <span class="chip">dependency-ordered · capped</span>
+    </div></div>
+  </div>
+
+  <div class="gate model"><span class="bar"></span>
+    <span class="gatepill">◆ nightly routine · per repo</span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">DEVELOP</span><span class="badge model">AI</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip skill">TDD dev agent</span>
+      <span class="chip">red → green → refactor</span>
+      <span class="chip">1 combined PR / repo / night</span>
+      <span class="chip dash">no self-merge</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ engineer · code review + merge</span><span class="arrow">▼</span></div>
+
+  <div class="stage">
+    <header><span class="t">DONE</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">merged to main</span>
+      <span class="chip det">existing CI/CD</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ PO · sprint review acceptance</span><span class="arrow">▼</span></div>
+
+  <div class="stage done">
+    <header><span class="t">CLOSED</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip ok">outcome accepted</span>
+      <span class="chip">full audit trail on the story</span>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="rails">
+  <div class="stage park">
+    <header><span class="t">PARKED</span><span class="chip tag">tag: parked</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip cmd">/park ⇄ /unpark</span>
+      <span class="chip dash">any state · hidden</span>
+    </div></div>
+  </div>
+  <div class="stage det">
+    <header><span class="t">DASHBOARD</span><span class="badge det">script</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip det">daily digest · no LLM</span>
+      <span class="chip">“your move” counts / role</span>
+    </div></div>
+  </div>
+</div>
+</div>
+</div>
+
+<p class="sub">
+The two loop commands are the quality mechanism: <code>/revise &lt;notes&gt;</code> re-runs Research
+with your feedback attached; <code>/redo</code> starts the analysis clean. A wrong plan costs a
+comment, not a sprint.
+</p>
+
+<h2>3 · The trust model that makes it safe</h2>
+<p>
+Each layer does only what it's best at, and the boundaries are structural — enforced by permissions
+and unit-tested code, not by behavioral promises. Agents have no merge rights, no design authority,
+and no way to act on an unauthorized command.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Separation of powers</p>
+<div class="bands">
+  <div class="band human">
+    <div class="who">HUMANS<span class="sub2">judgment</span></div>
+    <div class="what">
+      <span class="chip cmd">admit</span><span class="chip cmd">approve</span>
+      <span class="chip cmd">revise</span><span class="chip cmd">merge</span>
+      <span class="chip">design decisions</span><span class="chip">priorities</span>
+    </div>
+  </div>
+  <div class="band model">
+    <div class="who">AI AGENTS<span class="sub2">labor</span></div>
+    <div class="what">
+      <span class="chip skill">research + grilling</span><span class="chip skill">TDD implementation</span>
+      <span class="chip skill">PR authoring + CI babysitting</span>
+      <span class="chip dash">no design authority</span>
+    </div>
+  </div>
+  <div class="band det">
+    <div class="who">SCRIPTS<span class="sub2">guardrails</span></div>
+    <div class="what">
+      <span class="chip det">command parsing · role allowlist</span><span class="chip det">queue selection</span>
+      <span class="chip det">dashboards · CI · releases</span>
+      <span class="chip ok">unit-tested in CI</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>4 · Planning altitude: a grill gate at every descent</h2>
+<p>
+Work descends from strategy to buildable units through our normal hierarchy, on our normal cadence —
+Features commit to quarters, Stories to sprints. What's new is that each descent is guarded by a grill
+skill that interrogates the responsible human until the work item can't be misread, then writes the
+result back. <strong>Ready stops being an opinion:</strong> every story that reaches Ready has
+testable, TDD-ordered acceptance criteria, a routed repo, linked dependencies, and an assigned sprint
+— every time, on every team.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Hierarchy · cadence · grill gates</p>
+<div class="ladder">
+  <div class="rung">
+    <div class="lvl">EPIC<span class="cad">ongoing</span></div>
+    <div class="mid">
+      <span class="chip">strategic outcome</span>
+      <span class="chip dash">AI: read-only context</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">product leadership</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">FEATURE<span class="cad">quarter</span></div>
+    <div class="mid">
+      <span class="chip skill">grill-azdo-feature</span>
+      <span class="chip">scope · owning team · story split</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">product owner</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">USER STORY<span class="cad">sprint</span></div>
+    <div class="mid">
+      <span class="chip skill">grill-azdo-story</span>
+      <span class="chip ok">acceptance criteria · repo · links</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">team lead</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">TASK<span class="cad">nightly</span></div>
+    <div class="mid">
+      <span class="chip skill">TDD agent checklist</span>
+      <span class="chip dash">agent-created · agent-checked</span>
+    </div>
+    <div class="own"><span class="badge model">AI</span><span class="chip">dev agent</span></div>
+  </div>
+</div>
+</div>
+
+<h2>5 · Which skills run at which phase</h2>
+<p>
+Everything AI-facing is a version-controlled skill or agent definition, owned by the platform team and
+shipped by pull request like any other code. The deliberate split: wherever a step <em>can</em> be
+deterministic, it <em>is</em> a plain script with unit tests; model time is spent only where judgment
+is required — grilling and building.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Skills &amp; agents by phase · <span style="color:var(--model)">purple = model</span> · <span style="color:var(--det)">teal = deterministic</span></p>
+<div class="matrix">
+  <div class="mcol">
+    <header>GATE · every routine</header>
+    <div class="body">
+      <span class="chip skill">gatekeeper <span class="badge model">AI</span></span>
+      <span class="chip det">command parser</span>
+      <span class="chip">role allowlist / team</span>
+      <span class="chip">idempotency watermark</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>RESEARCH</header>
+    <div class="body">
+      <span class="chip skill">grill-azdo-feature</span>
+      <span class="chip skill">grill-azdo-story</span>
+      <span class="chip skill">grill-with-docs</span>
+      <span class="chip ok">output: acceptance criteria</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>QUEUE · nightly</header>
+    <div class="body">
+      <span class="chip det">queue selector</span>
+      <span class="chip">sprint + links + PR checks</span>
+      <span class="chip">cap / repo / night</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>DEVELOP · nightly</header>
+    <div class="body">
+      <span class="chip skill">TDD dev agents</span>
+      <span class="chip skill">per-repo skill packs</span>
+      <span class="chip">PR author + CI babysit</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>REPORT · daily</header>
+    <div class="body">
+      <span class="chip det">dashboard renderer</span>
+      <span class="chip">wiki page + Teams digest</span>
+      <span class="chip dash">no LLM in the loop</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>6 · The daily rhythm</h2>
+<p>
+The pipeline runs on a clock, not on attention. Humans interact whenever it suits them — the morning
+digest lists exactly what awaits whose decision, and a command typed at any hour is picked up by the
+next scheduled routine.
+</p>
+
+<div class="diagram">
+<p class="dtitle">One day, every day</p>
+<div class="clock">
+  <div class="tick model">
+    <div class="time">Overnight</div><div class="sub3">per opted-in repo</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip skill">TDD build run</span><span class="chip">1 PR / repo</span></div>
+  </div>
+  <div class="tick model">
+    <div class="time">Morning</div><div class="sub3">before standup</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip skill">research pass</span><span class="chip det">digest published</span></div>
+  </div>
+  <div class="tick model">
+    <div class="time">Evening</div><div class="sub3">end of day</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip">day's commands swept</span></div>
+  </div>
+</div>
+</div>
+
+<h2>7 · The command vocabulary</h2>
+<p>
+Nine commands are the complete human control surface — typed anywhere in a work-item comment,
+from any device. Parsing, authorization, and idempotency are enforced by a unit-tested script,
+not by the model.
+</p>
+
+<div class="tablewrap"><table>
+  <tr><th>Command</th><th>Who</th><th>Effect</th></tr>
+  <tr><td><code>/admit</code></td><td>PO or team lead</td><td>Pull a New item into AI Research</td></tr>
+  <tr><td><code>/approve</code></td><td>Lead (stories) · PO (features)</td><td>Accept the analysis → Ready; placement resolved from proposal or override</td></tr>
+  <tr><td><code>/revise &lt;notes&gt;</code></td><td>Same</td><td>Back to Research with feedback the next pass must address</td></tr>
+  <tr><td><code>/redo</code></td><td>Same</td><td>Discard the analysis, start fresh</td></tr>
+  <tr><td><code>/propose</code></td><td>Same</td><td>Authorize a clearly-marked draft for a missing design decision</td></tr>
+  <tr><td><code>/park</code> · <code>/unpark</code></td><td>Same</td><td>Hide from every routine / bring back</td></tr>
+  <tr><td><code>/sprint &lt;iteration&gt;</code></td><td>Team lead</td><td>Override the AI-proposed sprint for a story</td></tr>
+  <tr><td><code>/quarter &lt;Q&gt;</code></td><td>PO</td><td>Override the AI-proposed quarter for a feature</td></tr>
+</table></div>
+
+<h2>8 · Why it's safe to run while you sleep</h2>
+<ul>
+  <li><strong>Authorization</strong> — only allowlisted roles move work; every honored and every ignored command is reported.</li>
+  <li><strong>Idempotency</strong> — processed comments are watermarked; re-running a routine with nothing new changes nothing.</li>
+  <li><strong>No invented requirements</strong> — Research must stop and ask on any un-specced decision; drafting one requires an explicit <code>/propose</code>.</li>
+  <li><strong>No self-merge</strong> — agents open PRs and keep CI green; branch protection means only a human lands code.</li>
+  <li><strong>Honest reporting</strong> — every agent PR opens with a mandatory <em>Deviations and Decisions</em> section; nightly caps and dropped stories are logged, so a truncated run never reads as complete.</li>
+  <li><strong>Tested guardrails</strong> — the parser, queue selector, and dashboard renderer are plain scripts with unit tests run in CI on every change.</li>
+</ul>
+
+<h2>9 · Scale: many teams, many repos, one operating model</h2>
+<p>
+This federates naturally because every coupling point is explicit data: stories carry their repo,
+dependencies are typed links, and each gate names its authorized role. The org runs <em>many small
+pipelines that share one design</em>. The platform team owns the skill library and scripts; each team
+owns its gates, backlog, and caps; each repo opts in to a nightly builder. Cross-team work needs no
+meetings to coordinate: predecessor links block a story's eligibility until the other team's story is
+Done — the queue selector enforces it every night.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Federated topology · authority flows down · status rolls up</p>
+<div class="topo">
+  <div class="tier portfolio">
+    <header>PORTFOLIO · features → quarters</header>
+    <div class="cells c3">
+      <div class="cell"><div class="cn">Product leadership</div>
+        <div class="chips"><span class="chip cmd">/admit</span><span class="chip cmd">/approve · /quarter</span></div></div>
+      <div class="cell"><div class="cn">Feature research</div>
+        <div class="chips"><span class="chip skill">grill-azdo-feature</span><span class="chip">team routing</span></div></div>
+      <div class="cell"><div class="cn">Platform team</div>
+        <div class="chips"><span class="chip plan">skill + agent library</span><span class="chip det">shared scripts</span></div></div>
+    </div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="tier teams">
+    <header>TEAMS · stories → sprints · own gatekeepers</header>
+    <div class="cells c3">
+      <div class="cell"><div class="cn">Team A</div>
+        <div class="chips"><span class="chip skill">grill-azdo-story</span><span class="chip cmd">lead: /approve</span></div></div>
+      <div class="cell"><div class="cn">Team B</div>
+        <div class="chips"><span class="chip skill">grill-azdo-story</span><span class="chip cmd">lead: /approve</span></div></div>
+      <div class="cell"><div class="cn">Team C …</div>
+        <div class="chips"><span class="chip dash">same pattern · own caps</span></div></div>
+    </div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="tier repos">
+    <header>REPOS · nightly builders → 1 PR / repo / night</header>
+    <div class="cells c3">
+      <div class="cell"><div class="cn">repo-api</div>
+        <div class="chips"><span class="chip skill">TDD agent</span><span class="chip det">queue + cap</span></div></div>
+      <div class="cell"><div class="cn">repo-web</div>
+        <div class="chips"><span class="chip skill">TDD agent</span><span class="chip det">queue + cap</span></div></div>
+      <div class="cell"><div class="cn">repo-N …</div>
+        <div class="chips"><span class="chip dash">opt-in · CI unchanged</span></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>10 · What it buys</h2>
+<div class="stats">
+  <div class="stat"><div class="n">Minutes/day</div><div class="l">of human steering — every decision is one short comment, made from anywhere</div></div>
+  <div class="stat"><div class="n">Overnight</div><div class="l">throughput — approved stories are built while the team sleeps, delivered as one reviewable PR per repo</div></div>
+  <div class="stat"><div class="n">100%</div><div class="l">of admit, approve, and merge decisions made by a named human role — always</div></div>
+  <div class="stat"><div class="n">One</div><div class="l">definition of Ready, machine-checked, identical on every participating team</div></div>
+</div>
+<p>
+What we track per team, straight from work-item history and PR data: cycle time New → Closed, stories
+built per night against the cap, revise-loop rate, PR first-review pass rate, and reviewer minutes per
+merged story. The standing question every review answers: <em>is Ready-quality going up while cycle
+time goes down?</em>
+</p>
+
+<h2>11 · What onboarding a team actually takes</h2>
+<p>
+Joining is configuration, not construction — the skills, agents, and scripts already exist in the
+platform library. A team onboards with one config PR declaring three things:
+</p>
+<ul>
+  <li><strong>The allowlist</strong> — who holds the PO and team-lead roles at each gate.</li>
+  <li><strong>The caps</strong> — how many stories per repo per night (start at 2–3; it's the spend dial).</li>
+  <li><strong>The repos</strong> — which repositories opt in to a nightly builder. Everything else — boards, CI, branch protection, release tooling — stays exactly as the team runs it today.</li>
+</ul>
+
+<h2>12 · Questions engineers ask first</h2>
+
+<details open>
+  <summary>What stops an agent from merging bad code?</summary>
+  <p>Permissions, not promises: agents have no merge rights. They open PRs, keep CI green, and stop. A
+  human reviews every diff against acceptance criteria a human already approved.</p>
+</details>
+<details open>
+  <summary>What happens when the AI's plan is wrong?</summary>
+  <p><code>/revise</code> with notes sends it back through Research with your feedback attached;
+  <code>/redo</code> starts clean. Nothing builds until you approve, so a wrong plan costs a comment.</p>
+</details>
+<details open>
+  <summary>What happens when a story fails to build overnight?</summary>
+  <p>Its commits are dropped so the shared branch stays green, the story returns to Ready with the
+  failure reason recorded, and the PR lists what was built, dropped, and deferred — partial success is
+  never silent.</p>
+</details>
+<details open>
+  <summary>How are cross-team dependencies handled?</summary>
+  <p>As predecessor–successor links created during Research. A story is simply never eligible to build
+  until its predecessors are Done — coordination by data, not by meetings.</p>
+</details>
+<details open>
+  <summary>What does it cost, and how is spend controlled?</summary>
+  <p>Model time concentrates in Research and Develop, and both are gated: nothing enters Research
+  without an admit, and nightly caps bound Develop per repo. Parsing, queues, dashboards, and CI are
+  deterministic and near-free. The caps are the throttle.</p>
+</details>
+<details open>
+  <summary>How do we know the process is being followed?</summary>
+  <p>The state machine is the process, and scripts move it — Develop is unreachable without approved
+  acceptance criteria, Done is unreachable without a merged PR. The daily digest shows queue health and
+  "your move" items per role; deviations are self-reported in every PR under a mandatory heading.</p>
+</details>
+
+<div class="foot">
+Companion formats: <a href="05-deck.html">slide deck</a> · <a href="06-scrolly.html">scroll story</a>
+</div>
+
+</div>
+</body>
+</html>

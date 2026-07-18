@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Delivery Pipeline — Scroll Story</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --paper:#f6f7f9;
+    --human:#b45309; --human-bg:#fef3c7; --human-line:#f59e0b;
+    --model:#6d28d9; --model-bg:#ede9fe; --model-line:#a78bfa;
+    --det:#0f766e;   --det-bg:#ccfbf1;   --det-line:#2dd4bf;
+    --state:#334155; --state-bg:#f1f5f9; --state-line:#94a3b8;
+    --done:#15803d;  --done-bg:#dcfce7;  --done-line:#4ade80;
+    --plan:#1d4ed8;  --plan-bg:#dbeafe;  --plan-line:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 6px;
+       font:.82em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* top progress */
+  .progress{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(0,0,0,.06);z-index:50}
+  .progress .p{height:100%;width:0;background:linear-gradient(90deg,var(--human-line),var(--model-line),var(--det-line))}
+
+  /* hero */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+        text-align:center;padding:40px 22px;position:relative}
+  .hero .kick{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .hero h1{font-size:clamp(34px,6vw,64px);line-height:1.08;margin:16px 0 0;max-width:16ch}
+  .hero .triad{display:flex;gap:10px;width:min(480px,70vw);margin:34px 0 0}
+  .hero .triad span{height:10px;border-radius:99px;flex:1}
+  .t1{background:var(--human-line)}.t2{background:var(--model-line)}.t3{background:var(--det-line)}
+  .hero .sub{font-size:clamp(17px,2.2vw,21px);color:#475569;max-width:52ch;margin:26px 0 0}
+  .hero .hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:13px}
+  .hero .hint .chev{display:block;text-align:center;font-size:20px;animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+
+  /* interlude band */
+  .inter{padding:16vh 22px;text-align:center}
+  .inter p{font-size:clamp(20px,3vw,30px);font-weight:700;max-width:34ch;margin:0 auto;line-height:1.35}
+  .inter p small{display:block;font-size:.6em;font-weight:600;color:var(--muted);margin-top:14px}
+
+  /* scrolly layout */
+  .scrolly{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,42ch);gap:clamp(20px,4vw,70px);
+           max-width:1150px;margin:0 auto;padding:0 22px}
+  .scrolly.flip{grid-template-columns:minmax(0,42ch) minmax(0,1fr)}
+  .sticky{position:sticky;top:0;height:100vh;display:flex;align-items:center;justify-content:center}
+  .steps{padding:14vh 0 40vh}
+  .step{min-height:78vh;display:flex;align-items:center;opacity:.25;transition:opacity .4s ease}
+  .step.active{opacity:1}
+  .step .card{background:#fff;border:1px solid var(--line);border-left:5px solid var(--state-line);
+              border-radius:14px;padding:22px 24px;box-shadow:0 8px 26px rgba(15,23,42,.06)}
+  .step .card.human{border-left-color:var(--human-line)}
+  .step .card.model{border-left-color:var(--model-line)}
+  .step .card.det{border-left-color:var(--det-line)}
+  .step .card.done{border-left-color:var(--done-line)}
+  .step h3{margin:0 0 8px;font-size:20px}
+  .step p{margin:0;color:#475569;font-size:16.5px}
+  .step .cchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .cchip{display:inline-flex;padding:4px 9px;border-radius:7px;border:1px solid var(--state-line);
+         background:#fff;font-size:12.5px;color:var(--state);white-space:nowrap}
+  .cchip.cmd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--human-bg);
+             border-color:var(--human-line);color:var(--human);font-weight:600}
+  .cchip.skill{background:var(--model-bg);border-color:var(--model-line);color:var(--model);font-weight:600}
+  .cchip.det{background:var(--det-bg);border-color:var(--det-line);color:var(--det);font-weight:600}
+  .cchip.ok{background:var(--done-bg);border-color:var(--done-line);color:var(--done)}
+
+  /* ACT 1 graphic: vertical pipeline */
+  .pipe{width:min(360px,86vw)}
+  .pnode{border:2.5px solid var(--state-line);border-radius:14px;background:#fff;padding:12px 16px;
+         opacity:.42;transform:scale(.97);transition:all .45s ease}
+  .pnode .pt{font-weight:800;font-size:16px;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center}
+  .pnode .pt .who{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+                  padding:2px 8px;border-radius:99px;color:#fff;background:var(--state-line)}
+  .pnode .pchips{display:flex;flex-wrap:wrap;gap:6px;max-height:0;overflow:hidden;opacity:0;
+                 transition:all .45s ease;margin-top:0}
+  .pgate{display:flex;flex-direction:column;align-items:center;opacity:.35;transition:opacity .45s ease}
+  .pgate .bar{width:2px;height:10px;background:var(--state-line)}
+  .pgate .pill{border:2px solid var(--human-line);color:var(--human);background:var(--human-bg);
+               border-radius:999px;font-size:12px;font-weight:800;padding:4px 12px;margin:2px 0;
+               transition:transform .45s ease}
+  .pgate.model .pill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .pgate .ar{color:var(--state-line);font-size:13px;line-height:1;margin-top:-1px}
+
+  .pipe[data-s="new"]     .k-new,
+  .pipe[data-s="research"] .k-research, .pipe[data-s="await"] .k-research,
+  .pipe[data-s="ready"]   .k-ready,
+  .pipe[data-s="develop"] .k-develop,
+  .pipe[data-s="done"]    .k-done,
+  .pipe[data-s="closed"]  .k-closed{opacity:1;transform:scale(1);box-shadow:0 10px 30px rgba(15,23,42,.10)}
+  .pipe[data-s="new"] .k-new{border-color:var(--state-line)}
+  .pipe[data-s="research"] .k-research,.pipe[data-s="await"] .k-research{border-color:var(--model-line);background:linear-gradient(#fdfcff,#fff)}
+  .pipe[data-s="ready"] .k-ready{border-color:var(--det-line);background:linear-gradient(#f9fefd,#fff)}
+  .pipe[data-s="develop"] .k-develop{border-color:var(--model-line);background:linear-gradient(#fdfcff,#fff)}
+  .pipe[data-s="done"] .k-done{border-color:var(--state-line)}
+  .pipe[data-s="closed"] .k-closed{border-color:var(--done-line);background:linear-gradient(#f8fdf9,#fff)}
+
+  .pipe[data-s="new"]      .k-new .pchips,
+  .pipe[data-s="research"] .k-research .pchips.r-base,
+  .pipe[data-s="await"]    .k-research .pchips.r-await,
+  .pipe[data-s="ready"]    .k-ready .pchips,
+  .pipe[data-s="develop"]  .k-develop .pchips,
+  .pipe[data-s="done"]     .k-done .pchips,
+  .pipe[data-s="closed"]   .k-closed .pchips{max-height:90px;opacity:1;margin-top:9px}
+
+  .pipe[data-s="research"] .g-admit,
+  .pipe[data-s="ready"]   .g-approve,
+  .pipe[data-s="develop"] .g-night,
+  .pipe[data-s="done"]    .g-merge,
+  .pipe[data-s="closed"]  .g-accept{opacity:1}
+  .pipe[data-s="research"] .g-admit .pill,
+  .pipe[data-s="ready"]   .g-approve .pill,
+  .pipe[data-s="develop"] .g-night .pill,
+  .pipe[data-s="done"]    .g-merge .pill,
+  .pipe[data-s="closed"]  .g-accept .pill{transform:scale(1.12)}
+
+  .pipe[data-s="all"] .pnode,.pipe[data-s="all"] .pgate{opacity:1;transform:none}
+
+  /* ACT 2 graphic: bands */
+  .bands{width:min(520px,88vw);display:flex;flex-direction:column;gap:14px}
+  .bd{display:grid;grid-template-columns:132px 1fr;border:2.5px solid;border-radius:16px;overflow:hidden;
+      background:#fff;opacity:.35;transform:translateX(-18px);transition:all .5s ease}
+  .bd .who{padding:16px 12px;font-weight:800;font-size:15px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+  .bd .who small{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .bd .what{padding:12px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .bd.human{border-color:var(--human-line)} .bd.human .who{background:var(--human-bg);color:var(--human)}
+  .bd.model{border-color:var(--model-line)} .bd.model .who{background:var(--model-bg);color:var(--model)}
+  .bd.det{border-color:var(--det-line)}     .bd.det .who{background:var(--det-bg);color:var(--det)}
+  .bands[data-s="humans"] .bd.human,
+  .bands[data-s="agents"] .bd.model,
+  .bands[data-s="scripts"] .bd.det,
+  .bands[data-s="all"] .bd{opacity:1;transform:none}
+  .bands[data-s="agents"] .bd.human,
+  .bands[data-s="scripts"] .bd.human,.bands[data-s="scripts"] .bd.model{opacity:.75;transform:none}
+
+  /* ACT 3 graphic: day track */
+  .day{width:min(560px,88vw)}
+  .day .sky{position:relative;height:120px;border:2px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+  .day .zone{position:absolute;top:0;bottom:0;display:flex;align-items:flex-end;justify-content:center;
+             color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-bottom:8px}
+  .day .z1{left:0;width:34%;background:linear-gradient(#eef2ff40,#fff0)}
+  .day .z2{left:34%;width:33%;background:linear-gradient(#fef9c340,#fff0)}
+  .day .z3{left:67%;width:33%;background:linear-gradient(#ffedd540,#fff0)}
+  .day .track{position:absolute;left:4%;right:4%;top:56px;height:3px;background:var(--line);border-radius:99px}
+  .day .orb{position:absolute;top:44px;left:4%;width:28px;height:28px;border-radius:50%;
+            background:radial-gradient(circle at 35% 35%,#fff8,transparent 60%),var(--model-line);
+            box-shadow:0 4px 14px rgba(109,40,217,.35);transform:translateX(0)}
+  .day .cap{margin-top:14px;display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .day .evt{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+  .day .ev{border:2px solid var(--line);border-radius:12px;background:#fff;padding:10px 14px;font-size:14.5px;
+           display:flex;gap:10px;align-items:center;opacity:.4;transition:all .45s ease}
+  .day .ev b{font-size:14px}
+  .day[data-s="night"] .ev.e1,.day[data-s="morning"] .ev.e2,.day[data-s="evening"] .ev.e3,.day[data-s="all"] .ev{
+    opacity:1;border-color:var(--model-line);box-shadow:0 6px 18px rgba(15,23,42,.07)}
+
+  /* ACT 4 graphic: federation */
+  .fed{width:min(560px,88vw);display:flex;flex-direction:column;gap:8px}
+  .fr{display:grid;grid-template-columns:120px 1fr;border:2.5px solid;border-radius:14px;overflow:hidden;
+      background:#fff;opacity:.3;transform:translateY(14px);transition:all .5s ease}
+  .fr .tn{padding:13px 12px;font-weight:800;font-size:14px}
+  .fr .td{padding:10px 12px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .fr.portfolio{border-color:var(--plan-line)} .fr.portfolio .tn{background:var(--plan-bg);color:var(--plan)}
+  .fr.teams{border-color:var(--human-line)} .fr.teams .tn{background:var(--human-bg);color:var(--human)}
+  .fr.repos{border-color:var(--model-line)} .fr.repos .tn{background:var(--model-bg);color:var(--model)}
+  .farrow{text-align:center;color:var(--muted);font-size:15px;opacity:.3;transition:opacity .5s ease}
+  .fed[data-s="portfolio"] .fr.portfolio{opacity:1;transform:none}
+  .fed[data-s="teams"] .fr.portfolio,.fed[data-s="teams"] .fr.teams,.fed[data-s="teams"] .a1{opacity:1;transform:none}
+  .fed[data-s="repos"] .fr,.fed[data-s="repos"] .farrow,
+  .fed[data-s="links"] .fr,.fed[data-s="links"] .farrow,
+  .fed[data-s="all"] .fr,.fed[data-s="all"] .farrow{opacity:1;transform:none}
+  .fed .link{margin-top:6px;text-align:center;font-size:13px;color:var(--plan);font-weight:700;
+             opacity:0;transition:opacity .5s ease}
+  .fed[data-s="links"] .link,.fed[data-s="all"] .link{opacity:1}
+
+  /* stats + close */
+  .finale{max-width:1000px;margin:0 auto;padding:14vh 22px 10vh}
+  .finale h2{font-size:clamp(26px,4vw,38px);margin:0 0 30px;text-align:center}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;
+        opacity:0;transform:translateY(20px);transition:all .6s ease}
+  .stat.in{opacity:1;transform:none}
+  .stat .n{font-size:30px;font-weight:800;line-height:1.1}
+  .stat .l{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .close{min-height:88vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+         text-align:center;padding:40px 22px}
+  .close .kick{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .close h2{font-size:clamp(30px,5vw,50px);margin:14px 0 0}
+  .close .sub{font-size:18px;color:#475569;max-width:52ch;margin:22px 0 0}
+  .close .mantra{margin-top:38px;font-size:clamp(19px,2.6vw,25px);font-weight:800}
+  .close .mantra .h{color:var(--human)} .close .mantra .m{color:var(--model)} .close .mantra .d{color:var(--det)}
+
+  @media (max-width:860px){
+    .scrolly,.scrolly.flip{grid-template-columns:1fr}
+    .sticky{position:sticky;top:0;height:46vh;background:linear-gradient(var(--paper) 82%,transparent);z-index:5}
+    .scrolly.flip .sticky{order:-1}
+    .steps{padding:6vh 0 30vh}
+    .step{min-height:64vh}
+    .pipe{transform:scale(.8);transform-origin:center}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,.pnode,.pgate,.bd,.fr,.stat,.step,.day .ev{transition:none!important;animation:none!important}
+  }
+  @media print{
+    .sticky{position:static;height:auto}
+    .step{min-height:0;opacity:1;padding:14px 0}
+    .steps{padding:20px 0}
+    .pipe .pnode,.pipe .pgate,.bands .bd,.fed .fr,.fed .farrow,.day .ev{opacity:1!important;transform:none!important}
+    .pipe .pchips{max-height:none!important;opacity:1!important;margin-top:9px!important}
+    .stat{opacity:1!important;transform:none!important}
+    .progress,.hero .hint{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="p" id="prog"></div></div>
+
+<header class="hero">
+  <p class="kick">The Agentic Delivery Pipeline · In Production Today</p>
+  <h1>Humans decide. AI executes. Scripts enforce.</h1>
+  <div class="triad"><span class="t1"></span><span class="t2"></span><span class="t3"></span></div>
+  <p class="sub">Follow one user story from a one-line idea to accepted, shipped code —
+     and count how little human time it takes, and how much human control it keeps.</p>
+  <div class="hint"><span class="chev">▾</span>scroll</div>
+</header>
+
+<!-- ACT 1 -->
+<section class="inter">
+  <p>Act I — The life of a story.<small>Our six board states are the pipeline. Watch the gates.</small></p>
+</section>
+
+<div class="scrolly" id="act1">
+  <div class="sticky">
+    <div class="pipe" id="pipe" data-s="all">
+      <div class="pnode k-new">
+        <div class="pt">NEW <span class="who">anyone</span></div>
+        <div class="pchips">
+          <span class="cchip">one-line idea</span><span class="cchip">team backlog</span>
+        </div>
+      </div>
+      <div class="pgate g-admit"><span class="bar"></span><span class="pill">◆ /admit</span><span class="ar">▼</span></div>
+      <div class="pnode k-research">
+        <div class="pt">RESEARCH <span class="who" style="background:var(--model)">AI</span></div>
+        <div class="pchips r-base">
+          <span class="cchip skill">grill-azdo-story</span><span class="cchip skill">grill-with-docs</span>
+        </div>
+        <div class="pchips r-await">
+          <span class="cchip">tag: pending-approval</span><span class="cchip">tag: needs-clarification</span>
+        </div>
+      </div>
+      <div class="pgate g-approve"><span class="bar"></span><span class="pill">◆ /approve</span><span class="ar">▼</span></div>
+      <div class="pnode k-ready">
+        <div class="pt">READY <span class="who" style="background:var(--det)">script</span></div>
+        <div class="pchips">
+          <span class="cchip det">deterministic queue</span><span class="cchip">capped / repo / night</span>
+        </div>
+      </div>
+      <div class="pgate model g-night"><span class="bar"></span><span class="pill">nightly routine</span><span class="ar">▼</span></div>
+      <div class="pnode k-develop">
+        <div class="pt">DEVELOP <span class="who" style="background:var(--model)">AI</span></div>
+        <div class="pchips">
+          <span class="cchip">red → green → refactor</span><span class="cchip">1 PR / repo / night</span>
+        </div>
+      </div>
+      <div class="pgate g-merge"><span class="bar"></span><span class="pill">◆ review + merge</span><span class="ar">▼</span></div>
+      <div class="pnode k-done">
+        <div class="pt">DONE <span class="who">human</span></div>
+        <div class="pchips">
+          <span class="cchip">merged to main</span><span class="cchip det">existing CI/CD</span>
+        </div>
+      </div>
+      <div class="pgate g-accept"><span class="bar"></span><span class="pill">◆ sprint review</span><span class="ar">▼</span></div>
+      <div class="pnode k-closed">
+        <div class="pt">CLOSED <span class="who" style="background:var(--done)">accepted</span></div>
+        <div class="pchips">
+          <span class="cchip ok">full audit trail on the story</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step" data-scene="pipe" data-s="new">
+      <div class="card">
+        <h3>It starts as one line</h3>
+        <p>Anyone files a story: a bug, a request, half a thought. It costs nothing —
+           the AI can't even see it yet.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="research">
+      <div class="card human">
+        <h3>A human types <code>/admit</code></h3>
+        <p>One comment from the PO or team lead pulls it into Research. The grill skills read the
+           docs and the code, then interrogate the story until it can't be misread.</p>
+        <div class="cchips"><span class="cchip skill">grill-azdo-story</span><span class="cchip skill">grill-with-docs</span></div>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="await">
+      <div class="card model">
+        <h3>The AI hands back — it never guesses</h3>
+        <p>A finished plan waits under <em>pending-approval</em>. An unsettled design question waits as
+           one specific question under <em>needs-clarification</em>. Wrong plan? <code>/revise</code>
+           sends it back with your notes attached.</p>
+        <div class="cchips"><span class="cchip cmd">/approve</span><span class="cchip cmd">/revise</span><span class="cchip cmd">/redo</span></div>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="ready">
+      <div class="card det">
+        <h3>Ready becomes a fact</h3>
+        <p><code>/approve</code> means the Definition of Ready is met — testable, TDD-ordered acceptance
+           criteria, a routed repo, linked dependencies, an assigned sprint. Identical on every team.
+           A script, not a person, keeps the queue honest.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="develop">
+      <div class="card model">
+        <h3>Built while you sleep</h3>
+        <p>Each night, per repo, the TDD agent takes the top of the queue: failing test first, minimum
+           code, refactor. A story that won't go green is dropped cleanly and re-queued —
+           the branch is never red in the morning.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="done">
+      <div class="card human">
+        <h3>A human lands every line</h3>
+        <p>Morning brings one reviewable PR per repo, opening with a mandatory
+           <em>Deviations &amp; Decisions</em> section. An engineer reviews against the approved
+           criteria and merges by hand. Agents have no merge rights — by permission, not by promise.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="pipe" data-s="closed">
+      <div class="card done">
+        <h3>Accepted, with receipts</h3>
+        <p>The PO closes it at sprint review. The story carries its whole history: the analysis, the
+           approval, the criteria, the PR, the changelog entry. The work item <em>is</em> the audit trail.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACT 2 -->
+<section class="inter">
+  <p>Act II — Who does what.<small>Three layers, structurally separated.</small></p>
+</section>
+
+<div class="scrolly flip" id="act2">
+  <div class="steps">
+    <div class="step" data-scene="bands" data-s="humans">
+      <div class="card human">
+        <h3>Humans keep every judgment call</h3>
+        <p>Admit, approve, revise, merge, accept — plus every design decision and every priority.
+           Each gate names its role: PO for features, team lead for stories.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="bands" data-s="agents">
+      <div class="card model">
+        <h3>Agents do the labor between gates</h3>
+        <p>Grilling, planning, test-driven implementation, PR authoring, CI babysitting.
+           No design authority, no merge rights, no exceptions.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="bands" data-s="scripts">
+      <div class="card det">
+        <h3>Scripts hold the guardrails</h3>
+        <p>Command parsing and role checks, queue selection, dashboards — plain, unit-tested code.
+           The rules that keep the pipeline safe are never left to a model's judgment.</p>
+      </div>
+    </div>
+  </div>
+  <div class="sticky">
+    <div class="bands" id="bands" data-s="all">
+      <div class="bd human">
+        <div class="who">HUMANS<small>judgment</small></div>
+        <div class="what">
+          <span class="cchip cmd">admit</span><span class="cchip cmd">approve</span>
+          <span class="cchip cmd">merge</span><span class="cchip">design</span><span class="cchip">priorities</span>
+        </div>
+      </div>
+      <div class="bd model">
+        <div class="who">AI AGENTS<small>labor</small></div>
+        <div class="what">
+          <span class="cchip skill">grilling</span><span class="cchip skill">TDD build</span>
+          <span class="cchip skill">PR author</span><span class="cchip">no authority</span>
+        </div>
+      </div>
+      <div class="bd det">
+        <div class="who">SCRIPTS<small>guardrails</small></div>
+        <div class="what">
+          <span class="cchip det">parser · authz</span><span class="cchip det">queue</span>
+          <span class="cchip det">dashboards</span><span class="cchip ok">unit-tested</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACT 3 -->
+<section class="inter">
+  <p>Act III — One day, every day.<small>The pipeline runs on a clock, not on attention.</small></p>
+</section>
+
+<div class="scrolly" id="act3">
+  <div class="sticky">
+    <div class="day" id="day" data-s="all">
+      <div class="sky">
+        <div class="zone z1">overnight</div>
+        <div class="zone z2">morning</div>
+        <div class="zone z3">evening</div>
+        <div class="track"></div>
+        <div class="orb" id="orb"></div>
+      </div>
+      <div class="evt">
+        <div class="ev e1"><b>🌙</b> gatekeeper → TDD build run → 1 PR per opted-in repo</div>
+        <div class="ev e2"><b>☀️</b> research pass → daily digest: what awaits whose decision</div>
+        <div class="ev e3"><b>🌆</b> command sweep → the day's approvals feed tonight's build</div>
+      </div>
+    </div>
+  </div>
+  <div class="steps">
+    <div class="step" data-scene="day" data-s="night">
+      <div class="card model">
+        <h3>Overnight</h3>
+        <p>The gatekeeper sweeps commands, the queue selects, the agent builds.
+           By morning there's a green PR per repo — capacity that used to be idle.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="day" data-s="morning">
+      <div class="card det">
+        <h3>Morning</h3>
+        <p>Newly admitted work gets researched, and the digest lands before standup:
+           queue health, and a "your move" list per role.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="day" data-s="evening">
+      <div class="card human">
+        <h3>Evening</h3>
+        <p>Type <code>/approve</code> from anywhere — a phone in the elevator counts.
+           The sweep applies it, and tonight's build picks it up.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACT 4 -->
+<section class="inter">
+  <p>Act IV — It federates.<small>Many small pipelines, one shared design.</small></p>
+</section>
+
+<div class="scrolly flip" id="act4">
+  <div class="steps">
+    <div class="step" data-scene="fed" data-s="portfolio">
+      <div class="card">
+        <h3>Portfolio: features gate on quarters</h3>
+        <p><code>grill-azdo-feature</code> forces scope, owning team, and story split before a
+           feature can commit to a quarter. The PO approves; child stories land in the team's backlog.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="fed" data-s="teams">
+      <div class="card human">
+        <h3>Teams own their own gates</h3>
+        <p>Each team runs its own gatekeeper, allowlist, and caps. Planning authority is handed
+           down with the stories — no central bottleneck.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="fed" data-s="repos">
+      <div class="card model">
+        <h3>Repos opt in, one by one</h3>
+        <p>A nightly builder per repository, one PR per repo per night. CI, branch protection,
+           and release tooling stay exactly as each repo runs them today.</p>
+      </div>
+    </div>
+    <div class="step" data-scene="fed" data-s="links">
+      <div class="card det">
+        <h3>Cross-team work coordinates itself</h3>
+        <p>Dependencies are predecessor links, created during Research. A story is never eligible
+           until its predecessors are Done — enforced by the queue script, every night, across teams.</p>
+      </div>
+    </div>
+  </div>
+  <div class="sticky">
+    <div class="fed" id="fed" data-s="all">
+      <div class="fr portfolio">
+        <div class="tn">PORTFOLIO</div>
+        <div class="td"><span class="cchip">features → quarters</span><span class="cchip skill">grill-azdo-feature</span></div>
+      </div>
+      <div class="farrow a1">▼</div>
+      <div class="fr teams">
+        <div class="tn">TEAMS</div>
+        <div class="td"><span class="cchip">stories → sprints</span><span class="cchip skill">grill-azdo-story</span><span class="cchip cmd">own gates · caps</span></div>
+      </div>
+      <div class="farrow a2">▼</div>
+      <div class="fr repos">
+        <div class="tn">REPOS</div>
+        <div class="td"><span class="cchip skill">nightly TDD builder</span><span class="cchip">1 PR / night</span></div>
+      </div>
+      <div class="link">⛓ predecessor links — the queue blocks on them automatically</div>
+    </div>
+  </div>
+</div>
+
+<!-- FINALE -->
+<div class="finale">
+  <h2>What it buys</h2>
+  <div class="stats" id="stats">
+    <div class="stat"><div class="n">Minutes/day</div><div class="l">of human steering — every decision is one short comment, from any device</div></div>
+    <div class="stat"><div class="n">Overnight</div><div class="l">throughput — approved stories are built while the team sleeps</div></div>
+    <div class="stat"><div class="n">100%</div><div class="l">of admit, approve, and merge decisions made by a named human role</div></div>
+    <div class="stat"><div class="n">One</div><div class="l">machine-checked definition of Ready, identical across every team</div></div>
+  </div>
+</div>
+
+<footer class="close">
+  <p class="kick">The Ask</p>
+  <h2>Pick the next two teams.</h2>
+  <p class="sub">Onboarding is one config PR: the allowlist, the caps, the repos.
+     Measured every sprint: cycle time down, Ready-quality up.</p>
+  <p class="mantra"><span class="h">Humans decide.</span> <span class="m">AI executes.</span> <span class="d">Scripts enforce.</span></p>
+</footer>
+
+<script>
+(function(){
+  var scenes = {
+    pipe: document.getElementById('pipe'),
+    bands: document.getElementById('bands'),
+    day: document.getElementById('day'),
+    fed: document.getElementById('fed')
+  };
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+
+  // initial states (no-JS default was "all"; with JS we start each scene at its first beat)
+  scenes.pipe.setAttribute('data-s','new');
+  scenes.bands.setAttribute('data-s','humans');
+  scenes.day.setAttribute('data-s','night');
+  scenes.fed.setAttribute('data-s','portfolio');
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var st = en.target;
+        steps.forEach(function(s){ s.classList.toggle('active', s === st); });
+        var sc = scenes[st.getAttribute('data-scene')];
+        if (sc) sc.setAttribute('data-s', st.getAttribute('data-s'));
+      });
+    }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+    steps.forEach(function(s){ io.observe(s); });
+
+    var so = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) {
+          var tiles = en.target.querySelectorAll('.stat');
+          Array.prototype.forEach.call(tiles, function(t, k){
+            setTimeout(function(){ t.classList.add('in'); }, k * 130);
+          });
+          so.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    so.observe(document.getElementById('stats'));
+  } else {
+    steps.forEach(function(s){ s.classList.add('active'); });
+    Object.keys(scenes).forEach(function(k){ scenes[k].setAttribute('data-s','all'); });
+    Array.prototype.forEach.call(document.querySelectorAll('.stat'), function(t){ t.classList.add('in'); });
+  }
+
+  // continuous scroll-linked effects
+  var prog = document.getElementById('prog');
+  var orb = document.getElementById('orb');
+  var act3 = document.getElementById('act3');
+  function onScroll(){
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    prog.style.width = (max > 0 ? (window.scrollY / max * 100) : 0) + '%';
+
+    var r = act3.getBoundingClientRect();
+    var span = r.height - window.innerHeight;
+    var p = span > 0 ? (-r.top) / span : 0;
+    p = Math.max(0, Math.min(1, p));
+    var sky = orb.parentElement;
+    var w = sky.clientWidth;
+    orb.style.transform = 'translateX(' + (p * (w * 0.92 - 28)) + 'px)';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>
+</body>
+</html>
