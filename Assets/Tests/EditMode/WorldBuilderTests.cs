@@ -273,6 +273,22 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SpawnedDogs_RestAtTheSidewalkSurfaceHeight_NotTheRoadsHeight()
+        {
+            // #151: street dogs spawn on their house's walkway attach point
+            // on the sidewalk, which the Kenney kit models raised above the
+            // road surface — the spawn point must snap up to that height,
+            // or the dogs' legs render clipped into the raised mesh.
+            DogSpawner.SpawnDogs(GameState.CreateNew(), root.transform);
+
+            foreach (var view in root.GetComponentsInChildren<DogView>())
+            {
+                Assert.That(view.transform.position.y, Is.EqualTo(WorldDimensions.SidewalkSurfaceHeight).Within(0.001f),
+                    $"{view.Dog.Name} did not spawn at the sidewalk surface height");
+            }
+        }
+
+        [Test]
         public void SunMatchesTheDaytimeLightingPreset()
         {
             // #39: single fixed daytime setup.

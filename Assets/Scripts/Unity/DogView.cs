@@ -36,6 +36,11 @@ namespace Doggiehood.Unity
         /// measured body bounds.</summary>
         private static readonly Vector3 BubbleScale = new Vector3(2.4f, 2f, 0.6f);
 
+        /// <summary>An axis-aligned bounding box has 8 corners; used when
+        /// projecting the bubble's world bounds to screen space for
+        /// TryHandleBubbleTap (#169).</summary>
+        private const int BoundsCornerCount = 8;
+
         /// <summary>Resources-relative path to the Kenney Cube Pets model
         /// (#119) — the single standard shared model used for every roster dog
         /// (decision 2026-07-16, #166/#35: Cube Pets is the standard mesh;
@@ -184,6 +189,61 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>#169: true when the bubble is currently shown (a quest
+        /// is active) and the given screen-space tap falls within its
+        /// projected bounds, padded per Core's BubbleTapZone. A mouse
+        /// cursor is pixel-precise; a finger touch is not — the #148/#158
+        /// SphereCollider-only raycast has zero forgiveness for a tap that
+        /// visually reads as "on the bubble" but lands a little outside its
+        /// exact rendered mesh, which this catches. Calls OnTapped and
+        /// returns true on a hit; otherwise a no-op false (bubble inactive,
+        /// no renderers yet, or the tap missed even the padded zone).
+        /// TapRouter checks this ahead of its physics raycast.</summary>
+        public bool TryHandleBubbleTap(Camera camera, Vector2 screenPosition)
+        {
+            if (!bubble.activeSelf)
+            {
+                return false;
+            }
+
+            var renderers = bubble.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0)
+            {
+                return false;
+            }
+
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            var minX = float.MaxValue;
+            var maxX = float.MinValue;
+            var minY = float.MaxValue;
+            var maxY = float.MinValue;
+            for (var i = 0; i < BoundsCornerCount; i++)
+            {
+                var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                    (i & 1) == 0 ? -1f : 1f,
+                    (i & 2) == 0 ? -1f : 1f,
+                    (i & 4) == 0 ? -1f : 1f));
+                var screen = camera.WorldToScreenPoint(corner);
+                minX = Mathf.Min(minX, screen.x);
+                maxX = Mathf.Max(maxX, screen.x);
+                minY = Mathf.Min(minY, screen.y);
+                maxY = Mathf.Max(maxY, screen.y);
+            }
+
+            if (!BubbleTapZone.Contains(minX, minY, maxX, maxY, screenPosition.x, screenPosition.y))
+            {
+                return false;
+            }
+
+            OnTapped();
+            return true;
+        }
+
         /// <summary>Applies the pose for the dog's current state (#66); each
         /// state produces a visually distinct rotation on the body. Rotations
         /// are rig-specific: the graybox capsule is authored standing on end
@@ -241,8 +301,15 @@ namespace Doggiehood.Unity
             {
                 if (!hasTarget)
                 {
-                    var next = wander.NextTarget(new GridPoint(transform.position.x, transform.position.z));
-                    currentTarget = new Vector3(next.X, 0f, next.Z);
+                    var current = new GridPoint(transform.position.x, transform.position.z);
+                    var currentNode = NeighborhoodLayout.WalkNetwork.NearestWalkableNode(current);
+                    var next = wander.NextTarget(current);
+                    // #151: snap the dog's feet to whichever surface this
+                    // hop actually crosses (sidewalk vs. road/crosswalk) —
+                    // the Kenney kit models the sidewalk band raised above
+                    // the road, so a fixed Y clips the legs into it.
+                    var groundY = NeighborhoodLayout.WalkNetwork.GroundHeight(currentNode, next);
+                    currentTarget = new Vector3(next.X, groundY, next.Z);
                     hasTarget = true;
                 }
 

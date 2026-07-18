@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -9,6 +10,10 @@ namespace Doggiehood.Unity.EditModeTests
 {
     public class DogLayerTests
     {
+        /// <summary>An axis-aligned bounding box has 8 corners; used by
+        /// ProjectedScreenBounds (#169).</summary>
+        private const int BoundsCornerCount = 8;
+
         private GameObject worldRoot;
         private GameState state;
 
@@ -343,6 +348,107 @@ namespace Doggiehood.Unity.EditModeTests
                 Object.DestroyImmediate(texture);
                 Object.DestroyImmediate(camGo);
             }
+        }
+
+        [Test]
+        public void TapJustBeyondTheBubblesCollider_ButWithinTheTouchPaddingMargin_StillOpensItsConversation()
+        {
+            // #169: on mobile, only the dog's body reliably opened its
+            // conversation — tapping the speech bubble itself "did
+            // nothing". A mouse cursor (the #148/#158 verification path) is
+            // pixel-precise; a finger touch is not. Physics.Raycast against
+            // the bubble's SphereCollider alone has zero forgiveness for
+            // that imprecision: a tap that visually reads as "on the
+            // bubble" but lands a little outside its exact rendered mesh
+            // misses outright. TapRouter must still route such a tap via
+            // the padded screen-space check (Core's BubbleTapZone).
+            //
+            // Uses the real rig's pitch/yaw/DefaultZoom (unlike the #148
+            // regression tests above, which use an artificial close-up cam)
+            // so the screen-pixel geometry matches actual gameplay.
+            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
+            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Sunny");
+            view.Dog.GiveQuest();
+            view.RefreshBubble();
+
+            // Isolate the dog so no house/fence/other dog can intercept the
+            // ray or sit inside the padded screen zone.
+            view.transform.position = new Vector3(-400f, 0f, -400f);
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = Doggiehood.Core.Cameras.CameraController.DefaultZoom;
+            cam.transform.rotation = Quaternion.Euler(
+                Doggiehood.Core.Cameras.CameraRigConfig.PitchDegrees,
+                Doggiehood.Core.Cameras.CameraRigConfig.YawDegrees, 0f);
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                var bubble = view.transform.Find(DogView.BubbleName);
+                var target = CombinedRendererBounds(bubble).center;
+                cam.transform.position =
+                    target - cam.transform.forward * Doggiehood.Core.Cameras.CameraRigConfig.RigDistance;
+                Physics.SyncTransforms();
+
+                var screenBounds = ProjectedScreenBounds(cam, bubble);
+
+                // Just beyond the bubble's own rendered/collider bounds
+                // (halfway into the #169 padding margin), directly above
+                // its screen-space top edge.
+                var probeScreen = new Vector3(
+                    (screenBounds.minX + screenBounds.maxX) / 2f,
+                    screenBounds.maxY + BubbleTapZone.PaddingPixels / 2f,
+                    0f);
+
+                var rawRaycastHitTheDog =
+                    Physics.Raycast(cam.ScreenPointToRay(probeScreen), out var rawHit, Mathf.Infinity)
+                    && rawHit.collider.GetComponentInParent<DogView>() == view;
+                Assert.That(rawRaycastHitTheDog, Is.False,
+                    "test setup sanity: the probe point must sit outside the bubble's raw collider, " +
+                    "so this test exercises the #169 padding rather than redundantly re-testing dead center");
+
+                var routed = TapRouter.RouteTap(cam, probeScreen);
+
+                Assert.That(routed, Is.True,
+                    "a tap just beyond the bubble's rendered bounds, but within the #169 padding " +
+                    "margin, must still route to the dog");
+                Assert.That(presenter.IsOpen, Is.True,
+                    "tapping near (not just exactly on) the speech bubble opens the dog's conversation");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        private static (float minX, float minY, float maxX, float maxY) ProjectedScreenBounds(
+            Camera camera, Transform root)
+        {
+            var bounds = CombinedRendererBounds(root);
+            var minX = float.MaxValue;
+            var maxX = float.MinValue;
+            var minY = float.MaxValue;
+            var maxY = float.MinValue;
+            for (var i = 0; i < BoundsCornerCount; i++)
+            {
+                var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                    (i & 1) == 0 ? -1f : 1f,
+                    (i & 2) == 0 ? -1f : 1f,
+                    (i & 4) == 0 ? -1f : 1f));
+                var screen = camera.WorldToScreenPoint(corner);
+                minX = Mathf.Min(minX, screen.x);
+                maxX = Mathf.Max(maxX, screen.x);
+                minY = Mathf.Min(minY, screen.y);
+                maxY = Mathf.Max(maxY, screen.y);
+            }
+
+            return (minX, minY, maxX, maxY);
         }
 
         [Test]
