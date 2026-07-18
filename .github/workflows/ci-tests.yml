@@ -3,8 +3,9 @@ name: tests
 # Runs the two test suites from docs/engineering/testing.md:
 #   1. Core NUnit tests — plain dotnet, no Unity install, always run.
 #   2. Unity EditMode tests — headless editor via game-ci/unity-test-runner.
-#      Requires the UNITY_LICENSE secret (#71); until it is configured the
-#      EditMode job emits a loud warning instead of silently passing.
+#      Requires the UNITY_LICENSE secret (#71); if it is missing the EditMode
+#      job fails outright so a "required" check can't go green without the
+#      suite actually running (#163).
 
 on:
   pull_request:
@@ -59,7 +60,8 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=EditMode tests skipped::UNITY_LICENSE secret is not configured, so Unity EditMode tests did not run. Generate a Unity Personal activation file and add it as the UNITY_LICENSE repo secret (issue #71)."
+            echo "::error title=EditMode tests cannot run::UNITY_LICENSE secret is not configured, so Unity EditMode tests cannot run and this required check must fail. Generate a Unity Personal activation file and add it as the UNITY_LICENSE repo secret (issue #71)."
+            exit 1
           fi
 
       - name: Cache Unity Library
