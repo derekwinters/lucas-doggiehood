@@ -25,8 +25,8 @@ three formats — pick per audience and setting.
 | # | File | Format | Notes |
 |---|------|--------|-------|
 | 4 | [`04-work-pitch.html`](04-work-pitch.html) | Written document | The full pitch: lifecycle, trust model, hierarchy, skills-by-phase, daily rhythm, commands, federation, metrics, one-config-PR onboarding, engineer FAQ. Simplified diagrams. |
-| 5 | [`05-deck.html`](05-deck.html) | Slide deck (15 slides) | Keyboard-driven: → / space advance (with staged reveals), ← back, F fullscreen, click/tap edges or swipe. Auto-scales to any screen; print for a per-slide PDF. |
-| 6 | [`06-scrolly.html`](06-scrolly.html) | Scroll story | Four acts with a sticky animated pipeline: stages light up as you scroll, a day-cycle marker moves across the timeline, federation tiers build in. Degrades gracefully without JS and in print. |
+| 5 | [`05-deck.html`](05-deck.html) | Slide deck (13 slides) | The primary presentation format. Keyboard-driven: → / space advance (with staged reveals), ← back, F fullscreen, click/tap edges or swipe. Auto-scales to any screen; print for a per-slide PDF. |
+| 6 | [`06-scrolly.html`](06-scrolly.html) | Scroll story (parked draft) | Four acts with a sticky animated pipeline. Parked for now: content overlaps on mobile, and it predates the deck's later revisions (it still references overnight scheduling and grill-with-docs). Revisit before using. |
 
 ## Conventions used in the diagrams
 
