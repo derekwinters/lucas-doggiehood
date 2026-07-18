@@ -1813,16 +1813,20 @@ into each AI routine; this pivot supersedes that.)</p>
 <p>Digs into every <code>ai-triage</code> issue in parallel and routes it to await Derek —
 <strong>never inventing design</strong>:</p>
 <ul>
-<li><strong>Bug</strong> → root-cause diagnosis + fix approach → <code>pending-approval</code> (adds
-  <code>type:bug</code>).</li>
+<li><strong>Bug</strong> → root-cause diagnosis + fix approach, ending with a <code>## Build
+  checklist</code> of acceptance criteria → <code>pending-approval</code> (adds <code>type:bug</code>).</li>
 <li><strong>Spec-covered feature</strong> → implementation plan + a milestone proposed by
-  matching <strong>live milestone descriptions</strong> → <code>pending-approval</code>.</li>
+  matching <strong>live milestone descriptions</strong> + a closing <code>## Build checklist</code> of
+  acceptance criteria → <code>pending-approval</code>.</li>
 <li><strong>Feature needing a new design call or a UI wireframe</strong> (CLAUDE.md rule #8) →
   <strong>stops and asks</strong> with a concrete <code>❓ Needs from Derek/Lucas:</code> question →
-  <code>needs-clarification</code>.</li>
-<li><strong><code>/propose</code> set</strong> → authorized to draft the design as a marked PROPOSAL →
-  <code>pending-approval</code>.</li>
+  <code>needs-clarification</code> (no plan or checklist).</li>
+<li><strong><code>/propose</code> set</strong> → authorized to draft the design as a marked PROPOSAL, with
+  a <code>## Build checklist</code> of acceptance criteria → <code>pending-approval</code>.</li>
 </ul>
+<p>The <code>## Build checklist</code> is TDD-ordered checkbox acceptance criteria seeded from
+the relevant <code>docs/specs/**</code> page's own build checklist — what Derek approves
+and the reviewer checks the PR against.</p>
 <p>Dependencies are recorded as first-class GitHub relationships — sub-issues for
 decomposition, <code>Blocked by: #N</code> for hard peer dependencies, <code>Depends on: #N</code>
 for soft sibling ordering.</p>
