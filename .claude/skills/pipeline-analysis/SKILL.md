@@ -38,12 +38,14 @@ For each `ai-triage` issue, first read the issue, its comments (including any
 `/revise` notes or `/propose` from Derek), and the `/docs` pages it relates to.
 Then route:
 
-1. **Bug** → root-cause **diagnosis** + a recommended fix approach. Add
+1. **Bug** → root-cause **diagnosis** + a recommended fix approach, ending with
+   a **`## Build checklist`** (acceptance criteria — see below). Add
    `type:bug`. Post the analysis, set `pending-approval`.
 
 2. **Feature fully covered by the specs** → a concrete **implementation plan**
-   grounded in the relevant `docs/specs/` pages, plus a **proposed milestone**
-   (see milestone matching). Post it, set `pending-approval`.
+   grounded in the relevant `docs/specs/` pages, a **proposed milestone**
+   (see milestone matching), and a closing **`## Build checklist`** (acceptance
+   criteria — see below). Post it, set `pending-approval`.
 
 3. **Feature needing a new design decision or a UI wireframe (rule #8)** →
    **stop and ask.** Post a clearly-labeled block:
@@ -55,16 +57,33 @@ Then route:
 
    Set `needs-clarification`. The question must stand on its own — someone
    reading only that block should understand the decision. Never proceed to a
-   plan for this kind.
+   plan **or a Build checklist** for this kind — it stops at the question.
 
 4. **`/propose` present on the issue** (an owner comment containing `/propose`)
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your
-   approval):`). Then set `pending-approval`. This is the single opt-in that
+   approval):`), ending with a **`## Build checklist`** (acceptance criteria —
+   see below). Then set `pending-approval`. This is the single opt-in that
    lets analysis suggest design; without it, case 3 applies.
 
 When re-triaging after a `/revise`, read Derek's revise notes and address them
 directly in the new analysis.
+
+## Build checklist — acceptance criteria on every plan
+
+Every `pending-approval` hand-back (the **Bug**, **spec-covered feature**, and
+**`/propose`** routes — *not* `needs-clarification`) ends with a `## Build
+checklist`: the acceptance criteria Derek approves and the reviewer checks the
+resulting PR against. Without it, `pipeline-dev` invents its own scope and there
+is nothing crisp to verify at review.
+
+Write it as **3–8 TDD-ordered checkbox items**, each a single verifiable
+criterion in red-green order (failing test → minimum implementation → refactor).
+Seed it from the relevant `docs/specs/**` page's own **Build checklist** and
+cross-reference that page. Honor the Core/Unity split: any item covering game
+logic leads with a **Core** NUnit test before the Unity wiring. Keep each item
+checkable — "Core test: building on an empty lot deducts the flat house cost
+(named constant)", not "implement house costs".
 
 ## Milestone matching — read milestones live
 
