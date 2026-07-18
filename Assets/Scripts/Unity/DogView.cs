@@ -241,8 +241,15 @@ namespace Doggiehood.Unity
             {
                 if (!hasTarget)
                 {
-                    var next = wander.NextTarget(new GridPoint(transform.position.x, transform.position.z));
-                    currentTarget = new Vector3(next.X, 0f, next.Z);
+                    var current = new GridPoint(transform.position.x, transform.position.z);
+                    var currentNode = NeighborhoodLayout.WalkNetwork.NearestWalkableNode(current);
+                    var next = wander.NextTarget(current);
+                    // #151: snap the dog's feet to whichever surface this
+                    // hop actually crosses (sidewalk vs. road/crosswalk) —
+                    // the Kenney kit models the sidewalk band raised above
+                    // the road, so a fixed Y clips the legs into it.
+                    var groundY = NeighborhoodLayout.WalkNetwork.GroundHeight(currentNode, next);
+                    currentTarget = new Vector3(next.X, groundY, next.Z);
                     hasTarget = true;
                 }
 

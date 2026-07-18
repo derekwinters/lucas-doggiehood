@@ -48,13 +48,17 @@ namespace Doggiehood.Unity
             if (!network.TryGetFrontWalkway(houseId, out var walkway))
             {
                 // A lot with no walkway (no sidewalk to attach to) keeps
-                // the old lot-center spawn.
-                return new Vector3(lot.Position.X, 0f, lot.Position.Z);
+                // the old lot-center spawn, off the walk network entirely,
+                // so it stays at road/ground level.
+                return new Vector3(lot.Position.X, WorldDimensions.RoadSurfaceHeight, lot.Position.Z);
             }
 
             var attach = walkway.B;
 
             var direction = new Vector3(1f, 0f, 0f);
+            // #151: the attach point is always on a sidewalk, so its
+            // ground height is the raised sidewalk surface, not the road's.
+            var groundY = WorldDimensions.SidewalkSurfaceHeight;
             var sidewalkEdge = network.EdgesFrom(attach)
                 .Where(e => e.Kind == WalkEdgeKind.Sidewalk)
                 .Select(e => (WalkEdge?)e)
@@ -68,10 +72,12 @@ namespace Doggiehood.Unity
                 {
                     direction = toOther.normalized;
                 }
+
+                groundY = network.GroundHeight(attach, other);
             }
 
             var stagger = indexAtHouse * StaggerDistance;
-            return new Vector3(attach.X, 0f, attach.Z) + direction * stagger;
+            return new Vector3(attach.X, groundY, attach.Z) + direction * stagger;
         }
     }
 }

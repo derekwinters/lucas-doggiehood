@@ -268,5 +268,58 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(path.Any(otherDoors.Contains), Is.False);
         }
+
+        [Test]
+        public void GroundHeight_OnASidewalkEdge_IsTheSidewalkSurfaceHeight()
+        {
+            // #151: the Kenney City Kit road tiles model the sidewalk band
+            // raised above the road surface — a dog hopping between two
+            // nodes joined by a Sidewalk edge must snap up to that surface,
+            // not stay at the road's Y.
+            var network = BuildStartingNetwork();
+            var sidewalkEdge = network.Edges.First(e => e.Kind == WalkEdgeKind.Sidewalk);
+
+            Assert.That(network.GroundHeight(sidewalkEdge.A, sidewalkEdge.B),
+                Is.EqualTo(WorldDimensions.SidewalkSurfaceHeight));
+            Assert.That(network.GroundHeight(sidewalkEdge.B, sidewalkEdge.A),
+                Is.EqualTo(WorldDimensions.SidewalkSurfaceHeight),
+                "must resolve the same edge regardless of query direction");
+        }
+
+        [Test]
+        public void GroundHeight_OnACrosswalkEdge_IsTheRoadSurfaceHeight()
+        {
+            // Crosswalks are painted flat onto the road itself (#106) —
+            // never raised — so crossing one must keep a dog at road level,
+            // even though both of a crosswalk's endpoint nodes also carry
+            // sidewalk edges of their own (the box-corner nodes).
+            var network = BuildStartingNetwork();
+            var crosswalkEdge = network.Edges.First(e => e.Kind == WalkEdgeKind.Crosswalk);
+
+            Assert.That(network.GroundHeight(crosswalkEdge.A, crosswalkEdge.B),
+                Is.EqualTo(WorldDimensions.RoadSurfaceHeight));
+        }
+
+        [Test]
+        public void GroundHeight_OnAFrontWalkwayEdge_IsTheSidewalkSurfaceHeight()
+        {
+            // The paver walkway attaches directly to the sidewalk it
+            // connects to, so it shares that raised surface.
+            var network = BuildStartingNetwork();
+            Assert.That(network.TryGetFrontWalkway(1, out var walkway), Is.True);
+
+            Assert.That(network.GroundHeight(walkway.A, walkway.B),
+                Is.EqualTo(WorldDimensions.SidewalkSurfaceHeight));
+        }
+
+        [Test]
+        public void GroundHeight_BetweenUnconnectedPoints_FallsBackToTheRoadSurfaceHeight()
+        {
+            var network = BuildStartingNetwork();
+            var farAway = new GridPoint(9999f, 9999f);
+
+            Assert.That(network.GroundHeight(farAway, farAway),
+                Is.EqualTo(WorldDimensions.RoadSurfaceHeight));
+        }
     }
 }

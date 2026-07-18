@@ -119,6 +119,37 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// The ground surface height (world Y) a dog's feet should rest at
+        /// while moving directly between two adjacent network nodes
+        /// (#151): <see cref="WorldDimensions.SidewalkSurfaceHeight"/> for
+        /// a Sidewalk or FrontWalkway edge, since both are the Kenney kit's
+        /// raised paved band; <see cref="WorldDimensions.RoadSurfaceHeight"/>
+        /// for a Crosswalk edge, since crosswalks are painted flat onto the
+        /// road itself. Resolved from the specific edge connecting the two
+        /// points — not just whichever edges touch the destination node —
+        /// because a box-corner node (where a crosswalk meets its
+        /// sidewalks) carries edges of both kinds, so only the edge
+        /// actually being crossed disambiguates road from sidewalk there.
+        /// Falls back to <see cref="WorldDimensions.RoadSurfaceHeight"/> if
+        /// the two points aren't directly joined by a real edge (defensive;
+        /// every legitimate hop over this network is a real edge).
+        /// </summary>
+        public float GroundHeight(GridPoint from, GridPoint to)
+        {
+            foreach (var edge in EdgesFrom(from))
+            {
+                if (edge.Other(from).Equals(to))
+                {
+                    return edge.Kind == WalkEdgeKind.Crosswalk
+                        ? WorldDimensions.RoadSurfaceHeight
+                        : WorldDimensions.SidewalkSurfaceHeight;
+                }
+            }
+
+            return WorldDimensions.RoadSurfaceHeight;
+        }
+
+        /// <summary>
         /// The house's front walkway edge (#128): A is the front-door node
         /// on the lot, B is the sidewalk attach point. The lot's ONLY
         /// connection to the rest of the network.

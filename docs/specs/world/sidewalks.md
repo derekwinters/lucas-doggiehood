@@ -48,6 +48,26 @@ Construction, generically:
 
 At each node, the choice between continuing straight and deviating/turning is weighted. Two overloads exist: `WanderBehavior.NextTarget(current, continueWeight, deviateWeight)` takes an explicit override, while the parameterless `WanderBehavior.NextTarget(current)` — what every caller (`DogView`) uses today — derives `continueWeight = 1 - TurnProbability` and `deviateWeight = TurnProbability` from the dog's own `MovementProfile.TurnProbability` (#89). A lower `TurnProbability` (Excited) means a higher continue-weight, i.e. longer straight stretches before a turn, so the per-personality distinction from [Dog Behavior](../dogs/behavior.md#movement-conveys-personality) carries all the way through to wander's actual path shape — both `Speed` and turn pacing now differ for Excited dogs, not just Speed.
 
+## Ground height: sidewalks sit above the road
+
+*Related: [#151](https://github.com/derekwinters/lucas-doggiehood/issues/151)*
+
+The Kenney City Kit Roads tiles model the sidewalk band raised a little
+above the road surface (a real curb, not just a color change) — placing a
+dog at a single fixed world-Y clipped its legs into that raised mesh
+whenever it stood on a sidewalk. `WorldDimensions` now locks
+`RoadSurfaceHeight` (0m, the road/crosswalk plane) and
+`SidewalkSurfaceHeight` (0.2m, measured directly from the shared kit road
+tile mesh) alongside the other world dimensions. `WalkNetwork.GroundHeight
+(from, to)` resolves which of the two applies to a hop between two
+adjacent network nodes from the specific edge connecting them — a Sidewalk
+or FrontWalkway edge resolves to the sidewalk height, a Crosswalk edge to
+the road height — rather than from either endpoint node alone, since a
+box-corner node (where a crosswalk meets its sidewalks) carries edges of
+both kinds and only the edge actually being crossed disambiguates them.
+`DogView`'s wander step and `DogSpawner`'s sidewalk spawn point both
+consume this Core query instead of hardcoding Y.
+
 ## Walking home routes over the network
 
 Walking home after accepting a "buy me X" quest ([Quest Content](../quests/quest-content.md)) used to move in a straight line, ignoring streets entirely. Core now computes the actual route with `WalkNetwork.FindPath` from the dog's current position to its house's **front door**, ending via that lot's front walkway ([#128](https://github.com/derekwinters/lucas-doggiehood/issues/128) — the dog arrives at the actual door, which also feeds future quest arrivals); the Unity layer (`QuestDirector`) only consumes the returned waypoint list and walks it frame by frame (`Vector3.MoveTowards` hop to hop) — the Core/Unity split stays intact, per [Testing Strategy](../../engineering/testing.md). Dogs also spawn at their walkway's sidewalk attach point (`DogSpawner`), staggered along the sidewalk so housemates don't overlap.
@@ -74,4 +94,5 @@ A front walkway renders as tiled Kenney City Kit Suburban `path-short` pieces �
 - [x] Front walkways render as tiled City Kit Suburban path pieces along the Core segment, with a graybox strip fallback when the assets are absent (#128)
 - [x] `WorldBuilder` renders road, verge, sidewalk, and crosswalk as visually distinct placeholder-colored surfaces in the primitive fallback (the kit tiles bring their own art); spawned dogs stand on sidewalks
 - [x] Crosswalks render only over the road itself, never over sidewalk pavement
+- [x] Dogs standing or walking on a sidewalk rest at the sidewalk's raised surface height, not the road's — `WalkNetwork.GroundHeight` resolves the right one per edge (#151)
 - [ ] On-device visual check (human task, not attempted here)
