@@ -101,15 +101,20 @@ into each AI routine; this pivot supersedes that.)
 Digs into every `ai-triage` issue in parallel and routes it to await Derek —
 **never inventing design**:
 
-- **Bug** → root-cause diagnosis + fix approach → `pending-approval` (adds
-  `type:bug`).
+- **Bug** → root-cause diagnosis + fix approach, ending with a `## Build
+  checklist` of acceptance criteria → `pending-approval` (adds `type:bug`).
 - **Spec-covered feature** → implementation plan + a milestone proposed by
-  matching **live milestone descriptions** → `pending-approval`.
+  matching **live milestone descriptions** + a closing `## Build checklist` of
+  acceptance criteria → `pending-approval`.
 - **Feature needing a new design call or a UI wireframe** (CLAUDE.md rule #8) →
   **stops and asks** with a concrete `❓ Needs from Derek/Lucas:` question →
-  `needs-clarification`.
-- **`/propose` set** → authorized to draft the design as a marked PROPOSAL →
-  `pending-approval`.
+  `needs-clarification` (no plan or checklist).
+- **`/propose` set** → authorized to draft the design as a marked PROPOSAL, with
+  a `## Build checklist` of acceptance criteria → `pending-approval`.
+
+The `## Build checklist` is TDD-ordered checkbox acceptance criteria seeded from
+the relevant `docs/specs/**` page's own build checklist — what Derek approves
+and the reviewer checks the PR against.
 
 Dependencies are recorded as first-class GitHub relationships — sub-issues for
 decomposition, `Blocked by: #N` for hard peer dependencies, `Depends on: #N`
