@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Delivery Pipeline — Executive Overview</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --paper:#f6f7f9; --card:#ffffff;
+    --human:#b45309; --human-bg:#fef3c7; --human-line:#f59e0b;
+    --model:#6d28d9; --model-bg:#ede9fe; --model-line:#a78bfa;
+    --det:#0f766e;   --det-bg:#ccfbf1;   --det-line:#2dd4bf;
+    --state:#334155; --state-bg:#f1f5f9; --state-line:#94a3b8;
+    --done:#15803d;  --done-bg:#dcfce7;  --done-line:#4ade80;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1000px;margin:0 auto;padding:44px 20px 90px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  h1{font-size:32px;line-height:1.15;margin:0 0 10px}
+  h2{font-size:21px;margin:54px 0 8px;padding-top:18px;border-top:1px solid var(--line)}
+  p.lede{font-size:18px;color:#334155;max-width:70ch;margin:6px 0 0}
+  p,li{max-width:76ch}
+  code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 5px;
+       font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 4px;padding:14px 16px;
+          background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+  .key{display:flex;align-items:center;gap:8px;color:#334155}
+  .sw{width:14px;height:14px;border-radius:4px;border:2px solid}
+  .sw.human{background:var(--human-bg);border-color:var(--human-line)}
+  .sw.model{background:var(--model-bg);border-color:var(--model-line)}
+  .sw.det{background:var(--det-bg);border-color:var(--det-line)}
+
+  .diagram{margin:22px 0 8px;padding:26px 22px;background:var(--card);
+           border:1px solid var(--line);border-radius:16px;overflow-x:auto}
+  .diagram .dtitle{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+                   color:var(--muted);font-weight:700;margin:0 0 18px}
+  .flowcol{max-width:760px;margin:0 auto}
+
+  .stage{border:2px solid var(--state-line);border-radius:14px;background:#fbfcfe;overflow:hidden}
+  .stage>header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;
+                background:var(--state-bg);border-bottom:1px solid var(--line)}
+  .stage>header .t{font-weight:800;font-size:15px;letter-spacing:.02em}
+  .stage .body{padding:12px 14px 14px}
+  .stage.model{border-color:var(--model-line)} .stage.model>header{background:var(--model-bg)}
+  .stage.done{border-color:var(--done-line)}   .stage.done>header{background:var(--done-bg)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips+.chips{margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;
+        border:1px solid var(--state-line);background:#fff;font-size:13px;color:var(--state);white-space:nowrap}
+  .chip.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--human-bg);border-color:var(--human-line);color:var(--human);font-weight:600}
+  .chip.skill{background:var(--model-bg);border-color:var(--model-line);color:var(--model);font-weight:600}
+  .chip.det{background:var(--det-bg);border-color:var(--det-line);color:var(--det);font-weight:600}
+  .chip.ok{background:var(--done-bg);border-color:var(--done-line);color:var(--done)}
+  .chip.dash{border-style:dashed;color:var(--muted);background:#fafafa}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:99px;text-transform:uppercase}
+  .badge.model{background:var(--model);color:#fff}
+  .badge.det{background:var(--det);color:#fff}
+
+  .gate{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .gate .bar{width:2px;height:12px;background:var(--state-line)}
+  .gatepill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+            border:2px solid;font-size:13px;font-weight:700;background:#fff;margin:2px 0}
+  .gate.human .gatepill{border-color:var(--human-line);color:var(--human);background:var(--human-bg)}
+  .gate.model .gatepill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .gate .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+
+  .bands{display:flex;flex-direction:column;gap:14px;max-width:820px;margin:0 auto}
+  .band{display:grid;grid-template-columns:170px 1fr;border:2px solid;border-radius:14px;overflow:hidden;background:#fff}
+  .band .who{padding:14px;font-weight:800;font-size:14px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+  .band .who .sub2{font-size:11.5px;font-weight:600;color:var(--muted)}
+  .band .what{padding:12px 14px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .band.human{border-color:var(--human-line)} .band.human .who{background:var(--human-bg);color:var(--human)}
+  .band.model{border-color:var(--model-line)} .band.model .who{background:var(--model-bg);color:var(--model)}
+  .band.det{border-color:var(--det-line)}     .band.det .who{background:var(--det-bg);color:var(--det)}
+  @media (max-width:640px){.band{grid-template-columns:1fr}.band .what{border-left:none;border-top:1px solid var(--line)}}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:20px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat .n{font-size:26px;font-weight:800;line-height:1.1}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+
+  .foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  a{color:#1d4ed8}
+  @media print{body{background:#fff}.diagram,.stage,.band,.stat{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kicker">Agentic Delivery Pipeline · Document 1 of 3 · Executive Overview</p>
+<h1>Humans decide. AI executes. Scripts enforce.</h1>
+<p class="lede">
+A production-proven operating model where every piece of work flows through explicit human decision
+gates, and everything <em>between</em> those gates — analysis, planning, test-driven implementation,
+reporting — is done autonomously by AI agents on a fixed daily schedule. The human role compresses to
+minutes per day of high-leverage judgment; delivery continues overnight.
+</p>
+
+<div class="legend">
+  <span class="key"><span class="sw human"></span> Human decision gate</span>
+  <span class="key"><span class="sw model"></span> AI work (skills &amp; agents)</span>
+  <span class="key"><span class="sw det"></span> Deterministic guardrail (unit-tested script)</span>
+</div>
+
+<h2>The operating loop at a glance</h2>
+<p>
+Work items move through a small, visible state machine. Nothing passes a decision gate except an
+authorized human's short comment command; between gates, AI advances the work on a fixed schedule
+with no human in the loop. This is currently running end-to-end in a real shipping project
+(an Android game), with one owner steering it from a phone.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Idea → shipped, with every gate visible</p>
+<div class="flowcol">
+
+  <div class="stage">
+    <header><span class="t">1 · INTAKE</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">any idea · any source</span>
+      <span class="chip">zero AI cost until admitted</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ human: admit</span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">2 · AI ANALYSIS</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip">bug → root cause + fix plan</span>
+        <span class="chip">feature → plan vs. written specs</span>
+        <span class="chip ok">testable acceptance criteria</span>
+      </div>
+      <div class="chips">
+        <span class="chip dash">un-specced design → question, not guess</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ human: approve / revise / redo</span><span class="arrow">▼</span></div>
+
+  <div class="stage">
+    <header><span class="t">3 · READY QUEUE</span><span class="badge det">script</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip det">deterministic selection</span>
+      <span class="chip">dependency-ordered</span>
+      <span class="chip">nightly cap</span>
+    </div></div>
+  </div>
+
+  <div class="gate model"><span class="bar"></span>
+    <span class="gatepill">◆ scheduled: overnight run</span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">4 · AI BUILD</span><span class="badge model">AI</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">strict test-driven development</span>
+      <span class="chip">PR babysat until CI green</span>
+      <span class="chip">1 reviewable PR / night</span>
+      <span class="chip dash">no self-merge · ever</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ human: review + merge</span><span class="arrow">▼</span></div>
+
+  <div class="stage done">
+    <header><span class="t">5 · SHIP</span><span class="badge det">script</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip det">automated versioning + changelog</span>
+      <span class="chip det">release artifacts built + attached</span>
+      <span class="chip ok">full audit trail per item</span>
+    </div></div>
+  </div>
+
+</div>
+</div>
+
+<h2>The three-layer trust model</h2>
+<p>
+The design principle that makes this safe to run unattended: each layer does only what it is best at,
+and the boundaries between layers are structural, not behavioral promises.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Separation of powers</p>
+<div class="bands">
+  <div class="band human">
+    <div class="who">HUMANS<span class="sub2">judgment</span></div>
+    <div class="what">
+      <span class="chip cmd">admit</span><span class="chip cmd">approve</span>
+      <span class="chip cmd">revise</span><span class="chip cmd">merge</span>
+      <span class="chip">design decisions</span><span class="chip">priorities</span>
+    </div>
+  </div>
+  <div class="band model">
+    <div class="who">AI AGENTS<span class="sub2">labor</span></div>
+    <div class="what">
+      <span class="chip skill">triage + analysis</span><span class="chip skill">implementation (TDD)</span>
+      <span class="chip skill">PR authoring</span><span class="chip skill">CI babysitting</span>
+      <span class="chip dash">no design authority</span>
+    </div>
+  </div>
+  <div class="band det">
+    <div class="who">SCRIPTS<span class="sub2">guardrails</span></div>
+    <div class="what">
+      <span class="chip det">command parsing · authz</span><span class="chip det">queue selection</span>
+      <span class="chip det">status dashboard</span><span class="chip det">CI · lint · release</span>
+      <span class="chip ok">unit-tested in CI</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>What this buys</h2>
+<div class="stats">
+  <div class="stat"><div class="n">Minutes/day</div><div class="l">of human time to steer the whole pipeline — decisions are one-word comment commands</div></div>
+  <div class="stat"><div class="n">Overnight</div><div class="l">throughput: approved work is built while the team sleeps, delivered as one reviewable PR</div></div>
+  <div class="stat"><div class="n">100%</div><div class="l">of admit, approve, and merge decisions made by an authorized human — no scope enters and no code lands on AI say-so alone</div></div>
+  <div class="stat"><div class="n">Zero</div><div class="l">invented requirements: agents must stop and ask when specs don't answer a question</div></div>
+</div>
+
+<ul>
+  <li><strong>Control without ceremony.</strong> Every decision an executive would want a human to make still has a human making it — but the decision costs one comment, not a meeting.</li>
+  <li><strong>Predictable spend.</strong> AI runs on a fixed schedule with a hard nightly cap; expensive model time is used only where judgment is needed, while parsing, queueing, and reporting are near-free scripts.</li>
+  <li><strong>Audit-grade traceability.</strong> Every item carries its analysis, its approval, its acceptance criteria, its PR, and its changelog entry — the work item <em>is</em> the paper trail.</li>
+  <li><strong>Quality is enforced upstream.</strong> Work isn't eligible to build until it has human-approved, testable acceptance criteria; the builder must develop test-first and keeps CI green while the PR awaits review.</li>
+  <li><strong>Fails safe.</strong> Unauthorized commands are ignored, re-runs are idempotent, a failed build drops out cleanly and re-queues, and the AI can never merge its own work.</li>
+</ul>
+
+<h2>Where to go deeper</h2>
+<p>
+<strong><a href="02-current-pipeline.html">Document 2 — Current State</a></strong> is the verified,
+box-by-box specification of the pipeline as it runs today: every state, command, skill, agent,
+schedule, and guardrail, with a source-file map for auditing.
+</p>
+<p>
+<strong><a href="03-work-blueprint.html">Document 3 — Enterprise Blueprint</a></strong> translates the
+model onto our stack: Azure DevOps work items (Epic → Feature → Story → Task), the
+New/Research/Ready/Develop/Done/Closed state flow, quarter and sprint gating, our
+<code>grill-*</code> skills, generic TDD agents, and scale-out across many teams and repositories.
+</p>
+
+<div class="foot">
+Document 1 of 3 · Companion pages: <a href="02-current-pipeline.html">Current state (verified)</a> ·
+<a href="03-work-blueprint.html">Enterprise blueprint (Azure DevOps + GitHub)</a>
+</div>
+
+</div>
+</body>
+</html>

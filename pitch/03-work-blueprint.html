@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Delivery Pipeline — Enterprise Blueprint (Azure DevOps + GitHub)</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --paper:#f6f7f9; --card:#ffffff;
+    --human:#b45309; --human-bg:#fef3c7; --human-line:#f59e0b;
+    --model:#6d28d9; --model-bg:#ede9fe; --model-line:#a78bfa;
+    --det:#0f766e;   --det-bg:#ccfbf1;   --det-line:#2dd4bf;
+    --state:#334155; --state-bg:#f1f5f9; --state-line:#94a3b8;
+    --done:#15803d;  --done-bg:#dcfce7;  --done-line:#4ade80;
+    --park:#525252;  --park-bg:#e5e5e5;  --park-line:#a3a3a3;
+    --plan:#1d4ed8;  --plan-bg:#dbeafe;  --plan-line:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 20px 90px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 8px}
+  h2{font-size:21px;margin:56px 0 6px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 8px}
+  p.lede{font-size:17px;color:#334155;max-width:74ch;margin:6px 0 0}
+  p,li{max-width:78ch}
+  .sub{color:var(--muted);font-size:14px}
+  code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 5px;
+       font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 4px;padding:14px 16px;
+          background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+  .key{display:flex;align-items:center;gap:8px;color:#334155}
+  .sw{width:14px;height:14px;border-radius:4px;border:2px solid}
+  .sw.human{background:var(--human-bg);border-color:var(--human-line)}
+  .sw.model{background:var(--model-bg);border-color:var(--model-line)}
+  .sw.det{background:var(--det-bg);border-color:var(--det-line)}
+  .sw.state{background:var(--state-bg);border-color:var(--state-line)}
+  .sw.plan{background:var(--plan-bg);border-color:var(--plan-line)}
+  .sw.done{background:var(--done-bg);border-color:var(--done-line)}
+
+  .diagram{margin:22px 0 8px;padding:26px 22px;background:var(--card);
+           border:1px solid var(--line);border-radius:16px;overflow-x:auto}
+  .diagram .dtitle{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+                   color:var(--muted);font-weight:700;margin:0 0 18px}
+  .flowcol{max-width:860px;margin:0 auto}
+
+  .stage{border:2px solid var(--state-line);border-radius:14px;background:#fbfcfe;overflow:hidden}
+  .stage>header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;
+                background:var(--state-bg);border-bottom:1px solid var(--line)}
+  .stage>header .t{font-weight:800;font-size:14.5px;letter-spacing:.02em}
+  .stage .body{padding:12px 14px 14px}
+  .stage.human{border-color:var(--human-line)} .stage.human>header{background:var(--human-bg)}
+  .stage.model{border-color:var(--model-line)} .stage.model>header{background:var(--model-bg)}
+  .stage.det{border-color:var(--det-line)}     .stage.det>header{background:var(--det-bg)}
+  .stage.plan{border-color:var(--plan-line)}   .stage.plan>header{background:var(--plan-bg)}
+  .stage.done{border-color:var(--done-line)}   .stage.done>header{background:var(--done-bg)}
+  .stage.park{border-color:var(--park-line);border-style:dashed} .stage.park>header{background:var(--park-bg)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips+.chips{margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;
+        border:1px solid var(--state-line);background:#fff;font-size:13px;color:var(--state);white-space:nowrap}
+  .chip.st{font-weight:700;background:var(--state-bg)}
+  .chip.tag{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--state-bg);border-color:var(--state-line);font-weight:600}
+  .chip.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--human-bg);border-color:var(--human-line);color:var(--human);font-weight:600}
+  .chip.skill{background:var(--model-bg);border-color:var(--model-line);color:var(--model);font-weight:600}
+  .chip.det{background:var(--det-bg);border-color:var(--det-line);color:var(--det);font-weight:600}
+  .chip.plan{background:var(--plan-bg);border-color:var(--plan-line);color:var(--plan);font-weight:600}
+  .chip.ok{background:var(--done-bg);border-color:var(--done-line);color:var(--done)}
+  .chip.dash{border-style:dashed;color:var(--muted);background:#fafafa}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:99px;text-transform:uppercase}
+  .badge.human{background:var(--human);color:#fff}
+  .badge.model{background:var(--model);color:#fff}
+  .badge.det{background:var(--det);color:#fff}
+
+  .conn{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .conn .bar{width:2px;height:14px;background:var(--state-line)}
+  .conn .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .gate .bar{width:2px;height:12px;background:var(--state-line)}
+  .gatepill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+            border:2px solid;font-size:13px;font-weight:700;background:#fff;margin:2px 0}
+  .gate.human .gatepill{border-color:var(--human-line);color:var(--human);background:var(--human-bg)}
+  .gate.model .gatepill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .gate.det .gatepill{border-color:var(--det-line);color:var(--det);background:var(--det-bg)}
+  .gate .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate .loops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 2px}
+
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .fork .lane{display:flex;flex-direction:column}
+  .fork .lane .route{align-self:center;margin:0 0 4px}
+  @media (max-width:720px){.fork{grid-template-columns:1fr}}
+
+  .withrails{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;align-items:start}
+  .rails{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+  @media (max-width:920px){.withrails{grid-template-columns:1fr}.rails{position:static;flex-direction:row;flex-wrap:wrap}
+    .rails .stage{flex:1 1 260px}}
+
+  /* hierarchy ladder */
+  .ladder{max-width:860px;margin:0 auto;display:flex;flex-direction:column}
+  .rung{display:grid;grid-template-columns:150px 1fr 210px;border:2px solid var(--plan-line);
+        border-radius:14px;overflow:hidden;background:#fff}
+  .rung .lvl{background:var(--plan-bg);color:var(--plan);font-weight:800;padding:14px;font-size:14.5px;
+             display:flex;flex-direction:column;gap:3px;justify-content:center}
+  .rung .lvl .cad{font-size:11px;font-weight:700;color:#3b5bd0;text-transform:uppercase;letter-spacing:.06em}
+  .rung .mid{padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .rung .own{padding:12px 14px;border-left:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;
+             align-content:center;background:#fbfcfe}
+  .ladder .conn{align-self:center}
+  @media (max-width:760px){.rung{grid-template-columns:1fr}.rung .own{border-left:none;border-top:1px solid var(--line)}}
+
+  /* horizontal feature strip */
+  .hstrip{display:flex;align-items:stretch;gap:0;min-width:900px}
+  .hstate{flex:1;border:2px solid var(--state-line);border-radius:12px;background:#fbfcfe;overflow:hidden;min-width:130px}
+  .hstate>header{padding:7px 10px;font-weight:800;font-size:13px;background:var(--state-bg);border-bottom:1px solid var(--line)}
+  .hstate .body{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+  .hstate .body .chip{white-space:normal}
+  .hgate{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;min-width:86px}
+  .hgate .pill{border:2px solid;border-radius:999px;background:#fff;font-size:11px;font-weight:700;
+               padding:4px 8px;text-align:center;line-height:1.25}
+  .hgate.human .pill{border-color:var(--human-line);color:var(--human);background:var(--human-bg)}
+  .hgate.model .pill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .hgate.det .pill{border-color:var(--det-line);color:var(--det);background:var(--det-bg)}
+  .hgate .arrow{color:var(--state-line);font-size:14px;margin-top:2px}
+  .hstate.model{border-color:var(--model-line)} .hstate.model>header{background:var(--model-bg)}
+  .hstate.human{border-color:var(--human-line)} .hstate.human>header{background:var(--human-bg)}
+  .hstate.done{border-color:var(--done-line)} .hstate.done>header{background:var(--done-bg)}
+
+  /* matrix */
+  .matrix{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;min-width:960px}
+  .mcol{border:2px solid var(--line);border-radius:12px;background:#fbfcfe;overflow:hidden}
+  .mcol>header{padding:8px 10px;font-size:12.5px;font-weight:800;background:var(--state-bg);
+               border-bottom:1px solid var(--line)}
+  .mcol .body{padding:10px;display:flex;flex-direction:column;gap:7px}
+  .mcol .chip{white-space:normal;justify-content:flex-start}
+
+  /* topology */
+  .topo{display:flex;flex-direction:column;gap:0;max-width:980px;margin:0 auto}
+  .tier{border:2px solid;border-radius:14px;overflow:hidden;background:#fff}
+  .tier>header{display:flex;gap:10px;align-items:center;padding:9px 14px;font-weight:800;font-size:14px;
+               border-bottom:1px solid var(--line)}
+  .tier .cells{display:grid;gap:12px;padding:12px 14px}
+  .tier.portfolio{border-color:var(--plan-line)} .tier.portfolio>header{background:var(--plan-bg);color:var(--plan)}
+  .tier.teams{border-color:var(--human-line)} .tier.teams>header{background:var(--human-bg);color:var(--human)}
+  .tier.repos{border-color:var(--model-line)} .tier.repos>header{background:var(--model-bg);color:var(--model)}
+  .cell{border:1.5px solid var(--line);border-radius:10px;padding:10px;background:#fbfcfe}
+  .cell .cn{font-weight:800;font-size:13px;margin-bottom:7px}
+  .cell .chips .chip{font-size:12px;padding:4px 8px}
+  .cells.c3{grid-template-columns:repeat(3,1fr)}
+  .cells.c4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:860px){.cells.c3,.cells.c4{grid-template-columns:1fr 1fr}}
+  @media (max-width:560px){.cells.c3,.cells.c4{grid-template-columns:1fr}}
+
+  table{border-collapse:collapse;width:100%;background:var(--card);font-size:14px}
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px}
+  th{background:var(--state-bg);text-align:left;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  th,td{padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;
+          padding:14px 18px;margin:10px 0;max-width:86ch}
+  summary{font-weight:700;cursor:pointer;font-size:15px}
+  details p{margin:10px 0 2px}
+
+  .foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  a{color:#1d4ed8}
+  @media print{
+    body{background:#fff}
+    .diagram,.stage,.rung,.tier,table,details{break-inside:avoid}
+    .rails{position:static}
+    .matrix{min-width:0;grid-template-columns:repeat(3,1fr)}
+    .hstrip{min-width:0 !important;flex-wrap:wrap;row-gap:10px}
+    .hstate{min-width:150px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kicker">Agentic Delivery Pipeline · Document 3 of 3 · Enterprise Blueprint — PROPOSAL</p>
+<h1>The same operating model on Azure DevOps + GitHub, at team scale</h1>
+<p class="lede">
+Document 2 describes a pipeline proven in production with one human, one repo, and GitHub issues.
+This page re-bases that exact operating model onto our stack — Azure DevOps work items, quarter/sprint
+cadence, our six work-item states, our <code>grill-*</code> skills, and our generic TDD agents — and
+extends it across many teams and repositories. Nothing here is speculative: every mechanism below is
+either a translation of the running personal pipeline or a skill already in daily use at work, each
+translation is called out explicitly, and the handful of deliberate deltas are listed in section 7.
+</p>
+
+<div class="legend">
+  <span class="key"><span class="sw human"></span> Human decision (role-gated)</span>
+  <span class="key"><span class="sw model"></span> AI work (skills &amp; agents)</span>
+  <span class="key"><span class="sw det"></span> Deterministic script (unit-tested)</span>
+  <span class="key"><span class="sw state"></span> ADO state / tag</span>
+  <span class="key"><span class="sw plan"></span> Planning structure</span>
+  <span class="key"><span class="sw done"></span> Terminal</span>
+  <span class="key"><span class="sw park" style="background:var(--park-bg);border-color:var(--park-line)"></span> Side state</span>
+</div>
+
+<h2>1 · Rosetta stone: personal project → enterprise</h2>
+<p>
+The load-bearing concepts all survive the translation; only their carriers change. Two translations do
+the most work: <strong>labels become the states our process already has</strong> (the pipeline stops
+being a bolt-on and becomes how the board actually moves), and <strong>the "focus milestone" becomes
+the sprint</strong> — the personal project needed a custom marker to say "build this milestone now";
+Azure DevOps already says it with iteration paths.
+</p>
+
+<div class="tablewrap"><table>
+  <tr><th>Concept</th><th>Doggiehood (today)</th><th>At work (proposed)</th></tr>
+  <tr><td>Work item</td><td>GitHub issue</td><td>ADO User Story (build unit) · Feature (planning unit)</td></tr>
+  <tr><td>State machine</td><td>Labels (<code>ai-triage</code>, <code>pending-approval</code>, …)</td><td>ADO states: New · Research · Ready · Develop · Done · Closed, plus tags for AI sub-states</td></tr>
+  <tr><td>Build horizon</td><td>Focus milestone (<code>/focus</code> + hidden marker)</td><td>Active sprint (iteration path) — no marker needed</td></tr>
+  <tr><td>Planning horizon</td><td>Numbered milestones <code>02</code>–<code>08</code></td><td>Features → quarters; Stories → sprints</td></tr>
+  <tr><td>Control surface</td><td>Owner's <code>/commands</code> in issue comments</td><td>Seven commands carried over (<code>/admit /approve /revise /redo /propose /park /unpark</code>); <code>/milestone</code> → <code>/sprint &lt;iteration&gt;</code> (stories) and <code>/quarter &lt;Q&gt;</code> (features); <code>/focus</code> retired (see §7)</td></tr>
+  <tr><td>Bad-actor gate</td><td>Repo-owner-only parser rule</td><td>Role allowlist: PO approves features, team lead approves stories, either may admit — configured per team</td></tr>
+  <tr><td>Idempotency watermark</td><td>👀 reaction on processed comments</td><td>ADO comment "like" by the bot identity (fallback: processed-ID ledger field)</td></tr>
+  <tr><td>Analysis skill</td><td><code>pipeline-analysis</code> vs <code>docs/specs</code></td><td><code>grill-with-docs</code> + <code>grill-azdo-feature</code> / <code>grill-azdo-story</code></td></tr>
+  <tr><td>Acceptance criteria</td><td><code>## Build checklist</code>, TDD-ordered</td><td>Story acceptance criteria field, TDD-ordered — the grill exit artifact</td></tr>
+  <tr><td>Builder</td><td><code>doggiehood-dev</code> agent (repo-specific)</td><td>Generic TDD agents (already built) + per-repo skill packs</td></tr>
+  <tr><td>Queue selection</td><td><code>select_queue.py</code> (label/milestone/blockers/cap)</td><td>Same script pattern vs ADO REST: sprint/state/links/cap, per repo</td></tr>
+  <tr><td>Dependencies</td><td>Sub-issues · <code>Blocked by:</code> · <code>Depends on:</code></td><td>Parent/child links · predecessor–successor links (cross-team capable)</td></tr>
+  <tr><td>Dashboard</td><td>Deterministic render of issue #193</td><td>Deterministic render → ADO wiki page / Teams digest; boards stay native</td></tr>
+  <tr><td>Code + CI</td><td>GitHub + Actions</td><td>GitHub — unchanged; each repo keeps its existing CI</td></tr>
+  <tr><td>Release discipline</td><td>Conventional Commits → release-please</td><td>Same pattern per repo — adopt where not already in use</td></tr>
+</table></div>
+
+<h2>2 · Work-item hierarchy and planning cadence</h2>
+<p>
+Planning happens at three altitudes with a grill skill guarding each descent. A Feature cannot enter a
+quarter until <code>grill-azdo-feature</code> has forced it into a consistent, decomposable state; a
+Story cannot reach <strong>Ready</strong> until <code>grill-azdo-story</code> has done the same at
+story grain. This is the direct enterprise analog of Doggiehood's "no work is eligible until analysis
+produced an approved Build checklist" — the grill skills are the analysis stage, made interactive.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Hierarchy · cadence · grill gates</p>
+<div class="ladder">
+  <div class="rung">
+    <div class="lvl">EPIC<span class="cad">ongoing</span></div>
+    <div class="mid">
+      <span class="chip">strategic outcome</span>
+      <span class="chip plan">portfolio backlog</span>
+      <span class="chip dash">AI: read-only context</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">product leadership</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">FEATURE<span class="cad">quarter</span></div>
+    <div class="mid">
+      <span class="chip skill">grill-azdo-feature</span>
+      <span class="chip skill">grill-with-docs</span>
+      <span class="chip">outcome + scope + owning team</span>
+      <span class="chip plan">quarter commitment</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">product owner</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">USER STORY<span class="cad">sprint</span></div>
+    <div class="mid">
+      <span class="chip skill">grill-azdo-story</span>
+      <span class="chip ok">acceptance criteria · TDD-ordered</span>
+      <span class="chip">repo routing field</span>
+      <span class="chip plan">sprint assignment</span>
+    </div>
+    <div class="own"><span class="badge human">human</span><span class="chip">team lead</span></div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="rung">
+    <div class="lvl">TASK<span class="cad">nightly</span></div>
+    <div class="mid">
+      <span class="chip skill">TDD agent checklist</span>
+      <span class="chip">red → green → refactor steps</span>
+      <span class="chip dash">agent-created · agent-checked</span>
+    </div>
+    <div class="own"><span class="badge model">AI</span><span class="chip">dev agent</span></div>
+  </div>
+</div>
+</div>
+
+<h2>3 · The story lifecycle: our six states as the gating sections</h2>
+<p>
+This is Document 2's diagram, re-drawn with our states. The mapping is almost embarrassingly clean:
+<strong>New</strong> is intake, <strong>Research</strong> is the AI analysis section (with the same
+two "awaiting a human" sub-states, carried as tags), <strong>Ready</strong> is the approved dev queue,
+<strong>Develop</strong> is the overnight build, <strong>Done</strong> is merged-and-verified, and
+<strong>Closed</strong> is product-owner acceptance. The two human loops (<code>/revise</code>,
+<code>/redo</code>) and the parking side-rail translate unchanged.
+</p>
+<p>
+Research runs in two complementary modes. When the team lead or PO has time to engage,
+<code>grill-azdo-story</code> runs as a live session that interrogates them until the story can't be
+misread. Between sessions the story simply waits in Research under one of the two tags below, and
+comment-based <code>/revise</code> notes are the asynchronous fallback — feedback left overnight is
+picked up by the next Research pass, exactly as in the personal project. Authority is one consistent
+rule throughout: <strong>the team lead approves stories, the PO approves features, and either may
+admit.</strong>
+</p>
+
+<div class="diagram">
+<p class="dtitle">User Story lifecycle — ADO states as gates · tags as sub-states</p>
+<div class="withrails">
+<div class="flowcol">
+
+  <div class="stage">
+    <header><span class="t">NEW</span><span class="chip st">state: New</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">filed by anyone · any source</span>
+      <span class="chip">team backlog</span>
+      <span class="chip dash">invisible to AI</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ PO / lead · <code>/admit</code></span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">RESEARCH</span><span class="chip st">state: Research</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip skill">grill-azdo-story</span>
+        <span class="chip skill">grill-with-docs</span>
+        <span class="chip">reads: story + links + docs + code</span>
+      </div>
+      <div class="chips">
+        <span class="chip">plan + repo routing + sprint proposal</span>
+        <span class="chip ok">acceptance criteria · TDD-ordered</span>
+        <span class="chip dash">un-specced decision → question, not guess</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+
+  <div class="fork">
+    <div class="lane">
+      <span class="chip dash route">route: plan complete</span>
+      <div class="stage">
+        <header><span class="t">AWAITING APPROVAL</span><span class="chip st">state: Research</span><span class="chip tag">tag: pending-approval</span></header>
+        <div class="body"><div class="chips">
+          <span class="chip">analysis on the story</span>
+          <span class="chip cmd">/approve</span><span class="chip cmd">/revise</span><span class="chip cmd">/redo</span>
+        </div></div>
+      </div>
+    </div>
+    <div class="lane">
+      <span class="chip dash route">route: open design question</span>
+      <div class="stage">
+        <header><span class="t">AWAITING ANSWER</span><span class="chip st">state: Research</span><span class="chip tag">tag: needs-clarification</span></header>
+        <div class="body"><div class="chips">
+          <span class="chip">❓ specific decision requested</span>
+          <span class="chip">answer inline</span><span class="chip cmd">/propose</span>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ team lead · <code>/approve</code> = Definition of Ready met</span>
+    <div class="loops">
+      <span class="chip cmd">/revise ↩ Research</span>
+      <span class="chip cmd">/redo ↩ Research</span>
+      <span class="chip cmd">/sprint &lt;iteration&gt; = override</span>
+    </div>
+    <span class="arrow">▼</span></div>
+
+  <div class="stage det">
+    <header><span class="t">READY</span><span class="chip st">state: Ready</span><span class="badge det">script</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip">sprint assigned</span>
+        <span class="chip">repo routed</span>
+        <span class="chip ok">acceptance criteria approved</span>
+      </div>
+      <div class="chips">
+        <span class="chip det">queue selector / repo</span>
+        <span class="chip">eligible: active sprint</span>
+        <span class="chip">predecessors Done · no open PR · not blocked</span>
+      </div>
+      <div class="chips">
+        <span class="chip">dependency-ordered</span>
+        <span class="chip">cap: N stories / repo / night</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate model"><span class="bar"></span>
+    <span class="gatepill">◆ nightly routine · per repo</span><span class="arrow">▼</span></div>
+
+  <div class="stage model">
+    <header><span class="t">DEVELOP</span><span class="chip st">state: Develop</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip skill">generic TDD dev agent</span>
+        <span class="chip">serial · 1 story at a time</span>
+        <span class="chip">nightly branch / repo</span>
+      </div>
+      <div class="chips">
+        <span class="chip">strict TDD: red → green → refactor</span>
+        <span class="chip">agent Tasks under the story</span>
+        <span class="chip dash">failed story ↩ Ready · commits dropped</span>
+      </div>
+      <div class="chips">
+        <span class="chip">1 combined PR / repo / night</span>
+        <span class="chip">PR: Deviations &amp; Decisions section</span>
+        <span class="chip det">CI: tests · lint · build</span>
+        <span class="chip dash">no self-merge</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ engineer · code review + merge</span><span class="arrow">▼</span></div>
+
+  <div class="stage">
+    <header><span class="t">DONE</span><span class="chip st">state: Done</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">merged to main</span>
+      <span class="chip det">deployed via existing CD</span>
+      <span class="chip ok">acceptance criteria verified in PR</span>
+    </div></div>
+  </div>
+
+  <div class="gate human"><span class="bar"></span>
+    <span class="gatepill">◆ PO · sprint review acceptance</span><span class="arrow">▼</span></div>
+
+  <div class="stage done">
+    <header><span class="t">CLOSED</span><span class="chip st">state: Closed</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip ok">outcome accepted</span>
+      <span class="chip">full audit trail on the story</span>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="rails">
+  <div class="stage park">
+    <header><span class="t">PARKED</span><span class="chip tag">tag: parked</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip cmd">/park</span><span class="chip cmd">/unpark</span>
+      <span class="chip dash">any state · hidden from routines</span>
+    </div></div>
+  </div>
+  <div class="stage det">
+    <header><span class="t">DASHBOARD</span><span class="badge det">script</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip det">deterministic render · daily</span>
+      <span class="chip">ADO wiki page + Teams digest</span>
+      <span class="chip">“your move” counts / role</span>
+      <span class="chip dash">boards + queries: native ADO</span>
+    </div></div>
+  </div>
+  <div class="stage">
+    <header><span class="t">CROSS-TEAM DEP</span></header>
+    <div class="body"><div class="chips">
+      <span class="chip">predecessor link → other team's story</span>
+      <span class="chip det">queue: blocked until predecessor Done</span>
+    </div></div>
+  </div>
+</div>
+</div>
+</div>
+
+<p class="sub">
+One deliberate strengthening versus today's manual process: <strong>Ready stops being an opinion.</strong>
+A story reaches Ready only through the grill exit + explicit <code>/approve</code>, so "Ready" always
+means the same thing — testable acceptance criteria, routed repo, resolved dependencies, assigned
+sprint. That consistency is precisely what makes overnight agent development safe.
+</p>
+
+<h2>4 · The feature lifecycle: quarter-gated, then delegated</h2>
+<p>
+Features run the same shape one level up and one cadence slower. The critical move is the hand-off:
+when a Feature reaches <strong>Ready</strong>, planning authority transfers from the portfolio level to
+the owning team — the Feature's output is a set of linked child Stories in that team's backlog, each of
+which then runs the story lifecycle above under that team's own gatekeepers. This is how one pipeline
+design serves many teams without central bottlenecks.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Feature lifecycle — quarter cadence · delegation at Ready</p>
+<div class="hstrip">
+  <div class="hstate">
+    <header>NEW</header>
+    <div class="body"><span class="chip">idea / request</span><span class="chip dash">portfolio backlog</span></div>
+  </div>
+  <div class="hgate human"><span class="pill">◆ PO<br>/admit</span><span class="arrow">▶</span></div>
+  <div class="hstate model">
+    <header>RESEARCH</header>
+    <div class="body"><span class="chip skill">grill-azdo-feature</span><span class="chip">scope · team · quarter fit</span><span class="chip">draft story split</span></div>
+  </div>
+  <div class="hgate human"><span class="pill">◆ PO<br>/approve<br>+ /quarter &lt;Q&gt;</span><span class="arrow">▶</span></div>
+  <div class="hstate human">
+    <header>READY</header>
+    <div class="body"><span class="chip">quarter committed</span><span class="chip ok">child stories → team backlog</span><span class="chip">planning handed to team</span></div>
+  </div>
+  <div class="hgate det"><span class="pill">first story<br>→ Develop</span><span class="arrow">▶</span></div>
+  <div class="hstate model">
+    <header>DEVELOP</header>
+    <div class="body"><span class="chip">child stories in flight</span><span class="chip det">roll-up: auto</span></div>
+  </div>
+  <div class="hgate det"><span class="pill">all stories<br>Done</span><span class="arrow">▶</span></div>
+  <div class="hstate">
+    <header>DONE</header>
+    <div class="body"><span class="chip">outcome shipped</span></div>
+  </div>
+  <div class="hgate human"><span class="pill">◆ PO<br>quarter review</span><span class="arrow">▶</span></div>
+  <div class="hstate done">
+    <header>CLOSED</header>
+    <div class="body"><span class="chip ok">accepted</span></div>
+  </div>
+</div>
+</div>
+
+<h2>5 · Which skills and agents run at which phase</h2>
+<p>
+Same six-column shape as the personal project, with our skills slotted in. The grill family replaces
+the fire-and-forget analysis skill — a deliberate upgrade for enterprise ambiguity: instead of one AI
+pass that either plans or asks a single question, the grill skills interrogate the human until the
+work item can't be misread, then write the result back. The deterministic layer (parser, queue
+selector, dashboard renderer) is ported nearly as-is; it is stack-agnostic Python against a different
+REST API, and stays unit-tested in CI.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Skills &amp; agents by phase · <span style="color:var(--model)">purple = model</span> · <span style="color:var(--det)">teal = deterministic script</span></p>
+<div class="matrix">
+  <div class="mcol">
+    <header>GATE · every routine</header>
+    <div class="body">
+      <span class="chip skill">ado-gatekeeper <span class="badge model">AI</span></span>
+      <span class="chip det">parse_commands.py (port)</span>
+      <span class="chip">role allowlist / team</span>
+      <span class="chip">watermark: comment “like”</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>RESEARCH · feature</header>
+    <div class="body">
+      <span class="chip skill">grill-azdo-feature</span>
+      <span class="chip skill">grill-with-docs</span>
+      <span class="chip">quarter fit · team routing</span>
+      <span class="chip">story decomposition draft</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>RESEARCH · story</header>
+    <div class="body">
+      <span class="chip skill">grill-azdo-story</span>
+      <span class="chip skill">grill-with-docs</span>
+      <span class="chip ok">output: acceptance criteria</span>
+      <span class="chip">repo + dependency links</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>QUEUE · nightly</header>
+    <div class="body">
+      <span class="chip det">select_queue.py (port)</span>
+      <span class="chip">sprint + links + PR checks</span>
+      <span class="chip">topological order</span>
+      <span class="chip">cap / repo / night</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>DEVELOP · nightly</header>
+    <div class="body">
+      <span class="chip skill">TDD dev agents (existing)</span>
+      <span class="chip skill">per-repo skill packs</span>
+      <span class="chip">scaffold · test-run · conventions</span>
+      <span class="chip">PR author + CI babysit</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>REPORT · daily</header>
+    <div class="body">
+      <span class="chip det">dashboard renderer (port)</span>
+      <span class="chip">wiki page / Teams digest</span>
+      <span class="chip">golden-snapshot tested</span>
+      <span class="chip dash">no LLM in the loop</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>6 · Scale-out: many teams, many repos, one operating model</h2>
+<p>
+The personal project is a single instance of a pattern that federates naturally, because every
+coupling point is already explicit: stories carry their repo, dependencies are typed links, and each
+gate names its authorized role. The org runs <em>many small pipelines that share one design</em> — not
+one big pipeline. A platform team owns the shared skill/agent definitions and the deterministic
+scripts; each product team owns its own gates, backlog, and caps; each repo gets its own nightly
+builder and PR stream.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Federated topology · authority flows down · status rolls up</p>
+<div class="topo">
+  <div class="tier portfolio">
+    <header>PORTFOLIO · epics + features · quarter cadence</header>
+    <div class="cells c3">
+      <div class="cell"><div class="cn">Product leadership</div>
+        <div class="chips"><span class="chip cmd">/admit</span><span class="chip cmd">/approve · /quarter</span></div></div>
+      <div class="cell"><div class="cn">Feature research</div>
+        <div class="chips"><span class="chip skill">grill-azdo-feature</span><span class="chip">team routing</span></div></div>
+      <div class="cell"><div class="cn">Platform team</div>
+        <div class="chips"><span class="chip plan">shared skills + agents</span><span class="chip det">script library</span><span class="chip plan">pipeline config repo</span></div></div>
+    </div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="tier teams">
+    <header>TEAMS · stories · sprint cadence · own gatekeepers</header>
+    <div class="cells c3">
+      <div class="cell"><div class="cn">Team A</div>
+        <div class="chips"><span class="chip skill">grill-azdo-story</span><span class="chip cmd">lead: /approve</span><span class="chip">sprint queue</span></div></div>
+      <div class="cell"><div class="cn">Team B</div>
+        <div class="chips"><span class="chip skill">grill-azdo-story</span><span class="chip cmd">lead: /approve</span><span class="chip">sprint queue</span></div></div>
+      <div class="cell"><div class="cn">Team C …</div>
+        <div class="chips"><span class="chip dash">same pattern · own caps</span><span class="chip">cross-team: predecessor links</span></div></div>
+    </div>
+  </div>
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+  <div class="tier repos">
+    <header>REPOS · nightly builders · PR per repo per night</header>
+    <div class="cells c4">
+      <div class="cell"><div class="cn">repo-api</div>
+        <div class="chips"><span class="chip skill">TDD agent</span><span class="chip det">queue + cap</span></div></div>
+      <div class="cell"><div class="cn">repo-web</div>
+        <div class="chips"><span class="chip skill">TDD agent</span><span class="chip det">queue + cap</span></div></div>
+      <div class="cell"><div class="cn">repo-data</div>
+        <div class="chips"><span class="chip skill">TDD agent</span><span class="chip det">queue + cap</span></div></div>
+      <div class="cell"><div class="cn">repo-N …</div>
+        <div class="chips"><span class="chip dash">opt-in per repo</span><span class="chip">CI gates unchanged</span></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<p>
+Cross-repo features need no new machinery: <code>grill-azdo-feature</code> decomposes them into
+per-repo stories connected by predecessor–successor links, and every repo's queue selector already
+refuses to build a story whose predecessors aren't Done — the same topological rule the personal
+project uses tonight, applied across team boundaries.
+</p>
+
+<h2>7 · What genuinely changes from the personal project</h2>
+<ul>
+  <li><strong>Authority becomes role-based.</strong> "Repo owner only" becomes a small allowlist per gate (PO at feature gates, team lead at story gates), still enforced in the deterministic parser — config per team, not per person.</li>
+  <li><strong>Two commands are re-based onto ADO's planning fields.</strong> <code>/focus</code> disappears — sprint assignment already expresses "build this now", so the queue selector filters on the active iteration instead of a milestone marker. <code>/milestone</code> becomes <code>/sprint &lt;iteration&gt;</code> on stories and <code>/quarter &lt;Q&gt;</code> on features — same role as before: an explicit override of the AI-proposed placement, resolved at <code>/approve</code> time by the same parser rule.</li>
+  <li><strong>Analysis becomes conversational.</strong> The grill skills interrogate a human to reach Ready, where the personal project's analysis runs unattended and hands back one question at a time. Both end in the same artifact: approved, TDD-ordered acceptance criteria.</li>
+  <li><strong>Two systems instead of one.</strong> Work state lives in ADO, code and CI in GitHub. The joint is the story's repo-routing field plus PR ↔ story links written by the builder; the dashboard renders both sides.</li>
+  <li><strong>Watermark mechanics.</strong> GitHub comment reactions become ADO comment likes from the bot identity (or a processed-comment-ID ledger on the work item if likes prove unreliable) — same idempotency contract either way.</li>
+  <li><strong>Caps become budget policy.</strong> One repo × 3 issues/night becomes a per-repo, per-team cap set in pipeline config — the org's model-spend dial, adjustable without touching any logic.</li>
+</ul>
+
+<h2>8 · The questions engineers ask first</h2>
+
+<details open>
+  <summary>What stops an agent from merging bad code?</summary>
+  <p>Structure, not trust: agents have no merge rights. They open PRs, keep CI green, and stop. A human
+  reviews every diff against acceptance criteria that a human already approved. Branch protection makes
+  this a platform guarantee rather than a prompt instruction.</p>
+</details>
+<details open>
+  <summary>What stops a random commenter from driving the pipeline?</summary>
+  <p>The command parser honors only allowlisted identities per gate, and every honored or ignored
+  command is reported in the routine's summary. This rule lives in unit-tested Python, not in the
+  model — the ported <code>parse_commands.py</code> keeps its test suite.</p>
+</details>
+<details open>
+  <summary>What happens when the AI's plan is wrong?</summary>
+  <p>The same thing that happens today when a human's plan is wrong, but cheaper: <code>/revise</code>
+  with notes sends it back through Research with your feedback attached; <code>/redo</code> starts the
+  analysis clean. Nothing builds until you approve, so a wrong plan costs a comment, not a sprint.</p>
+</details>
+<details open>
+  <summary>What happens when a story fails to build overnight?</summary>
+  <p>Its commits are dropped so the shared branch stays green, the story returns to Ready with the
+  failure reason recorded, and the run's PR lists what was dropped and what was capped out. Silent
+  partial success is designed out: the report always distinguishes built / dropped / deferred.</p>
+</details>
+<details open>
+  <summary>How are dependencies between teams handled?</summary>
+  <p>As ADO predecessor–successor links, created during Research. Every repo's queue selector treats
+  an unmet predecessor as a hard block, so a story simply never becomes eligible until the other
+  team's story is Done — coordination by data, not by meetings.</p>
+</details>
+<details open>
+  <summary>Where does this run, and with what credentials?</summary>
+  <p>Scheduled agent routines (the same mechanism the personal project uses daily) plus cron CI jobs
+  for the deterministic renderers. ADO access via a scoped service identity; GitHub via the existing
+  app installation. Skills, agents, and scripts are version-controlled in a pipeline-config repo, so
+  the pipeline itself ships by PR.</p>
+</details>
+<details open>
+  <summary>What does it cost, and how is spend controlled?</summary>
+  <p>Model spend concentrates in two places — Research (grilling) and Develop (TDD build) — and both
+  are explicitly gated: nothing enters Research without an admit, and nightly caps bound Develop per
+  repo. Parsing, queueing, dashboards, CI, and releases are deterministic and cost nearly nothing.
+  The caps are the throttle: start at 2–3 stories per repo per night and tune with real data.</p>
+</details>
+<details open>
+  <summary>How do we know the process is being followed?</summary>
+  <p>The state machine is the process, and scripts move it — a story physically can't reach Develop
+  without approved acceptance criteria, and can't reach Done without a merged PR. The daily dashboard
+  makes queue health and "your move" items visible per role; deviations are self-reported in every PR
+  under a mandatory heading.</p>
+</details>
+
+<h2>9 · Rollout: prove it small, then federate</h2>
+<div class="diagram">
+<p class="dtitle">Three phases · exit criteria per phase</p>
+<div class="hstrip" style="min-width:760px">
+  <div class="hstate">
+    <header>PILOT · 1 sprint–1 quarter</header>
+    <div class="body">
+      <span class="chip">1 team · 1 repo</span>
+      <span class="chip skill">grill-azdo-story live</span>
+      <span class="chip det">gatekeeper + queue ported</span>
+      <span class="chip ok">exit: 10+ stories Closed via pipeline</span>
+    </div>
+  </div>
+  <div class="hgate human"><span class="pill">◆ leadership<br>metrics review</span><span class="arrow">▶</span></div>
+  <div class="hstate model">
+    <header>EXPAND · 1–2 quarters</header>
+    <div class="body">
+      <span class="chip">3–5 teams · their repos</span>
+      <span class="chip skill">grill-azdo-feature live</span>
+      <span class="chip">cross-team dependency links</span>
+      <span class="chip ok">exit: feature delivered end-to-end</span>
+    </div>
+  </div>
+  <div class="hgate human"><span class="pill">◆ leadership<br>metrics review</span><span class="arrow">▶</span></div>
+  <div class="hstate done">
+    <header>FEDERATE · ongoing</header>
+    <div class="body">
+      <span class="chip">opt-in per team + repo</span>
+      <span class="chip plan">platform-owned skill library</span>
+      <span class="chip ok">org dashboard · spend policy</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<p>
+Suggested pilot metrics — all derivable from work-item history and PR data, no new instrumentation:
+cycle time New → Closed; stories built per night vs. cap; revise-loop rate (plans sent back per
+approval); PR first-review pass rate; and reviewer minutes per merged story. The pilot's exit
+question is simple: <em>did Ready-quality go up while cycle time went down?</em>
+</p>
+
+<div class="foot">
+Document 3 of 3 · Companion pages: <a href="01-executive-overview.html">Executive overview</a> ·
+<a href="02-current-pipeline.html">Current state (verified)</a>
+</div>
+
+</div>
+</body>
+</html>

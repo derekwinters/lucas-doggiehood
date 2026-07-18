@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doggiehood — Issue Pipeline, Current State</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --paper:#f6f7f9; --card:#ffffff;
+    --human:#b45309; --human-bg:#fef3c7; --human-line:#f59e0b;
+    --model:#6d28d9; --model-bg:#ede9fe; --model-line:#a78bfa;
+    --det:#0f766e;   --det-bg:#ccfbf1;   --det-line:#2dd4bf;
+    --state:#334155; --state-bg:#f1f5f9; --state-line:#94a3b8;
+    --done:#15803d;  --done-bg:#dcfce7;  --done-line:#4ade80;
+    --park:#525252;  --park-bg:#e5e5e5;  --park-line:#a3a3a3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 20px 90px;}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 8px}
+  h2{font-size:21px;margin:56px 0 6px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 8px}
+  p.lede{font-size:17px;color:#334155;max-width:74ch;margin:6px 0 0}
+  p, li{max-width:78ch}
+  .sub{color:var(--muted);font-size:14px}
+  code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 5px;
+       font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 4px;padding:14px 16px;
+          background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+  .key{display:flex;align-items:center;gap:8px;color:#334155}
+  .sw{width:14px;height:14px;border-radius:4px;border:2px solid}
+  .sw.human{background:var(--human-bg);border-color:var(--human-line)}
+  .sw.model{background:var(--model-bg);border-color:var(--model-line)}
+  .sw.det{background:var(--det-bg);border-color:var(--det-line)}
+  .sw.state{background:var(--state-bg);border-color:var(--state-line)}
+  .sw.done{background:var(--done-bg);border-color:var(--done-line)}
+  .sw.park{background:var(--park-bg);border-color:var(--park-line)}
+
+  /* diagram frame */
+  .diagram{margin:22px 0 8px;padding:26px 22px;background:var(--card);
+           border:1px solid var(--line);border-radius:16px;overflow-x:auto}
+  .diagram .dtitle{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+                   color:var(--muted);font-weight:700;margin:0 0 18px}
+  .flowcol{max-width:840px;margin:0 auto}
+
+  /* large boxes */
+  .stage{border:2px solid var(--state-line);border-radius:14px;background:#fbfcfe;overflow:hidden}
+  .stage>header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;
+                background:var(--state-bg);border-bottom:1px solid var(--line)}
+  .stage>header .t{font-weight:800;font-size:14.5px;letter-spacing:.02em}
+  .stage .body{padding:12px 14px 14px}
+  .stage.human{border-color:var(--human-line)} .stage.human>header{background:var(--human-bg)}
+  .stage.model{border-color:var(--model-line)} .stage.model>header{background:var(--model-bg)}
+  .stage.det{border-color:var(--det-line)}     .stage.det>header{background:var(--det-bg)}
+  .stage.done{border-color:var(--done-line)}   .stage.done>header{background:var(--done-bg)}
+  .stage.park{border-color:var(--park-line);border-style:dashed} .stage.park>header{background:var(--park-bg)}
+
+  /* small boxes */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips+.chips{margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;
+        border:1px solid var(--state-line);background:#fff;font-size:13px;color:var(--state);white-space:nowrap}
+  .chip.lbl{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--state-bg);border-color:var(--state-line);font-weight:600}
+  .chip.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+            background:var(--human-bg);border-color:var(--human-line);color:var(--human);font-weight:600}
+  .chip.skill{background:var(--model-bg);border-color:var(--model-line);color:var(--model);font-weight:600}
+  .chip.det{background:var(--det-bg);border-color:var(--det-line);color:var(--det);font-weight:600}
+  .chip.ok{background:var(--done-bg);border-color:var(--done-line);color:var(--done)}
+  .chip.dash{border-style:dashed;color:var(--muted);background:#fafafa}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:99px;
+         text-transform:uppercase}
+  .badge.human{background:var(--human);color:#fff}
+  .badge.model{background:var(--model);color:#fff}
+  .badge.det{background:var(--det);color:#fff}
+
+  /* connectors + gates */
+  .conn{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+  .conn .bar{width:2px;height:14px;background:var(--state-line)}
+  .conn .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate{display:flex;flex-direction:column;align-items:center;gap:0;padding:2px 0}
+  .gate .bar{width:2px;height:12px;background:var(--state-line)}
+  .gatepill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+            border:2px solid;font-size:13px;font-weight:700;background:#fff;margin:2px 0}
+  .gatepill .dia{font-size:12px}
+  .gate.human .gatepill{border-color:var(--human-line);color:var(--human);background:var(--human-bg)}
+  .gate.model .gatepill{border-color:var(--model-line);color:var(--model);background:var(--model-bg)}
+  .gate.det .gatepill{border-color:var(--det-line);color:var(--det);background:var(--det-bg)}
+  .gate .arrow{color:var(--state-line);font-size:15px;line-height:1;margin-top:-2px}
+  .gate .loops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 2px}
+
+  /* fork */
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0}
+  .fork .lane{display:flex;flex-direction:column}
+  .fork .lane .route{align-self:center;margin:0 0 4px}
+  @media (max-width:720px){.fork{grid-template-columns:1fr}}
+
+  /* main + rails layout */
+  .withrails{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:20px;align-items:start}
+  .rails{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+  @media (max-width:900px){.withrails{grid-template-columns:1fr}.rails{position:static;flex-direction:row;flex-wrap:wrap}
+    .rails .stage{flex:1 1 260px}}
+
+  /* matrix */
+  .matrix{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;min-width:960px}
+  .mcol{border:2px solid var(--line);border-radius:12px;background:#fbfcfe;overflow:hidden}
+  .mcol>header{padding:8px 10px;font-size:12.5px;font-weight:800;background:var(--state-bg);
+               border-bottom:1px solid var(--line);letter-spacing:.02em}
+  .mcol .body{padding:10px;display:flex;flex-direction:column;gap:7px}
+  .mcol .chip{white-space:normal;justify-content:flex-start}
+
+  /* clock */
+  .clock{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:12px;min-width:820px}
+  .tick{border:2px solid var(--line);border-radius:12px;background:#fbfcfe;padding:12px}
+  .tick .time{font-weight:800;font-size:17px}
+  .tick .utc{font-size:11.5px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;margin-bottom:8px}
+  .tick.model{border-color:var(--model-line)} .tick.det{border-color:var(--det-line)}
+
+  /* TDD loop */
+  .tdd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .tdd .step{border:2px solid var(--state-line);background:#fff;border-radius:10px;padding:8px 12px;
+             font-size:13px;font-weight:700;text-align:center}
+  .tdd .step .n{display:block;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.1em}
+  .tdd .step.red{border-color:#f87171;color:#b91c1c;background:#fef2f2}
+  .tdd .step.green{border-color:var(--done-line);color:var(--done);background:var(--done-bg)}
+  .tdd .a{color:var(--muted);font-size:16px}
+
+  /* tables */
+  table{border-collapse:collapse;width:100%;background:var(--card);font-size:14px}
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px}
+  th{background:var(--state-bg);text-align:left;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  th,td{padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+
+  .foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  a{color:#1d4ed8}
+  @media print{
+    body{background:#fff}
+    .diagram,.stage,.legend,table{break-inside:avoid}
+    .rails{position:static}
+    .matrix{min-width:0;grid-template-columns:repeat(3,1fr)}
+    .clock{min-width:0;grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kicker">Agentic Delivery Pipeline · Document 2 of 3 · Current State (verified)</p>
+<h1>How an idea becomes shipped code in <em>Doggiehood</em></h1>
+<p class="lede">
+This page is the as-built record of the AI issue-management pipeline running today in
+<code>derekwinters/lucas-doggiehood</code>. Every box, label, command, schedule, and file name below is
+taken directly from the repository — sources are listed at the bottom so any claim can be checked in
+minutes.
+</p>
+
+<div class="legend">
+  <span class="key"><span class="sw human"></span> Human decision (repo owner)</span>
+  <span class="key"><span class="sw model"></span> AI model — skill or agent</span>
+  <span class="key"><span class="sw det"></span> Deterministic script / workflow (unit-tested)</span>
+  <span class="key"><span class="sw state"></span> Pipeline state (GitHub label)</span>
+  <span class="key"><span class="sw done"></span> Terminal / shipped</span>
+  <span class="key"><span class="sw park"></span> Side state</span>
+</div>
+
+<h2>1 · The state machine, end to end</h2>
+<p>
+Three ideas carry the whole design. <strong>Labels are the state machine</strong> — an issue's label
+is its pipeline state, so the entire system is inspectable from the issue list. <strong>Comments are
+the control surface</strong> — the owner steers everything by typing short <code>/commands</code> on
+issues, from a phone, at any time. <strong>A gatekeeper translates comments into label moves</strong> —
+it runs first in every scheduled routine, honors only the repo owner (the "bad-actor gate"), and
+watermarks each processed comment with a 👀 reaction so re-runs never double-apply a command.
+</p>
+<p>
+Large boxes below are the gating sections an issue sits in; small boxes are what is true of the issue
+while it sits there. Pills on the connectors are the gates that move it forward.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Issue lifecycle — intake to release</p>
+<div class="withrails">
+<div class="flowcol">
+
+  <div class="stage">
+    <header><span class="t">INTAKE</span><span class="chip lbl">(no label)</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip">raw idea</span>
+        <span class="chip">filed by anyone</span>
+        <span class="chip dash">invisible to AI</span>
+        <span class="chip dash">dashboard: intake list</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human">
+    <span class="bar"></span>
+    <span class="gatepill"><span class="dia">◆</span> Derek · <code>/admit</code></span>
+    <span class="arrow">▼</span>
+  </div>
+
+  <div class="stage model">
+    <header><span class="t">ANALYSIS</span><span class="chip lbl">ai-triage</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip skill">skill: pipeline-analysis</span>
+        <span class="chip">routine: 7:00 AM CT</span>
+        <span class="chip">1 sub-agent / issue</span>
+        <span class="chip">reads: issue + comments + docs/specs</span>
+      </div>
+      <div class="chips">
+        <span class="chip">bug → root-cause diagnosis + <code>type:bug</code></span>
+        <span class="chip">spec-covered → plan + proposed milestone</span>
+        <span class="chip"><code>/propose</code> → marked PROPOSAL draft</span>
+        <span class="chip">design gap → ❓ question only</span>
+      </div>
+      <div class="chips">
+        <span class="chip ok">## Build checklist · 3–8 TDD items</span>
+        <span class="chip">deps: sub-issues · Blocked by · Depends on</span>
+        <span class="chip dash">no invented design</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+
+  <div class="fork">
+    <div class="lane">
+      <span class="chip dash route">route: diagnosis · plan · PROPOSAL</span>
+      <div class="stage">
+        <header><span class="t">AWAITING APPROVAL</span><span class="chip lbl">pending-approval</span></header>
+        <div class="body">
+          <div class="chips">
+            <span class="chip">analysis posted on issue</span>
+            <span class="chip">milestone proposed</span>
+            <span class="chip ok">Build checklist attached</span>
+          </div>
+          <div class="chips">
+            <span class="chip cmd">/approve</span><span class="chip cmd">/revise</span>
+            <span class="chip cmd">/redo</span><span class="chip cmd">/park</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lane">
+      <span class="chip dash route">route: design / wireframe gap</span>
+      <div class="stage">
+        <header><span class="t">AWAITING ANSWER</span><span class="chip lbl">needs-clarification</span></header>
+        <div class="body">
+          <div class="chips">
+            <span class="chip">❓ <code>Needs from Derek/Lucas:</code> block</span>
+            <span class="chip dash">no plan · no checklist</span>
+          </div>
+          <div class="chips">
+            <span class="chip">answer inline</span><span class="chip cmd">/revise</span>
+            <span class="chip cmd">/redo</span><span class="chip cmd">/propose</span><span class="chip cmd">/park</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human">
+    <span class="bar"></span>
+    <span class="gatepill"><span class="dia">◆</span> Derek · <code>/approve</code> (+ optional <code>/milestone</code>)</span>
+    <div class="loops">
+      <span class="chip cmd">/revise ↩ ai-triage</span>
+      <span class="chip cmd">/redo ↩ ai-triage</span>
+      <span class="chip cmd">/propose ↩ ai-triage</span>
+    </div>
+    <span class="arrow">▼</span>
+  </div>
+
+  <div class="stage det">
+    <header><span class="t">DEV QUEUE</span><span class="chip lbl">ready-for-work</span><span class="badge det">script</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip">milestone set</span>
+        <span class="chip">focus marker: <code>&lt;!-- pipeline-focus: &lt;milestone&gt; --&gt;</code> on #193</span>
+      </div>
+      <div class="chips">
+        <span class="chip det">select_queue.py</span>
+        <span class="chip">eligible: focus milestone</span>
+        <span class="chip">blockers closed · no open PR</span>
+        <span class="chip">not parked · not epic</span>
+      </div>
+      <div class="chips">
+        <span class="chip">topological order: deps → issue #</span>
+        <span class="chip">cap: 3 / night</span>
+        <span class="chip dash">capped-out → next night</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate model">
+    <span class="bar"></span>
+    <span class="gatepill"><span class="dia">◆</span> nightly routine · 1:00 AM CT</span>
+    <span class="arrow">▼</span>
+  </div>
+
+  <div class="stage model">
+    <header><span class="t">BUILD</span><span class="chip lbl">in-progress</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip skill">skill: pipeline-dev</span>
+        <span class="chip skill">agent: doggiehood-dev</span>
+        <span class="chip">serial · 1 issue at a time</span>
+        <span class="chip">shared branch: <code>pipeline/nightly-YYYYMMDD</code></span>
+      </div>
+      <div class="chips">
+        <span class="chip">strict TDD: red → green → refactor</span>
+        <span class="chip skill">scaffold-core</span>
+        <span class="chip skill">run-tests</span>
+        <span class="chip skill">core-unity-split</span>
+      </div>
+      <div class="chips">
+        <span class="chip dash">failed issue → commits dropped ↩ ready-for-work</span>
+        <span class="chip ok">branch always green</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn"><span class="bar"></span><span class="arrow">▼</span></div>
+
+  <div class="stage">
+    <header><span class="t">ONE COMBINED PR / NIGHT</span><span class="badge model">AI</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip">title: lead Conventional Commit line</span>
+        <span class="chip">body: ## Deviations and Decisions</span>
+        <span class="chip">body: 1 Conventional Commit line / issue</span>
+      </div>
+      <div class="chips">
+        <span class="chip det">CI: pr-title-lint</span>
+        <span class="chip det">CI: Core NUnit + Unity EditMode</span>
+        <span class="chip det">CI: debug APK build</span>
+      </div>
+      <div class="chips">
+        <span class="chip">babysit: CI kept green</span>
+        <span class="chip dash">no merge · no close · ever</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="gate human">
+    <span class="bar"></span>
+    <span class="gatepill"><span class="dia">◆</span> Derek · review + squash-merge</span>
+    <span class="arrow">▼</span>
+  </div>
+
+  <div class="stage done">
+    <header><span class="t">RELEASE — SCRIPTED</span><span class="badge det">script</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip det">release-please → release PR + CHANGELOG</span>
+        <span class="chip cmd">release PR merge: Derek</span>
+        <span class="chip det">VERSION file · semver</span>
+      </div>
+      <div class="chips">
+        <span class="chip det">rc-build: <code>vX.Y.Z-rcN</code> APK</span>
+        <span class="chip det">release-build: APK on GitHub release</span>
+        <span class="chip det">docs-publish: versioned site (mike)</span>
+        <span class="chip ok">1 changelog entry / issue</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="rails">
+  <div class="stage park">
+    <header><span class="t">PARKED</span><span class="chip lbl">parked</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip cmd">/park</span><span class="chip cmd">/unpark</span>
+        <span class="chip dash">from any stage</span>
+        <span class="chip dash">hidden: routines + dashboard</span>
+      </div>
+    </div>
+  </div>
+  <div class="stage det">
+    <header><span class="t">DASHBOARD · #193</span><span class="badge det">script</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip det">render_dashboard.py</span>
+        <span class="chip det">dashboard.yml · 3×/day</span>
+        <span class="chip">read-only · no LLM</span>
+        <span class="chip">focus pie · queues · “Your move” counts</span>
+      </div>
+    </div>
+  </div>
+  <div class="stage">
+    <header><span class="t">EXCLUDED</span></header>
+    <div class="body">
+      <div class="chips">
+        <span class="chip lbl">type:epic</span>
+        <span class="chip lbl">dashboard</span>
+        <span class="chip dash">never admitted · never built</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<p class="sub">
+The two loops on the approval gate are the quality mechanism: <code>/revise &lt;notes&gt;</code> sends
+the issue back to analysis <em>with feedback the next pass must address</em>, <code>/redo</code> discards
+and re-analyzes fresh, and <code>/propose</code> is the single opt-in that authorizes the AI to draft a
+missing design — always as a clearly-marked PROPOSAL, never silently.
+</p>
+
+<h2>2 · Which skills and agents run at which phase</h2>
+<p>
+Everything AI-facing is packaged as a version-controlled <strong>skill</strong>
+(<code>.claude/skills/*</code>) or <strong>agent</strong> (<code>.claude/agents/*</code>) in the repo
+itself — reviewed, diffed, and tested like any other code. The deliberate split: wherever a step can be
+deterministic, it <em>is</em> a plain Python script with unit tests run in CI; the model is spent only
+where judgment is required (analysis, implementation, short acknowledgments).
+</p>
+
+<div class="diagram">
+<p class="dtitle">Skills &amp; agents by phase · <span style="color:var(--model)">purple = model</span> · <span style="color:var(--det)">teal = deterministic script</span></p>
+<div class="matrix">
+  <div class="mcol">
+    <header>GATE · every routine</header>
+    <div class="body">
+      <span class="chip skill">pipeline-gatekeeper <span class="badge model">AI</span></span>
+      <span class="chip det">parse_commands.py</span>
+      <span class="chip">owner-only command filter</span>
+      <span class="chip">👀 watermark = idempotent</span>
+      <span class="chip">👍 ack + “Your move” menu</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>ANALYZE · 7:00 CT</header>
+    <div class="body">
+      <span class="chip skill">pipeline-analysis <span class="badge model">AI</span></span>
+      <span class="chip">parallel sub-agents</span>
+      <span class="chip">milestone match: live API</span>
+      <span class="chip">Build checklist author</span>
+      <span class="chip">wireframe gate check</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>QUEUE · 1:00 CT</header>
+    <div class="body">
+      <span class="chip det">select_queue.py</span>
+      <span class="chip">eligibility filter</span>
+      <span class="chip">topological sort</span>
+      <span class="chip">nightly cap: 3</span>
+      <span class="chip">skip reasons logged</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>BUILD · 1:00 CT</header>
+    <div class="body">
+      <span class="chip skill">pipeline-dev <span class="badge model">AI</span></span>
+      <span class="chip skill">doggiehood-dev agent</span>
+      <span class="chip skill">scaffold-core</span>
+      <span class="chip skill">run-tests</span>
+      <span class="chip skill">core-unity-split</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>REPORT · 3×/day</header>
+    <div class="body">
+      <span class="chip det">dashboard.yml</span>
+      <span class="chip det">render_dashboard.py</span>
+      <span class="chip">PATCH #193 body only</span>
+      <span class="chip">golden-snapshot tested</span>
+      <span class="chip skill">pipeline-dashboard (docs)</span>
+    </div>
+  </div>
+  <div class="mcol">
+    <header>VERIFY · CI · path-scoped</header>
+    <div class="body">
+      <span class="chip det">pr-title-lint.yml · every PR</span>
+      <span class="chip det">ci-tests.yml · game code</span>
+      <span class="chip det">pr-build.yml · game code</span>
+      <span class="chip det">pipeline-tests.yml · pipeline scripts</span>
+      <span class="chip det">docs-test.yml · docs</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<h2>3 · The daily clock</h2>
+<p>
+Three scheduled Claude Code routines drive the model stages; a plain GitHub Actions cron re-renders the
+dashboard about an hour after each so it always reflects fresh labels. The gatekeeper runs
+<em>first</em> inside every routine, so downstream stages never act on stale state. Derek's entire
+day-to-day involvement is reading the dashboard and typing commands — typically minutes, on a phone.
+</p>
+
+<div class="diagram">
+<p class="dtitle">24-hour cycle · times in Central (cron pinned to UTC)</p>
+<div class="clock">
+  <div class="tick model">
+    <div class="time">1:00 AM</div><div class="utc">cron 0 6 * * *</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip skill">pipeline-dev</span><span class="chip">build night · 1 PR</span></div>
+  </div>
+  <div class="tick model">
+    <div class="time">7:00 AM</div><div class="utc">cron 0 12 * * *</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip skill">pipeline-analysis</span><span class="chip">triage morning</span></div>
+  </div>
+  <div class="tick model">
+    <div class="time">6:00 PM</div><div class="utc">cron 0 23 * * *</div>
+    <div class="chips"><span class="chip skill">gatekeeper</span><span class="chip">evening command sweep</span></div>
+  </div>
+  <div class="tick det">
+    <div class="time">+ ~1 hour</div><div class="utc">cron 7:00 · 13:00 · 0:00 UTC</div>
+    <div class="chips"><span class="chip det">dashboard.yml</span><span class="chip">#193 refreshed</span><span class="chip dash">fixed UTC · ±1h DST drift</span></div>
+  </div>
+</div>
+</div>
+
+<h2>4 · The owner's command vocabulary</h2>
+<p>
+Nine commands are the complete control surface. They can appear anywhere in a comment, surrounded by
+prose. Parsing is done by <code>parse_commands.py</code>, not by the model — the command grammar,
+owner-only rule, watermark rule, and parked-issue rule are all enforced in unit-tested code.
+</p>
+
+<div class="tablewrap"><table>
+  <tr><th>Command</th><th>Effect</th><th>Resulting state</th></tr>
+  <tr><td><code>/admit</code></td><td>Pull a raw idea into AI analysis</td><td><code>ai-triage</code></td></tr>
+  <tr><td><code>/approve</code></td><td>Accept the analysis; milestone resolved from override or proposal</td><td><code>ready-for-work</code></td></tr>
+  <tr><td><code>/revise &lt;notes&gt;</code></td><td>Send back with feedback the next analysis must address</td><td><code>ai-triage</code></td></tr>
+  <tr><td><code>/redo</code></td><td>Discard the analysis, start fresh</td><td><code>ai-triage</code></td></tr>
+  <tr><td><code>/propose</code></td><td>Authorize a marked PROPOSAL for a missing design/wireframe</td><td><code>ai-triage</code></td></tr>
+  <tr><td><code>/park</code> · <code>/unpark</code></td><td>Hide from every routine and the dashboard / bring back</td><td><code>parked</code> ⇄</td></tr>
+  <tr><td><code>/milestone &lt;name&gt;</code></td><td>Set or override the milestone (<code>04</code>, fragment, or full title)</td><td>—</td></tr>
+  <tr><td><code>/focus &lt;name&gt;</code></td><td>Point nightly development at a milestone (stored as the #193 marker)</td><td>—</td></tr>
+</table></div>
+
+<h2>5 · Inside the build: the development agent</h2>
+<p>
+The <code>doggiehood-dev</code> agent implements exactly one issue at a time, treating the approved
+Build checklist as its acceptance criteria and the <code>/docs</code> site as the design contract.
+Test-driven development is not a preference — the agent must show the failing output before
+implementation exists, and the pipeline drops any issue whose branch can't be kept green.
+</p>
+
+<div class="diagram">
+<p class="dtitle">Red–green–refactor · enforced per behavior change</p>
+<div class="tdd">
+  <span class="step"><span class="n">1</span>failing test first</span><span class="a">→</span>
+  <span class="step red"><span class="n">2</span>run · show RED</span><span class="a">→</span>
+  <span class="step"><span class="n">3</span>minimum code</span><span class="a">→</span>
+  <span class="step green"><span class="n">4</span>run · show GREEN</span><span class="a">→</span>
+  <span class="step"><span class="n">5</span>refactor · re-run</span>
+</div>
+<div style="margin-top:18px" class="chips">
+  <span class="chip">logic → <code>Doggiehood.Core</code> · engine-free C#</span>
+  <span class="chip">Core tests: plain NUnit · <code>dotnet test</code></span>
+  <span class="chip">thin Unity layer → EditMode tests in CI</span>
+  <span class="chip">Conventional Commit · <code>Refs #NN</code></span>
+  <span class="chip dash">docs conflict → stop + flag</span>
+  <span class="chip dash">UI structure w/o wireframe → stop + flag</span>
+</div>
+</div>
+
+<p>
+Two structural guardrails do a lot of quiet work here. The <strong>Core/Unity split</strong> keeps
+almost all game logic in an engine-free assembly, so the agent's red-green loop runs anywhere in
+seconds with no Unity install. And the <strong>wireframe-before-UI gate</strong> means no screen
+structure is ever invented during implementation — layout is proposed, reviewed, and approved as a
+spec + HTML mockup pair in <code>docs/specs/ui/</code> before code is allowed.
+</p>
+
+<h2>6 · Trust: why the owner can sleep while it runs</h2>
+<ul>
+  <li><strong>Authorization</strong> — only the repo owner's commands act; anyone else's <code>/commands</code> are parsed, ignored, and reported.</li>
+  <li><strong>Idempotency</strong> — the 👀 reaction watermark means a re-run with no new comments changes nothing.</li>
+  <li><strong>No silent design</strong> — analysis must stop and ask on any un-specced decision; drafting requires an explicit <code>/propose</code>.</li>
+  <li><strong>No self-merge</strong> — the pipeline opens PRs and keeps them green; only a human merges, so nothing reaches <code>main</code> unreviewed.</li>
+  <li><strong>Honest reporting</strong> — every PR opens with <code>## Deviations and Decisions</code>; the nightly cap and dropped issues are logged so a truncated queue never reads as "done".</li>
+  <li><strong>Tested guardrails</strong> — the parser, queue selector, and dashboard renderer are pure Python with unit tests (including a golden snapshot) run by CI on every change.</li>
+</ul>
+
+<h2>7 · Source map</h2>
+<p>Every claim above traces to one of these files in the repository.</p>
+<div class="tablewrap"><table>
+  <tr><th>Topic</th><th>Source of truth</th></tr>
+  <tr><td>Pipeline model, states, commands, schedule</td><td><code>docs/engineering/issue-pipeline.md</code></td></tr>
+  <tr><td>Label vocabulary, milestones</td><td><code>docs/intro/conventions.md</code></td></tr>
+  <tr><td>Command gate</td><td><code>.claude/skills/pipeline-gatekeeper/</code> (SKILL.md, <code>parse_commands.py</code>, tests)</td></tr>
+  <tr><td>Analysis stage</td><td><code>.claude/skills/pipeline-analysis/SKILL.md</code></td></tr>
+  <tr><td>Nightly build stage</td><td><code>.claude/skills/pipeline-dev/</code> (SKILL.md, <code>select_queue.py</code>, tests)</td></tr>
+  <tr><td>Dashboard render</td><td><code>.claude/skills/pipeline-dashboard/</code> + <code>.github/workflows/dashboard.yml</code></td></tr>
+  <tr><td>Development agent</td><td><code>.claude/agents/doggiehood-dev.md</code>; skills <code>run-tests</code>, <code>scaffold-core</code>, <code>core-unity-split</code></td></tr>
+  <tr><td>TDD strategy, Core/Unity split</td><td><code>docs/engineering/testing.md</code>, <code>docs/engineering/tech-stack.md</code></td></tr>
+  <tr><td>Wireframe-before-UI gate</td><td><code>docs/engineering/ui-design-process.md</code></td></tr>
+  <tr><td>Releases, changelog-per-issue mechanics</td><td><code>docs/engineering/versioning.md</code>, <code>docs/engineering/ci-cd.md</code>, <code>.github/workflows/*</code></td></tr>
+  <tr><td>Hard rules (TDD, no invented design, Conventional Commits)</td><td><code>CLAUDE.md</code></td></tr>
+</table></div>
+
+<div class="foot">
+Document 2 of 3 · Companion pages: <a href="01-executive-overview.html">Executive overview</a> ·
+<a href="03-work-blueprint.html">Enterprise blueprint (Azure DevOps + GitHub)</a>
+</div>
+
+</div>
+</body>
+</html>
