@@ -59,14 +59,26 @@ namespace Doggiehood.Core.Tests.Economy
         }
 
         [Test]
-        public void EveryCatalogItemCost_IsInTheThirtyToFiftyRange()
+        public void EveryPurchasableCatalogItemCost_IsInTheThirtyToFiftyRange()
         {
-            // #62: gifts/decorations cost 3-5 quests' worth of saving.
+            // #62/#190: gifts/decorations cost 3-5 quests' worth of saving.
+            // Find-only items (no Gift/Decoration eligibility) carry no cost.
             Assert.That(ItemCatalog.Items, Is.Not.Empty);
 
             foreach (var item in ItemCatalog.Items)
             {
-                Assert.That(item.Cost, Is.InRange(30, 50), item.Name);
+                var purchasable = item.IsEligibleFor(ItemEligibility.Gift)
+                    || item.IsEligibleFor(ItemEligibility.Decoration);
+
+                if (purchasable)
+                {
+                    Assert.That(item.Cost, Is.Not.Null, item.Name);
+                    Assert.That(item.Cost.Value, Is.InRange(30, 50), item.Name);
+                }
+                else
+                {
+                    Assert.That(item.Cost, Is.Null, item.Name + " is find-only and should carry no cost");
+                }
             }
         }
 

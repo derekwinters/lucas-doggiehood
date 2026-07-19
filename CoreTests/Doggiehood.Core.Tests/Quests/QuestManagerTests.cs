@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -162,6 +166,86 @@ namespace Doggiehood.Core.Tests.Quests
             // Once sprayed (completed) the house drops off the list.
             Assert.That(state.Quests.SprayHouse(buggedDog.HouseId), Is.True);
             Assert.That(state.Quests.HousesAwaitingSpray(), Is.Empty);
+        }
+
+        [Test]
+        public void LostItemPool_ExactlyMatchesTheCatalogsLostEligibleItems()
+        {
+            // #190: pools are queries over the single tagged catalog, not a
+            // hand-maintained parallel list.
+            var state = NewState();
+            var expected = ItemCatalog.NamesEligibleFor(ItemEligibility.Lost);
+            var observed = new HashSet<string>();
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(seed));
+                observed.Add(quest.ItemName);
+            }
+
+            Assert.That(observed, Is.EquivalentTo(expected));
+        }
+
+        [Test]
+        public void GiftPool_ExactlyMatchesTheCatalogsGiftEligibleItems()
+        {
+            // #190.
+            var state = NewState();
+            var expected = ItemCatalog.NamesEligibleFor(ItemEligibility.Gift);
+            var observed = new HashSet<string>();
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
+                observed.Add(quest.ItemName);
+            }
+
+            Assert.That(observed, Is.EquivalentTo(expected));
+        }
+
+        [Test]
+        public void DecorationRequestOptions_ExactlyMatchTheCatalogsDecorationEligibleItems()
+        {
+            // #190: the generic decoration request offers the
+            // Decoration-eligible catalog slice, no second parallel list.
+            var state = NewState();
+            var expected = ItemCatalog.NamesEligibleFor(ItemEligibility.Decoration);
+
+            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.DecorationRequest, new Random(1));
+
+            Assert.That(quest.Options, Is.EquivalentTo(expected));
+        }
+
+        [Test]
+        public void FindOnlyItems_AreNeverChosenForABuyGiftQuest()
+        {
+            // Find-only items (e.g. "puppy") carry no cost and must never be
+            // selectable for a purchase-driven quest type.
+            var state = NewState();
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
+                Assert.That(quest.ItemName, Is.Not.EqualTo("puppy"));
+            }
+        }
+
+        [Test]
+        public void NoParallelItemArrays_RemainOnQuestManager()
+        {
+            // #190 guard: LostItems/GiftItems/DecorationItems are deleted —
+            // pools must be queries over ItemCatalog, not hand-kept lists.
+            // (Invariant.)
+            var forbidden = new[] { "LostItems", "GiftItems", "DecorationItems" };
+
+            var offenders = typeof(QuestManager)
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Public
+                    | BindingFlags.Static | BindingFlags.Instance)
+                .Select(f => f.Name)
+                .Where(name => forbidden.Contains(name))
+                .ToList();
+
+            Assert.That(offenders, Is.Empty);
         }
 
         [Test]

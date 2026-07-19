@@ -30,6 +30,18 @@ Post-MVP expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Exp
 
 These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build. Every one of them is a named constant in Core so playtesting adjustments are one-line changes.
 
+## Item catalog
+
+*Source: [#190](https://github.com/derekwinters/lucas-doggiehood/issues/190), decided in interview with Derek 2026-07-16.*
+
+The priced catalog and every quest type's subject pool are **one source of truth**: a single tagged item catalog (`ItemCatalog`), not per-type hand-maintained lists. Each entry carries:
+
+- **Name**
+- **Cost** — optional. Purchasable items (gift/decoration) carry a cost in the 30-50 range above; find-only items (e.g. a lost puppy) carry none, since they're found rather than bought.
+- **Eligibility tags** for which quest type(s) it can appear in — Lost, Gift, Decoration. An item can carry more than one tag (a toy or ball is both lost- and gift-eligible).
+
+Each quest type's subject pool is a query over the catalog's tags (e.g. "every Gift-eligible item"), and the decoration-request options are the Decoration-eligible slice of the same catalog — there is no second, independently maintained item list anywhere. Adding a new item is a single catalog entry with its tags and cost; it then appears automatically in every rotation pool it's tagged for. The 30-50 coin rule above is a tested invariant on every Gift- or Decoration-eligible catalog entry.
+
 ## Quest authoring
 
 *Source: [#61](https://github.com/derekwinters/lucas-doggiehood/issues/61), implementation tracked in [#69](https://github.com/derekwinters/lucas-doggiehood/issues/69). Line-variety model ("Model 2") decided in interview with Derek 2026-07-16, tracked in [#189](https://github.com/derekwinters/lucas-doggiehood/issues/189).*
@@ -66,3 +78,4 @@ This generalizes what earlier drafts did with a single default line and a single
 - [ ] A quest template data structure exists with slots for dog name, personality-flavored line variant, and item/subject
 - [ ] At least the 3 MVP quest types (see [Quest Content](quest-content.md)) are expressed as templates, not hard-coded per-dog text
 - [x] Opener and closer lines are drawn from a default pool ∪ per-personality pool, uniform-random per string, via an injectable RNG — no anti-repeat memory or per-dog persisted state ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189))
+- [x] All quest subject pools (and decoration-request options) are queries over one tagged item catalog — no per-type parallel item lists; every Gift/Decoration-eligible entry costs 30-50 coins, find-only entries carry no cost ([#190](https://github.com/derekwinters/lucas-doggiehood/issues/190))
