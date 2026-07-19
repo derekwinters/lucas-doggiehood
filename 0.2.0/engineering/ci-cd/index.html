@@ -1546,10 +1546,14 @@
 <h2 id="commit-linting">Commit linting<a class="headerlink" href="#commit-linting" title="Permanent link">&para;</a></h2>
 <p>A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>)</p>
 <h2 id="docs-site-build-publish">Docs site build &amp; publish<a class="headerlink" href="#docs-site-build-publish" title="Permanent link">&para;</a></h2>
-<p>Two workflows, both gated to only run on changes under <code>docs/</code>, <code>mkdocs.yml</code>, or the workflow files themselves — so unrelated app-code PRs don't burn CI minutes on the docs pipeline:</p>
 <ul>
-<li><strong><code>docs-test.yml</code></strong>: on any PR touching docs, runs <code>mkdocs build --strict</code> to catch broken links/config before merge. No deploy.</li>
-<li><strong><code>docs-publish.yml</code></strong>: on push to <code>main</code> (when docs changed) or on a release tag, builds the site and publishes it with <code>mike</code>, versioned to match the app's <code>VERSION</code> file, to GitHub Pages.</li>
+<li><strong><code>docs-test.yml</code></strong>: runs its <code>build</code> job on <strong>every</strong> PR (no path filter) so it can report a status on code-only PRs too, backing the <a href="../agent-workflow/">docs-reconciliation rule</a>:<ul>
+<li>PR touches docs → runs <code>mkdocs build --strict</code> to catch broken links/config before merge. No deploy.</li>
+<li>PR touches no docs → the reconciliation gate fails the PR unless it carries the <code>skip-docs</code> label (the deliberate escape hatch for a genuinely doc-irrelevant change).</li>
+<li><strong>release-please's auto-generated release PR is exempt.</strong> It only bumps <code>VERSION</code>/<code>CHANGELOG.md</code>/<code>manifest.json</code> and can neither reconcile docs nor self-apply a label, so without an exemption the gate would block every release. It's identified by its deterministic <code>release-please--branches--*</code> head branch or its <code>autorelease: pending</code> label — either match bypasses the gate.</li>
+</ul>
+</li>
+<li><strong><code>docs-publish.yml</code></strong>: path-gated to changes under <code>docs/</code>, <code>mkdocs.yml</code>, or the workflow file itself. On push to <code>main</code> (when docs changed) or on a release tag, builds the site and publishes it with <code>mike</code>, versioned to match the app's <code>VERSION</code> file, to GitHub Pages.</li>
 </ul>
 <p>See the workflow files at <code>.github/workflows/docs-test.yml</code> and <code>.github/workflows/docs-publish.yml</code>.</p>
 <h2 id="issue-pipeline-workflows">Issue-pipeline workflows<a class="headerlink" href="#issue-pipeline-workflows" title="Permanent link">&para;</a></h2>
