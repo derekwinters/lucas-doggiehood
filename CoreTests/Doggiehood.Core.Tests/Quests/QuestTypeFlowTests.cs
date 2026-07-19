@@ -56,11 +56,37 @@ namespace Doggiehood.Core.Tests.Quests
         public void GeneratedViaTheSharedTemplateSystem()
         {
             // #12: dialogue comes from the template, not per-dog text.
+            // #189: the pooled opener/closer are drawn via an injectable
+            // RNG shared with the rest of quest generation, so the exact
+            // line depends on how much that RNG was already advanced —
+            // assert pool membership rather than an exact re-render.
             var state = GameState.CreateNew();
             var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new System.Random(9));
+            var dog = state.Dogs[0];
+            var template = QuestTemplates.For(QuestType.LostItem);
 
-            Assert.That(quest.DialogueLines,
-                Is.EqualTo(QuestTemplates.For(QuestType.LostItem).Render(state.Dogs[0], quest.ItemName)));
+            var openerCandidates = FilledPool(template.DefaultOpeners, template.FlavoredOpeners, dog, quest.ItemName);
+            var closerCandidates = FilledPool(template.DefaultClosers, template.FlavoredClosers, dog, quest.ItemName);
+
+            Assert.That(quest.DialogueLines.Count, Is.EqualTo(2));
+            Assert.That(openerCandidates, Does.Contain(quest.DialogueLines[0]));
+            Assert.That(closerCandidates, Does.Contain(quest.DialogueLines[1]));
+        }
+
+        private static System.Collections.Generic.HashSet<string> FilledPool(
+            System.Collections.Generic.IReadOnlyList<string> defaults,
+            System.Collections.Generic.IReadOnlyDictionary<Personality, System.Collections.Generic.IReadOnlyList<string>> flavored,
+            Dog dog,
+            string item)
+        {
+            var raw = new System.Collections.Generic.List<string>(defaults);
+            if (flavored.TryGetValue(dog.Personality, out var personalityLines))
+            {
+                raw.AddRange(personalityLines);
+            }
+
+            return new System.Collections.Generic.HashSet<string>(
+                raw.ConvertAll(t => t.Replace("{dog}", dog.Name).Replace("{item}", item)));
         }
     }
 

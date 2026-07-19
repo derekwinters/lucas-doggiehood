@@ -81,7 +81,7 @@ namespace Doggiehood.Core.Quests
                     // Generic request (#50): no pre-named item — the player
                     // chooses from the comfort options at acceptance.
                     var decoQuest = new Quest(nextQuestId++, type, dog.Name, null,
-                        QuestTemplates.For(type).Render(dog, "something comfy"),
+                        QuestTemplates.For(type).Render(dog, "something comfy", rng),
                         null, null, null, Decorations.ComfortDecorations.ItemNames);
                     quests.Add(decoQuest);
                     dog.GiveQuest();
@@ -93,7 +93,7 @@ namespace Doggiehood.Core.Quests
             }
 
             var quest = new Quest(nextQuestId++, type, dog.Name, item,
-                QuestTemplates.For(type).Render(dog, item), hidden, cost, targetHouse);
+                QuestTemplates.For(type).Render(dog, item, rng), hidden, cost, targetHouse);
             quests.Add(quest);
             dog.GiveQuest();
             return quest;
