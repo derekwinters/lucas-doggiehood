@@ -19,9 +19,6 @@ namespace Doggiehood.Core.Quests
         private const float LostItemTapRadius = 1.5f;
         private const float HiddenItemExtent = 25f;
 
-        private static readonly string[] LostItems = { "toy", "ball", "puppy" };
-        private static readonly string[] GiftItems = { "toy", "ball", "chew bone", "pool" };
-        private static readonly string[] DecorationItems = { "bed", "cushion", "blanket" };
         private static readonly QuestType[] RotationTypes =
         {
             QuestType.LostItem,
@@ -68,20 +65,22 @@ namespace Doggiehood.Core.Quests
             switch (type)
             {
                 case QuestType.LostItem:
-                    item = LostItems[rng.Next(LostItems.Length)];
+                    var lostItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Lost);
+                    item = lostItems[rng.Next(lostItems.Count)];
                     hidden = new GridPoint(
                         (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent,
                         (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent);
                     break;
                 case QuestType.BuyGift:
-                    item = GiftItems[rng.Next(GiftItems.Length)];
+                    var giftItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Gift);
+                    item = giftItems[rng.Next(giftItems.Count)];
                     cost = ItemCatalog.Get(item).Cost;
                     break;
                 case QuestType.DecorationRequest:
                     // Generic request (#50): no pre-named item — the player
                     // chooses from the comfort options at acceptance.
                     var decoQuest = new Quest(nextQuestId++, type, dog.Name, null,
-                        QuestTemplates.For(type).Render(dog, "something comfy"),
+                        QuestTemplates.For(type).Render(dog, "something comfy", rng),
                         null, null, null, Decorations.ComfortDecorations.ItemNames);
                     quests.Add(decoQuest);
                     dog.GiveQuest();
@@ -93,7 +92,7 @@ namespace Doggiehood.Core.Quests
             }
 
             var quest = new Quest(nextQuestId++, type, dog.Name, item,
-                QuestTemplates.For(type).Render(dog, item), hidden, cost, targetHouse);
+                QuestTemplates.For(type).Render(dog, item, rng), hidden, cost, targetHouse);
             quests.Add(quest);
             dog.GiveQuest();
             return quest;
@@ -141,7 +140,7 @@ namespace Doggiehood.Core.Quests
                 return false;
             }
 
-            var cost = ItemCatalog.Get(chosenItem).Cost;
+            var cost = ItemCatalog.Get(chosenItem).Cost.Value;
             if (!state.Wallet.TrySpend(cost))
             {
                 return false;

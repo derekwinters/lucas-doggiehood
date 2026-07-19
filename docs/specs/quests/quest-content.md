@@ -32,6 +32,8 @@ Decoration requests (a dog wants something comfy for its yard) are handled by th
 
 All 3 types are implemented as templates, not one-off hand-written text — see [Quest & Economy § Quest authoring](economy.md#quest-authoring).
 
+Item/subject names for all 3 types (and for decoration requests) are drawn from a single tagged item catalog, not per-type hand-written lists — see [Quest & Economy § Item catalog](economy.md#item-catalog). Find-only subjects (e.g. a lost puppy) carry no price, since they're found rather than bought.
+
 ## Build checklist
 
 - [ ] "Lost something" quest: item placed in-scene, resolved by pan/zoom + tap, no separate search screen

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Doggiehood.Core.Dogs;
 
@@ -5,38 +6,64 @@ namespace Doggiehood.Core.Quests
 {
     /// <summary>
     /// A reusable quest dialogue template (#69) with variable slots:
-    /// {dog} and {item}, plus a personality-flavored variant of the opening
-    /// line. Templates are why the daily rotation never needs hand-written
-    /// per-dog conversations.
+    /// {dog} and {item}. Line variety (#189, "Model 2"): both the opener
+    /// and the closer draw from a personality-agnostic default pool plus
+    /// an optional small per-personality pool. The candidate set for a
+    /// render is default UNION this dog's personality pool, and one line
+    /// is picked uniformly at random per string (not per bucket) via an
+    /// injectable RNG — pure random each fire, no anti-repeat memory, no
+    /// per-dog/session persisted state, matching the move-in system's
+    /// seeded-<see cref="Random"/> convention (docs/specs/expansion.md).
     /// </summary>
     public sealed class QuestTemplate
     {
-        private readonly IReadOnlyDictionary<Personality, string> flavoredOpeners;
-        private readonly string defaultOpener;
-        private readonly IReadOnlyList<string> followUpLines;
+        private readonly IReadOnlyList<string> defaultOpeners;
+        private readonly IReadOnlyDictionary<Personality, IReadOnlyList<string>> flavoredOpeners;
+        private readonly IReadOnlyList<string> defaultClosers;
+        private readonly IReadOnlyDictionary<Personality, IReadOnlyList<string>> flavoredClosers;
 
-        public QuestTemplate(string defaultOpener,
-            IReadOnlyDictionary<Personality, string> flavoredOpeners,
-            IReadOnlyList<string> followUpLines)
+        public QuestTemplate(
+            IReadOnlyList<string> defaultOpeners,
+            IReadOnlyDictionary<Personality, IReadOnlyList<string>> flavoredOpeners,
+            IReadOnlyList<string> defaultClosers,
+            IReadOnlyDictionary<Personality, IReadOnlyList<string>> flavoredClosers)
         {
-            this.defaultOpener = defaultOpener;
+            this.defaultOpeners = defaultOpeners;
             this.flavoredOpeners = flavoredOpeners;
-            this.followUpLines = followUpLines;
+            this.defaultClosers = defaultClosers;
+            this.flavoredClosers = flavoredClosers;
         }
 
-        public IReadOnlyList<string> Render(Dog dog, string itemName)
-        {
-            var opener = flavoredOpeners.TryGetValue(dog.Personality, out var flavored)
-                ? flavored
-                : defaultOpener;
+        public IReadOnlyList<string> DefaultOpeners => defaultOpeners;
+        public IReadOnlyDictionary<Personality, IReadOnlyList<string>> FlavoredOpeners => flavoredOpeners;
+        public IReadOnlyList<string> DefaultClosers => defaultClosers;
+        public IReadOnlyDictionary<Personality, IReadOnlyList<string>> FlavoredClosers => flavoredClosers;
 
-            var lines = new List<string> { Fill(opener, dog, itemName) };
-            foreach (var line in followUpLines)
+        public IReadOnlyList<string> Render(Dog dog, string itemName, Random random)
+        {
+            var opener = PickLine(defaultOpeners, flavoredOpeners, dog.Personality, random);
+            var closer = PickLine(defaultClosers, flavoredClosers, dog.Personality, random);
+
+            return new List<string>
             {
-                lines.Add(Fill(line, dog, itemName));
+                Fill(opener, dog, itemName),
+                Fill(closer, dog, itemName),
+            };
+        }
+
+        private static string PickLine(
+            IReadOnlyList<string> defaults,
+            IReadOnlyDictionary<Personality, IReadOnlyList<string>> flavored,
+            Personality personality,
+            Random random)
+        {
+            var candidates = new List<string>(defaults);
+            if (flavored.TryGetValue(personality, out var personalityLines))
+            {
+                candidates.AddRange(personalityLines);
             }
 
-            return lines;
+            return candidates[random.Next(candidates.Count)];
         }
 
         private static string Fill(string template, Dog dog, string itemName)
