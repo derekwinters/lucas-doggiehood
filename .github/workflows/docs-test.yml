@@ -3,6 +3,8 @@ name: docs-test
 # The `build` job runs on EVERY pull request (no path filter) so it can report a
 # status on code-only PRs too. Behavior:
 #   - PR touches docs -> run `mkdocs build --strict` (as before).
+#   - PR is release-please's auto-generated release PR -> pass (it only bumps
+#     VERSION/CHANGELOG/manifest and can never carry docs or a hand-added label).
 #   - PR touches no docs but carries the `skip-docs` label -> pass (deliberate escape hatch).
 #   - PR touches no docs and has no label -> fail, asking for a docs reconciliation or the label.
 # `labeled`/`unlabeled` are in the trigger list so toggling `skip-docs` re-evaluates the gate
@@ -46,6 +48,24 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Determine whether this is release-please's release PR
+        id: release
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          # release-please's release PR is mechanical (VERSION/CHANGELOG/manifest
+          # only) and cannot reconcile docs or self-apply skip-docs, so it is
+          # exempt from the docs-reconciliation gate. Match on its deterministic
+          # head branch (release-please--branches--<target>) OR its own
+          # `autorelease: pending` label, either of which uniquely identifies it.
+          if [ "${HEAD_REF#release-please--branches--}" != "$HEAD_REF" ] \
+            || printf '%s' "$LABELS" | grep -q '"autorelease: pending"'; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # --- Docs-touching PR: build the site strictly, exactly as before. ---
       - name: Set up Python
         if: steps.docs.outputs.changed == 'true'
@@ -65,6 +85,10 @@ jobs:
       - name: Docs reconciliation gate
         if: steps.docs.outputs.changed != 'true'
         run: |
+          if [ "${{ steps.release.outputs.is_release }}" = "true" ]; then
+            echo "release-please release PR — docs reconciliation gate does not apply."
+            exit 0
+          fi
           if [ "${{ steps.label.outputs.skip }}" = "true" ]; then
             echo "skip-docs label present — docs reconciliation gate bypassed for this PR."
             exit 0
