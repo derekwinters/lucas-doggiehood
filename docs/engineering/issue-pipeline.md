@@ -63,13 +63,20 @@ The active nightly-development milestone lives in a hidden marker on the
 <!-- pipeline-focus: v0.4 -->
 ```
 
-This is the single source of truth shared by the gatekeeper (writes it on
+This is the single source of truth shared by the gatekeeper (sets it on
 `/focus`), `pipeline-dev` (reads it to pick the queue), and the dashboard
 renderer (reads it, displays it, and re-emits it). It was chosen over a
 committed state file (no routine needs to push a commit just to record focus)
 and over a separate issue (the value sits next to where it's shown). If the
-marker is absent, focus defaults to the lowest-numbered milestone with open
+marker is absent, focus defaults to the lowest version milestone with open
 `ready-for-work` issues.
+
+The gatekeeper sets focus by **re-rendering the dashboard** with a
+`DASHBOARD_SET_FOCUS` override, which writes the new marker into a freshly
+rendered (raw) body — it never hand-edits #193's body directly. Reading and
+writing that body back through the GitHub tools re-HTML-encodes it (`"` →
+`&#34;`, `&` → `&amp;`) and breaks the Mermaid charts
+([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
 
 ## Routines and the dashboard workflow
 

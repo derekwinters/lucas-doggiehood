@@ -61,9 +61,15 @@ issue (#193)** body:
 This is the single source of truth read by both `pipeline-dev` (queue
 selection) and the dashboard workflow. It was chosen over a committed state
 file so no routine needs to push a commit just to record focus, and over a
-separate issue so the value sits next to where it's displayed. When `/focus`
-fires, update this marker (see step 5). If the marker is absent, focus defaults
-to the lowest-numbered milestone with open `ready-for-work` issues.
+separate issue so the value sits next to where it's displayed.
+
+**Never hand-edit #193's body to change the marker.** Reading that body back
+through the GitHub tools re-HTML-encodes it (`"` → `&#34;`, `&` → `&amp;`) and
+breaks the Mermaid charts ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
+Instead, `/focus` sets the marker by **re-rendering** the dashboard with the
+`DASHBOARD_SET_FOCUS` override, which makes the renderer write the new marker
+itself, raw (see step 3). If the marker is absent, focus defaults to the lowest
+version milestone with open `ready-for-work` issues.
 
 ## Procedure
 
@@ -96,8 +102,17 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
      comment if present, otherwise the milestone **proposed by analysis** in
      its `pending-approval` comment on that issue. If neither exists, leave the
      milestone unset and say so in the ack.
-   - If `set_focus` is non-null, update the `<!-- pipeline-focus: ... -->`
-     marker on #193 (add it if missing).
+   - If `set_focus` is non-null, set focus by **re-rendering** the dashboard
+     with the override — **never hand-edit #193's body** (a read-modify-write
+     re-HTML-encodes it and breaks the Mermaid charts, [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)):
+
+     ```bash
+     DASHBOARD_SET_FOCUS='<milestone title>' \
+       python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
+     ```
+
+     The renderer writes the new `<!-- pipeline-focus: <title> -->` marker
+     itself (raw) as part of the freshly rendered body.
 
 4. **Acknowledge.** React to the source comment with 👍 (`+1`) to confirm the
    action, and — where it moves the issue to a state awaiting Derek — post a
