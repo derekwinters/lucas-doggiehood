@@ -719,9 +719,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#open-design-question-do-opposing-turn-arches-join-into-a-loop" class="md-nav__link">
+  <a href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" class="md-nav__link">
     <span class="md-ellipsis">
-      Open design question: do opposing-turn arches join into a loop?
+      Resolved: opposing-turn arches do not join into a loop
     </span>
   </a>
   
@@ -1441,9 +1441,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#open-design-question-do-opposing-turn-arches-join-into-a-loop" class="md-nav__link">
+  <a href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" class="md-nav__link">
     <span class="md-ellipsis">
-      Open design question: do opposing-turn arches join into a loop?
+      Resolved: opposing-turn arches do not join into a loop
     </span>
   </a>
   
@@ -1473,10 +1473,10 @@
 
 
 <h1 id="tile-catalog-design-reference">Tile Catalog (Design Reference)<a class="headerlink" href="#tile-catalog-design-reference" title="Permanent link">&para;</a></h1>
-<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (deferred multi-tile grid/placement system, slated for v0.4), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (map-shape question, resolved 2026-07-14 — see <a href="../../expansion/#map-shape">Neighborhood Expansion</a>)</em></p>
+<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (multi-tile grid/placement system, implemented), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (map-shape question, resolved 2026-07-14 — see <a href="../../expansion/#map-shape">Neighborhood Expansion</a>)</em></p>
 <div class="admonition note">
-<p class="admonition-title">Status: design reference only, not implemented</p>
-<p>This catalog is a design reference for the deferred multi-tile grid/placement system (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>) — it is <strong>not implemented in Core by this issue</strong>. Today the codebase contains exactly one tile: the <code>FourWay</code> starting intersection, built as <a href="../world/"><code>NeighborhoodLayout</code></a>. No <code>TileType</code> enum, adjacency validation, or per-type lot logic exists yet. Its sidewalks, crosswalks, and walk network graph <strong>are</strong> implemented (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than any tile/adjacency system, so that implementation doesn't presuppose an answer to this catalog's open questions.</p>
+<p class="admonition-title">Status: implemented in Core (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>)</p>
+<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (17 values), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges and, for the OpposingTurns types, arcs), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 16 non-<code>FourWay</code> types). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system. Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
 </div>
 <h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
 <p>These 7 measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) as the geometric basis every tile type below will eventually be built from.</p>
@@ -1519,7 +1519,7 @@
 </tbody>
 </table>
 <h2 id="the-17-tile-types">The 17 tile types<a class="headerlink" href="#the-17-tile-types" title="Permanent link">&para;</a></h2>
-<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the other 16 are designed for the future multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>).</p>
+<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the other 16 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>).</p>
 <table>
 <thead>
 <tr>
@@ -1606,19 +1606,28 @@
 </tr>
 <tr>
 <td><code>OpposingTurnsNS</code></td>
-<td>E,W</td>
-<td><code>⬭</code> two quarter-circle-radius arches joining the E/W edge connections — one bowing north, one bowing south — enclosing a central island</td>
+<td>N,E,S,W</td>
+<td><code>⬭</code> a NE-corner turn arc and an unrelated SW-corner turn arc — one bowing north(-east), one bowing south(-west) — enclosing a central island, <strong>not</strong> connected to each other</td>
 </tr>
 <tr>
 <td><code>OpposingTurnsEW</code></td>
-<td>N,S</td>
-<td><code>⬯</code> the 90° rotation: arches bowing east and west</td>
+<td>N,E,S,W</td>
+<td><code>⬯</code> the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other</td>
 </tr>
 </tbody>
 </table>
-<h2 id="open-design-question-do-opposing-turn-arches-join-into-a-loop">Open design question: do opposing-turn arches join into a loop?<a class="headerlink" href="#open-design-question-do-opposing-turn-arches-join-into-a-loop" title="Permanent link">&para;</a></h2>
-<p><em>Unresolved — carried forward to <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, does not block this issue</em></p>
-<p>The current assumption, per Derek, is that each arch in <code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code> is "a curved road, an arch, likely a quarter circle radius" — implying the two arches join into a continuous loop around the central island, using the 15m <code>OpposingTurnArchRadius</code>. Whether they're actually meant to connect into a loop, versus being disconnected curves, is not yet decided. This needs an answer before tile geometry is built in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, but not before then.</p>
+<h2 id="resolved-opposing-turn-arches-do-not-join-into-a-loop">Resolved: opposing-turn arches do not join into a loop<a class="headerlink" href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" title="Permanent link">&para;</a></h2>
+<p><em>Resolved 2026-07-18 by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, overriding the earlier #105 "loop/island" framing below</em></p>
+<blockquote>
+<p>The two turns would not connect. Each arc would connect two adjacent sides only. There would be two distinct, unconnected arcs.</p>
+</blockquote>
+<p>So each arch in <code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code> is a <strong>turn</strong> in exactly the same sense as the <code>TurnNE</code>/<code>TurnNW</code>/<code>TurnSE</code>/<code>TurnSW</code> tiles above: it joins two <em>adjacent</em> (corner) edges, not the two <em>opposite</em> edges the original framing assumed. <code>OpposingTurnsNS</code> is a <code>TurnNE</code>-shaped arc plus an unconnected <code>TurnSW</code>-shaped arc; <code>OpposingTurnsEW</code> is that pairing's 90° rotation (<code>TurnNW</code> + <code>TurnSE</code>). Between them the two arcs touch all four edges, but there is no path from one arc into the other — no loop, no shared connection point — matching Core's <code>TileArc</code>/<code>TileTypeDefinition.EdgesConnectedVia</code> in <code>Doggiehood.Core.World</code> (built by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>), which scopes each edge's connection to its own arc only. The 15m <code>OpposingTurnArchRadius</code> (see <a href="#standard-dimensions">Standard dimensions</a>) still describes each arc's individual curve; it just no longer describes one continuous loop.</p>
+<details>
+<summary>Original (superseded) framing, kept for history</summary>
+
+The original assumption, per Derek, was that each arch in `OpposingTurnsNS`/`OpposingTurnsEW` is "a curved road, an arch, likely a quarter circle radius" — implying the two arches join into a continuous loop around the central island, using the 15m `OpposingTurnArchRadius`, with both arches connecting the tile's two *opposite* edges (E/W for `OpposingTurnsNS`, N/S for `OpposingTurnsEW`). This is superseded by the resolution above.
+
+</details>
 
 
 

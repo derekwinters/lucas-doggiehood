@@ -1492,7 +1492,7 @@
 
 <h1 id="dog-roster-names">Dog Roster &amp; Names<a class="headerlink" href="#dog-roster-names" title="Permanent link">&para;</a></h1>
 <p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/63">#63</a> (starting roster), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/67">#67</a> (name pool), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/68">#68</a> (easter eggs)</em></p>
-<p>All three specs below are <strong>decided but not yet implemented</strong> as data in the project.</p>
+<p>All three specs below are implemented as data in the project. The name-selection and easter-egg mechanics are now wired into a live consumer — the <a href="../../expansion/#move-in-system">move-in system</a> (<code>Doggiehood.Core.Expansion.MoveInSystem</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>).</p>
 <h2 id="starting-roster-the-4-houses">Starting roster (the 4 houses)<a class="headerlink" href="#starting-roster-the-4-houses" title="Permanent link">&para;</a></h2>
 <p>Breed pool used for the starting cast: German Shepherd, Golden Retriever, Labrador, Beagle, Chihuahua, French Bulldog, Puggle, Frenchton. Personality types: see <a href="../behavior/">Dog Behavior</a>.</p>
 <table>
@@ -1614,10 +1614,10 @@
 </table>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
-<li>[ ] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above</li>
-<li>[ ] General name pool (68 names) exists as data, excluding <code>Hank</code> and <code>Stella</code></li>
-<li>[ ] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs</li>
-<li>[ ] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment</li>
+<li>[x] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above</li>
+<li>[x] General name pool (68 names) exists as data, excluding <code>Hank</code> and <code>Stella</code></li>
+<li>[x] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs</li>
+<li>[x] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment</li>
 </ul>
 
 

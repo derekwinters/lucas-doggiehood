@@ -1655,7 +1655,7 @@ consume this Core query instead of hardcoding Y.</p>
 <h2 id="explicitly-out-of-scope-here">Explicitly out of scope here<a class="headerlink" href="#explicitly-out-of-scope-here" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Approach-to-rest movement</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a>) — <code>RestBehavior</code> stays a pure probabilistic state flip with no movement of its own; it doesn't touch the walk network.</li>
-<li><strong>Multi-tile grid / adjacency system</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, slated for v0.4) — no <code>TileType</code> enum exists. <code>WalkNetwork</code> is generic enough to extend to it later, but building that system is not part of this page.</li>
+<li><strong>Multi-tile grid / adjacency system</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, implemented — see <a href="../tile-catalog/">Tile Catalog</a>) — <code>WalkNetwork</code> doesn't consume it yet; <code>WalkNetwork</code> is generic enough to extend to it later, but wiring it up is not part of this page.</li>
 <li><strong>Literal crosswalk striping</strong> — deferred visual polish; today's crosswalk is one flat-colored patch.</li>
 </ul>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
