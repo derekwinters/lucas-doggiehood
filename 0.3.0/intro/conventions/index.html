@@ -1590,7 +1590,7 @@
 <li><strong><code>ready-for-work</code></strong> — approved and milestoned; in the nightly dev queue.</li>
 <li><strong><code>in-progress</code></strong> — a nightly dev run has picked it up.</li>
 <li><strong><code>parked</code></strong> — hidden from every routine and the dashboard.</li>
-<li><strong><code>dashboard</code></strong> — marks the single live dashboard issue; excluded everywhere.</li>
+<li><strong><code>dashboard</code></strong> — marks the single live dashboard issue; excluded from every routine, except that <code>/focus</code> is honored on it so focus can be set from the dashboard itself (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/204">#204</a>).</li>
 </ul>
 <h2 id="milestones-are-version-numbered-scopes">Milestones are version-numbered scopes<a class="headerlink" href="#milestones-are-version-numbered-scopes" title="Permanent link">&para;</a></h2>
 <p>Each milestone's <strong>title is a version</strong> (<code>v0.4</code>, <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, …) and its <strong>description carries the scope</strong> — what that version adds, expands, or polishes. Pick a milestone by matching an issue against the milestone's scope <em>description</em>, read live, rather than a memorized phase list.</p>
