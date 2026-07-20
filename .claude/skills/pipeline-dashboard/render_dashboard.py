@@ -306,13 +306,12 @@ def fetch_state(repo, token, as_of):
         else:
             b["remaining"] += 1
 
-    # Focus: marker on #193 if present, else lowest milestone with ready work.
+    # Focus: DASHBOARD_SET_FOCUS override (a `/focus` re-render) > #193 marker
+    # > lowest version milestone with ready work.
     dash = _api_get("/repos/%s/issues/%d" % (repo, DASHBOARD_ISSUE), token)
-    focus_title = _read_focus_marker(dash.get("body") or "")
-    if not focus_title:
-        ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
-        pool = ready_ms or list(milestones)
-        focus_title = min(pool, key=_milestone_key) if pool else "(none)"
+    focus_title = _resolve_focus(
+        os.environ.get("DASHBOARD_SET_FOCUS"),
+        _read_focus_marker(dash.get("body") or ""), milestones)
     fb = milestones.get(focus_title, {"done": 0, "ready": 0, "remaining": 0})
 
     def open_issues_with(label):
@@ -398,6 +397,24 @@ def _read_focus_marker(body):
     import re
     m = re.search(r"<!--\s*pipeline-focus:\s*(.+?)\s*-->", body)
     return m.group(1).strip() if m else None
+
+
+def _resolve_focus(override, marker_title, milestones):
+    """Focus precedence: an explicit override (the DASHBOARD_SET_FOCUS env var,
+    set when a `/focus` command re-renders the dashboard) wins; else the #193
+    marker; else the lowest version milestone with ready-for-work issues.
+
+    Setting focus by re-rendering with this override — instead of hand-editing
+    #193's body — is what keeps the stored body raw. A read-modify-write of the
+    body re-HTML-encodes it (`"` becomes `&#34;`, `&` becomes `&amp;`) and breaks
+    the Mermaid charts. See #204."""
+    if override and override.strip():
+        return override.strip()
+    if marker_title:
+        return marker_title
+    ready = [t for t, b in milestones.items() if b["ready"] > 0]
+    pool = ready or list(milestones)
+    return min(pool, key=_milestone_key) if pool else "(none)"
 
 
 def _blocked_by(body):
