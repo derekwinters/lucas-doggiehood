@@ -4,9 +4,10 @@ using System.Collections.Generic;
 namespace Doggiehood.Core.Dogs
 {
     /// <summary>
-    /// The curated 66-name pool for dogs that move in later (#67). Hank and
+    /// The curated 68-name pool for dogs that move in later (#67). Hank and
     /// Stella are deliberately absent — they're reserved easter-egg names
-    /// (#68). No live consumer until expansion (post-MVP); that's expected.
+    /// (#68). Consumed live by the move-in system (#54,
+    /// Expansion.MoveInSystem) once a house becomes vacant.
     /// </summary>
     public static class NamePool
     {

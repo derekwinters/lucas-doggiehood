@@ -13,9 +13,15 @@ namespace Doggiehood.Core.World
     {
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
         private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
+        private readonly List<Dog> dogs;
 
         public IReadOnlyList<House> Houses { get; }
-        public IReadOnlyList<Dog> Dogs { get; }
+
+        public IReadOnlyList<Dog> Dogs
+        {
+            get { return dogs; }
+        }
+
         public Economy.Wallet Wallet { get; }
         public Quests.QuestManager Quests { get; }
 
@@ -31,10 +37,10 @@ namespace Doggiehood.Core.World
             get { return decorations; }
         }
 
-        private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> dogs)
+        private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> startingDogs)
         {
             Houses = houses;
-            Dogs = dogs;
+            dogs = new List<Dog>(startingDogs);
             Wallet = new Economy.Wallet();
             Quests = new Quests.QuestManager(this);
         }
@@ -56,6 +62,14 @@ namespace Doggiehood.Core.World
         public void AddDecoration(Decorations.Decoration decoration)
         {
             decorations.Add(decoration);
+        }
+
+        /// <summary>A newly moved-in dog (#54) joins the live roster
+        /// immediately — eligible for the very next daily quest rotation,
+        /// exactly like any other quest-free dog.</summary>
+        public void AddDog(Dog dog)
+        {
+            dogs.Add(dog);
         }
 
         /// <summary>First-launch tutorial flag (#44); persists in the save.</summary>

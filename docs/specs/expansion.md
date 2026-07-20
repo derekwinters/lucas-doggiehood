@@ -42,6 +42,8 @@ The tile-grid placement/adjacency system this all sits on is [#109](https://gith
 - **Names** come from the [general name pool](dogs/roster-names.md#general-name-pool-for-dogs-that-move-in-later), no duplicates among active dogs.
 - New dogs **join the daily quest rotation immediately**.
 
+**Implementation note ([#54](https://github.com/derekwinters/lucas-doggiehood/issues/54)):** the mechanism above is built as pure Core logic — `Doggiehood.Core.Expansion.MoveInSystem`, `VacantHouses`, and `BreedWeighting` — operating on an abstract set of vacant house ids plus the current dog roster, with no dependency on the #109/#56 tile-grid/zone geometry. It isn't wired into `GameState` yet: there's no real vacant house to fill until zone unlock (#56) and house building (#57) exist, so that wiring (plus persisting `MoveInSystem`'s pity-counter and easter-egg-reserve state through `SaveCodec`) lands together with #58.
+
 ## House leveling
 
 Levels 1–4. Decoration slots equal the house level (**1/2/3/4**); upgrade costs are in [Pricing](#pricing). The v1.0 decoration flow auto-places with no cap, so the cap is introduced with [#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) (already-placed decorations are never removed). Per-level *visuals* are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.

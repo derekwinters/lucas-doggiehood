@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -10,6 +11,19 @@ namespace Doggiehood.Core.Tests.World
         public void CreateNew_ContainsExactlyFourHouses()
         {
             Assert.That(GameState.CreateNew().Houses.Count, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void AddDog_ExtendsTheLiveRoster()
+        {
+            // #54: a moved-in dog joins the live roster immediately.
+            var state = GameState.CreateNew();
+            var newDog = new Dog("Buddy", Breed.Beagle, Personality.Excited, houseId: 1, isPuppy: false);
+
+            state.AddDog(newDog);
+
+            Assert.That(state.Dogs.Count, Is.EqualTo(9));
+            Assert.That(state.Dogs, Does.Contain(newDog));
         }
 
         [Test]
