@@ -552,7 +552,15 @@ namespace Doggiehood.Unity
             }
         }
 
-        private static void BuildHouse(Transform parent, House house)
+        /// <summary>
+        /// Builds one house's full visual (view + model, #38): public so
+        /// it can be called for a single house directly — both the #58
+        /// vacancy EditMode tests (a house not part of a full GameState)
+        /// and, forward-looking, #57's eventual "build one new house
+        /// mid-game" action, which needs exactly this without rebuilding
+        /// the whole scene. Returns the house's root GameObject.
+        /// </summary>
+        public static GameObject BuildHouse(Transform parent, House house)
         {
             var lot = NeighborhoodLayout.GetHouseLot(house.Id);
 
@@ -590,8 +598,8 @@ namespace Doggiehood.Unity
             if (model != null)
             {
                 var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
-                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant);
-                return;
+                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant, house.IsVacant);
+                return houseRoot;
             }
 
             // Graybox fallback (only reached when the kit model itself
@@ -601,12 +609,15 @@ namespace Doggiehood.Unity
             // their per-house hex colors, since real per-house visual
             // identity now comes from the kit model + BuildHouseModel's
             // tint-variant texture swap, which this fallback never reaches.
+            // #58: a vacant house gets the flat vacancy tint instead of the
+            // fallback's normal wall color.
             var walls = GameObject.CreatePrimitive(PrimitiveType.Cube);
             walls.name = "Walls";
             walls.transform.SetParent(houseRoot.transform);
             walls.transform.localScale = new Vector3(HouseFallbackWallsFootprint, HouseFallbackWallsHeight, HouseFallbackWallsFootprint);
             walls.transform.localPosition = new Vector3(0f, HouseFallbackWallsHeight / 2f, 0f);
-            Paint(walls, Palette.HouseFallbackHex);
+            Paint(walls, house.IsVacant ? Palette.VacantHouseTintHex : Palette.HouseFallbackHex);
+            return houseRoot;
         }
 
         /// <summary>
@@ -640,7 +651,7 @@ namespace Doggiehood.Unity
         /// walls/roof/porch are built in this path.
         /// </summary>
         private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing,
-            HouseTintVariant tintVariant)
+            HouseTintVariant tintVariant, bool isVacant)
         {
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
@@ -650,6 +661,7 @@ namespace Doggiehood.Unity
             visual.transform.localScale = Vector3.one * HouseKitScale;
 
             ApplyTintVariant(visual, tintVariant);
+            ApplyVacancyTint(visual, isVacant);
 
             // houseRoot has identity rotation and unit scale at this point,
             // matching TapColliders.AddFitted's requirement.
@@ -709,6 +721,35 @@ namespace Doggiehood.Unity
                     ? new Material(renderer.sharedMaterial)
                     : new Material(Shader.Find("Standard"));
                 material.mainTexture = texture;
+                renderer.sharedMaterial = material;
+            }
+        }
+
+        /// <summary>
+        /// Greyscales a vacant house's mesh (#58, superseding the earlier
+        /// "for sale sign" plan): while House.IsVacant, every renderer on
+        /// the model gets a flat desaturated color multiply instead of its
+        /// normal ApplyTintVariant coloring — the same color-multiply
+        /// technique DogView.PaintModel uses for its white-base coat, no
+        /// new art asset needed. Pure function of House.IsVacant at build
+        /// time, no logic of its own: occupied houses are left exactly as
+        /// ApplyTintVariant already rendered them (this simply never
+        /// touches them), so the next time the world rebuilds after a
+        /// house's dog moves in, it renders the normal tint again.
+        /// </summary>
+        private static void ApplyVacancyTint(GameObject visual, bool isVacant)
+        {
+            if (!isVacant)
+            {
+                return;
+            }
+
+            foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.color = CoreColors.FromHex(Palette.VacantHouseTintHex);
                 renderer.sharedMaterial = material;
             }
         }

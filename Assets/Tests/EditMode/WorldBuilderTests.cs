@@ -105,6 +105,65 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void VacantHouse_RendersGreyscaled_AndRestoresNormalTintOnceOccupied()
+        {
+            // #58: a vacant house's mesh renders with a flat desaturated
+            // tint instead of its normal HouseStyleTable coloring; once a
+            // dog moves in (House.MarkOccupied), rebuilding the same
+            // logical house must render its normal tint again. Kit path —
+            // this SetUp already staged the real City Kit Suburban models.
+            var lot = NeighborhoodLayout.HouseLots.First();
+            var house = new House(lot.HouseId, lot.Quadrant, isVacant: true);
+            var container = new GameObject("VacancyTestContainer");
+            var vacantTint = CoreColors.FromHex(Palette.VacantHouseTintHex);
+
+            var vacantVisual = WorldBuilder.BuildHouse(container.transform, house);
+            var vacantColors = vacantVisual.GetComponentsInChildren<Renderer>()
+                .Select(r => r.sharedMaterial.color).ToList();
+
+            Assert.That(vacantColors, Is.Not.Empty);
+            Assert.That(vacantColors, Has.All.EqualTo(vacantTint),
+                "every renderer on a vacant house should carry the flat vacancy tint");
+
+            Object.DestroyImmediate(vacantVisual);
+            house.MarkOccupied();
+            var occupiedVisual = WorldBuilder.BuildHouse(container.transform, house);
+            var occupiedColors = occupiedVisual.GetComponentsInChildren<Renderer>()
+                .Select(r => r.sharedMaterial.color).ToList();
+
+            Assert.That(occupiedColors, Has.None.EqualTo(vacantTint),
+                "an occupied house must never keep the vacancy tint");
+
+            Object.DestroyImmediate(container);
+        }
+
+        [Test]
+        public void VacantHouse_RendersGreyscaled_InThePrimitiveFallbackPathToo()
+        {
+            // Same contract as above, but for the graybox fallback (only
+            // reached when a house's kit model itself can't load).
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var lot = NeighborhoodLayout.HouseLots.First();
+            var house = new House(lot.HouseId, lot.Quadrant, isVacant: true);
+            var container = new GameObject("VacancyTestContainer");
+            var vacantTint = CoreColors.FromHex(Palette.VacantHouseTintHex);
+
+            var vacantVisual = WorldBuilder.BuildHouse(container.transform, house);
+            var walls = vacantVisual.GetComponentsInChildren<Transform>().Single(t => t.name == "Walls");
+
+            Assert.That(walls.GetComponent<Renderer>().sharedMaterial.color, Is.EqualTo(vacantTint));
+
+            Object.DestroyImmediate(vacantVisual);
+            house.MarkOccupied();
+            var occupiedVisual = WorldBuilder.BuildHouse(container.transform, house);
+            var occupiedWalls = occupiedVisual.GetComponentsInChildren<Transform>().Single(t => t.name == "Walls");
+
+            Assert.That(occupiedWalls.GetComponent<Renderer>().sharedMaterial.color, Is.Not.EqualTo(vacantTint));
+
+            Object.DestroyImmediate(container);
+        }
+
+        [Test]
         public void BuildsBothRoads()
         {
             var roads = Children().Where(t => t.name.StartsWith(WorldBuilder.RoadNamePrefix)).ToList();
