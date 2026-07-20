@@ -19,7 +19,7 @@ No implementation code is written before its failing test exists and has been sh
 ## Where tests live
 
 - **Core logic** (quests, economy, dog state, name pool, house leveling, etc.): plain NUnit tests, no Unity dependency. These run anywhere, instantly — the primary source of coverage.
-- **Unity integration layer** (`MonoBehaviour` wiring, scene setup): Unity Test Framework EditMode tests, run headless in CI via `-batchmode -nographics`. No PlayMode tests and no on-device/emulator testing are required for MVP — the thin Unity layer should have as little untested logic in it as possible by design (push everything possible into Core).
+- **Unity integration layer** (`MonoBehaviour` wiring, scene setup): Unity Test Framework EditMode tests, run headless in CI via `-batchmode -nographics`. No PlayMode tests and no on-device/emulator testing are required for v1.0 — the thin Unity layer should have as little untested logic in it as possible by design (push everything possible into Core).
 
 ## What this means for new features
 

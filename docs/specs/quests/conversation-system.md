@@ -4,7 +4,7 @@
 
 ## Discovery
 
-Dogs that have something to say show a speech bubble icon above them. ([#10](https://github.com/derekwinters/lucas-doggiehood/issues/10)) This is the **sole** way quests are surfaced for MVP — there is no separate quest log or journal screen. ([#32](https://github.com/derekwinters/lucas-doggiehood/issues/32))
+Dogs that have something to say show a speech bubble icon above them. ([#10](https://github.com/derekwinters/lucas-doggiehood/issues/10)) This is the **sole** way quests are surfaced for v1.0 — there is no separate quest log or journal screen. ([#32](https://github.com/derekwinters/lucas-doggiehood/issues/32))
 
 ## Starting a conversation
 
@@ -12,7 +12,7 @@ Clicking/tapping a dog's speech bubble opens the conversation UI with that dog. 
 
 ## Dialogue structure
 
-Conversations are a simple linear back-and-forth: the dog explains its request, the player taps to accept, done. **No branching dialogue choices for MVP.** ([#33](https://github.com/derekwinters/lucas-doggiehood/issues/33))
+Conversations are a simple linear back-and-forth: the dog explains its request, the player taps to accept, done. **No branching dialogue choices for v1.0.** ([#33](https://github.com/derekwinters/lucas-doggiehood/issues/33))
 
 Dialogue lines are generated from templates rather than hand-written per dog — see [Quest & Economy](economy.md#quest-authoring) for how template content is structured and personality-flavored. The opener and closer are each drawn at random from a pool (default lines plus the dog's personality-specific lines) when the quest fires ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189)) — still a single linear exchange, no branching, just non-repetitive wording.
 

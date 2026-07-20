@@ -19,11 +19,11 @@ Breed pool used for the starting cast: German Shepherd, Golden Retriever, Labrad
 | 4 — Multi-dog (3) | Scout | Beagle | Adventurous/Exploring |
 | 4 — Multi-dog (3) | Waffles | Frenchton | Shy |
 
-French Bulldog and Puggle are unused in the starting roster — reserved for the first expansion zone (post-MVP, see [Neighborhood Expansion](../expansion.md)).
+French Bulldog and Puggle are unused in the starting roster — reserved for the first expansion zone (v0.4, see [Neighborhood Expansion](../expansion.md)).
 
 ## General name pool (for dogs that move in later)
 
-As new houses fill up over time (post-MVP expansion), new dogs need names. The game randomly picks an unused name from a curated pool, avoiding duplicates with dogs currently in the neighborhood.
+As new houses fill up over time (v0.4 expansion), new dogs need names. The game randomly picks an unused name from a curated pool, avoiding duplicates with dogs currently in the neighborhood.
 
 How move-in dogs are assembled (households, the reserved-breeds-first rule, count-weighted breed selection, personalities, and the easter-egg chance) is specified in [Neighborhood Expansion — Move-in system](../expansion.md#move-in-system) *(decisions 2026-07-14, Derek, on [#54](https://github.com/derekwinters/lucas-doggiehood/issues/54))*. In short: after the reserved French Bulldog and Puggle arrive, breeds are chosen with weights inversely proportional to each breed's current count in the neighborhood.
 

@@ -12,8 +12,8 @@ The overall goal is helping dogs around the neighborhood by completing their req
 
 ## Currency
 
-- **Source**: currency is earned only by completing dog requests/quests. No idle income, ads, or mini-games for MVP. ([#24](https://github.com/derekwinters/lucas-doggiehood/issues/24))
-- **Sinks**: quest gifts, decorations (both delivered via the normal quest flow — see [Decorations](../decorations.md)), and (post-MVP) new streets/houses ([Neighborhood Expansion](../expansion.md)). ([#25](https://github.com/derekwinters/lucas-doggiehood/issues/25))
+- **Source**: currency is earned only by completing dog requests/quests. No idle income, ads, or mini-games for v1.0. ([#24](https://github.com/derekwinters/lucas-doggiehood/issues/24))
+- **Sinks**: quest gifts, decorations (both delivered via the normal quest flow — see [Decorations](../decorations.md)), and (in v0.4) new streets/houses ([Neighborhood Expansion](../expansion.md)). ([#25](https://github.com/derekwinters/lucas-doggiehood/issues/25))
 
 ### Numbers (placeholder, expect tuning)
 
@@ -22,7 +22,7 @@ The overall goal is helping dogs around the neighborhood by completing their req
 - A completed quest pays a **flat 10 coins**, regardless of quest type.
 - A typical gift/decoration item costs **roughly 30-50 coins** (3-5 quests' worth of saving).
 
-Post-MVP expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Expansion](../expansion.md#pricing))*:
+v0.4 expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Expansion](../expansion.md#pricing))*:
 
 - Zone unlock: **100 coins** for the first zone, **+100 per subsequent zone** (100, 200, 300, …).
 - Building a house: **50 coins**, flat.
@@ -52,7 +52,7 @@ Quests are authored as reusable **templates**, not hand-written per dog. Each qu
 - Item/subject (toy name, decoration type, pest type, etc.)
 - Personality ([Dog Behavior](../dogs/behavior.md)) — seasons which opener/closer line is drawn, per the pooled model below
 
-New quest types (mechanics) beyond the existing set stay deferred/post-MVP — this section is only about line variety within the existing types, not new mechanics.
+New quest types (mechanics) beyond the existing set stay deferred to a later version — this section is only about line variety within the existing types, not new mechanics.
 
 ### Line variety: pooled openers/closers, uniform random ("Model 2")
 
@@ -76,6 +76,6 @@ This generalizes what earlier drafts did with a single default line and a single
 - [ ] Completed quest state (delivered items, decorations) persists permanently — no reset logic tied to the daily rotation
 - [ ] No quest has a timer, expiration, or fail state anywhere in the system
 - [ ] A quest template data structure exists with slots for dog name, personality-flavored line variant, and item/subject
-- [ ] At least the 3 MVP quest types (see [Quest Content](quest-content.md)) are expressed as templates, not hard-coded per-dog text
+- [ ] At least the 3 v1.0 quest types (see [Quest Content](quest-content.md)) are expressed as templates, not hard-coded per-dog text
 - [x] Opener and closer lines are drawn from a default pool ∪ per-personality pool, uniform-random per string, via an injectable RNG — no anti-repeat memory or per-dog persisted state ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189))
 - [x] All quest subject pools (and decoration-request options) are queries over one tagged item catalog — no per-type parallel item lists; every Gift/Decoration-eligible entry costs 30-50 coins, find-only entries carry no cost ([#190](https://github.com/derekwinters/lucas-doggiehood/issues/190))

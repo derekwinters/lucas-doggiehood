@@ -16,6 +16,10 @@ This was chosen over having release-please patch Unity's `ProjectSettings/Projec
 
 The marker is required — release-please's generic `extra-files` updater (used for any file without a recognized JSON/YAML/TOML/XML extension) only rewrites a line that contains `x-release-please-version`; it does not blindly overwrite a file's entire contents. Without the marker, the updater has nothing to match and silently leaves the file untouched. This is exactly what happened in [#114](https://github.com/derekwinters/lucas-doggiehood/issues/114): `VERSION` stayed on `0.1.0` across a real `0.2.0` release because it was a bare version string with no marker, even though release-please's own `manifest.json` bookkeeping had correctly advanced. Anything that reads `VERSION` (build workflows, docs publishing) strips everything from `#` onward before parsing, so the trailing comment never leaks into a `versionName`/`versionCode`.
 
+## Milestone versions vs. the shipped version
+
+GitHub **milestones are version-*named*** (`v0.4`, `v1.0`, …) as planning targets — see [Conventions](../intro/conventions.md#milestones-are-version-numbered-scopes). Those labels are **decoupled** from the version release-please computes here: `VERSION` advances from Conventional-Commit history, so a milestone titled `v0.4` describes a *scope*, and the version that actually ships when its work lands need not be exactly `0.4.0`. Milestones plan; release-please versions. We deliberately don't add tooling to force the two to line up.
+
 ## release-please configuration
 
 Config lives at non-default paths:

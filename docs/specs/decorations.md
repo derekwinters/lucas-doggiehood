@@ -4,7 +4,7 @@
 
 ## Scope
 
-Decorations apply to a specific dog's own yard/house only. No decorating shared public spaces (streets, the intersection) for MVP. ([#46](https://github.com/derekwinters/lucas-doggiehood/issues/46))
+Decorations apply to a specific dog's own yard/house only. No decorating shared public spaces (streets, the intersection) for v1.0. ([#46](https://github.com/derekwinters/lucas-doggiehood/issues/46))
 
 ## Effect
 
@@ -12,7 +12,7 @@ Decorations are cosmetic but also raise a dog's happiness. Happiness affects ani
 
 ## Placement
 
-Decorations are placed automatically in a sensible spot in the yard — no drag-and-drop or arranging UI for MVP. ([#48](https://github.com/derekwinters/lucas-doggiehood/issues/48))
+Decorations are placed automatically in a sensible spot in the yard — no drag-and-drop or arranging UI for v1.0. ([#48](https://github.com/derekwinters/lucas-doggiehood/issues/48))
 
 ## Acquisition
 
@@ -20,7 +20,7 @@ There is **no standalone decoration shop**. Decorations are requested by dogs th
 
 A decoration request is **generic** (e.g. "my yard could use something comfy") rather than naming one specific item — the player picks which item to send from a small set of options. This differs from the toy/pool quest, which asks for one specific named thing. ([#50](https://github.com/derekwinters/lucas-doggiehood/issues/50))
 
-## MVP category: comfort items
+## v1.0 category: comfort items
 
 Starting scope is **comfort items** — dog beds, cushions, blankets. ([#51](https://github.com/derekwinters/lucas-doggiehood/issues/51)) Other categories considered for later: play items (pool, sprinkler), yard dressing (flowers, fence), food/bowls.
 

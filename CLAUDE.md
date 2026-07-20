@@ -12,7 +12,7 @@ Doggiehood is a low-poly Android game about a neighborhood of dogs, built by Der
 
 Build the docs site locally with `pip install -r docs/requirements.txt && mkdocs serve` if you want to browse it rendered.
 
-**GitHub issues are the checklist for accomplishing the contract.** Each issue needed for MVP has a detailed TDD-oriented checklist. Work one issue at a time, in milestone order (`02` → `08`, lowest issue number first within a milestone — see `docs/intro/conventions.md`).
+**GitHub issues are the checklist for accomplishing the contract.** Each issue carries a detailed TDD-oriented checklist. Work one issue at a time within the current **focus milestone**, lowest issue number first. Milestones are version-numbered planning scopes (`v0.4`, `v1.0`, …), matched live by their description — see `docs/intro/conventions.md`.
 
 If an issue and the docs ever disagree, or something needed isn't covered by either, stop and flag it — don't invent a rule. Decisions get made in conversation with Derek and Lucas, captured as GitHub issues, then reflected in `/docs`.
 
@@ -35,5 +35,4 @@ Anything an agent cannot complete autonomously — repo settings, secrets, asset
 ## What not to do
 
 - Don't add monetization, ads, accounts, or network calls — the product is free, offline, local-save-only (`docs/specs/product-scope.md`).
-- Don't build `06 - Neighborhood Expansion` content as part of the MVP milestone — it's fully specced but explicitly post-MVP (`docs/specs/expansion.md`).
 - Don't invent quest types, personalities, breeds, or mechanics not in the specs — bring new ideas back to Derek and Lucas first.

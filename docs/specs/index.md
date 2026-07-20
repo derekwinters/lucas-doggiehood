@@ -4,9 +4,9 @@ This section is the implementation contract. Each page is a settled design area;
 
 A development agent implementing a feature should treat these pages as authoritative. If something needed to implement a feature isn't covered here, that's a gap — stop and flag it rather than inventing a rule, and it should get resolved back in GitHub first.
 
-## MVP scope
+## v1.0 scope
 
-The MVP is the **`08 - Vertical Slice Release Candidate`** milestone: everything in milestones `02` through `05`, plus a light pass of `07`, integrated into one playable build across the 4 starting houses. **`06 - Neighborhood Expansion` is explicitly out of MVP scope** ([#88](https://github.com/derekwinters/lucas-doggiehood/issues/88)) — the [Neighborhood Expansion](expansion.md) page is fully designed but is post-MVP work.
+v1.0 — the first complete release — integrates all mainline functionality into one playable build across the 4 starting houses, with real art, polish, and onboarding. The bulk of that functionality lands first in graybox under **`v0.4`**, which now also includes **neighborhood expansion** ([#88](https://github.com/derekwinters/lucas-doggiehood/issues/88)) — the [Neighborhood Expansion](expansion.md) page is fully designed and no longer deferred. See [Conventions](../intro/conventions.md#milestones-are-version-numbered-scopes) for the version-milestone model.
 
 ## Pages
 
@@ -36,7 +36,7 @@ The MVP is the **`08 - Vertical Slice Release Candidate`** milestone: everything
 **Other systems**
 
 - [Decorations](decorations.md)
-- [Neighborhood Expansion](expansion.md) *(post-MVP)*
+- [Neighborhood Expansion](expansion.md) *(v0.4)*
 - [Audio](audio.md)
 - [Onboarding](onboarding.md)
 - [Product Scope & Constraints](product-scope.md)

@@ -18,11 +18,11 @@ When a release-please release PR is open, CI builds a release-candidate APK vers
 !!! note "RC numbering design (resolved)"
     release-please's native prerelease support bumps prerelease numbers when *releases* happen, not when the open release PR is rebased, so it can't produce `rc1` → `rc2` across pushes to the same open PR. Instead, `rc-build.yml` derives the RC number itself: it counts that workflow's runs on the release PR's branch since the PR was opened (current run included). Every push to the open release PR adds a run, incrementing the RC; a fresh release PR after a release ships has a later created-at watermark, so the count — and the RC number — starts over at `rc1`. The release PR's `VERSION` file already carries the next version (it's a release-please extra-file), so builds are versioned `v<VERSION>-rc<N>`.
 
-Both PR debug builds and RC builds use debug signing, apply the same `.debug` applicationId suffix ([#80](https://github.com/derekwinters/lucas-doggiehood/issues/80)), and are distributed as GitHub Actions artifacts only, consistent with the rest of MVP scope.
+Both PR debug builds and RC builds use debug signing, apply the same `.debug` applicationId suffix ([#80](https://github.com/derekwinters/lucas-doggiehood/issues/80)), and are distributed as GitHub Actions artifacts only, consistent with the rest of the current release scope.
 
 ## Release builds
 
-When a release ships (release-please publishes the `vX.Y.Z` GitHub release), `release-build.yml` builds the APK for that tag and **attaches it to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in MVP scope.
+When a release ships (release-please publishes the `vX.Y.Z` GitHub release), `release-build.yml` builds the APK for that tag and **attaches it to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in the current release scope.
 
 ## Commit linting
 

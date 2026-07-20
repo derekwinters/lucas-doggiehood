@@ -13,11 +13,11 @@ Some dogs are placed inside houses rather than out on the street, visible lookin
 Rather than giving every personality its own animation set, mood is conveyed through **how a dog walks** ([#89](https://github.com/derekwinters/lucas-doggiehood/issues/89)):
 
 - **Excited**: fast walking speed, long straight stretches down a street before turning — covers real distance rather than pacing back and forth.
-- **Grumpy/sad**: slow walking speed, turns almost every step — shuffles around a small area. *(Deferred out of MVP — see below.)*
+- **Grumpy/sad**: slow walking speed, turns almost every step — shuffles around a small area. *(Deferred past v1.0 — see below.)*
 
 Other personalities (Brave, Shy, Adventurous/Exploring, Athletic) can get their own speed/turn-pattern combinations later using the same system.
 
-**MVP scope**: only the general speed/turn-pattern system needs to exist. **Excited** is the one pattern to actually implement for MVP. Grumpy's distinct movement pattern is deferred — Grumpy remains a valid personality for dialogue/flavor (Pepper is Grumpy, see [Dog Roster & Names](roster-names.md)), it just won't have distinct movement behavior yet.
+**v1.0 scope**: only the general speed/turn-pattern system needs to exist. **Excited** is the one pattern to actually implement for the first complete release. Grumpy's distinct movement pattern is deferred — Grumpy remains a valid personality for dialogue/flavor (Pepper is Grumpy, see [Dog Roster & Names](roster-names.md)), it just won't have distinct movement behavior yet.
 
 ### Quest-related movement
 
@@ -27,7 +27,7 @@ When a dog's "buy me X" request is accepted, the dog walks home at a medium spee
 
 Across the 4 starting houses: most houses have a parent dog + puppy, some houses have just one dog, and some have 2-3 dogs. This variety sets up quests like "lost my puppy" naturally. ([#34](https://github.com/derekwinters/lucas-doggiehood/issues/34)) See [Dog Roster & Names](roster-names.md) for the actual starting cast.
 
-New houses (post-MVP expansion) start empty and dogs move in gradually over time — see [Neighborhood Expansion](../expansion.md).
+New houses (v0.4 expansion) start empty and dogs move in gradually over time — see [Neighborhood Expansion](../expansion.md).
 
 ## Breeds & personality
 
@@ -39,7 +39,7 @@ Every dog has a defined personality trait that colors its dialogue tone and the 
 
 ## Scope
 
-Dogs are the only interactable characters for MVP — no cats, mail carriers, squirrels, or other animals/people. Scope is limited to dogs and their houses; other characters can be revisited in future expansions. ([#37](https://github.com/derekwinters/lucas-doggiehood/issues/37))
+Dogs are the only interactable characters for v1.0 — no cats, mail carriers, squirrels, or other animals/people. Scope is limited to dogs and their houses; other characters can be revisited in future expansions. ([#37](https://github.com/derekwinters/lucas-doggiehood/issues/37))
 
 ## Animations
 

@@ -36,7 +36,7 @@ A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't
 
 ## How an issue gets worked
 
-1. Pick the next open issue in build-order (milestones `02` → `08`, lowest number first within a milestone).
+1. Pick the next open issue in the current focus milestone, lowest number first (milestones are version-numbered planning scopes — see [Conventions](../intro/conventions.md#milestones-are-version-numbered-scopes)).
 2. Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.
 3. Work test-first per [Testing Strategy](testing.md), checking off checklist items as they're satisfied.
 4. **Reconcile the docs/specs the change affects, in the same PR.** If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant [`docs/specs`](../specs/index.md) (or `docs/engineering`) page(s) alongside the code — never leave the spec describing the old behavior. If no doc change is genuinely needed, say so explicitly in the `Deviations and Decisions` section with the reason. This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the `docs-test` `build` job runs on **every** PR and fails a code-only PR unless it carries the `skip-docs` label (see [CI/CD](ci-cd.md)) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass. (release-please's mechanical release PR is auto-exempt from the gate — it only bumps `VERSION`/`CHANGELOG.md`/`manifest.json`, so it never has docs to reconcile and can't self-apply the label.)

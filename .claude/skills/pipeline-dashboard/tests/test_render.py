@@ -36,7 +36,7 @@ class TestRender(unittest.TestCase):
     def test_focus_marker_present_and_first(self):
         first = self.body.splitlines()[0]
         self.assertEqual(
-            first, "<!-- pipeline-focus: 03 - Dogs & Conversations -->"
+            first, "<!-- pipeline-focus: v0.4 -->"
         )
 
     def test_pie_values(self):
@@ -78,8 +78,8 @@ class TestRender(unittest.TestCase):
     def test_release_please_in_automation(self):
         self.assertIn("chore(main): release 0.3.0", self.body)
 
-    def test_post_mvp_annotated(self):
-        self.assertIn("post-MVP", self.body)
+    def test_no_mvp_language(self):
+        self.assertNotIn("MVP", self.body)
 
     def test_deterministic(self):
         self.assertEqual(self.body, render_dashboard.render_body(load_state()))
