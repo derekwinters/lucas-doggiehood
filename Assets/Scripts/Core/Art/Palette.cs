@@ -32,5 +32,19 @@ namespace Doggiehood.Core.Art
         /// per-house WallColorHex values on HouseStyle.
         /// </summary>
         public const string HouseFallbackHex = "#D9A066";
+
+        /// <summary>
+        /// Flat desaturated tint for a vacant house's mesh (#58): while a
+        /// house has no dog living in it yet (House.IsVacant), WorldBuilder
+        /// paints its model with this grey instead of its normal
+        /// HouseStyleTable coloring — a material color multiply over the
+        /// existing mesh, no new art asset (docs/specs/expansion.md
+        /// superseded the earlier "for sale sign" plan with this). Rendering
+        /// is a pure function of House.IsVacant at build time (no live
+        /// re-tint of an already-built house) — the next time the world
+        /// (re)builds after #54's move-in system occupies a house, it
+        /// renders that house's normal tint again.
+        /// </summary>
+        public const string VacantHouseTintHex = "#9A9A9A";
     }
 }

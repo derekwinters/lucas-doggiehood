@@ -9,7 +9,7 @@
 
 1. **Unlock a zone**: the player pays a currency cost to unlock a new zone/area of the map. Newly unlocked zones start with no houses at all — just empty land. ([#56](https://github.com/derekwinters/lucas-doggiehood/issues/56))
 2. **Build houses**: the player spends currency to construct individual houses within an unlocked zone. Houses don't appear automatically — building each one is its own purchase. ([#57](https://github.com/derekwinters/lucas-doggiehood/issues/57))
-3. **Vacancy**: a freshly built house is empty and displays a "for sale" sign until a dog eventually moves in. ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58))
+3. **Vacancy**: a freshly built house is empty and renders greyscaled until a dog eventually moves in. ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58))
 4. **Occupancy over time**: new dogs arrive and move into empty houses gradually over time, rather than all at once. ([#54](https://github.com/derekwinters/lucas-doggiehood/issues/54)) See [Move-in system](#move-in-system) below for the full mechanism, and [Dog Roster & Names](dogs/roster-names.md) for how names and breeds are drawn.
 5. **House leveling**: every house starts at level 1 and can be upgraded up to level 4. Upgrading makes the house visually bigger/nicer and increases how many decorations its yard can hold. ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59))
 
@@ -42,6 +42,8 @@ The tile-grid placement/adjacency system this all sits on is [#109](https://gith
 - **Names** come from the [general name pool](dogs/roster-names.md#general-name-pool-for-dogs-that-move-in-later), no duplicates among active dogs.
 - New dogs **join the daily quest rotation immediately**.
 
+**Implementation note ([#54](https://github.com/derekwinters/lucas-doggiehood/issues/54)/[#58](https://github.com/derekwinters/lucas-doggiehood/issues/58)):** the mechanism above is built as pure Core logic — `Doggiehood.Core.Expansion.MoveInSystem`, `VacantHouses`, and `BreedWeighting` — operating on an abstract set of vacant house ids plus the current dog roster, with no dependency on the #109/#56 tile-grid/zone geometry. `Doggiehood.Core.World.House` carries the vacancy flag itself (`IsVacant`, flipped by `MarkOccupied`); `Doggiehood.Core.Expansion.HouseOccupancy` bridges the two, deriving the current vacant set from live houses, running one `MoveInSystem` roll, and — only on success — occupying the filled house. `GameState.HandleQuestCompleted` calls this on every completed quest (`QuestManager.Complete`), so the trigger is fully wired. Since zone unlock (#56) and house building (#57) don't exist yet, every house in a real game is one of the 4 starting houses (already occupied at `GameState.CreateNew()`) — so this wiring has no vacant house to actually fill until #56/#57 land, but is exercised directly in the Core test suite. **Still outstanding:** persisting `MoveInSystem`'s pity-counter and easter-egg-reserve state through `SaveCodec` — until that lands, both reset every app session.
+
 ## House leveling
 
 Levels 1–4. Decoration slots equal the house level (**1/2/3/4**); upgrade costs are in [Pricing](#pricing). The v1.0 decoration flow auto-places with no cap, so the cap is introduced with [#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) (already-placed decorations are never removed). Per-level *visuals* are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.
@@ -54,16 +56,18 @@ The neighborhood needs a visible signal that it *can* grow — a marker on the m
 
 The asset is imported/staged only — nothing is wired to it yet. Like every other art binary in the repo it carries no committed per-file `.meta`; when `v0.4` wires the icon into the map UI, that PR pins its GUID and sprite internal ID and adds the serialization guard test, per [Hand-Authoring Unity Serialized Assets](../engineering/unity-serialization.md).
 
-## The "for sale" sign
+## Vacant house rendering
 
-Vacancy is Core state; the sign is purely its visual. No sign 3D asset exists yet — sourcing one is [#154](https://github.com/derekwinters/lucas-doggiehood/issues/154) (Direct Involvement Needed). Until it lands, a graybox placeholder is used via `WorldBuilder`'s existing missing-kit-piece fallback, so the asset does not block [#58](https://github.com/derekwinters/lucas-doggiehood/issues/58).
+> **Decision update (2026-07-16, Derek, on [#58](https://github.com/derekwinters/lucas-doggiehood/issues/58)):** superseded the earlier "for sale sign in the yard" plan. Instead, **the whole house mesh renders greyscaled (desaturated) while vacant** and returns to its normal tinted color the moment a dog moves in. This needs no new art asset — it's a flat desaturated material color multiplied over the existing house mesh (the same technique already used for dog coat tinting), not a sign object placed in the yard. It removed the dependency on sourcing a "for sale" sign 3D asset, so [#154](https://github.com/derekwinters/lucas-doggiehood/issues/154) is closed as no longer needed.
+
+Vacancy is Core state (`House.IsVacant`); the greyscale is purely its visual, with no logic of its own — `WorldBuilder` reads the flag at build time and picks the flat vacancy tint instead of the house's normal `HouseStyleTable` coloring, in both the City Kit model path and the graybox fallback.
 
 ## Build checklist (for when `v0.4` starts)
 
-- [ ] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
+- [x] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
 - [ ] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street
 - [ ] Currency-gated house building (50 flat) places a level-1, vacant house on an empty lot in an unlocked zone
-- [ ] Newly built houses show a "for sale" sign (graybox until [#154](https://github.com/derekwinters/lucas-doggiehood/issues/154)) that clears on move-in
+- [ ] Newly built houses render greyscaled and return to their normal tinted color on move-in ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58) — Core state, wiring, and rendering already built; unreachable in a real game until house building (#57) exists)
 - [ ] The shared pity-counter move-in system (5% base, +5% per quest, reset on success) fills vacant houses per the household/breed/easter-egg rules above
 - [ ] Houses support 4 discrete levels (upgrades 100/200/400) with decoration slots equal to level
 - [ ] Every tuning value above is a named constant adjustable for playtesting

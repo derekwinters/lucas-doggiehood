@@ -2,7 +2,7 @@
 
 *Issues: [#63](https://github.com/derekwinters/lucas-doggiehood/issues/63) (starting roster), [#67](https://github.com/derekwinters/lucas-doggiehood/issues/67) (name pool), [#68](https://github.com/derekwinters/lucas-doggiehood/issues/68) (easter eggs)*
 
-All three specs below are **decided but not yet implemented** as data in the project.
+All three specs below are implemented as data in the project. The name-selection and easter-egg mechanics are now wired into a live consumer — the [move-in system](../expansion.md#move-in-system) (`Doggiehood.Core.Expansion.MoveInSystem`, [#54](https://github.com/derekwinters/lucas-doggiehood/issues/54)).
 
 ## Starting roster (the 4 houses)
 
@@ -53,7 +53,7 @@ Each expansion move-in has a **5% chance** its household head is drawn from this
 
 ## Build checklist
 
-- [ ] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above
-- [ ] General name pool (68 names) exists as data, excluding `Hank` and `Stella`
-- [ ] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs
-- [ ] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment
+- [x] The 8 starting dogs exist as data (name, breed, personality, house assignment) matching the roster table above
+- [x] General name pool (68 names) exists as data, excluding `Hank` and `Stella`
+- [x] Name-selection logic picks a random unused name from the pool when a new dog is needed, with no duplicates among currently-active dogs
+- [x] Easter-egg name table exists and always resolves to its fixed breed/coat when that name comes up, bypassing random breed assignment

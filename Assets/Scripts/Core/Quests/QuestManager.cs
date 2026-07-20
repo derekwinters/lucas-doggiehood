@@ -27,12 +27,26 @@ namespace Doggiehood.Core.Quests
         };
 
         private readonly GameState state;
+        private readonly Random moveInRng;
         private readonly List<Quest> quests = new List<Quest>();
         private int nextQuestId = 1;
 
         public QuestManager(GameState state)
+            : this(state, new Random())
+        {
+        }
+
+        /// <summary>#58: the move-in pity-counter roll (docs/specs/expansion.md
+        /// "RNG injectable for deterministic tests") needs a Random on
+        /// every quest completion, but Complete() has no caller-supplied
+        /// one to thread through (unlike StartNewDay's explicit parameter)
+        /// — QuestManager owns it instead, defaulting to a real Random so
+        /// production callers need no changes, with this overload for
+        /// deterministic tests.</summary>
+        public QuestManager(GameState state, Random moveInRng)
         {
             this.state = state;
+            this.moveInRng = moveInRng;
         }
 
         public IEnumerable<Quest> ActiveQuests
@@ -253,6 +267,7 @@ namespace Doggiehood.Core.Quests
             quest.Status = QuestStatus.Completed;
             FindDog(quest).ClearQuest();
             state.Wallet.Deposit(EconomyNumbers.QuestPayout);
+            state.HandleQuestCompleted(moveInRng);
         }
 
         private Dog FindDog(Quest quest)
