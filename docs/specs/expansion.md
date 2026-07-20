@@ -64,7 +64,7 @@ Vacancy is Core state (`House.IsVacant`); the greyscale is purely its visual, wi
 
 ## Build checklist (for when `v0.4` starts)
 
-- [ ] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
+- [x] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
 - [ ] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street
 - [ ] Currency-gated house building (50 flat) places a level-1, vacant house on an empty lot in an unlocked zone
 - [ ] Newly built houses render greyscaled and return to their normal tinted color on move-in ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58) — Core state, wiring, and rendering already built; unreachable in a real game until house building (#57) exists)

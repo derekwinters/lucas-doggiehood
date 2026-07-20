@@ -79,7 +79,7 @@ A front walkway renders as tiled Kenney City Kit Suburban `path-short` pieces �
 ## Explicitly out of scope here
 
 - **Approach-to-rest movement** ([#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) — `RestBehavior` stays a pure probabilistic state flip with no movement of its own; it doesn't touch the walk network.
-- **Multi-tile grid / adjacency system** ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), slated for v0.4) — no `TileType` enum exists. `WalkNetwork` is generic enough to extend to it later, but building that system is not part of this page.
+- **Multi-tile grid / adjacency system** ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), implemented — see [Tile Catalog](tile-catalog.md)) — `WalkNetwork` doesn't consume it yet; `WalkNetwork` is generic enough to extend to it later, but wiring it up is not part of this page.
 - **Literal crosswalk striping** — deferred visual polish; today's crosswalk is one flat-colored patch.
 
 ## Build checklist
