@@ -57,5 +57,22 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(north.X, Is.EqualTo(WorldDimensions.TileSize));
             Assert.That(north.Z, Is.EqualTo(half));
         }
+
+        [Test]
+        public void LotWorldPositionsFor_OffsetsTheTypesLocalLotsByTheTilesCenter()
+        {
+            var coordinate = new TileCoordinate(1, 0);
+            var center = TileGeometry.CenterOf(coordinate);
+            var localOffsets = TileLotCatalog.LotOffsetsFor(TileType.TurnNE);
+
+            var worldLots = TileGeometry.LotWorldPositionsFor(TileType.TurnNE, coordinate);
+
+            Assert.That(worldLots.Count, Is.EqualTo(localOffsets.Count));
+            for (int i = 0; i < worldLots.Count; i++)
+            {
+                Assert.That(worldLots[i].X, Is.EqualTo(center.X + localOffsets[i].X));
+                Assert.That(worldLots[i].Z, Is.EqualTo(center.Z + localOffsets[i].Z));
+            }
+        }
     }
 }
