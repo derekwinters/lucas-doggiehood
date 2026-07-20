@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
@@ -11,6 +12,31 @@ namespace Doggiehood.Core.Tests.World
         public void CreateNew_ContainsExactlyFourHouses()
         {
             Assert.That(GameState.CreateNew().Houses.Count, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void CreateNew_StartingHousesAreAlreadyOccupied()
+        {
+            // #58: the 4 starting houses already have dogs living in them
+            // (#63) — they must never report vacant.
+            Assert.That(GameState.CreateNew().Houses, Has.All.Property("IsVacant").False);
+        }
+
+        [Test]
+        public void HandleQuestCompleted_IsANoOp_WhenNoHouseIsVacant()
+        {
+            // #58/#54: GameState is wired to the move-in system, but with
+            // every starting house occupied there is nothing to fill —
+            // the pity counter must not advance and the roster must not
+            // change, regardless of the roll.
+            var state = GameState.CreateNew();
+            var dogCountBefore = state.Dogs.Count;
+
+            var moved = state.HandleQuestCompleted(new Random());
+
+            Assert.That(moved, Is.Empty);
+            Assert.That(state.Dogs.Count, Is.EqualTo(dogCountBefore));
+            Assert.That(state.Houses, Has.All.Property("IsVacant").False);
         }
 
         [Test]

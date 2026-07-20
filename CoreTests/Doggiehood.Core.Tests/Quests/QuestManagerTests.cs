@@ -126,6 +126,25 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void CompletingAQuest_RollsTheMoveInPityCounter_ButNeverFillsAnOccupiedHouse()
+        {
+            // #58: every quest completion is wired to GameState's move-in
+            // hook (#54). With all 4 starting houses already occupied
+            // there is nothing to fill, so completing a quest must never
+            // grow the dog roster or touch house vacancy, no matter how
+            // the roll would have landed.
+            var state = NewState();
+            var dogCountBefore = state.Dogs.Count;
+            var pest = state.Quests.GiveQuestTo(state.Dogs[4], QuestType.PestControl, new System.Random(3));
+            state.Quests.Accept(pest);
+
+            Assert.That(state.Quests.SprayHouse(pest.TargetHouseId.Value), Is.True);
+
+            Assert.That(state.Dogs.Count, Is.EqualTo(dogCountBefore));
+            Assert.That(state.Houses, Has.All.Property("IsVacant").False);
+        }
+
+        [Test]
         public void QuestsNeverExpire_AcrossAnyNumberOfRotations()
         {
             // #28: an active quest stays active until explicitly completed.
