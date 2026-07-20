@@ -16,12 +16,12 @@ Two distinct dependency notions (see issue #197):
 
 Input schema (stdin):
   {
-    "focus_milestone": "04 - Quests & Economy",
+    "focus_milestone": "v0.4",
     "cap": 3,
     "open_issue_numbers": [205, 210, 211, 212],
     "issues": [
       {"number": 210, "labels": ["ready-for-work"],
-       "milestone": "04 - Quests & Economy", "is_epic": false,
+       "milestone": "v0.4", "is_epic": false,
        "has_open_pr": false, "blocked_by": [], "depends_on": []}
     ]
   }

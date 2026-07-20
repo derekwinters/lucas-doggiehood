@@ -20,7 +20,7 @@ Design rules encoded here (see issue #194 and docs/engineering/issue-pipeline.md
 Input schema (stdin):
   {
     "repo_owner": "derekwinters",
-    "milestones": ["03 - Dogs & Conversations", "04 - Quests & Economy", ...],
+    "milestones": ["v0.4", "v1.0", ...],
     "issues": [
       {"number": 181, "labels": ["pending-approval"],
        "is_epic": false, "is_dashboard": false,
@@ -35,8 +35,8 @@ Output schema (stdout):
     "actions": [
       {"issue": 181, "comment_id": 7, "commands": ["approve"],
        "add_labels": ["ready-for-work"], "remove_labels": ["pending-approval"],
-       "set_milestone": "07 - Polish & Onboarding" | null,
-       "set_focus": "04 - Quests & Economy" | null,
+       "set_milestone": "v1.0" | null,
+       "set_focus": "v0.4" | null,
        "propose": false, "revise_notes": null, "redo": false,
        "react": 7,
        "menu": "ready-for-work"}

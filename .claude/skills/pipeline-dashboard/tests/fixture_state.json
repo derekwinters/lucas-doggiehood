@@ -2,7 +2,7 @@
   "repo": "derekwinters/lucas-doggiehood",
   "as_of": "2026-07-17 07:00 CT",
   "focus": {
-    "milestone": "03 - Dogs & Conversations",
+    "milestone": "v0.4",
     "done": 18,
     "ready": 0,
     "remaining": 5,
@@ -34,14 +34,14 @@
     {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
   ],
   "other_milestones": [
-    {"title": "04 - Quests & Economy", "done": 18, "open": 3, "post_mvp": false},
-    {"title": "05 - Decorations & Happiness", "done": 8, "open": 1, "post_mvp": false},
-    {"title": "07 - Polish & Onboarding", "done": 3, "open": 11, "post_mvp": false},
-    {"title": "06 - Neighborhood Expansion", "done": 1, "open": 9, "post_mvp": true}
+    {"title": "v1.0", "done": 3, "open": 11},
+    {"title": "v1.1", "done": 0, "open": 2},
+    {"title": "v2.0", "done": 0, "open": 1},
+    {"title": "Direct Involvement Needed", "done": 13, "open": 4}
   ],
   "open_by_milestone": {
-    "labels": ["m03", "m04", "m05", "m06", "m07"],
-    "values": [5, 3, 1, 9, 11],
+    "labels": ["v0.4", "v1.0", "v1.1", "v2.0", "Direct Involvement Needed"],
+    "values": [5, 11, 2, 1, 4],
     "ymax": 12
   }
 }

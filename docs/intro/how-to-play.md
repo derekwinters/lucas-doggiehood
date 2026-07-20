@@ -28,4 +28,4 @@ Coin goes toward gifts for dogs and comfort decorations for their yards — a be
 
 ## Starting small
 
-The very first neighborhood is deliberately tiny: one intersection, two streets, four houses. Expanding to new streets and zones is real, planned, and fully designed — just not part of the first playable version of the game. *(Spec: [Neighborhood Expansion](../specs/expansion.md) — post-MVP)*
+The very first neighborhood is deliberately tiny: one intersection, two streets, four houses. Expanding to new streets and zones is real, planned, and fully designed — slated for v0.4. *(Spec: [Neighborhood Expansion](../specs/expansion.md) — v0.4)*

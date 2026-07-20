@@ -76,12 +76,13 @@ implementation, write the test, show it red, then restore the minimum code.
   linted in CI.
 - Never hand-edit `/VERSION` or Unity's version fields in
   `ProjectSettings.asset` — release-please owns versioning.
-- Work milestones `02` → `08` in order, lowest issue number first within a
-  milestone. Reference the issue number in the commit body
+- Work within the current focus milestone, lowest issue number first.
+  Milestones are version-numbered planning scopes (`v0.4`, `v1.0`, …; see
+  `docs/intro/conventions.md`). Reference the issue number in the commit body
   (`Refs #NN` / `Closes #NN`).
 - No monetization, ads, accounts, or network calls — ever
-  (docs/specs/product-scope.md). No `06 - Neighborhood Expansion` content
-  in MVP work. No new quest types, breeds, or mechanics beyond the specs.
+  (docs/specs/product-scope.md). No new quest types, breeds, or mechanics
+  beyond the specs.
 
 ## Reflect — required final step before opening a PR
 

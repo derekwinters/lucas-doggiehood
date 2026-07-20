@@ -4,7 +4,7 @@
 
 Doggiehood is a neighborhood of dogs, viewed from above. You don't control a character — you're an unseen presence panning and zooming around the streets, tapping on dogs who have something to say. Some dogs wander the sidewalks. Some watch from a window. Each one has a name, a breed, and a personality that colors how it talks and what it asks for.
 
-Helping a dog — finding what it lost, buying what it wants, clearing out its bug problem — earns a little currency, which goes right back into the neighborhood: gifts for dogs, comfort decorations for their yards, and (eventually, post-MVP) whole new streets.
+Helping a dog — finding what it lost, buying what it wants, clearing out its bug problem — earns a little currency, which goes right back into the neighborhood: gifts for dogs, comfort decorations for their yards, and (in v0.4) whole new streets.
 
 ## Tone
 

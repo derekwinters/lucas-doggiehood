@@ -85,5 +85,5 @@ issue #6).
 No attribution is legally required under CC0, but Kenney is credited here
 as a courtesy. The `locked` icon is the chosen map-expansion indicator —
 the marker that signals an unexplored/expandable zone (issue #178). It is
-staged here for the `06 - Neighborhood Expansion` milestone; nothing wires
+staged here for the v0.4 neighborhood expansion; nothing wires
 it yet.

@@ -53,7 +53,7 @@ The active nightly-dev milestone lives in a **hidden marker on the dashboard
 issue (#193)** body:
 
 ```
-<!-- pipeline-focus: 04 - Quests & Economy -->
+<!-- pipeline-focus: v0.4 -->
 ```
 
 This is the single source of truth read by both `pipeline-dev` (queue
@@ -108,7 +108,7 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
    what makes the gatekeeper idempotent — do not skip it.
 
 6. **Report** a one-line summary per issue touched (e.g.
-   `#181 approve → ready-for-work (07 - Polish & Onboarding)`), and note any
+   `#181 approve → ready-for-work (v0.4)`), and note any
    `skipped` non-owner commands so Derek can see an attempted bad-actor command
    was ignored.
 

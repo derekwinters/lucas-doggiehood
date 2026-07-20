@@ -191,9 +191,8 @@ def render_body(state):
         mdone, mopen = m["done"], m["open"]
         mtotal = mdone + mopen
         bar = _progress_bar(mdone, mtotal)
-        note = " · _post-MVP_" if m.get("post_mvp") else ""
-        a("| `%s` | `%s` | %d/%d complete · %d open%s |"
-          % (m["title"], bar, mdone, mtotal, mopen, note))
+        a("| `%s` | `%s` | %d/%d complete · %d open |"
+          % (m["title"], bar, mdone, mtotal, mopen))
     a("")
     a("---")
     a("")
@@ -206,7 +205,7 @@ def render_body(state):
         a("```mermaid")
         a("xychart-beta")
         a('    title "Open issues by milestone"')
-        a("    x-axis [%s]" % ", ".join(obm["labels"]))
+        a("    x-axis [%s]" % ", ".join('"%s"' % s for s in obm["labels"]))
         a('    y-axis "Open issues" 0 --> %d' % obm["ymax"])
         a("    bar [%s]" % ", ".join(str(v) for v in obm["values"]))
         a("```")
@@ -270,10 +269,16 @@ def _paginate(path, token):
     return items
 
 
-def _milestone_num(title):
+def _milestone_key(title):
+    """Sort key ordering version milestones (v0.4, v1.0, v1.1, v2.0) by
+    (major, minor). Any non-version milestone — `Direct Involvement Needed`, or
+    a closed phase milestone kept for historical roll-up — sorts after the
+    versions, by title."""
     import re
-    m = re.match(r"^0*(\d+)", title or "")
-    return int(m.group(1)) if m else 9999
+    m = re.match(r"^v(\d+)\.(\d+)$", (title or "").strip())
+    if m:
+        return (0, int(m.group(1)), int(m.group(2)), "")
+    return (1, 0, 0, title or "")
 
 
 def fetch_state(repo, token, as_of):
@@ -307,7 +312,7 @@ def fetch_state(repo, token, as_of):
     if not focus_title:
         ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
         pool = ready_ms or list(milestones)
-        focus_title = min(pool, key=_milestone_num) if pool else "(none)"
+        focus_title = min(pool, key=_milestone_key) if pool else "(none)"
     fb = milestones.get(focus_title, {"done": 0, "ready": 0, "remaining": 0})
 
     def open_issues_with(label):
@@ -355,14 +360,13 @@ def fetch_state(repo, token, as_of):
 
     # Other-milestone summaries + open-by-milestone chart.
     other, chart_labels, chart_vals = [], [], []
-    for title in sorted(milestones, key=_milestone_num):
+    for title in sorted(milestones, key=_milestone_key):
         b = milestones[title]
         opencount = b["ready"] + b["remaining"]
         if title != focus_title:
-            other.append({"title": title, "done": b["done"], "open": opencount,
-                          "post_mvp": _milestone_num(title) == 6})
+            other.append({"title": title, "done": b["done"], "open": opencount})
         if opencount > 0:
-            chart_labels.append("m%02d" % _milestone_num(title))
+            chart_labels.append(title)
             chart_vals.append(opencount)
     ymax = (max(chart_vals) + 1) if chart_vals else 1
 

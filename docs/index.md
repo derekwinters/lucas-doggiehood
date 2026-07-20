@@ -15,4 +15,4 @@ There's also an **[Engineering](engineering/tech-stack.md)** section covering th
 
 ## Where decisions live
 
-Every rule in this site traces back to a GitHub issue in [derekwinters/lucas-doggiehood](https://github.com/derekwinters/lucas-doggiehood), organized into epics and numbered milestones (`00` through `08`) that define the build order. The issues are the day-to-day scratchpad where new ideas get discussed and settled; this site is the clean, current summary of what's been decided. When you see `#NN` in these docs, that's the GitHub issue where the decision was made.
+Every rule in this site traces back to a GitHub issue in [derekwinters/lucas-doggiehood](https://github.com/derekwinters/lucas-doggiehood), organized into epics and version-numbered milestones (`v0.4`, `v1.0`, …) that carry each version's scope. The issues are the day-to-day scratchpad where new ideas get discussed and settled; this site is the clean, current summary of what's been decided. When you see `#NN` in these docs, that's the GitHub issue where the decision was made.

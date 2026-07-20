@@ -60,7 +60,7 @@ The active nightly-development milestone lives in a hidden marker on the
 **first line of the dashboard issue (#193) body**:
 
 ```
-<!-- pipeline-focus: 04 - Quests & Economy -->
+<!-- pipeline-focus: v0.4 -->
 ```
 
 This is the single source of truth shared by the gatekeeper (writes it on

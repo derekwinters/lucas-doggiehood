@@ -22,21 +22,31 @@ These labels are the state machine for the [AI issue-management pipeline](../eng
 - **`parked`** — hidden from every routine and the dashboard.
 - **`dashboard`** — marks the single live dashboard issue; excluded everywhere.
 
-## Milestones define build order, not just grouping
+## Milestones are version-numbered scopes
 
-Milestones are numbered so their build order is unambiguous regardless of how GitHub sorts them:
+Each milestone's **title is a version** (`v0.4`, `v1.0`, `v1.1`, `v2.0`, …) and its **description carries the scope** — what that version adds, expands, or polishes. Pick a milestone by matching an issue against the milestone's scope *description*, read live, rather than a memorized phase list.
+
+These version numbers are **planning labels, not release numbers.** The shipped app version lives in [`/VERSION`](../engineering/versioning.md) and is computed by release-please from Conventional Commits; a milestone titled `v0.4` is a *target scope*, and the actual version that ships when its work lands may differ. The two are deliberately decoupled.
+
+Milestones are **forward-looking planning buckets.** A version that has already shipped lives as a git tag / GitHub release, not a milestone — so there is no `v0.3` milestone once v0.3 is out; any remaining open work simply moves to the next planning milestone.
+
+The current planning milestones:
 
 | Milestone | Scope |
 |---|---|
-| `00 - Concepts & Core Mechanics` | Standing design/product decisions with no single build phase (monetization, offline-only, target audience) |
-| `01 - Project Setup` | Repo, CI/CD, docs site, TDD architecture, the development agent |
-| `02 - World & Camera Foundation` | Static scene: camera, navigation, starting neighborhood art — no dogs yet |
-| `03 - Dogs & Conversations` | Dogs wander and talk — no quest logic wired in yet |
-| `04 - Quests & Economy` | The quest system, currency, and the 3 initial quest types working end-to-end |
-| `05 - Decorations & Happiness` | Yard decorations and the happiness system |
-| `06 - Neighborhood Expansion` | Zone unlocking, house building — **post-MVP** ([#88](https://github.com/derekwinters/lucas-doggiehood/issues/88)) |
-| `07 - Polish & Onboarding` | Audio, first-launch tutorial, art/UI/animation polish |
-| `08 - Vertical Slice Release Candidate` | Everything integrated and playable — this is the MVP |
+| `v0.4` | All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game *working*; art stays rough. |
+| `v1.0` | First complete release: the last group of changes required to call it v1 — real art, polish, onboarding, final integration. |
+| `v1.1` | Improvements, changes, and playtest fixes made after v1. |
+| `v2.0` | Major redesigns and large expansions. |
+
+Between the named milestones we spin up further version milestones (`v0.5`, `v0.6`, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.
+
+Two **non-version** milestones sit alongside these:
+
+- **`Direct Involvement Needed`** — tasks no agent can complete (asset creation, on-device checks, unanswered questions). Not a version; excluded from version ordering.
+- The early setup and shipped phase milestones (`00`–`08`) remain **closed** as historical record; they are not renamed to versions.
+
+Nightly development targets one **focus milestone** at a time (set with `/focus <version>`; see the [issue pipeline](../engineering/issue-pipeline.md)).
 
 ## Every issue names the spec pages it touches
 

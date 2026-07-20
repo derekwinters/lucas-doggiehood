@@ -7,7 +7,7 @@
 The first playable neighborhood is deliberately small: **one intersection of two streets, with one house in each of the four quadrants.** ([#38](https://github.com/derekwinters/lucas-doggiehood/issues/38))
 
 - 4 houses total to start, each home to a dog household (see [Dog Roster & Names](../dogs/roster-names.md))
-- More streets and houses are designed but explicitly **post-MVP** — see [Neighborhood Expansion](../expansion.md)
+- More streets and houses are designed and slated for **v0.4** — see [Neighborhood Expansion](../expansion.md)
 
 ## Layout
 
@@ -31,7 +31,7 @@ Visually, fences render as tiled Kenney City Kit Suburban `fence` pieces at unif
 
 ## Lighting & time
 
-Static, pleasant daytime lighting — always sunny/mid-day. **No day/night cycle and no weather system for MVP.** ([#39](https://github.com/derekwinters/lucas-doggiehood/issues/39))
+Static, pleasant daytime lighting — always sunny/mid-day. **No day/night cycle and no weather system for v1.0.** ([#39](https://github.com/derekwinters/lucas-doggiehood/issues/39))
 
 This is a deliberate simplification: it avoids needing lighting variants for every asset, and a future weather/day-night system is tracked separately as an explicit future idea — see [Future Ideas](../future-ideas.md).
 

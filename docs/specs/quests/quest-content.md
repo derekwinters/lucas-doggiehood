@@ -2,9 +2,9 @@
 
 *Epic: [#5](https://github.com/derekwinters/lucas-doggiehood/issues/5)*
 
-## MVP quest types
+## v1.0 quest types
 
-MVP ships with exactly 3 quest types. Expanding variety is explicitly deferred — see [#60](https://github.com/derekwinters/lucas-doggiehood/issues/60).
+v1.0 ships with exactly 3 quest types. Expanding variety is explicitly deferred — see [#60](https://github.com/derekwinters/lucas-doggiehood/issues/60).
 
 ### 1. Lost something
 
