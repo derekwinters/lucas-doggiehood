@@ -523,9 +523,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#milestones-define-build-order-not-just-grouping" class="md-nav__link">
+  <a href="#milestones-are-version-numbered-scopes" class="md-nav__link">
     <span class="md-ellipsis">
-      Milestones define build order, not just grouping
+      Milestones are version-numbered scopes
     </span>
   </a>
   
@@ -1505,9 +1505,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#milestones-define-build-order-not-just-grouping" class="md-nav__link">
+  <a href="#milestones-are-version-numbered-scopes" class="md-nav__link">
     <span class="md-ellipsis">
-      Milestones define build order, not just grouping
+      Milestones are version-numbered scopes
     </span>
   </a>
   
@@ -1592,8 +1592,11 @@
 <li><strong><code>parked</code></strong> — hidden from every routine and the dashboard.</li>
 <li><strong><code>dashboard</code></strong> — marks the single live dashboard issue; excluded everywhere.</li>
 </ul>
-<h2 id="milestones-define-build-order-not-just-grouping">Milestones define build order, not just grouping<a class="headerlink" href="#milestones-define-build-order-not-just-grouping" title="Permanent link">&para;</a></h2>
-<p>Milestones are numbered so their build order is unambiguous regardless of how GitHub sorts them:</p>
+<h2 id="milestones-are-version-numbered-scopes">Milestones are version-numbered scopes<a class="headerlink" href="#milestones-are-version-numbered-scopes" title="Permanent link">&para;</a></h2>
+<p>Each milestone's <strong>title is a version</strong> (<code>v0.4</code>, <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, …) and its <strong>description carries the scope</strong> — what that version adds, expands, or polishes. Pick a milestone by matching an issue against the milestone's scope <em>description</em>, read live, rather than a memorized phase list.</p>
+<p>These version numbers are <strong>planning labels, not release numbers.</strong> The shipped app version lives in <a href="../../engineering/versioning/"><code>/VERSION</code></a> and is computed by release-please from Conventional Commits; a milestone titled <code>v0.4</code> is a <em>target scope</em>, and the actual version that ships when its work lands may differ. The two are deliberately decoupled.</p>
+<p>Milestones are <strong>forward-looking planning buckets.</strong> A version that has already shipped lives as a git tag / GitHub release, not a milestone — so there is no <code>v0.3</code> milestone once v0.3 is out; any remaining open work simply moves to the next planning milestone.</p>
+<p>The current planning milestones:</p>
 <table>
 <thead>
 <tr>
@@ -1603,43 +1606,30 @@
 </thead>
 <tbody>
 <tr>
-<td><code>00 - Concepts &amp; Core Mechanics</code></td>
-<td>Standing design/product decisions with no single build phase (monetization, offline-only, target audience)</td>
+<td><code>v0.4</code></td>
+<td>All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game <em>working</em>; art stays rough.</td>
 </tr>
 <tr>
-<td><code>01 - Project Setup</code></td>
-<td>Repo, CI/CD, docs site, TDD architecture, the development agent</td>
+<td><code>v1.0</code></td>
+<td>First complete release: the last group of changes required to call it v1 — real art, polish, onboarding, final integration.</td>
 </tr>
 <tr>
-<td><code>02 - World &amp; Camera Foundation</code></td>
-<td>Static scene: camera, navigation, starting neighborhood art — no dogs yet</td>
+<td><code>v1.1</code></td>
+<td>Improvements, changes, and playtest fixes made after v1.</td>
 </tr>
 <tr>
-<td><code>03 - Dogs &amp; Conversations</code></td>
-<td>Dogs wander and talk — no quest logic wired in yet</td>
-</tr>
-<tr>
-<td><code>04 - Quests &amp; Economy</code></td>
-<td>The quest system, currency, and the 3 initial quest types working end-to-end</td>
-</tr>
-<tr>
-<td><code>05 - Decorations &amp; Happiness</code></td>
-<td>Yard decorations and the happiness system</td>
-</tr>
-<tr>
-<td><code>06 - Neighborhood Expansion</code></td>
-<td>Zone unlocking, house building — <strong>post-MVP</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/88">#88</a>)</td>
-</tr>
-<tr>
-<td><code>07 - Polish &amp; Onboarding</code></td>
-<td>Audio, first-launch tutorial, art/UI/animation polish</td>
-</tr>
-<tr>
-<td><code>08 - Vertical Slice Release Candidate</code></td>
-<td>Everything integrated and playable — this is the MVP</td>
+<td><code>v2.0</code></td>
+<td>Major redesigns and large expansions.</td>
 </tr>
 </tbody>
 </table>
+<p>Between the named milestones we spin up further version milestones (<code>v0.5</code>, <code>v0.6</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
+<p>Two <strong>non-version</strong> milestones sit alongside these:</p>
+<ul>
+<li><strong><code>Direct Involvement Needed</code></strong> — tasks no agent can complete (asset creation, on-device checks, unanswered questions). Not a version; excluded from version ordering.</li>
+<li>The early setup and shipped phase milestones (<code>00</code>–<code>08</code>) remain <strong>closed</strong> as historical record; they are not renamed to versions.</li>
+</ul>
+<p>Nightly development targets one <strong>focus milestone</strong> at a time (set with <code>/focus &lt;version&gt;</code>; see the <a href="../../engineering/issue-pipeline/">issue pipeline</a>).</p>
 <h2 id="every-issue-names-the-spec-pages-it-touches">Every issue names the spec pages it touches<a class="headerlink" href="#every-issue-names-the-spec-pages-it-touches" title="Permanent link">&para;</a></h2>
 <p>An issue that changes player-facing behavior, layout, or a design decision should name — in its body or checklist — which <a href="../../specs/"><code>docs/specs</code></a> (or <code>docs/engineering</code>) page(s) it expects to update, or note that none apply. This makes the spec reconciliation a planned deliverable rather than an afterthought: the matching page is updated in the <strong>same</strong> PR as the code (a <a href="../../engineering/agent-workflow/#how-an-issue-gets-worked">non-negotiable rule</a>), and CI's always-on <code>docs-test</code> gate forces a conscious decision — a code-only PR fails unless it carries the <code>skip-docs</code> label.</p>
 <h2 id="epics-and-sub-issues">Epics and sub-issues<a class="headerlink" href="#epics-and-sub-issues" title="Permanent link">&para;</a></h2>

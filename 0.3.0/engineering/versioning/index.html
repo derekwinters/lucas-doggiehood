@@ -1277,6 +1277,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#milestone-versions-vs-the-shipped-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Milestone versions vs. the shipped version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release-please-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       release-please configuration
@@ -1448,6 +1457,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#milestone-versions-vs-the-shipped-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Milestone versions vs. the shipped version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release-please-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       release-please configuration
@@ -1515,6 +1533,8 @@
 <div class="highlight"><pre><span></span><code>0.2.0 # x-release-please-version
 </code></pre></div>
 <p>The marker is required — release-please's generic <code>extra-files</code> updater (used for any file without a recognized JSON/YAML/TOML/XML extension) only rewrites a line that contains <code>x-release-please-version</code>; it does not blindly overwrite a file's entire contents. Without the marker, the updater has nothing to match and silently leaves the file untouched. This is exactly what happened in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/114">#114</a>: <code>VERSION</code> stayed on <code>0.1.0</code> across a real <code>0.2.0</code> release because it was a bare version string with no marker, even though release-please's own <code>manifest.json</code> bookkeeping had correctly advanced. Anything that reads <code>VERSION</code> (build workflows, docs publishing) strips everything from <code>#</code> onward before parsing, so the trailing comment never leaks into a <code>versionName</code>/<code>versionCode</code>.</p>
+<h2 id="milestone-versions-vs-the-shipped-version">Milestone versions vs. the shipped version<a class="headerlink" href="#milestone-versions-vs-the-shipped-version" title="Permanent link">&para;</a></h2>
+<p>GitHub <strong>milestones are version-<em>named</em></strong> (<code>v0.4</code>, <code>v1.0</code>, …) as planning targets — see <a href="../../intro/conventions/#milestones-are-version-numbered-scopes">Conventions</a>. Those labels are <strong>decoupled</strong> from the version release-please computes here: <code>VERSION</code> advances from Conventional-Commit history, so a milestone titled <code>v0.4</code> describes a <em>scope</em>, and the version that actually ships when its work lands need not be exactly <code>0.4.0</code>. Milestones plan; release-please versions. We deliberately don't add tooling to force the two to line up.</p>
 <h2 id="release-please-configuration">release-please configuration<a class="headerlink" href="#release-please-configuration" title="Permanent link">&para;</a></h2>
 <p>Config lives at non-default paths:</p>
 <ul>

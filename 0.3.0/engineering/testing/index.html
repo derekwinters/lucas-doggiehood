@@ -1504,7 +1504,7 @@
 <h2 id="where-tests-live">Where tests live<a class="headerlink" href="#where-tests-live" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Core logic</strong> (quests, economy, dog state, name pool, house leveling, etc.): plain NUnit tests, no Unity dependency. These run anywhere, instantly — the primary source of coverage.</li>
-<li><strong>Unity integration layer</strong> (<code>MonoBehaviour</code> wiring, scene setup): Unity Test Framework EditMode tests, run headless in CI via <code>-batchmode -nographics</code>. No PlayMode tests and no on-device/emulator testing are required for MVP — the thin Unity layer should have as little untested logic in it as possible by design (push everything possible into Core).</li>
+<li><strong>Unity integration layer</strong> (<code>MonoBehaviour</code> wiring, scene setup): Unity Test Framework EditMode tests, run headless in CI via <code>-batchmode -nographics</code>. No PlayMode tests and no on-device/emulator testing are required for v1.0 — the thin Unity layer should have as little untested logic in it as possible by design (push everything possible into Core).</li>
 </ul>
 <h2 id="what-this-means-for-new-features">What this means for new features<a class="headerlink" href="#what-this-means-for-new-features" title="Permanent link">&para;</a></h2>
 <p>When implementing anything from the <a href="../../specs/">specs</a>, default to:</p>

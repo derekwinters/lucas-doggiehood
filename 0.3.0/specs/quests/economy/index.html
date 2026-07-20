@@ -1579,8 +1579,8 @@
 </ul>
 <h2 id="currency">Currency<a class="headerlink" href="#currency" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Source</strong>: currency is earned only by completing dog requests/quests. No idle income, ads, or mini-games for MVP. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/24">#24</a>)</li>
-<li><strong>Sinks</strong>: quest gifts, decorations (both delivered via the normal quest flow — see <a href="../../decorations/">Decorations</a>), and (post-MVP) new streets/houses (<a href="../../expansion/">Neighborhood Expansion</a>). (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/25">#25</a>)</li>
+<li><strong>Source</strong>: currency is earned only by completing dog requests/quests. No idle income, ads, or mini-games for v1.0. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/24">#24</a>)</li>
+<li><strong>Sinks</strong>: quest gifts, decorations (both delivered via the normal quest flow — see <a href="../../decorations/">Decorations</a>), and (in v0.4) new streets/houses (<a href="../../expansion/">Neighborhood Expansion</a>). (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/25">#25</a>)</li>
 </ul>
 <h3 id="numbers-placeholder-expect-tuning">Numbers (placeholder, expect tuning)<a class="headerlink" href="#numbers-placeholder-expect-tuning" title="Permanent link">&para;</a></h3>
 <p><em>Source: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/62">#62</a></em></p>
@@ -1588,7 +1588,7 @@
 <li>A completed quest pays a <strong>flat 10 coins</strong>, regardless of quest type.</li>
 <li>A typical gift/decoration item costs <strong>roughly 30-50 coins</strong> (3-5 quests' worth of saving).</li>
 </ul>
-<p>Post-MVP expansion sinks <em>(decisions 2026-07-14, Derek — see <a href="../../expansion/#pricing">Neighborhood Expansion</a>)</em>:</p>
+<p>v0.4 expansion sinks <em>(decisions 2026-07-14, Derek — see <a href="../../expansion/#pricing">Neighborhood Expansion</a>)</em>:</p>
 <ul>
 <li>Zone unlock: <strong>100 coins</strong> for the first zone, <strong>+100 per subsequent zone</strong> (100, 200, 300, …).</li>
 <li>Building a house: <strong>50 coins</strong>, flat.</li>
@@ -1612,7 +1612,7 @@
 <li>Item/subject (toy name, decoration type, pest type, etc.)</li>
 <li>Personality (<a href="../../dogs/behavior/">Dog Behavior</a>) — seasons which opener/closer line is drawn, per the pooled model below</li>
 </ul>
-<p>New quest types (mechanics) beyond the existing set stay deferred/post-MVP — this section is only about line variety within the existing types, not new mechanics.</p>
+<p>New quest types (mechanics) beyond the existing set stay deferred to a later version — this section is only about line variety within the existing types, not new mechanics.</p>
 <h3 id="line-variety-pooled-openersclosers-uniform-random-model-2">Line variety: pooled openers/closers, uniform random ("Model 2")<a class="headerlink" href="#line-variety-pooled-openersclosers-uniform-random-model-2" title="Permanent link">&para;</a></h3>
 <p>For both the opener and the closer, each quest type holds two pools:</p>
 <ul>
@@ -1631,7 +1631,7 @@
 <li>[ ] Completed quest state (delivered items, decorations) persists permanently — no reset logic tied to the daily rotation</li>
 <li>[ ] No quest has a timer, expiration, or fail state anywhere in the system</li>
 <li>[ ] A quest template data structure exists with slots for dog name, personality-flavored line variant, and item/subject</li>
-<li>[ ] At least the 3 MVP quest types (see <a href="../quest-content/">Quest Content</a>) are expressed as templates, not hard-coded per-dog text</li>
+<li>[ ] At least the 3 v1.0 quest types (see <a href="../quest-content/">Quest Content</a>) are expressed as templates, not hard-coded per-dog text</li>
 <li>[x] Opener and closer lines are drawn from a default pool ∪ per-personality pool, uniform-random per string, via an injectable RNG — no anti-repeat memory or per-dog persisted state (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/189">#189</a>)</li>
 <li>[x] All quest subject pools (and decoration-request options) are queries over one tagged item catalog — no per-type parallel item lists; every Gift/Decoration-eligible entry costs 30-50 coins, find-only entries carry no cost (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/190">#190</a>)</li>
 </ul>
