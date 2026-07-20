@@ -42,10 +42,12 @@ See `docs/engineering/issue-pipeline.md` for the full model.
 | `/redo` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification` (fresh analysis pass) |
 | `/propose` | re-add `ai-triage` and authorize analysis to draft the missing design as a marked PROPOSAL |
 | `/park` / `/unpark` | add / remove `parked` |
-| `/milestone <name>` | set the milestone (accepts `04`, a title fragment, or the full title) |
+| `/milestone <name>` | set the milestone (accepts a version like `v0.4`, a title fragment, or the full title) |
 | `/focus <name>` | record the active nightly-dev milestone (stored in the dashboard marker — see below) |
 
 A `parked` issue only responds to `/unpark`.
+
+The dashboard issue (#193) is excluded from the pipeline, but it **does** honor `/focus` — so focus can be set by commenting `/focus <name>` right on the dashboard ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)). No other command works there.
 
 ## Where `/focus` is stored
 
@@ -115,7 +117,7 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
 ## Tests
 
 `tests/test_parse_commands.py` covers owner-only gating, the watermark,
-epic/dashboard exclusion, each command's label move, milestone matching, and
+epic exclusion, the dashboard's `/focus`-only rule, each command's label move, milestone matching, and
 the parked-issue rule. Run:
 
 ```bash

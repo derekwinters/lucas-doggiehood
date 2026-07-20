@@ -20,7 +20,7 @@ These labels are the state machine for the [AI issue-management pipeline](../eng
 - **`ready-for-work`** — approved and milestoned; in the nightly dev queue.
 - **`in-progress`** — a nightly dev run has picked it up.
 - **`parked`** — hidden from every routine and the dashboard.
-- **`dashboard`** — marks the single live dashboard issue; excluded everywhere.
+- **`dashboard`** — marks the single live dashboard issue; excluded from every routine, except that `/focus` is honored on it so focus can be set from the dashboard itself ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
 
 ## Milestones are version-numbered scopes
 

@@ -24,7 +24,7 @@ comments (`derekwinters`) are honored — the bad-actor gate. Everyone else's
 | `ready-for-work` | gatekeeper (on `/approve`) | Approved + milestone set; in the dev queue. |
 | `in-progress` | dev | A nightly dev run picked it up / opened its PR. |
 | `parked` | gatekeeper (on `/park`) | Hidden from every routine and the dashboard, any stage, indefinitely. |
-| `dashboard` | one-time | Marks the dashboard issue ([#193](https://github.com/derekwinters/lucas-doggiehood/issues/193)); hard-excluded everywhere. |
+| `dashboard` | one-time | Marks the dashboard issue ([#193](https://github.com/derekwinters/lucas-doggiehood/issues/193)); excluded everywhere except `/focus`, which is honored on it so focus can be set from the dashboard ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)). |
 
 `type:epic` issues are excluded from admit/dev throughout.
 

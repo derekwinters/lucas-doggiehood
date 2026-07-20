@@ -163,6 +163,26 @@ class TestParseCommands(unittest.TestCase):
         self.assertTrue(a["propose"])
         self.assertIn("ai-triage", a["add_labels"])
 
+    def test_focus_honored_on_dashboard_issue(self):
+        # #204: /focus is the one command accepted on the dashboard issue
+        # itself, so focus can be set from #193 — every other command stays
+        # excluded there (see test_non_focus_command_ignored_on_dashboard).
+        out = run(payload(
+            [base_issue(number=193, is_dashboard=True,
+                        comments=[comment("/focus v0.4", cid=8)])],
+            milestones=["v0.4", "v1.0"],
+        ))
+        a = self.actions_for(193, out)[0]
+        self.assertEqual(a["set_focus"], "v0.4")
+
+    def test_non_focus_command_ignored_on_dashboard(self):
+        # Only /focus is honored on the dashboard; other commands are dropped.
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/approve\n/admit", cid=9)]),
+        ]))
+        self.assertEqual(self.actions_for(193, out), [])
+
     def test_url_slash_does_not_trigger(self):
         out = run(payload([
             base_issue(number=180,

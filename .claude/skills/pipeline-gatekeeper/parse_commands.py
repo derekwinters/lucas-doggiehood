@@ -201,8 +201,9 @@ def process(data):
     actions, skipped = [], []
 
     for issue in data.get("issues", []):
-        if issue.get("is_epic") or issue.get("is_dashboard"):
+        if issue.get("is_epic"):
             continue
+        is_dashboard = issue.get("is_dashboard")
         labels = issue.get("labels", [])
         is_parked = "parked" in labels
         for comment in issue.get("comments", []):
@@ -210,6 +211,11 @@ def process(data):
                 continue
             body = comment.get("body", "")
             commands = _parse_comment(body)
+            if is_dashboard:
+                # #204: the dashboard issue (#193) is otherwise excluded from
+                # the pipeline, but `/focus` is honored there so focus can be
+                # set from the dashboard itself. Every other command is dropped.
+                commands = [(c, a) for c, a in commands if c == "focus"]
             if not commands:
                 continue
             if comment.get("author") != owner:
