@@ -3,6 +3,13 @@ namespace Doggiehood.Core.World
     /// <summary>A house in the neighborhood, keyed to its lot (#38).</summary>
     public sealed class House
     {
+        /// <summary>The level every newly built house starts at (#57).
+        /// The full upgrade path (levels 2-4, upgrade costs, decoration-slot
+        /// caps) is #59's job — this only pins the starting value so a
+        /// house built via GameState.TryBuildHouse can commit to "level 1"
+        /// now, per docs/specs/expansion.md#house-leveling.</summary>
+        public const int InitialLevel = 1;
+
         public int Id { get; }
         public Quadrant Quadrant { get; }
 
@@ -17,11 +24,17 @@ namespace Doggiehood.Core.World
         /// </summary>
         public bool IsVacant { get; private set; }
 
-        public House(int id, Quadrant quadrant, bool isVacant = true)
+        /// <summary>This house's current level (#59's full upgrade system
+        /// isn't built yet — every house stays at whatever level it was
+        /// constructed with).</summary>
+        public int Level { get; }
+
+        public House(int id, Quadrant quadrant, bool isVacant = true, int level = InitialLevel)
         {
             Id = id;
             Quadrant = quadrant;
             IsVacant = isVacant;
+            Level = level;
         }
 
         /// <summary>A household has moved in (#54) — vacancy never

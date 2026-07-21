@@ -34,5 +34,25 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(house.IsVacant, Is.False);
         }
+
+        [Test]
+        public void NewlyBuiltHouse_DefaultsToLevelOne()
+        {
+            // #57/#59: a house built via GameState.TryBuildHouse starts at
+            // level 1 — the full upgrade path (levels 2-4) is #59's job,
+            // this just pins the starting value.
+            var house = new House(99, Quadrant.NorthEast);
+
+            Assert.That(house.Level, Is.EqualTo(1));
+            Assert.That(house.Level, Is.EqualTo(House.InitialLevel));
+        }
+
+        [Test]
+        public void House_CanBeConstructedAtAnExplicitLevel()
+        {
+            var house = new House(99, Quadrant.NorthEast, isVacant: false, level: 3);
+
+            Assert.That(house.Level, Is.EqualTo(3));
+        }
     }
 }
