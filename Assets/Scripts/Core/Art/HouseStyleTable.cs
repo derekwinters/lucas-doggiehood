@@ -38,5 +38,25 @@ namespace Doggiehood.Core.Art
 
             throw new ArgumentException($"No house style assigned for house id {houseId}.", nameof(houseId));
         }
+
+        /// <summary>
+        /// Non-throwing existence check for <see cref="ForHouse"/> (#57):
+        /// a house built beyond the starting 4 (an unlocked zone's lot) has
+        /// no authored model/tint assignment yet — per-zone-house styling
+        /// is undesigned, so callers use this to fall back to a plain
+        /// render instead of catching ForHouse's ArgumentException.
+        /// </summary>
+        public static bool HasStyle(int houseId)
+        {
+            foreach (var style in Styles)
+            {
+                if (style.StyleId == houseId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

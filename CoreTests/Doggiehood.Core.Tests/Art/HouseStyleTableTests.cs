@@ -50,6 +50,21 @@ namespace Doggiehood.Core.Tests.Art
         }
 
         [Test]
+        public void HasStyle_IsTrueOnlyForAssignedHouseIds()
+        {
+            // #57: houses built beyond the starting 4 (on an unlocked
+            // zone's lots) have no authored style yet — WorldBuilder uses
+            // this non-throwing check to fall back to the graybox render
+            // instead of crashing on ForHouse's ArgumentException.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(HouseStyleTable.HasStyle(lot.HouseId), Is.True);
+            }
+
+            Assert.That(HouseStyleTable.HasStyle(999), Is.False);
+        }
+
+        [Test]
         public void ForHouse_MatchesThePlaceholderModelPicks()
         {
             // Same 4 letter picks as the pre-#64 HouseModelCatalog

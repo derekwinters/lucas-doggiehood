@@ -30,8 +30,19 @@ namespace Doggiehood.Unity
         public const string IntersectionTileName = RoadTileNamePrefix + "Intersection";
         public const string WalkwayNamePrefix = "Walkway - ";
         public const string FenceNamePrefix = "Fence - ";
+        public const string EmptyLotNamePrefix = "EmptyLot - ";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
+
+        /// <summary>Graybox marker footprint (local X/Z) for an empty,
+        /// buildable lot (#57) — a flat pad distinct from a house's
+        /// fallback wall block, sized just to read as a tap target within
+        /// the lot's own space.</summary>
+        private const float EmptyLotMarkerFootprint = 3f;
+
+        /// <summary>Graybox marker height/thickness — thin, so it reads as
+        /// a ground-level pad rather than a solid block.</summary>
+        private const float EmptyLotMarkerHeight = 0.2f;
 
         /// <summary>Ground footprint (local X/Z) of the graybox fallback
         /// house's single "Walls" box (#64) — only ever built when the
@@ -159,6 +170,7 @@ namespace Doggiehood.Unity
 
             BuildWalkways(root.transform);
             BuildFences(root.transform);
+            BuildEmptyLots(root.transform, state);
 
             BuildSun(root.transform);
             ApplyAmbientLighting();
@@ -553,17 +565,72 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
+        /// One graybox marker (#57) per lot in every unlocked zone that has
+        /// no house on it yet (GameState.IsLotBuildable) — the "empty lot"
+        /// tap targets ExpansionDirector wires up to GameState.TryBuildHouse.
+        /// Locked zones and lots that already have a house get nothing.
+        /// </summary>
+        private static void BuildEmptyLots(Transform parent, GameState state)
+        {
+            foreach (var zone in state.UnlockedZones)
+            {
+                foreach (var lot in zone.Lots)
+                {
+                    if (state.IsLotBuildable(lot.HouseId))
+                    {
+                        BuildEmptyLot(parent, lot);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Builds one graybox marker for an empty, buildable lot: a flat
+        /// pad at the lot's Core position with an EmptyLotView tap target.
+        /// Public so ExpansionDirector's EditMode tests can build a single
+        /// marker directly, same pattern as BuildHouse.
+        /// </summary>
+        public static GameObject BuildEmptyLot(Transform parent, HouseLot lot)
+        {
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = EmptyLotNamePrefix + lot.HouseId;
+            marker.transform.SetParent(parent);
+            marker.transform.localScale = new Vector3(EmptyLotMarkerFootprint, EmptyLotMarkerHeight, EmptyLotMarkerFootprint);
+            marker.transform.position = new Vector3(lot.Position.X, EmptyLotMarkerHeight / 2f, lot.Position.Z);
+            Paint(marker, Palette.EmptyLotMarkerHex);
+
+            var view = marker.AddComponent<EmptyLotView>();
+            view.Init(lot.HouseId);
+            return marker;
+        }
+
+        /// <summary>
         /// Builds one house's full visual (view + model, #38): public so
         /// it can be called for a single house directly — both the #58
         /// vacancy EditMode tests (a house not part of a full GameState)
-        /// and, forward-looking, #57's eventual "build one new house
-        /// mid-game" action, which needs exactly this without rebuilding
-        /// the whole scene. Returns the house's root GameObject.
+        /// and #57's "build one new house mid-game" action (ExpansionDirector),
+        /// which needs exactly this without rebuilding the whole scene.
+        /// Resolves the lot from NeighborhoodLayout (the starting layout) —
+        /// use the <see cref="BuildHouse(Transform, House, HouseLot)"/>
+        /// overload for a house built on a zone lot, which
+        /// NeighborhoodLayout doesn't know about. Returns the house's root
+        /// GameObject.
         /// </summary>
         public static GameObject BuildHouse(Transform parent, House house)
         {
-            var lot = NeighborhoodLayout.GetHouseLot(house.Id);
+            return BuildHouse(parent, house, NeighborhoodLayout.GetHouseLot(house.Id));
+        }
 
+        /// <summary>
+        /// Same as <see cref="BuildHouse(Transform, House)"/> but takes the
+        /// lot directly (#57) — needed for a house built on a zone lot,
+        /// which NeighborhoodLayout (the starting layout only) doesn't
+        /// know about. ExpansionDirector resolves the lot via
+        /// GameState.GetHouseLot and calls this overload when swapping a
+        /// tapped empty-lot marker for the real house.
+        /// </summary>
+        public static GameObject BuildHouse(Transform parent, House house, HouseLot lot)
+        {
             // #127: the house stands at Core's front-setback position —
             // pulled from the lot center toward its facing street so the
             // scaled front facade sits HousePlacement.FrontSetback from
@@ -592,7 +659,12 @@ namespace Doggiehood.Unity
             anchor.localRotation = Quaternion.LookRotation(facing, Vector3.up);
             view.WindowAnchor = anchor;
 
-            var model = ForcePrimitiveFallback
+            // #57: a house built on a zone lot beyond the starting 4 has no
+            // authored HouseStyleTable entry yet (per-zone-house model/tint
+            // assignment is undesigned) — HasStyle steers it straight to
+            // the graybox fallback below instead of letting
+            // HouseModelResourcePath's HouseStyleTable.ForHouse throw.
+            var model = (ForcePrimitiveFallback || !HouseStyleTable.HasStyle(house.Id))
                 ? null
                 : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
             if (model != null)

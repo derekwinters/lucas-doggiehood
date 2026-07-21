@@ -46,5 +46,14 @@ namespace Doggiehood.Core.Art
         /// renders that house's normal tint again.
         /// </summary>
         public const string VacantHouseTintHex = "#9A9A9A";
+
+        /// <summary>
+        /// Graybox marker color for an empty, buildable lot in an unlocked
+        /// zone (#57) — a distinct flat pad color so the "build here" tap
+        /// target reads clearly against the grass/street palette. Purely a
+        /// graybox stand-in; no dedicated art is planned until a real
+        /// lot-selection affordance is designed.
+        /// </summary>
+        public const string EmptyLotMarkerHex = "#F2A65A";
     }
 }

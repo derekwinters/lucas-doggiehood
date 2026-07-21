@@ -15,6 +15,10 @@ namespace Doggiehood.Unity
             var director = gameObject.AddComponent<QuestDirector>();
             director.Init(state, root.transform);
 
+            // #57: wires tapping an empty lot in an unlocked zone to
+            // GameState.TryBuildHouse.
+            gameObject.AddComponent<ExpansionDirector>().Init(state, root.transform);
+
             var presenter = FindFirstObjectByType<ConversationPresenter>();
             if (presenter == null)
             {

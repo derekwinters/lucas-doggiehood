@@ -164,6 +164,72 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void BuildsNoEmptyLotMarkers_WhenNoZoneIsUnlocked()
+        {
+            // #57: a fresh GameState has no unlocked zones, so there is
+            // nothing yet to build on.
+            var markers = root.GetComponentsInChildren<EmptyLotView>();
+
+            Assert.That(markers, Is.Empty);
+        }
+
+        [Test]
+        public void BuildsAnEmptyLotMarker_ForEveryBuildableLot_InAnUnlockedZone()
+        {
+            // #57: the whole first zone is unlocked and empty — every one
+            // of its lots gets a tappable "build here" marker.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+            state.TryUnlockNextZone();
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            var markers = root.GetComponentsInChildren<EmptyLotView>();
+            var zone = state.UnlockedZones[0];
+            Assert.That(markers.Select(m => m.HouseId), Is.EquivalentTo(zone.Lots.Select(lot => lot.HouseId)));
+        }
+
+        [Test]
+        public void BuildsNoEmptyLotMarker_ForALotThatAlreadyHasAHouse()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(150);
+            state.TryUnlockNextZone();
+            var zone = state.UnlockedZones[0];
+            var builtLot = zone.Lots[0];
+            state.TryBuildHouse(builtLot.HouseId);
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            var markers = root.GetComponentsInChildren<EmptyLotView>();
+            Assert.That(markers.Select(m => m.HouseId), Does.Not.Contain(builtLot.HouseId));
+            Assert.That(markers.Length, Is.EqualTo(zone.Lots.Count - 1));
+        }
+
+        [Test]
+        public void BuildHouse_OnAZoneLotWithNoAuthoredStyle_FallsBackToTheGrayboxRender_WithoutThrowing()
+        {
+            // #57: houses built beyond the starting 4 have no
+            // HouseStyleTable entry yet (per-zone-house model/tint
+            // assignment is undesigned) — BuildHouse must render the
+            // existing graybox fallback rather than crashing on
+            // HouseStyleTable.ForHouse's ArgumentException.
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var house = new House(lot.HouseId, lot.Quadrant);
+            var container = new GameObject("ZoneHouseTestContainer");
+
+            GameObject houseRoot = null;
+            Assert.DoesNotThrow(() => houseRoot = WorldBuilder.BuildHouse(container.transform, house, lot));
+
+            var walls = houseRoot.GetComponentsInChildren<Transform>().Single(t => t.name == "Walls");
+            Assert.That(walls, Is.Not.Null);
+
+            Object.DestroyImmediate(container);
+        }
+
+        [Test]
         public void BuildsBothRoads()
         {
             var roads = Children().Where(t => t.name.StartsWith(WorldBuilder.RoadNamePrefix)).ToList();
