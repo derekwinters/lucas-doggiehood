@@ -148,5 +148,106 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(state.UnlockedZones.Count, Is.EqualTo(1));
             Assert.That(state.Wallet.Coins, Is.EqualTo(coinsAfterFirstUnlock));
         }
+
+        [Test]
+        public void TryBuildHouse_Succeeds_DeductsTheFlatCost_AndAddsALevelOneVacantHouse_OnAnEmptyLotInAnUnlockedZone()
+        {
+            // #57: 100 to unlock the first zone + 50 (HouseBuildNumbers.Cost)
+            // to build on one of its lots.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(150);
+            state.TryUnlockNextZone();
+            var lot = state.UnlockedZones[0].Lots[0];
+
+            var built = state.TryBuildHouse(lot.HouseId);
+
+            Assert.That(built, Is.True);
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0));
+            Assert.That(state.Houses.Count, Is.EqualTo(5));
+
+            var house = state.Houses.Single(h => h.Id == lot.HouseId);
+            Assert.That(house.Quadrant, Is.EqualTo(lot.Quadrant));
+            Assert.That(house.IsVacant, Is.True);
+            Assert.That(house.Level, Is.EqualTo(House.InitialLevel));
+        }
+
+        [Test]
+        public void TryBuildHouse_Fails_WhenTheLotIsAlreadyOccupied()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(200);
+            state.TryUnlockNextZone();
+            var lot = state.UnlockedZones[0].Lots[0];
+            state.TryBuildHouse(lot.HouseId);
+            var coinsAfterFirstBuild = state.Wallet.Coins;
+
+            var builtAgain = state.TryBuildHouse(lot.HouseId);
+
+            Assert.That(builtAgain, Is.False);
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsAfterFirstBuild));
+            Assert.That(state.Houses.Count(h => h.Id == lot.HouseId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TryBuildHouse_Fails_WhenTheZoneIsLocked()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(50); // affordable, but no zone unlocked yet
+            var lockedLot = ZoneCatalog.FirstZone.Lots[0];
+
+            var built = state.TryBuildHouse(lockedLot.HouseId);
+
+            Assert.That(built, Is.False);
+            Assert.That(state.Wallet.Coins, Is.EqualTo(50));
+            Assert.That(state.Houses.Count, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void TryBuildHouse_Fails_WhenTheBalanceIsInsufficient()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+            state.TryUnlockNextZone(); // spends all 100; wallet is now 0
+            var lot = state.UnlockedZones[0].Lots[0];
+
+            var built = state.TryBuildHouse(lot.HouseId);
+
+            Assert.That(built, Is.False);
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0));
+            Assert.That(state.Houses.Count, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void GetHouseLot_ResolvesAZoneLot_AfterItsZoneIsUnlocked()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+            state.TryUnlockNextZone();
+            var expectedLot = state.UnlockedZones[0].Lots[0];
+
+            var lot = state.GetHouseLot(expectedLot.HouseId);
+
+            Assert.That(lot.Quadrant, Is.EqualTo(expectedLot.Quadrant));
+            Assert.That(lot.Position.X, Is.EqualTo(expectedLot.Position.X));
+            Assert.That(lot.Position.Z, Is.EqualTo(expectedLot.Position.Z));
+        }
+
+        [Test]
+        public void GetHouseLot_ResolvesAStartingLayoutLot()
+        {
+            var state = GameState.CreateNew();
+
+            var lot = state.GetHouseLot(1);
+
+            Assert.That(lot.Quadrant, Is.EqualTo(NeighborhoodLayout.GetHouseLot(1).Quadrant));
+        }
+
+        [Test]
+        public void GetHouseLot_Throws_ForAnUnknownHouseId()
+        {
+            var state = GameState.CreateNew();
+
+            Assert.Throws<ArgumentException>(() => state.GetHouseLot(-1));
+        }
     }
 }

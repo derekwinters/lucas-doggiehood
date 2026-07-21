@@ -17,6 +17,7 @@ namespace Doggiehood.Core.World
         /// first-zone layout's "starting FourWay at grid (0,0)".</summary>
         private static readonly TileCoordinate StartingIntersectionCoordinate = new TileCoordinate(0, 0);
 
+        private readonly List<House> houses;
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
         private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
         private readonly List<Dog> dogs;
@@ -27,7 +28,10 @@ namespace Doggiehood.Core.World
         /// docs/specs/expansion.md's move-in system note.</summary>
         private readonly Expansion.MoveInSystem moveInSystem = new Expansion.MoveInSystem();
 
-        public IReadOnlyList<House> Houses { get; }
+        public IReadOnlyList<House> Houses
+        {
+            get { return houses; }
+        }
 
         public IReadOnlyList<Dog> Dogs
         {
@@ -62,7 +66,7 @@ namespace Doggiehood.Core.World
 
         private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> startingDogs)
         {
-            Houses = houses;
+            this.houses = new List<House>(houses);
             dogs = new List<Dog>(startingDogs);
             Wallet = new Economy.Wallet();
             Quests = new Quests.QuestManager(this);
@@ -151,6 +155,76 @@ namespace Doggiehood.Core.World
         public bool IsLotBuildable(int houseId)
         {
             return Houses.All(house => house.Id != houseId);
+        }
+
+        /// <summary>
+        /// Builds a house on <paramref name="houseId"/>'s lot (#57): charges
+        /// <see cref="Expansion.HouseBuildNumbers.Cost"/> from <see cref="Wallet"/>
+        /// and adds a new <see cref="House"/> at <see cref="House.InitialLevel"/>,
+        /// vacant (#58). Returns false with no state change (no deduction,
+        /// no house added) when the lot already has a house
+        /// (<see cref="IsLotBuildable"/> false), the lot's zone hasn't been
+        /// unlocked yet, or the balance can't afford the cost.
+        /// </summary>
+        public bool TryBuildHouse(int houseId)
+        {
+            if (!IsLotBuildable(houseId))
+            {
+                return false;
+            }
+
+            var lot = FindLotInUnlockedZones(houseId);
+            if (lot == null)
+            {
+                return false;
+            }
+
+            if (!Wallet.TrySpend(Expansion.HouseBuildNumbers.Cost))
+            {
+                return false;
+            }
+
+            houses.Add(new House(houseId, lot.Quadrant));
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the <see cref="HouseLot"/> for any known house id — the
+        /// starting layout's lots (#38) or an unlocked zone's lots (#56) —
+        /// for callers (Unity's WorldBuilder) that need a built house's
+        /// position/quadrant. Throws if the id isn't part of the starting
+        /// layout or any unlocked zone.
+        /// </summary>
+        public HouseLot GetHouseLot(int houseId)
+        {
+            var startingLot = NeighborhoodLayout.HouseLots.FirstOrDefault(lot => lot.HouseId == houseId);
+            if (startingLot != null)
+            {
+                return startingLot;
+            }
+
+            var zoneLot = FindLotInUnlockedZones(houseId);
+            if (zoneLot != null)
+            {
+                return zoneLot;
+            }
+
+            throw new ArgumentException(
+                $"No house lot with id {houseId} in the starting layout or any unlocked zone.", nameof(houseId));
+        }
+
+        private HouseLot FindLotInUnlockedZones(int houseId)
+        {
+            foreach (var zone in unlockedZones)
+            {
+                var lot = zone.Lots.FirstOrDefault(candidate => candidate.HouseId == houseId);
+                if (lot != null)
+                {
+                    return lot;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>First-launch tutorial flag (#44); persists in the save.</summary>
