@@ -57,7 +57,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(house.Level, Is.EqualTo(House.InitialLevel));
 
             var remainingMarkers = worldRoot.GetComponentsInChildren<EmptyLotView>();
-            Assert.That(remainingMarkers.Select(v => v.HouseId), Does.Not.Contain(houseId));
+            Assert.That(remainingMarkers.Select(v => v.HouseId).ToList(), Has.No.Member(houseId));
 
             var houseView = worldRoot.GetComponentsInChildren<HouseView>().SingleOrDefault(h => h.HouseId == houseId);
             Assert.That(houseView, Is.Not.Null, "the built house should get a real HouseView in the scene");

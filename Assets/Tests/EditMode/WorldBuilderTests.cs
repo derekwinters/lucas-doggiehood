@@ -204,7 +204,7 @@ namespace Doggiehood.Unity.EditModeTests
             root = WorldBuilder.Build(state);
 
             var markers = root.GetComponentsInChildren<EmptyLotView>();
-            Assert.That(markers.Select(m => m.HouseId), Does.Not.Contain(builtLot.HouseId));
+            Assert.That(markers.Select(m => m.HouseId).ToList(), Has.No.Member(builtLot.HouseId));
             Assert.That(markers.Length, Is.EqualTo(zone.Lots.Count - 1));
         }
 
