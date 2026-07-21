@@ -36,7 +36,7 @@ class TestRender(unittest.TestCase):
     def test_focus_marker_present_and_first(self):
         first = self.body.splitlines()[0]
         self.assertEqual(
-            first, "<!-- pipeline-focus: v0.4 -->"
+            first, "<!-- pipeline-focus: 03 - Dogs & Conversations -->"
         )
 
     def test_pie_values(self):
@@ -78,8 +78,8 @@ class TestRender(unittest.TestCase):
     def test_release_please_in_automation(self):
         self.assertIn("chore(main): release 0.3.0", self.body)
 
-    def test_no_mvp_language(self):
-        self.assertNotIn("MVP", self.body)
+    def test_post_mvp_annotated(self):
+        self.assertIn("post-MVP", self.body)
 
     def test_deterministic(self):
         self.assertEqual(self.body, render_dashboard.render_body(load_state()))
@@ -88,32 +88,6 @@ class TestRender(unittest.TestCase):
         with open(GOLDEN) as fh:
             expected = fh.read()
         self.assertEqual(self.body, expected)
-
-
-class TestResolveFocus(unittest.TestCase):
-    """Focus precedence: explicit override (DASHBOARD_SET_FOCUS, i.e. a `/focus`
-    command re-rendering) > the #193 marker > lowest version milestone with
-    ready work. Setting focus via a fresh render — not a hand-edit of #193's
-    body — is what keeps the stored body raw (#204 corruption)."""
-
-    def ms(self, ready):
-        return {t: {"done": 0, "ready": r, "remaining": 0}
-                for t, r in ready.items()}
-
-    def test_override_wins_over_marker(self):
-        out = render_dashboard._resolve_focus(
-            "v1.0", "v0.4", self.ms({"v0.4": 3, "v1.0": 1}))
-        self.assertEqual(out, "v1.0")
-
-    def test_marker_used_when_no_override(self):
-        out = render_dashboard._resolve_focus(
-            None, "v0.4", self.ms({"v0.4": 3}))
-        self.assertEqual(out, "v0.4")
-
-    def test_fallback_to_lowest_version_with_ready(self):
-        out = render_dashboard._resolve_focus(
-            None, None, self.ms({"v1.0": 2, "v0.4": 1}))
-        self.assertEqual(out, "v0.4")
 
 
 if __name__ == "__main__":

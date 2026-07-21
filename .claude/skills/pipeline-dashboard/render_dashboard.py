@@ -191,8 +191,9 @@ def render_body(state):
         mdone, mopen = m["done"], m["open"]
         mtotal = mdone + mopen
         bar = _progress_bar(mdone, mtotal)
-        a("| `%s` | `%s` | %d/%d complete · %d open |"
-          % (m["title"], bar, mdone, mtotal, mopen))
+        note = " · _post-MVP_" if m.get("post_mvp") else ""
+        a("| `%s` | `%s` | %d/%d complete · %d open%s |"
+          % (m["title"], bar, mdone, mtotal, mopen, note))
     a("")
     a("---")
     a("")
@@ -205,7 +206,7 @@ def render_body(state):
         a("```mermaid")
         a("xychart-beta")
         a('    title "Open issues by milestone"')
-        a("    x-axis [%s]" % ", ".join('"%s"' % s for s in obm["labels"]))
+        a("    x-axis [%s]" % ", ".join(obm["labels"]))
         a('    y-axis "Open issues" 0 --> %d' % obm["ymax"])
         a("    bar [%s]" % ", ".join(str(v) for v in obm["values"]))
         a("```")
@@ -227,6 +228,11 @@ def render_body(state):
     a("| `/park` / `/unpark` | Hide from the pipeline / bring it back |")
     a("| `/milestone <name>` | Override the milestone |")
     a("| `/focus <name>` | Set the active milestone for nightly development |")
+    a("")
+    a("_`/focus` can be set from any issue **or from this dashboard issue** — "
+      "the gatekeeper honors it here even though every other command is "
+      "issue-scoped. Relocating this focus marker to a dedicated single-writer "
+      "store (a control issue or a repo variable) is tracked as decision #8._")
 
     return "\n".join(L) + "\n"
 
@@ -269,16 +275,10 @@ def _paginate(path, token):
     return items
 
 
-def _milestone_key(title):
-    """Sort key ordering version milestones (v0.4, v1.0, v1.1, v2.0) by
-    (major, minor). Any non-version milestone — `Direct Involvement Needed`, or
-    a closed phase milestone kept for historical roll-up — sorts after the
-    versions, by title."""
+def _milestone_num(title):
     import re
-    m = re.match(r"^v(\d+)\.(\d+)$", (title or "").strip())
-    if m:
-        return (0, int(m.group(1)), int(m.group(2)), "")
-    return (1, 0, 0, title or "")
+    m = re.match(r"^0*(\d+)", title or "")
+    return int(m.group(1)) if m else 9999
 
 
 def fetch_state(repo, token, as_of):
@@ -306,12 +306,13 @@ def fetch_state(repo, token, as_of):
         else:
             b["remaining"] += 1
 
-    # Focus: DASHBOARD_SET_FOCUS override (a `/focus` re-render) > #193 marker
-    # > lowest version milestone with ready work.
+    # Focus: marker on #193 if present, else lowest milestone with ready work.
     dash = _api_get("/repos/%s/issues/%d" % (repo, DASHBOARD_ISSUE), token)
-    focus_title = _resolve_focus(
-        os.environ.get("DASHBOARD_SET_FOCUS"),
-        _read_focus_marker(dash.get("body") or ""), milestones)
+    focus_title = _read_focus_marker(dash.get("body") or "")
+    if not focus_title:
+        ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
+        pool = ready_ms or list(milestones)
+        focus_title = min(pool, key=_milestone_num) if pool else "(none)"
     fb = milestones.get(focus_title, {"done": 0, "ready": 0, "remaining": 0})
 
     def open_issues_with(label):
@@ -359,13 +360,14 @@ def fetch_state(repo, token, as_of):
 
     # Other-milestone summaries + open-by-milestone chart.
     other, chart_labels, chart_vals = [], [], []
-    for title in sorted(milestones, key=_milestone_key):
+    for title in sorted(milestones, key=_milestone_num):
         b = milestones[title]
         opencount = b["ready"] + b["remaining"]
         if title != focus_title:
-            other.append({"title": title, "done": b["done"], "open": opencount})
+            other.append({"title": title, "done": b["done"], "open": opencount,
+                          "post_mvp": _milestone_num(title) == 6})
         if opencount > 0:
-            chart_labels.append(title)
+            chart_labels.append("m%02d" % _milestone_num(title))
             chart_vals.append(opencount)
     ymax = (max(chart_vals) + 1) if chart_vals else 1
 
@@ -397,24 +399,6 @@ def _read_focus_marker(body):
     import re
     m = re.search(r"<!--\s*pipeline-focus:\s*(.+?)\s*-->", body)
     return m.group(1).strip() if m else None
-
-
-def _resolve_focus(override, marker_title, milestones):
-    """Focus precedence: an explicit override (the DASHBOARD_SET_FOCUS env var,
-    set when a `/focus` command re-renders the dashboard) wins; else the #193
-    marker; else the lowest version milestone with ready-for-work issues.
-
-    Setting focus by re-rendering with this override — instead of hand-editing
-    #193's body — is what keeps the stored body raw. A read-modify-write of the
-    body re-HTML-encodes it (`"` becomes `&#34;`, `&` becomes `&amp;`) and breaks
-    the Mermaid charts. See #204."""
-    if override and override.strip():
-        return override.strip()
-    if marker_title:
-        return marker_title
-    ready = [t for t, b in milestones.items() if b["ready"] > 0]
-    pool = ready or list(milestones)
-    return min(pool, key=_milestone_key) if pool else "(none)"
 
 
 def _blocked_by(body):

@@ -8,9 +8,9 @@ name: dashboard
 
 on:
   schedule:
-    # UTC. Offset ~1h after the AI routines (12:00 AM analysis, 23:00 PM
-    # gatekeeper, 06:00 nightly dev) so labels are up to date. Fixed-UTC cron
-    # drifts 1h across US DST — accepted.
+    # UTC. Offset ~1h after the AI routines (12:00 gatekeeper→analysis AM,
+    # 23:00 gatekeeper review PM, 06:00 gatekeeper→dev nightly) so labels are
+    # up to date. Fixed-UTC cron drifts 1h across US DST — accepted.
     - cron: "0 13 * * *" # after the 7 AM CT triage routine
     - cron: "0 0 * * *"  # after the 6 PM CT review routine
     - cron: "0 7 * * *"  # after the 1 AM CT development routine

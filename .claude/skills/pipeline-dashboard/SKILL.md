@@ -53,22 +53,6 @@ and the command reference. Issue **titles** are used as the summary text
 - Refresh live from a machine with a token:
   `GITHUB_TOKEN=... python3 render_dashboard.py --write`.
 
-## Setting focus (`/focus`)
-
-Focus is resolved as **`DASHBOARD_SET_FOCUS` env override → the #193 marker →
-the lowest version milestone with ready-for-work issues** (`_resolve_focus`).
-The gatekeeper sets focus by re-rendering with the override:
-
-```bash
-DASHBOARD_SET_FOCUS='v0.4' python3 render_dashboard.py --write
-```
-
-The renderer writes the new `<!-- pipeline-focus: v0.4 -->` marker into the
-freshly rendered body, raw. **Never hand-edit #193's body to change the
-marker** — reading and writing that body back through the GitHub tools
-re-HTML-encodes it (`"` → `&#34;`, `&` → `&amp;`) and breaks the Mermaid charts
-([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
-
 ## Tests
 
 `tests/test_render.py` checks structural invariants (pie values and colors,

@@ -163,32 +163,83 @@ class TestParseCommands(unittest.TestCase):
         self.assertTrue(a["propose"])
         self.assertIn("ai-triage", a["add_labels"])
 
-    def test_focus_honored_on_dashboard_issue(self):
-        # #204: /focus is the one command accepted on the dashboard issue
-        # itself, so focus can be set from #193 — every other command stays
-        # excluded there (see test_non_focus_command_ignored_on_dashboard).
-        out = run(payload(
-            [base_issue(number=193, is_dashboard=True,
-                        comments=[comment("/focus v0.4", cid=8)])],
-            milestones=["v0.4", "v1.0"],
-        ))
-        a = self.actions_for(193, out)[0]
-        self.assertEqual(a["set_focus"], "v0.4")
-
-    def test_non_focus_command_ignored_on_dashboard(self):
-        # Only /focus is honored on the dashboard; other commands are dropped.
-        out = run(payload([
-            base_issue(number=193, is_dashboard=True,
-                       comments=[comment("/approve\n/admit", cid=9)]),
-        ]))
-        self.assertEqual(self.actions_for(193, out), [])
-
     def test_url_slash_does_not_trigger(self):
         out = run(payload([
             base_issue(number=180,
                        comments=[comment("see http://x/approve/foo", cid=8)]),
         ]))
         self.assertEqual(self.actions_for(180, out), [])
+
+    def test_focus_honored_on_dashboard_issue(self):
+        # /focus IS honored on the dashboard issue (the UI directs the owner
+        # to comment it there — issue #204); only set_focus survives.
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/focus 04", cid=8)]),
+        ]))
+        acts = self.actions_for(193, out)
+        self.assertEqual(len(acts), 1)
+        a = acts[0]
+        self.assertEqual(a["set_focus"], "04 - Quests & Economy")
+        self.assertEqual(a["add_labels"], [])
+        self.assertEqual(a["remove_labels"], [])
+        self.assertIsNone(a["menu"])
+
+    def test_issue_scoped_command_not_honored_on_dashboard(self):
+        # /approve (issue-scoped) on the dashboard issue is ignored.
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/approve", cid=9)]),
+        ]))
+        self.assertEqual(self.actions_for(193, out), [])
+
+    def test_focus_plus_issue_command_on_dashboard_keeps_only_focus(self):
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/approve\n/focus 07", cid=9)]),
+        ]))
+        a = self.actions_for(193, out)[0]
+        self.assertEqual(a["set_focus"], "07 - Polish & Onboarding")
+        self.assertEqual(a["commands"], ["focus"])
+        self.assertEqual(a["add_labels"], [])
+
+    def test_epic_still_skipped_entirely(self):
+        out = run(payload([
+            base_issue(number=191, is_epic=True,
+                       comments=[comment("/focus 04", cid=1)]),
+        ]))
+        self.assertEqual(out["actions"], [])
+
+    def test_unmatched_focus_is_rejected(self):
+        out = run(payload([
+            base_issue(number=185, comments=[comment("/focus 99", cid=8)]),
+        ]))
+        self.assertEqual(self.actions_for(185, out), [])
+        self.assertTrue(any(
+            s.get("comment_id") == 8 and s.get("reason") == "focus-no-match"
+            for s in out["skipped"]))
+
+    def test_unmatched_milestone_is_rejected(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       comments=[comment("/milestone 99", cid=8)]),
+        ]))
+        self.assertEqual(self.actions_for(181, out), [])
+        self.assertTrue(any(
+            s.get("comment_id") == 8 and s.get("reason") == "milestone-no-match"
+            for s in out["skipped"]))
+
+    def test_approve_with_unmatched_milestone_still_approves(self):
+        # /approve is honored; the unmatched /milestone is rejected separately.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       comments=[comment("/approve\n/milestone 99", cid=8)]),
+        ]))
+        a = self.actions_for(181, out)[0]
+        self.assertIn("ready-for-work", a["add_labels"])
+        self.assertIsNone(a["set_milestone"])
+        self.assertTrue(any(s.get("reason") == "milestone-no-match"
+                            for s in out["skipped"]))
 
 
 if __name__ == "__main__":

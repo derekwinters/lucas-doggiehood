@@ -78,6 +78,12 @@ writing that body back through the GitHub tools re-HTML-encodes it (`"` →
 `&#34;`, `&` → `&amp;`) and breaks the Mermaid charts
 ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
 
+`/focus` is now honored on the dashboard issue itself, and a `/focus` naming a
+milestone that matches no live milestone is rejected rather than silently
+stored. Relocating the marker out of the dashboard body into a dedicated
+single-writer store is tracked upstream in
+[ai-skills#8](https://github.com/derekwinters/ai-skills/issues/8).
+
 ## Routines and the dashboard workflow
 
 The gatekeeper runs first in each AI routine so downstream stages see fresh
