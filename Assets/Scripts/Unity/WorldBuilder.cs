@@ -165,7 +165,7 @@ namespace Doggiehood.Unity
 
             foreach (var house in state.Houses)
             {
-                BuildHouse(root.transform, house);
+                BuildHouse(root.transform, house, state.GetHouseLot(house.Id));
             }
 
             BuildWalkways(root.transform);
