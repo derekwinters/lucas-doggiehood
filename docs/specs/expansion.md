@@ -31,6 +31,8 @@ The tile-grid placement/adjacency system this all sits on is [#109](https://gith
 | Build a house | 50 coins, flat |
 | House upgrade to L2 / L3 / L4 | 100 / 200 / 400 coins (doubles per level) |
 
+**Implementation note ([#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)):** built as pure Core logic on top of [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)'s tile grid — `Doggiehood.Core.World.Zone` (authored tile placements + the quadrant lots each tile carries, via `TileLotCatalog`/`TileGeometry`), `Doggiehood.Core.World.ZoneCatalog` (the authored zone list — only the first zone exists yet), and `Doggiehood.Core.Expansion.ZoneUnlock`/`ZoneUnlockNumbers` for the cost formula. `GameState` now owns a `TileMap` (`Map`, seeded with just the starting FourWay intersection) and `UnlockedZones`; `GameState.TryUnlockNextZone()` is the one entry point — it charges `Wallet` for the next zone in sequence, adds that zone's tiles to `Map` through #109's placement/adjacency validation, and returns false with no state change (no deduction, no tiles placed) if the balance can't cover it or every authored zone is already unlocked. Unlocking never creates `House` objects — `GameState.IsLotBuildable(houseId)` reports a zone's lots as buildable exactly because no `House` exists for that id yet, which is what house building (#57) will check. **Still outstanding:** persisting `Map`/`UnlockedZones` through `SaveCodec` — like the [move-in system's pity counter](#move-in-system) below, this resets every app session until that lands. No Unity-side unlock trigger exists yet either — the UI/placement question is open on [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178).
+
 ## Move-in system
 
 *Decision 2026-07-14 (Derek, in conversation), detailed on [#54](https://github.com/derekwinters/lucas-doggiehood/issues/54). All values named, tunable constants; RNG injectable for deterministic tests.*
@@ -65,7 +67,7 @@ Vacancy is Core state (`House.IsVacant`); the greyscale is purely its visual, wi
 ## Build checklist (for when `v0.4` starts)
 
 - [x] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
-- [ ] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street
+- [x] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street
 - [ ] Currency-gated house building (50 flat) places a level-1, vacant house on an empty lot in an unlocked zone
 - [ ] Newly built houses render greyscaled and return to their normal tinted color on move-in ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58) — Core state, wiring, and rendering already built; unreachable in a real game until house building (#57) exists)
 - [ ] The shared pity-counter move-in system (5% base, +5% per quest, reset on success) fills vacant houses per the household/breed/easter-egg rules above

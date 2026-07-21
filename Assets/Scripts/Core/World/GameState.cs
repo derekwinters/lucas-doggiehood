@@ -12,9 +12,15 @@ namespace Doggiehood.Core.World
     /// </summary>
     public sealed class GameState
     {
+        /// <summary>Grid coordinate of the starting FourWay intersection
+        /// (#38, #109) — the map's fixed seed, matching the confirmed
+        /// first-zone layout's "starting FourWay at grid (0,0)".</summary>
+        private static readonly TileCoordinate StartingIntersectionCoordinate = new TileCoordinate(0, 0);
+
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
         private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
         private readonly List<Dog> dogs;
+        private readonly List<Zone> unlockedZones = new List<Zone>();
 
         /// <summary>Owns the shared move-in pity counter and easter-egg
         /// reserve (#54). Not yet persisted through SaveCodec — see
@@ -30,6 +36,17 @@ namespace Doggiehood.Core.World
 
         public Economy.Wallet Wallet { get; }
         public Quests.QuestManager Quests { get; }
+
+        /// <summary>The grid-coordinate tile map (#109), seeded with just
+        /// the starting FourWay intersection until zones are unlocked (#56).</summary>
+        public TileMap Map { get; }
+
+        /// <summary>Zones unlocked so far, in unlock order (#56). Empty for
+        /// a new game — the starting intersection isn't itself a zone.</summary>
+        public IReadOnlyList<Zone> UnlockedZones
+        {
+            get { return unlockedZones; }
+        }
 
         /// <summary>Permanent world changes from completed quests (#27).</summary>
         public IReadOnlyList<PlacedItem> PlacedItems
@@ -49,6 +66,7 @@ namespace Doggiehood.Core.World
             dogs = new List<Dog>(startingDogs);
             Wallet = new Economy.Wallet();
             Quests = new Quests.QuestManager(this);
+            Map = new TileMap(StartingIntersectionCoordinate, TileType.FourWay);
         }
 
         public static GameState CreateNew()
@@ -96,6 +114,43 @@ namespace Doggiehood.Core.World
             }
 
             return household;
+        }
+
+        /// <summary>
+        /// Unlocks the next authored <see cref="Zone"/> (#56,
+        /// <see cref="ZoneCatalog.Zones"/>) in sequence: the nth zone costs
+        /// <see cref="Expansion.ZoneUnlock.CostForZoneNumber"/>, deducted
+        /// from <see cref="Wallet"/>. Returns false with no state change
+        /// (no deduction, no tiles placed) when the balance can't afford
+        /// it, or when every authored zone is already unlocked.
+        /// </summary>
+        public bool TryUnlockNextZone()
+        {
+            var zoneNumber = unlockedZones.Count + 1;
+            if (zoneNumber > ZoneCatalog.Zones.Count)
+            {
+                return false;
+            }
+
+            var cost = Expansion.ZoneUnlock.CostForZoneNumber(zoneNumber);
+            if (!Wallet.TrySpend(cost))
+            {
+                return false;
+            }
+
+            var zone = ZoneCatalog.Zones[zoneNumber - 1];
+            zone.PlaceOnto(Map);
+            unlockedZones.Add(zone);
+            return true;
+        }
+
+        /// <summary>Whether <paramref name="houseId"/> (a <see cref="HouseLot"/>
+        /// id from a <see cref="Zone"/>, or the starting layout) has no
+        /// <see cref="House"/> built on it yet (#56, #57) — a freshly
+        /// unlocked zone reports every one of its lots buildable this way.</summary>
+        public bool IsLotBuildable(int houseId)
+        {
+            return Houses.All(house => house.Id != houseId);
         }
 
         /// <summary>First-launch tutorial flag (#44); persists in the save.</summary>
