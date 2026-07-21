@@ -1,0 +1,23 @@
+{
+  "source": "derekwinters/ai-skills",
+  "ref": "main",
+  "bundles": [
+    "core",
+    "pipeline"
+  ],
+  "skills": [
+    "ci-watch",
+    "pipeline-gatekeeper",
+    "pipeline-analysis",
+    "pipeline-dev",
+    "pipeline-dashboard"
+  ],
+  "agents": [
+    "dev"
+  ],
+  "workflows": [
+    "skills-update.yml",
+    "dashboard.yml",
+    "pipeline-tests.yml"
+  ]
+}

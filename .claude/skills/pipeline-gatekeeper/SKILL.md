@@ -42,12 +42,10 @@ See `docs/engineering/issue-pipeline.md` for the full model.
 | `/redo` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification` (fresh analysis pass) |
 | `/propose` | re-add `ai-triage` and authorize analysis to draft the missing design as a marked PROPOSAL |
 | `/park` / `/unpark` | add / remove `parked` |
-| `/milestone <name>` | set the milestone (accepts a version like `v0.4`, a title fragment, or the full title) |
+| `/milestone <name>` | set the milestone (accepts `04`, a title fragment, or the full title) |
 | `/focus <name>` | record the active nightly-dev milestone (stored in the dashboard marker — see below) |
 
 A `parked` issue only responds to `/unpark`.
-
-The dashboard issue (#193) is excluded from the pipeline, but it **does** honor `/focus` — so focus can be set by commenting `/focus <name>` right on the dashboard ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)). No other command works there.
 
 ## Where `/focus` is stored
 
@@ -55,21 +53,15 @@ The active nightly-dev milestone lives in a **hidden marker on the dashboard
 issue (#193)** body:
 
 ```
-<!-- pipeline-focus: v0.4 -->
+<!-- pipeline-focus: 04 - Quests & Economy -->
 ```
 
 This is the single source of truth read by both `pipeline-dev` (queue
 selection) and the dashboard workflow. It was chosen over a committed state
 file so no routine needs to push a commit just to record focus, and over a
-separate issue so the value sits next to where it's displayed.
-
-**Never hand-edit #193's body to change the marker.** Reading that body back
-through the GitHub tools re-HTML-encodes it (`"` → `&#34;`, `&` → `&amp;`) and
-breaks the Mermaid charts ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
-Instead, `/focus` sets the marker by **re-rendering** the dashboard with the
-`DASHBOARD_SET_FOCUS` override, which makes the renderer write the new marker
-itself, raw (see step 3). If the marker is absent, focus defaults to the lowest
-version milestone with open `ready-for-work` issues.
+separate issue so the value sits next to where it's displayed. When `/focus`
+fires, update this marker (see step 5). If the marker is absent, focus defaults
+to the lowest-numbered milestone with open `ready-for-work` issues.
 
 ## Procedure
 
@@ -102,17 +94,8 @@ version milestone with open `ready-for-work` issues.
      comment if present, otherwise the milestone **proposed by analysis** in
      its `pending-approval` comment on that issue. If neither exists, leave the
      milestone unset and say so in the ack.
-   - If `set_focus` is non-null, set focus by **re-rendering** the dashboard
-     with the override — **never hand-edit #193's body** (a read-modify-write
-     re-HTML-encodes it and breaks the Mermaid charts, [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)):
-
-     ```bash
-     DASHBOARD_SET_FOCUS='<milestone title>' \
-       python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
-     ```
-
-     The renderer writes the new `<!-- pipeline-focus: <title> -->` marker
-     itself (raw) as part of the freshly rendered body.
+   - If `set_focus` is non-null, update the `<!-- pipeline-focus: ... -->`
+     marker on #193 (add it if missing).
 
 4. **Acknowledge.** React to the source comment with 👍 (`+1`) to confirm the
    action, and — where it moves the issue to a state awaiting Derek — post a
@@ -125,14 +108,14 @@ version milestone with open `ready-for-work` issues.
    what makes the gatekeeper idempotent — do not skip it.
 
 6. **Report** a one-line summary per issue touched (e.g.
-   `#181 approve → ready-for-work (v0.4)`), and note any
+   `#181 approve → ready-for-work (07 - Polish & Onboarding)`), and note any
    `skipped` non-owner commands so Derek can see an attempted bad-actor command
    was ignored.
 
 ## Tests
 
 `tests/test_parse_commands.py` covers owner-only gating, the watermark,
-epic exclusion, the dashboard's `/focus`-only rule, each command's label move, milestone matching, and
+epic/dashboard exclusion, each command's label move, milestone matching, and
 the parked-issue rule. Run:
 
 ```bash
