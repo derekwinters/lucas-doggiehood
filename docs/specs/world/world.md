@@ -19,6 +19,14 @@ Streets are lined with houses that the player views and explores from above ([#7
 
 The constant lives in Core as `HousePlacement.KitScale` (`WorldBuilder.HouseKitScale` is the Unity-side alias), and everything downstream — front-setback placement, door world positions, walkway starts, the catalog gallery — derives from it. At ×7 the four starting models' footprints are: building-type-b **12.80×7.98m**, building-type-g **10.15×8.25m**, building-type-k **6.45×7.14m**, building-type-m **10.00×10.00m**. ×8 was rejected at the time because building-type-b would have been 14.6m wide against [#129](https://github.com/derekwinters/lucas-doggiehood/issues/129)'s then-current 15m lot-fence square (a 0.5m-margin guard); at ×7 it kept a 1.1m margin. That square is gone — [#146](https://github.com/derekwinters/lucas-doggiehood/issues/146) reshaped fences to anchor on the house itself (see [Backyard fences](#backyard-fences)), whose own guard is the 0.5m rear-wall clearance — but the ×7 decision stands on its own.
 
+## Property bounds
+
+> **Decision (2026-07-20, Derek, on [#222](https://github.com/derekwinters/lucas-doggiehood/issues/222)):** a **property (lot) is one quadrant of a tile**. On the starting FourWay intersection each of the 4 quadrants is a property; that same quadrant size is the standard for every layout — tighter layouts (the deferred [tile catalog](tile-catalog.md#the-17-tile-types)) simply fit fewer properties, never a differently-sized one.
+
+The geometry lives in Core (`LotBounds`): `QuadrantBounds(lot)` returns a rectangle sized to one tile-quadrant (half the 60m `WorldDimensions.TileSize` per side, so 30m×30m) positioned on the lot's own `HouseLot.Quadrant` — **not** on `HouseLot.Position` (the separate, hand-picked ±14m house-placement anchor described above). Sizing a full tile-quadrant box around that 14m anchor would overlap the opposite lot's bounds across the road by a meter; centering each quadrant on the tile's own N/S/E/W split instead makes the 4 starting lots' bounds exactly tile the 60m tile with no gap or overlap between neighbours.
+
+`LotBounds.FrontYard`/`BackYard` split those bounds relative to `HousePlacement.FrontFacing`, excluding the house footprint — the front yard is the portion between the lot's street-side edge and the house's front facade, the back yard the portion between the house's rear wall and the lot's far edge, both spanning the lot's full width. This is the region the deferred procedural trees work ([#170](https://github.com/derekwinters/lucas-doggiehood/issues/170)) scatters trees into.
+
 ## Backyard fences
 
 > **Decision (2026-07-14, Derek, on [#146](https://github.com/derekwinters/lucas-doggiehood/issues/146), reshaping [#129](https://github.com/derekwinters/lucas-doggiehood/issues/129)):** each fence starts at the **midpoint of each side wall of the house** and wraps around the **back yard** only — the **front yard stays open**. No fence line crosses the front, so #129's gate-gap design is gone: the front walkway ([#128](https://github.com/derekwinters/lucas-doggiehood/issues/128)) runs door → sidewalk through the open front and never meets a fence. Fences are **defined for every lot but hidden by default** — a future quest purchases them ([#147](https://github.com/derekwinters/lucas-doggiehood/issues/147)).
@@ -46,5 +54,6 @@ A cover art concept for the game exists at [#90](https://github.com/derekwinters
 - [ ] One intersection, two streets, 4 house lots (one per quadrant)
 - [x] Houses placed per [Art & UI Style](art-style.md) (cottage silhouettes, one per house)
 - [x] Backyard fence defined per lot (anchored at the house's side-wall midpoints, front yard open), hidden by default until purchased ([#146](https://github.com/derekwinters/lucas-doggiehood/issues/146); purchase quest: [#147](https://github.com/derekwinters/lucas-doggiehood/issues/147))
+- [x] Property bounds defined as one tile-quadrant per lot, split into front-yard/back-yard regions excluding the house footprint ([#222](https://github.com/derekwinters/lucas-doggiehood/issues/222))
 - [ ] Static daytime lighting setup, no day/night or weather systems present
 - [ ] Scene readable and navigable at the isometric camera angle (see [Camera, Navigation & Controls](camera-controls.md))
