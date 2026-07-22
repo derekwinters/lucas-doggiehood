@@ -55,5 +55,16 @@ namespace Doggiehood.Core.Art
         /// lot-selection affordance is designed.
         /// </summary>
         public const string EmptyLotMarkerHex = "#F2A65A";
+
+        /// <summary>
+        /// Graybox-fallback yard landscaping color (#170) — used only when
+        /// none of the tree-large/tree-small/planter kit models can load
+        /// (WorldBuilder.BuildYardLandscaping falls back to a simple
+        /// primitive per pick, same pattern as HouseFallbackHex). A darker,
+        /// more saturated green than the base GrassHex ground so a
+        /// fallback tree still reads as a distinct object standing on the
+        /// lawn rather than blending into it.
+        /// </summary>
+        public const string YardLandscapingFallbackHex = "#2F8F3F";
     }
 }

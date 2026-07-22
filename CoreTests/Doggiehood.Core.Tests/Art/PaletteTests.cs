@@ -35,5 +35,14 @@ namespace Doggiehood.Core.Tests.Art
             var surfaces = new[] { Palette.StreetHex, Palette.GrassVergeHex, Palette.SidewalkHex, Palette.CrosswalkHex };
             Assert.That(surfaces, Is.Unique);
         }
+
+        [Test]
+        public void YardLandscapingFallback_IsAValidColor_DistinctFromTheGrassGround()
+        {
+            // #170: the graybox-fallback yard tree/planter marker must read
+            // as its own object against the lawn, not blend into it.
+            Assert.That(() => ColorRgb.Parse(Palette.YardLandscapingFallbackHex), Throws.Nothing);
+            Assert.That(Palette.YardLandscapingFallbackHex, Is.Not.EqualTo(Palette.GrassHex));
+        }
     }
 }

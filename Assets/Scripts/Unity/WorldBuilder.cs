@@ -64,6 +64,29 @@ namespace Doggiehood.Unity
         /// and meet at the corners on their own.)</summary>
         public const string FencePieceResource = "fence";
 
+        /// <summary>Resources key for the large yard tree kit piece (#170),
+        /// staged alongside the houses.</summary>
+        public const string TreeLargeResource = "tree-large";
+
+        /// <summary>Resources key for the small yard tree kit piece (#170).</summary>
+        public const string TreeSmallResource = "tree-small";
+
+        /// <summary>Resources key for the yard planter kit piece (#170).</summary>
+        public const string PlanterResource = "planter";
+
+        /// <summary>Container name prefix for a lot's procedural yard
+        /// landscaping (#170) — one per lot, holding its selected front and
+        /// back yard trees/planters.</summary>
+        public const string YardLandscapingNamePrefix = "Yard - ";
+
+        /// <summary>Graybox-fallback yard prop height (#170) — only ever
+        /// built when none of the tree-large/tree-small/planter kit
+        /// pieces can load. Sized off Core's own collision radius (four
+        /// radii tall) so it reads as a small rounded tree/bush rather
+        /// than a flat disc, without inventing an unrelated tuning
+        /// number.</summary>
+        private const float YardLandscapingFallbackHeight = YardLandscaping.TreeFootprintRadius * 4f;
+
         /// <summary>
         /// Editor-check/test seam (#146): builds every lot's backyard
         /// fence even though HouseLot.HasFence defaults false (fences are
@@ -170,6 +193,7 @@ namespace Doggiehood.Unity
 
             BuildWalkways(root.transform);
             BuildFences(root.transform);
+            BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
 
             BuildSun(root.transform);
@@ -562,6 +586,90 @@ namespace Doggiehood.Unity
                     : new Vector3(thickness, height, run.Length);
                 Paint(rail, Palette.SidewalkHex);
             }
+        }
+
+        /// <summary>
+        /// Procedural yard landscaping (#170): one "Yard - N" container per
+        /// lot, holding its selected front and back yard trees/planters —
+        /// Core's YardLandscaping.FrontTreesFor/BackTreesFor decides which
+        /// positions and kit models, seeded deterministically per lot;
+        /// nothing here decides where a tree goes. In the kit path each
+        /// pick instantiates its matching tree-large/tree-small/planter
+        /// model; when a piece can't be loaded it falls back to one simple
+        /// primitive marker per pick (same pattern as the walkways/fences).
+        /// </summary>
+        private static void BuildYardLandscaping(Transform parent)
+        {
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var picks = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+                if (picks.Count == 0)
+                {
+                    continue;
+                }
+
+                var container = new GameObject(YardLandscapingNamePrefix + lot.HouseId);
+                container.transform.SetParent(parent);
+                container.transform.position = Vector3.zero;
+
+                for (var i = 0; i < picks.Count; i++)
+                {
+                    BuildYardTree(container.transform, picks[i], i);
+                }
+            }
+        }
+
+        /// <summary>Resources load key for a YardTreeKind's kit model.</summary>
+        public static string YardTreeResourceName(YardTreeKind kind)
+        {
+            switch (kind)
+            {
+                case YardTreeKind.TreeLarge:
+                    return TreeLargeResource;
+                case YardTreeKind.TreeSmall:
+                    return TreeSmallResource;
+                case YardTreeKind.Planter:
+                    return PlanterResource;
+                default:
+                    throw new System.ArgumentOutOfRangeException(nameof(kind), kind, null);
+            }
+        }
+
+        private static void BuildYardTree(Transform container, YardTreePlacement placement, int index)
+        {
+            var piece = ForcePrimitiveFallback
+                ? null
+                : Resources.Load<GameObject>(YardTreeResourceName(placement.Kind));
+
+            if (piece != null)
+            {
+                var tree = Object.Instantiate(piece, container);
+                tree.name = placement.Kind + " " + index;
+                tree.transform.position = new Vector3(placement.Position.X, 0f, placement.Position.Z);
+                tree.transform.rotation = Quaternion.identity;
+                tree.transform.localScale = Vector3.one * YardLandscaping.UniformScale;
+            }
+            else
+            {
+                BuildPrimitiveYardTree(container, placement, index);
+            }
+        }
+
+        private static void BuildPrimitiveYardTree(Transform container, YardTreePlacement placement, int index)
+        {
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            marker.name = placement.Kind + " " + index;
+            marker.transform.SetParent(container);
+
+            // Unity's primitive Cylinder is 1 unit in diameter and 2 units
+            // tall at scale 1 — scale.x/z land the diameter on Core's
+            // TreeFootprintRadius, scale.y halves the target height to
+            // compensate for the model's own 2-unit height.
+            var diameter = YardLandscaping.TreeFootprintRadius * 2f;
+            marker.transform.localScale = new Vector3(diameter, YardLandscapingFallbackHeight / 2f, diameter);
+            marker.transform.position = new Vector3(
+                placement.Position.X, YardLandscapingFallbackHeight / 2f, placement.Position.Z);
+            Paint(marker, Palette.YardLandscapingFallbackHex);
         }
 
         /// <summary>
