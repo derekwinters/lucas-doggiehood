@@ -444,6 +444,45 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void YardLandscaping_FallsBackToPrimitiveMarkers_WhenKitPiecesCannotLoad()
+        {
+            // #170: with the kit tree pieces unavailable, each lot's
+            // "Yard - N" container still gets one primitive marker per
+            // Core-selected pick — same fallback contract as the
+            // walkways/fences (#128/#129) — painted the yard-landscaping
+            // fallback color, positioned exactly where Core says.
+            RebuildWithPrimitiveFallback();
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var expected = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+                Assert.That(expected, Is.Not.Empty, $"sanity: lot {lot.HouseId} has yard landscaping picks");
+
+                var container = root.transform.Find(WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null, $"missing yard container for lot {lot.HouseId}");
+
+                var markers = container.Cast<Transform>().ToList();
+                Assert.That(markers.Count, Is.EqualTo(expected.Count), $"lot {lot.HouseId} yard marker count");
+
+                var expectedColor = CoreColors.FromHex(Palette.YardLandscapingFallbackHex);
+                for (var i = 0; i < markers.Count; i++)
+                {
+                    var marker = markers[i];
+                    Assert.That(marker.position.x, Is.EqualTo(expected[i].Position.X).Within(0.001f),
+                        $"lot {lot.HouseId} yard marker {i} X");
+                    Assert.That(marker.position.z, Is.EqualTo(expected[i].Position.Z).Within(0.001f),
+                        $"lot {lot.HouseId} yard marker {i} Z");
+
+                    var renderer = marker.GetComponent<Renderer>();
+                    Assert.That(renderer, Is.Not.Null, $"lot {lot.HouseId} yard marker {i} must render a primitive");
+                    Assert.That(renderer.sharedMaterial.color.r, Is.EqualTo(expectedColor.r).Within(0.001f));
+                    Assert.That(renderer.sharedMaterial.color.g, Is.EqualTo(expectedColor.g).Within(0.001f));
+                    Assert.That(renderer.sharedMaterial.color.b, Is.EqualTo(expectedColor.b).Within(0.001f));
+                }
+            }
+        }
+
+        [Test]
         public void WorldContainsNoPlayerObjects()
         {
             // #19: no player avatar anywhere in the built world.

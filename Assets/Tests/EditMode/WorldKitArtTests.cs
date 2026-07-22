@@ -77,6 +77,16 @@ namespace Doggiehood.Unity.EditModeTests
             // #129: the lot-fence piece, from the same kit.
             Assert.That(Resources.Load<GameObject>(WorldBuilder.FencePieceResource), Is.Not.Null,
                 $"City Kit Suburban piece '{WorldBuilder.FencePieceResource}' must be loadable from Resources");
+
+            // #170: the three yard landscaping pieces, from the same kit.
+            foreach (var key in new[]
+                     {
+                         WorldBuilder.TreeLargeResource, WorldBuilder.TreeSmallResource, WorldBuilder.PlanterResource,
+                     })
+            {
+                Assert.That(Resources.Load<GameObject>(key), Is.Not.Null,
+                    $"City Kit Suburban piece '{key}' must be loadable from Resources");
+            }
         }
 
         [Test]
@@ -512,6 +522,62 @@ namespace Doggiehood.Unity.EditModeTests
                     Assert.That(pieceMeshes, Is.Not.Empty, $"lot {lot.HouseId} fence piece {i} renders no mesh");
                     Assert.That(pieceMeshes, Is.SubsetOf(sourceMeshes),
                         $"lot {lot.HouseId} fence piece {i} must render the kit fence piece");
+                }
+            }
+        }
+
+        [Test]
+        public void YardLandscaping_IsBuiltFromKitTreeModels_AtCoreSelectedPositions()
+        {
+            // #170: each lot gets a "Yard - N" container whose children are
+            // instantiated tree-large/tree-small/planter kit models, one
+            // per pick from Core's YardLandscaping.FrontTreesFor/BackTreesFor
+            // (front trees first, then back), ground-pivoted with no yaw
+            // (the pieces have no meaningful facing) and scaled uniformly.
+            var sourceMeshesByKind = new Dictionary<YardTreeKind, List<Mesh>>();
+            foreach (var kind in new[] { YardTreeKind.TreeLarge, YardTreeKind.TreeSmall, YardTreeKind.Planter })
+            {
+                var source = Resources.Load<GameObject>(WorldBuilder.YardTreeResourceName(kind));
+                Assert.That(source, Is.Not.Null, $"sanity: {kind} kit piece staged");
+                var meshes = source.GetComponentsInChildren<MeshFilter>()
+                    .Select(f => f.sharedMesh)
+                    .Where(m => m != null)
+                    .ToList();
+                Assert.That(meshes, Is.Not.Empty, $"sanity: {kind} kit piece has meshes");
+                sourceMeshesByKind[kind] = meshes;
+            }
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var expected = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+                Assert.That(expected, Is.Not.Empty, $"sanity: lot {lot.HouseId} has yard landscaping picks");
+
+                var container = root.transform.Find(WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
+                Assert.That(container, Is.Not.Null, $"missing yard container for lot {lot.HouseId}");
+
+                var pieces = container.Cast<Transform>().ToList();
+                Assert.That(pieces.Count, Is.EqualTo(expected.Count), $"lot {lot.HouseId} yard piece count");
+
+                for (var i = 0; i < pieces.Count; i++)
+                {
+                    var piece = pieces[i];
+                    Assert.That(piece.position.x, Is.EqualTo(expected[i].Position.X).Within(0.001f),
+                        $"lot {lot.HouseId} yard piece {i} X");
+                    Assert.That(piece.position.z, Is.EqualTo(expected[i].Position.Z).Within(0.001f),
+                        $"lot {lot.HouseId} yard piece {i} Z");
+                    Assert.That(piece.position.y, Is.EqualTo(0f).Within(0.001f),
+                        $"lot {lot.HouseId} yard piece {i} must sit on the ground");
+
+                    Assert.That(piece.localScale.x, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
+                        $"lot {lot.HouseId} yard piece {i} scale");
+
+                    var pieceMeshes = piece.GetComponentsInChildren<MeshFilter>()
+                        .Select(f => f.sharedMesh)
+                        .Where(m => m != null)
+                        .ToList();
+                    Assert.That(pieceMeshes, Is.Not.Empty, $"lot {lot.HouseId} yard piece {i} renders no mesh");
+                    Assert.That(pieceMeshes, Is.SubsetOf(sourceMeshesByKind[expected[i].Kind]),
+                        $"lot {lot.HouseId} yard piece {i} must render its selected kit model ({expected[i].Kind})");
                 }
             }
         }
