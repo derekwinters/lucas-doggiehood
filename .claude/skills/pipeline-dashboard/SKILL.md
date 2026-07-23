@@ -44,7 +44,9 @@ needs-clarification, other-milestone progress bars, the open-issues bar chart,
 and the command reference. Issue **titles** are used as the summary text
 (deterministic — no model), which is the tradeoff for a fully-scripted body.
 
-`#193` itself and any `parked` issue are excluded from every queue.
+`#193` itself and any `parked` issue are excluded from every queue. **Closed
+milestones** (100% done) are omitted from the "Other milestones" section and the
+open-issues chart — that section shows only live milestones outside the focus.
 
 ## Manual / preview use
 

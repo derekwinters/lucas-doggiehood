@@ -34,6 +34,7 @@
     {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
   ],
   "other_milestones": [
+    {"title": "00 - Concepts & Core Mechanics", "done": 12, "open": 0, "post_mvp": false, "closed": true},
     {"title": "04 - Quests & Economy", "done": 18, "open": 3, "post_mvp": false},
     {"title": "05 - Decorations & Happiness", "done": 8, "open": 1, "post_mvp": false},
     {"title": "07 - Polish & Onboarding", "done": 3, "open": 11, "post_mvp": false},
