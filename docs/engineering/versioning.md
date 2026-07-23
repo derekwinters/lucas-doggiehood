@@ -37,25 +37,34 @@ Requires [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, 
 
 A Core guard test (`CoreTests/Doggiehood.Core.Tests/Versioning/VersionFileGuardTests.cs`) asserts `VERSION` contains a valid bare semver and matches `manifest.json`'s tracked version, so the two can't silently drift apart again the way they did in #114.
 
-## Combined nightly PRs squash with raw conventional lines in the body
+## One issue → one PR → one squash commit → one changelog entry
 
-The [issue pipeline](issue-pipeline.md)'s nightly dev run builds several issues
-onto one branch and opens a **single combined PR**. To keep release-please's
-changelog granular despite the single squash-merge, the PR is structured so its
-squash commit carries one Conventional-Commit line per issue:
+The [issue pipeline](issue-pipeline.md)'s nightly dev run builds each selected
+issue on **its own branch** and opens **one PR per issue** — never a combined
+PR batching several issues together. This keeps release-please's changelog
+granular through the repository's squash-merge setting without any fragile
+PR-body trickery:
 
-- **PR title** = the lead change's Conventional line (e.g.
+- **PR title** = that issue's single Conventional-Commit line (e.g.
   `feat: give approach-to-rest real walk-to-decoration movement`). This is what
-  `pr-title-lint` checks and what names the release.
-- **PR body** = the remaining issues' Conventional-Commit lines as **raw**
-  lines (no leading `*`/`-`), one per issue, so that on squash-merge they land
-  in the squash commit message. release-please parses each as its own entry and
-  emits one changelog line per issue.
+  `pr-title-lint` checks, and — because the PR resolves exactly one issue — it
+  is also the natural subject of the squash commit that lands on `main`.
+- **Squash commit** = one Conventional Commit. release-please parses that single
+  header and emits exactly one clean changelog entry for the issue. No extra
+  Conventional lines are smuggled through the PR body, so nothing can be
+  silently dropped by the squash the way a combined multi-issue PR did
+  ([#213](https://github.com/derekwinters/lucas-doggiehood/issues/213)).
+- **PR body** carries the required `## Deviations and Decisions` section plus a
+  `Closes #N` line so merging auto-closes the issue (see
+  [Development Agent & Workflow](agent-workflow.md#how-an-issue-gets-worked)).
+  The body is documentation for the reviewer, not a changelog-assembly
+  mechanism.
 
-This depends on the repository's squash-merge commit message being set to "Pull
-request title and description" so the body lines survive the squash (a
-Direct-Involvement setup item). Without it, only the title's entry would reach
-the changelog.
+Because each issue now lands as its own squash commit, `main` gains one commit
+per merged issue rather than one per multi-issue batch. Android's `versionCode`
+(derived below as `git rev-list --count main`) therefore rises one-per-issue —
+a smaller, steadier increment that is still strictly monotonic and
+deterministic.
 
 ## Android version code
 

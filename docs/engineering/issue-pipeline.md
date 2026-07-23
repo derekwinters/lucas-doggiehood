@@ -139,12 +139,14 @@ A serial nightly builder wrapping the `doggiehood-dev` agent. It builds the
 eligible set — `ready-for-work` **and** in the focus milestone **and** all hard
 blockers closed/merged **and** not `parked` **and** no open PR — in topological
 order (dependencies first, then issue number), up to a nightly cap (**3** to
-start). Each issue is built onto one shared branch; a failing issue's commits
-are dropped so the branch stays green. It opens **one combined PR** (title = the
-lead change's Conventional line; body = raw Conventional lines per issue for a
-granular release-please changelog) and marks each built issue `in-progress`. It
-**never merges and never closes** — Derek reviews and merges; PR-babysitting
-keeps CI green.
+start). Each issue is built on **its own branch** and opened as **its own PR**
+(title = that issue's single Conventional line; body = `## Deviations and
+Decisions` + `Closes #N`); a failing issue is dropped — its branch deleted, no
+PR — and the loop continues. Because each PR resolves exactly one issue, its
+squash-merge lands as one Conventional Commit and release-please emits one clean
+changelog entry per issue, and the `Closes #N` keyword auto-closes the issue on
+merge. Each built issue is marked `in-progress`. It **never merges and never
+closes** — Derek reviews and merges; PR-babysitting keeps CI green.
 
 ### Dashboard (`pipeline-dashboard` + `dashboard.yml`)
 
