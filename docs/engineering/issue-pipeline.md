@@ -153,7 +153,9 @@ place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
 please separated), intake, pending-approval, needs-clarification, other-
 milestone progress, and the command reference. It excludes #193 itself and
-`parked` issues, and mutates nothing else.
+`parked` issues, and mutates nothing else. **Closed milestones** (100% done)
+are omitted from the "Other milestones" section and the open-issues chart —
+only live milestones outside the focus are shown ([#214](https://github.com/derekwinters/lucas-doggiehood/issues/214)).
 
 ## Skills
 

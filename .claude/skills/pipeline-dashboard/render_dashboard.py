@@ -188,6 +188,9 @@ def render_body(state):
     a("| Milestone | Progress | |")
     a("| - | - | - |")
     for m in state.get("other_milestones", []):
+        if m.get("closed"):
+            # Closed milestones are 100% done; they only clutter (#214).
+            continue
         mdone, mopen = m["done"], m["open"]
         mtotal = mdone + mopen
         bar = _progress_bar(mdone, mtotal)
@@ -298,7 +301,11 @@ def fetch_state(repo, token, as_of):
         lbl = labels_of(i)
         if "dashboard" in lbl or "type:epic" in lbl or "parked" in lbl:
             continue
-        b = milestones.setdefault(title, {"done": 0, "ready": 0, "remaining": 0})
+        b = milestones.setdefault(
+            title, {"done": 0, "ready": 0, "remaining": 0, "closed": False})
+        # A milestone the maintainer has closed on GitHub is 100% done and is
+        # hidden from "Other milestones" and the chart (#214).
+        b["closed"] = ms.get("state") == "closed"
         if i["state"] == "closed":
             b["done"] += 1
         elif "ready-for-work" in lbl:
@@ -362,10 +369,14 @@ def fetch_state(repo, token, as_of):
     other, chart_labels, chart_vals = [], [], []
     for title in sorted(milestones, key=_milestone_num):
         b = milestones[title]
+        if b["closed"]:
+            # Closed milestones clutter the report; drop from both (#214).
+            continue
         opencount = b["ready"] + b["remaining"]
         if title != focus_title:
             other.append({"title": title, "done": b["done"], "open": opencount,
-                          "post_mvp": _milestone_num(title) == 6})
+                          "post_mvp": _milestone_num(title) == 6,
+                          "closed": b["closed"]})
         if opencount > 0:
             chart_labels.append("m%02d" % _milestone_num(title))
             chart_vals.append(opencount)

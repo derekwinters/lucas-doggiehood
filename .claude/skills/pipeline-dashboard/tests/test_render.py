@@ -81,6 +81,12 @@ class TestRender(unittest.TestCase):
     def test_post_mvp_annotated(self):
         self.assertIn("post-MVP", self.body)
 
+    def test_closed_milestone_excluded(self):
+        # Closed milestones (100% done) must not clutter "Other milestones"
+        # nor the by-milestone chart. See issue #214.
+        self.assertNotIn("00 - Concepts & Core Mechanics", self.body)
+        self.assertNotIn("m00", self.body)
+
     def test_deterministic(self):
         self.assertEqual(self.body, render_dashboard.render_body(load_state()))
 
