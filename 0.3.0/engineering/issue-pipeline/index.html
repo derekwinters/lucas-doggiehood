@@ -1846,12 +1846,14 @@ for soft sibling ordering.</p>
 eligible set — <code>ready-for-work</code> <strong>and</strong> in the focus milestone <strong>and</strong> all hard
 blockers closed/merged <strong>and</strong> not <code>parked</code> <strong>and</strong> no open PR — in topological
 order (dependencies first, then issue number), up to a nightly cap (<strong>3</strong> to
-start). Each issue is built onto one shared branch; a failing issue's commits
-are dropped so the branch stays green. It opens <strong>one combined PR</strong> (title = the
-lead change's Conventional line; body = raw Conventional lines per issue for a
-granular release-please changelog) and marks each built issue <code>in-progress</code>. It
-<strong>never merges and never closes</strong> — Derek reviews and merges; PR-babysitting
-keeps CI green.</p>
+start). Each issue is built on <strong>its own branch</strong> and opened as <strong>its own PR</strong>
+(title = that issue's single Conventional line; body = <code>## Deviations and
+Decisions</code> + <code>Closes #N</code>); a failing issue is dropped — its branch deleted, no
+PR — and the loop continues. Because each PR resolves exactly one issue, its
+squash-merge lands as one Conventional Commit and release-please emits one clean
+changelog entry per issue, and the <code>Closes #N</code> keyword auto-closes the issue on
+merge. Each built issue is marked <code>in-progress</code>. It <strong>never merges and never
+closes</strong> — Derek reviews and merges; PR-babysitting keeps CI green.</p>
 <h3 id="dashboard-pipeline-dashboard-dashboardyml">Dashboard (<code>pipeline-dashboard</code> + <code>dashboard.yml</code>)<a class="headerlink" href="#dashboard-pipeline-dashboard-dashboardyml" title="Permanent link">&para;</a></h3>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
 place: focus-milestone pie (green done / yellow ready-for-work / red

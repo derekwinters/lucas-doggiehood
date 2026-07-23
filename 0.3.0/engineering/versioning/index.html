@@ -1295,9 +1295,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" class="md-nav__link">
+  <a href="#one-issue-one-pr-one-squash-commit-one-changelog-entry" class="md-nav__link">
     <span class="md-ellipsis">
-      Combined nightly PRs squash with raw conventional lines in the body
+      One issue → one PR → one squash commit → one changelog entry
     </span>
   </a>
   
@@ -1475,9 +1475,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" class="md-nav__link">
+  <a href="#one-issue-one-pr-one-squash-commit-one-changelog-entry" class="md-nav__link">
     <span class="md-ellipsis">
-      Combined nightly PRs squash with raw conventional lines in the body
+      One issue → one PR → one squash commit → one changelog entry
     </span>
   </a>
   
@@ -1549,24 +1549,33 @@
 </ul>
 <p>Requires <a href="https://www.conventionalcommits.org/">Conventional Commits</a> (<code>feat:</code>, <code>fix:</code>, etc.) to be followed consistently, since release-please's version computation depends on them. A CI check lints PR titles against this (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>) so it doesn't rely on manual discipline alone.</p>
 <p>A Core guard test (<code>CoreTests/Doggiehood.Core.Tests/Versioning/VersionFileGuardTests.cs</code>) asserts <code>VERSION</code> contains a valid bare semver and matches <code>manifest.json</code>'s tracked version, so the two can't silently drift apart again the way they did in #114.</p>
-<h2 id="combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body">Combined nightly PRs squash with raw conventional lines in the body<a class="headerlink" href="#combined-nightly-prs-squash-with-raw-conventional-lines-in-the-body" title="Permanent link">&para;</a></h2>
-<p>The <a href="../issue-pipeline/">issue pipeline</a>'s nightly dev run builds several issues
-onto one branch and opens a <strong>single combined PR</strong>. To keep release-please's
-changelog granular despite the single squash-merge, the PR is structured so its
-squash commit carries one Conventional-Commit line per issue:</p>
+<h2 id="one-issue-one-pr-one-squash-commit-one-changelog-entry">One issue → one PR → one squash commit → one changelog entry<a class="headerlink" href="#one-issue-one-pr-one-squash-commit-one-changelog-entry" title="Permanent link">&para;</a></h2>
+<p>The <a href="../issue-pipeline/">issue pipeline</a>'s nightly dev run builds each selected
+issue on <strong>its own branch</strong> and opens <strong>one PR per issue</strong> — never a combined
+PR batching several issues together. This keeps release-please's changelog
+granular through the repository's squash-merge setting without any fragile
+PR-body trickery:</p>
 <ul>
-<li><strong>PR title</strong> = the lead change's Conventional line (e.g.
+<li><strong>PR title</strong> = that issue's single Conventional-Commit line (e.g.
   <code>feat: give approach-to-rest real walk-to-decoration movement</code>). This is what
-  <code>pr-title-lint</code> checks and what names the release.</li>
-<li><strong>PR body</strong> = the remaining issues' Conventional-Commit lines as <strong>raw</strong>
-  lines (no leading <code>*</code>/<code>-</code>), one per issue, so that on squash-merge they land
-  in the squash commit message. release-please parses each as its own entry and
-  emits one changelog line per issue.</li>
+  <code>pr-title-lint</code> checks, and — because the PR resolves exactly one issue — it
+  is also the natural subject of the squash commit that lands on <code>main</code>.</li>
+<li><strong>Squash commit</strong> = one Conventional Commit. release-please parses that single
+  header and emits exactly one clean changelog entry for the issue. No extra
+  Conventional lines are smuggled through the PR body, so nothing can be
+  silently dropped by the squash the way a combined multi-issue PR did
+  (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/213">#213</a>).</li>
+<li><strong>PR body</strong> carries the required <code>## Deviations and Decisions</code> section plus a
+  <code>Closes #N</code> line so merging auto-closes the issue (see
+  <a href="../agent-workflow/#how-an-issue-gets-worked">Development Agent &amp; Workflow</a>).
+  The body is documentation for the reviewer, not a changelog-assembly
+  mechanism.</li>
 </ul>
-<p>This depends on the repository's squash-merge commit message being set to "Pull
-request title and description" so the body lines survive the squash (a
-Direct-Involvement setup item). Without it, only the title's entry would reach
-the changelog.</p>
+<p>Because each issue now lands as its own squash commit, <code>main</code> gains one commit
+per merged issue rather than one per multi-issue batch. Android's <code>versionCode</code>
+(derived below as <code>git rev-list --count main</code>) therefore rises one-per-issue —
+a smaller, steadier increment that is still strictly monotonic and
+deterministic.</p>
 <h2 id="android-version-code">Android version code<a class="headerlink" href="#android-version-code" title="Permanent link">&para;</a></h2>
 <p>Android's <code>versionCode</code> (a plain incrementing integer, separate from the human-readable <code>versionName</code>) is derived at build time as <code>git rev-list --count main</code> — deterministic and always increasing, independent of CI run-number state. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/81">#81</a>)</p>
 <h2 id="docs-versioning">Docs versioning<a class="headerlink" href="#docs-versioning" title="Permanent link">&para;</a></h2>
