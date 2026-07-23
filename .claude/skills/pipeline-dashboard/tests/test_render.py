@@ -78,6 +78,19 @@ class TestRender(unittest.TestCase):
     def test_release_please_in_automation(self):
         self.assertIn("chore(main): release 0.3.0", self.body)
 
+    def test_your_move_pr_line_has_no_release_please(self):
+        # The "Your move" PR callout shows only the awaiting-merge count with
+        # no release-please parenthetical (#225); the parenthetical only
+        # matters at milestone close, which the pie already covers.
+        pr_line = next(
+            ln for ln in self.body.splitlines()
+            if "PRs awaiting your merge" in ln
+        )
+        self.assertNotIn("release-please", pr_line)
+        self.assertEqual(pr_line, "| 🔀 PRs awaiting your merge | **0** |")
+        # ...but the release-please PR is still listed in the Automation section.
+        self.assertIn("chore(main): release 0.3.0", self.body)
+
     def test_post_mvp_annotated(self):
         self.assertIn("post-MVP", self.body)
 
