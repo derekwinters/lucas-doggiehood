@@ -24,7 +24,7 @@ _Nothing queued yet. `/approve` an analysis into this milestone and it lands her
 ### 🔔 Your move
 | Queue | Count |
 | - | - |
-| 🔀 PRs awaiting your merge | **0** (+1 release-please, below) |
+| 🔀 PRs awaiting your merge | **0** |
 | 🆕 New ideas to `/admit` | **2** |
 | ✅ Analyses to `/approve` | **3** |
 | ❓ Questions to answer | **1** |

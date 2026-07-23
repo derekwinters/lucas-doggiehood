@@ -110,8 +110,7 @@ def render_body(state):
     a("### 🔔 Your move")
     a("| Queue | Count |")
     a("| - | - |")
-    a("| 🔀 PRs awaiting your merge | **%d** (+%d release-please, below) |"
-      % (ym["prs"], ym["release_please"]))
+    a("| 🔀 PRs awaiting your merge | **%d** |" % ym["prs"])
     a("| 🆕 New ideas to `/admit` | **%d** |" % ym["new_ideas"])
     a("| ✅ Analyses to `/approve` | **%d** |" % ym["approvals"])
     a("| ❓ Questions to answer | **%d** |" % ym["questions"])
