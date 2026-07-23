@@ -115,3 +115,8 @@ render.experimental.xml
 # MkDocs build output
 # =========================
 /site/
+
+# =========================
+# Claude Code agent worktrees (transient, auto-created for isolated runs)
+# =========================
+.claude/worktrees/
