@@ -20,5 +20,16 @@ namespace Doggiehood.Core.Expansion
 
             return ZoneUnlockNumbers.BaseCost + (zoneNumber - 1) * ZoneUnlockNumbers.CostStep;
         }
+
+        /// <summary>
+        /// Whether <paramref name="balance"/> covers the nth zone's unlock
+        /// cost (#178, docs/specs/expansion.md "Expansion indicator") —
+        /// the affordability check the discoverability indicator tints
+        /// gold (true) or grey/black (false) on, without spending anything.
+        /// </summary>
+        public static bool IsAffordable(int balance, int zoneNumber)
+        {
+            return balance >= CostForZoneNumber(zoneNumber);
+        }
     }
 }

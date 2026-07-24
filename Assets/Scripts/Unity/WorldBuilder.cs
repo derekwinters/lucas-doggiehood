@@ -31,6 +31,7 @@ namespace Doggiehood.Unity
         public const string WalkwayNamePrefix = "Walkway - ";
         public const string FenceNamePrefix = "Fence - ";
         public const string EmptyLotNamePrefix = "EmptyLot - ";
+        public const string ExpansionIndicatorName = "ExpansionIndicator";
         public const string SunName = "Sun";
         public const float GroundExtent = 30f;
 
@@ -43,6 +44,20 @@ namespace Doggiehood.Unity
         /// <summary>Graybox marker height/thickness — thin, so it reads as
         /// a ground-level pad rather than a solid block.</summary>
         private const float EmptyLotMarkerHeight = 0.2f;
+
+        /// <summary>Resources key for the #183 lock icon, staged at
+        /// Assets/Art/UI/ExpansionIndicator/Resources/locked.png (bare
+        /// filename, same convention as every other Resources-loaded art
+        /// key here).</summary>
+        private const string LockIconResource = "locked";
+
+        /// <summary>World footprint (meters) of the expansion indicator
+        /// marker (#178): the staged icon is 100x100px at
+        /// TintedIcon.SpritePixelsPerUnit (100 px/unit), so a default,
+        /// unscaled sprite is 1m wide — this scales it up to a size that
+        /// reads clearly next to the EmptyLotMarkerFootprint-sized lot
+        /// markers.</summary>
+        private const float ExpansionIndicatorWorldSize = 4f;
 
         /// <summary>Ground footprint (local X/Z) of the graybox fallback
         /// house's single "Walls" box (#64) — only ever built when the
@@ -195,6 +210,7 @@ namespace Doggiehood.Unity
             BuildFences(root.transform);
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
+            BuildExpansionIndicator(root.transform, state);
 
             BuildSun(root.transform);
             ApplyAmbientLighting();
@@ -710,6 +726,36 @@ namespace Doggiehood.Unity
             var view = marker.AddComponent<EmptyLotView>();
             view.Init(lot.HouseId);
             return marker;
+        }
+
+        /// <summary>
+        /// The map-expansion lock indicator marker (#178): a SpriteRenderer
+        /// showing the #183 lock icon, positioned and tinted by
+        /// ExpansionIndicatorView from Core's live ExpansionIndicator
+        /// state. Skipped entirely if the icon can't load — there's no
+        /// designed graybox stand-in for it (unlike the CityKit models,
+        /// this repo-native icon is always expected to be present, so this
+        /// is a defensive no-op rather than a real fallback path).
+        /// </summary>
+        private static void BuildExpansionIndicator(Transform parent, GameState state)
+        {
+            var baseTexture = Resources.Load<Texture2D>(LockIconResource);
+            if (baseTexture == null)
+            {
+                return;
+            }
+
+            var marker = new GameObject(ExpansionIndicatorName);
+            marker.transform.SetParent(parent);
+            marker.transform.localScale = Vector3.one * ExpansionIndicatorWorldSize;
+
+            marker.AddComponent<SpriteRenderer>();
+
+            var affordableSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorAffordableHex));
+            var lockedSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorLockedHex));
+
+            var view = marker.AddComponent<ExpansionIndicatorView>();
+            view.Init(state, affordableSprite, lockedSprite);
         }
 
         /// <summary>

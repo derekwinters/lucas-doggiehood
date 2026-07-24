@@ -71,7 +71,7 @@ issue #6).
 
 ## Game Icons (Kenney)
 
-- **Files:** `Assets/Art/UI/ExpansionIndicator/locked.png`
+- **Files:** `Assets/Art/UI/ExpansionIndicator/Resources/locked.png`
 - **Asset:** Game Icons
 - **Author:** Kenney (www.kenney.nl)
 - **Source:** https://kenney.nl/assets/game-icons
