@@ -12,9 +12,9 @@ namespace Doggiehood.Core.Tests.World
     /// occasionally) and the back yard generates up to 11 (3-5 shown),
     /// all collision-aware against the house footprint, the front
     /// walkway, the backyard fence line (#146), and each other — spaced
-    /// by a tree footprint radius derived from the kit mesh bounds
-    /// (tree-large.fbx/tree-small.fbx/planter.fbx). Selection is seeded
-    /// deterministically per lot.
+    /// by a tree footprint radius derived from the larger of the two tree
+    /// kit meshes (tree-large.fbx/tree-small.fbx; the planter kind was
+    /// removed in #243). Selection is seeded deterministically per lot.
     /// </summary>
     public class YardLandscapingTests
     {
@@ -143,6 +143,50 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(counts, Does.Contain(3));
             Assert.That(counts, Does.Contain(4));
             Assert.That(counts, Does.Contain(5));
+        }
+
+        [Test]
+        public void TreeFootprintRadius_IsDerivedFromTheLargerTreeCanopyHalfExtent()
+        {
+            // #243: with the planter kind removed, the collision spacing must
+            // be re-derived from the largest REMAINING (tree) mesh — the
+            // larger of the two shared tree canopy half-extents (Z, 0.1215 >
+            // X, 0.1052) at the module's uniform scale — not off a piece that
+            // can never be placed anymore.
+            var largerTreeHalfExtent = Math.Max(YardLandscaping.TreeHalfExtentX, YardLandscaping.TreeHalfExtentZ);
+
+            Assert.That(YardLandscaping.TreeFootprintRadius,
+                Is.EqualTo(largerTreeHalfExtent * YardLandscaping.UniformScale).Within(1e-6f),
+                "footprint radius must come from the larger tree half-extent, not the removed planter");
+            Assert.That(YardLandscaping.MinSpacing,
+                Is.EqualTo(YardLandscaping.TreeFootprintRadius * 2f).Within(1e-6f),
+                "min spacing is two footprint radii");
+        }
+
+        [Test]
+        public void Selection_OnlyEverYieldsTreeModels_NeverAPlanter()
+        {
+            // #243: the planter kind is removed from the selection set, so
+            // every placed prop can only ever render as one of the two tree
+            // meshes — a planter can never be selected.
+            var pool = FarApartCandidates(YardLandscaping.BackCandidateCount);
+            var kindsSeen = new HashSet<YardTreeKind>();
+
+            for (var seed = 0; seed < 300; seed++)
+            {
+                foreach (var pick in YardLandscaping.SelectBack(pool, seed))
+                {
+                    Assert.That(pick.Kind,
+                        Is.EqualTo(YardTreeKind.TreeLarge).Or.EqualTo(YardTreeKind.TreeSmall),
+                        $"seed {seed}: a selected pick must be a tree, never a planter");
+                    kindsSeen.Add(pick.Kind);
+                }
+            }
+
+            Assert.That(kindsSeen, Does.Contain(YardTreeKind.TreeLarge),
+                "tree-large must still occur across many seeds");
+            Assert.That(kindsSeen, Does.Contain(YardTreeKind.TreeSmall),
+                "tree-small must still occur across many seeds");
         }
 
         [Test]

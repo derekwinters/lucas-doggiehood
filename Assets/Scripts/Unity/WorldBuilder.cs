@@ -86,17 +86,14 @@ namespace Doggiehood.Unity
         /// <summary>Resources key for the small yard tree kit piece (#170).</summary>
         public const string TreeSmallResource = "tree-small";
 
-        /// <summary>Resources key for the yard planter kit piece (#170).</summary>
-        public const string PlanterResource = "planter";
-
         /// <summary>Container name prefix for a lot's procedural yard
         /// landscaping (#170) — one per lot, holding its selected front and
-        /// back yard trees/planters.</summary>
+        /// back yard trees.</summary>
         public const string YardLandscapingNamePrefix = "Yard - ";
 
         /// <summary>Graybox-fallback yard prop height (#170) — only ever
-        /// built when none of the tree-large/tree-small/planter kit
-        /// pieces can load. Sized off Core's own collision radius (four
+        /// built when neither the tree-large nor tree-small kit piece can
+        /// load. Sized off Core's own collision radius (four
         /// radii tall) so it reads as a small rounded tree/bush rather
         /// than a flat disc, without inventing an unrelated tuning
         /// number.</summary>
@@ -606,13 +603,13 @@ namespace Doggiehood.Unity
 
         /// <summary>
         /// Procedural yard landscaping (#170): one "Yard - N" container per
-        /// lot, holding its selected front and back yard trees/planters —
-        /// Core's YardLandscaping.FrontTreesFor/BackTreesFor decides which
+        /// lot, holding its selected front and back yard trees — Core's
+        /// YardLandscaping.FrontTreesFor/BackTreesFor decides which
         /// positions and kit models, seeded deterministically per lot;
         /// nothing here decides where a tree goes. In the kit path each
-        /// pick instantiates its matching tree-large/tree-small/planter
-        /// model; when a piece can't be loaded it falls back to one simple
-        /// primitive marker per pick (same pattern as the walkways/fences).
+        /// pick instantiates its matching tree-large/tree-small model; when
+        /// a piece can't be loaded it falls back to one simple primitive
+        /// marker per pick (same pattern as the walkways/fences).
         /// </summary>
         private static void BuildYardLandscaping(Transform parent)
         {
@@ -644,8 +641,6 @@ namespace Doggiehood.Unity
                     return TreeLargeResource;
                 case YardTreeKind.TreeSmall:
                     return TreeSmallResource;
-                case YardTreeKind.Planter:
-                    return PlanterResource;
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(kind), kind, null);
             }
