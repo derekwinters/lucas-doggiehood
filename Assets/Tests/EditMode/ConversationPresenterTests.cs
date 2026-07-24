@@ -7,6 +7,14 @@ using UnityEngine;
 
 namespace Doggiehood.Unity.EditModeTests
 {
+    /// <summary>
+    /// #186: the conversation panel had no affordance for a buy-something
+    /// quest's cost, and a failed purchase used to close the panel with
+    /// zero player-visible feedback. These guard the fix: cost/affordability
+    /// surfaced via QuestPurchasePresentation, and a failed Accept/
+    /// AcceptWithChoice leaves the panel open with a message instead of
+    /// silently closing. #185's "Not now" decline tests live here too.
+    /// </summary>
     public class ConversationPresenterTests
     {
         private GameObject host;
@@ -17,7 +25,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void CreatePresenter()
         {
             state = GameState.CreateNew();
-            host = new GameObject("conversation-presenter-under-test");
+            host = new GameObject("conversation-presenter-host");
             presenter = host.AddComponent<ConversationPresenter>();
             presenter.State = state;
         }
@@ -63,6 +71,106 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(presenter.TryOpen(dog), Is.True, "the conversation must be re-openable after declining");
             Assert.That(presenter.Current.Lines, Is.EqualTo(quest.DialogueLines),
                 "re-opening presents the same request");
+        }
+
+        [Test]
+        public void AcceptLabel_ShowsTheCost_ForABuyQuest()
+        {
+            var dog = state.Dogs[1];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.AcceptLabel, Is.EqualTo($"Buy · {quest.Cost.Value}"));
+        }
+
+        [Test]
+        public void AcceptIsAffordable_ReflectsTheWalletBalance_ForABuyQuest()
+        {
+            var dog = state.Dogs[1];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.AcceptIsAffordable, Is.False, "a fresh wallet starts at 0 coins");
+
+            state.Wallet.Deposit(quest.Cost.Value);
+            Assert.That(presenter.AcceptIsAffordable, Is.True);
+        }
+
+        [Test]
+        public void OptionLabel_And_OptionIsAffordable_ReflectTheCatalogCostAndWallet()
+        {
+            var dog = state.Dogs[2];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.DecorationRequest, new System.Random(7));
+            presenter.TryOpen(dog);
+            var option = quest.Options[0];
+            var cost = Doggiehood.Core.Economy.ItemCatalog.Get(option).Cost.Value;
+
+            Assert.That(presenter.OptionLabel(option), Is.EqualTo($"{option} · {cost}"));
+            Assert.That(presenter.OptionIsAffordable(option), Is.False);
+
+            state.Wallet.Deposit(cost);
+            Assert.That(presenter.OptionIsAffordable(option), Is.True);
+        }
+
+        [Test]
+        public void AcceptCurrent_OnAnUnaffordableBuyQuest_LeavesThePanelOpen_WithAnInsufficientFundsMessage()
+        {
+            var dog = state.Dogs[1];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            presenter.TryOpen(dog);
+
+            presenter.AcceptCurrent();
+
+            Assert.That(presenter.IsOpen, Is.True, "a failed purchase must not silently close the panel");
+            Assert.That(presenter.StatusMessage, Is.Not.Null.And.Not.Empty);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Available), "no accept side effect on a rejected spend");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0), "an unaffordable attempt spends nothing");
+        }
+
+        [Test]
+        public void AcceptCurrent_OnAnAffordableBuyQuest_ClosesThePanel_WithNoStatusMessage()
+        {
+            var dog = state.Dogs[1];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            state.Wallet.Deposit(quest.Cost.Value);
+            presenter.TryOpen(dog);
+
+            presenter.AcceptCurrent();
+
+            Assert.That(presenter.IsOpen, Is.False);
+            Assert.That(presenter.StatusMessage, Is.Null);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted));
+        }
+
+        [Test]
+        public void AcceptChoice_OnAnUnaffordableDecorationOption_LeavesThePanelOpen_WithAnInsufficientFundsMessage()
+        {
+            var dog = state.Dogs[2];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.DecorationRequest, new System.Random(7));
+            presenter.TryOpen(dog);
+            var option = quest.Options[0];
+
+            presenter.AcceptChoice(option);
+
+            Assert.That(presenter.IsOpen, Is.True, "a failed purchase must not silently close the panel");
+            Assert.That(presenter.StatusMessage, Is.Not.Null.And.Not.Empty);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Available), "no accept side effect on a rejected spend");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0), "an unaffordable attempt spends nothing");
+        }
+
+        [Test]
+        public void ReopeningThePanel_ClearsAnyStaleStatusMessage()
+        {
+            var dog = state.Dogs[1];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            presenter.TryOpen(dog);
+            presenter.AcceptCurrent();
+            Assert.That(presenter.StatusMessage, Is.Not.Null, "sanity check: the failed attempt set a message");
+
+            presenter.Close();
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.StatusMessage, Is.Null, "a fresh open should not show a stale message");
         }
     }
 }
