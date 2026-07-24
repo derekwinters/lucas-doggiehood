@@ -1671,7 +1671,7 @@
 <li><strong><code>ai-triage</code></strong> — admitted for AI analysis.</li>
 <li><strong><code>pending-approval</code></strong> — analysis done; awaiting Derek's <code>/approve</code>.</li>
 <li><strong><code>needs-clarification</code></strong> — analysis posted a question; awaiting an answer.</li>
-<li><strong><code>ready-for-work</code></strong> — approved and milestoned; in the nightly dev queue.</li>
+<li><strong><code>ready-for-work</code></strong> — approved and milestoned; in the nightly dev queue. <strong>Invariant: <code>ready-for-work</code> ⇒ the issue has a milestone</strong> — the gatekeeper refuses an <code>/approve</code> that resolves no milestone (inline <code>/milestone</code>, the issue's current milestone, or the analysis-proposed one) and asks which milestone instead, so the focus-milestone-only nightly builder never silently skips an approved issue (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>).</li>
 <li><strong><code>in-progress</code></strong> — a nightly dev run has picked it up.</li>
 <li><strong><code>parked</code></strong> — hidden from every routine and the dashboard.</li>
 <li><strong><code>dashboard</code></strong> — marks the single live dashboard issue; excluded from every routine, except that <code>/focus</code> is honored on it so focus can be set from the dashboard itself (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/204">#204</a>).</li>

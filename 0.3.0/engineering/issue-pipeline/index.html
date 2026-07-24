@@ -1451,6 +1451,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#the-approve-milestone-gate-ready-for-work-has-milestone" class="md-nav__link">
+    <span class="md-ellipsis">
+      The /approve milestone gate — ready-for-work ⇒ has milestone
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1634,6 +1643,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#the-approve-milestone-gate-ready-for-work-has-milestone" class="md-nav__link">
+    <span class="md-ellipsis">
+      The /approve milestone gate — ready-for-work ⇒ has milestone
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1783,7 +1801,7 @@ comments (<code>derekwinters</code>) are honored — the bad-actor gate. Everyon
 <tr>
 <td><code>ready-for-work</code></td>
 <td>gatekeeper (on <code>/approve</code>)</td>
-<td>Approved + milestone set; in the dev queue.</td>
+<td>Approved + milestone set; in the dev queue. <strong>Invariant: <code>ready-for-work</code> ⇒ the issue has a milestone</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>) — the gatekeeper refuses any <code>/approve</code> that would land here milestone-less, so the nightly builder (which only sees the focus milestone) never silently skips an approved issue.</td>
 </tr>
 <tr>
 <td><code>in-progress</code></td>
@@ -1820,7 +1838,7 @@ commands act):</p>
 </tr>
 <tr>
 <td><code>/approve</code></td>
-<td>Accept the analysis → <code>ready-for-work</code>, set the proposed (or <code>/milestone</code>-overridden) milestone.</td>
+<td>Accept the analysis → <code>ready-for-work</code>, set the proposed (or <code>/milestone</code>-overridden) milestone. <strong>Refused if no milestone resolves</strong> (see the <code>/approve</code> milestone gate below).</td>
 </tr>
 <tr>
 <td><code>/revise &lt;notes&gt;</code></td>
@@ -1855,6 +1873,33 @@ Processed comments are watermarked with a 👀 reaction so re-running a routine
 never double-applies a command. Both rules are enforced by the deterministic
 parser (<code>.claude/skills/pipeline-gatekeeper/parse_commands.py</code>), not by model
 judgment.</p>
+<h3 id="the-approve-milestone-gate-ready-for-work-has-milestone">The <code>/approve</code> milestone gate — <code>ready-for-work</code> ⇒ has milestone<a class="headerlink" href="#the-approve-milestone-gate-ready-for-work-has-milestone" title="Permanent link">&para;</a></h3>
+<p>Nightly development only builds issues in the <strong>focus milestone</strong>, so a
+<code>ready-for-work</code> issue with <strong>no milestone</strong> is invisible to the builder —
+"approved and ready" yet silently never picked up. To close that gap
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>) the parser
+enforces the invariant <strong><code>ready-for-work</code> ⇒ the issue has a milestone</strong>.</p>
+<p>On <code>/approve</code> the parser resolves an <strong>effective milestone</strong> from, in order: an
+inline <code>/milestone</code> in the same comment, the issue's current milestone, then the
+milestone analysis proposed in its <code>pending-approval</code> comment (the snapshot
+carries <code>milestone</code> and <code>proposed_milestone</code> for exactly this). Resolution is
+done as an order-independent finalization, so <code>/approve\n/milestone 07</code> and
+<code>/milestone 07\n/approve</code> behave identically.</p>
+<ul>
+<li><strong>A milestone resolves</strong> → the move proceeds and that milestone rides along on
+  the action, so <code>ready-for-work</code> is never set milestone-less.</li>
+<li><strong>No milestone resolves</strong> → the transition is <strong>refused</strong>: no label change,
+  the issue stays in its prior state (<code>pending-approval</code> / <code>needs-clarification</code>),
+  and the parser emits an <code>approve-no-milestone</code> skip carrying a
+  <code>which-milestone</code> hand-back menu. The gatekeeper posts a "which milestone?"
+  reply (e.g. <em>"Can't approve #N to <code>ready-for-work</code> — no milestone resolved;
+  reply <code>/milestone &lt;name&gt;</code> then <code>/approve</code>"</em>).</li>
+</ul>
+<p>This is the <strong>presence</strong> gate. Its sibling
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a> layers an
+<strong>order</strong> gate onto the same resolved value (the milestone must not precede a
+blocker's milestone); the two chain <strong>resolve → presence (#247) → order (#212)</strong>,
+so the order check only runs once a milestone exists.</p>
 <h2 id="where-focus-is-stored">Where <code>/focus</code> is stored<a class="headerlink" href="#where-focus-is-stored" title="Permanent link">&para;</a></h2>
 <p>The active nightly-development milestone lives in a hidden marker on the
 <strong>first line of the dashboard issue (#193) body</strong>:</p>
