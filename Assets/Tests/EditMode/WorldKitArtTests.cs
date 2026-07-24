@@ -78,10 +78,11 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(Resources.Load<GameObject>(WorldBuilder.FencePieceResource), Is.Not.Null,
                 $"City Kit Suburban piece '{WorldBuilder.FencePieceResource}' must be loadable from Resources");
 
-            // #170: the three yard landscaping pieces, from the same kit.
+            // #170: the two yard landscaping tree pieces, from the same kit
+            // (the planter piece was removed in #243).
             foreach (var key in new[]
                      {
-                         WorldBuilder.TreeLargeResource, WorldBuilder.TreeSmallResource, WorldBuilder.PlanterResource,
+                         WorldBuilder.TreeLargeResource, WorldBuilder.TreeSmallResource,
                      })
             {
                 Assert.That(Resources.Load<GameObject>(key), Is.Not.Null,
@@ -530,12 +531,13 @@ namespace Doggiehood.Unity.EditModeTests
         public void YardLandscaping_IsBuiltFromKitTreeModels_AtCoreSelectedPositions()
         {
             // #170: each lot gets a "Yard - N" container whose children are
-            // instantiated tree-large/tree-small/planter kit models, one
-            // per pick from Core's YardLandscaping.FrontTreesFor/BackTreesFor
-            // (front trees first, then back), ground-pivoted with no yaw
-            // (the pieces have no meaningful facing) and scaled uniformly.
+            // instantiated tree-large/tree-small kit models, one per pick
+            // from Core's YardLandscaping.FrontTreesFor/BackTreesFor (front
+            // trees first, then back), ground-pivoted with no yaw (the
+            // pieces have no meaningful facing) and scaled uniformly. (#243
+            // removed the planter kind — only the two trees remain.)
             var sourceMeshesByKind = new Dictionary<YardTreeKind, List<Mesh>>();
-            foreach (var kind in new[] { YardTreeKind.TreeLarge, YardTreeKind.TreeSmall, YardTreeKind.Planter })
+            foreach (var kind in new[] { YardTreeKind.TreeLarge, YardTreeKind.TreeSmall })
             {
                 var source = Resources.Load<GameObject>(WorldBuilder.YardTreeResourceName(kind));
                 Assert.That(source, Is.Not.Null, $"sanity: {kind} kit piece staged");

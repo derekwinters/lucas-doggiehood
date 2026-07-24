@@ -89,15 +89,10 @@ namespace Doggiehood.Core.World
 
         /// <summary>Model-local half-extent (Z axis) of tree-large.fbx /
         /// tree-small.fbx — both trees share the same canopy footprint,
-        /// only their height differs.</summary>
+        /// only their height differs. This is the larger of the two tree
+        /// half-extents (Z 0.1215 > X 0.1052), so it drives
+        /// <see cref="TreeFootprintRadius"/>.</summary>
         public const float TreeHalfExtentZ = 0.1215f;
-
-        /// <summary>Model-local half-extent (X axis) of planter.fbx — the
-        /// widest of the three kit pieces.</summary>
-        public const float PlanterHalfExtentX = 0.2000f;
-
-        /// <summary>Model-local half-extent (Z axis) of planter.fbx.</summary>
-        public const float PlanterHalfExtentZ = 0.1506f;
 
         /// <summary>
         /// Uniform scale applied to every yard landscaping kit piece.
@@ -111,14 +106,16 @@ namespace Doggiehood.Core.World
 
         /// <summary>
         /// The single collision radius used for every candidate and pick,
-        /// regardless of which of the three kit models ends up there:
-        /// the largest model-local half-extent among tree-large.fbx/
-        /// tree-small.fbx/planter.fbx (planter.fbx's X half-extent) at
-        /// <see cref="UniformScale"/>. Conservative by construction — a
-        /// spacing derived from the largest piece can never let a smaller
-        /// piece overlap either.
+        /// regardless of which of the two tree models ends up there: the
+        /// largest model-local half-extent among tree-large.fbx/
+        /// tree-small.fbx (their shared canopy's Z half-extent,
+        /// <see cref="TreeHalfExtentZ"/>) at <see cref="UniformScale"/>.
+        /// Conservative by construction — a spacing derived from the widest
+        /// piece can never let a narrower one overlap either. (#243 removed
+        /// the planter kind, which used to be the widest piece; the spacing
+        /// is now re-derived from the trees that actually remain.)
         /// </summary>
-        public const float TreeFootprintRadius = PlanterHalfExtentX * UniformScale;
+        public const float TreeFootprintRadius = TreeHalfExtentZ * UniformScale;
 
         /// <summary>Minimum center-to-center distance between two placed
         /// yard props: two footprint radii.</summary>
@@ -139,7 +136,7 @@ namespace Doggiehood.Core.World
 
         private static readonly YardTreeKind[] Kinds =
         {
-            YardTreeKind.TreeLarge, YardTreeKind.TreeSmall, YardTreeKind.Planter,
+            YardTreeKind.TreeLarge, YardTreeKind.TreeSmall,
         };
 
         /// <summary>

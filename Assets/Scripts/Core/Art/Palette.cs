@@ -58,7 +58,7 @@ namespace Doggiehood.Core.Art
 
         /// <summary>
         /// Graybox-fallback yard landscaping color (#170) — used only when
-        /// none of the tree-large/tree-small/planter kit models can load
+        /// neither the tree-large nor tree-small kit model can load
         /// (WorldBuilder.BuildYardLandscaping falls back to a simple
         /// primitive per pick, same pattern as HouseFallbackHex). A darker,
         /// more saturated green than the base GrassHex ground so a
