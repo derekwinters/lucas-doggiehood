@@ -105,6 +105,57 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Candidates_ClearEveryRoadBorderingTheLot_FacedAndPerpendicular_AcrossManySeeds()
+        {
+            // #272 (follow-up to #244): each lot is one tile QUADRANT, and on
+            // the FourWay every quadrant borders TWO roads — one on each inner
+            // edge (X=0 and Z=0). #244 only inset the FACED road's edge, so
+            // both the front and back yard regions still spanned onto the
+            // PERPENDICULAR road's centerline and trees landed in it. Every
+            // placed tree's full (scaled) footprint — a conservative circle of
+            // TreeFootprintRadius — must clear EVERY road bordering the lot,
+            // asserted across all quadrants and many seeds.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var frontYard = LotBounds.FrontYard(lot);
+                var backYard = LotBounds.BackYard(lot);
+                var footprint = HouseFootprintOf(lot);
+                NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway);
+                var fenceRuns = LotFence.GeometryFor(lot);
+
+                for (var seed = 0; seed < 50; seed++)
+                {
+                    var candidates = YardLandscaping
+                        .GenerateFrontCandidates(frontYard, footprint, walkway, seed)
+                        .Concat(YardLandscaping.GenerateBackCandidates(backYard, footprint, fenceRuns, seed));
+
+                    foreach (var candidate in candidates)
+                    {
+                        foreach (var road in NeighborhoodLayout.Roads)
+                        {
+                            Assert.That(DistanceToRect(candidate.Position, RoadRect(road)),
+                                Is.GreaterThanOrEqualTo(YardLandscaping.TreeFootprintRadius),
+                                $"lot {lot.HouseId} (seed {seed}): candidate {candidate.Position} "
+                                + $"must clear the {road.Orientation} road with its full scaled footprint");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static LotRect RoadRect(Road road)
+        {
+            var halfWidth = road.Width / 2f;
+            return road.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    road.Center.X - halfWidth, road.Center.X + halfWidth,
+                    road.Center.Z - road.HalfLength, road.Center.Z + road.HalfLength)
+                : new LotRect(
+                    road.Center.X - road.HalfLength, road.Center.X + road.HalfLength,
+                    road.Center.Z - halfWidth, road.Center.Z + halfWidth);
+        }
+
+        [Test]
         public void BackCandidates_StayWithinTheBackYard_ClearOfHouseAndFence_AndMutuallySpaced()
         {
             foreach (var lot in NeighborhoodLayout.HouseLots)
