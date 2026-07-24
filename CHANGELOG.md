@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.3.0...v0.4.0) (2026-07-24)
+
+
+### Features
+
+* **ai:** adopt shared ai-skills bundles + /focus fix ([#238](https://github.com/derekwinters/lucas-doggiehood/issues/238)) ([7c8f6fd](https://github.com/derekwinters/lucas-doggiehood/commit/7c8f6fd8f91e3e9f78273b95902ad8b0c2218d05))
+* **camera:** add free twist-driven yaw rotation ([#264](https://github.com/derekwinters/lucas-doggiehood/issues/264)) ([cfca215](https://github.com/derekwinters/lucas-doggiehood/commit/cfca2151d35134442110ee3c63698e18d03dd7b1))
+* drop release-please parenthetical from dashboard Your move PR count ([#253](https://github.com/derekwinters/lucas-doggiehood/issues/253)) ([a3f348f](https://github.com/derekwinters/lucas-doggiehood/commit/a3f348f44d2f509e3f77090bd32231fcbea5aa51))
+* **expansion:** move dogs into empty houses over time via a pity ([e355cfb](https://github.com/derekwinters/lucas-doggiehood/commit/e355cfb817323cb08606f44097e7510783a9e261))
+* **expansion:** move dogs into empty houses over time via a pity counter ([#237](https://github.com/derekwinters/lucas-doggiehood/issues/237)) ([e355cfb](https://github.com/derekwinters/lucas-doggiehood/commit/e355cfb817323cb08606f44097e7510783a9e261))
+* **expansion:** tint the map-expansion lock indicator by affordability ([#261](https://github.com/derekwinters/lucas-doggiehood/issues/261)) ([966d346](https://github.com/derekwinters/lucas-doggiehood/commit/966d34605d76646e1357d6e3456af5a7cac53738))
+* **expansion:** unlock authored map zones with a currency cost ([#239](https://github.com/derekwinters/lucas-doggiehood/issues/239)) ([d71f56c](https://github.com/derekwinters/lucas-doggiehood/commit/d71f56c64b45235b8c40021b74cd5e773d2fc957))
+* **expansion:** unlock authored map zones with a currency cost ([#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)) ([d71f56c](https://github.com/derekwinters/lucas-doggiehood/commit/d71f56c64b45235b8c40021b74cd5e773d2fc957))
+* **quests:** add a Not-now decline action to the conversation panel ([#262](https://github.com/derekwinters/lucas-doggiehood/issues/262)) ([865eadd](https://github.com/derekwinters/lucas-doggiehood/commit/865eadd174bd6fafb6e9b0e5552702b9a1126765))
+* **quests:** show cost and insufficient-funds feedback in the conversation panel ([#263](https://github.com/derekwinters/lucas-doggiehood/issues/263)) ([c47c045](https://github.com/derekwinters/lucas-doggiehood/commit/c47c045a471509e2d5b1311cb65ee74a1a5b2f11)), closes [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186)
+* **world:** define lot bounds as a tile-quadrant primitive (refs [#222](https://github.com/derekwinters/lucas-doggiehood/issues/222)) ([79a5427](https://github.com/derekwinters/lucas-doggiehood/commit/79a54279212df98e090d6bde40caf7b00a40fb12))
+* **world:** define lot bounds as a tile-quadrant primitive (refs [#222](https://github.com/derekwinters/lucas-doggiehood/issues/222)) ([#242](https://github.com/derekwinters/lucas-doggiehood/issues/242)) ([79a5427](https://github.com/derekwinters/lucas-doggiehood/commit/79a54279212df98e090d6bde40caf7b00a40fb12))
+
+
+### Bug Fixes
+
+* **dashboard:** hide closed milestones from the pipeline dashboard ([#251](https://github.com/derekwinters/lucas-doggiehood/issues/251)) ([f68af19](https://github.com/derekwinters/lucas-doggiehood/commit/f68af197168d6d72ba3f97622d552a4251d98b02))
+* honor /focus on the dashboard issue so focus can be set from [#193](https://github.com/derekwinters/lucas-doggiehood/issues/193) ([#226](https://github.com/derekwinters/lucas-doggiehood/issues/226)) ([b5e90aa](https://github.com/derekwinters/lucas-doggiehood/commit/b5e90aa8f8c6606fe814c0597cd851f339f1c1f7))
+* set /focus by re-rendering the dashboard, never hand-editing [#193](https://github.com/derekwinters/lucas-doggiehood/issues/193) ([#230](https://github.com/derekwinters/lucas-doggiehood/issues/230)) ([ef5e8a3](https://github.com/derekwinters/lucas-doggiehood/commit/ef5e8a36d09dd05df5dc92bcb474ff2f5a1b8a61))
+
 ## [0.3.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.2.0...v0.3.0) (2026-07-19)
 
 
