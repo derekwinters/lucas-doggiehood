@@ -7,14 +7,25 @@ name: docs-test
 #     VERSION/CHANGELOG/manifest and can never carry docs or a hand-added label).
 #   - PR touches no docs but carries the `skip-docs` label -> pass (deliberate escape hatch).
 #   - PR touches no docs and has no label -> fail, asking for a docs reconciliation or the label.
-# `labeled`/`unlabeled` are in the trigger list so toggling `skip-docs` re-evaluates the gate
-# without a new push.
+#
+# `skip-docs` cannot be set atomically at PR creation (pipeline-dev opens the PR,
+# then labels it a moment later), and this workflow triggers on both `opened` and
+# `labeled`. To avoid a transient failed run on the `opened` event before the
+# label lands (#254 — that superseded run fired spurious CI-failure webhooks), the
+# reconciliation gate's decision lives in `.github/scripts/docs_reconciliation_gate.py`:
+# when the triggering payload has no `skip-docs`, it polls the PR's LIVE labels for a
+# short grace window before failing, so the same `opened` run observes the label and
+# passes — no failing run is ever produced. `labeled`/`unlabeled` stay in the trigger
+# list so manually toggling `skip-docs` still re-evaluates the gate without a new push.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
+  # The reconciliation gate re-fetches the PR's live labels via `gh api` to
+  # absorb the opened/labeled race (#254).
+  pull-requests: read
 
 jobs:
   build:
@@ -35,17 +46,6 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Determine whether the skip-docs label is present
-        id: label
-        env:
-          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-        run: |
-          if printf '%s' "$LABELS" | grep -q '"skip-docs"'; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Determine whether this is release-please's release PR
@@ -82,16 +82,29 @@ jobs:
         run: mkdocs build --strict
 
       # --- Code-only PR: pass only if the docs decision was made deliberately. ---
+      # The decision (and its live-label grace poll for the opened/labeled race)
+      # lives in a unit-tested script — see the `gate-tests` job below.
       - name: Docs reconciliation gate
         if: steps.docs.outputs.changed != 'true'
-        run: |
-          if [ "${{ steps.release.outputs.is_release }}" = "true" ]; then
-            echo "release-please release PR — docs reconciliation gate does not apply."
-            exit 0
-          fi
-          if [ "${{ steps.label.outputs.skip }}" = "true" ]; then
-            echo "skip-docs label present — docs reconciliation gate bypassed for this PR."
-            exit 0
-          fi
-          echo "::error::Documentation changes are almost always needed for a behavior/design change. This PR changes no docs/** page. Reconcile the affected spec in this PR, or — if it truly needs none — add the 'skip-docs' label."
-          exit 1
+        env:
+          DOCS_CHANGED: ${{ steps.docs.outputs.changed }}
+          IS_RELEASE: ${{ steps.release.outputs.is_release }}
+          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/docs_reconciliation_gate.py
+
+  # Unit tests for the reconciliation gate's decision logic. Runs on every PR
+  # (alongside `build`) so the decision that gates every PR is always validated.
+  gate-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run docs-reconciliation gate unit tests
+        run: python3 -m unittest discover -s .github/scripts/tests

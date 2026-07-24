@@ -210,6 +210,15 @@ changelog entry per issue, and the `Closes #N` keyword auto-closes the issue on
 merge. Each built issue is marked `in-progress`. It **never merges and never
 closes** — Derek reviews and merges; PR-babysitting keeps CI green.
 
+When a built PR touches no `docs/**` page, `pipeline-dev` applies the
+`skip-docs` label **immediately after** opening it, before any other post-open
+work. The label can't be set atomically at PR creation, so the `docs-test` gate
+absorbs the brief `opened`→`labeled` gap with a live-label grace poll rather than
+firing a transient failure on the `opened` run
+([#254](https://github.com/derekwinters/lucas-doggiehood/issues/254)); see
+[CI/CD](ci-cd.md#docs-site-build-publish). A PR that reconciles docs needs no
+label — the gate passes on the docs change.
+
 ### Reconciliation (`pipeline-reconcile`)
 
 Nothing guarantees an issue stays inside the label state machine, and two

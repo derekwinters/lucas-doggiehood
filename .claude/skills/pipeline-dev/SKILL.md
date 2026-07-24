@@ -87,6 +87,14 @@ marker is absent, default to the lowest-numbered milestone that has open
      Closes #185
      ```
 
+   - **If the PR touches no `docs/**` page, apply the `skip-docs` label
+     immediately after `create_pull_request` — before any other post-open work
+     (babysitting, comments, moving to the next issue).** The label can't be set
+     atomically at creation, so the `docs-test` gate absorbs the brief
+     `opened`→`labeled` gap with a live-label grace poll ([#254](https://github.com/derekwinters/lucas-doggiehood/issues/254));
+     labeling first keeps that window as small as possible. A PR that *does*
+     reconcile docs needs no label — the gate passes on the docs change.
+
 6. **After the loop, report the run**: list any dropped issues and why, and any
    `capped_out` issues deferred to the next night. **Log the cap explicitly** so
    a truncated queue never reads as "everything was built."
