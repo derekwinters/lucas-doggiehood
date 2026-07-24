@@ -59,7 +59,7 @@ namespace Doggiehood.Unity
             return true;
         }
 
-        /// <summary>The single closing action (#33): accept the quest.</summary>
+        /// <summary>Accepts the currently open quest (#33).</summary>
         public void AcceptCurrent()
         {
             if (currentQuest != null && State != null && State.Quests.Accept(currentQuest))
@@ -92,6 +92,16 @@ namespace Doggiehood.Unity
                 QuestAccepted?.Invoke(currentQuest);
             }
 
+            Close();
+        }
+
+        /// <summary>"Not now" (#185): a silent, non-punishing decline. Just
+        /// closes the panel — the quest is left exactly as it was (still
+        /// `Available` if it was), no dialogue line, no sound, no timer or
+        /// cooldown. The dog's speech bubble stays up, so the same request
+        /// is fully re-presented if the player taps it again.</summary>
+        public void DeclineCurrent()
+        {
             Close();
         }
 
@@ -130,6 +140,13 @@ namespace Doggiehood.Unity
             else if (GUILayout.Button(Current.Ending == ConversationEnding.Accept ? "Accept" : "Complete"))
             {
                 AcceptCurrent();
+            }
+
+            // #185: "Not now" is always present, regardless of accept-row
+            // variant (standard/choice/buy-something) — a silent decline.
+            if (GUILayout.Button("Not now"))
+            {
+                DeclineCurrent();
             }
 
             GUILayout.EndArea();
