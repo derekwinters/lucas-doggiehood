@@ -93,21 +93,36 @@ this survives the version-numbering rework (#192). Pick the milestone whose
 description best fits the work; state which one and why in the analysis. Derek's
 `/approve` accepts it; `/milestone` overrides it.
 
-## Dependencies — first-class GitHub relationships
+## Dependencies — always structured, never prose (#248)
 
-Record dependencies as real relationships, not just prose:
+**Every dependency you identify MUST be recorded as a structured relationship —
+never as prose alone.** The nightly builder (`select_queue.py`) and the
+dashboard only see structured forms; a dependency written in a sentence
+(e.g. "depends on #109") is invisible to them, so the builder treats a blocked
+issue as eligible and can build it before its prerequisite exists (the exact
+drift that motivated this rule). Even when the prose already names the issue
+number, you must still add the structured line — writing the number in a
+sentence is not enough.
+
+Record a dependency **only** one of these ways:
 
 - **Decomposition** (an issue is really several) → create **sub-issues** and
   link them as children.
-- **Peer dependency** (issue A can't start until issue B merges) → add a
-  `Blocked by: #B` line to A's body (the dashboard and `pipeline-dev` parse
-  this), and use native issue-dependencies if writable.
+- **Hard blocker** (issue A can't *start* until issue B merges) → add a
+  `Blocked by: #B` line to A's body — one ref per line, keyword then a colon
+  then `#N`. Gates eligibility for dev. Use native issue-dependencies too if
+  writable.
+- **Soft ordering** (A may build, but prerequisite B should sort first) → add a
+  `Depends on: #B` line. Orders the build without blocking it.
 - **Likely duplicate** → link the candidate issue and note it; don't close
   anything — flag it for Derek.
 
-Distinguish a **hard blocker** (`Blocked by:` — gates eligibility for dev) from
-a **soft ordering** hint between sibling sub-issues (note it as `Depends on: #N`
-so dev orders them without blocking).
+The colon-bearing line (`Blocked by: #N` / `Depends on: #N`) is the canonical
+structured form. The reconciliation sweep flags any body that mentions a
+dependency in prose without a matching structured line, so drift is caught — do
+not rely on it as a substitute for writing the line correctly the first time.
+See `docs/engineering/issue-pipeline.md` → "Recording dependencies" and #197 for
+the hard-vs-soft semantics.
 
 ## Every hand-back ends with a menu
 

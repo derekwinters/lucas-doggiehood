@@ -241,6 +241,87 @@ class TestClosingRefsParsing(unittest.TestCase):
         self.assertEqual(reconcile._closing_refs_in(None), set())
 
 
+class TestProseDepDetection(unittest.TestCase):
+    """`prose_deps_in(body)` (issue #248): flag a dependency written in prose
+    (`depends on #N` / `blocked by #N`, case-insensitive) that has NO matching
+    structured `Blocked by: #N` / `Depends on: #N` line for that number. The
+    colon-bearing line is the canonical "structured" form; its presence for a
+    given number always clears it. A bare `#N` that is not a dependency phrase
+    is never flagged.
+    """
+
+    # --- positive: prose-only references are flagged ----------------------
+    def test_prose_depends_on_without_structured_line_flagged(self):
+        self.assertEqual(
+            reconcile.prose_deps_in("This work depends on #109 landing first."),
+            [109],
+        )
+
+    def test_prose_blocked_by_without_structured_line_flagged(self):
+        self.assertEqual(
+            reconcile.prose_deps_in("It is blocked by #57 until that ships."),
+            [57],
+        )
+
+    def test_case_insensitive_phrase(self):
+        for text in ["Depends On #109", "DEPENDS ON #109", "Blocked By #109",
+                     "blocked by #109"]:
+            self.assertEqual(reconcile.prose_deps_in(text), [109], text)
+
+    def test_multiple_numbers_on_one_prose_line(self):
+        # #57's real body: "Depends on #109 … and #56" — both are prose-only.
+        self.assertEqual(
+            reconcile.prose_deps_in("Depends on #109 and also #56 for economy"),
+            [56, 109],
+        )
+
+    def test_no_colon_line_start_is_prose_not_structured(self):
+        # Line begins with the keyword but has NO colon -> still prose, flagged.
+        self.assertEqual(reconcile.prose_deps_in("Blocked by #57"), [57])
+
+    # --- negative: a matching structured line clears the number -----------
+    def test_structured_line_present_not_flagged(self):
+        body = "Depends on: #109\n\nThe economy work depends on #109 landing."
+        self.assertEqual(reconcile.prose_deps_in(body), [])
+
+    def test_structured_line_only_clears_its_own_number(self):
+        body = "Depends on: #109\nAlso it is blocked by #57 in a sentence."
+        self.assertEqual(reconcile.prose_deps_in(body), [57])
+
+    def test_structured_line_with_list_marker_and_extra_text(self):
+        body = "- Blocked by: #57 (must merge first)\nblocked by #57 too"
+        self.assertEqual(reconcile.prose_deps_in(body), [])
+
+    def test_structured_line_multiple_numbers(self):
+        body = "Depends on: #109, #110\nWork depends on #109 and #110."
+        self.assertEqual(reconcile.prose_deps_in(body), [])
+
+    def test_native_relationship_clears_number(self):
+        # A number carried as a native GitHub relationship also satisfies.
+        self.assertEqual(
+            reconcile.prose_deps_in("depends on #109", native_refs=[109]),
+            [],
+        )
+
+    # --- negative: non-dependency mentions are never flagged --------------
+    def test_bare_hash_not_flagged(self):
+        for text in ["See #58 for context", "Part of #191", "Relates to #250",
+                     "Refs #57", "Follow-up to #244", "#58"]:
+            self.assertEqual(reconcile.prose_deps_in(text), [], text)
+
+    def test_no_body_or_empty(self):
+        self.assertEqual(reconcile.prose_deps_in(""), [])
+        self.assertEqual(reconcile.prose_deps_in(None), [])
+
+    def test_word_boundary_unblocked_not_matched(self):
+        # "unblocked by #5" is not "blocked by" a dependency.
+        self.assertEqual(reconcile.prose_deps_in("It was unblocked by #5"), [])
+
+    def test_result_sorted_and_deduped(self):
+        body = "depends on #30 and #10, blocked by #10 and #20"
+        self.assertEqual(reconcile.prose_deps_in(body), [10, 20, 30])
+
+
 class TestExclusionsAndHealth(unittest.TestCase):
     def test_epic_excluded(self):
         out = run(payload([
