@@ -125,6 +125,32 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
+        public void PollLoopOrder_PanZoomTapThenTargetQuestCleared_ReachesDone()
+        {
+            // #207 regression: drive the sequence exactly the way the Unity
+            // overlay's poll loop does — pan, zoom, open the target dog's
+            // conversation, then observe the target dog's quest clear and
+            // signal NotifyTargetDogQuestResolved. This must still reach Done,
+            // proving the Core state machine is correct and isolating the
+            // reported "banner never dismisses" bug to the Unity wiring layer.
+            var state = StateWithQuests();
+            var onboarding = new OnboardingSequence(state);
+
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+            onboarding.NotifyConversationOpened(onboarding.TargetDog);
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest));
+
+            // The overlay's CheckQuestCompletion only signals once the target
+            // dog no longer has an active quest.
+            onboarding.TargetDog.ClearQuest();
+            onboarding.NotifyTargetDogQuestResolved();
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+            Assert.That(state.OnboardingComplete, Is.True);
+        }
+
+        [Test]
         public void WrongDogOrWrongQuest_DoesNotAdvanceTheSequence()
         {
             var state = StateWithQuests();

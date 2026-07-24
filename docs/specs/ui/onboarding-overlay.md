@@ -40,6 +40,7 @@ The bar's **style** — thick outline, hard drop shadow, pill (999 px) radius �
     2. **Zoom** — "Nice! Pinch (or scroll) to zoom in and out."
     3. **Tap bubble** — "{Dog} has something to say — tap the speech bubble!"
     4. **Complete** — "Help them out to finish your first quest!"
-- **Supersedes the graybox top banner.** This bottom-center coach prompt replaces the old top-banner rendering in `OnboardingOverlay`; [#207](https://github.com/derekwinters/lucas-doggiehood/issues/207) deletes that old top-banner code once this lands.
+- **Supersedes the graybox top banner.** This bottom-center coach prompt replaces the old top-banner rendering in `OnboardingOverlay`; [#207](https://github.com/derekwinters/lucas-doggiehood/issues/207) removed that old top-banner code, laid the bar out against the constants above, and fixed the prompt so it advances on the real interactions and auto-dismisses after the first quest.
+- **No-camera fallback.** If no `CameraRig` is present when onboarding starts (a degenerate case — the shipped scene always has one), the pan and zoom steps have nothing to act on, so they are treated as satisfied rather than deadlocking the sequence; onboarding still advances through the tap and complete steps and dismisses.
 - **Reference resolution.** Constants are authored at the 1920×1200 (16:10) reference per [Overview](index.md); a Unity `CanvasScaler` scales from this so each px constant has a fixed meaning across tablet sizes.
 - Style itself (outlines, flat shadows, pill shapes, rounded type) lives in [Art & UI Style](../world/art-style.md); this page is layout only.
