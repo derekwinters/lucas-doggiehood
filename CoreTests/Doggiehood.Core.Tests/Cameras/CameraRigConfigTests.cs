@@ -8,24 +8,35 @@ namespace Doggiehood.Core.Tests.Cameras
     public class CameraRigConfigTests
     {
         [Test]
-        public void DocumentedIsometricAngleConstants()
+        public void DocumentedFixedCameraConstants()
         {
-            // #21: fixed isometric/angled top-down view. The EditMode suite
-            // asserts the scene camera matches these same constants.
+            // #21/#203: pitch and projection stay fixed. Yaw is no longer a
+            // config constant here - it is mutable state on CameraController.
             Assert.That(CameraRigConfig.PitchDegrees, Is.EqualTo(45f));
-            Assert.That(CameraRigConfig.YawDegrees, Is.EqualTo(45f));
             Assert.That(CameraRigConfig.Orthographic, Is.True);
+            Assert.That(CameraRigConfig.RigDistance, Is.GreaterThan(0f));
         }
 
         [Test]
-        public void AngleIsFixed_NoCodePathCanChangeIt()
+        public void PitchProjectionAndDistance_StayFixedImmutableConsts()
         {
-            // Guard (#21): the config must stay a static class of constants —
-            // no public writable state or methods that could enable a free
-            // orbit/rotation camera.
+            // Guard (#203): pitch, orthographic projection and rig distance
+            // remain compile-time constants with no writable code path. Only
+            // yaw became mutable, and it moved off this type entirely - there
+            // must be no YawDegrees constant left to accidentally rely on.
             var type = typeof(CameraRigConfig);
 
             Assert.That(type.IsAbstract && type.IsSealed, Is.True, "CameraRigConfig must be a static class");
+
+            var constFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => f.IsLiteral)
+                .Select(f => f.Name)
+                .ToList();
+            Assert.That(constFields, Does.Contain(nameof(CameraRigConfig.PitchDegrees)));
+            Assert.That(constFields, Does.Contain(nameof(CameraRigConfig.Orthographic)));
+            Assert.That(constFields, Does.Contain(nameof(CameraRigConfig.RigDistance)));
+            Assert.That(constFields, Does.Not.Contain("YawDegrees"),
+                "Yaw is no longer a fixed config constant (#203)");
 
             var writableFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => !f.IsLiteral && !f.IsInitOnly)
@@ -38,6 +49,19 @@ namespace Doggiehood.Core.Tests.Cameras
                 .Select(p => p.Name)
                 .ToList();
             Assert.That(settableProperties, Is.Empty, "No settable properties allowed");
+        }
+
+        [Test]
+        public void Rotation_IsNowPossible_ViaCameraController()
+        {
+            // Companion to the guard above (#203): the deliberate immovability
+            // of #21 is reopened for yaw - the camera CAN now rotate freely.
+            var controller = CameraController.ForStartingNeighborhood();
+            var before = controller.Yaw;
+
+            controller.Rotate(37f);
+
+            Assert.That(controller.Yaw, Is.EqualTo(before + 37f));
         }
     }
 }
