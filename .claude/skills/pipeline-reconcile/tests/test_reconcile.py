@@ -17,6 +17,9 @@ import unittest
 
 SCRIPT = os.path.join(os.path.dirname(__file__), os.pardir, "reconcile.py")
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir))
+import reconcile  # noqa: E402  (imported after sys.path tweak)
+
 
 def run(payload):
     proc = subprocess.run(
@@ -175,6 +178,67 @@ class TestStretchRules(unittest.TestCase):
         out = run(payload([issue(178, labels=["ready-for-work"], prose_deps=[109])]))
         self.assertEqual(numbers(out["flag_prose_dep"]), [178])
         self.assertEqual(out["flag_prose_dep"][0]["refs"], [109])
+
+
+class TestClosingRefsParsing(unittest.TestCase):
+    """Parsing layer (#277): done-ness / open-PR association counts ONLY closing
+    keywords (Closes/Fixes/Resolves #N + tense/case variants), per CLAUDE.md
+    rule #10. A bare `#N`, `Refs #N`, `Part of #N`, `Relates to #N` only links.
+    """
+
+    def test_prose_and_bare_refs_are_not_closing(self):
+        # None of these landed work per rule #10 -> empty closing-ref set.
+        for text in [
+            "Relates to #250",
+            "Part of #191",
+            "Refs #57",
+            "follow-up to #244",
+            "Follow-up to #244",
+            "see #58 for context",
+            "#58",
+            "Reverts #58",
+        ]:
+            self.assertEqual(reconcile._closing_refs_in(text), set(), text)
+
+    def test_closing_keywords_capture_number(self):
+        self.assertEqual(reconcile._closing_refs_in("Closes #58"), {58})
+        self.assertEqual(reconcile._closing_refs_in("Fixes #58"), {58})
+        self.assertEqual(reconcile._closing_refs_in("Resolves #58"), {58})
+
+    def test_case_and_tense_variants_all_close(self):
+        for text in [
+            "closes #58",
+            "close #58",
+            "CLOSED #58",
+            "fix #58",
+            "FIXED #58",
+            "Fixes #58",
+            "resolve #58",
+            "Resolved #58",
+            "RESOLVES #58",
+        ]:
+            self.assertEqual(reconcile._closing_refs_in(text), {58}, text)
+
+    def test_colon_separator_allowed(self):
+        self.assertEqual(reconcile._closing_refs_in("Closes: #58"), {58})
+
+    def test_mixed_prose_and_closing_keeps_only_closing(self):
+        text = "Relates to #250\n\nFixes #58\nPart of #191\nRefs #99"
+        self.assertEqual(reconcile._closing_refs_in(text), {58})
+
+    def test_multiple_closing_refs(self):
+        self.assertEqual(
+            reconcile._closing_refs_in("Closes #10, fixes #20\nResolves #30"),
+            {10, 20, 30},
+        )
+
+    def test_word_boundary_prefix_not_matched(self):
+        # 'prefix #5' must not trip the 'fix' keyword.
+        self.assertEqual(reconcile._closing_refs_in("prefix #5"), set())
+
+    def test_empty_and_none(self):
+        self.assertEqual(reconcile._closing_refs_in(""), set())
+        self.assertEqual(reconcile._closing_refs_in(None), set())
 
 
 class TestExclusionsAndHealth(unittest.TestCase):

@@ -178,11 +178,19 @@ is either ambiguous or already owned by [#211](https://github.com/derekwinters/l
 an issue.** An open `in-progress` issue that is already on `main` classifies as
 merged-but-open, never as a stall — that guard stops the #109 re-pick loop.
 
-**Done-ness is decided by a merged commit *body* reference (`#N` / `Refs #N` /
-`Closes #N`) or deliverables on `HEAD` — never a PR/commit *title*.** The nightly
-builder squash-merges several issues under one lead PR title, so a title-only
-match keeps missing bundled squashes (verified on #109/#58/#57/#190/#170). The
-guard is locked in a unit test.
+**Done-ness is decided by a merged commit *body* *closing-keyword* reference
+(`Closes` / `Fixes` / `Resolves #N` and their tense/case variants) or
+deliverables on `HEAD` — never a PR/commit *title*, and never a bare `#N` /
+`Refs #N`.** This matches CLAUDE.md rule #10: only a closing keyword resolves an
+issue; a bare `#N`, `Refs #N`, `Part of #N`, or `Relates to #N` merely links, so
+a prose cross-reference in a merged commit body must not mark that issue done
+([#277](https://github.com/derekwinters/lucas-doggiehood/issues/277)). The same
+closing-keyword rule governs open-PR association (`has_open_pr`), so a PR that
+only "Relates to #N" does not suppress that issue's stalled-`in-progress`
+requeue. Titles are excluded separately: the nightly builder squash-merges
+several issues under one lead PR title, so a title-only match keeps missing
+bundled squashes (verified on #109/#58/#57/#190/#170). Both guards are locked in
+unit tests.
 
 The sweep runs in the **gatekeeper** step of each scheduled routine (after
 command processing, so it reconciles against the labels those commands just
