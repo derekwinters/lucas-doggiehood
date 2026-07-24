@@ -32,5 +32,20 @@ namespace Doggiehood.Core.Tests.Expansion
             Assert.Throws<System.ArgumentOutOfRangeException>(() => ZoneUnlock.CostForZoneNumber(0));
             Assert.Throws<System.ArgumentOutOfRangeException>(() => ZoneUnlock.CostForZoneNumber(-1));
         }
+
+        // #178: the discoverability affordance needs to know whether the
+        // player can afford the NEXT zone right now, without spending
+        // anything - a pure comparison of a wallet balance against
+        // CostForZoneNumber's result.
+        [TestCase(0, 1, false)]
+        [TestCase(99, 1, false)]
+        [TestCase(100, 1, true)]
+        [TestCase(101, 1, true)]
+        [TestCase(100, 2, false)]
+        [TestCase(200, 2, true)]
+        public void IsAffordable_ComparesBalanceAgainstCostForZoneNumber(int balance, int zoneNumber, bool expected)
+        {
+            Assert.That(ZoneUnlock.IsAffordable(balance, zoneNumber), Is.EqualTo(expected));
+        }
     }
 }

@@ -66,5 +66,20 @@ namespace Doggiehood.Core.Art
         /// lawn rather than blending into it.
         /// </summary>
         public const string YardLandscapingFallbackHex = "#2F8F3F";
+
+        /// <summary>
+        /// Map-expansion lock indicator tint when the wallet covers the
+        /// next zone's unlock cost (#178, docs/specs/expansion.md
+        /// "Expansion indicator" — Derek, 2026-07-18: "Gold icon if
+        /// affordable.").
+        /// </summary>
+        public const string ExpansionIndicatorAffordableHex = "#FFD700";
+
+        /// <summary>
+        /// Map-expansion lock indicator tint when the wallet does not yet
+        /// cover the next zone's unlock cost (#178 — Derek, 2026-07-18:
+        /// "Grey or black lock icon if can't purchase.").
+        /// </summary>
+        public const string ExpansionIndicatorLockedHex = "#4A4A4A";
     }
 }

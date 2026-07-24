@@ -483,6 +483,21 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void BuildsTheExpansionIndicatorMarker_WithTheLockIconAndACoreDrivenView()
+        {
+            // #178: one marker for the map-expansion lock indicator,
+            // rendering the #183 lock icon via a SpriteRenderer and driven
+            // live by ExpansionIndicatorView — position/tint are Core's
+            // job (covered by ExpansionIndicatorViewTests), this just pins
+            // that WorldBuilder actually wires the marker into the scene.
+            var marker = root.transform.Find(WorldBuilder.ExpansionIndicatorName);
+
+            Assert.That(marker, Is.Not.Null, "missing the expansion indicator marker");
+            Assert.That(marker.GetComponent<SpriteRenderer>(), Is.Not.Null);
+            Assert.That(marker.GetComponent<ExpansionIndicatorView>(), Is.Not.Null);
+        }
+
+        [Test]
         public void WorldContainsNoPlayerObjects()
         {
             // #19: no player avatar anywhere in the built world.
