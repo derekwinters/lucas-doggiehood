@@ -115,3 +115,9 @@ render.experimental.xml
 # MkDocs build output
 # =========================
 /site/
+
+# =========================
+# Python (pipeline skills — tests run via `python3 -m unittest`)
+# =========================
+__pycache__/
+*.pyc
