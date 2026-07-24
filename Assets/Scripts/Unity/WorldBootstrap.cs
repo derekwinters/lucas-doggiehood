@@ -43,11 +43,17 @@ namespace Doggiehood.Unity
             // First launch only (#44): tutorial prompts over live gameplay.
             if (Doggiehood.Core.Onboarding.OnboardingSequence.ShouldRun(state))
             {
+                // #207: don't silently drop onboarding when no CameraRig is
+                // found — resolve one from the main camera if needed, and wire
+                // the overlay regardless (it tolerates a null rig).
                 var rig = FindFirstObjectByType<CameraRig>();
-                if (rig != null)
+                if (rig == null && Camera.main != null)
                 {
-                    gameObject.AddComponent<OnboardingOverlay>().Init(state, rig, presenter);
+                    rig = Camera.main.GetComponent<CameraRig>()
+                        ?? Camera.main.gameObject.AddComponent<CameraRig>();
                 }
+
+                gameObject.AddComponent<OnboardingOverlay>().Init(state, rig, presenter);
             }
         }
     }
