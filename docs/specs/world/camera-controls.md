@@ -16,7 +16,7 @@ Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossi
 
 The **pitch (45°) and the orthographic projection are fixed**. The **yaw rotates freely**, driven by a two-finger twist gesture: the neighborhood follows your fingers — twisting clockwise turns the scene clockwise (the camera itself yaws the opposite way), the same "content follows the finger" convention as drag-to-pan. Rotation is continuous — it does not snap to fixed angles and is not clamped to a range. This reopens the original "no free rotation/orbit" decision of #21 for yaw only, while keeping the recognisable angled-down look. ([#203](https://github.com/derekwinters/lucas-doggiehood/issues/203))
 
-> Note: the fixed-angle scene-visibility assumption from [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) — that content only ever needs to read well at the single fixed yaw — is **deferred** and out of scope for the rotation control. Making all scene content (e.g. speech bubbles, facade-only art) read correctly at every yaw is tracked separately.
+> Note: the fixed-angle scene-visibility assumption — that content only ever needs to read well at the single fixed yaw — is **deferred** and out of scope for the rotation control. Making world markers and scene content (e.g. speech bubbles, the map-expansion lock icon, facade-only art) read correctly at every yaw is tracked in [#266](https://github.com/derekwinters/lucas-doggiehood/issues/266).
 
 ## Orientation
 
@@ -24,7 +24,7 @@ The app runs in **landscape** orientation, to better show off the neighborhood s
 
 ## Build checklist
 
-- [ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping); #181's fixed-angle visibility assumption deferred
+- [ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping); marker/scene readability at every yaw deferred to #266
 - [ ] Pan via drag/swipe within the bounds of the current neighborhood scene
 - [ ] Pinch-to-zoom with sane min/max zoom limits
 - [ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels
