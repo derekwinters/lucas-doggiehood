@@ -25,6 +25,12 @@ Design rules encoded here (see issue #194 and docs/engineering/issue-pipeline.md
   * `/focus <arg>` and `/milestone <arg>` are REJECTED when the argument
     resolves to no live milestone (`focus-no-match` / `milestone-no-match` in
     `skipped`) rather than silently writing a null milestone.
+  * `ready-for-work` implies a milestone (issue #247): `/approve` only moves an
+    issue to `ready-for-work` when a milestone resolves — an inline `/milestone`
+    in the same comment, the issue's current milestone, or the milestone
+    proposed by analysis. If none resolves, the approve is REFUSED
+    (`approve-no-milestone` in `skipped`, carrying the `which-milestone` menu)
+    with no label move, leaving the issue in its prior state.
   * A command must start at a line start or after whitespace, so URLs and file
     paths such as `http://x/approve/y` never trigger it.
 
@@ -35,11 +41,17 @@ Input schema (stdin):
     "issues": [
       {"number": 181, "labels": ["pending-approval"],
        "is_epic": false, "is_dashboard": false,
+       "milestone": "04 - Quests & Economy" | null,
+       "proposed_milestone": "04 - Quests & Economy" | null,
        "comments": [
          {"id": 7, "author": "derekwinters", "body": "...", "processed": false}
        ]}
     ]
   }
+
+  `milestone` is the issue's currently-set milestone title (or null);
+  `proposed_milestone` is the milestone analysis proposed in its
+  `pending-approval` comment (or null). Both feed the `/approve` milestone gate.
 
 Output schema (stdout):
   {
@@ -56,7 +68,7 @@ Output schema (stdout):
   }
 
 Skip reasons: "not-owner", "no-op", "parked-ignored", "focus-no-match",
-"milestone-no-match".
+"milestone-no-match", "approve-no-milestone".
 """
 
 import json
@@ -86,6 +98,9 @@ MENUS = {
     "milestone": "`/approve` · `/revise <notes>` · `/park`",
     "focus": "(nightly dev now targets this milestone)",
     "proposed": "`/park` (analysis will draft a PROPOSAL)",
+    # Hand-back when /approve resolves no milestone (issue #247): the issue is
+    # left in its prior state and Derek is asked which milestone to use.
+    "which-milestone": "`/milestone <name>` then `/approve` · `/revise <notes>` · `/park`",
 }
 
 
@@ -163,14 +178,16 @@ def _build_action(issue, comment, commands, milestones, is_parked,
         if label not in remove:
             remove.append(label)
 
-    def reject(reason):
-        rejected.append({
+    def reject(reason, menu=None):
+        record = {
             "issue": issue["number"],
             "comment_id": comment["id"],
             "reason": reason,
-        })
+        }
+        if menu is not None:
+            record["menu"] = menu
+        rejected.append(record)
 
-    honored = False
     for cmd, arg in commands:
         # A parked issue only responds to /unpark.
         if is_parked and cmd != "unpark":
@@ -185,7 +202,6 @@ def _build_action(issue, comment, commands, milestones, is_parked,
             if resolved is None:
                 reject("milestone-no-match")
                 continue
-            honored = True
             action["commands"].append(cmd)
             action["set_milestone"] = resolved
             if action["menu"] is None:
@@ -196,7 +212,6 @@ def _build_action(issue, comment, commands, milestones, is_parked,
             if resolved is None:
                 reject("focus-no-match")
                 continue
-            honored = True
             action["commands"].append(cmd)
             action["set_focus"] = resolved
             # On the dashboard issue keep ONLY the focus marker change — no
@@ -205,7 +220,6 @@ def _build_action(issue, comment, commands, milestones, is_parked,
                 action["menu"] = "focus"
             continue
 
-        honored = True
         action["commands"].append(cmd)
         if cmd == "admit":
             want_add("ai-triage")
@@ -240,7 +254,33 @@ def _build_action(issue, comment, commands, milestones, is_parked,
             want_remove("parked")
             action["menu"] = "unparked"
 
-    if not honored:
+    # Post-loop: enforce ready-for-work ⇒ has milestone (issue #247). Resolve
+    # /approve's effective milestone from, in order, an inline /milestone in the
+    # same comment (already captured in set_milestone), the issue's current
+    # milestone, then the analysis-proposed milestone. Doing it after the loop
+    # makes it order-independent — `/approve\n/milestone 07` and the reverse
+    # behave identically. If none resolves, refuse the transition: undo the
+    # labels /approve added, drop it from the command list, and record an
+    # `approve-no-milestone` skip carrying the which-milestone hand-back so the
+    # issue stays in its prior state.
+    if "approve" in action["commands"]:
+        effective = (action["set_milestone"]
+                     or issue.get("milestone")
+                     or issue.get("proposed_milestone"))
+        if effective is None:
+            reject("approve-no-milestone", menu="which-milestone")
+            action["commands"].remove("approve")
+            if "ready-for-work" in add:
+                add.remove("ready-for-work")
+            for lbl in ("pending-approval", "needs-clarification", "ai-triage"):
+                if lbl in remove:
+                    remove.remove(lbl)
+            if action["menu"] == "ready-for-work":
+                action["menu"] = None
+        else:
+            action["set_milestone"] = effective
+
+    if not action["commands"]:
         return None, rejected
     return action, rejected
 

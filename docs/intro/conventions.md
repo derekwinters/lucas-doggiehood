@@ -17,7 +17,7 @@ These labels are the state machine for the [AI issue-management pipeline](../eng
 - **`ai-triage`** — admitted for AI analysis.
 - **`pending-approval`** — analysis done; awaiting Derek's `/approve`.
 - **`needs-clarification`** — analysis posted a question; awaiting an answer.
-- **`ready-for-work`** — approved and milestoned; in the nightly dev queue.
+- **`ready-for-work`** — approved and milestoned; in the nightly dev queue. **Invariant: `ready-for-work` ⇒ the issue has a milestone** — the gatekeeper refuses an `/approve` that resolves no milestone (inline `/milestone`, the issue's current milestone, or the analysis-proposed one) and asks which milestone instead, so the focus-milestone-only nightly builder never silently skips an approved issue ([#247](https://github.com/derekwinters/lucas-doggiehood/issues/247)).
 - **`in-progress`** — a nightly dev run has picked it up.
 - **`parked`** — hidden from every routine and the dashboard.
 - **`dashboard`** — marks the single live dashboard issue; excluded from every routine, except that `/focus` is honored on it so focus can be set from the dashboard itself ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).

@@ -31,6 +31,8 @@ def base_issue(**kw):
         "labels": [],
         "is_epic": False,
         "is_dashboard": False,
+        "milestone": None,
+        "proposed_milestone": None,
         "comments": [],
     }
     issue.update(kw)
@@ -62,6 +64,7 @@ class TestParseCommands(unittest.TestCase):
     def test_approve_by_owner(self):
         out = run(payload([
             base_issue(number=181, labels=["pending-approval"],
+                       proposed_milestone="07 - Polish & Onboarding",
                        comments=[comment("looks good /approve", cid=7)]),
         ]))
         acts = self.actions_for(181, out)
@@ -70,6 +73,9 @@ class TestParseCommands(unittest.TestCase):
         self.assertIn("approve", a["commands"])
         self.assertIn("ready-for-work", a["add_labels"])
         self.assertIn("pending-approval", a["remove_labels"])
+        # ready-for-work ⇒ has milestone (#247): the resolved milestone rides
+        # along on the action so the move is never milestone-less.
+        self.assertEqual(a["set_milestone"], "07 - Polish & Onboarding")
         self.assertEqual(a["react"], 7)
 
     def test_non_owner_is_noop(self):
@@ -229,17 +235,90 @@ class TestParseCommands(unittest.TestCase):
             s.get("comment_id") == 8 and s.get("reason") == "milestone-no-match"
             for s in out["skipped"]))
 
-    def test_approve_with_unmatched_milestone_still_approves(self):
-        # /approve is honored; the unmatched /milestone is rejected separately.
+    def test_approve_with_unmatched_milestone_is_refused(self):
+        # ready-for-work ⇒ has milestone (#247): a bare /approve whose only
+        # milestone hint is an unmatched /milestone 99 resolves no milestone, so
+        # the transition is refused — no ready-for-work, no label removals — and
+        # BOTH the milestone-no-match and approve-no-milestone skips are emitted.
         out = run(payload([
             base_issue(number=181, labels=["pending-approval"],
                        comments=[comment("/approve\n/milestone 99", cid=8)]),
         ]))
+        self.assertEqual(self.actions_for(181, out), [])
+        reasons = {s.get("reason") for s in out["skipped"]
+                   if s.get("comment_id") == 8}
+        self.assertIn("milestone-no-match", reasons)
+        self.assertIn("approve-no-milestone", reasons)
+
+    def test_approve_without_milestone_is_refused(self):
+        # #247: /approve with no inline /milestone, no current milestone, and no
+        # analysis-proposed milestone must NOT move the issue to ready-for-work.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       comments=[comment("looks good /approve", cid=8)]),
+        ]))
+        self.assertEqual(self.actions_for(181, out), [])
+        refusal = [s for s in out["skipped"]
+                   if s.get("comment_id") == 8
+                   and s.get("reason") == "approve-no-milestone"]
+        self.assertEqual(len(refusal), 1)
+        # The refusal carries the which-milestone hand-back menu so the skill
+        # asks Derek which milestone before re-approving.
+        self.assertEqual(refusal[0].get("menu"), "which-milestone")
+
+    def test_approve_uses_issue_current_milestone(self):
+        # #247: an issue that already carries a milestone approves cleanly, and
+        # the resolved milestone rides along on the action.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="04 - Quests & Economy",
+                       comments=[comment("/approve", cid=8)]),
+        ]))
         a = self.actions_for(181, out)[0]
         self.assertIn("ready-for-work", a["add_labels"])
-        self.assertIsNone(a["set_milestone"])
-        self.assertTrue(any(s.get("reason") == "milestone-no-match"
-                            for s in out["skipped"]))
+        self.assertEqual(a["set_milestone"], "04 - Quests & Economy")
+
+    def test_approve_uses_proposed_milestone(self):
+        # #247: the analysis-proposed milestone resolves the gate when nothing
+        # else is present.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       proposed_milestone="03 - Dogs & Conversations",
+                       comments=[comment("/approve", cid=8)]),
+        ]))
+        a = self.actions_for(181, out)[0]
+        self.assertIn("ready-for-work", a["add_labels"])
+        self.assertEqual(a["set_milestone"], "03 - Dogs & Conversations")
+
+    def test_approve_inline_milestone_overrides_proposed(self):
+        # An inline /milestone wins over the proposed one, and order does not
+        # matter: /milestone before /approve resolves identically.
+        out_a = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       proposed_milestone="03 - Dogs & Conversations",
+                       comments=[comment("/approve\n/milestone 07", cid=8)]),
+        ]))
+        out_b = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       proposed_milestone="03 - Dogs & Conversations",
+                       comments=[comment("/milestone 07\n/approve", cid=8)]),
+        ]))
+        a = self.actions_for(181, out_a)[0]
+        b = self.actions_for(181, out_b)[0]
+        self.assertEqual(a["set_milestone"], "07 - Polish & Onboarding")
+        self.assertEqual(b["set_milestone"], "07 - Polish & Onboarding")
+        self.assertIn("ready-for-work", a["add_labels"])
+        self.assertIn("ready-for-work", b["add_labels"])
+
+    def test_non_approve_command_unaffected_by_milestone_gate(self):
+        # The milestone gate is scoped to /approve only: /admit and /park still
+        # act on a milestone-less issue.
+        out = run(payload([
+            base_issue(number=180, comments=[comment("/admit", cid=3)]),
+            base_issue(number=182, comments=[comment("/park", cid=4)]),
+        ]))
+        self.assertIn("ai-triage", self.actions_for(180, out)[0]["add_labels"])
+        self.assertIn("parked", self.actions_for(182, out)[0]["add_labels"])
 
 
 if __name__ == "__main__":

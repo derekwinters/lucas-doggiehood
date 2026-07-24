@@ -37,7 +37,7 @@ See `docs/engineering/issue-pipeline.md` for the full model.
 | Command | Effect |
 | - | - |
 | `/admit` | add `ai-triage` (raw idea → analysis queue) |
-| `/approve` | add `ready-for-work`, remove `pending-approval`/`needs-clarification`/`ai-triage`, set the milestone (see below) |
+| `/approve` | add `ready-for-work`, remove `pending-approval`/`needs-clarification`/`ai-triage`, set the milestone (see below) — **refused if no milestone resolves** (`ready-for-work` ⇒ has milestone, #247) |
 | `/revise <notes>` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification`; the notes are left for analysis to read |
 | `/redo` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification` (fresh analysis pass) |
 | `/propose` | re-add `ai-triage` and authorize analysis to draft the missing design as a marked PROPOSAL |
@@ -68,7 +68,10 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
 1. **Gather the snapshot.** With the GitHub MCP tools, list open issues in
    `derekwinters/lucas-doggiehood` (exclude none yet — the script filters
    epics/dashboard). For each issue collect: `number`, `labels`, whether it is
-   `type:epic` (`is_epic`), whether it is #193 (`is_dashboard`), and its
+   `type:epic` (`is_epic`), whether it is #193 (`is_dashboard`), its current
+   `milestone` title (or null), its `proposed_milestone` (the milestone
+   analysis proposed in the issue's `pending-approval` comment, or null — this
+   feeds the `/approve` milestone gate below), and its
    comments. For each comment collect `id`, `author.login`, `body`, and
    `processed` = whether it already carries the 👀 `eyes` reaction from this
    bot. To keep this cheap, only fetch comments for issues that actually have
@@ -88,12 +91,15 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
 3. **Apply each action** with the GitHub MCP tools, in the order returned:
    - Add/remove the labels in `add_labels` / `remove_labels`.
    - If `set_milestone` is non-null, set that milestone.
-   - **`/approve` milestone resolution:** if the action has `approve` in
-     `commands` and `set_milestone` is null, resolve the milestone before
-     applying — use an explicit `/milestone` from the same or an earlier owner
-     comment if present, otherwise the milestone **proposed by analysis** in
-     its `pending-approval` comment on that issue. If neither exists, leave the
-     milestone unset and say so in the ack.
+   - **`/approve` milestone gate (`ready-for-work` ⇒ has milestone, #247):**
+     the parser now resolves and enforces this deterministically from the
+     `milestone` / `proposed_milestone` you gathered — you do **not** re-decide
+     it in prose. When an `approve` action comes back with `set_milestone` set,
+     apply that milestone as part of the move (it is never milestone-less). When
+     `/approve` resolves **no** milestone, the parser emits **no** action and
+     instead a `{"reason": "approve-no-milestone", "menu": "which-milestone"}`
+     skip — the issue stays in its prior state; post the which-milestone
+     hand-back (see below) rather than moving it to `ready-for-work`.
    - If `set_focus` is non-null, update the `<!-- pipeline-focus: ... -->`
      marker on #193 (add it if missing).
 
@@ -101,7 +107,12 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
    action, and — where it moves the issue to a state awaiting Derek — post a
    short comment ending with the `menu` the action names (see `MENUS` in the
    script for the exact "Your move" text). Keep acknowledgments to one or two
-   lines; the deterministic work is already done.
+   lines; the deterministic work is already done. For an
+   **`approve-no-milestone`** skip (an `/approve` the parser refused because no
+   milestone resolved), react 👍 and post the which-milestone hand-back — a
+   single line like `Can't approve #N to ready-for-work — no milestone
+   resolved; reply` followed by the skip's `which-milestone` menu — so Derek
+   sees the issue stayed put and knows to set a milestone first.
 
 5. **Watermark.** Add the 👀 `eyes` reaction to every comment you processed
    (both honored and owner-authored no-ops) so the next run skips it. This is
@@ -121,8 +132,11 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
 ## Tests
 
 `tests/test_parse_commands.py` covers owner-only gating, the watermark,
-epic/dashboard exclusion, each command's label move, milestone matching, and
-the parked-issue rule. Run:
+epic/dashboard exclusion, each command's label move, milestone matching, the
+`/approve` milestone gate (`ready-for-work` ⇒ has milestone — refused with an
+`approve-no-milestone` skip when none resolves, honored when an inline
+`/milestone`, the issue's current milestone, or the analysis-proposed milestone
+resolves one), and the parked-issue rule. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-gatekeeper/tests
