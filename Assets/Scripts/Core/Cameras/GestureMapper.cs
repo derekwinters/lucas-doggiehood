@@ -16,9 +16,11 @@ namespace Doggiehood.Core.Cameras
         private const float DegreesToRadians = (float)Math.PI / 180f;
 
         /// <summary>Twist-to-rotation gain: degrees of camera yaw per degree
-        /// of two-finger twist. 1:1 so the world tracks the fingers exactly.
-        /// Sign is preserved, pinning the convention that a clockwise twist
-        /// (positive delta) rotates the camera clockwise (positive delta).</summary>
+        /// of two-finger twist. 1:1 so the scene tracks the fingers exactly.
+        /// The sign is inverted (see <see cref="TwistToRotation"/>): a clockwise
+        /// twist rotates the camera counter-clockwise so the neighborhood turns
+        /// clockwise under the fingers - the same "content follows the finger"
+        /// convention as <see cref="DragToPan"/>.</summary>
         public const float TwistRotationSensitivity = 1f;
 
         /// <summary>World-space pan delta for a drag of (dx, dy) pixels
@@ -50,11 +52,14 @@ namespace Doggiehood.Core.Cameras
         }
 
         /// <summary>Yaw-rotation delta (degrees) for a two-finger twist of the
-        /// given degrees (#203). Clockwise twist -> clockwise camera rotation:
-        /// the sign of the twist is preserved through the sensitivity gain.</summary>
+        /// given degrees (#203). The sign is inverted so the scene follows the
+        /// fingers: a clockwise twist (positive delta) rotates the camera
+        /// counter-clockwise (negative yaw delta), which turns the neighborhood
+        /// clockwise on screen - matching DragToPan's "content follows the
+        /// finger" convention.</summary>
         public static float TwistToRotation(float twistDeltaDegrees)
         {
-            return twistDeltaDegrees * TwistRotationSensitivity;
+            return -twistDeltaDegrees * TwistRotationSensitivity;
         }
 
         private static float MetersPerPixel(float zoom, float screenHeightPixels)

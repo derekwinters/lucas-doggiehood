@@ -80,8 +80,9 @@ namespace Doggiehood.Unity
                 HandlePinch(distance - lastPinchDistance, screenHeightPixels);
 
                 // Mathf.DeltaAngle gives the counter-clockwise angle change;
-                // negate so a clockwise finger twist maps to a positive
-                // (clockwise) camera rotation, matching GestureMapper's sign.
+                // negate so a clockwise finger twist is a positive twist delta.
+                // GestureMapper.TwistToRotation then inverts that into the camera
+                // yaw so the scene follows the fingers (see its docs).
                 HandleTwist(-Mathf.DeltaAngle(lastTwistAngle, angle));
             }
 

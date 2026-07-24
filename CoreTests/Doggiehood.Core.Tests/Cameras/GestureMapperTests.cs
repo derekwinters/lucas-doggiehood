@@ -76,23 +76,25 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
-        public void TwistToRotation_ClockwiseTwist_ProducesClockwiseRotation()
+        public void TwistToRotation_ClockwiseTwist_RotatesCameraCounterClockwise_SoTheWorldFollowsTheFingers()
         {
             // #203 sign convention: a clockwise two-finger twist (positive delta)
-            // rotates the camera clockwise (positive yaw delta). Same-sign.
+            // rotates the *camera* counter-clockwise (negative yaw delta) so the
+            // scene turns clockwise under the fingers - the same "content follows
+            // the finger" convention as DragToPan.
             var rotation = GestureMapper.TwistToRotation(12f);
-
-            Assert.That(rotation, Is.GreaterThan(0f));
-            Assert.That(rotation, Is.EqualTo(12f * GestureMapper.TwistRotationSensitivity).Within(0.0001f));
-        }
-
-        [Test]
-        public void TwistToRotation_CounterClockwiseTwist_ProducesCounterClockwiseRotation()
-        {
-            var rotation = GestureMapper.TwistToRotation(-12f);
 
             Assert.That(rotation, Is.LessThan(0f));
             Assert.That(rotation, Is.EqualTo(-12f * GestureMapper.TwistRotationSensitivity).Within(0.0001f));
+        }
+
+        [Test]
+        public void TwistToRotation_CounterClockwiseTwist_RotatesCameraClockwise_SoTheWorldFollowsTheFingers()
+        {
+            var rotation = GestureMapper.TwistToRotation(-12f);
+
+            Assert.That(rotation, Is.GreaterThan(0f));
+            Assert.That(rotation, Is.EqualTo(12f * GestureMapper.TwistRotationSensitivity).Within(0.0001f));
         }
     }
 }

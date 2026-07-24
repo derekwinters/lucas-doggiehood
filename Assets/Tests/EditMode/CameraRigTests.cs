@@ -74,18 +74,19 @@ namespace Doggiehood.Unity.EditModeTests
             // #203: two-finger twist detection mirrors the lastPinchDistance
             // pattern - the first sample only records the baseline angle, and
             // the next sample forwards the per-frame angle delta to HandleTwist.
-            // Fingers here rotate counter-clockwise (angle 0deg -> 45deg), which
-            // rotates the camera counter-clockwise (yaw decreases).
+            // Fingers here rotate counter-clockwise (angle 0deg -> 45deg); the
+            // scene follows the fingers, so the camera turns the opposite way
+            // (yaw increases) - see GestureMapper.TwistToRotation.
             var start = new Vector2(0f, 0f);
             rig.ProcessTwoFingerSample(start, new Vector2(100f, 0f), true, 1000f);
             var yawAfterBaseline = rig.Controller.Yaw;
 
             rig.ProcessTwoFingerSample(start, new Vector2(100f, 100f), true, 1000f);
 
-            Assert.That(rig.Controller.Yaw, Is.LessThan(yawAfterBaseline),
-                "a counter-clockwise finger twist rotates the camera counter-clockwise");
-            Assert.That(rig.Controller.Yaw, Is.EqualTo(yawAfterBaseline - 45f).Within(0.01f),
-                "a 45deg finger twist maps 1:1 to a 45deg camera rotation");
+            Assert.That(rig.Controller.Yaw, Is.GreaterThan(yawAfterBaseline),
+                "a counter-clockwise finger twist turns the scene counter-clockwise (camera yaw increases)");
+            Assert.That(rig.Controller.Yaw, Is.EqualTo(yawAfterBaseline + 45f).Within(0.01f),
+                "a 45deg finger twist maps 1:1 to a 45deg rotation");
         }
 
         [Test]
