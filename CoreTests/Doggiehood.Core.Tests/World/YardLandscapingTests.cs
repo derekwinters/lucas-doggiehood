@@ -74,6 +74,37 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void FrontCandidates_ClearTheStreetCorridor_NeverLandingInTheRoad()
+        {
+            // #244: front candidates escaped the lot into the road because
+            // the front-yard region reached the tile centerline — where the
+            // road the lot faces runs. Every front candidate's CENTER must
+            // clear the road: at minimum the road half-width plus its own
+            // footprint radius from the centerline of the road it faces.
+            var minClearance = NeighborhoodLayout.StreetWidth / 2f + YardLandscaping.TreeFootprintRadius;
+
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var facing = HousePlacement.FrontFacing(lot);
+
+                foreach (var candidate in YardLandscaping.FrontCandidatesFor(lot))
+                {
+                    // The road the front faces runs along the tile centerline
+                    // perpendicular to the facing axis (through 0 on that
+                    // axis), so distance to its centerline is the candidate's
+                    // own coordinate on the facing axis.
+                    var distanceToRoadCenterline = facing.X != 0f
+                        ? Math.Abs(candidate.Position.X)
+                        : Math.Abs(candidate.Position.Z);
+
+                    Assert.That(distanceToRoadCenterline, Is.GreaterThanOrEqualTo(minClearance),
+                        $"lot {lot.HouseId}: front candidate {candidate.Position} must clear the road "
+                        + $"(at least {minClearance}m from the road centerline it faces), not sit in it");
+                }
+            }
+        }
+
+        [Test]
         public void BackCandidates_StayWithinTheBackYard_ClearOfHouseAndFence_AndMutuallySpaced()
         {
             foreach (var lot in NeighborhoodLayout.HouseLots)
