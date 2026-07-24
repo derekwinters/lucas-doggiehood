@@ -5,3 +5,8 @@ HTML mockups for approved wireframes live in this folder, one file per screen
 `docs/specs/ui/`. See the [UI Design Process](../../../engineering/ui-design-process.md).
 
 This folder is populated as wireframes are approved (epic #171).
+
+## Mockups
+
+- [Shared UI Components](shared-components.html) — the shared reference
+  (`docs/specs/ui/shared-components.md`) every per-screen wireframe points to.
