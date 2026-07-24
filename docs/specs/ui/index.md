@@ -23,6 +23,7 @@ Doggiehood is primarily a **tablet** game, **landscape-locked** ([#22](https://g
 - [Shared UI Components](shared-components.md) — the shared reference every per-screen wireframe points to.
 - [HUD](hud.md) — the persistent HUD; currency chip placement ([#174](https://github.com/derekwinters/lucas-doggiehood/issues/174)).
 - [Conversation Panel](conversation-panel.md) — the dialogue panel opened by tapping a dog's speech bubble ([#175](https://github.com/derekwinters/lucas-doggiehood/issues/175)).
+- [Onboarding Overlay](onboarding-overlay.md) — the first-launch bottom-center coach prompt guiding pan/zoom/tap/complete ([#176](https://github.com/derekwinters/lucas-doggiehood/issues/176)).
 
 *Per-screen wireframes are added here as they're approved (tracked under epic [#171](https://github.com/derekwinters/lucas-doggiehood/issues/171): [#173](https://github.com/derekwinters/lucas-doggiehood/issues/173) shared components, [#174](https://github.com/derekwinters/lucas-doggiehood/issues/174) HUD currency chip, [#175](https://github.com/derekwinters/lucas-doggiehood/issues/175) conversation panel, [#176](https://github.com/derekwinters/lucas-doggiehood/issues/176) onboarding overlay, [#177](https://github.com/derekwinters/lucas-doggiehood/issues/177) dog profile view).*
 
