@@ -47,6 +47,20 @@ namespace Doggiehood.Core.Tests.Economy
             Assert.That(() => wallet.Deposit(-5), Throws.ArgumentException);
             Assert.That(() => wallet.TrySpend(-5), Throws.ArgumentException);
         }
+
+        [Test]
+        public void CanAfford_TrueOnlyWhenBalanceCoversTheAmount()
+        {
+            // #186: lets the UI query affordability (e.g. to grey out a buy
+            // pill) without reaching into Coins and re-implementing the
+            // comparison itself.
+            var wallet = new Wallet();
+            wallet.Deposit(20);
+
+            Assert.That(wallet.CanAfford(20), Is.True, "exact balance is affordable");
+            Assert.That(wallet.CanAfford(19), Is.True);
+            Assert.That(wallet.CanAfford(21), Is.False);
+        }
     }
 
     public class EconomyNumbersTests

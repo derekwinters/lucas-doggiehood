@@ -29,6 +29,15 @@ namespace Doggiehood.Core.Economy
             return true;
         }
 
+        /// <summary>#186: lets callers (the conversation panel UI) query
+        /// affordability proactively instead of comparing against
+        /// <see cref="Coins"/> themselves.</summary>
+        public bool CanAfford(int amount)
+        {
+            RequirePositive(amount);
+            return amount <= Coins;
+        }
+
         private static void RequirePositive(int amount)
         {
             if (amount < 0)

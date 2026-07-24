@@ -16,6 +16,8 @@ Conversations are a simple linear back-and-forth: the dog explains its request, 
 
 Dialogue lines are generated from templates rather than hand-written per dog — see [Quest & Economy](economy.md#quest-authoring) for how template content is structured and personality-flavored. The opener and closer are each drawn at random from a pool (default lines plus the dog's personality-specific lines) when the quest fires ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189)) — still a single linear exchange, no branching, just non-repetitive wording.
 
+**Buying something ([#186](https://github.com/derekwinters/lucas-doggiehood/issues/186)).** Accepting a buy-something or decoration quest is the same accept action, not a separate confirm-purchase step — the panel just surfaces what that accept spends: the accept/option pill shows the item's cost and greys out when it isn't affordable (see the [conversation panel wireframe](../ui/conversation-panel.md)). The actual spend is re-checked at accept time against [Quest & Economy](economy.md)'s "fails gracefully" rule; if it's rejected, the panel stays open with an insufficient-funds message instead of closing as if nothing happened.
+
 ## Build checklist
 
 - [ ] Dogs with an active quest display a speech bubble icon above them at all times until resolved
