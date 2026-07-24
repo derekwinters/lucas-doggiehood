@@ -23,4 +23,5 @@ Dialogue lines are generated from templates rather than hand-written per dog —
 - [ ] Dogs with an active quest display a speech bubble icon above them at all times until resolved
 - [ ] Tapping the speech bubble opens a conversation UI scoped to that dog
 - [ ] Conversation UI presents the dog's request as linear text with an accept/complete action or a non-punishing decline; still no branching choice tree
+- [ ] The conversation panel is always dismissable without accepting (a "Not now" / tap-outside decline), and Accept resolves exactly one quest at a time — it never runs through the whole message queue ([#221](https://github.com/derekwinters/lucas-doggiehood/issues/221))
 - [ ] No quest log/journal screen exists; the speech bubble is the only quest-discovery mechanism
