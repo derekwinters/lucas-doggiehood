@@ -64,6 +64,7 @@ class TestRender(unittest.TestCase):
             "## 🆕 New ideas",
             "## ✅ Pending approval",
             "## ❓ Needs clarification",
+            "## ⚠️ Reconcile",
             "## 📦 Other milestones",
             "### 📖 Command reference",
         ):
@@ -99,6 +100,27 @@ class TestRender(unittest.TestCase):
         # nor the by-milestone chart. See issue #214.
         self.assertNotIn("00 - Concepts & Core Mechanics", self.body)
         self.assertNotIn("m00", self.body)
+
+    def test_reconcile_section_lists_flag_findings(self):
+        # Merged-but-open issues are flagged for a manual close (not auto-closed
+        # — #211 owns auto-close). See issue #246.
+        self.assertIn("## ⚠️ Reconcile", self.body)
+        self.assertIn("Merged but still open", self.body)
+        self.assertIn(
+            "[#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)",
+            self.body,
+        )
+        # Stretch flags surface too.
+        self.assertIn("Ready-for-work with no milestone", self.body)
+        self.assertIn("Prose-only dependency references", self.body)
+        # Auto-fix activity note.
+        self.assertIn("2 stale-label strip(s), 1 requeue(s)", self.body)
+
+    def test_reconcile_empty_shows_clean_message(self):
+        state = load_state()
+        state["reconcile"] = {}
+        body = render_dashboard.render_body(state)
+        self.assertIn("Nothing to reconcile", body)
 
     def test_deterministic(self):
         self.assertEqual(self.body, render_dashboard.render_body(load_state()))

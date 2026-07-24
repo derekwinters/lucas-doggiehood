@@ -107,7 +107,13 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
    (both honored and owner-authored no-ops) so the next run skips it. This is
    what makes the gatekeeper idempotent — do not skip it.
 
-6. **Report** a one-line summary per issue touched (e.g.
+6. **Run the reconciliation sweep** (`pipeline-reconcile`) against live state,
+   now that the commands above have set their labels. Apply only its
+   `strip_labels` and `requeue` auto-fixes; the sweep never closes an issue, and
+   its `flag_*` findings are surfaced by the dashboard, not acted on here. See
+   `docs/engineering/issue-pipeline.md`.
+
+7. **Report** a one-line summary per issue touched (e.g.
    `#181 approve → ready-for-work (07 - Polish & Onboarding)`), and note any
    `skipped` non-owner commands so Derek can see an attempted bad-actor command
    was ignored.

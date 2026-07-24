@@ -79,6 +79,32 @@ _A specific question is posted on each issue — open it to read and reply._
 
 ---
 
+## ⚠️ Reconcile — board drifted from reality
+_Detected by the reconciliation sweep. Auto-fixes (stale-label strips, requeues) are applied by the gatekeeper; the items below need your call._
+
+**🔀 Merged but still open** — the work is on `main`; close these (#211 auto-closes the clean cases once it lands):
+
+| Issue | Summary |
+| - | - |
+| [#56](https://github.com/derekwinters/lucas-doggiehood/issues/56) | Pity counter for gacha pulls |
+| [#189](https://github.com/derekwinters/lucas-doggiehood/issues/189) | Opener/closer conversation lines |
+
+**🏷️ Ready-for-work with no milestone** — set one so the builder can queue it:
+
+| Issue | Summary |
+| - | - |
+| [#250](https://github.com/derekwinters/lucas-doggiehood/issues/250) | Ready-for-work issue with no milestone set |
+
+**🔗 Prose-only dependency references** — record as structured `Blocked by:` / `Depends on:` so the queue can order them:
+
+| Issue | Summary | References |
+| - | - | - |
+| [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) | Depends on the tile grid in prose | [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) |
+
+_Sweep auto-fixed this run: 2 stale-label strip(s), 1 requeue(s)._
+
+---
+
 ## 📦 Other milestones
 _Live counts for every milestone outside the current focus._
 
