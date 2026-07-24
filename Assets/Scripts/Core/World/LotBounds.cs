@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Doggiehood.Core.World
 {
@@ -115,6 +116,14 @@ namespace Doggiehood.Core.World
         public const float StreetCorridorInset =
             WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
 
+        /// <summary>Tolerance for deciding a yard edge sits ON a road's
+        /// centerline (#272). Quadrant edges on an inner road land on an
+        /// exact 0, and an already-inset edge is a full
+        /// <see cref="StreetCorridorInset"/> (5.75m) away — far larger than
+        /// this — so a tiny tolerance both matches the real border edges and
+        /// never re-insets an edge #244 already pulled off the centerline.</summary>
+        private const float RoadCenterlineTolerance = 0.001f;
+
         /// <summary>The lot's rectangular bounds: one tile-quadrant
         /// (<see cref="WorldDimensions.TileSize"/> / 2 per side), positioned
         /// on the lot's own <see cref="HouseLot.Quadrant"/>.</summary>
@@ -147,21 +156,100 @@ namespace Doggiehood.Core.World
             return YardSplit(lot).Back;
         }
 
+        /// <summary>
+        /// Pulls every edge of <paramref name="yard"/> that lies on a road
+        /// centerline inward by <see cref="StreetCorridorInset"/>, so no
+        /// part of the region reaches into a road it borders (#272).
+        ///
+        /// Each lot is one tile quadrant, so on the FourWay every quadrant
+        /// borders TWO roads — one on each inner edge. The #244 inset only
+        /// cleared the FACED road; the PERPENDICULAR road's centerline still
+        /// ran along the yard's other inner edge, and trees landed in it.
+        /// This trims BOTH, and derives which edges border a road generically
+        /// from <paramref name="roads"/> (an edge is only trimmed when it lies
+        /// on a road's centerline AND overlaps that road's finite extent), so
+        /// the rule survives map expansion rather than hard-coding the two
+        /// inner quadrant edges. Already-inset edges (#244) sit a full
+        /// <see cref="StreetCorridorInset"/> off the centerline and are left
+        /// untouched, so this composes with the faced-road trim without
+        /// double-insetting.
+        /// </summary>
+        public static LotRect ClearRoadCorridors(LotRect yard, IReadOnlyList<Road> roads)
+        {
+            if (roads == null)
+            {
+                throw new ArgumentNullException(nameof(roads));
+            }
+
+            var minX = yard.MinX;
+            var maxX = yard.MaxX;
+            var minZ = yard.MinZ;
+            var maxZ = yard.MaxZ;
+
+            foreach (var road in roads)
+            {
+                if (road.Orientation == StreetOrientation.NorthSouth)
+                {
+                    // Centerline at constant X, running along Z over its extent.
+                    var extentMin = road.Center.Z - road.HalfLength;
+                    var extentMax = road.Center.Z + road.HalfLength;
+                    if (!SpansOverlap(minZ, maxZ, extentMin, extentMax))
+                    {
+                        continue;
+                    }
+
+                    if (OnCenterline(minX, road.Center.X))
+                    {
+                        minX = Math.Min(minX + StreetCorridorInset, maxX);
+                    }
+
+                    if (OnCenterline(maxX, road.Center.X))
+                    {
+                        maxX = Math.Max(maxX - StreetCorridorInset, minX);
+                    }
+                }
+                else
+                {
+                    // Centerline at constant Z, running along X over its extent.
+                    var extentMin = road.Center.X - road.HalfLength;
+                    var extentMax = road.Center.X + road.HalfLength;
+                    if (!SpansOverlap(minX, maxX, extentMin, extentMax))
+                    {
+                        continue;
+                    }
+
+                    if (OnCenterline(minZ, road.Center.Z))
+                    {
+                        minZ = Math.Min(minZ + StreetCorridorInset, maxZ);
+                    }
+
+                    if (OnCenterline(maxZ, road.Center.Z))
+                    {
+                        maxZ = Math.Max(maxZ - StreetCorridorInset, minZ);
+                    }
+                }
+            }
+
+            return new LotRect(minX, maxX, minZ, maxZ);
+        }
+
         private static (LotRect Front, LotRect Back) YardSplit(HouseLot lot)
         {
             var bounds = QuadrantBounds(lot);
             var facing = HousePlacement.FrontFacing(lot);
             var house = HousePlacement.Position(lot, HousePlacement.KitScale);
             var halfDepth = HalfDepthOf(lot);
+            var roads = NeighborhoodLayout.Roads;
 
             if (facing.X > 0f)
             {
                 var facadeX = house.X + halfDepth;
                 var rearX = house.X - halfDepth;
                 var streetEdgeX = Math.Max(bounds.MaxX - StreetCorridorInset, facadeX);
-                return (
+                return ClearRoadCorridors(
                     new LotRect(facadeX, streetEdgeX, bounds.MinZ, bounds.MaxZ),
-                    new LotRect(bounds.MinX, rearX, bounds.MinZ, bounds.MaxZ));
+                    new LotRect(bounds.MinX, rearX, bounds.MinZ, bounds.MaxZ),
+                    roads);
             }
 
             if (facing.X < 0f)
@@ -169,9 +257,10 @@ namespace Doggiehood.Core.World
                 var facadeX = house.X - halfDepth;
                 var rearX = house.X + halfDepth;
                 var streetEdgeX = Math.Min(bounds.MinX + StreetCorridorInset, facadeX);
-                return (
+                return ClearRoadCorridors(
                     new LotRect(streetEdgeX, facadeX, bounds.MinZ, bounds.MaxZ),
-                    new LotRect(rearX, bounds.MaxX, bounds.MinZ, bounds.MaxZ));
+                    new LotRect(rearX, bounds.MaxX, bounds.MinZ, bounds.MaxZ),
+                    roads);
             }
 
             if (facing.Z > 0f)
@@ -179,9 +268,10 @@ namespace Doggiehood.Core.World
                 var facadeZ = house.Z + halfDepth;
                 var rearZ = house.Z - halfDepth;
                 var streetEdgeZ = Math.Max(bounds.MaxZ - StreetCorridorInset, facadeZ);
-                return (
+                return ClearRoadCorridors(
                     new LotRect(bounds.MinX, bounds.MaxX, facadeZ, streetEdgeZ),
-                    new LotRect(bounds.MinX, bounds.MaxX, bounds.MinZ, rearZ));
+                    new LotRect(bounds.MinX, bounds.MaxX, bounds.MinZ, rearZ),
+                    roads);
             }
 
             if (facing.Z < 0f)
@@ -189,12 +279,29 @@ namespace Doggiehood.Core.World
                 var facadeZ = house.Z - halfDepth;
                 var rearZ = house.Z + halfDepth;
                 var streetEdgeZ = Math.Min(bounds.MinZ + StreetCorridorInset, facadeZ);
-                return (
+                return ClearRoadCorridors(
                     new LotRect(bounds.MinX, bounds.MaxX, streetEdgeZ, facadeZ),
-                    new LotRect(bounds.MinX, bounds.MaxX, rearZ, bounds.MaxZ));
+                    new LotRect(bounds.MinX, bounds.MaxX, rearZ, bounds.MaxZ),
+                    roads);
             }
 
             throw new ArgumentException("Lot facing must be a nonzero cardinal direction.", nameof(lot));
+        }
+
+        private static (LotRect Front, LotRect Back) ClearRoadCorridors(
+            LotRect front, LotRect back, IReadOnlyList<Road> roads)
+        {
+            return (ClearRoadCorridors(front, roads), ClearRoadCorridors(back, roads));
+        }
+
+        private static bool OnCenterline(float edge, float centerline)
+        {
+            return Math.Abs(edge - centerline) <= RoadCenterlineTolerance;
+        }
+
+        private static bool SpansOverlap(float aMin, float aMax, float bMin, float bMax)
+        {
+            return aMin < bMax && aMax > bMin;
         }
 
         private static float HalfDepthOf(HouseLot lot)

@@ -120,6 +120,42 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void FrontYard_And_BackYard_ClearEveryRoadCorridorBorderingTheLot()
+        {
+            // #272 (follow-up to #244): each lot is one tile quadrant, and on
+            // the FourWay every quadrant borders TWO roads (one on each inner
+            // edge). #244 only inset the FACED road; the PERPENDICULAR road's
+            // centerline still ran along the yard's other inner edge. Neither
+            // yard region may overlap ANY road strip bordering the lot.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var front = LotBounds.FrontYard(lot);
+                var back = LotBounds.BackYard(lot);
+
+                foreach (var road in NeighborhoodLayout.Roads)
+                {
+                    var roadRect = RoadRect(road);
+                    Assert.That(front.Overlaps(roadRect), Is.False,
+                        $"lot {lot.HouseId}: front yard must not overlap the {road.Orientation} road strip");
+                    Assert.That(back.Overlaps(roadRect), Is.False,
+                        $"lot {lot.HouseId}: back yard must not overlap the {road.Orientation} road strip");
+                }
+            }
+        }
+
+        private static LotRect RoadRect(Road road)
+        {
+            var halfWidth = road.Width / 2f;
+            return road.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    road.Center.X - halfWidth, road.Center.X + halfWidth,
+                    road.Center.Z - road.HalfLength, road.Center.Z + road.HalfLength)
+                : new LotRect(
+                    road.Center.X - road.HalfLength, road.Center.X + road.HalfLength,
+                    road.Center.Z - halfWidth, road.Center.Z + halfWidth);
+        }
+
+        [Test]
         public void FrontYard_And_BackYard_ExcludeTheHouseFootprint()
         {
             foreach (var lot in NeighborhoodLayout.HouseLots)
