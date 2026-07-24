@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dog Profile — Wireframe #177 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:66ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+
+  .viewer{overflow:auto;max-height:74vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:57%;height:90px;background:#9C9AA0;}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:240px;top:20%;} .h2{left:1420px;top:19%;background:#7FB2E6;}
+
+  /* dim scrim behind the profile */
+  .scrim{position:absolute;inset:0;background:rgba(46,42,38,.42);}
+
+  /* centered profile card */
+  .card{position:absolute;left:510px;top:290px;width:900px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);padding:48px;}
+  .close{position:absolute;top:-24px;right:-18px;width:72px;height:72px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--ink);}
+  .phead{display:flex;gap:36px;align-items:center;}
+  .portrait{width:220px;height:220px;flex:0 0 auto;border-radius:32px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);background:linear-gradient(#BFE3F2,#A6D8EE);position:relative;overflow:hidden;}
+  .portrait .cube{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:130px;height:120px;background:#C98A4B;border:7px solid var(--ink);border-radius:24px;}
+  .portrait .cube::before{content:"";position:absolute;left:26px;top:38px;width:18px;height:18px;border-radius:999px;background:var(--ink);box-shadow:48px 0 0 var(--ink);}
+  .portrait .cube::after{content:"";position:absolute;left:44px;top:78px;width:42px;height:14px;border-radius:0 0 14px 14px;background:var(--ink);}
+  .pname{font-size:56px;color:var(--ink);margin:0 0 12px;line-height:1;}
+  .breedchip{display:inline-flex;align-items:center;height:56px;padding:0 24px;border-radius:999px;background:var(--sky);border:5px solid var(--ink);box-shadow:0 5px 0 var(--ink);font-size:28px;color:var(--ink);}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:40px 0 10px;}
+  .stat{background:var(--stage);border:5px solid var(--ink);border-radius:24px;padding:20px 26px;}
+  .stat .k{font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);opacity:.6;}
+  .stat .v{font-size:36px;color:var(--ink);}
+
+  .pfoot{display:flex;justify-content:flex-end;margin-top:36px;}
+  .cc-btn{display:inline-flex;align-items:center;justify-content:center;gap:16px;height:96px;padding:0 48px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);background:var(--leaf);}
+  .cc-btn .pin{font-size:34px;}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:110px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #177 · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Dog profile</h1>
+  <p class="lede">Tapping a dog opens its profile (#165) — a centered card over a dimmed scene showing who they are,
+    with a <b>Home</b> button that pans the camera to their house (no street names, so “home” is a place you fly to,
+    not an address). Dog-only; the mirrored house profile is <a href="#">#208</a>.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Field values are placeholders — real name/breed/age/personality come from the dog's Core data.</p>
+
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet with a dimmed neighborhood behind a centered dog-profile card: portrait, name Biscuit, breed, age, personality, and a Home button">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="card">
+        <div class="close rounded">✕</div>
+        <div class="phead">
+          <div class="portrait"><div class="cube"></div></div>
+          <div>
+            <h2 class="pname rounded">Biscuit</h2>
+            <span class="breedchip rounded">Corgi</span>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="k rounded">Age</div><div class="v rounded">3 years</div></div>
+          <div class="stat"><div class="k rounded">Personality</div><div class="v rounded">Playful</div></div>
+        </div>
+        <div class="pfoot">
+          <button class="cc-btn rounded"><span class="pin">📍</span> Home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>ProfileAnchor</td><td class="val">Center</td><td>card position (over a dim scrim)</td></tr>
+        <tr><td>ProfileWidthPx</td><td class="val">900</td><td>card width</td></tr>
+        <tr><td>ProfilePaddingPx</td><td class="val">48</td><td>card inset</td></tr>
+        <tr><td>PortraitSizePx</td><td class="val">220</td><td>dog portrait</td></tr>
+        <tr><td>CloseButtonSizePx</td><td class="val">72</td><td>dismiss (top-right)</td></tr>
+        <tr><td>&nbsp;↳ panel chrome</td><td class="val">#173</td><td>outline 6 / radius 40 / shadow 12–14</td></tr>
+        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>the Home button (96px)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Header</b> (portrait · name · breed chip) · <b>Stats</b> (age · personality) · <b>Footer action</b> (Home) · <b>Close</b> (top-right ✕).</p>
+      <p class="note"><b>Home button:</b> closes the profile and pans/zooms the camera to that dog's house (brief highlight on arrival). No address text — home is a place, per the no-street-names world.</p>
+      <p class="note"><b>Data:</b> name, breed, age, personality read from the dog's Core data (authored roster); this page fixes layout only. Dog profile only — the house profile is <b>#208</b>.</p>
+    </div>
+  </div>
+
+  <footer>
+    Opens from tapping a dog (#165) · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built card against them.
+    <br><span class="status">Approved (Derek, 2026-07-24) (#177)</span>
+  </footer>
+</div>
+</body>
+</html>
