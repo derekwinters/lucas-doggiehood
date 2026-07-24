@@ -15,6 +15,12 @@ namespace Doggiehood.Unity.EditModeTests
     /// decline action, cost/affordability surfaced via
     /// QuestPurchasePresentation, and a failed Accept/AcceptWithChoice
     /// leaving the panel open with a message instead of silently closing.
+    ///
+    /// #221: the reported softlock had two halves — Accept appeared to run
+    /// through the whole message queue, and a decoration request offered only
+    /// option buttons with no way out. The last three tests here lock in the
+    /// non-softlocked behavior: Accept resolves exactly one quest and a second
+    /// call never chains, and a decoration request is always dismissable.
     /// </summary>
     public class ConversationPresenterTests
     {
@@ -157,6 +163,59 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(presenter.StatusMessage, Is.Not.Null.And.Not.Empty);
             Assert.That(quest.Status, Is.EqualTo(QuestStatus.Available), "no accept side effect on a rejected spend");
             Assert.That(state.Wallet.Coins, Is.EqualTo(0), "an unaffordable attempt spends nothing");
+        }
+
+        [Test]
+        public void AcceptCurrent_ResolvesExactlyOneQuest_AndASecondCallDoesNotChain()
+        {
+            // #221: the softlock's "Accept runs through every message" half.
+            // A single Accept must resolve exactly one quest and hand control
+            // back (panel closes); a second immediate Accept must be a harmless
+            // no-op — no second QuestAccepted, no spurious status message, and
+            // the already-accepted quest untouched — so Accept can never chain
+            // through a queue.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(11));
+            presenter.TryOpen(dog);
+
+            var acceptedCount = 0;
+            presenter.QuestAccepted += _ => acceptedCount++;
+
+            presenter.AcceptCurrent();
+
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted), "the one open quest is accepted");
+            Assert.That(presenter.IsOpen, Is.False, "Accept hands control back by closing the panel");
+            Assert.That(acceptedCount, Is.EqualTo(1), "exactly one quest resolves per Accept");
+
+            presenter.AcceptCurrent();
+
+            Assert.That(acceptedCount, Is.EqualTo(1), "a second Accept must not chain into another quest");
+            Assert.That(presenter.IsOpen, Is.False, "the panel stays closed");
+            Assert.That(presenter.StatusMessage, Is.Null, "a no-op Accept must not surface a stale/spurious message");
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted), "the resolved quest is left as-is");
+        }
+
+        [Test]
+        public void DeclineCurrent_OnADecorationRequest_ClosesWithoutAccepting_SoOptionsAreNeverADeadEnd()
+        {
+            // #221: the softlock's "panel can't be closed" half. A decoration
+            // request presents one pill per option; the player must still be
+            // able to back out without committing to any option — the decline
+            // path is present alongside the options, not replaced by them.
+            var dog = state.Dogs[2];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.DecorationRequest, new System.Random(7));
+            presenter.TryOpen(dog);
+            Assume.That(quest.Options.Count, Is.GreaterThan(0), "sanity: a decoration request offers options");
+
+            var accepted = false;
+            presenter.QuestAccepted += _ => accepted = true;
+
+            presenter.DeclineCurrent();
+
+            Assert.That(presenter.IsOpen, Is.False, "the decoration panel is dismissable without picking an option");
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Available), "declining must not accept any option");
+            Assert.That(accepted, Is.False, "declining must not raise QuestAccepted");
+            Assert.That(presenter.TryOpen(dog), Is.True, "the same request is fully re-openable after declining");
         }
 
         [Test]
