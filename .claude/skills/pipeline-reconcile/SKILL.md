@@ -51,7 +51,7 @@ findings).
 | **Stalled `in-progress`** | open, `in-progress`, **no open PR**, **not** on `main` | **auto-fix** → `requeue` (`in-progress` → `ready-for-work`) so the builder retries |
 | **Merged-but-open** (incl. bundled squash) | open, work **is** on `main` (merged-commit-body ref or deliverables present) | **flag** → `flag_done`; surfaced on the dashboard for Derek to close, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, **no milestone** | **flag** → `flag_orphaned_ready` |
-| **Prose-only dependency** (stretch) | open, body has a prose "blocked by/depends on #N" not in structured form | **flag** → `flag_prose_dep` |
+| **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line for that number (`reconcile.prose_deps_in`, #248) | **flag** → `flag_prose_dep` |
 
 Why this split: the two auto-fixes are **safe and unambiguous** — a closed issue
 must not keep a pipeline-state label, and a stalled issue with no work on `main`
@@ -78,7 +78,10 @@ throughout, matching the rest of the pipeline.
      commit **body** reachable from `main`;
    - optionally `deliverables_present` (a `{ "N": true }` map when the fetch
      layer can cheaply confirm an issue's Build-checklist files exist at `HEAD`);
-   - optionally `prose_deps` per issue for the stretch flag.
+   - `prose_deps` per issue — dependency numbers named only in prose
+     (`depends on #N` / `blocked by #N`) with no matching structured
+     `Blocked by:` / `Depends on:` line. `fetch_state` (`--live`) populates this
+     from each issue body via `prose_deps_in` (#248).
 
 2. **Classify** deterministically:
 
@@ -119,7 +122,10 @@ throughout, matching the rest of the pipeline.
 negative counterpart — closed+stale strip, stalled requeue, merged-but-open via
 commit body, the title-only guard, the done-vs-stall classification split, the
 stretch flags, the epic/dashboard/parked exclusions, and the healthy/empty
-board. Run:
+board. `TestProseDepDetection` pins `prose_deps_in` (#248): prose-only
+`depends on #N` / `blocked by #N` is flagged, a matching structured
+`Blocked by:` / `Depends on:` line (or a native relationship) clears it, and a
+bare `#N` that is not a dependency phrase is never flagged. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-reconcile/tests

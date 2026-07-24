@@ -192,6 +192,54 @@ def _closing_refs_in(text):
     return {int(n) for n in _CLOSING_REF_RE.findall(text or "")}
 
 
+# --------------------------------------------------------------------------
+# Prose-only dependency detection (issue #248). A dependency must be recorded
+# as a STRUCTURED line — `Blocked by: #N` (hard gate) or `Depends on: #N` (soft
+# ordering) — or a native GitHub relationship; never as prose alone, which the
+# nightly builder (`select_queue.py`) and dashboard cannot see. This flags the
+# drift: a body mentioning `depends on #N` / `blocked by #N` in a sentence with
+# no matching structured line for that number. Pure text-in / numbers-out, same
+# shape as `_closing_refs_in`; wired into `fetch_state` to populate `prose_deps`.
+# --------------------------------------------------------------------------
+
+# A dependency PHRASE anywhere in a line. `\b` stops `unblocked by` from
+# matching. This alone does not distinguish prose from structured — see below.
+_DEP_PHRASE_RE = re.compile(r"(?i)\b(?:blocked by|depends on)\b")
+
+# A STRUCTURED dependency line: the keyword, then a REQUIRED colon, then `#N`,
+# at line start (optionally behind a `-`/`*` list marker). The colon is what
+# makes the line canonical/structured — it is the form select_queue.py and the
+# dashboard parse. Everything else that merely mentions the phrase is prose.
+_STRUCTURED_DEP_LINE_RE = re.compile(
+    r"(?i)^[ \t]*(?:[-*][ \t]+)?(?:blocked by|depends on)[ \t]*:[ \t]*#\d+"
+)
+
+_HASH_NUM_RE = re.compile(r"#(\d+)")
+
+
+def prose_deps_in(body, native_refs=()):
+    """Issue numbers referenced as a dependency **only in prose** in ``body``.
+
+    A number is returned when it is named on a line carrying a dependency
+    phrase (``depends on`` / ``blocked by``, case-insensitive) but is **not**
+    cleared by a structured ``Blocked by: #N`` / ``Depends on: #N`` line (the
+    canonical, colon-bearing form) anywhere in the body, nor present in
+    ``native_refs`` (numbers carried as native GitHub relationships). The result
+    is sorted and de-duplicated. A bare ``#N`` with no dependency phrase, or any
+    number already backed by a structured line, is never returned.
+    """
+    body = body or ""
+    structured = set()
+    referenced = set()
+    for line in body.splitlines():
+        if _STRUCTURED_DEP_LINE_RE.match(line):
+            structured.update(int(n) for n in _HASH_NUM_RE.findall(line))
+        if _DEP_PHRASE_RE.search(line):
+            referenced.update(int(n) for n in _HASH_NUM_RE.findall(line))
+    satisfied = structured | {int(n) for n in native_refs}
+    return sorted(referenced - satisfied)
+
+
 def fetch_state(repo, token):
     """Assemble the reconcile state dict from live GitHub state.
 
@@ -202,6 +250,10 @@ def fetch_state(repo, token):
     Open-PR association is likewise taken from each open PR's closing-keyword
     refs in its title+body, so a PR that merely "Relates to #N" does not mark
     #N as having an open PR.
+
+    ``prose_deps`` is populated per issue from ``prose_deps_in`` (issue #248):
+    dependency numbers named only in prose (`depends on #N` / `blocked by #N`)
+    with no matching structured ``Blocked by:`` / ``Depends on:`` line.
     """
     raw = _paginate("/repos/%s/issues?state=all" % repo, token)
     issues_raw = [i for i in raw if "pull_request" not in i]
@@ -239,7 +291,7 @@ def fetch_state(repo, token):
             "is_epic": "type:epic" in labels,
             "is_dashboard": i["number"] == DASHBOARD_ISSUE,
             "has_open_pr": i["number"] in open_pr_refs,
-            "prose_deps": [],
+            "prose_deps": prose_deps_in(i.get("body") or ""),
         })
 
     return {

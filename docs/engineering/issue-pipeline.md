@@ -161,7 +161,39 @@ and the reviewer checks the PR against.
 
 Dependencies are recorded as first-class GitHub relationships — sub-issues for
 decomposition, `Blocked by: #N` for hard peer dependencies, `Depends on: #N`
-for soft sibling ordering.
+for soft sibling ordering. See **Recording dependencies** below.
+
+### Recording dependencies
+
+**Every dependency between issues is recorded as a structured relationship —
+never as prose alone** ([#248](https://github.com/derekwinters/lucas-doggiehood/issues/248)).
+The nightly builder (`select_queue.py`) and the dashboard derive an issue's
+blockers and ordering **only** from structured forms; a dependency written in a
+sentence (e.g. "this depends on #109") is invisible to them, so the builder sees
+the issue as unblocked and can build it before its prerequisite exists. That is
+the exact drift that motivated this rule — several issues (#57, #170, #185) had
+prose-only deps and were treated as eligible.
+
+There are exactly **two** supported ways to record a dependency:
+
+1. **A structured line** in the issue body — one reference per line, the keyword
+   followed by a colon and `#N`:
+     - `Blocked by: #N` — **hard gate.** The dependent is ineligible for dev
+       until `#N` is closed/merged (parsed into `blocked_by`).
+     - `Depends on: #N` — **soft ordering.** The dependent may build, but a
+       prerequisite sorts first (parsed into `depends_on`).
+   The colon is what makes the line canonical/structured; a keyword mention
+   without it (e.g. `blocked by #57` mid-sentence) is prose, not a structured
+   line. The hard-vs-soft semantics are settled in
+   [#197](https://github.com/derekwinters/lucas-doggiehood/issues/197).
+2. **A native GitHub relationship** — a real issue-dependency or a sub-issue
+   parent link, where the tooling can read it.
+
+Writing the issue number in a sentence is **not** sufficient even when the prose
+already names it — the structured line (or native relationship) must be present.
+The reconciliation sweep enforces this: it flags any open issue whose body
+mentions `depends on #N` / `blocked by #N` in prose with no matching structured
+line for that number (see **Prose-only dependency** below).
 
 ### Development (`pipeline-dev`)
 
@@ -200,7 +232,7 @@ dashboard for Derek):
 | **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries |
 | **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
-| **Prose-only dependency** (stretch) | open, prose "blocked by/depends on #N" not in structured form | **flag** |
+| **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line for that number ([#248](https://github.com/derekwinters/lucas-doggiehood/issues/248), detected by `reconcile.prose_deps_in`) | **flag** |
 
 The two auto-fixes are safe and unambiguous; everything about *closing* an issue
 is either ambiguous or already owned by [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)
