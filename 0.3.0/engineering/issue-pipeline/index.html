@@ -2050,6 +2050,14 @@ squash-merge lands as one Conventional Commit and release-please emits one clean
 changelog entry per issue, and the <code>Closes #N</code> keyword auto-closes the issue on
 merge. Each built issue is marked <code>in-progress</code>. It <strong>never merges and never
 closes</strong> — Derek reviews and merges; PR-babysitting keeps CI green.</p>
+<p>When a built PR touches no <code>docs/**</code> page, <code>pipeline-dev</code> applies the
+<code>skip-docs</code> label <strong>immediately after</strong> opening it, before any other post-open
+work. The label can't be set atomically at PR creation, so the <code>docs-test</code> gate
+absorbs the brief <code>opened</code>→<code>labeled</code> gap with a live-label grace poll rather than
+firing a transient failure on the <code>opened</code> run
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/254">#254</a>); see
+<a href="../ci-cd/#docs-site-build-publish">CI/CD</a>. A PR that reconciles docs needs no
+label — the gate passes on the docs change.</p>
 <h3 id="reconciliation-pipeline-reconcile">Reconciliation (<code>pipeline-reconcile</code>)<a class="headerlink" href="#reconciliation-pipeline-reconcile" title="Permanent link">&para;</a></h3>
 <p>Nothing guarantees an issue stays inside the label state machine, and two
 failure modes accumulated undetected (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>):
