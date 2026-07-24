@@ -4,9 +4,13 @@
   "focus": {
     "milestone": "03 - Dogs & Conversations",
     "done": 18,
-    "ready": 0,
-    "remaining": 5,
-    "queue": []
+    "ready": 3,
+    "remaining": 2,
+    "queue": [
+      {"number": 109, "title": "Tile grid foundation", "blocked": false, "unblocks": [57, 58, 178]},
+      {"number": 210, "title": "Standalone bark sound polish", "blocked": false, "unblocks": []},
+      {"number": 205, "title": "Quest reward wiring", "blocked": true, "unblocks": []}
+    ]
   },
   "your_move": {
     "prs": 0,
