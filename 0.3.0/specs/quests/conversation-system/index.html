@@ -1058,6 +1058,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ui/conversation-panel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation Panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ui/mockups/" class="md-nav__link">
         
   
@@ -1518,13 +1539,13 @@
 <h2 id="starting-a-conversation">Starting a conversation<a class="headerlink" href="#starting-a-conversation" title="Permanent link">&para;</a></h2>
 <p>Clicking/tapping a dog's speech bubble opens the conversation UI with that dog. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/11">#11</a>)</p>
 <h2 id="dialogue-structure">Dialogue structure<a class="headerlink" href="#dialogue-structure" title="Permanent link">&para;</a></h2>
-<p>Conversations are a simple linear back-and-forth: the dog explains its request, the player taps to accept, done. <strong>No branching dialogue choices for v1.0.</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/33">#33</a>)</p>
+<p>Conversations are a simple linear back-and-forth: the dog explains its request, and the player either <strong>accepts</strong> it or <strong>declines</strong>. The panel presents an accept/complete action alongside a non-punishing "Not now" decline that dismisses the panel and can be reopened later (tapping outside the panel counts as declining); see the <a href="../../ui/conversation-panel/">conversation panel wireframe</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/175">#175</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/185">#185</a>). A decline is an exit, not a dialogue branch — <strong>there are still no branching dialogue choices for v1.0.</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/33">#33</a>)</p>
 <p>Dialogue lines are generated from templates rather than hand-written per dog — see <a href="../economy/#quest-authoring">Quest &amp; Economy</a> for how template content is structured and personality-flavored. The opener and closer are each drawn at random from a pool (default lines plus the dog's personality-specific lines) when the quest fires (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/189">#189</a>) — still a single linear exchange, no branching, just non-repetitive wording.</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] Dogs with an active quest display a speech bubble icon above them at all times until resolved</li>
 <li>[ ] Tapping the speech bubble opens a conversation UI scoped to that dog</li>
-<li>[ ] Conversation UI presents the dog's request as linear text with a single accept/complete action — no branching choice tree</li>
+<li>[ ] Conversation UI presents the dog's request as linear text with an accept/complete action or a non-punishing decline; still no branching choice tree</li>
 <li>[ ] No quest log/journal screen exists; the speech bubble is the only quest-discovery mechanism</li>
 </ul>
 
