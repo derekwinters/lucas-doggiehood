@@ -1599,12 +1599,16 @@
 <h2 id="navigation">Navigation<a class="headerlink" href="#navigation" title="Permanent link">&para;</a></h2>
 <p>Drag/swipe to pan the camera across the neighborhood; pinch to zoom in and out — the same interaction model as panning around a map. Tapping a dog or house triggers its interaction directly. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/20">#20</a>)</p>
 <h2 id="camera-angle">Camera angle<a class="headerlink" href="#camera-angle" title="Permanent link">&para;</a></h2>
-<p>Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a free-rotating 3D orbit camera. This shows house facades and roofs and keeps dogs easy to spot and tap. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/21">#21</a>)</p>
+<p>Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a full free-orbit 3D camera. This shows house facades and roofs and keeps dogs easy to spot and tap. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/21">#21</a>)</p>
+<p>The <strong>pitch (45°) and the orthographic projection are fixed</strong>. The <strong>yaw rotates freely</strong>, driven by a two-finger twist gesture: the neighborhood follows your fingers — twisting clockwise turns the scene clockwise (the camera itself yaws the opposite way), the same "content follows the finger" convention as drag-to-pan. Rotation is continuous — it does not snap to fixed angles and is not clamped to a range. This reopens the original "no free rotation/orbit" decision of #21 for yaw only, while keeping the recognisable angled-down look. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/203">#203</a>)</p>
+<blockquote>
+<p>Note: the fixed-angle scene-visibility assumption from <a href="https://github.com/derekwinters/lucas-doggiehood/issues/181">#181</a> — that content only ever needs to read well at the single fixed yaw — is <strong>deferred</strong> and out of scope for the rotation control. Making all scene content (e.g. speech bubbles, facade-only art) read correctly at every yaw is tracked separately.</p>
+</blockquote>
 <h2 id="orientation">Orientation<a class="headerlink" href="#orientation" title="Permanent link">&para;</a></h2>
 <p>The app runs in <strong>landscape</strong> orientation, to better show off the neighborhood scene at once. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/22">#22</a>)</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
-<li>[ ] Fixed isometric camera angle (no free rotation/orbit)</li>
+<li>[ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping); #181's fixed-angle visibility assumption deferred</li>
 <li>[ ] Pan via drag/swipe within the bounds of the current neighborhood scene</li>
 <li>[ ] Pinch-to-zoom with sane min/max zoom limits</li>
 <li>[ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels</li>
