@@ -1691,7 +1691,11 @@
 <tbody>
 <tr>
 <td><code>v0.4</code></td>
-<td>All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game <em>working</em>; art stays rough.</td>
+<td><strong>Closed to new issues (frozen 2026-07-24).</strong> All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game <em>working</em>; art stays rough. Remaining already-approved v0.4 work finishes here; new issues no longer land in v0.4.</td>
+</tr>
+<tr>
+<td><code>v0.5</code></td>
+<td>Post-v0.4 <strong>playtest fixes &amp; polish</strong> — bugs and rough edges surfaced while playtesting the v0.4 graybox. Active target for new playtest-fix intake; larger new features wait for a later milestone.</td>
 </tr>
 <tr>
 <td><code>v1.0</code></td>
@@ -1707,7 +1711,8 @@
 </tr>
 </tbody>
 </table>
-<p>Between the named milestones we spin up further version milestones (<code>v0.5</code>, <code>v0.6</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
+<p>Between the named milestones we spin up further version milestones (<code>v0.6</code>, <code>v0.7</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
+<p><strong>Closing a milestone to new work.</strong> When a version is done taking new issues, <em>freeze</em> it: mark its row here <strong>and its GitHub milestone <code>description</code></strong> as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions (<a href="../../engineering/issue-pipeline/">pipeline-analysis</a>), so freezing one and activating the next is what reroutes new intake — <strong>existing approved issues in the frozen milestone stay put and finish</strong>, only new issues are redirected. <code>/focus</code> still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner <code>/approve</code> or <code>/milestone</code> can still place an issue anywhere.)</p>
 <p>Two <strong>non-version</strong> milestones sit alongside these:</p>
 <ul>
 <li><strong><code>Direct Involvement Needed</code></strong> — tasks no agent can complete (asset creation, on-device checks, unanswered questions). Not a version; excluded from version ordering.</li>
