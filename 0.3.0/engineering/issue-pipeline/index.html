@@ -2130,7 +2130,15 @@ please separated), intake, pending-approval, needs-clarification, a read-only
 visible and easy to <code>/unpark</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/249">#249</a>),
 a <strong>"⚠️ Reconcile"</strong> section listing the sweep's flag findings (merged-but-open,
 orphaned ready, prose-only dependencies — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>),
-other-milestone progress, and the command reference. It excludes #193 itself,
+other-milestone progress, and the command reference. In the focus ready-for-work
+queue, <strong>unblocking issues are starred</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/250">#250</a>):
+an issue that is open, not itself blocked by any open issue, and listed in at
+least one other open issue's structured <code>Blocked by:</code> set is the highest-leverage
+pick, so its row is marked <code>⭐ unblocks #57, #58, …</code> (the open issues it frees)
+and it sorts to the top of the queue; blocked rows keep their <code>⛔ _blocked_</code> flag
+and fully-independent rows stay unmarked. The unblocker set is derived from the
+same structured <code>Blocked by:</code> graph the nightly builder and reconcile read — never
+prose — by the pure <code>compute_unblockers</code> helper. It excludes #193 itself,
 and keeps <code>parked</code> issues out of every <em>active</em> queue and count (pie, ready-for-
 work queue, "Your move", intake, pending-approval, needs-clarification, reconcile)
 — the Parked section is a separate listing, not a re-admission — and mutates
