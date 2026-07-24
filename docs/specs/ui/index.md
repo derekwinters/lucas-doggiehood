@@ -6,6 +6,12 @@ This section is the **layout contract** for the game's UI. Where [Art & UI Style
 
 Every page here is a distilled, **approved** wireframe. Nothing lands in this section until it has gone through the [UI Design Process](../../engineering/ui-design-process.md) loop (propose → review → approve → distill). A development agent implementing a UI screen treats the matching page here as authoritative for layout; if a screen has no page here yet, that's the [gate](../../engineering/ui-design-process.md#the-gate) — stop and flag rather than inventing a layout.
 
+## Target platform & reference resolution
+
+Doggiehood is primarily a **tablet** game, **landscape-locked** ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)). Every UI wireframe's layout constants are authored against a **1920×1200 (16:10)** reference resolution — the pixel values on each page and in each mockup are the component's true size at that reference. On device, a Unity `CanvasScaler` scales from this reference so the same composition holds across the supported range of tablet sizes and aspect ratios.
+
+*Reference-resolution rollout and any per-screen scaling follow-ups are tracked in [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256).*
+
 ## Structure
 
 - **`docs/specs/ui/<screen>.md`** — one page per distinct screen, panel, or overlay: the structured text spec.

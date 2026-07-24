@@ -3,6 +3,8 @@
 *Wireframe issue: [#173](https://github.com/derekwinters/lucas-doggiehood/issues/173) (stub established in [#172](https://github.com/derekwinters/lucas-doggiehood/issues/172)). Style source: [Art & UI Style](../world/art-style.md) ([#65](https://github.com/derekwinters/lucas-doggiehood/issues/65)).*
 *Mockup: [mockups/shared-components.html](mockups/shared-components.html).*
 
+**Reference resolution: 1920×1200 (16:10 tablet, landscape — [#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)).** Every layout constant on this page is authored against that reference; a Unity `CanvasScaler` scales from it. See the [target platform note](index.md#target-platform-reference-resolution).
+
 Atomic, reusable UI pieces are documented **once, here**, and referenced by every per-screen [wireframe](index.md) that uses them — never re-specified per screen. This page is the shared reference: a screen's page names a component and points here, rather than restating its shape, outline, or shadow.
 
 The **style** of every component below comes from the "Candy Cottage" direction settled in [Art & UI Style](../world/art-style.md). This page pulls the rules that apply to *every* component forward as the shared baseline; the full rationale and the reference mockup live on that page. What this page adds on top of style is **layout**: each component's regions and its named layout constants (per [#161](../../engineering/tech-stack.md#geometry-layout-and-tuning-values-are-named-variables)), which implementation declares and EditMode tests assert against.
@@ -24,10 +26,10 @@ Inherited by every component; a component's own table adds only what is specific
 
 | Constant | Value | Applies to |
 |---|---|---|
-| `OutlineThicknessPx` | 4 | dark outline on all chrome |
-| `ShadowOffsetPx` | 6 | hard drop-shadow, straight down, no blur |
+| `OutlineThicknessPx` | 6 | dark outline on all chrome |
+| `ShadowOffsetPx` | 8 | hard drop-shadow, straight down, no blur |
 | `PillRadiusPx` | 999 | buttons & chips (full pill) |
-| `PanelRadiusPx` | 28 | dialogue box / panel chrome |
+| `PanelRadiusPx` | 40 | dialogue box / panel chrome |
 
 ### Shared palette
 
@@ -37,9 +39,11 @@ The fixed Candy Cottage component colors (the same values regardless of viewer t
 |---|---|---|
 | Ink | `#2E2A26` | outlines, shadows, text on light fills |
 | Cream | `#FFF3D9` | neutral / decline fills |
+| Panel | `#FFFDF7` | dialogue box / panel chrome fill |
 | Coral | `#FF7A5C` | primary / spend fills |
 | Leaf | `#58C06A` | positive / confirm fills |
 | Gold | `#FFC23C` | coin token, name tag |
+| Disabled | `#D8D2C6` | disabled fills (outline + text dim together) |
 
 **Role-tint mapping** (used by the pill button and any tinted chrome): Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Disabled = grey (outline and text dim together).
 
@@ -55,10 +59,10 @@ Decoration/gift choices, dialogue actions, menu buttons. One shape, tinted by ro
 
 | Constant | Value | Region |
 |---|---|---|
-| `HeightPx` | 64 | tap target |
-| `PaddingXPx` | 32 | label inset |
-| `FontSizePx` | 24 | label |
-| `IconGapPx` | 12 | icon → label |
+| `HeightPx` | 96 | tap target |
+| `PaddingXPx` | 48 | label inset |
+| `FontSizePx` | 36 | label |
+| `IconGapPx` | 16 | icon → label |
 
 Role tints: Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Disabled = grey (outline + text dim together).
 
@@ -70,11 +74,11 @@ The HUD coin indicator — a coin token plus the live balance. Sits in a screen 
 
 | Constant | Value | Region |
 |---|---|---|
-| `HeightPx` | 56 | chip |
-| `CoinDiameterPx` | 36 | coin token |
+| `HeightPx` | 64 | chip |
+| `CoinDiameterPx` | 44 | coin token |
 | `PaddingLeftPx` | 10 | coin inset |
-| `PaddingRightPx` | 22 | number inset |
-| `FontSizePx` | 24 | balance (tabular) |
+| `PaddingRightPx` | 26 | number inset |
+| `FontSizePx` | 34 | balance (tabular) |
 
 ### Speech-bubble indicator (`SpeechBubbleIndicator`)
 
@@ -84,10 +88,10 @@ Floats over a dog that has something to say; tapping it opens the conversation. 
 
 | Constant | Value | Region |
 |---|---|---|
-| `DiameterPx` | 68 | bubble |
-| `TailSizePx` | 16 | pointer |
-| `DotDiameterPx` | 9 | "…" glyph ×3 |
-| `BobAmplitudePx` | 6 | idle motion |
+| `DiameterPx` | 104 | bubble |
+| `TailSizePx` | 24 | pointer |
+| `DotDiameterPx` | 13 | "…" glyph ×3 |
+| `BobAmplitudePx` | 8 | idle motion |
 
 ### Dialogue box (`DialogueBox`)
 
@@ -97,8 +101,10 @@ The shared panel **shell** for conversation ([#175](https://github.com/derekwint
 
 | Constant | Value | Region |
 |---|---|---|
-| `PaddingPx` | 24 | panel inset |
-| `PanelRadiusPx` | 28 | panel corners |
-| `PanelShadowPx` | 8 | drop-shadow |
-| `NameTagOffsetPx` | 18 | tab overlap at top |
-| `ActionGapPx` | 12 | between buttons |
+| `PaddingPx` | 40 | panel inset |
+| `PanelRadiusPx` | 40 | panel corners |
+| `PanelShadowPx` | 12 | drop-shadow |
+| `NameTagOffsetPx` | 28 | tab overlap at top |
+| `ActionGapPx` | 20 | between buttons |
+
+The overall panel **width and placement** are settled per screen ([#175](https://github.com/derekwinters/lucas-doggiehood/issues/175)), not here; the mockup shows a representative wide tablet panel.

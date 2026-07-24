@@ -3,201 +3,114 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shared UI Components — Wireframe #173</title>
+<title>Shared UI Components — Wireframe #173 (1:1 @ 1920×1200)</title>
 <style>
   :root {
-    /* --- Candy Cottage component palette (fixed in both themes) --- */
-    --ink: #2E2A26;
-    --cream: #FFF3D9;
-    --panel: #FFFDF7;
-    --coral: #FF7A5C;
-    --leaf: #58C06A;
-    --gold: #FFC23C;
-    --bubble: #FFFFFF;
-    --disabled: #D8D2C6;
-    --outline: 4px;
-    --shadow: 6px;
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A;
+    --gold:#FFC23C; --bubble:#FFFFFF; --disabled:#D8D2C6;
+    --outline:6px; --shadow:8px;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --stage:#E7DFCE; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --stage:#322D28; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --stage:#E7DFCE; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --stage:#322D28; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; }
 
-    /* --- Spec-sheet chrome (theme-aware) --- */
-    --bg: #F2EDE3;
-    --bg-2: #FBF8F1;
-    --stage: #E7DFCE;
-    --text: #2E2A26;
-    --muted: #857C6E;
-    --hair: #D9D0BF;
-    --accent: #C4623F;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #211E1B;
-      --bg-2: #2A2622;
-      --stage: #322D28;
-      --text: #F2ECE0;
-      --muted: #A9A093;
-      --hair: #3D3730;
-      --accent: #FF9A76;
-    }
-  }
-  :root[data-theme="light"] {
-    --bg: #F2EDE3; --bg-2: #FBF8F1; --stage: #E7DFCE; --text: #2E2A26;
-    --muted: #857C6E; --hair: #D9D0BF; --accent: #C4623F;
-  }
-  :root[data-theme="dark"] {
-    --bg: #211E1B; --bg-2: #2A2622; --stage: #322D28; --text: #F2ECE0;
-    --muted: #A9A093; --hair: #3D3730; --accent: #FF9A76;
-  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(28px,5vw,40px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:64ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
 
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  .rounded {
-    font-family: ui-rounded, "SF Pro Rounded", "Segoe UI Rounded", "Nunito",
-      "Quicksand", system-ui, sans-serif;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-  }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 72px; }
+  .baseline{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px;}
+  .tag{font-size:12.5px;font-weight:600;color:var(--text);background:var(--bg-2);border:1px solid var(--hair);padding:6px 12px;border-radius:999px;}
 
-  /* Header */
-  .eyebrow {
-    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--accent); font-weight: 700; margin: 0 0 10px;
-  }
-  h1 { font-size: clamp(28px, 5vw, 40px); margin: 0 0 10px; text-wrap: balance; letter-spacing: -0.01em; }
-  .lede { font-size: 17px; color: var(--muted); max-width: 64ch; margin: 0 0 24px; }
+  .baseline-card{margin:26px 0 8px;padding:18px 20px;background:var(--bg-2);border:1px solid var(--hair);border-radius:14px;}
+  .baseline-card h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;}
+  .swatches{display:flex;flex-wrap:wrap;gap:14px;}
+  .swatch{display:flex;align-items:center;gap:9px;font-size:13px;}
+  .chip-color{width:26px;height:26px;border-radius:7px;border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);}
+  .swatch code{font-size:11.5px;color:var(--muted);}
 
-  .baseline {
-    display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px;
+  .card{margin:22px 0;background:var(--bg-2);border:1px solid var(--hair);border-radius:18px;overflow:hidden;}
+  .stage{
+    background:radial-gradient(120% 120% at 50% 0%, color-mix(in srgb,var(--stage) 60%, #8FC7E8 12%), var(--stage));
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+    padding:44px 28px;overflow-x:auto; /* components shown at TRUE px; scroll if wide */
   }
-  .tag {
-    font-size: 12.5px; font-weight: 600; color: var(--text);
-    background: var(--bg-2); border: 1px solid var(--hair);
-    padding: 6px 12px; border-radius: 999px;
-  }
+  .info{padding:24px 26px;border-top:1px solid var(--hair);display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h3{margin:0 0 4px;font-size:20px;}
+  .info .cname{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--accent);}
+  .info p{font-size:13.5px;color:var(--muted);margin:10px 0 0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:7px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:12px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;color:var(--text);width:64px;}
+  tr:last-child td{border-bottom:none;}
+  .region-note{font-size:12.5px;color:var(--muted);margin-top:12px;}
+  .region-note b{color:var(--text);font-weight:600;}
 
-  /* Baseline constants strip */
-  .baseline-card {
-    margin: 28px 0 8px; padding: 18px 20px; background: var(--bg-2);
-    border: 1px solid var(--hair); border-radius: 14px;
+  /* ===== Candy Cottage components @ TRUE 1920×1200 px ===== */
+  .cc-btn{
+    -webkit-appearance:none;appearance:none;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:16px;
+    height:96px;padding:0 48px;border-radius:999px;
+    border:var(--outline) solid var(--ink);box-shadow:0 var(--shadow) 0 var(--ink);
+    font-size:36px;color:var(--ink);transition:transform .06s ease,box-shadow .06s ease;
   }
-  .baseline-card h2 { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
-  .swatches { display: flex; flex-wrap: wrap; gap: 14px; }
-  .swatch { display: flex; align-items: center; gap: 9px; font-size: 13px; }
-  .chip-color { width: 26px; height: 26px; border-radius: 7px; border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }
-  .swatch code { font-size: 11.5px; color: var(--muted); }
+  .cc-btn.rounded{font-weight:800;}
+  .cc-btn--primary{background:var(--coral);}
+  .cc-btn--positive{background:var(--leaf);}
+  .cc-btn--neutral{background:var(--cream);}
+  .cc-btn--disabled{background:var(--disabled);color:#8f887b;border-color:#8f887b;box-shadow:0 var(--shadow) 0 #8f887b;cursor:not-allowed;}
+  .cc-btn:not(.cc-btn--disabled):active{transform:translateY(var(--shadow));box-shadow:0 0 0 var(--ink);}
+  .cc-btn:focus-visible{outline:3px solid var(--accent);outline-offset:4px;}
+  .btn-row{display:flex;flex-wrap:wrap;gap:22px;align-items:center;justify-content:center;}
 
-  /* Component cards */
-  .card {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-    margin: 22px 0; background: var(--bg-2);
-    border: 1px solid var(--hair); border-radius: 18px; overflow: hidden;
+  .cc-chip{
+    display:inline-flex;align-items:center;gap:12px;
+    height:64px;padding:0 26px 0 10px;border-radius:999px;
+    background:var(--cream);border:var(--outline) solid var(--ink);box-shadow:0 var(--shadow) 0 var(--ink);
+    font-size:34px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1;
   }
-  @media (max-width: 720px) { .card { grid-template-columns: 1fr; } }
+  .coin{width:44px;height:44px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
 
-  .stage {
-    background:
-      radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--stage) 60%, #8FC7E8 12%), var(--stage));
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 18px; padding: 40px 28px; min-height: 220px;
+  .cc-bubble{
+    position:relative;width:104px;height:104px;border-radius:999px;
+    background:var(--bubble);border:var(--outline) solid var(--ink);box-shadow:0 var(--shadow) 0 var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:20px;
+    animation:bob 1.6s ease-in-out infinite;
   }
-  .info { padding: 26px 26px; border-left: 1px solid var(--hair); }
-  @media (max-width: 720px) { .info { border-left: none; border-top: 1px solid var(--hair); } }
-  .info h3 { margin: 0 0 4px; font-size: 20px; }
-  .info .cname { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent); }
-  .info p { font-size: 14px; color: var(--muted); margin: 10px 0 16px; }
+  .cc-bubble::after{content:"";position:absolute;bottom:-19px;left:24px;width:28px;height:28px;background:var(--bubble);border-right:var(--outline) solid var(--ink);border-bottom:var(--outline) solid var(--ink);transform:rotate(45deg);}
+  .cc-bubble i{width:13px;height:13px;border-radius:999px;background:var(--ink);display:block;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @media (prefers-reduced-motion: reduce){ .cc-bubble{animation:none;} }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 0 0 7px; border-bottom: 1px solid var(--hair); }
-  td { padding: 7px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
-  td:first-child { font-family: ui-monospace, monospace; font-size: 12px; padding-right: 12px; white-space: nowrap; }
-  td.val { font-variant-numeric: tabular-nums; color: var(--text); width: 64px; }
-  tr:last-child td { border-bottom: none; }
+  .cc-dialog{
+    width:100%;max-width:860px;position:relative;
+    background:var(--panel);border:var(--outline) solid var(--ink);border-radius:40px;box-shadow:0 12px 0 var(--ink);
+    padding:40px;margin-top:20px;
+  }
+  .cc-dialog .nametag{position:absolute;top:-28px;left:36px;background:var(--gold);border:5px solid var(--ink);box-shadow:0 6px 0 var(--ink);border-radius:999px;padding:8px 26px;font-size:24px;color:var(--ink);}
+  .cc-dialog .body{font-size:30px;color:var(--ink);margin:8px 0 28px;line-height:1.4;}
+  .cc-dialog .actions{display:flex;flex-wrap:wrap;gap:20px;justify-content:flex-end;}
 
-  /* ===== The Candy Cottage components themselves ===== */
-  .cc-btn {
-    -webkit-appearance: none; appearance: none; cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
-    height: 64px; padding: 0 32px; border-radius: 999px;
-    border: var(--outline) solid var(--ink);
-    box-shadow: 0 var(--shadow) 0 var(--ink);
-    font-size: 24px; color: var(--ink);
-    transition: transform .06s ease, box-shadow .06s ease;
-  }
-  .cc-btn.rounded { font-weight: 800; }
-  .cc-btn--primary { background: var(--coral); }
-  .cc-btn--positive { background: var(--leaf); }
-  .cc-btn--neutral { background: var(--cream); }
-  .cc-btn--disabled { background: var(--disabled); color: #8f887b; border-color: #8f887b; box-shadow: 0 var(--shadow) 0 #8f887b; cursor: not-allowed; }
-  .cc-btn:not(.cc-btn--disabled):active { transform: translateY(var(--shadow)); box-shadow: 0 0 0 var(--ink); }
-  .cc-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .btn-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: center; }
-
-  .cc-chip {
-    display: inline-flex; align-items: center; gap: 10px;
-    height: 56px; padding: 0 22px 0 10px; border-radius: 999px;
-    background: var(--cream); border: var(--outline) solid var(--ink);
-    box-shadow: 0 var(--shadow) 0 var(--ink);
-    font-size: 24px; color: var(--ink); font-variant-numeric: tabular-nums;
-  }
-  .coin {
-    width: 36px; height: 36px; border-radius: 999px; background: var(--gold);
-    border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: var(--ink);
-  }
-
-  .cc-bubble {
-    position: relative; width: 68px; height: 68px; border-radius: 999px;
-    background: var(--bubble); border: var(--outline) solid var(--ink);
-    box-shadow: 0 var(--shadow) 0 var(--ink);
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    animation: bob 1.6s ease-in-out infinite;
-  }
-  .cc-bubble::after {
-    content: ""; position: absolute; bottom: -13px; left: 16px;
-    width: 18px; height: 18px; background: var(--bubble);
-    border-right: var(--outline) solid var(--ink); border-bottom: var(--outline) solid var(--ink);
-    transform: rotate(45deg);
-  }
-  .cc-bubble i { width: 9px; height: 9px; border-radius: 999px; background: var(--ink); display: block; }
-  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-  @media (prefers-reduced-motion: reduce) { .cc-bubble { animation: none; } }
-
-  .cc-dialog {
-    width: 100%; max-width: 360px; position: relative;
-    background: var(--panel); border: var(--outline) solid var(--ink);
-    border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
-    padding: 24px; margin-top: 14px;
-  }
-  .cc-dialog .nametag {
-    position: absolute; top: -18px; left: 22px;
-    background: var(--gold); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
-    border-radius: 999px; padding: 5px 16px; font-size: 15px; color: var(--ink);
-  }
-  .cc-dialog .body { font-size: 16px; color: var(--ink); margin: 8px 0 18px; line-height: 1.45; }
-  .cc-dialog .actions { display: flex; gap: 12px; justify-content: flex-end; }
-  .cc-dialog .cc-btn { height: 48px; font-size: 18px; padding: 0 22px; box-shadow: 0 5px 0 var(--ink); }
-
-  .region-note { font-size: 12.5px; color: var(--muted); margin-top: 14px; }
-  .region-note b { color: var(--text); font-weight: 600; }
-
-  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--hair); font-size: 13px; color: var(--muted); }
-  footer a { color: var(--accent); }
-  .status { display: inline-block; margin-top: 8px; padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 25%, transparent); border: 1px solid var(--gold); color: var(--text); font-size: 12.5px; font-weight: 600; }
+  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);}
+  footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #173</p>
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #173 · Tablet · 1920×1200</p>
   <h1 class="rounded">Shared UI Components</h1>
-  <p class="lede">The atomic, reusable pieces every screen points to instead of redefining. Style is the decided
-    “Candy Cottage” direction; this wireframe fixes each piece’s <b>regions</b> and <b>named layout constants</b> —
-    the same constants the implementation declares (rule #161) and EditMode tests assert against.</p>
+  <p class="lede">The reusable pieces every screen points to. Style is the decided “Candy Cottage” direction; this
+    fixes each piece’s <b>regions</b> and <b>named layout constants</b>, now re-based to the 1920×1200 tablet reference.</p>
+  <p class="scalenote">Shown 1:1 at the 1920×1200 reference — components are their true pixel size. Stages scroll horizontally if a component is wider than the card.</p>
 
   <div class="baseline">
     <span class="tag">Thick dark outlines</span>
@@ -207,7 +120,7 @@
   </div>
 
   <div class="baseline-card">
-    <h2>Shared baseline constants — inherited by every component</h2>
+    <h2>Shared baseline constants (@ 1920×1200) — inherited by every component</h2>
     <div class="swatches">
       <span class="swatch"><span class="chip-color" style="background:#2E2A26"></span><b>Ink</b> <code>#2E2A26</code></span>
       <span class="swatch"><span class="chip-color" style="background:#FFF3D9"></span><b>Cream</b> <code>#FFF3D9</code></span>
@@ -217,10 +130,10 @@
     </div>
     <table style="margin-top:16px">
       <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
-      <tr><td>OutlineThicknessPx</td><td class="val">4</td><td>dark outline on all chrome</td></tr>
-      <tr><td>ShadowOffsetPx</td><td class="val">6</td><td>hard drop-shadow, straight down, no blur</td></tr>
-      <tr><td>PillRadiusPx</td><td class="val">999</td><td>buttons & chips (full pill)</td></tr>
-      <tr><td>PanelRadiusPx</td><td class="val">28</td><td>dialogue box / panel chrome</td></tr>
+      <tr><td>OutlineThicknessPx</td><td class="val">6</td><td>dark outline on all chrome</td></tr>
+      <tr><td>ShadowOffsetPx</td><td class="val">8</td><td>hard drop-shadow, straight down, no blur</td></tr>
+      <tr><td>PillRadiusPx</td><td class="val">999</td><td>buttons &amp; chips (full pill)</td></tr>
+      <tr><td>PanelRadiusPx</td><td class="val">40</td><td>dialogue box / panel chrome</td></tr>
     </table>
   </div>
 
@@ -237,56 +150,64 @@
       </div>
     </div>
     <div class="info">
-      <h3 class="rounded">Pill button</h3>
-      <div class="cname">PillButton</div>
-      <p>Decoration/gift choices, dialogue actions, menu buttons. One shape, tinted by role. Press collapses the shadow and drops the button down.</p>
-      <table>
-        <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
-        <tr><td>HeightPx</td><td class="val">64</td><td>tap target</td></tr>
-        <tr><td>PaddingXPx</td><td class="val">32</td><td>label inset</td></tr>
-        <tr><td>FontSizePx</td><td class="val">24</td><td>label</td></tr>
-        <tr><td>IconGapPx</td><td class="val">12</td><td>icon → label</td></tr>
-      </table>
-      <p class="region-note"><b>Role tints:</b> Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Disabled = grey (outline + text dim together).</p>
+      <div>
+        <h3 class="rounded">Pill button</h3>
+        <div class="cname">PillButton</div>
+        <p>Decoration/gift choices, dialogue actions, menu buttons. One shape, tinted by role; bigger than a chip so a primary action reads clearly. Press collapses the shadow.</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
+          <tr><td>HeightPx</td><td class="val">96</td><td>tap target</td></tr>
+          <tr><td>PaddingXPx</td><td class="val">48</td><td>label inset</td></tr>
+          <tr><td>FontSizePx</td><td class="val">36</td><td>label</td></tr>
+          <tr><td>IconGapPx</td><td class="val">16</td><td>icon → label</td></tr>
+        </table>
+        <p class="region-note"><b>Role tints:</b> Positive=leaf · Primary/spend=coral · Neutral/decline=cream · Disabled=grey.</p>
+      </div>
     </div>
   </div>
 
   <!-- Currency chip -->
   <div class="card">
-    <div class="stage">
-      <div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div>
-    </div>
+    <div class="stage"><div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div></div>
     <div class="info">
-      <h3 class="rounded">Currency chip</h3>
-      <div class="cname">CurrencyChip</div>
-      <p>The HUD coin indicator — a coin token plus the live balance. Sits in a screen corner (its anchor is fixed in the HUD wireframe, #174).</p>
-      <table>
-        <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
-        <tr><td>HeightPx</td><td class="val">56</td><td>chip</td></tr>
-        <tr><td>CoinDiameterPx</td><td class="val">36</td><td>coin token</td></tr>
-        <tr><td>PaddingLeftPx</td><td class="val">10</td><td>coin inset</td></tr>
-        <tr><td>PaddingRightPx</td><td class="val">22</td><td>number inset</td></tr>
-        <tr><td>FontSizePx</td><td class="val">24</td><td>balance (tabular)</td></tr>
-      </table>
+      <div>
+        <h3 class="rounded">Currency chip</h3>
+        <div class="cname">CurrencyChip</div>
+        <p>The HUD coin readout — deliberately small, a quiet corner element (see HUD #174), not a button.</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
+          <tr><td>HeightPx</td><td class="val">64</td><td>chip</td></tr>
+          <tr><td>CoinDiameterPx</td><td class="val">44</td><td>coin token</td></tr>
+          <tr><td>PaddingLeftPx</td><td class="val">10</td><td>coin inset</td></tr>
+          <tr><td>PaddingRightPx</td><td class="val">26</td><td>number inset</td></tr>
+          <tr><td>FontSizePx</td><td class="val">34</td><td>balance (tabular)</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Speech bubble indicator -->
+  <!-- Speech bubble -->
   <div class="card">
-    <div class="stage">
-      <div class="cc-bubble"><i></i><i></i><i></i></div>
-    </div>
+    <div class="stage"><div class="cc-bubble"><i></i><i></i><i></i></div></div>
     <div class="info">
-      <h3 class="rounded">Speech-bubble indicator</h3>
-      <div class="cname">SpeechBubbleIndicator</div>
-      <p>Floats over a dog that has something to say; tapping it opens the conversation. Bobs gently to draw the eye (motion only — layout is the static bubble + tail).</p>
-      <table>
-        <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
-        <tr><td>DiameterPx</td><td class="val">68</td><td>bubble</td></tr>
-        <tr><td>TailSizePx</td><td class="val">16</td><td>pointer</td></tr>
-        <tr><td>DotDiameterPx</td><td class="val">9</td><td>“…” glyph ×3</td></tr>
-        <tr><td>BobAmplitudePx</td><td class="val">6</td><td>idle motion</td></tr>
-      </table>
+      <div>
+        <h3 class="rounded">Speech-bubble indicator</h3>
+        <div class="cname">SpeechBubbleIndicator</div>
+        <p>Floats over a dog that has something to say; tap to open the conversation. Bobs to draw the eye.</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
+          <tr><td>DiameterPx</td><td class="val">104</td><td>bubble</td></tr>
+          <tr><td>TailSizePx</td><td class="val">24</td><td>pointer</td></tr>
+          <tr><td>DotDiameterPx</td><td class="val">13</td><td>“…” glyph ×3</td></tr>
+          <tr><td>BobAmplitudePx</td><td class="val">8</td><td>idle motion</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -303,24 +224,28 @@
       </div>
     </div>
     <div class="info">
-      <h3 class="rounded">Dialogue box</h3>
-      <div class="cname">DialogueBox</div>
-      <p>The shared panel <b>shell</b> for conversation (#175) and onboarding (#176) surfaces — name tag, body, action row. Screens fill the content; the chrome is defined once here.</p>
-      <table>
-        <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
-        <tr><td>PaddingPx</td><td class="val">24</td><td>panel inset</td></tr>
-        <tr><td>PanelRadiusPx</td><td class="val">28</td><td>panel corners</td></tr>
-        <tr><td>PanelShadowPx</td><td class="val">8</td><td>drop-shadow</td></tr>
-        <tr><td>NameTagOffsetPx</td><td class="val">18</td><td>tab overlap at top</td></tr>
-        <tr><td>ActionGapPx</td><td class="val">12</td><td>between buttons</td></tr>
-      </table>
-      <p class="region-note"><b>Regions:</b> name tag (overlapping tab) · body text · action row. The specific actions per screen (e.g. whether a decline button exists) are decided in that screen’s wireframe, not here.</p>
+      <div>
+        <h3 class="rounded">Dialogue box</h3>
+        <div class="cname">DialogueBox</div>
+        <p>The shared panel <b>shell</b> for conversation (#175) and onboarding (#176). Screens fill the content; the chrome is defined once here. (Overall panel size/placement is settled per screen — this is a representative sample.)</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>Constant</th><th>Value</th><th>Region</th></tr>
+          <tr><td>PaddingPx</td><td class="val">40</td><td>panel inset</td></tr>
+          <tr><td>PanelRadiusPx</td><td class="val">40</td><td>panel corners</td></tr>
+          <tr><td>PanelShadowPx</td><td class="val">12</td><td>drop-shadow</td></tr>
+          <tr><td>NameTagOffsetPx</td><td class="val">28</td><td>tab overlap</td></tr>
+          <tr><td>ActionGapPx</td><td class="val">20</td><td>between buttons</td></tr>
+        </table>
+        <p class="region-note"><b>Regions:</b> name tag · body text · action row. Actions are <code>PillButton</code>s; the specific set per screen (e.g. whether a decline button exists) is decided in that screen’s wireframe — #175.</p>
+      </div>
     </div>
   </div>
 
   <footer>
-    Style baseline: <a href="#">Art &amp; UI Style — “Candy Cottage” (#65)</a>. Layout constants are born and approved here (#161), then declared by implementation and asserted by EditMode tests.
-    <br><span class="status">Draft for review — pending Derek &amp; Lucas approval (#173)</span>
+    Style baseline: <a href="#">Art &amp; UI Style — “Candy Cottage” (#65)</a>. Reference resolution 1920×1200 (16:10 tablet). Constants born &amp; approved here (#161), declared by implementation, asserted by EditMode tests.
+    <br><span class="status">Approved (Derek, 2026-07-23) — re-based to the 1920×1200 tablet reference (#173)</span>
   </footer>
 </div>
 </body>
