@@ -2010,11 +2010,19 @@ is either ambiguous or already owned by <a href="https://github.com/derekwinters
 (auto-close-on-merge), so it is flagged, never applied. The sweep <strong>never closes
 an issue.</strong> An open <code>in-progress</code> issue that is already on <code>main</code> classifies as
 merged-but-open, never as a stall — that guard stops the #109 re-pick loop.</p>
-<p><strong>Done-ness is decided by a merged commit <em>body</em> reference (<code>#N</code> / <code>Refs #N</code> /
-<code>Closes #N</code>) or deliverables on <code>HEAD</code> — never a PR/commit <em>title</em>.</strong> The nightly
-builder squash-merges several issues under one lead PR title, so a title-only
-match keeps missing bundled squashes (verified on #109/#58/#57/#190/#170). The
-guard is locked in a unit test.</p>
+<p><strong>Done-ness is decided by a merged commit <em>body</em> <em>closing-keyword</em> reference
+(<code>Closes</code> / <code>Fixes</code> / <code>Resolves #N</code> and their tense/case variants) or
+deliverables on <code>HEAD</code> — never a PR/commit <em>title</em>, and never a bare <code>#N</code> /
+<code>Refs #N</code>.</strong> This matches CLAUDE.md rule #10: only a closing keyword resolves an
+issue; a bare <code>#N</code>, <code>Refs #N</code>, <code>Part of #N</code>, or <code>Relates to #N</code> merely links, so
+a prose cross-reference in a merged commit body must not mark that issue done
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/277">#277</a>). The same
+closing-keyword rule governs open-PR association (<code>has_open_pr</code>), so a PR that
+only "Relates to #N" does not suppress that issue's stalled-<code>in-progress</code>
+requeue. Titles are excluded separately: the nightly builder squash-merges
+several issues under one lead PR title, so a title-only match keeps missing
+bundled squashes (verified on #109/#58/#57/#190/#170). Both guards are locked in
+unit tests.</p>
 <p>The sweep runs in the <strong>gatekeeper</strong> step of each scheduled routine (after
 command processing, so it reconciles against the labels those commands just
 set), which applies the two auto-fixes; the <strong>dashboard</strong> render lists the flag
