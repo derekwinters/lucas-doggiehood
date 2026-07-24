@@ -180,6 +180,19 @@ def render_body(state):
     a("---")
     a("")
 
+    # --- Parked ----------------------------------------------------------
+    # Read-only listing so parked work stays visible (#249). Parked issues are
+    # excluded from every active queue and count above; this is a reference
+    # section, not a re-admission, so there is no "Your move" menu.
+    a("## ⏸️ Parked")
+    a("_Hidden from the pipeline and every active queue above. `/unpark` brings "
+      "one back into intake._")
+    a("")
+    _issue_table(a, repo, state.get("parked", []))
+    a("")
+    a("---")
+    a("")
+
     # --- Reconcile -------------------------------------------------------
     _reconcile_section(a, repo, state.get("reconcile") or {})
 
@@ -404,6 +417,19 @@ def fetch_state(repo, token, as_of):
     pending = open_issues_with(lambda l: "pending-approval" in l)
     needs = open_issues_with(lambda l: "needs-clarification" in l)
 
+    # Parked: a separate read-only listing (#249). Not routed through
+    # open_issues_with, which excludes parked issues by design; every active
+    # queue/count stays parked-free while this surfaces them on their own.
+    parked = []
+    for i in issues:
+        if i["state"] != "open":
+            continue
+        lbl = labels_of(i)
+        if i["number"] == DASHBOARD_ISSUE or "type:epic" in lbl:
+            continue
+        if "parked" in lbl:
+            parked.append({"number": i["number"], "title": _clean(i["title"])})
+
     # Focus ready-for-work queue.
     queue = []
     open_numbers = {i["number"] for i in issues if i["state"] == "open"}
@@ -459,6 +485,7 @@ def fetch_state(repo, token, as_of):
         "intake": intake,
         "pending_approval": pending,
         "needs_clarification": needs,
+        "parked": parked,
         "other_milestones": other,
         "open_by_milestone": {"labels": chart_labels, "values": chart_vals,
                               "ymax": ymax},

@@ -33,6 +33,9 @@
   "needs_clarification": [
     {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
   ],
+  "parked": [
+    {"number": 172, "title": "Seasonal weather effects"}
+  ],
   "other_milestones": [
     {"title": "00 - Concepts & Core Mechanics", "done": 12, "open": 0, "post_mvp": false, "closed": true},
     {"title": "04 - Quests & Economy", "done": 18, "open": 3, "post_mvp": false},
