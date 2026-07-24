@@ -1503,6 +1503,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#reconciliation-pipeline-reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reconciliation (pipeline-reconcile)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dashboard-pipeline-dashboard-dashboardyml" class="md-nav__link">
     <span class="md-ellipsis">
       Dashboard (pipeline-dashboard + dashboard.yml)
@@ -1671,6 +1680,15 @@
   <a href="#development-pipeline-dev" class="md-nav__link">
     <span class="md-ellipsis">
       Development (pipeline-dev)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reconciliation-pipeline-reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reconciliation (pipeline-reconcile)
     </span>
   </a>
   
@@ -1938,12 +1956,77 @@ squash-merge lands as one Conventional Commit and release-please emits one clean
 changelog entry per issue, and the <code>Closes #N</code> keyword auto-closes the issue on
 merge. Each built issue is marked <code>in-progress</code>. It <strong>never merges and never
 closes</strong> — Derek reviews and merges; PR-babysitting keeps CI green.</p>
+<h3 id="reconciliation-pipeline-reconcile">Reconciliation (<code>pipeline-reconcile</code>)<a class="headerlink" href="#reconciliation-pipeline-reconcile" title="Permanent link">&para;</a></h3>
+<p>Nothing guarantees an issue stays inside the label state machine, and two
+failure modes accumulated undetected (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>):
+a merged PR left its issue <code>open</code> (so <code>v0.4</code> progress read 3/16 when it was
+really 7/16), and a nightly build dropped an <code>in-progress</code> issue's commits so it
+never re-entered the queue (invisible — not <code>ready-for-work</code>, not done, not
+building; #109's stall blocked the whole #178 cascade). The reconciliation sweep
+is the periodic check that catches this drift.</p>
+<p>Detection is a <strong>pure, unit-tested function</strong> (<code>reconcile.py::process</code>), a
+JSON-snapshot-in / findings-out shape exactly like <code>select_queue.py</code>; GitHub I/O
+lives only at the edges. Each finding is classified <strong>auto-fix</strong> (a safe,
+unambiguous label move applied by the gatekeeper) or <strong>flag</strong> (surfaced on the
+dashboard for Derek):</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Closed + stale label</strong></td>
+<td><code>closed</code> issue still carrying any pipeline-state label (<code>ai-triage</code>, <code>pending-approval</code>, <code>needs-clarification</code>, <code>ready-for-work</code>, <code>in-progress</code>)</td>
+<td><strong>auto-fix</strong> — strip those labels (the <code>Closes #N</code> label-leak seen on #211)</td>
+</tr>
+<tr>
+<td><strong>Stalled <code>in-progress</code></strong></td>
+<td>open, <code>in-progress</code>, no open PR, not on <code>main</code></td>
+<td><strong>auto-fix</strong> — requeue <code>in-progress</code> → <code>ready-for-work</code> so the builder retries</td>
+</tr>
+<tr>
+<td><strong>Merged-but-open</strong> (incl. bundled squash)</td>
+<td>open, work is on <code>main</code></td>
+<td><strong>flag</strong> — surface in the dashboard "⚠️ Reconcile" section, <em>not</em> auto-closed</td>
+</tr>
+<tr>
+<td><strong>Orphaned ready</strong> (stretch)</td>
+<td>open, <code>ready-for-work</code>, no milestone</td>
+<td><strong>flag</strong></td>
+</tr>
+<tr>
+<td><strong>Prose-only dependency</strong> (stretch)</td>
+<td>open, prose "blocked by/depends on #N" not in structured form</td>
+<td><strong>flag</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The two auto-fixes are safe and unambiguous; everything about <em>closing</em> an issue
+is either ambiguous or already owned by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/211">#211</a>
+(auto-close-on-merge), so it is flagged, never applied. The sweep <strong>never closes
+an issue.</strong> An open <code>in-progress</code> issue that is already on <code>main</code> classifies as
+merged-but-open, never as a stall — that guard stops the #109 re-pick loop.</p>
+<p><strong>Done-ness is decided by a merged commit <em>body</em> reference (<code>#N</code> / <code>Refs #N</code> /
+<code>Closes #N</code>) or deliverables on <code>HEAD</code> — never a PR/commit <em>title</em>.</strong> The nightly
+builder squash-merges several issues under one lead PR title, so a title-only
+match keeps missing bundled squashes (verified on #109/#58/#57/#190/#170). The
+guard is locked in a unit test.</p>
+<p>The sweep runs in the <strong>gatekeeper</strong> step of each scheduled routine (after
+command processing, so it reconciles against the labels those commands just
+set), which applies the two auto-fixes; the <strong>dashboard</strong> render lists the flag
+findings. Both share the one <code>reconcile.py</code> implementation.</p>
 <h3 id="dashboard-pipeline-dashboard-dashboardyml">Dashboard (<code>pipeline-dashboard</code> + <code>dashboard.yml</code>)<a class="headerlink" href="#dashboard-pipeline-dashboard-dashboardyml" title="Permanent link">&para;</a></h3>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
 place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
-please separated), intake, pending-approval, needs-clarification, other-
-milestone progress, and the command reference. It excludes #193 itself and
+please separated), intake, pending-approval, needs-clarification, a <strong>"⚠️
+Reconcile"</strong> section listing the sweep's flag findings (merged-but-open,
+orphaned ready, prose-only dependencies — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>),
+other-milestone progress, and the command reference. It excludes #193 itself and
 <code>parked</code> issues, and mutates nothing else. <strong>Closed milestones</strong> (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/214">#214</a>).</p>
@@ -1957,9 +2040,12 @@ only live milestones outside the focus are shown (<a href="https://github.com/de
   driven in production by <code>.github/workflows/dashboard.yml</code>.</li>
 <li><code>pipeline-dev/</code> — <code>SKILL.md</code> + <code>select_queue.py</code> (eligibility + topological
   ordering) + tests.</li>
+<li><code>pipeline-reconcile/</code> — <code>SKILL.md</code> + <code>reconcile.py</code> (drift detection +
+  auto-fix/flag classification) + tests; run in the gatekeeper step and
+  surfaced by the dashboard render.</li>
 </ul>
-<p>The deterministic parts (command parsing, queue selection, dashboard render)
-are scripted and unit-tested (run in CI via
+<p>The deterministic parts (command parsing, queue selection, dashboard render,
+reconciliation) are scripted and unit-tested (run in CI via
 <a href="../ci-cd/"><code>pipeline-tests.yml</code></a>); the model does only analysis, development,
 and light acknowledgments.</p>
 
