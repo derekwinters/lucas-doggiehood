@@ -70,6 +70,7 @@ nav:
           - Overview: specs/ui/index.md
           - Shared UI Components: specs/ui/shared-components.md
           - HUD: specs/ui/hud.md
+          - Conversation Panel: specs/ui/conversation-panel.md
           - Mockups: specs/ui/mockups/index.md
       - Decorations: specs/decorations.md
       - Neighborhood Expansion (Post-MVP): specs/expansion.md
