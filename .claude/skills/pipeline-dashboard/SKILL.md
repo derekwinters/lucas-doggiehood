@@ -30,7 +30,9 @@ The workflow runs `render_dashboard.py --write`, which:
 
 1. `fetch_state()` — queries the GitHub REST API (stdlib `urllib`, no pip
    deps) for issues by label, milestone roll-ups, open PRs (release-please
-   broken out), the focus marker on #193, and blocked state.
+   broken out), the focus marker on #193, blocked state, and the unblocker
+   graph (`compute_unblockers`, derived from the structured `Blocked by:`
+   lines) that stars the highest-leverage queue picks (#250).
 2. `render_body(state)` — renders the approved markdown (see below).
 3. PATCHes **only** #193's body. Mutates nothing else.
 
@@ -39,7 +41,8 @@ The workflow runs `render_dashboard.py --write`, which:
 Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
 marker (first line — the shared focus source of truth), the focus-milestone pie
 (green done / yellow ready-for-work / red remaining), the focus ready-for-work
-queue (blockers flagged), the "Your move" counts, PRs, intake, pending-approval,
+queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and sorted
+first — #250), the "Your move" counts, PRs, intake, pending-approval,
 needs-clarification, a read-only **"⏸️ Parked"** section listing open `parked`
 issues (#249), other-milestone progress bars, the open-issues bar chart,
 and the command reference. Issue **titles** are used as the summary text

@@ -41,8 +41,8 @@ class TestRender(unittest.TestCase):
 
     def test_pie_values(self):
         self.assertIn('"Done" : 18', self.body)
-        self.assertIn('"Ready for work" : 0', self.body)
-        self.assertIn('"Remaining" : 5', self.body)
+        self.assertIn('"Ready for work" : 3', self.body)
+        self.assertIn('"Remaining" : 2', self.body)
 
     def test_pie_colors(self):
         # done=green, ready=yellow, remaining=red
@@ -117,7 +117,7 @@ class TestRender(unittest.TestCase):
         # appear in the rendered body exactly once — inside the Parked section.
         self.assertEqual(self.body.count("/issues/172)"), 1)
         # Active queues/counts are unchanged from the current golden.
-        self.assertIn('"Ready for work" : 0', self.body)
+        self.assertIn('"Ready for work" : 3', self.body)
         self.assertIn("| 🆕 New ideas to `/admit` | **2** |", self.body)
         self.assertIn("| ✅ Analyses to `/approve` | **3** |", self.body)
         self.assertIn("| ❓ Questions to answer | **1** |", self.body)
@@ -161,6 +161,96 @@ class TestRender(unittest.TestCase):
         with open(GOLDEN) as fh:
             expected = fh.read()
         self.assertEqual(self.body, expected)
+
+
+class TestComputeUnblockers(unittest.TestCase):
+    """Pure unblocker-graph computation (#250).
+
+    An unblocking issue is open, not itself blocked by any *open* issue, and
+    is listed in at least one other open issue's ``blocked_by`` set.
+    """
+
+    def test_unblocker_maps_to_sorted_dependents(self):
+        graph = [
+            {"number": 109, "blocked_by": []},
+            {"number": 58, "blocked_by": [109]},
+            {"number": 57, "blocked_by": [109]},
+            {"number": 178, "blocked_by": [109]},
+        ]
+        self.assertEqual(
+            render_dashboard.compute_unblockers(graph), {109: [57, 58, 178]}
+        )
+
+    def test_blocked_issue_is_not_an_unblocker(self):
+        # 175 blocks 185, but 175 is itself blocked by open 109 -> not an
+        # unblocker. 109 (not blocked, blocks 175) is.
+        graph = [
+            {"number": 109, "blocked_by": []},
+            {"number": 175, "blocked_by": [109]},
+            {"number": 185, "blocked_by": [175]},
+        ]
+        result = render_dashboard.compute_unblockers(graph)
+        self.assertNotIn(175, result)
+        self.assertEqual(result[109], [175])
+
+    def test_independent_issue_absent(self):
+        graph = [
+            {"number": 300, "blocked_by": []},
+            {"number": 301, "blocked_by": []},
+        ]
+        self.assertEqual(render_dashboard.compute_unblockers(graph), {})
+
+    def test_closed_blocker_does_not_block_dependent(self):
+        # Only OPEN blockers count. 58's blocker 109 is absent from the graph
+        # (closed/merged), so 58 is not blocked; nobody in the graph blocks it.
+        graph = [{"number": 58, "blocked_by": [109]}]
+        self.assertEqual(render_dashboard.compute_unblockers(graph), {})
+
+    def test_empty_graph(self):
+        self.assertEqual(render_dashboard.compute_unblockers([]), {})
+
+
+class TestQueueUnblockerRendering(unittest.TestCase):
+    """Rendering of ⭐ unblocker marks in the focus ready-for-work queue (#250)."""
+
+    def setUp(self):
+        self.state = load_state()
+        self.body = render_dashboard.render_body(self.state)
+
+    def _queue_row(self, number):
+        needle = "/issues/%d)" % number
+        return next(ln for ln in self.body.splitlines()
+                    if ln.startswith("| ") and needle in ln)
+
+    def test_unblocker_row_starred_with_list(self):
+        row = self._queue_row(109)
+        self.assertIn("⭐ unblocks", row)
+        for dep in (57, 58, 178):
+            self.assertIn("/issues/%d)" % dep, row)
+
+    def test_blocked_row_flagged_not_starred(self):
+        row = self._queue_row(205)
+        self.assertIn("⛔ _blocked_", row)
+        self.assertNotIn("⭐", row)
+
+    def test_independent_row_unmarked(self):
+        row = self._queue_row(210)
+        self.assertNotIn("⭐", row)
+        self.assertNotIn("⛔", row)
+
+    def test_unblockers_ordered_first(self):
+        i109 = self.body.index("/issues/109)")
+        i210 = self.body.index("/issues/210)")
+        i205 = self.body.index("/issues/205)")
+        self.assertLess(i109, i210)  # unblocker before independent
+        self.assertLess(i210, i205)  # independent before blocked
+
+    def test_empty_queue_keeps_placeholder(self):
+        state = load_state()
+        state["focus"]["queue"] = []
+        body = render_dashboard.render_body(state)
+        self.assertIn("Nothing queued yet", body)
+        self.assertNotIn("⭐", body)
 
 
 if __name__ == "__main__":

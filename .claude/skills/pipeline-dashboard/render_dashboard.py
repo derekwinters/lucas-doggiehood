@@ -55,6 +55,32 @@ def _progress_bar(done, total):
     return "▰" * filled + "▱" * (BAR_CELLS - filled)
 
 
+def compute_unblockers(graph):
+    """Map each unblocking issue to the sorted open issues it unblocks (#250).
+
+    ``graph`` is a list of ``{"number": int, "blocked_by": [int, ...]}`` for the
+    OPEN issues only; ``blocked_by`` holds the hard blockers parsed from the
+    structured ``Blocked by: #N`` lines (see ``_blocked_by``). Reads the same
+    blocker graph the nightly builder / reconcile use — not prose.
+
+    An **unblocking issue** is one that is open, is **not itself blocked** by any
+    open issue, and appears in at least one other open issue's ``blocked_by``
+    set. Returns ``{number: [sorted dependents]}`` containing only those
+    unblockers; blocked issues and fully-independent issues are absent.
+    """
+    open_nums = {g["number"] for g in graph}
+    blocked = {}
+    unblocks = {}
+    for g in graph:
+        n = g["number"]
+        open_blockers = [b for b in g.get("blocked_by", []) if b in open_nums]
+        blocked[n] = bool(open_blockers)
+        for b in open_blockers:
+            unblocks.setdefault(b, set()).add(n)
+    return {n: sorted(deps) for n, deps in unblocks.items()
+            if not blocked.get(n)}
+
+
 def render_body(state):
     repo = state.get("repo", REPO_DEFAULT)
     focus = state["focus"]
@@ -96,7 +122,16 @@ def render_body(state):
         a("| Issue | Title | |")
         a("| - | - | - |")
         for it in queue:
-            flag = " ⛔ _blocked_" if it.get("blocked") else ""
+            if it.get("blocked"):
+                flag = " ⛔ _blocked_"
+            elif it.get("unblocks"):
+                # Highest-leverage pick: mark it and list the open issues it
+                # unblocks (#250). By definition an unblocker is never blocked,
+                # so ⭐ and ⛔ are mutually exclusive.
+                deps = ", ".join(_issue_link(repo, n) for n in it["unblocks"])
+                flag = " ⭐ unblocks %s" % deps
+            else:
+                flag = ""
             a("| %s | %s |%s |" % (_issue_link(repo, it["number"]), it["title"], flag))
     else:
         a("_Nothing queued yet. `/approve` an analysis into this milestone and "
@@ -430,9 +465,23 @@ def fetch_state(repo, token, as_of):
         if "parked" in lbl:
             parked.append({"number": i["number"], "title": _clean(i["title"])})
 
+    # Unblocker graph over ALL open issues (#250): read the same structured
+    # `Blocked by:` hard-blocker set the nightly builder / reconcile use, then
+    # derive which open issues are unblockers (open, not blocked, block >=1 open
+    # issue). The star is only ever *rendered* on the focus ready-for-work queue,
+    # but the graph must span every open issue so a queue item's cross-milestone
+    # dependents are counted.
+    open_numbers = {i["number"] for i in issues if i["state"] == "open"}
+    open_graph = [
+        {"number": i["number"],
+         "blocked_by": [b for b in _blocked_by(i.get("body") or "")
+                        if b in open_numbers]}
+        for i in issues if i["state"] == "open"
+    ]
+    unblocker_map = compute_unblockers(open_graph)
+
     # Focus ready-for-work queue.
     queue = []
-    open_numbers = {i["number"] for i in issues if i["state"] == "open"}
     for i in issues:
         lbl = labels_of(i)
         ms = i.get("milestone")
@@ -440,8 +489,11 @@ def fetch_state(repo, token, as_of):
                 and ms and ms["title"] == focus_title and "parked" not in lbl):
             blocked = any(b in open_numbers for b in _blocked_by(i.get("body") or ""))
             queue.append({"number": i["number"], "title": _clean(i["title"]),
-                          "blocked": blocked})
-    queue.sort(key=lambda q: (q["blocked"], q["number"]))
+                          "blocked": blocked,
+                          "unblocks": unblocker_map.get(i["number"], [])})
+    # Unblockers sort to the top (highest-leverage picks first), blocked issues
+    # to the bottom, ties broken by issue number (#250).
+    queue.sort(key=lambda q: (q["blocked"], not q["unblocks"], q["number"]))
 
     # Pull requests.
     pulls = _paginate("/repos/%s/pulls?state=open" % repo, token)
