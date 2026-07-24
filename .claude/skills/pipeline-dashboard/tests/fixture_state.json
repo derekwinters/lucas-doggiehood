@@ -44,5 +44,18 @@
     "labels": ["m03", "m04", "m05", "m06", "m07"],
     "values": [5, 3, 1, 9, 11],
     "ymax": 12
+  },
+  "reconcile": {
+    "flag_done": [
+      {"number": 56, "title": "Pity counter for gacha pulls"},
+      {"number": 189, "title": "Opener/closer conversation lines"}
+    ],
+    "orphaned_ready": [
+      {"number": 250, "title": "Ready-for-work issue with no milestone set"}
+    ],
+    "prose_dep": [
+      {"number": 178, "title": "Depends on the tile grid in prose", "refs": [109]}
+    ],
+    "auto_fixed": {"strip_labels": 2, "requeue": 1}
   }
 }

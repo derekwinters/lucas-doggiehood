@@ -148,13 +148,56 @@ changelog entry per issue, and the `Closes #N` keyword auto-closes the issue on
 merge. Each built issue is marked `in-progress`. It **never merges and never
 closes** — Derek reviews and merges; PR-babysitting keeps CI green.
 
+### Reconciliation (`pipeline-reconcile`)
+
+Nothing guarantees an issue stays inside the label state machine, and two
+failure modes accumulated undetected ([#246](https://github.com/derekwinters/lucas-doggiehood/issues/246)):
+a merged PR left its issue `open` (so `v0.4` progress read 3/16 when it was
+really 7/16), and a nightly build dropped an `in-progress` issue's commits so it
+never re-entered the queue (invisible — not `ready-for-work`, not done, not
+building; #109's stall blocked the whole #178 cascade). The reconciliation sweep
+is the periodic check that catches this drift.
+
+Detection is a **pure, unit-tested function** (`reconcile.py::process`), a
+JSON-snapshot-in / findings-out shape exactly like `select_queue.py`; GitHub I/O
+lives only at the edges. Each finding is classified **auto-fix** (a safe,
+unambiguous label move applied by the gatekeeper) or **flag** (surfaced on the
+dashboard for Derek):
+
+| Rule | Condition | Action |
+| - | - | - |
+| **Closed + stale label** | `closed` issue still carrying any pipeline-state label (`ai-triage`, `pending-approval`, `needs-clarification`, `ready-for-work`, `in-progress`) | **auto-fix** — strip those labels (the `Closes #N` label-leak seen on #211) |
+| **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries |
+| **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
+| **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
+| **Prose-only dependency** (stretch) | open, prose "blocked by/depends on #N" not in structured form | **flag** |
+
+The two auto-fixes are safe and unambiguous; everything about *closing* an issue
+is either ambiguous or already owned by [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)
+(auto-close-on-merge), so it is flagged, never applied. The sweep **never closes
+an issue.** An open `in-progress` issue that is already on `main` classifies as
+merged-but-open, never as a stall — that guard stops the #109 re-pick loop.
+
+**Done-ness is decided by a merged commit *body* reference (`#N` / `Refs #N` /
+`Closes #N`) or deliverables on `HEAD` — never a PR/commit *title*.** The nightly
+builder squash-merges several issues under one lead PR title, so a title-only
+match keeps missing bundled squashes (verified on #109/#58/#57/#190/#170). The
+guard is locked in a unit test.
+
+The sweep runs in the **gatekeeper** step of each scheduled routine (after
+command processing, so it reconciles against the labels those commands just
+set), which applies the two auto-fixes; the **dashboard** render lists the flag
+findings. Both share the one `reconcile.py` implementation.
+
 ### Dashboard (`pipeline-dashboard` + `dashboard.yml`)
 
 Read-only. `render_dashboard.py` recomputes live state and rewrites **#193** in
 place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
-please separated), intake, pending-approval, needs-clarification, other-
-milestone progress, and the command reference. It excludes #193 itself and
+please separated), intake, pending-approval, needs-clarification, a **"⚠️
+Reconcile"** section listing the sweep's flag findings (merged-but-open,
+orphaned ready, prose-only dependencies — [#246](https://github.com/derekwinters/lucas-doggiehood/issues/246)),
+other-milestone progress, and the command reference. It excludes #193 itself and
 `parked` issues, and mutates nothing else. **Closed milestones** (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown ([#214](https://github.com/derekwinters/lucas-doggiehood/issues/214)).
@@ -170,8 +213,11 @@ Each stage is a self-contained skill directory under `.claude/skills/`:
   driven in production by `.github/workflows/dashboard.yml`.
 - `pipeline-dev/` — `SKILL.md` + `select_queue.py` (eligibility + topological
   ordering) + tests.
+- `pipeline-reconcile/` — `SKILL.md` + `reconcile.py` (drift detection +
+  auto-fix/flag classification) + tests; run in the gatekeeper step and
+  surfaced by the dashboard render.
 
-The deterministic parts (command parsing, queue selection, dashboard render)
-are scripted and unit-tested (run in CI via
+The deterministic parts (command parsing, queue selection, dashboard render,
+reconciliation) are scripted and unit-tested (run in CI via
 [`pipeline-tests.yml`](ci-cd.md)); the model does only analysis, development,
 and light acknowledgments.

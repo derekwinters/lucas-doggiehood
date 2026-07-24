@@ -180,6 +180,9 @@ def render_body(state):
     a("---")
     a("")
 
+    # --- Reconcile -------------------------------------------------------
+    _reconcile_section(a, repo, state.get("reconcile") or {})
+
     # --- Other milestones ------------------------------------------------
     a("## 📦 Other milestones")
     a("_Live counts for every milestone outside the current focus._")
@@ -237,6 +240,68 @@ def render_body(state):
       "store (a control issue or a repo variable) is tracked as decision #8._")
 
     return "\n".join(L) + "\n"
+
+
+def _reconcile_section(a, repo, rec):
+    """Read-only "⚠️ Reconcile" section — board state drifted from reality.
+
+    Lists the *flag* findings from the reconciliation sweep (issue #246):
+    merged-but-open issues to close, orphaned ready-for-work, and prose-only
+    dependency references. The safe auto-fixes (stale-label strips, requeues)
+    are applied by the gatekeeper routine, not shown as pending here; their
+    counts are noted so the sweep's activity is visible.
+    """
+    done = rec.get("flag_done", [])
+    orphaned = rec.get("orphaned_ready", [])
+    prose = rec.get("prose_dep", [])
+    fixed = rec.get("auto_fixed") or {}
+
+    a("## ⚠️ Reconcile — board drifted from reality")
+    a("_Detected by the reconciliation sweep. Auto-fixes (stale-label strips, "
+      "requeues) are applied by the gatekeeper; the items below need your call._")
+    a("")
+
+    if done:
+        a("**🔀 Merged but still open** — the work is on `main`; close these "
+          "(#211 auto-closes the clean cases once it lands):")
+        a("")
+        a("| Issue | Summary |")
+        a("| - | - |")
+        for it in done:
+            a("| %s | %s |" % (_issue_link(repo, it["number"]), it["title"]))
+        a("")
+    if orphaned:
+        a("**🏷️ Ready-for-work with no milestone** — set one so the builder can "
+          "queue it:")
+        a("")
+        a("| Issue | Summary |")
+        a("| - | - |")
+        for it in orphaned:
+            a("| %s | %s |" % (_issue_link(repo, it["number"]), it["title"]))
+        a("")
+    if prose:
+        a("**🔗 Prose-only dependency references** — record as structured "
+          "`Blocked by:` / `Depends on:` so the queue can order them:")
+        a("")
+        a("| Issue | Summary | References |")
+        a("| - | - | - |")
+        for it in prose:
+            refs = ", ".join(_issue_link(repo, n) for n in it.get("refs", []))
+            a("| %s | %s | %s |"
+              % (_issue_link(repo, it["number"]), it["title"], refs))
+        a("")
+    if not (done or orphaned or prose):
+        a("_✅ Nothing to reconcile — every issue's labels match reality._")
+        a("")
+
+    if fixed:
+        strips = fixed.get("strip_labels", 0)
+        requeues = fixed.get("requeue", 0)
+        a("_Sweep auto-fixed this run: %d stale-label strip(s), %d requeue(s)._"
+          % (strips, requeues))
+        a("")
+    a("---")
+    a("")
 
 
 def _issue_table(a, repo, issues):
@@ -397,6 +462,40 @@ def fetch_state(repo, token, as_of):
         "other_milestones": other,
         "open_by_milestone": {"labels": chart_labels, "values": chart_vals,
                               "ymax": ymax},
+        "reconcile": _reconcile_block(repo, token, issues),
+    }
+
+
+def _reconcile_block(repo, token, issues):
+    """Populate the dashboard's ``reconcile`` block from the sweep's findings.
+
+    Delegates detection to the single source of truth — ``pipeline-reconcile``'s
+    pure ``process`` over its own live snapshot — then resolves the flagged
+    issue numbers to titles from the issues this renderer already fetched.
+    I/O-layer only; not exercised by the render unit tests.
+    """
+    import importlib.util
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, os.pardir, "pipeline-reconcile", "reconcile.py")
+    spec = importlib.util.spec_from_file_location("pipeline_reconcile", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    findings = mod.process(mod.fetch_state(repo, token))
+    titles = {i["number"]: _clean(i["title"]) for i in issues}
+
+    def rows(items):
+        return [{"number": f["number"], "title": titles.get(f["number"], "")}
+                for f in items]
+
+    prose = [{"number": f["number"], "title": titles.get(f["number"], ""),
+              "refs": f.get("refs", [])} for f in findings["flag_prose_dep"]]
+    return {
+        "flag_done": rows(findings["flag_done"]),
+        "orphaned_ready": rows(findings["flag_orphaned_ready"]),
+        "prose_dep": prose,
+        "auto_fixed": {"strip_labels": len(findings["strip_labels"]),
+                       "requeue": len(findings["requeue"])},
     }
 
 
