@@ -86,5 +86,39 @@ namespace Doggiehood.Core.Tests.Cameras
 
             Assert.That(camera.Zoom, Is.InRange(CameraController.MinZoom, CameraController.MaxZoom));
         }
+
+        [Test]
+        public void Yaw_StartsAtTheDefaultIsometricYaw()
+        {
+            // #203: yaw is now mutable state, starting at the old fixed 45deg.
+            var camera = NewController();
+
+            Assert.That(camera.Yaw, Is.EqualTo(CameraController.DefaultYaw));
+            Assert.That(CameraController.DefaultYaw, Is.EqualTo(45f));
+        }
+
+        [Test]
+        public void Rotate_ChangesYawByTheDelta()
+        {
+            var camera = NewController();
+
+            camera.Rotate(30f);
+
+            Assert.That(camera.Yaw, Is.EqualTo(45f + 30f));
+        }
+
+        [Test]
+        public void Rotate_IsFree_NoClampingOrSnapping()
+        {
+            // #203: free continuous rotation - yaw is never clamped to a range
+            // nor snapped to fixed angles, in either direction, past a full turn.
+            var camera = NewController();
+
+            camera.Rotate(1000f);
+            Assert.That(camera.Yaw, Is.EqualTo(45f + 1000f));
+
+            camera.Rotate(-2000f);
+            Assert.That(camera.Yaw, Is.EqualTo(45f + 1000f - 2000f));
+        }
     }
 }

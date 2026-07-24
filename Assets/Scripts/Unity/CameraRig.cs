@@ -5,9 +5,12 @@ namespace Doggiehood.Unity
 {
     /// <summary>
     /// Thin adapter between input gestures and the Core CameraController
-    /// (#20, #21). All decisions (clamping, gesture math, the fixed angle)
-    /// live in Core; this component polls input, forwards deltas, and copies
-    /// the resulting state onto the actual camera.
+    /// (#20, #21, #203). All decisions (pan clamping, gesture math, the fixed
+    /// pitch/projection, free yaw rotation) live in Core; this component polls
+    /// input, forwards deltas, and copies the resulting state onto the actual
+    /// camera. The two-finger twist that drives rotation is assembled here
+    /// from per-frame touch angles, since Unity's touch API has no built-in
+    /// twist gesture.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class CameraRig : MonoBehaviour
@@ -18,6 +21,7 @@ namespace Doggiehood.Unity
         private Vector3 lastPointerPosition;
         private float accumulatedDragPixels;
         private float lastPinchDistance;
+        private float lastTwistAngle;
 
         public CameraController Controller { get; } = CameraController.ForStartingNeighborhood();
 
@@ -26,19 +30,18 @@ namespace Doggiehood.Unity
             ApplyConfiguration();
         }
 
-        /// <summary>Applies the fixed isometric configuration and current
-        /// controller state. Idempotent; tests call it directly.</summary>
+        /// <summary>Applies the fixed projection and current controller state
+        /// (position, zoom, yaw). Idempotent; tests call it directly.</summary>
         public void ApplyConfiguration()
         {
             cachedCamera = GetComponent<Camera>();
             cachedCamera.orthographic = CameraRigConfig.Orthographic;
-            transform.rotation = Quaternion.Euler(CameraRigConfig.PitchDegrees, CameraRigConfig.YawDegrees, 0f);
             ApplyControllerState();
         }
 
         public void HandleDrag(float dragXPixels, float dragYPixels, float screenHeightPixels)
         {
-            var pan = GestureMapper.DragToPan(dragXPixels, dragYPixels, Controller.Zoom, screenHeightPixels);
+            var pan = GestureMapper.DragToPan(dragXPixels, dragYPixels, Controller.Yaw, Controller.Zoom, screenHeightPixels);
             Controller.Pan(pan.X, pan.Z);
             ApplyControllerState();
         }
@@ -49,13 +52,47 @@ namespace Doggiehood.Unity
             ApplyControllerState();
         }
 
+        public void HandleTwist(float twistDeltaDegrees)
+        {
+            Controller.Rotate(GestureMapper.TwistToRotation(twistDeltaDegrees));
+            ApplyControllerState();
+        }
+
         public void HandleTap(Vector2 screenPosition)
         {
             TapRouter.RouteTap(cachedCamera, screenPosition);
         }
 
+        /// <summary>Input-independent core of two-finger polling (#203). Given
+        /// this frame's two touch positions and whether both touches are
+        /// continuing (neither just began), emits the pinch-zoom and
+        /// twist-rotation for the change since the previous sample, then
+        /// records the new baseline. Public so EditMode tests can drive it
+        /// without simulating Unity's touch input.</summary>
+        public void ProcessTwoFingerSample(Vector2 first, Vector2 second, bool bothContinuing, float screenHeightPixels)
+        {
+            var span = second - first;
+            var distance = span.magnitude;
+            var angle = Mathf.Atan2(span.y, span.x) * Mathf.Rad2Deg;
+
+            if (bothContinuing && lastPinchDistance > 0f)
+            {
+                HandlePinch(distance - lastPinchDistance, screenHeightPixels);
+
+                // Mathf.DeltaAngle gives the counter-clockwise angle change;
+                // negate so a clockwise finger twist maps to a positive
+                // (clockwise) camera rotation, matching GestureMapper's sign.
+                HandleTwist(-Mathf.DeltaAngle(lastTwistAngle, angle));
+            }
+
+            lastPinchDistance = distance;
+            lastTwistAngle = angle;
+            accumulatedDragPixels = float.MaxValue; // a two-finger gesture is never a tap
+        }
+
         private void ApplyControllerState()
         {
+            transform.rotation = Quaternion.Euler(CameraRigConfig.PitchDegrees, Controller.Yaw, 0f);
             cachedCamera.orthographicSize = Controller.Zoom;
             var target = new Vector3(Controller.Position.X, 0f, Controller.Position.Z);
             transform.position = target - transform.forward * CameraRigConfig.RigDistance;
@@ -81,15 +118,9 @@ namespace Doggiehood.Unity
         {
             var a = Input.GetTouch(0);
             var b = Input.GetTouch(1);
-            var distance = Vector2.Distance(a.position, b.position);
+            var bothContinuing = a.phase != TouchPhase.Began && b.phase != TouchPhase.Began;
 
-            if (a.phase != TouchPhase.Began && b.phase != TouchPhase.Began && lastPinchDistance > 0f)
-            {
-                HandlePinch(distance - lastPinchDistance, Screen.height);
-            }
-
-            lastPinchDistance = distance;
-            accumulatedDragPixels = float.MaxValue; // a pinch is never a tap
+            ProcessTwoFingerSample(a.position, b.position, bothContinuing, Screen.height);
         }
 
         private void PollTouchDrag(Touch touch)

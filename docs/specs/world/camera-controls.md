@@ -12,7 +12,11 @@ Drag/swipe to pan the camera across the neighborhood; pinch to zoom in and out �
 
 ## Camera angle
 
-Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a free-rotating 3D orbit camera. This shows house facades and roofs and keeps dogs easy to spot and tap. ([#21](https://github.com/derekwinters/lucas-doggiehood/issues/21))
+Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a full free-orbit 3D camera. This shows house facades and roofs and keeps dogs easy to spot and tap. ([#21](https://github.com/derekwinters/lucas-doggiehood/issues/21))
+
+The **pitch (45°) and the orthographic projection are fixed**. The **yaw rotates freely**, driven by a two-finger twist gesture: a clockwise twist rotates the camera clockwise, a counter-clockwise twist rotates it counter-clockwise. Rotation is continuous — it does not snap to fixed angles and is not clamped to a range. This reopens the original "no free rotation/orbit" decision of #21 for yaw only, while keeping the recognisable angled-down look. ([#203](https://github.com/derekwinters/lucas-doggiehood/issues/203))
+
+> Note: the fixed-angle scene-visibility assumption from [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) — that content only ever needs to read well at the single fixed yaw — is **deferred** and out of scope for the rotation control. Making all scene content (e.g. speech bubbles, facade-only art) read correctly at every yaw is tracked separately.
 
 ## Orientation
 
@@ -20,7 +24,7 @@ The app runs in **landscape** orientation, to better show off the neighborhood s
 
 ## Build checklist
 
-- [ ] Fixed isometric camera angle (no free rotation/orbit)
+- [ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping); #181's fixed-angle visibility assumption deferred
 - [ ] Pan via drag/swipe within the bounds of the current neighborhood scene
 - [ ] Pinch-to-zoom with sane min/max zoom limits
 - [ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels

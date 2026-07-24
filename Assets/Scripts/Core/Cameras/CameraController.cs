@@ -14,17 +14,26 @@ namespace Doggiehood.Core.Cameras
         public const float MaxZoom = 30f;
         public const float DefaultZoom = 18f;
 
+        /// <summary>Starting yaw (#203): the old fixed isometric angle,
+        /// now the initial value of free, mutable rotation.</summary>
+        public const float DefaultYaw = 45f;
+
         private const float BoundsMargin = 12f;
 
         public WorldBounds Bounds { get; }
         public GridPoint Position { get; private set; }
         public float Zoom { get; private set; }
 
+        /// <summary>Camera yaw in degrees (#203). Free continuous rotation —
+        /// never clamped or snapped, unlike Position (bounds) or Zoom (min/max).</summary>
+        public float Yaw { get; private set; }
+
         public CameraController(WorldBounds bounds, GridPoint startPosition, float startZoom)
         {
             Bounds = bounds;
             Position = new GridPoint(bounds.ClampX(startPosition.X), bounds.ClampZ(startPosition.Z));
             Zoom = ClampZoom(startZoom);
+            Yaw = DefaultYaw;
         }
 
         public static CameraController ForStartingNeighborhood()
@@ -44,6 +53,13 @@ namespace Doggiehood.Core.Cameras
         public void ZoomBy(float delta)
         {
             Zoom = ClampZoom(Zoom + delta);
+        }
+
+        /// <summary>Rotates the camera yaw by the delta (#203). Unclamped:
+        /// rotation is free and continuous, with no snapping to fixed angles.</summary>
+        public void Rotate(float deltaDegrees)
+        {
+            Yaw += deltaDegrees;
         }
 
         private static float ClampZoom(float zoom)

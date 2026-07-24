@@ -383,7 +383,7 @@ namespace Doggiehood.Unity.EditModeTests
             cam.orthographicSize = Doggiehood.Core.Cameras.CameraController.DefaultZoom;
             cam.transform.rotation = Quaternion.Euler(
                 Doggiehood.Core.Cameras.CameraRigConfig.PitchDegrees,
-                Doggiehood.Core.Cameras.CameraRigConfig.YawDegrees, 0f);
+                Doggiehood.Core.Cameras.CameraController.DefaultYaw, 0f);
             var texture = new RenderTexture(1920, 1080, 0);
             cam.targetTexture = texture;
             try
