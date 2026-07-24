@@ -95,6 +95,26 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class LotBounds
     {
+        /// <summary>
+        /// How far the paved street corridor reaches from a road's
+        /// centerline into the front yard that faces it: the road
+        /// half-width plus the grass verge plus the full sidewalk width —
+        /// i.e. the sidewalk's OUTER edge, the same 5.75m boundary
+        /// <see cref="HousePlacement"/> sets front facades back from.
+        /// Derived from <see cref="WorldDimensions"/> alone (#244), no
+        /// hand-tuned magic number.
+        ///
+        /// A lot's quadrant bounds tile the whole 60m tile with no gap, so
+        /// the front yard's street-side edge sits ON the tile centerline
+        /// where the road runs — <see cref="FrontYard"/> pulls that edge
+        /// inward by this distance so the region ends at the yard/pavement
+        /// line instead of reaching into the road and sidewalk (#244:
+        /// procedurally placed trees were landing in the road because the
+        /// region included it).
+        /// </summary>
+        public const float StreetCorridorInset =
+            WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
+
         /// <summary>The lot's rectangular bounds: one tile-quadrant
         /// (<see cref="WorldDimensions.TileSize"/> / 2 per side), positioned
         /// on the lot's own <see cref="HouseLot.Quadrant"/>.</summary>
@@ -110,7 +130,10 @@ namespace Doggiehood.Core.World
         /// <summary>The portion of <see cref="QuadrantBounds"/> on the
         /// street side of the house (the direction
         /// <see cref="HousePlacement.FrontFacing"/> points), excluding the
-        /// house footprint.</summary>
+        /// house footprint AND the paved street corridor: the street-side
+        /// edge is pulled in by <see cref="StreetCorridorInset"/> so the
+        /// region ends at the yard/pavement line rather than reaching into
+        /// the road and sidewalk it faces (#244).</summary>
         public static LotRect FrontYard(HouseLot lot)
         {
             return YardSplit(lot).Front;
@@ -135,8 +158,9 @@ namespace Doggiehood.Core.World
             {
                 var facadeX = house.X + halfDepth;
                 var rearX = house.X - halfDepth;
+                var streetEdgeX = Math.Max(bounds.MaxX - StreetCorridorInset, facadeX);
                 return (
-                    new LotRect(facadeX, bounds.MaxX, bounds.MinZ, bounds.MaxZ),
+                    new LotRect(facadeX, streetEdgeX, bounds.MinZ, bounds.MaxZ),
                     new LotRect(bounds.MinX, rearX, bounds.MinZ, bounds.MaxZ));
             }
 
@@ -144,8 +168,9 @@ namespace Doggiehood.Core.World
             {
                 var facadeX = house.X - halfDepth;
                 var rearX = house.X + halfDepth;
+                var streetEdgeX = Math.Min(bounds.MinX + StreetCorridorInset, facadeX);
                 return (
-                    new LotRect(bounds.MinX, facadeX, bounds.MinZ, bounds.MaxZ),
+                    new LotRect(streetEdgeX, facadeX, bounds.MinZ, bounds.MaxZ),
                     new LotRect(rearX, bounds.MaxX, bounds.MinZ, bounds.MaxZ));
             }
 
@@ -153,8 +178,9 @@ namespace Doggiehood.Core.World
             {
                 var facadeZ = house.Z + halfDepth;
                 var rearZ = house.Z - halfDepth;
+                var streetEdgeZ = Math.Max(bounds.MaxZ - StreetCorridorInset, facadeZ);
                 return (
-                    new LotRect(bounds.MinX, bounds.MaxX, facadeZ, bounds.MaxZ),
+                    new LotRect(bounds.MinX, bounds.MaxX, facadeZ, streetEdgeZ),
                     new LotRect(bounds.MinX, bounds.MaxX, bounds.MinZ, rearZ));
             }
 
@@ -162,8 +188,9 @@ namespace Doggiehood.Core.World
             {
                 var facadeZ = house.Z - halfDepth;
                 var rearZ = house.Z + halfDepth;
+                var streetEdgeZ = Math.Min(bounds.MinZ + StreetCorridorInset, facadeZ);
                 return (
-                    new LotRect(bounds.MinX, bounds.MaxX, bounds.MinZ, facadeZ),
+                    new LotRect(bounds.MinX, bounds.MaxX, streetEdgeZ, facadeZ),
                     new LotRect(bounds.MinX, bounds.MaxX, rearZ, bounds.MaxZ));
             }
 
