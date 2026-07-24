@@ -264,11 +264,16 @@ findings. Both share the one `reconcile.py` implementation.
 Read-only. `render_dashboard.py` recomputes live state and rewrites **#193** in
 place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
-please separated), intake, pending-approval, needs-clarification, a **"⚠️
-Reconcile"** section listing the sweep's flag findings (merged-but-open,
+please separated), intake, pending-approval, needs-clarification, a read-only
+**"⏸️ Parked"** section listing every open `parked` issue so parked work stays
+visible and easy to `/unpark` ([#249](https://github.com/derekwinters/lucas-doggiehood/issues/249)),
+a **"⚠️ Reconcile"** section listing the sweep's flag findings (merged-but-open,
 orphaned ready, prose-only dependencies — [#246](https://github.com/derekwinters/lucas-doggiehood/issues/246)),
-other-milestone progress, and the command reference. It excludes #193 itself and
-`parked` issues, and mutates nothing else. **Closed milestones** (100% done)
+other-milestone progress, and the command reference. It excludes #193 itself,
+and keeps `parked` issues out of every *active* queue and count (pie, ready-for-
+work queue, "Your move", intake, pending-approval, needs-clarification, reconcile)
+— the Parked section is a separate listing, not a re-admission — and mutates
+nothing else. **Closed milestones** (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown ([#214](https://github.com/derekwinters/lucas-doggiehood/issues/214)).
 

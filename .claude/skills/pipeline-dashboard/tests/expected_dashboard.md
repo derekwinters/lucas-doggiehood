@@ -79,6 +79,15 @@ _A specific question is posted on each issue — open it to read and reply._
 
 ---
 
+## ⏸️ Parked
+_Hidden from the pipeline and every active queue above. `/unpark` brings one back into intake._
+
+| Issue | Summary |
+| - | - |
+| [#172](https://github.com/derekwinters/lucas-doggiehood/issues/172) | Seasonal weather effects |
+
+---
+
 ## ⚠️ Reconcile — board drifted from reality
 _Detected by the reconciliation sweep. Auto-fixes (stale-label strips, requeues) are applied by the gatekeeper; the items below need your call._
 

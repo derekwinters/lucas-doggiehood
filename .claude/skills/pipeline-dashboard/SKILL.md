@@ -40,11 +40,13 @@ Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
 marker (first line — the shared focus source of truth), the focus-milestone pie
 (green done / yellow ready-for-work / red remaining), the focus ready-for-work
 queue (blockers flagged), the "Your move" counts, PRs, intake, pending-approval,
-needs-clarification, other-milestone progress bars, the open-issues bar chart,
+needs-clarification, a read-only **"⏸️ Parked"** section listing open `parked`
+issues (#249), other-milestone progress bars, the open-issues bar chart,
 and the command reference. Issue **titles** are used as the summary text
 (deterministic — no model), which is the tradeoff for a fully-scripted body.
 
-`#193` itself and any `parked` issue are excluded from every queue. **Closed
+`#193` itself and any `parked` issue are excluded from every *active* queue and
+count; parked issues appear only in the read-only "⏸️ Parked" listing. **Closed
 milestones** (100% done) are omitted from the "Other milestones" section and the
 open-issues chart — that section shows only live milestones outside the focus.
 

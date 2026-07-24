@@ -64,6 +64,7 @@ class TestRender(unittest.TestCase):
             "## 🆕 New ideas",
             "## ✅ Pending approval",
             "## ❓ Needs clarification",
+            "## ⏸️ Parked",
             "## ⚠️ Reconcile",
             "## 📦 Other milestones",
             "### 📖 Command reference",
@@ -100,6 +101,37 @@ class TestRender(unittest.TestCase):
         # nor the by-milestone chart. See issue #214.
         self.assertNotIn("00 - Concepts & Core Mechanics", self.body)
         self.assertNotIn("m00", self.body)
+
+    def test_parked_section_lists_open_parked_issues(self):
+        # #249: parked issues get a read-only listing so they stay visible.
+        self.assertIn("## ⏸️ Parked", self.body)
+        self.assertIn(
+            "[#172](https://github.com/derekwinters/lucas-doggiehood/issues/172)",
+            self.body,
+        )
+        self.assertIn("Seasonal weather effects", self.body)
+
+    def test_parked_issue_only_appears_in_parked_section(self):
+        # #249: the Parked section is a separate listing, NOT a re-admission.
+        # The parked issue must not leak into any active queue/count. It should
+        # appear in the rendered body exactly once — inside the Parked section.
+        self.assertEqual(self.body.count("/issues/172)"), 1)
+        # Active queues/counts are unchanged from the current golden.
+        self.assertIn('"Ready for work" : 0', self.body)
+        self.assertIn("| 🆕 New ideas to `/admit` | **2** |", self.body)
+        self.assertIn("| ✅ Analyses to `/approve` | **3** |", self.body)
+        self.assertIn("| ❓ Questions to answer | **1** |", self.body)
+
+    def test_parked_empty_shows_none_state(self):
+        # #249: with no parked issues the header still renders, followed by the
+        # shared empty-state line, and rendering does not raise.
+        state = load_state()
+        state["parked"] = []
+        body = render_dashboard.render_body(state)
+        self.assertIn("## ⏸️ Parked", body)
+        parked_idx = body.index("## ⏸️ Parked")
+        reconcile_idx = body.index("## ⚠️ Reconcile")
+        self.assertIn("_None right now._", body[parked_idx:reconcile_idx])
 
     def test_reconcile_section_lists_flag_findings(self):
         # Merged-but-open issues are flagged for a manual close (not auto-closed
