@@ -29,11 +29,17 @@ findings).
    stalled issues. Merged-but-open issues are **flagged**, never auto-closed —
    `#211` owns auto-close-on-merge, and the done-ness heuristic can
    false-positive.
-2. **Done-ness is decided by a merged commit *body* reference (or deliverables
-   on `HEAD`), never a PR/commit *title*.** The nightly builder squash-merges
-   several issues under one lead PR title, so a title-only match keeps missing
-   bundled squashes (verified on #109/#58/#57/#190/#170 — see #246). This guard
-   is locked in by `test_title_only_reference_does_not_flag_done`.
+2. **Done-ness is decided by a merged commit *body* *closing-keyword* reference
+   (`Closes`/`Fixes`/`Resolves #N` + tense/case variants) or deliverables on
+   `HEAD`, never a PR/commit *title* and never a bare `#N` / `Refs #N`.** Only a
+   closing keyword resolves an issue (CLAUDE.md rule #10); a bare `#N`,
+   `Refs #N`, `Part of #N`, or `Relates to #N` merely links, so a prose
+   cross-reference in a merged commit body must not flag that issue done (#277).
+   Titles are excluded separately: the nightly builder squash-merges several
+   issues under one lead PR title, so a title-only match keeps missing bundled
+   squashes (verified on #109/#58/#57/#190/#170 — see #246). Both guards are
+   locked in by `test_title_only_reference_does_not_flag_done` and
+   `TestClosingRefsParsing`.
 3. **Deterministic detection.** All classification lives in `process`; the model
    only gathers the snapshot and applies the actions the script returns.
 
@@ -65,9 +71,11 @@ throughout, matching the rest of the pipeline.
 1. **Gather the snapshot** with the GitHub MCP tools (or run `reconcile.py
    --live` with `GITHUB_TOKEN` set, which does it via stdlib `urllib`):
    - every issue with `number`, `state`, `labels`, `milestone`, `is_epic`,
-     `is_dashboard`, and `has_open_pr` (an **open** PR references it);
-   - `merged_commit_body_refs`: issue numbers referenced by `#N` / `Refs #N` /
-     `Closes #N` in a merged commit **body** reachable from `main`;
+     `is_dashboard`, and `has_open_pr` (an **open** PR is set to **close** it,
+     i.e. `Closes/Fixes/Resolves #N` — not a bare `#N`/`Relates to #N`);
+   - `merged_commit_body_refs`: issue numbers a **closing keyword**
+     (`Closes`/`Fixes`/`Resolves #N` + tense/case variants) resolves in a merged
+     commit **body** reachable from `main`;
    - optionally `deliverables_present` (a `{ "N": true }` map when the fetch
      layer can cheaply confirm an issue's Build-checklist files exist at `HEAD`);
    - optionally `prose_deps` per issue for the stretch flag.

@@ -16,12 +16,15 @@ network (same pattern as ``select_queue.py`` / ``render_dashboard.py``):
   * ``fetch_state(repo, token)`` — queries the GitHub REST API (stdlib urllib,
     no third-party deps) and assembles the state dict. Not unit-tested.
 
-Done-ness — avoiding the bundled-squash blind spot (2026-07-23 comment on
-#246): an issue's work is judged "on main" ONLY from a ``#N``/``Refs #N``/
-``Closes #N`` reference in a merged commit *body* reachable from main, or from
-its deliverables existing at HEAD — **never** from a PR/commit *title*
-referencing it. The nightly builder squash-merges several issues under one lead
-PR title, so a title-only match keeps missing bundled squashes.
+Done-ness — closing keywords only (CLAUDE.md rule #10, #277): an issue's work is
+judged "on main" ONLY from a **closing-keyword** reference
+(``Closes``/``Fixes``/``Resolves #N`` and their tense/case variants) in a merged
+commit *body* reachable from main, or from its deliverables existing at HEAD. A
+bare ``#N`` / ``Refs #N`` / ``Part of #N`` / ``Relates to #N`` merely links and
+does **not** mark an issue done. Done-ness is also **never** taken from a
+PR/commit *title* (avoiding the bundled-squash blind spot, 2026-07-23 comment on
+#246): the nightly builder squash-merges several issues under one lead PR title,
+so a title-only match keeps missing bundled squashes.
 
 Input schema (stdin):
   {
@@ -51,6 +54,7 @@ dashboard. Every list is sorted by issue number.
 
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -167,19 +171,37 @@ def _paginate(path, token):
     return items
 
 
-def _refs_in(text):
-    """Issue numbers referenced by ``#N`` / ``Refs #N`` / ``Closes #N`` in text."""
-    import re
-    return {int(n) for n in re.findall(r"#(\d+)", text or "")}
+# A GitHub closing keyword (any tense) immediately preceding ``#N``. Per
+# CLAUDE.md rule #10, ONLY these resolve an issue — a bare ``#N`` / ``Refs #N`` /
+# ``Part of #N`` / ``Relates to #N`` merely links and must NOT mark work done.
+# ``\b`` keeps ``prefix #5`` from tripping ``fix``; ``[:\s]+`` allows the
+# ``Closes #N`` and ``Closes: #N`` separators GitHub accepts.
+_CLOSING_REF_RE = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[:\s]+#(\d+)",
+    re.IGNORECASE,
+)
+
+
+def _closing_refs_in(text):
+    """Issue numbers a closing keyword resolves in ``text``.
+
+    Matches ``close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved``
+    immediately before ``#N`` (case-insensitive). A bare ``#N``, ``Refs #N``,
+    ``Part of #N``, or ``Relates to #N`` returns nothing — those only link.
+    """
+    return {int(n) for n in _CLOSING_REF_RE.findall(text or "")}
 
 
 def fetch_state(repo, token):
     """Assemble the reconcile state dict from live GitHub state.
 
-    Done-ness is gathered from merged commit **bodies** on the default branch —
-    never PR/commit titles — so bundled squashes are caught (see module
-    docstring). Open-PR association is taken from each open PR's referenced
-    issue numbers in its title+body.
+    Done-ness is gathered from **closing-keyword** references in merged commit
+    **bodies** on the default branch — never PR/commit titles, never a bare
+    ``#N``/``Refs #N`` (CLAUDE.md rule #10, #277) — so bundled squashes are
+    caught (see module docstring) without prose cross-references false-positing.
+    Open-PR association is likewise taken from each open PR's closing-keyword
+    refs in its title+body, so a PR that merely "Relates to #N" does not mark
+    #N as having an open PR.
     """
     raw = _paginate("/repos/%s/issues?state=all" % repo, token)
     issues_raw = [i for i in raw if "pull_request" not in i]
@@ -187,20 +209,23 @@ def fetch_state(repo, token):
     def labels_of(i):
         return [l["name"] for l in i.get("labels", [])]
 
-    # Issues with an OPEN PR referencing them (from the PR title+body).
+    # Issues an OPEN PR is set to CLOSE (from the PR title+body). A PR that
+    # merely "Relates to #N" must NOT mark #N as having an open PR — that would
+    # wrongly suppress a legitimate stalled-`in-progress` requeue (#277).
     open_pr_refs = set()
     for p in _paginate("/repos/%s/pulls?state=open" % repo, token):
         text = "%s\n%s" % (p.get("title", ""), p.get("body") or "")
-        open_pr_refs |= _refs_in(text)
+        open_pr_refs |= _closing_refs_in(text)
 
-    # Merged commit BODY references reachable from the default branch. The
-    # commit message body (not the subject line) is what carries `Refs #N`.
+    # Merged commit BODY closing-keyword references reachable from the default
+    # branch. The commit message body (not the subject line) is what carries
+    # `Closes #N`; a prose `#N` / `Refs #N` is a link, not a landing (#277).
     body_refs = set()
     for c in _paginate("/repos/%s/commits" % repo, token):
         message = (c.get("commit") or {}).get("message", "")
         parts = message.split("\n", 1)
         commit_body = parts[1] if len(parts) > 1 else ""
-        body_refs |= _refs_in(commit_body)
+        body_refs |= _closing_refs_in(commit_body)
 
     issues = []
     for i in issues_raw:
