@@ -18,51 +18,6 @@ namespace Doggiehood.Unity
         // (#186) rather than closing with no player-visible feedback.
         private const string InsufficientFundsMessage = "Not enough coins for that yet.";
 
-        // #273 interim graybox readability bump. Default IMGUI sizes are too
-        // small to read on-device, so the dialogue text and action buttons are
-        // roughly doubled — WITHOUT touching the panel box (its size/position
-        // stay fixed, see the panel-box constants below). This is NOT the
-        // permanent Candy-Cottage styling; the wireframe pixel values
-        // (BodyFontPx 34, 96px pills) live in docs/specs/ui/conversation-panel.md
-        // (#175) and are unchanged by this interim tuning.
-        //
-        // Baselines approximate the default IMGUI skin's effective sizes so the
-        // doubled constants read as an explicit ~2x bump (#161: named, not inline).
-        public const int BaselineFontPx = 12;
-        public const int BaselineButtonHeightPx = 24;
-
-        /// <summary>Dialogue/status/label font size — ~2x the default IMGUI size (#273).</summary>
-        public const int DialogueFontPx = BaselineFontPx * 2;
-
-        /// <summary>Action-button minimum height — ~2x the default IMGUI button height (#273).</summary>
-        public const int ButtonMinHeightPx = BaselineButtonHeightPx * 2;
-
-        /// <summary>Padding inside the enlarged accept/option/decline pills (#273).</summary>
-        public const int ButtonPaddingPx = 12;
-
-        // Panel-box geometry (#161: named, not inline). Unchanged by #273 — the
-        // box keeps the same size and position while its content grows.
-        private const float PanelMaxWidthPx = 600f;
-        private const float PanelHorizontalMarginPx = 40f;
-        private const float PanelTopFraction = 0.6f;
-        private const float PanelHeightFraction = 0.35f;
-
-        private Vector2 scrollPosition;
-
-        /// <summary>The fixed graybox panel rect: centered, width clamped to
-        /// min(600, screenWidth - 40), sitting at 60% down the screen and
-        /// filling 35% of its height. Extracted so an EditMode test can pin
-        /// that #273 did not move or resize the box.</summary>
-        public static Rect ComputePanelRect(float screenWidth, float screenHeight)
-        {
-            var width = Mathf.Min(PanelMaxWidthPx, screenWidth - PanelHorizontalMarginPx);
-            return new Rect(
-                (screenWidth - width) / 2f,
-                screenHeight * PanelTopFraction,
-                width,
-                screenHeight * PanelHeightFraction);
-        }
-
         public Conversation Current { get; private set; }
 
         /// <summary>Set by WorldBootstrap; when present, conversations use
@@ -228,29 +183,11 @@ namespace Doggiehood.Unity
                 return;
             }
 
-            // #273: enlarged dialogue/label and button styles (~2x default IMGUI).
-            var labelStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = DialogueFontPx,
-                wordWrap = true,
-            };
-            var buttonStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = DialogueFontPx,
-                padding = new RectOffset(ButtonPaddingPx, ButtonPaddingPx, ButtonPaddingPx, ButtonPaddingPx),
-            };
-            var buttonMinHeight = GUILayout.MinHeight(ButtonMinHeightPx);
-
-            GUILayout.BeginArea(ComputePanelRect(Screen.width, Screen.height), GUI.skin.box);
-
-            // #273: the box stays a fixed 0.35x height while the doubled text and
-            // buttons grow, so the body scrolls rather than clipping when it
-            // overflows (e.g. a multi-line request with all its action pills).
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-
+            var width = Mathf.Min(600f, Screen.width - 40f);
+            GUILayout.BeginArea(new Rect((Screen.width - width) / 2f, Screen.height * 0.6f, width, Screen.height * 0.35f), GUI.skin.box);
             foreach (var line in Current.Lines)
             {
-                GUILayout.Label(line, labelStyle);
+                GUILayout.Label(line);
             }
 
             if (currentQuest != null && currentQuest.Options.Count > 0)
@@ -260,7 +197,7 @@ namespace Doggiehood.Unity
                 foreach (var option in currentQuest.Options)
                 {
                     GUI.enabled = OptionIsAffordable(option);
-                    if (GUILayout.Button(OptionLabel(option), buttonStyle, buttonMinHeight))
+                    if (GUILayout.Button(OptionLabel(option)))
                     {
                         AcceptChoice(option);
                         GUI.enabled = true;
@@ -273,7 +210,7 @@ namespace Doggiehood.Unity
             else
             {
                 GUI.enabled = AcceptIsAffordable;
-                if (GUILayout.Button(AcceptLabel, buttonStyle, buttonMinHeight))
+                if (GUILayout.Button(AcceptLabel))
                 {
                     AcceptCurrent();
                 }
@@ -283,17 +220,16 @@ namespace Doggiehood.Unity
 
             if (!string.IsNullOrEmpty(StatusMessage))
             {
-                GUILayout.Label(StatusMessage, labelStyle);
+                GUILayout.Label(StatusMessage);
             }
 
             // #185: "Not now" is always present, regardless of accept-row
             // variant (standard/choice/buy-something) — a silent decline.
-            if (GUILayout.Button("Not now", buttonStyle, buttonMinHeight))
+            if (GUILayout.Button("Not now"))
             {
                 DeclineCurrent();
             }
 
-            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
     }

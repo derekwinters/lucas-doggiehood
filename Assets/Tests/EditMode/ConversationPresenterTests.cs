@@ -219,51 +219,6 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void ComputePanelRect_KeepsTheGrayboxBoxSizeAndPosition_Unchanged()
-        {
-            // #273: the readability bump must NOT resize or reposition the box.
-            // Locked to the pre-#273 formulas: width = min(600, w - 40),
-            // height = h * 0.35, at y = h * 0.6, centered horizontally.
-            const float w = 1920f;
-            const float h = 1200f;
-            var rect = ConversationPresenter.ComputePanelRect(w, h);
-
-            var expectedWidth = Mathf.Min(600f, w - 40f);
-            Assert.That(rect.width, Is.EqualTo(expectedWidth).Within(0.01f));
-            Assert.That(rect.height, Is.EqualTo(h * 0.35f).Within(0.01f));
-            Assert.That(rect.x, Is.EqualTo((w - expectedWidth) / 2f).Within(0.01f), "centered horizontally");
-            Assert.That(rect.y, Is.EqualTo(h * 0.6f).Within(0.01f));
-        }
-
-        [Test]
-        public void ComputePanelRect_ClampsWidthOnNarrowScreens_LikeTheOriginal()
-        {
-            // The width clamp (min(600, w - 40)) is preserved for small screens.
-            const float w = 500f;
-            const float h = 800f;
-            var rect = ConversationPresenter.ComputePanelRect(w, h);
-
-            Assert.That(rect.width, Is.EqualTo(w - 40f).Within(0.01f),
-                "narrow screens clamp to width-40, not 600");
-        }
-
-        [Test]
-        public void DialogueAndButtonSizes_AreRoughlyDouble_TheDefaultImguiBaseline()
-        {
-            // #273: interim graybox legibility — the dialogue text and the
-            // action buttons render at ~2x their default IMGUI size, driven
-            // by named constants (#161: no inline literals).
-            Assert.That(ConversationPresenter.DialogueFontPx,
-                Is.EqualTo(ConversationPresenter.BaselineFontPx * 2),
-                "dialogue/status/label font is ~2x the default IMGUI size");
-            Assert.That(ConversationPresenter.ButtonMinHeightPx,
-                Is.EqualTo(ConversationPresenter.BaselineButtonHeightPx * 2),
-                "action buttons are ~2x the default IMGUI button height");
-            Assert.That(ConversationPresenter.ButtonPaddingPx, Is.GreaterThan(0),
-                "the enlarged pills carry positive padding");
-        }
-
-        [Test]
         public void ReopeningThePanel_ClearsAnyStaleStatusMessage()
         {
             var dog = state.Dogs[1];
