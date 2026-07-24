@@ -21,7 +21,7 @@ comments (`derekwinters`) are honored — the bad-actor gate. Everyone else's
 | `ai-triage` | gatekeeper (on `/admit`) | Admitted; queued for analysis. |
 | `pending-approval` | analysis | Bug diagnosis / spec-covered plan posted; awaiting `/approve`. |
 | `needs-clarification` | analysis | A clearly-stated question is on the issue; awaiting an answer. |
-| `ready-for-work` | gatekeeper (on `/approve`) | Approved + milestone set; in the dev queue. |
+| `ready-for-work` | gatekeeper (on `/approve`) | Approved + milestone set; in the dev queue. **Invariant: `ready-for-work` ⇒ the issue has a milestone** ([#247](https://github.com/derekwinters/lucas-doggiehood/issues/247)) — the gatekeeper refuses any `/approve` that would land here milestone-less, so the nightly builder (which only sees the focus milestone) never silently skips an approved issue. |
 | `in-progress` | dev | A nightly dev run picked it up / opened its PR. |
 | `parked` | gatekeeper (on `/park`) | Hidden from every routine and the dashboard, any stage, indefinitely. |
 | `dashboard` | one-time | Marks the dashboard issue ([#193](https://github.com/derekwinters/lucas-doggiehood/issues/193)); excluded everywhere except `/focus`, which is honored on it so focus can be set from the dashboard ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)). |
@@ -36,7 +36,7 @@ commands act):
 | Command | Effect |
 | - | - |
 | `/admit` | Pull a raw idea into AI analysis (`ai-triage`). |
-| `/approve` | Accept the analysis → `ready-for-work`, set the proposed (or `/milestone`-overridden) milestone. |
+| `/approve` | Accept the analysis → `ready-for-work`, set the proposed (or `/milestone`-overridden) milestone. **Refused if no milestone resolves** (see the `/approve` milestone gate below). |
 | `/revise <notes>` | Send back to analysis with feedback (re-add `ai-triage`). |
 | `/redo` | Discard the analysis and start it over. |
 | `/propose` | Authorize analysis to draft the missing design/wireframe as a marked PROPOSAL. |
@@ -53,6 +53,36 @@ Processed comments are watermarked with a 👀 reaction so re-running a routine
 never double-applies a command. Both rules are enforced by the deterministic
 parser (`.claude/skills/pipeline-gatekeeper/parse_commands.py`), not by model
 judgment.
+
+### The `/approve` milestone gate — `ready-for-work` ⇒ has milestone
+
+Nightly development only builds issues in the **focus milestone**, so a
+`ready-for-work` issue with **no milestone** is invisible to the builder —
+"approved and ready" yet silently never picked up. To close that gap
+([#247](https://github.com/derekwinters/lucas-doggiehood/issues/247)) the parser
+enforces the invariant **`ready-for-work` ⇒ the issue has a milestone**.
+
+On `/approve` the parser resolves an **effective milestone** from, in order: an
+inline `/milestone` in the same comment, the issue's current milestone, then the
+milestone analysis proposed in its `pending-approval` comment (the snapshot
+carries `milestone` and `proposed_milestone` for exactly this). Resolution is
+done as an order-independent finalization, so `/approve\n/milestone 07` and
+`/milestone 07\n/approve` behave identically.
+
+- **A milestone resolves** → the move proceeds and that milestone rides along on
+  the action, so `ready-for-work` is never set milestone-less.
+- **No milestone resolves** → the transition is **refused**: no label change,
+  the issue stays in its prior state (`pending-approval` / `needs-clarification`),
+  and the parser emits an `approve-no-milestone` skip carrying a
+  `which-milestone` hand-back menu. The gatekeeper posts a "which milestone?"
+  reply (e.g. *"Can't approve #N to `ready-for-work` — no milestone resolved;
+  reply `/milestone <name>` then `/approve`"*).
+
+This is the **presence** gate. Its sibling
+[#212](https://github.com/derekwinters/lucas-doggiehood/issues/212) layers an
+**order** gate onto the same resolved value (the milestone must not precede a
+blocker's milestone); the two chain **resolve → presence (#247) → order (#212)**,
+so the order check only runs once a milestone exists.
 
 ## Where `/focus` is stored
 
