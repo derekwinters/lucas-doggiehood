@@ -22,7 +22,7 @@ The **pitch (45°) and the orthographic projection are fixed**. The **yaw rotate
 
 The app is **locked to landscape** orientation — it never rotates to portrait — to better show off the neighborhood scene at once. ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22))
 
-This is one facet of the project's platform target, stated authoritatively once — tablet, landscape, and the 1920×1200 (16:10) UI reference resolution — under [UI Wireframes → Target platform & reference resolution](../ui/index.md#target-platform-reference-resolution). It is enforced in Unity by pinning `defaultScreenOrientation` to landscape and scaling the UI canvas from that reference with a `CanvasScaler` ([#256](https://github.com/derekwinters/lucas-doggiehood/issues/256)).
+This is one facet of the project's platform target, stated authoritatively once — tablet, landscape, and the 1920×1200 (16:10) UI reference resolution — under [UI Wireframes → Target platform & reference resolution](../ui/index.md#target-platform-reference-resolution). It is enforced in Unity by allowing only the two landscape orientations (portrait disabled, so the tablet auto-rotates between landscape-left and landscape-right but never to portrait) and scaling the UI canvas from that reference with a `CanvasScaler` ([#256](https://github.com/derekwinters/lucas-doggiehood/issues/256)).
 
 ## Build checklist
 

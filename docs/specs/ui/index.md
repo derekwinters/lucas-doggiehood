@@ -10,7 +10,7 @@ Every page here is a distilled, **approved** wireframe. Nothing lands in this se
 
 Doggiehood is primarily a **tablet** game, **landscape-locked** ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)). Every UI wireframe's layout constants are authored against a **1920×1200 (16:10)** reference resolution — the pixel values on each page and in each mockup are the component's true size at that reference. On device, a Unity `CanvasScaler` scales from this reference so the same composition holds across the supported range of tablet sizes and aspect ratios.
 
-The landscape lock (`defaultScreenOrientation`) and the `CanvasScaler` that pins this reference resolution are wired in Unity per [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256); see [Camera, Navigation & Controls → Orientation](../world/camera-controls.md#orientation) for the origin of the landscape decision ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)).
+The landscape lock (portrait disabled, auto-rotating between the two landscape orientations) and the `CanvasScaler` that pins this reference resolution are wired in Unity per [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256); see [Camera, Navigation & Controls → Orientation](../world/camera-controls.md#orientation) for the origin of the landscape decision ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)).
 
 ## Structure
 
