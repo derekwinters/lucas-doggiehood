@@ -1,6 +1,6 @@
 # Settings menu
 
-*Wireframe issue: [#218](https://github.com/derekwinters/lucas-doggiehood/issues/218). Implements/covers: the in-game settings menu ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)). Approved: PROPOSAL — awaiting Derek/Lucas.*
+*Wireframe issue: [#218](https://github.com/derekwinters/lucas-doggiehood/issues/218). Implements/covers: the in-game settings menu ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)). Approved: Derek, 2026-07-25 (in-session).*
 *Mockup: [mockups/settings.html](mockups/settings.html).*
 
 ## Purpose
@@ -53,8 +53,8 @@ The panel **chrome** (outline 6 / corner radius 40 / drop-shadow 12) and the **p
 - **Reference resolution.** Constants are authored at the 1920×1200 (16:10) reference per [Overview](index.md); a Unity `CanvasScaler` scales from this so each px constant has a fixed meaning across tablet sizes.
 - Style itself (outlines, flat shadows, pill shapes, rounded type) lives in [Art & UI Style](../world/art-style.md); this page is layout only.
 
-## Open questions — proposed answers (for approval)
+## Design decisions (resolved)
 
 1. **Entry point** — how Settings opens → **a gear button in the HUD's top-right corner (furthest right)**, with the **currency chip moved just inboard, to the gear's left**. This nudges the currency-chip placement, so the HUD wireframe ([#174](https://github.com/derekwinters/lucas-doggiehood/issues/174)) is flagged to reconcile — the gear takes the corner.
 2. **Sidebar vs. bottom tabs on portrait** → **sidebar only.** The game is landscape-locked ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)/[#256](https://github.com/derekwinters/lucas-doggiehood/issues/256)), so there is no portrait case that would need a bottom-tab variant.
-3. **Does the Debug unlock persist across launches?** → **resets each session** (ships hidden, re-hidden every launch; re-tap to reveal). Persisting across launches is a one-flag change if preferred.
+3. **Does the Debug unlock persist across launches?** → **resets each session** (ships hidden, re-hidden every launch; re-tap to reveal). Persisting across launches remains a one-flag change if we later prefer it.

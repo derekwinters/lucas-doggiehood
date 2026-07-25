@@ -98,7 +98,7 @@
   .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
   .q{font-size:13px;color:var(--text);margin:10px 0 0;padding:10px 14px;background:color-mix(in srgb,var(--gold) 16%,transparent);border-left:4px solid var(--gold);border-radius:0 8px 8px 0;}
   footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
-  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--coral) 22%,transparent);border:1px solid var(--coral);color:var(--text);font-size:12.5px;font-weight:600;}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -215,7 +215,7 @@
       <p class="note"><b>Title</b> (Settings) · <b>Sidebar</b> (tab rail: About, + Debug when unlocked) · <b>Content pane</b> (active tab's body) · <b>Close</b> (top-right ✕). Entry: a <b>gear</b> in the HUD's top-right corner (coins chip moved inboard, to its left).</p>
       <p class="note"><b>About:</b> app name + tappable <b>version</b> label (also the debug-unlock target) + a small credits line.</p>
       <p class="note"><b>Debug</b> (hidden until unlocked): a list of on-device toggles/actions. First toggle <b>Show backyard fences</b> drives <code>WorldBuilder.ForceFencesVisible</code> (#152). Room for more (e.g. <b>Add coins</b>, #286).</p>
-      <h2 style="margin-top:22px;">Open questions — proposed answers (for approval)</h2>
+      <h2 style="margin-top:22px;">Design decisions (approved)</h2>
       <p class="q"><b>① Entry point:</b> a <b>gear button in the HUD's top-right corner (furthest right)</b>, with the <b>currency chip moved just inboard, to the gear's left</b>. This nudges the currency-chip placement, so the HUD wireframe (#174) is flagged to reconcile — the gear takes the corner.</p>
       <p class="q"><b>② Sidebar vs bottom tabs:</b> <b>sidebar only</b> — the game is landscape-locked (#22/#256), so there's no portrait case to design a bottom-tab variant for.</p>
       <p class="q"><b>③ Debug unlock persistence:</b> <b>resets each session</b> — the Debug tab ships hidden and is re-hidden on every launch; re-tap the version 10× to reveal. (Persisting across launches is a one-flag change if you'd rather unlock once.)</p>
@@ -224,7 +224,7 @@
 
   <footer>
     Opens from a HUD gear · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200 · establishes the "debug affordances live in the Debug tab" standard (#219). Constants born here (#161); EditMode tests assert the built menu against them.
-    <br><span class="status">Proposal — awaiting Derek/Lucas approval (#218)</span>
+    <br><span class="status">Approved (Derek, 2026-07-25) (#218)</span>
   </footer>
 </div>
 </body>
