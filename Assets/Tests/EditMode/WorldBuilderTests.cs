@@ -49,6 +49,39 @@ namespace Doggiehood.Unity.EditModeTests
             return root.transform.Cast<Transform>();
         }
 
+        private int FenceContainerCount()
+        {
+            return Children().Count(t => t.name.StartsWith(WorldBuilder.FenceNamePrefix));
+        }
+
+        [Test]
+        public void RebuildFences_ShowsAndHidesFencesOnALiveBuild()
+        {
+            // #219: the Debug tab's fence toggle sets ForceFencesVisible then
+            // rebuilds just the fences on the live world (no full reload), so
+            // #152 can be eyeballed on-device — fences appear when forced on
+            // and disappear when forced off.
+            var original = WorldBuilder.ForceFencesVisible;
+            try
+            {
+                WorldBuilder.ForceFencesVisible = false;
+                WorldBuilder.RebuildFences(root.transform);
+                Assert.That(FenceContainerCount(), Is.EqualTo(0), "default lots are unfenced");
+
+                WorldBuilder.ForceFencesVisible = true;
+                WorldBuilder.RebuildFences(root.transform);
+                Assert.That(FenceContainerCount(), Is.GreaterThan(0), "fences appear on a live rebuild");
+
+                WorldBuilder.ForceFencesVisible = false;
+                WorldBuilder.RebuildFences(root.transform);
+                Assert.That(FenceContainerCount(), Is.EqualTo(0), "fences disappear on a live rebuild");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
         [Test]
         public void BuildsExactlyFourHouses_AtTheirCoreFrontSetbackPositions()
         {
