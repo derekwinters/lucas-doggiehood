@@ -1719,8 +1719,12 @@
 <td>Post-v0.4 <strong>playtest fixes &amp; polish</strong> — bugs and rough edges surfaced while playtesting the v0.4 graybox. Active target for new playtest-fix intake; larger new features wait for a later milestone.</td>
 </tr>
 <tr>
+<td><code>v0.6</code></td>
+<td><strong>First real-art / de-graybox pass.</strong> Replace the graybox placeholders with real art — both the Candy Cottage UI chrome (HUD, dialogue panel, onboarding, settings; visual direction from <a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>) <em>and</em> the world/house visuals — so the working v0.4 graybox starts to look like the real game. Larger art/UI work that outgrows v0.5's playtest-fix scope lands here.</td>
+</tr>
+<tr>
 <td><code>v1.0</code></td>
-<td>First complete release: the last group of changes required to call it v1 — real art, polish, onboarding, final integration.</td>
+<td>First complete release: the last group of changes required to call it v1 — final art polish, onboarding, and integration on top of v0.6's real-art pass.</td>
 </tr>
 <tr>
 <td><code>v1.1</code></td>
@@ -1732,7 +1736,7 @@
 </tr>
 </tbody>
 </table>
-<p>Between the named milestones we spin up further version milestones (<code>v0.6</code>, <code>v0.7</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
+<p>Between the named milestones we spin up further version milestones (<code>v0.7</code>, <code>v0.8</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
 <p><strong>Closing a milestone to new work.</strong> When a version is done taking new issues, <em>freeze</em> it: mark its row here <strong>and its GitHub milestone <code>description</code></strong> as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions (<a href="../../engineering/issue-pipeline/">pipeline-analysis</a>), so freezing one and activating the next is what reroutes new intake — <strong>existing approved issues in the frozen milestone stay put and finish</strong>, only new issues are redirected. <code>/focus</code> still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner <code>/approve</code> or <code>/milestone</code> can still place an issue anywhere.)</p>
 <p>Two <strong>non-version</strong> milestones sit alongside these:</p>
 <ul>
