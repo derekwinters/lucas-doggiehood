@@ -178,6 +178,19 @@ namespace Doggiehood.Unity
             return HouseModelCatalog.ForHouse(houseId).ModelName;
         }
 
+        /// <summary>
+        /// Resources load key for a house's kit model at a given level (#59):
+        /// the level-resolved mesh from
+        /// <see cref="HouseLevelModelTable"/> (level 1 is the anchored
+        /// as-built mesh, matching the single-arg overload; upgrading swaps
+        /// in the next rung). Used by BuildHouse to render the mesh for a
+        /// house's current level.
+        /// </summary>
+        public static string HouseModelResourcePath(int houseId, int level)
+        {
+            return HouseLevelModelTable.ForHouseLevel(houseId, level);
+        }
+
         public static GameObject Build(GameState state)
         {
             var root = new GameObject(RootName);
@@ -829,14 +842,22 @@ namespace Doggiehood.Unity
             anchor.localRotation = Quaternion.LookRotation(facing, Vector3.up);
             view.WindowAnchor = anchor;
 
-            // #57: a house built on a zone lot beyond the starting 4 has no
-            // authored HouseStyleTable entry yet (per-zone-house model/tint
-            // assignment is undesigned) — HasStyle steers it straight to
-            // the graybox fallback below instead of letting
-            // HouseModelResourcePath's HouseStyleTable.ForHouse throw.
-            var model = (ForcePrimitiveFallback || !HouseStyleTable.HasStyle(house.Id))
+            // #59: render the mesh for the house's CURRENT level from
+            // HouseLevelModelTable — a level-1 house shows its anchored
+            // as-built mesh, and upgrading swaps in the next rung. Two things
+            // steer to the graybox fallback below instead: a house built on a
+            // zone lot beyond the starting 4 has no ladder (#57,
+            // per-zone-house styling undesigned), and the L2-L4 upgrade
+            // meshes have no authored HouseModelCatalog geometry yet
+            // (HasModel false) so they render graybox until a later art pass.
+            // The lot footprint is untouched either way — leveling never
+            // resizes the lot.
+            var levelModelName = HouseLevelModelTable.HasHouse(house.Id)
+                ? HouseModelResourcePath(house.Id, house.Level)
+                : null;
+            var model = (ForcePrimitiveFallback || levelModelName == null || !HouseModelCatalog.HasModel(levelModelName))
                 ? null
-                : Resources.Load<GameObject>(HouseModelResourcePath(house.Id));
+                : Resources.Load<GameObject>(levelModelName);
             if (model != null)
             {
                 var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
