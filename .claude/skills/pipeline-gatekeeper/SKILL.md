@@ -118,16 +118,38 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
    (both honored and owner-authored no-ops) so the next run skips it. This is
    what makes the gatekeeper idempotent — do not skip it.
 
-6. **Run the reconciliation sweep** (`pipeline-reconcile`) against live state,
+6. **Auto-revisit unblocked questions** (`check_revisits.py`, issue #241). An
+   issue can sit in `needs-clarification` only because it is `Blocked by: #N` —
+   it needed a decision that lives in its blocker. This is a **state-derived
+   transition, not a comment command**, so it runs here after the
+   comment-driven moves above, once those labels are set. Build a snapshot of
+   the **open** issues (each `number`, `labels`, and `body` — the body carries
+   the structured `Blocked by: #N` lines) and pipe it in:
+
+   ```bash
+   python3 .claude/skills/pipeline-gatekeeper/check_revisits.py < snapshot.json
+   ```
+
+   The script returns `{"revisits": [...]}`. For each revisit, apply its
+   `add_labels` / `remove_labels` (swap `needs-clarification` → `ai-triage`) and
+   post a short auto-comment naming the cleared blocker(s) and ending in the
+   `back-to-analysis` menu — e.g. *"Blocker #N reached `ready-for-work` —
+   revisiting."* A blocker counts as resolved when it is closed/merged (absent
+   from the open snapshot) or carries `ready-for-work`/`in-progress`; an issue
+   with **multiple** blockers only revisits once **all** are resolved. Only
+   structured `Blocked by: #N` lines gate this — a prose mention never fires it.
+
+7. **Run the reconciliation sweep** (`pipeline-reconcile`) against live state,
    now that the commands above have set their labels. Apply only its
    `strip_labels` and `requeue` auto-fixes; the sweep never closes an issue, and
    its `flag_*` findings are surfaced by the dashboard, not acted on here. See
    `docs/engineering/issue-pipeline.md`.
 
-7. **Report** a one-line summary per issue touched (e.g.
-   `#181 approve → ready-for-work (07 - Polish & Onboarding)`), and note any
-   `skipped` non-owner commands so Derek can see an attempted bad-actor command
-   was ignored.
+8. **Report** a one-line summary per issue touched (e.g.
+   `#181 approve → ready-for-work (07 - Polish & Onboarding)`, or
+   `#185 revisit → ai-triage (blocker #109 cleared)`), and note any `skipped`
+   non-owner commands so Derek can see an attempted bad-actor command was
+   ignored.
 
 ## Tests
 
@@ -136,7 +158,11 @@ epic/dashboard exclusion, each command's label move, milestone matching, the
 `/approve` milestone gate (`ready-for-work` ⇒ has milestone — refused with an
 `approve-no-milestone` skip when none resolves, honored when an inline
 `/milestone`, the issue's current milestone, or the analysis-proposed milestone
-resolves one), and the parked-issue rule. Run:
+resolves one), and the parked-issue rule. `tests/test_check_revisits.py` covers
+the blocker auto-revisit (#241): single/multiple blockers, closed vs.
+`ready-for-work`/`in-progress` blockers, the all-must-resolve rule, and the
+regression guards (no `Blocked by:` line, still-open blocker, prose-only
+mention, non-`needs-clarification` and `parked` issues never fire). Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-gatekeeper/tests

@@ -84,6 +84,30 @@ This is the **presence** gate. Its sibling
 blocker's milestone); the two chain **resolve → presence (#247) → order (#212)**,
 so the order check only runs once a milestone exists.
 
+### Auto-revisit when a blocker clears
+
+An issue can be parked in `needs-clarification` **only because** it is
+`Blocked by: #N` — it needed a decision that lives in its blocker (e.g. issue 1
+blocks issue 2; issue 2 was sent back for clarification only because it awaits a
+call on issue 1). Nothing was re-examining those issues once the blocker
+resolved: analysis only acts on `ai-triage`, and the gatekeeper otherwise only
+acts on Derek's comments — so the question stalled indefinitely
+([#241](https://github.com/derekwinters/lucas-doggiehood/issues/241)).
+
+The gatekeeper closes that gap with a **state-derived transition** (not a
+comment command): the deterministic `check_revisits.py::check_blocker_revisits`
+takes the open-issue snapshot (number, labels, body) and returns a revisit —
+add `ai-triage`, remove `needs-clarification` — for every `needs-clarification`
+issue whose structured `Blocked by: #N` blockers have **all** resolved. A
+blocker is resolved when it is closed/merged (absent from the open snapshot) or
+carries `ready-for-work`/`in-progress`. An issue with multiple blockers revisits
+only once every one is resolved; an issue with no structured `Blocked by:` line,
+a still-open unresolved blocker, a prose-only mention, or a `parked` label is
+never touched (no false triggers). It runs in the gatekeeper step **after**
+comment-driven moves, so it reconciles against the labels those commands just
+set, and posts a short auto-comment naming the cleared blocker(s) ending in the
+`back-to-analysis` menu.
+
 ## Where `/focus` is stored
 
 The active nightly-development milestone lives in a hidden marker on the
@@ -273,7 +297,10 @@ findings. Both share the one `reconcile.py` implementation.
 Read-only. `render_dashboard.py` recomputes live state and rewrites **#193** in
 place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
-please separated), intake, pending-approval, needs-clarification, a read-only
+please separated), intake, pending-approval and needs-clarification (each of
+these three tables carries a **"Blocked by"** column listing the issue's
+structured `Blocked by: #N` hard blockers as links, so blockers surface on every
+stage the way the focus queue already flags them — [#241](https://github.com/derekwinters/lucas-doggiehood/issues/241)), a read-only
 **"⏸️ Parked"** section listing every open `parked` issue so parked work stays
 visible and easy to `/unpark` ([#249](https://github.com/derekwinters/lucas-doggiehood/issues/249)),
 a **"⚠️ Reconcile"** section listing the sweep's flag findings (merged-but-open,
@@ -299,7 +326,8 @@ only live milestones outside the focus are shown ([#214](https://github.com/dere
 Each stage is a self-contained skill directory under `.claude/skills/`:
 
 - `pipeline-gatekeeper/` — `SKILL.md` + `parse_commands.py` (deterministic
-  command parser) + tests.
+  command parser) + `check_revisits.py` (blocker auto-revisit transition) +
+  tests.
 - `pipeline-analysis/` — `SKILL.md` (model-driven triage/design).
 - `pipeline-dashboard/` — `SKILL.md` + `render_dashboard.py` + golden test;
   driven in production by `.github/workflows/dashboard.yml`.
