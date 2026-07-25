@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.4.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.3.0...v0.4.0) (2026-07-25)
+
+
+### Features
+
+* add pipeline reconciliation sweep for drifted issues ([#276](https://github.com/derekwinters/lucas-doggiehood/issues/276)) ([2a027c7](https://github.com/derekwinters/lucas-doggiehood/commit/2a027c76d373991361ee000356572027d2acb037))
+* add Settings menu with About tab, Debug unlock, and fence toggle ([#289](https://github.com/derekwinters/lucas-doggiehood/issues/289)) ([0d57586](https://github.com/derekwinters/lucas-doggiehood/commit/0d5758653efa06379ba6bbc64436d2f836db28a2))
+* **ai:** adopt shared ai-skills bundles + /focus fix ([#238](https://github.com/derekwinters/lucas-doggiehood/issues/238)) ([7c8f6fd](https://github.com/derekwinters/lucas-doggiehood/commit/7c8f6fd8f91e3e9f78273b95902ad8b0c2218d05))
+* **camera:** add free twist-driven yaw rotation ([#264](https://github.com/derekwinters/lucas-doggiehood/issues/264)) ([cfca215](https://github.com/derekwinters/lucas-doggiehood/commit/cfca2151d35134442110ee3c63698e18d03dd7b1))
+* **dashboard:** add read-only Parked section ([#282](https://github.com/derekwinters/lucas-doggiehood/issues/282)) ([04c743a](https://github.com/derekwinters/lucas-doggiehood/commit/04c743ac066ee55e54ae2d9226e843cc2bc5bf79))
+* **dashboard:** star unblocking issues in the ready-for-work queue ([#283](https://github.com/derekwinters/lucas-doggiehood/issues/283)) ([b2d282e](https://github.com/derekwinters/lucas-doggiehood/commit/b2d282efe54cf3581bc5d37885182871112c8249))
+* drop release-please parenthetical from dashboard Your move PR count ([#253](https://github.com/derekwinters/lucas-doggiehood/issues/253)) ([a3f348f](https://github.com/derekwinters/lucas-doggiehood/commit/a3f348f44d2f509e3f77090bd32231fcbea5aa51))
+* enlarge conversation panel dialogue text and buttons for readability ([#274](https://github.com/derekwinters/lucas-doggiehood/issues/274)) ([4d85d47](https://github.com/derekwinters/lucas-doggiehood/commit/4d85d471f867124b6d256e798dfebe3480c4edee))
+* **expansion:** move dogs into empty houses over time via a pity ([e355cfb](https://github.com/derekwinters/lucas-doggiehood/commit/e355cfb817323cb08606f44097e7510783a9e261))
+* **expansion:** move dogs into empty houses over time via a pity counter ([#237](https://github.com/derekwinters/lucas-doggiehood/issues/237)) ([e355cfb](https://github.com/derekwinters/lucas-doggiehood/commit/e355cfb817323cb08606f44097e7510783a9e261))
+* **expansion:** tint the map-expansion lock indicator by affordability ([#261](https://github.com/derekwinters/lucas-doggiehood/issues/261)) ([966d346](https://github.com/derekwinters/lucas-doggiehood/commit/966d34605d76646e1357d6e3456af5a7cac53738))
+* **expansion:** unlock authored map zones with a currency cost ([#239](https://github.com/derekwinters/lucas-doggiehood/issues/239)) ([d71f56c](https://github.com/derekwinters/lucas-doggiehood/commit/d71f56c64b45235b8c40021b74cd5e773d2fc957))
+* **expansion:** unlock authored map zones with a currency cost ([#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)) ([d71f56c](https://github.com/derekwinters/lucas-doggiehood/commit/d71f56c64b45235b8c40021b74cd5e773d2fc957))
+* **quests:** add a Not-now decline action to the conversation panel ([#262](https://github.com/derekwinters/lucas-doggiehood/issues/262)) ([865eadd](https://github.com/derekwinters/lucas-doggiehood/commit/865eadd174bd6fafb6e9b0e5552702b9a1126765))
+* **quests:** show cost and insufficient-funds feedback in the conversation panel ([#263](https://github.com/derekwinters/lucas-doggiehood/issues/263)) ([c47c045](https://github.com/derekwinters/lucas-doggiehood/commit/c47c045a471509e2d5b1311cb65ee74a1a5b2f11)), closes [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186)
+* **reconcile:** flag prose-only dependency references ([#281](https://github.com/derekwinters/lucas-doggiehood/issues/281)) ([67df8c5](https://github.com/derekwinters/lucas-doggiehood/commit/67df8c5990781fafd9eb6fcf3beffa963b8babd7))
+* **ui:** lock landscape orientation and add 1920x1200 CanvasScaler ([#285](https://github.com/derekwinters/lucas-doggiehood/issues/285)) ([35716ce](https://github.com/derekwinters/lucas-doggiehood/commit/35716ce560c8f63156ee25e6af7101ad4dadbfdb))
+* **world:** define lot bounds as a tile-quadrant primitive (refs [#222](https://github.com/derekwinters/lucas-doggiehood/issues/222)) ([79a5427](https://github.com/derekwinters/lucas-doggiehood/commit/79a54279212df98e090d6bde40caf7b00a40fb12))
+* **world:** define lot bounds as a tile-quadrant primitive (refs [#222](https://github.com/derekwinters/lucas-doggiehood/issues/222)) ([#242](https://github.com/derekwinters/lucas-doggiehood/issues/242)) ([79a5427](https://github.com/derekwinters/lucas-doggiehood/commit/79a54279212df98e090d6bde40caf7b00a40fb12))
+
+
+### Bug Fixes
+
+* **ci:** stop docs-test gate flapping red on skip-docs PRs ([#284](https://github.com/derekwinters/lucas-doggiehood/issues/284)) ([c4add0c](https://github.com/derekwinters/lucas-doggiehood/commit/c4add0c8758e9c5c79f9735d6fc351cb2e6fed5d))
+* clear the perpendicular road corridor from yard regions too ([#275](https://github.com/derekwinters/lucas-doggiehood/issues/275)) ([46060c2](https://github.com/derekwinters/lucas-doggiehood/commit/46060c2f0f554fb8e185c9a50dc88f448d3c83a3))
+* conversation panel resolves one quest at a time and is always dismissable ([#269](https://github.com/derekwinters/lucas-doggiehood/issues/269)) ([45e1772](https://github.com/derekwinters/lucas-doggiehood/commit/45e1772cbd08aeac6a56dc365e48608e3e75f49a))
+* **dashboard:** hide closed milestones from the pipeline dashboard ([#251](https://github.com/derekwinters/lucas-doggiehood/issues/251)) ([f68af19](https://github.com/derekwinters/lucas-doggiehood/commit/f68af197168d6d72ba3f97622d552a4251d98b02))
+* **gatekeeper:** refuse /approve to ready-for-work without a milestone ([#280](https://github.com/derekwinters/lucas-doggiehood/issues/280)) ([528034d](https://github.com/derekwinters/lucas-doggiehood/commit/528034d5df345bdce648536e528874cca1d2fa7e))
+* honor /focus on the dashboard issue so focus can be set from [#193](https://github.com/derekwinters/lucas-doggiehood/issues/193) ([#226](https://github.com/derekwinters/lucas-doggiehood/issues/226)) ([b5e90aa](https://github.com/derekwinters/lucas-doggiehood/commit/b5e90aa8f8c6606fe814c0597cd851f339f1c1f7))
+* keep procedural yard trees out of the road ([#271](https://github.com/derekwinters/lucas-doggiehood/issues/271)) ([5f7c7ed](https://github.com/derekwinters/lucas-doggiehood/commit/5f7c7ed0cb3aaed7a2fe587cb02d2fa6328c2a14))
+* make onboarding coach prompt advance and dismiss, re-lay against wireframe ([#268](https://github.com/derekwinters/lucas-doggiehood/issues/268)) ([20e8bbb](https://github.com/derekwinters/lucas-doggiehood/commit/20e8bbb222da399ee62a965fbd0d5f7f645a91fd))
+* reconcile done-ness counts only closing-keyword refs ([#278](https://github.com/derekwinters/lucas-doggiehood/issues/278)) ([1f0f099](https://github.com/derekwinters/lucas-doggiehood/commit/1f0f0999665e6e6b19f3f7f47ac2e6c78126fa88))
+* remove planters from procedural yard landscaping ([#270](https://github.com/derekwinters/lucas-doggiehood/issues/270)) ([37a374d](https://github.com/derekwinters/lucas-doggiehood/commit/37a374d678bfa13581c85bc1380adf9187efdd7d))
+* set /focus by re-rendering the dashboard, never hand-editing [#193](https://github.com/derekwinters/lucas-doggiehood/issues/193) ([#230](https://github.com/derekwinters/lucas-doggiehood/issues/230)) ([ef5e8a3](https://github.com/derekwinters/lucas-doggiehood/commit/ef5e8a36d09dd05df5dc92bcb474ff2f5a1b8a61))
+
 ## [0.3.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.2.0...v0.3.0) (2026-07-19)
 
 
