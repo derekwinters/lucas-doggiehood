@@ -54,5 +54,21 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(house.Level, Is.EqualTo(3));
         }
+
+        [Test]
+        public void RaiseLevel_IncrementsTheLevelByOne()
+        {
+            // #59: the mutating upgrade path, mirroring MarkOccupied — a
+            // one-way increment with no ceremony of its own. The max-level
+            // and cost guards live in GameState.TryUpgradeHouse (mirroring
+            // how MarkOccupied leaves the vacancy decision to the move-in
+            // system), so a house's level only ever climbs through that
+            // validated entry point.
+            var house = new House(99, Quadrant.NorthEast);
+
+            house.RaiseLevel();
+
+            Assert.That(house.Level, Is.EqualTo(House.InitialLevel + 1));
+        }
     }
 }

@@ -249,5 +249,100 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.Throws<ArgumentException>(() => state.GetHouseLot(-1));
         }
+
+        [Test]
+        public void TryUpgradeHouse_MovesLevelOneToTwo_DebitingTheNamedCost()
+        {
+            // #59: the first upgrade step charges HouseUpgradeNumbers'
+            // named 100-coin constant and raises the house from level 1 to
+            // level 2 — the same charge-then-mutate pattern as
+            // TryBuildHouse. A starting house is level 1.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2);
+            var house = state.Houses.First();
+            Assert.That(house.Level, Is.EqualTo(House.InitialLevel), "sanity: starts at level 1");
+
+            var upgraded = state.TryUpgradeHouse(house.Id);
+
+            Assert.That(upgraded, Is.True);
+            Assert.That(house.Level, Is.EqualTo(2));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryUpgradeHouse_UnknownHouse_IsRejectedWithNoStateChange()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2);
+
+            var upgraded = state.TryUpgradeHouse(9999);
+
+            Assert.That(upgraded, Is.False);
+            Assert.That(state.Wallet.Coins, Is.EqualTo(Expansion.HouseUpgradeNumbers.CostToLevel2));
+            Assert.That(state.Houses, Has.All.Property("Level").EqualTo(House.InitialLevel));
+        }
+
+        [Test]
+        public void TryUpgradeHouse_ClimbsTwoToThreeToFour_DebitingTheDoublingCosts()
+        {
+            // #59: sequential upgrades charge 200 then 400 (the named
+            // doubling constants) as the house climbs to the level-4 cap.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2
+                + Expansion.HouseUpgradeNumbers.CostToLevel3
+                + Expansion.HouseUpgradeNumbers.CostToLevel4);
+            var house = state.Houses.First();
+
+            Assert.That(state.TryUpgradeHouse(house.Id), Is.True);
+            Assert.That(house.Level, Is.EqualTo(2));
+            Assert.That(state.TryUpgradeHouse(house.Id), Is.True);
+            Assert.That(house.Level, Is.EqualTo(3));
+            Assert.That(state.TryUpgradeHouse(house.Id), Is.True);
+            Assert.That(house.Level, Is.EqualTo(Expansion.HouseUpgradeNumbers.MaxLevel));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryUpgradeHouse_AtMaxLevel_IsRejectedWithNoStateChange()
+        {
+            // #59: upgrading past level 4 is rejected — no deduction, level
+            // unchanged. The wallet is left flush with coins to prove the
+            // rejection is the cap, not affordability.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2
+                + Expansion.HouseUpgradeNumbers.CostToLevel3
+                + Expansion.HouseUpgradeNumbers.CostToLevel4);
+            var house = state.Houses.First();
+            state.TryUpgradeHouse(house.Id);
+            state.TryUpgradeHouse(house.Id);
+            state.TryUpgradeHouse(house.Id);
+            Assert.That(house.Level, Is.EqualTo(Expansion.HouseUpgradeNumbers.MaxLevel), "sanity: at the cap");
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel4);
+            var coinsAtCap = state.Wallet.Coins;
+
+            var upgraded = state.TryUpgradeHouse(house.Id);
+
+            Assert.That(upgraded, Is.False);
+            Assert.That(house.Level, Is.EqualTo(Expansion.HouseUpgradeNumbers.MaxLevel));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsAtCap));
+        }
+
+        [Test]
+        public void TryUpgradeHouse_InsufficientBalance_IsRejected_LevelAndBalanceUnchanged()
+        {
+            // #59: an unaffordable upgrade leaves both the level and the
+            // balance untouched (Wallet.TrySpend never deducts on a
+            // rejected spend).
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2 - 1);
+            var house = state.Houses.First();
+            var coinsBefore = state.Wallet.Coins;
+
+            var upgraded = state.TryUpgradeHouse(house.Id);
+
+            Assert.That(upgraded, Is.False);
+            Assert.That(house.Level, Is.EqualTo(House.InitialLevel));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore));
+        }
     }
 }
