@@ -1166,6 +1166,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capacity-house-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capacity (= house level)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#acquisition" class="md-nav__link">
     <span class="md-ellipsis">
       Acquisition
@@ -1580,6 +1589,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capacity-house-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capacity (= house level)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#acquisition" class="md-nav__link">
     <span class="md-ellipsis">
       Acquisition
@@ -1637,6 +1655,9 @@
 <p>Decorations are cosmetic but also raise a dog's happiness. Happiness affects animations (more wagging), idle behavior, and dialogue tone/mood <strong>only</strong> — it never gates or unlocks quests, dialogue, or rewards. This keeps the no-fail, low-pressure design intact. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/47">#47</a>)</p>
 <h2 id="placement">Placement<a class="headerlink" href="#placement" title="Permanent link">&para;</a></h2>
 <p>Decorations are placed automatically in a sensible spot in the yard — no drag-and-drop or arranging UI for v1.0. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/48">#48</a>)</p>
+<h2 id="capacity-house-level">Capacity (= house level)<a class="headerlink" href="#capacity-house-level" title="Permanent link">&para;</a></h2>
+<p>A yard holds at most as many decorations as its <a href="../expansion/#house-leveling">house level</a> — <strong>1 at level 1, up to 4 at level 4</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>). A placement past the current capacity is rejected. Upgrading the house raises the cap.</p>
+<p><strong>Grandfathering (Derek, 2026-07-14):</strong> the MVP decoration flow auto-placed with no cap, so a yard can already hold more decorations than its level allows when the cap ships. Nothing already placed is ever removed — the cap blocks <em>new</em> placements only. In Core this is <code>GameState.TryAddDecoration</code> (the capacity-respecting path); the raw <code>AddDecoration</code> used by save-load stays uncapped, which is what preserves the grandfathered items.</p>
 <h2 id="acquisition">Acquisition<a class="headerlink" href="#acquisition" title="Permanent link">&para;</a></h2>
 <p>There is <strong>no standalone decoration shop</strong>. Decorations are requested by dogs the same way other gifts are, as part of the normal quest rotation, fulfilled via the delivery truck (see <a href="../quests/quest-content/">Quest Content</a>). (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/49">#49</a>)</p>
 <p>A decoration request is <strong>generic</strong> (e.g. "my yard could use something comfy") rather than naming one specific item — the player picks which item to send from a small set of options. This differs from the toy/pool quest, which asks for one specific named thing. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/50">#50</a>)</p>
