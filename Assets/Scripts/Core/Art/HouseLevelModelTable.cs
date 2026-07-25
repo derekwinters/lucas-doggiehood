@@ -12,11 +12,14 @@ namespace Doggiehood.Core.Art
     /// is exactly the as-built mesh <see cref="HouseStyleTable"/> already
     /// assigns that house (guarded by a table test), so a level-1 house
     /// renders identically to today. Levels 2-4 are Derek's approved
-    /// direction (2026-07-25); their full 3D catalog entries
-    /// (footprint/door anchors in <see cref="Doggiehood.Core.World.HouseModelCatalog"/>)
-    /// are NOT yet authored, so the Unity layer renders those upgrade meshes
-    /// via the existing graybox fallback until a later art pass — this Core
-    /// table only holds the mesh-name strings. See
+    /// direction (2026-07-25). Every rung of every ladder has a full 3D
+    /// catalog entry (footprint/door anchors in
+    /// <see cref="Doggiehood.Core.World.HouseModelCatalog"/>) as of the v0.6
+    /// de-graybox pass, so the Unity layer renders each level's chosen kit
+    /// mesh (visibly growing) rather than a graybox placeholder — this Core
+    /// table only holds the mesh-name strings. The non-L1 meshes' door
+    /// anchors are still provisional placeholders pending a gallery authoring
+    /// pass; the models themselves are final. See
     /// docs/specs/expansion.md#house-leveling.
     /// </summary>
     public static class HouseLevelModelTable

@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -39,12 +40,40 @@ namespace Doggiehood.Core.Tests.World
         public void HasModel_IsTrueOnlyForCatalogedMeshes()
         {
             // #59: WorldBuilder uses this non-throwing check to steer a
-            // level-resolved mesh with no authored catalog entry (the L2-L4
-            // upgrade meshes, geometry not yet authored) to the graybox
+            // level-resolved mesh with no catalog entry to the graybox
             // fallback instead of crashing on ForModel's ArgumentException.
+            // The starter-house ladder meshes now ALL carry a catalog entry
+            // (v0.6 de-graybox pass — every level renders its chosen kit
+            // mesh), so the fallback is reached only for genuinely-unknown
+            // meshes (e.g. an expansion house with no ladder).
             Assert.That(HouseModelCatalog.HasModel("building-type-r"), Is.True);
-            Assert.That(HouseModelCatalog.HasModel("building-type-c"), Is.False, "L2 upgrade mesh has no catalog entry yet");
+            Assert.That(HouseModelCatalog.HasModel("building-type-c"), Is.True, "L2 upgrade mesh now has a catalog entry");
             Assert.That(HouseModelCatalog.HasModel("building-type-zzz"), Is.False);
+        }
+
+        [Test]
+        public void EveryLevelOfEveryStarterHouse_ResolvesToARealCatalogEntry()
+        {
+            // "No graybox at any level" as an enforced invariant (Derek
+            // 2026-07-25: the chosen kit mesh must render at every level, not
+            // a graybox placeholder). Every level 1..MaxLevel of every starter
+            // house's HouseLevelModelTable ladder must name a mesh that has a
+            // full HouseModelCatalog entry, so WorldBuilder never falls back
+            // to the graybox for a starter house at any level.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(HouseLevelModelTable.HasHouse(lot.HouseId), Is.True,
+                    $"house {lot.HouseId} has no level ladder");
+
+                for (var level = HouseLevelModelTable.MinLevel;
+                     level <= Doggiehood.Core.Expansion.HouseUpgradeNumbers.MaxLevel;
+                     level++)
+                {
+                    var mesh = HouseLevelModelTable.ForHouseLevel(lot.HouseId, level);
+                    Assert.That(HouseModelCatalog.HasModel(mesh), Is.True,
+                        $"house {lot.HouseId} level {level} mesh '{mesh}' has no catalog entry");
+                }
+            }
         }
 
         [Test]
@@ -112,6 +141,48 @@ namespace Doggiehood.Core.Tests.World
             AssertDoor("building-type-r", 0f, -0.2550f);
             AssertDoor("building-type-h", 0f, -0.2290f);
             AssertDoor("building-type-q", 0f, -0.2214f);
+        }
+
+        [Test]
+        public void Models_RecordTheMeasuredFootprints_ForTheLadderMeshes()
+        {
+            // The 10 non-L1 upgrade meshes of the #59 ladders (v0.6
+            // de-graybox pass, Derek 2026-07-25: every level renders its
+            // chosen kit mesh, no graybox). Footprints measured from each kit
+            // FBX bounding-box extent / 100 — the same model-local convention
+            // b/g/k/m and the r/h/q L1 starters use.
+            AssertEntry("building-type-c", 1.2864f, 1.0281f);
+            AssertEntry("building-type-s", 1.4060f, 1.0864f);
+            AssertEntry("building-type-f", 1.4280f, 1.4059f);
+            AssertEntry("building-type-i", 1.2864f, 1.0280f);
+            AssertEntry("building-type-l", 1.0336f, 1.0200f);
+            AssertEntry("building-type-j", 1.3700f, 0.9160f);
+            AssertEntry("building-type-d", 1.7564f, 1.0280f);
+            AssertEntry("building-type-e", 1.3000f, 1.0280f);
+            AssertEntry("building-type-u", 1.4280f, 1.0869f);
+            AssertEntry("building-type-n", 1.7843f, 1.3779f);
+        }
+
+        [Test]
+        public void Models_DoorLocalPoints_ForTheLadderMeshes_ArePlaceholders()
+        {
+            // PLACEHOLDER door anchors for the 10 non-L1 ladder meshes, NOT
+            // authored measurements: centered on X and a quarter of the way
+            // toward the street (z = -FootprintZ/4) — the same provisional
+            // pattern as the r/h/q L1 starters, pending a Derek gallery
+            // authoring pass (the mechanism that produced the #126 pass-1 door
+            // data for b/g/k/m). They sit strictly inside the footprint so the
+            // within-footprint guardrail holds until the real anchors land.
+            AssertDoor("building-type-c", 0f, -0.2570f);
+            AssertDoor("building-type-s", 0f, -0.2716f);
+            AssertDoor("building-type-f", 0f, -0.3515f);
+            AssertDoor("building-type-i", 0f, -0.2570f);
+            AssertDoor("building-type-l", 0f, -0.2550f);
+            AssertDoor("building-type-j", 0f, -0.2290f);
+            AssertDoor("building-type-d", 0f, -0.2570f);
+            AssertDoor("building-type-e", 0f, -0.2570f);
+            AssertDoor("building-type-u", 0f, -0.2717f);
+            AssertDoor("building-type-n", 0f, -0.3445f);
         }
 
         [Test]

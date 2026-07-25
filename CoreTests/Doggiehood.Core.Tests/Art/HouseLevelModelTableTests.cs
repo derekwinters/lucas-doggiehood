@@ -10,9 +10,10 @@ namespace Doggiehood.Core.Tests.Art
     /// <summary>
     /// #59: each house's level (1-4) resolves to a City Kit Suburban mesh,
     /// anchored on that house's Level-1 (as-built) mesh. Derek approved the
-    /// L1->L4 ladders (2026-07-25) as the real data; the L2-L4 3D catalog
-    /// entries are not yet authored, so Unity renders those via the graybox
-    /// fallback until a later art pass.
+    /// L1->L4 ladders (2026-07-25) as the real data; as of the v0.6
+    /// de-graybox pass every rung has a full HouseModelCatalog entry, so Unity
+    /// renders each level's chosen kit mesh (only the non-L1 door anchors
+    /// remain provisional placeholders pending a gallery authoring pass).
     /// </summary>
     public class HouseLevelModelTableTests
     {

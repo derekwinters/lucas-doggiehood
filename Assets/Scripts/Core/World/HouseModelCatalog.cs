@@ -59,6 +59,36 @@ namespace Doggiehood.Core.World
             new HouseModel("building-type-r", 1.028f, 1.020f, 0f, -0.2550f),
             new HouseModel("building-type-h", 1.300f, 0.916f, 0f, -0.2290f),
             new HouseModel("building-type-q", 1.240f, 0.8856f, 0f, -0.2214f),
+
+            // Level-2..4 upgrade meshes for the #59 ladders (v0.6 de-graybox
+            // pass, Derek 2026-07-25: "I want the house models we chose at all
+            // levels, not graybox"). Every level of every starter house now
+            // resolves to a real catalog entry, so a leveled-up home renders
+            // its chosen kit mesh — visibly growing — instead of the graybox
+            // placeholder. Footprints are measured from each kit FBX
+            // bounding-box extent / 100 (the b/g/k/m and r/h/q convention).
+            // Ladders: house1 r->c->s->b, house2 h->i->g->f,
+            // house3 k->l->j->d, house4 q->e->u->n.
+            //
+            // Door points are PROVISIONAL PLACEHOLDERS, not authored data:
+            // centered on X, a quarter of the footprint toward the street
+            // (z = -FootprintZ/4) — the same provisional pattern as the r/h/q
+            // L1 entries. They sit strictly inside the footprint so the
+            // within-footprint guardrail holds, and await a Derek gallery
+            // authoring pass (the mechanism that produced b/g/k/m's #126
+            // pass-1 measurements) to replace them with each mesh's real door
+            // anchor. The models themselves are final; only the door anchors
+            // are deferred.
+            new HouseModel("building-type-c", 1.2864f, 1.0281f, 0f, -0.2570f),
+            new HouseModel("building-type-s", 1.4060f, 1.0864f, 0f, -0.2716f),
+            new HouseModel("building-type-f", 1.4280f, 1.4059f, 0f, -0.3515f),
+            new HouseModel("building-type-i", 1.2864f, 1.0280f, 0f, -0.2570f),
+            new HouseModel("building-type-l", 1.0336f, 1.0200f, 0f, -0.2550f),
+            new HouseModel("building-type-j", 1.3700f, 0.9160f, 0f, -0.2290f),
+            new HouseModel("building-type-d", 1.7564f, 1.0280f, 0f, -0.2570f),
+            new HouseModel("building-type-e", 1.3000f, 1.0280f, 0f, -0.2570f),
+            new HouseModel("building-type-u", 1.4280f, 1.0869f, 0f, -0.2717f),
+            new HouseModel("building-type-n", 1.7843f, 1.3779f, 0f, -0.3445f),
         };
 
         public static HouseModel ForModel(string modelName)
@@ -75,12 +105,14 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
-        /// Non-throwing check for whether <paramref name="modelName"/> has an
-        /// authored catalog entry (#59). The #59 level-swap ladders
-        /// (<see cref="HouseLevelModelTable"/>) name L2-L4 meshes whose
-        /// footprint/door geometry isn't authored yet, so the Unity layer
-        /// uses this to steer those to the graybox fallback instead of
-        /// catching <see cref="ForModel"/>'s ArgumentException.
+        /// Non-throwing check for whether <paramref name="modelName"/> has a
+        /// catalog entry (#59). Every mesh named by the #59 level-swap ladders
+        /// (<see cref="HouseLevelModelTable"/>) now has one (v0.6 de-graybox
+        /// pass — all four levels of every starter house render their chosen
+        /// kit mesh), so the Unity layer only steers to the graybox fallback
+        /// for a genuinely-unknown mesh — e.g. an expansion-built house with
+        /// no ladder — instead of catching <see cref="ForModel"/>'s
+        /// ArgumentException.
         /// </summary>
         public static bool HasModel(string modelName)
         {
