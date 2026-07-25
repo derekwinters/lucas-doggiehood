@@ -26,7 +26,7 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(state.DecorationCapacityForHouse(house.Id), Is.EqualTo(1));
 
-            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2);
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2);
             state.TryUpgradeHouse(house.Id);
 
             Assert.That(state.DecorationCapacityForHouse(house.Id), Is.EqualTo(2));
@@ -55,7 +55,7 @@ namespace Doggiehood.Core.Tests.World
             state.TryAddDecoration(BedFor(house.Id, 0));
             Assert.That(state.TryAddDecoration(BedFor(house.Id, 1)), Is.False, "sanity: full at level 1");
 
-            state.Wallet.Deposit(Expansion.HouseUpgradeNumbers.CostToLevel2);
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2);
             state.TryUpgradeHouse(house.Id);
 
             Assert.That(state.TryAddDecoration(BedFor(house.Id, 1)), Is.True);
