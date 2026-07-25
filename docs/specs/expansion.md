@@ -50,7 +50,22 @@ The tile-grid placement/adjacency system this all sits on is [#109](https://gith
 
 ## House leveling
 
-Levels 1–4. Decoration slots equal the house level (**1/2/3/4**); upgrade costs are in [Pricing](#pricing). The v1.0 decoration flow auto-places with no cap, so the cap is introduced with [#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) (already-placed decorations are never removed). Per-level *visuals* are deliberately not yet designed — Core carries only the level number, and the art mapping is flagged as an open item on #59.
+Levels 1–4. Decoration slots equal the house level (**1/2/3/4**); upgrade costs are in [Pricing](#pricing) (100 / 200 / 400, doubling per step, capped at level 4).
+
+**Per-level visuals — model swap ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59), Derek 2026-07-25).** Leveling a house up swaps its City Kit Suburban mesh for the next rung of a per-house ladder, so a home visibly grows as it is upgraded. Each ladder is *anchored on its Level-1 mesh* — the level-1 entry is exactly the as-built mesh [`HouseStyleTable`](world/art-style.md#house-architecture) assigns that house, so a level-1 house renders identically to today. The approved L1→L4 ladders:
+
+| House | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|
+| 1 | `building-type-r` | `building-type-c` | `building-type-s` | `building-type-b` |
+| 2 | `building-type-h` | `building-type-i` | `building-type-g` | `building-type-f` |
+| 3 | `building-type-k` | `building-type-l` | `building-type-j` | `building-type-d` |
+| 4 | `building-type-q` | `building-type-e` | `building-type-u` | `building-type-n` |
+
+The L2–L4 meshes are an approved *direction*: their full 3D catalog entries (footprint/door anchors in `HouseModelCatalog`) are **not yet authored**, so the Unity layer renders those upgrade levels via the existing graybox fallback until a later art pass. Core carries only mesh-name strings (`Doggiehood.Core.Art.HouseLevelModelTable`).
+
+**Decoration capacity = house level.** A yard holds at most as many decorations as its level (1/2/3/4); a placement past capacity is rejected. See [Decorations](decorations.md#capacity-house-level) for the cap and its grandfathering rule (yards that already held more than their level's cap when this shipped keep everything — the cap blocks new placements only).
+
+**Implementation note ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59)):** `GameState.TryUpgradeHouse(houseId)` is the one Core entry point — it charges `Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToReach` (100/200/400) from `Wallet` and raises the house's level (`House.RaiseLevel`), returning false with no state change when the house is unknown, already at `HouseUpgradeNumbers.MaxLevel` (4), or unaffordable. The decoration cap is `GameState.TryAddDecoration` (capacity = level); the raw `AddDecoration` stays uncapped so save-load and grandfathered data are never removed. The player-facing **upgrade button UI** is out of scope here and tracked on [#294](https://github.com/derekwinters/lucas-doggiehood/issues/294) (blocked on a wireframe); until it lands, `TryUpgradeHouse` is reachable only in the Core test suite. Because the live quest-delivery flow (`QuestManager.DeliverPackage`) still uses the uncapped `AddDecoration`, the capacity cap governs the new `TryAddDecoration` path only — how a decoration quest behaves against a full yard is a separate, undesigned decision left for when the decoration/upgrade UI is built.
 
 ## Expansion indicator (discoverability)
 
@@ -74,5 +89,5 @@ Vacancy is Core state (`House.IsVacant`); the greyscale is purely its visual, wi
 - [x] Newly built houses render greyscaled and return to their normal tinted color on move-in ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58) — Core state, wiring, and rendering already built, now reachable through house building (#57))
 - [x] The map-expansion lock indicator hovers past the next locked zone's road-end entrance and tints gold/grey-black by affordability, updating live as the balance changes ([#178](https://github.com/derekwinters/lucas-doggiehood/issues/178), building on the icon staged by [#183](https://github.com/derekwinters/lucas-doggiehood/issues/183))
 - [ ] The shared pity-counter move-in system (5% base, +5% per quest, reset on success) fills vacant houses per the household/breed/easter-egg rules above
-- [ ] Houses support 4 discrete levels (upgrades 100/200/400) with decoration slots equal to level
+- [x] Houses support 4 discrete levels (upgrades 100/200/400) with decoration slots equal to level ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) — Core upgrade path + capacity cap + model-swap ladders built; player-facing upgrade button is [#294](https://github.com/derekwinters/lucas-doggiehood/issues/294), and the L2–L4 3D catalog entries await a later art pass)
 - [ ] Every tuning value above is a named constant adjustable for playtesting

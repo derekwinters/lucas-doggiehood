@@ -14,6 +14,12 @@ Decorations are cosmetic but also raise a dog's happiness. Happiness affects ani
 
 Decorations are placed automatically in a sensible spot in the yard — no drag-and-drop or arranging UI for v1.0. ([#48](https://github.com/derekwinters/lucas-doggiehood/issues/48))
 
+## Capacity (= house level)
+
+A yard holds at most as many decorations as its [house level](expansion.md#house-leveling) — **1 at level 1, up to 4 at level 4** ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59)). A placement past the current capacity is rejected. Upgrading the house raises the cap.
+
+**Grandfathering (Derek, 2026-07-14):** the MVP decoration flow auto-placed with no cap, so a yard can already hold more decorations than its level allows when the cap ships. Nothing already placed is ever removed — the cap blocks *new* placements only. In Core this is `GameState.TryAddDecoration` (the capacity-respecting path); the raw `AddDecoration` used by save-load stays uncapped, which is what preserves the grandfathered items.
+
 ## Acquisition
 
 There is **no standalone decoration shop**. Decorations are requested by dogs the same way other gifts are, as part of the normal quest rotation, fulfilled via the delivery truck (see [Quest Content](quests/quest-content.md)). ([#49](https://github.com/derekwinters/lucas-doggiehood/issues/49))
