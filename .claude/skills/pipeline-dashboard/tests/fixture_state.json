@@ -26,16 +26,16 @@
     ]
   },
   "intake": [
-    {"number": 180, "title": "Dogs playing in yard"},
-    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)"}
+    {"number": 180, "title": "Dogs playing in yard", "blocked_by": []},
+    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)", "blocked_by": [180]}
   ],
   "pending_approval": [
-    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel"},
-    {"number": 181, "title": "Lost Dog"},
-    {"number": 163, "title": "Make EditMode tests required"}
+    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel", "blocked_by": []},
+    {"number": 181, "title": "Lost Dog", "blocked_by": [186]},
+    {"number": 163, "title": "Make EditMode tests required", "blocked_by": []}
   ],
   "needs_clarification": [
-    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
+    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request", "blocked_by": [186]}
   ],
   "parked": [
     {"number": 172, "title": "Seasonal weather effects"}

@@ -50,10 +50,10 @@ pie showData title 03 - Dogs & Conversations
 ## 🆕 New ideas — awaiting your call
 _Raw, ungated issues. `/admit` pulls one into analysis · `/park` hides it._
 
-| Issue | Summary |
-| - | - |
-| [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) | Dogs playing in yard |
-| [#192](https://github.com/derekwinters/lucas-doggiehood/issues/192) | Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles) |
+| Issue | Summary | Blocked by |
+| - | - | - |
+| [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) | Dogs playing in yard |  |
+| [#192](https://github.com/derekwinters/lucas-doggiehood/issues/192) | Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles) | [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) |
 
 > **Your move:** `/admit` · `/park`
 
@@ -62,11 +62,11 @@ _Raw, ungated issues. `/admit` pulls one into analysis · `/park` hides it._
 ## ✅ Pending approval — analysis done, awaiting you
 _AI has triaged these; read the analysis on each, then act._
 
-| Issue | Summary |
-| - | - |
-| [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) | Buy-something quest: no way to actually buy the item from the conversation panel |
-| [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) | Lost Dog |
-| [#163](https://github.com/derekwinters/lucas-doggiehood/issues/163) | Make EditMode tests required |
+| Issue | Summary | Blocked by |
+| - | - | - |
+| [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) | Buy-something quest: no way to actually buy the item from the conversation panel |  |
+| [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) | Lost Dog | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
+| [#163](https://github.com/derekwinters/lucas-doggiehood/issues/163) | Make EditMode tests required |  |
 
 > **Your move:** `/approve` (→ ready-for-work, milestone as proposed) · `/revise <notes>` · `/redo` · `/park`
 
@@ -75,9 +75,9 @@ _AI has triaged these; read the analysis on each, then act._
 ## ❓ Needs clarification — blocked on your answer
 _A specific question is posted on each issue — open it to read and reply._
 
-| Issue | Summary |
-| - | - |
-| [#185](https://github.com/derekwinters/lucas-doggiehood/issues/185) | Conversation panel has no way to decline/say no to a quest request |
+| Issue | Summary | Blocked by |
+| - | - | - |
+| [#185](https://github.com/derekwinters/lucas-doggiehood/issues/185) | Conversation panel has no way to decline/say no to a quest request | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
 
 > **Your move:** `/revise <notes>` · `/redo` · `/propose` · `/park`
 

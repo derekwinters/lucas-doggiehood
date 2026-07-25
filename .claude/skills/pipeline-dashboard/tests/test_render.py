@@ -133,6 +133,51 @@ class TestRender(unittest.TestCase):
         reconcile_idx = body.index("## ⚠️ Reconcile")
         self.assertIn("_None right now._", body[parked_idx:reconcile_idx])
 
+    def _section(self, header, next_header):
+        start = self.body.index(header)
+        end = self.body.index(next_header, start)
+        return self.body[start:end]
+
+    def test_intake_table_has_blocked_by_column(self):
+        # #241: intake gets a "Blocked by" column matching the focus-queue
+        # convention of surfacing blockers on the table.
+        section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
+        self.assertIn("| Issue | Summary | Blocked by |", section)
+
+    def test_pending_approval_table_has_blocked_by_column(self):
+        section = self._section("## ✅ Pending approval", "## ❓ Needs clarification")
+        self.assertIn("| Issue | Summary | Blocked by |", section)
+
+    def test_needs_clarification_table_has_blocked_by_column(self):
+        section = self._section("## ❓ Needs clarification", "## ⏸️ Parked")
+        self.assertIn("| Issue | Summary | Blocked by |", section)
+
+    def test_needs_clarification_row_shows_blocker_link(self):
+        # #241: #185 is Blocked by #186 in the fixture — its row must link #186.
+        section = self._section("## ❓ Needs clarification", "## ⏸️ Parked")
+        row = next(ln for ln in section.splitlines()
+                   if "/issues/185)" in ln)
+        self.assertIn("/issues/186)", row)
+
+    def test_pending_row_shows_blocker_link(self):
+        section = self._section("## ✅ Pending approval", "## ❓ Needs clarification")
+        row = next(ln for ln in section.splitlines()
+                   if "/issues/181)" in ln)
+        self.assertIn("/issues/186)", row)
+
+    def test_intake_unblocked_row_has_empty_blocked_by_cell(self):
+        # #180 has no blockers -> its Blocked by cell is empty (no stray link).
+        section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
+        row = next(ln for ln in section.splitlines()
+                   if "/issues/180)" in ln)
+        self.assertNotIn("/issues/", row.rsplit("|", 2)[1])
+
+    def test_parked_table_has_no_blocked_by_column(self):
+        # #241 scopes the column to intake/pending/needs; Parked stays 2-column.
+        section = self._section("## ⏸️ Parked", "## ⚠️ Reconcile")
+        self.assertIn("| Issue | Summary |", section)
+        self.assertNotIn("Blocked by", section)
+
     def test_reconcile_section_lists_flag_findings(self):
         # Merged-but-open issues are flagged for a manual close (not auto-closed
         # — #211 owns auto-close). See issue #246.
