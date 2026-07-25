@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -33,6 +34,46 @@ namespace Doggiehood.Core.Tests.World
         public void ForModel_UnknownNameThrows()
         {
             Assert.That(() => HouseModelCatalog.ForModel("building-type-zzz"), Throws.ArgumentException);
+        }
+
+        [Test]
+        public void HasModel_IsTrueOnlyForCatalogedMeshes()
+        {
+            // #59: WorldBuilder uses this non-throwing check to steer a
+            // level-resolved mesh with no catalog entry to the graybox
+            // fallback instead of crashing on ForModel's ArgumentException.
+            // The starter-house ladder meshes now ALL carry a catalog entry
+            // (v0.6 de-graybox pass — every level renders its chosen kit
+            // mesh), so the fallback is reached only for genuinely-unknown
+            // meshes (e.g. an expansion house with no ladder).
+            Assert.That(HouseModelCatalog.HasModel("building-type-r"), Is.True);
+            Assert.That(HouseModelCatalog.HasModel("building-type-c"), Is.True, "L2 upgrade mesh now has a catalog entry");
+            Assert.That(HouseModelCatalog.HasModel("building-type-zzz"), Is.False);
+        }
+
+        [Test]
+        public void EveryLevelOfEveryStarterHouse_ResolvesToARealCatalogEntry()
+        {
+            // "No graybox at any level" as an enforced invariant (Derek
+            // 2026-07-25: the chosen kit mesh must render at every level, not
+            // a graybox placeholder). Every level 1..MaxLevel of every starter
+            // house's HouseLevelModelTable ladder must name a mesh that has a
+            // full HouseModelCatalog entry, so WorldBuilder never falls back
+            // to the graybox for a starter house at any level.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(HouseLevelModelTable.HasHouse(lot.HouseId), Is.True,
+                    $"house {lot.HouseId} has no level ladder");
+
+                for (var level = HouseLevelModelTable.MinLevel;
+                     level <= Doggiehood.Core.Expansion.HouseUpgradeNumbers.MaxLevel;
+                     level++)
+                {
+                    var mesh = HouseLevelModelTable.ForHouseLevel(lot.HouseId, level);
+                    Assert.That(HouseModelCatalog.HasModel(mesh), Is.True,
+                        $"house {lot.HouseId} level {level} mesh '{mesh}' has no catalog entry");
+                }
+            }
         }
 
         [Test]
@@ -75,6 +116,76 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Models_RecordTheMeasuredFootprints_ForTheLevel1Starters_R_H_Q()
+        {
+            // Level-1 starter meshes for houses 1/2/4 (Derek's 2026-07-25
+            // call resolving #122). Footprints measured from the kit FBX
+            // bounding-box extent / 100 — the same model-local convention
+            // the b/g/k/m entries use. House 3 keeps building-type-k, whose
+            // footprint is already covered above.
+            AssertEntry("building-type-r", 1.028f, 1.020f);
+            AssertEntry("building-type-h", 1.300f, 0.916f);
+            AssertEntry("building-type-q", 1.240f, 0.8856f);
+        }
+
+        [Test]
+        public void Models_DoorLocalPoints_ForTheLevel1Starters_R_H_Q_ArePlaceholders()
+        {
+            // PLACEHOLDER door anchors for the new r/h/q starters, NOT
+            // authored measurements: centered on X and a quarter of the way
+            // toward the street (z = -FootprintZ/4). They are provisional
+            // pending a Derek gallery authoring pass (same mechanism that
+            // produced the #126 pass-1 door data for b/g/k/m). Chosen to sit
+            // strictly inside the footprint so the within-footprint
+            // guardrail holds until the real anchors land.
+            AssertDoor("building-type-r", 0f, -0.2550f);
+            AssertDoor("building-type-h", 0f, -0.2290f);
+            AssertDoor("building-type-q", 0f, -0.2214f);
+        }
+
+        [Test]
+        public void Models_RecordTheMeasuredFootprints_ForTheLadderMeshes()
+        {
+            // The 10 non-L1 upgrade meshes of the #59 ladders (v0.6
+            // de-graybox pass, Derek 2026-07-25: every level renders its
+            // chosen kit mesh, no graybox). Footprints measured from each kit
+            // FBX bounding-box extent / 100 — the same model-local convention
+            // b/g/k/m and the r/h/q L1 starters use.
+            AssertEntry("building-type-c", 1.2864f, 1.0281f);
+            AssertEntry("building-type-s", 1.4060f, 1.0864f);
+            AssertEntry("building-type-f", 1.4280f, 1.4059f);
+            AssertEntry("building-type-i", 1.2864f, 1.0280f);
+            AssertEntry("building-type-l", 1.0336f, 1.0200f);
+            AssertEntry("building-type-j", 1.3700f, 0.9160f);
+            AssertEntry("building-type-d", 1.7564f, 1.0280f);
+            AssertEntry("building-type-e", 1.3000f, 1.0280f);
+            AssertEntry("building-type-u", 1.4280f, 1.0869f);
+            AssertEntry("building-type-n", 1.7843f, 1.3779f);
+        }
+
+        [Test]
+        public void Models_DoorLocalPoints_ForTheLadderMeshes_ArePlaceholders()
+        {
+            // PLACEHOLDER door anchors for the 10 non-L1 ladder meshes, NOT
+            // authored measurements: centered on X and a quarter of the way
+            // toward the street (z = -FootprintZ/4) — the same provisional
+            // pattern as the r/h/q L1 starters, pending a Derek gallery
+            // authoring pass (the mechanism that produced the #126 pass-1 door
+            // data for b/g/k/m). They sit strictly inside the footprint so the
+            // within-footprint guardrail holds until the real anchors land.
+            AssertDoor("building-type-c", 0f, -0.2570f);
+            AssertDoor("building-type-s", 0f, -0.2716f);
+            AssertDoor("building-type-f", 0f, -0.3515f);
+            AssertDoor("building-type-i", 0f, -0.2570f);
+            AssertDoor("building-type-l", 0f, -0.2550f);
+            AssertDoor("building-type-j", 0f, -0.2290f);
+            AssertDoor("building-type-d", 0f, -0.2570f);
+            AssertDoor("building-type-e", 0f, -0.2570f);
+            AssertDoor("building-type-u", 0f, -0.2717f);
+            AssertDoor("building-type-n", 0f, -0.3445f);
+        }
+
+        [Test]
         public void Models_DoorLocalPoints_LieStrictlyWithinTheFootprint()
         {
             // Guardrail (replacing the pre-gallery facade-plane rule): a
@@ -94,17 +205,18 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void ForHouse_KeepsThePlaceholderModelPicks()
+        public void ForHouse_UsesTheLevel1MeshOfEachUpgradePath()
         {
-            // The houseId -> model assignment (#122's placeholder picks,
-            // still awaiting Derek and Lucas's re-pick in the Editor) now
-            // lives on Doggiehood.Core.Art.HouseStyleTable (#64) as the
-            // single source of truth; HouseModelCatalog.ForHouse delegates
-            // to it rather than keeping its own duplicate assignment list.
-            Assert.That(HouseModelCatalog.ForHouse(1).ModelName, Is.EqualTo("building-type-b"));
-            Assert.That(HouseModelCatalog.ForHouse(2).ModelName, Is.EqualTo("building-type-g"));
+            // The houseId -> model assignment lives on
+            // Doggiehood.Core.Art.HouseStyleTable (#64) as the single
+            // source of truth; HouseModelCatalog.ForHouse delegates to it
+            // rather than keeping its own duplicate assignment list. Derek's
+            // 2026-07-25 call (resolving the #122 placeholder) set these to
+            // the Level-1 (as-built) mesh of each house's #59 upgrade path.
+            Assert.That(HouseModelCatalog.ForHouse(1).ModelName, Is.EqualTo("building-type-r"));
+            Assert.That(HouseModelCatalog.ForHouse(2).ModelName, Is.EqualTo("building-type-h"));
             Assert.That(HouseModelCatalog.ForHouse(3).ModelName, Is.EqualTo("building-type-k"));
-            Assert.That(HouseModelCatalog.ForHouse(4).ModelName, Is.EqualTo("building-type-m"));
+            Assert.That(HouseModelCatalog.ForHouse(4).ModelName, Is.EqualTo("building-type-q"));
         }
 
         [Test]

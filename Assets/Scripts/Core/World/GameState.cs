@@ -90,9 +90,50 @@ namespace Doggiehood.Core.World
             placedItems.Add(new PlacedItem(houseId, itemName));
         }
 
+        /// <summary>Appends a decoration with no capacity check (#27, #46).
+        /// This is the uncapped path used by save-load and by the
+        /// grandfathered MVP data (#59) — it never removes or rejects, so a
+        /// yard that already holds more decorations than its level's cap
+        /// keeps every one. New, capacity-respecting placements go through
+        /// <see cref="TryAddDecoration"/>.</summary>
         public void AddDecoration(Decorations.Decoration decoration)
         {
             decorations.Add(decoration);
+        }
+
+        /// <summary>How many decorations currently sit in
+        /// <paramref name="houseId"/>'s yard (#59).</summary>
+        public int DecorationCountForHouse(int houseId)
+        {
+            return decorations.Count(decoration => decoration.HouseId == houseId);
+        }
+
+        /// <summary>How many decorations <paramref name="houseId"/>'s yard
+        /// can hold (#59): exactly the house's level (1/2/3/4). An unknown
+        /// house has no capacity (0).</summary>
+        public int DecorationCapacityForHouse(int houseId)
+        {
+            var house = houses.FirstOrDefault(candidate => candidate.Id == houseId);
+            return house == null ? 0 : house.Level;
+        }
+
+        /// <summary>
+        /// Places a decoration in a house's yard (#59), respecting the
+        /// capacity cap (decorations = level). Returns false with no state
+        /// change when the yard is already at (or over) capacity, or the
+        /// house is unknown. Grandfathered decorations placed before the cap
+        /// existed are never removed — this only blocks NEW placements once
+        /// the count has reached the level.
+        /// </summary>
+        public bool TryAddDecoration(Decorations.Decoration decoration)
+        {
+            if (DecorationCountForHouse(decoration.HouseId) >= DecorationCapacityForHouse(decoration.HouseId))
+            {
+                return false;
+            }
+
+            decorations.Add(decoration);
+            return true;
         }
 
         /// <summary>A newly moved-in dog (#54) joins the live roster
@@ -185,6 +226,41 @@ namespace Doggiehood.Core.World
             }
 
             houses.Add(new House(houseId, lot.Quadrant));
+            return true;
+        }
+
+        /// <summary>
+        /// Upgrades the house on <paramref name="houseId"/> one level (#59):
+        /// charges <see cref="Expansion.HouseUpgradeNumbers.CostToReach"/>
+        /// (100 / 200 / 400, doubling per step) from <see cref="Wallet"/>
+        /// and raises the house's level. Returns false with no state change
+        /// (no deduction, level unchanged) when no house has that id, the
+        /// house is already at <see cref="Expansion.HouseUpgradeNumbers.MaxLevel"/>,
+        /// or the balance can't afford the step — the same charge-then-mutate
+        /// contract as <see cref="TryBuildHouse"/>. Raising the level also
+        /// raises the yard's decoration capacity (see
+        /// <see cref="DecorationCapacityForHouse"/>).
+        /// </summary>
+        public bool TryUpgradeHouse(int houseId)
+        {
+            var house = houses.FirstOrDefault(candidate => candidate.Id == houseId);
+            if (house == null)
+            {
+                return false;
+            }
+
+            if (house.Level >= Expansion.HouseUpgradeNumbers.MaxLevel)
+            {
+                return false;
+            }
+
+            var cost = Expansion.HouseUpgradeNumbers.CostToReach(house.Level + 1);
+            if (!Wallet.TrySpend(cost))
+            {
+                return false;
+            }
+
+            house.RaiseLevel();
             return true;
         }
 

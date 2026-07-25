@@ -16,13 +16,17 @@ namespace Doggiehood.Core.Art
     {
         public static IReadOnlyList<HouseStyle> Styles { get; } = new[]
         {
-            // Same 4 letter picks as the pre-#64 HouseModelCatalog
-            // assignment (#122 placeholder pending Derek/Lucas visual
-            // review) — consolidated here, not re-picked.
-            new HouseStyle(1, "building-type-b", HouseTintVariant.Colormap),
-            new HouseStyle(2, "building-type-g", HouseTintVariant.VariationA),
+            // The Level-1 (as-built) mesh of each house's proposed #59
+            // upgrade path — Derek's call (2026-07-25) resolving the #122
+            // placeholder picks. Homes now start small and visibly grow as
+            // they level up; these are the chosen starter meshes, no longer
+            // placeholders. Each house keeps its original tint variant (the
+            // tint is independent of the model), so the 4 starters stay 4
+            // distinct models with 4 distinct tints.
+            new HouseStyle(1, "building-type-r", HouseTintVariant.Colormap),
+            new HouseStyle(2, "building-type-h", HouseTintVariant.VariationA),
             new HouseStyle(3, "building-type-k", HouseTintVariant.VariationB),
-            new HouseStyle(4, "building-type-m", HouseTintVariant.VariationC),
+            new HouseStyle(4, "building-type-q", HouseTintVariant.VariationC),
         };
 
         /// <summary>Starting assignment: house id N gets style N.</summary>

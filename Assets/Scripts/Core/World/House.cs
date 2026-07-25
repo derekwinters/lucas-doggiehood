@@ -24,10 +24,15 @@ namespace Doggiehood.Core.World
         /// </summary>
         public bool IsVacant { get; private set; }
 
-        /// <summary>This house's current level (#59's full upgrade system
-        /// isn't built yet — every house stays at whatever level it was
-        /// constructed with).</summary>
-        public int Level { get; }
+        /// <summary>This house's current level (#59). A house is built at
+        /// <see cref="InitialLevel"/> and climbs one level at a time via
+        /// <see cref="RaiseLevel"/> — the max-level ceiling and coin cost of
+        /// each step live on the validated upgrade path
+        /// (GameState.TryUpgradeHouse / Expansion.HouseUpgradeNumbers), not
+        /// here. The level also caps how many yard decorations the house can
+        /// hold (decoration capacity = level), per
+        /// docs/specs/expansion.md#house-leveling.</summary>
+        public int Level { get; private set; }
 
         public House(int id, Quadrant quadrant, bool isVacant = true, int level = InitialLevel)
         {
@@ -42,6 +47,17 @@ namespace Doggiehood.Core.World
         public void MarkOccupied()
         {
             IsVacant = false;
+        }
+
+        /// <summary>Upgrades this house one level (#59). Like
+        /// <see cref="MarkOccupied"/> this is a bare one-way mutation: the
+        /// max-level ceiling and the coin cost of the step are enforced by
+        /// the caller (GameState.TryUpgradeHouse, using
+        /// Expansion.HouseUpgradeNumbers), so a level only ever climbs
+        /// through that validated path — never past its cap.</summary>
+        public void RaiseLevel()
+        {
+            Level += 1;
         }
     }
 }
