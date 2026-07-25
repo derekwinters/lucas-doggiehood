@@ -36,6 +36,18 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void HasModel_IsTrueOnlyForCatalogedMeshes()
+        {
+            // #59: WorldBuilder uses this non-throwing check to steer a
+            // level-resolved mesh with no authored catalog entry (the L2-L4
+            // upgrade meshes, geometry not yet authored) to the graybox
+            // fallback instead of crashing on ForModel's ArgumentException.
+            Assert.That(HouseModelCatalog.HasModel("building-type-r"), Is.True);
+            Assert.That(HouseModelCatalog.HasModel("building-type-c"), Is.False, "L2 upgrade mesh has no catalog entry yet");
+            Assert.That(HouseModelCatalog.HasModel("building-type-zzz"), Is.False);
+        }
+
+        [Test]
         public void Models_HaveUniqueNames_AndPositiveFootprints()
         {
             Assert.That(HouseModelCatalog.Models, Is.Not.Empty);

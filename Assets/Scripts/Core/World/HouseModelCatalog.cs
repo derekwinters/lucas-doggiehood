@@ -75,6 +75,27 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// Non-throwing check for whether <paramref name="modelName"/> has an
+        /// authored catalog entry (#59). The #59 level-swap ladders
+        /// (<see cref="HouseLevelModelTable"/>) name L2-L4 meshes whose
+        /// footprint/door geometry isn't authored yet, so the Unity layer
+        /// uses this to steer those to the graybox fallback instead of
+        /// catching <see cref="ForModel"/>'s ArgumentException.
+        /// </summary>
+        public static bool HasModel(string modelName)
+        {
+            foreach (var model in Models)
+            {
+                if (model.ModelName == modelName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// House id -> model, via Doggiehood.Core.Art.HouseStyleTable
         /// (#64): the houseId -> model assignment that used to live here
         /// as a separate hardcoded list moved to HouseStyleTable so
