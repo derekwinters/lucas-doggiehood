@@ -1361,6 +1361,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-device-debug-menu-toggles-in-the-debug-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      On-device debug menu: toggles in the Debug tab
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repo-hygiene" class="md-nav__link">
     <span class="md-ellipsis">
       Repo hygiene
@@ -1610,6 +1619,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-device-debug-menu-toggles-in-the-debug-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      On-device debug menu: toggles in the Debug tab
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repo-hygiene" class="md-nav__link">
     <span class="md-ellipsis">
       Repo hygiene
@@ -1666,6 +1684,10 @@ stripped from player builds:</p>
 <li><strong><code>Doggiehood ▸ Build Catalog Gallery</code></strong> — procedurally rebuilds the house-catalog authoring gallery scene (<code>CatalogGalleryBuilder</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/126">#126</a>).</li>
 <li><strong><code>Doggiehood ▸ Reset Save Data</code></strong> — deletes the local save file (<code>doggiehood-save.txt</code> in <code>Application.persistentDataPath</code>) after a confirmation dialog, so the next launch starts a fresh game (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/187">#187</a>). The disk work is the testable <code>SaveStore.DeleteSave()</code> seam; the menu only adds the confirmation.</li>
 </ul>
+<h2 id="on-device-debug-menu-toggles-in-the-debug-tab">On-device debug menu: toggles in the Debug tab<a class="headerlink" href="#on-device-debug-menu-toggles-in-the-debug-tab" title="Permanent link">&para;</a></h2>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a> — the standard for all future debug affordances</em></p>
+<p>Editor menus above only help at an authoring machine. Debugging a <strong>real build on a tablet</strong> goes through the in-game <strong>Settings ▸ Debug tab</strong> instead (<code>SettingsPanel</code>, <code>docs/specs/ui/settings.md</code>), unlocked the Android developer-options way — tap the version label 10× within 10s. The unlock is engine-free Core logic (<code>Doggiehood.Core.Debugging.DebugUnlockGesture</code>) and <strong>resets each session</strong> (ships hidden, re-hidden every launch); the Debug menu is in the build but has no stray entry point.</p>
+<p><strong>Standard:</strong> a new debug affordance is a <strong>toggle or action registered in the Debug tab</strong>, never a temporary code edit (e.g. hand-setting a static seam and reverting it). Register it in <code>Doggiehood.Core.Debugging.DebugToggleRegistry</code> (name → bool, unknown names handled safely) and bind its effect in the thin Unity layer. The first toggle, <strong>Show backyard fences</strong>, drives the existing <code>WorldBuilder.ForceFencesVisible</code> seam and calls <code>WorldBuilder.RebuildFences</code> so the enclosures show/hide on a live build (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/152">#152</a>). The gesture and registry are unit-tested in the Core suite; the panel/toggle wiring is EditMode-tested against the wireframe constants.</p>
 <h2 id="repo-hygiene">Repo hygiene<a class="headerlink" href="#repo-hygiene" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Git LFS</strong> tracks common binary asset types (<code>.png</code>, <code>.psd</code>, <code>.fbx</code>, <code>.wav</code>, <code>.mp3</code>, <code>.ttf</code>, etc.) from the first commit. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/79">#79</a>)</li>

@@ -1615,7 +1615,8 @@
 
 <h1 id="settings-menu">Settings menu<a class="headerlink" href="#settings-menu" title="Permanent link">&para;</a></h1>
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/218">#218</a>. Implements/covers: the in-game settings menu (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>). Approved: Derek, 2026-07-25 (in-session).</em>
-<em>Mockup: <a href="../mockups/settings.html">mockups/settings.html</a>.</em></p>
+<em>Mockup: <a href="../mockups/settings.html">mockups/settings.html</a>.</em>
+<em>Status: </em><em>implemented</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>) — Unity <code>SettingsPanel</code> (<code>Assets/Scripts/Unity/SettingsPanel.cs</code>) built under the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/256">#256</a> <code>UiCanvas</code> CanvasScaler; unlock gesture + debug-toggle registry in <code>Doggiehood.Core.Debugging</code>; opened from the <code>HudOverlay</code> gear.</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>An in-game <strong>Settings menu</strong>, opened from a gear on the HUD: a left <strong>sidebar of tabs</strong> with a content pane. It gives two things — a real settings surface we grow over time (starting with an <strong>About</strong> tab showing the app version) and an <strong>on-device Debug tab</strong>, hidden by default and revealed by tapping the version label 10× within 10s (the Android developer-options gesture), so we can debug on a tablet without the Editor. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
