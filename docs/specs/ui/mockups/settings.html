@@ -38,7 +38,7 @@
   .chip{position:absolute;top:34px;right:34px;height:64px;display:flex;align-items:center;gap:10px;padding:0 26px 0 10px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);}
   .chip .coin{width:44px;height:44px;border-radius:999px;background:var(--gold);border:5px solid var(--ink);}
   .chip .bal{font-size:34px;color:var(--ink);font-variant-numeric:tabular-nums;}
-  .gear{position:absolute;top:32px;left:32px;width:88px;height:88px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:46px;}
+  .gear{position:absolute;top:22px;right:184px;width:88px;height:88px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:46px;}
 
   /* dim scrim behind the settings panel */
   .scrim{position:absolute;inset:0;background:rgba(46,42,38,.46);}
@@ -137,7 +137,7 @@
           </div>
         </div>
       </div>
-      <div class="cel" style="left:44px;top:150px;"><span class="num">1</span><span class="txt">gear opens Settings (HUD)</span></div>
+      <div class="cel" style="left:1330px;top:150px;"><span class="num">1</span><span class="txt">gear opens Settings (HUD, by the coins)</span></div>
       <div class="cel" style="left:690px;top:706px;"><span class="num">2</span><span class="txt">version = 10-tap unlock target</span></div>
     </div>
 
@@ -216,7 +216,7 @@
       <p class="note"><b>About:</b> app name + tappable <b>version</b> label (also the debug-unlock target) + a small credits line.</p>
       <p class="note"><b>Debug</b> (hidden until unlocked): a list of on-device toggles/actions. First toggle <b>Show backyard fences</b> drives <code>WorldBuilder.ForceFencesVisible</code> (#152). Room for more (e.g. <b>Add coins</b>, #286).</p>
       <h2 style="margin-top:22px;">Open questions — proposed answers (for approval)</h2>
-      <p class="q"><b>① Entry point:</b> a <b>gear button, HUD top-left</b> (currency chip stays top-right). Lightly touches the HUD wireframe (#174) — placement flagged there, not restructured.</p>
+      <p class="q"><b>① Entry point:</b> a <b>gear button on the HUD, top-right — just inboard of the currency chip</b> (which keeps its corner anchor from #174). Lightly touches the HUD wireframe (#174) — placement flagged there, not restructured.</p>
       <p class="q"><b>② Sidebar vs bottom tabs:</b> <b>sidebar only</b> — the game is landscape-locked (#22/#256), so there's no portrait case to design a bottom-tab variant for.</p>
       <p class="q"><b>③ Debug unlock persistence:</b> <b>resets each session</b> — the Debug tab ships hidden and is re-hidden on every launch; re-tap the version 10× to reveal. (Persisting across launches is a one-flag change if you'd rather unlock once.)</p>
     </div>

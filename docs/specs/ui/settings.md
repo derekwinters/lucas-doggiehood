@@ -55,6 +55,6 @@ The panel **chrome** (outline 6 / corner radius 40 / drop-shadow 12) and the **p
 
 ## Open questions — proposed answers (for approval)
 
-1. **Entry point** — how Settings opens → **a gear button on the HUD, top-left** (the currency chip stays top-right). Lightly touches the HUD wireframe ([#174](https://github.com/derekwinters/lucas-doggiehood/issues/174)) — placement flagged there, HUD not restructured.
+1. **Entry point** — how Settings opens → **a gear button on the HUD, top-right, just inboard of the currency chip** (which keeps its corner anchor from [#174](https://github.com/derekwinters/lucas-doggiehood/issues/174)). Lightly touches the HUD wireframe — placement flagged there, HUD not restructured.
 2. **Sidebar vs. bottom tabs on portrait** → **sidebar only.** The game is landscape-locked ([#22](https://github.com/derekwinters/lucas-doggiehood/issues/22)/[#256](https://github.com/derekwinters/lucas-doggiehood/issues/256)), so there is no portrait case that would need a bottom-tab variant.
 3. **Does the Debug unlock persist across launches?** → **resets each session** (ships hidden, re-hidden every launch; re-tap to reveal). Persisting across launches is a one-flag change if preferred.
