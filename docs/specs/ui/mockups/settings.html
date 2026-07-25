@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings menu — Wireframe #218 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:70ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+
+  .viewer{overflow:auto;max-height:80vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);padding:14px;
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .caption{font-family:ui-monospace,monospace;font-size:12px;color:var(--accent);font-weight:700;margin:6px 4px 8px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;margin-bottom:6px;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:57%;height:90px;background:#9C9AA0;}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:240px;top:20%;} .h2{left:1420px;top:19%;background:#7FB2E6;}
+
+  /* HUD context: currency chip (top-right) + settings gear entry point (top-left) */
+  .chip{position:absolute;top:46px;right:142px;height:64px;display:flex;align-items:center;gap:10px;padding:0 26px 0 10px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);}
+  .chip .coin{width:44px;height:44px;border-radius:999px;background:var(--gold);border:5px solid var(--ink);}
+  .chip .bal{font-size:34px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .gear{position:absolute;top:34px;right:34px;width:88px;height:88px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:46px;}
+
+  /* dim scrim behind the settings panel */
+  .scrim{position:absolute;inset:0;background:rgba(46,42,38,.46);}
+
+  /* settings panel: centered, sidebar + content */
+  .panel{position:absolute;left:260px;top:190px;width:1400px;height:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 12px 0 var(--ink);padding:48px;display:flex;flex-direction:column;}
+  .close{position:absolute;top:-24px;right:-18px;width:72px;height:72px;border-radius:999px;background:var(--cream);border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--ink);}
+  .ptitle{font-size:52px;color:var(--ink);margin:0 0 30px;line-height:1;}
+  .pbody{display:flex;gap:40px;flex:1;min-height:0;}
+
+  /* sidebar tab rail */
+  .rail{width:360px;flex:0 0 auto;display:flex;flex-direction:column;gap:16px;}
+  .tab{height:96px;border-radius:24px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;gap:18px;padding:0 28px;font-size:36px;color:var(--ink);background:var(--cream);}
+  .tab.active{background:var(--coral);}
+  .tab .ic{font-size:38px;}
+  .tab .lock{margin-left:auto;font-size:26px;opacity:.8;}
+
+  /* content pane */
+  .pane{flex:1;background:var(--stage);border:5px solid var(--ink);border-radius:28px;padding:44px;overflow:hidden;position:relative;}
+
+  /* About pane */
+  .appname{font-size:64px;color:var(--ink);margin:0 0 6px;line-height:1;}
+  .apptag{font-size:26px;color:var(--ink);opacity:.6;margin:0 0 46px;}
+  .verrow{display:inline-flex;flex-direction:column;gap:6px;}
+  .verk{font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);opacity:.6;}
+  .verv{font-size:44px;color:var(--ink);border:5px dashed var(--accent);border-radius:18px;padding:10px 22px;display:inline-block;}
+  .abmeta{margin-top:52px;font-size:24px;color:var(--ink);opacity:.55;}
+
+  /* Debug pane rows */
+  .drow{display:flex;align-items:center;height:96px;padding:0 30px;background:var(--panel);border:5px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink);margin-bottom:20px;}
+  .drow .dl{font-size:34px;color:var(--ink);}
+  .drow .sub{font-size:20px;color:var(--ink);opacity:.55;margin-top:2px;}
+  .drow .grow{flex:1;}
+  .toggle{width:104px;height:56px;border-radius:999px;border:5px solid var(--ink);position:relative;flex:0 0 auto;}
+  .toggle.on{background:var(--leaf);}
+  .toggle.off{background:var(--disabled,#D8D2C6);}
+  .knob{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;background:var(--panel);border:4px solid var(--ink);}
+  .toggle.on .knob{right:5px;} .toggle.off .knob{left:5px;}
+  .action{display:inline-flex;align-items:center;gap:12px;height:72px;padding:0 34px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);background:var(--gold);font-size:30px;color:var(--ink);flex:0 0 auto;}
+  .ghost{opacity:.45;}
+  .ghost .dl{font-style:italic;}
+
+  /* annotation callouts */
+  .cel{position:absolute;display:flex;align-items:center;gap:10px;font-family:ui-monospace,monospace;font-size:22px;color:#fff;}
+  .cel .num{width:40px;height:40px;border-radius:999px;background:var(--accent);border:4px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;}
+  .cel .txt{background:rgba(46,42,38,.9);border:2px solid var(--accent);border-radius:10px;padding:6px 12px;}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:96px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  .q{font-size:13px;color:var(--text);margin:10px 0 0;padding:10px 14px;background:color-mix(in srgb,var(--gold) 16%,transparent);border-left:4px solid var(--gold);border-radius:0 8px 8px 0;}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #218 · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Settings menu</h1>
+  <p class="lede">An in-game settings menu: a left <b>sidebar of tabs</b> with a content pane, opened from a gear on the HUD.
+    MVP tabs are <b>About</b> (shows the app version) and a hidden <b>Debug</b> tab, revealed only after tapping the version
+    label 10× within 10s — the classic Android developer-options gesture. Debug hosts on-device toggles (first: show/hide
+    backyard fences, #152).</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two states: default (Debug hidden) and Debug unlocked. Field values are placeholders.</p>
+
+  <div class="viewer">
+    <div class="caption">STATE 1 — default · Debug tab hidden · gear entry point (HUD top-left)</div>
+    <div class="screen" role="img" aria-label="Landscape tablet: dimmed neighborhood behind a centered Settings panel. Left sidebar has one tab, About, active. Content pane shows app name Doggiehood and version 0.4.0. A gear button sits top-left on the HUD.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="gear rounded">⚙️</div>
+      <div class="chip"><div class="coin"></div><div class="bal rounded">10</div></div>
+      <div class="scrim"></div>
+      <div class="panel">
+        <div class="close rounded">✕</div>
+        <h2 class="ptitle rounded">Settings</h2>
+        <div class="pbody">
+          <div class="rail">
+            <div class="tab active rounded"><span class="ic">ℹ️</span> About</div>
+          </div>
+          <div class="pane">
+            <h3 class="appname rounded">Doggiehood</h3>
+            <p class="apptag rounded">A neighborhood of dogs</p>
+            <div class="verrow">
+              <span class="verk rounded">Version</span>
+              <span class="verv rounded">0.4.0</span>
+            </div>
+            <p class="abmeta rounded">Made by Derek &amp; Lucas</p>
+          </div>
+        </div>
+      </div>
+      <div class="cel" style="left:1250px;top:150px;"><span class="num">1</span><span class="txt">gear = furthest top-right; coins moved inboard</span></div>
+      <div class="cel" style="left:690px;top:706px;"><span class="num">2</span><span class="txt">version = 10-tap unlock target</span></div>
+    </div>
+
+    <div class="caption">STATE 2 — Debug unlocked · Debug tab active · fence toggle + future actions</div>
+    <div class="screen" role="img" aria-label="Same Settings panel after unlocking. Sidebar now has About and a revealed Debug tab, Debug active. Content pane lists debug toggles: Show backyard fences (on), and placeholder future actions.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="gear rounded">⚙️</div>
+      <div class="chip"><div class="coin"></div><div class="bal rounded">10</div></div>
+      <div class="scrim"></div>
+      <div class="panel">
+        <div class="close rounded">✕</div>
+        <h2 class="ptitle rounded">Settings</h2>
+        <div class="pbody">
+          <div class="rail">
+            <div class="tab rounded"><span class="ic">ℹ️</span> About</div>
+            <div class="tab active rounded"><span class="ic">🐞</span> Debug <span class="lock">🔓</span></div>
+          </div>
+          <div class="pane">
+            <div class="drow">
+              <div>
+                <div class="dl rounded">Show backyard fences</div>
+                <div class="sub rounded">Drives WorldBuilder.ForceFencesVisible (#152)</div>
+              </div>
+              <div class="grow"></div>
+              <div class="toggle on"><div class="knob"></div></div>
+            </div>
+            <div class="drow">
+              <div>
+                <div class="dl rounded">Add coins</div>
+                <div class="sub rounded">Grant coins to test expansion (#286)</div>
+              </div>
+              <div class="grow"></div>
+              <div class="action rounded">＋100</div>
+            </div>
+            <div class="drow ghost">
+              <div><div class="dl rounded">future toggle…</div></div>
+              <div class="grow"></div>
+              <div class="toggle off"><div class="knob"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cel" style="left:300px;top:470px;"><span class="num">3</span><span class="txt">Debug tab appears only once unlocked</span></div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>SettingsPanelAnchor</td><td class="val">Center</td><td>panel position (over dim scrim)</td></tr>
+        <tr><td>SettingsPanelWidthPx</td><td class="val">1400</td><td>panel width</td></tr>
+        <tr><td>SettingsPanelHeightPx</td><td class="val">820</td><td>panel height</td></tr>
+        <tr><td>SettingsPanelPaddingPx</td><td class="val">48</td><td>panel inset</td></tr>
+        <tr><td>SidebarWidthPx</td><td class="val">360</td><td>tab rail</td></tr>
+        <tr><td>SidebarContentGapPx</td><td class="val">40</td><td>rail → pane</td></tr>
+        <tr><td>TabHeightPx</td><td class="val">96</td><td>each sidebar tab</td></tr>
+        <tr><td>TabGapPx</td><td class="val">16</td><td>between tabs</td></tr>
+        <tr><td>TabRadiusPx</td><td class="val">24</td><td>tab corners</td></tr>
+        <tr><td>VersionFontSizePx</td><td class="val">44</td><td>version label (unlock target)</td></tr>
+        <tr><td>ToggleTrackWidthPx</td><td class="val">104</td><td>debug switch track</td></tr>
+        <tr><td>ToggleTrackHeightPx</td><td class="val">56</td><td>debug switch track</td></tr>
+        <tr><td>ToggleKnobPx</td><td class="val">44</td><td>debug switch knob</td></tr>
+        <tr><td>DebugRowHeightPx</td><td class="val">96</td><td>each debug toggle/action row</td></tr>
+        <tr><td>GearButtonSizePx</td><td class="val">88</td><td>HUD settings entry point</td></tr>
+        <tr><td>GearMarginPx</td><td class="val">32</td><td>gear inset from HUD corner</td></tr>
+        <tr><td>CloseButtonSizePx</td><td class="val">72</td><td>close (✕), top-right</td></tr>
+        <tr><td>&nbsp;↳ panel chrome</td><td class="val">#173</td><td>outline 6 / radius 40 / shadow 12</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Title</b> (Settings) · <b>Sidebar</b> (tab rail: About, + Debug when unlocked) · <b>Content pane</b> (active tab's body) · <b>Close</b> (top-right ✕). Entry: a <b>gear</b> in the HUD's top-right corner (coins chip moved inboard, to its left).</p>
+      <p class="note"><b>About:</b> app name + tappable <b>version</b> label (also the debug-unlock target) + a small credits line.</p>
+      <p class="note"><b>Debug</b> (hidden until unlocked): a list of on-device toggles/actions. First toggle <b>Show backyard fences</b> drives <code>WorldBuilder.ForceFencesVisible</code> (#152). Room for more (e.g. <b>Add coins</b>, #286).</p>
+      <h2 style="margin-top:22px;">Design decisions (approved)</h2>
+      <p class="q"><b>① Entry point:</b> a <b>gear button in the HUD's top-right corner (furthest right)</b>, with the <b>currency chip moved just inboard, to the gear's left</b>. This nudges the currency-chip placement, so the HUD wireframe (#174) is flagged to reconcile — the gear takes the corner.</p>
+      <p class="q"><b>② Sidebar vs bottom tabs:</b> <b>sidebar only</b> — the game is landscape-locked (#22/#256), so there's no portrait case to design a bottom-tab variant for.</p>
+      <p class="q"><b>③ Debug unlock persistence:</b> <b>resets each session</b> — the Debug tab ships hidden and is re-hidden on every launch; re-tap the version 10× to reveal. (Persisting across launches is a one-flag change if you'd rather unlock once.)</p>
+    </div>
+  </div>
+
+  <footer>
+    Opens from a HUD gear · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200 · establishes the "debug affordances live in the Debug tab" standard (#219). Constants born here (#161); EditMode tests assert the built menu against them.
+    <br><span class="status">Approved (Derek, 2026-07-25) (#218)</span>
+  </footer>
+</div>
+</body>
+</html>
