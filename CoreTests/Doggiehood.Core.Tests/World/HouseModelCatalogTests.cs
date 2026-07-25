@@ -75,6 +75,34 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Models_RecordTheMeasuredFootprints_ForTheLevel1Starters_R_H_Q()
+        {
+            // Level-1 starter meshes for houses 1/2/4 (Derek's 2026-07-25
+            // call resolving #122). Footprints measured from the kit FBX
+            // bounding-box extent / 100 — the same model-local convention
+            // the b/g/k/m entries use. House 3 keeps building-type-k, whose
+            // footprint is already covered above.
+            AssertEntry("building-type-r", 1.028f, 1.020f);
+            AssertEntry("building-type-h", 1.300f, 0.916f);
+            AssertEntry("building-type-q", 1.240f, 0.8856f);
+        }
+
+        [Test]
+        public void Models_DoorLocalPoints_ForTheLevel1Starters_R_H_Q_ArePlaceholders()
+        {
+            // PLACEHOLDER door anchors for the new r/h/q starters, NOT
+            // authored measurements: centered on X and a quarter of the way
+            // toward the street (z = -FootprintZ/4). They are provisional
+            // pending a Derek gallery authoring pass (same mechanism that
+            // produced the #126 pass-1 door data for b/g/k/m). Chosen to sit
+            // strictly inside the footprint so the within-footprint
+            // guardrail holds until the real anchors land.
+            AssertDoor("building-type-r", 0f, -0.2550f);
+            AssertDoor("building-type-h", 0f, -0.2290f);
+            AssertDoor("building-type-q", 0f, -0.2214f);
+        }
+
+        [Test]
         public void Models_DoorLocalPoints_LieStrictlyWithinTheFootprint()
         {
             // Guardrail (replacing the pre-gallery facade-plane rule): a
@@ -94,17 +122,18 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void ForHouse_KeepsThePlaceholderModelPicks()
+        public void ForHouse_UsesTheLevel1MeshOfEachUpgradePath()
         {
-            // The houseId -> model assignment (#122's placeholder picks,
-            // still awaiting Derek and Lucas's re-pick in the Editor) now
-            // lives on Doggiehood.Core.Art.HouseStyleTable (#64) as the
-            // single source of truth; HouseModelCatalog.ForHouse delegates
-            // to it rather than keeping its own duplicate assignment list.
-            Assert.That(HouseModelCatalog.ForHouse(1).ModelName, Is.EqualTo("building-type-b"));
-            Assert.That(HouseModelCatalog.ForHouse(2).ModelName, Is.EqualTo("building-type-g"));
+            // The houseId -> model assignment lives on
+            // Doggiehood.Core.Art.HouseStyleTable (#64) as the single
+            // source of truth; HouseModelCatalog.ForHouse delegates to it
+            // rather than keeping its own duplicate assignment list. Derek's
+            // 2026-07-25 call (resolving the #122 placeholder) set these to
+            // the Level-1 (as-built) mesh of each house's #59 upgrade path.
+            Assert.That(HouseModelCatalog.ForHouse(1).ModelName, Is.EqualTo("building-type-r"));
+            Assert.That(HouseModelCatalog.ForHouse(2).ModelName, Is.EqualTo("building-type-h"));
             Assert.That(HouseModelCatalog.ForHouse(3).ModelName, Is.EqualTo("building-type-k"));
-            Assert.That(HouseModelCatalog.ForHouse(4).ModelName, Is.EqualTo("building-type-m"));
+            Assert.That(HouseModelCatalog.ForHouse(4).ModelName, Is.EqualTo("building-type-q"));
         }
 
         [Test]

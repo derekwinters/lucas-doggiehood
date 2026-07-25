@@ -65,15 +65,17 @@ namespace Doggiehood.Core.Tests.Art
         }
 
         [Test]
-        public void ForHouse_MatchesThePlaceholderModelPicks()
+        public void ForHouse_UsesTheLevel1MeshOfEachUpgradePath()
         {
-            // Same 4 letter picks as the pre-#64 HouseModelCatalog
-            // assignment (#122 placeholder, pending Derek/Lucas visual
-            // review in #125/#122) — consolidated here, not re-picked.
-            Assert.That(HouseStyleTable.ForHouse(1).ModelName, Is.EqualTo("building-type-b"));
-            Assert.That(HouseStyleTable.ForHouse(2).ModelName, Is.EqualTo("building-type-g"));
+            // Derek's call (2026-07-25) resolving the #122 placeholder
+            // picks: the 4 starting houses are now the Level-1 (as-built)
+            // mesh of each house's proposed #59 upgrade path, so homes
+            // start small and visibly grow as they level up. Tints are
+            // unchanged; house 3 keeps building-type-k.
+            Assert.That(HouseStyleTable.ForHouse(1).ModelName, Is.EqualTo("building-type-r"));
+            Assert.That(HouseStyleTable.ForHouse(2).ModelName, Is.EqualTo("building-type-h"));
             Assert.That(HouseStyleTable.ForHouse(3).ModelName, Is.EqualTo("building-type-k"));
-            Assert.That(HouseStyleTable.ForHouse(4).ModelName, Is.EqualTo("building-type-m"));
+            Assert.That(HouseStyleTable.ForHouse(4).ModelName, Is.EqualTo("building-type-q"));
         }
 
         [Test]

@@ -29,6 +29,10 @@ namespace Doggiehood.Core.World
     /// doors are recessed behind the front facade (porches;
     /// building-type-b's is near its footprint center) — that observation
     /// is what turned the door datum from a facade scalar into a 2D point.
+    /// The later #59 Level-1 starter meshes (r/h/q) instead carry
+    /// PROVISIONAL PLACEHOLDER door points (centered on X, toward the
+    /// street) pending their own gallery authoring pass — see their inline
+    /// note below.
     /// </summary>
     public static class HouseModelCatalog
     {
@@ -38,6 +42,23 @@ namespace Doggiehood.Core.World
             new HouseModel("building-type-g", 1.450f, 1.178f, 0.0769f, -0.3382f),
             new HouseModel("building-type-k", 0.921f, 1.020f, 0.1900f, -0.3672f),
             new HouseModel("building-type-m", 1.428f, 1.428f, -0.0464f, -0.6105f),
+
+            // Level-1 (as-built) starter meshes for the #59 upgrade paths,
+            // chosen by Derek (2026-07-25) to replace the #122 placeholder
+            // starters r/h/q for houses 1/2/4 (house 3 keeps building-type-k
+            // above). Footprints are measured from the kit FBX bounding-box
+            // extent / 100 — the same model-local convention as b/g/k/m.
+            //
+            // Door points are PROVISIONAL PLACEHOLDERS, not authored data:
+            // centered on X, a quarter of the footprint toward the street
+            // (z = -FootprintZ/4). They sit strictly inside the footprint so
+            // the within-footprint guardrail holds, and await a Derek
+            // gallery authoring pass (the mechanism that produced b/g/k/m's
+            // #126 pass-1 measurements) to replace them with the real door
+            // anchors of each mesh.
+            new HouseModel("building-type-r", 1.028f, 1.020f, 0f, -0.2550f),
+            new HouseModel("building-type-h", 1.300f, 0.916f, 0f, -0.2290f),
+            new HouseModel("building-type-q", 1.240f, 0.8856f, 0f, -0.2214f),
         };
 
         public static HouseModel ForModel(string modelName)
