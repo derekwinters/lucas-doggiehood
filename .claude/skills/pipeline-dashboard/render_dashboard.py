@@ -185,7 +185,7 @@ def render_body(state):
     a("## 🆕 New ideas — awaiting your call")
     a("_Raw, ungated issues. `/admit` pulls one into analysis · `/park` hides it._")
     a("")
-    _issue_table(a, repo, state.get("intake", []))
+    _issue_table(a, repo, state.get("intake", []), show_blocked_by=True)
     a("")
     a("> **Your move:** `/admit` · `/park`")
     a("")
@@ -196,7 +196,7 @@ def render_body(state):
     a("## ✅ Pending approval — analysis done, awaiting you")
     a("_AI has triaged these; read the analysis on each, then act._")
     a("")
-    _issue_table(a, repo, state.get("pending_approval", []))
+    _issue_table(a, repo, state.get("pending_approval", []), show_blocked_by=True)
     a("")
     a("> **Your move:** `/approve` (→ ready-for-work, milestone as proposed) · "
       "`/revise <notes>` · `/redo` · `/park`")
@@ -208,7 +208,7 @@ def render_body(state):
     a("## ❓ Needs clarification — blocked on your answer")
     a("_A specific question is posted on each issue — open it to read and reply._")
     a("")
-    _issue_table(a, repo, state.get("needs_clarification", []))
+    _issue_table(a, repo, state.get("needs_clarification", []), show_blocked_by=True)
     a("")
     a("> **Your move:** `/revise <notes>` · `/redo` · `/propose` · `/park`")
     a("")
@@ -352,9 +352,26 @@ def _reconcile_section(a, repo, rec):
     a("")
 
 
-def _issue_table(a, repo, issues):
+def _issue_table(a, repo, issues, show_blocked_by=False):
+    """Render an issue table.
+
+    When ``show_blocked_by`` is set (#241) a third **Blocked by** column lists
+    each issue's structured ``Blocked by: #N`` hard blockers as links (empty
+    cell when it has none), so every pipeline stage surfaces its blockers the
+    same way the focus ready-for-work queue does. The Parked listing keeps the
+    two-column form.
+    """
     if not issues:
         a("_None right now._")
+        return
+    if show_blocked_by:
+        a("| Issue | Summary | Blocked by |")
+        a("| - | - | - |")
+        for it in issues:
+            blockers = ", ".join(_issue_link(repo, n)
+                                 for n in it.get("blocked_by", []))
+            a("| %s | %s | %s |"
+              % (_issue_link(repo, it["number"]), it["title"], blockers))
         return
     a("| Issue | Summary |")
     a("| - | - |")
@@ -443,7 +460,8 @@ def fetch_state(repo, token, as_of):
             if i["number"] == DASHBOARD_ISSUE or "parked" in lbl or "type:epic" in lbl:
                 continue
             if label(lbl):
-                out.append({"number": i["number"], "title": _clean(i["title"])})
+                out.append({"number": i["number"], "title": _clean(i["title"]),
+                            "blocked_by": _blocked_by(i.get("body") or "")})
         return out
 
     intake = open_issues_with(lambda l: not (l & {
