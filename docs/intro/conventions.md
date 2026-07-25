@@ -36,11 +36,12 @@ The current planning milestones:
 |---|---|
 | `v0.4` | **Closed to new issues (frozen 2026-07-24).** All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game *working*; art stays rough. Remaining already-approved v0.4 work finishes here; new issues no longer land in v0.4. |
 | `v0.5` | Post-v0.4 **playtest fixes & polish** — bugs and rough edges surfaced while playtesting the v0.4 graybox. Active target for new playtest-fix intake; larger new features wait for a later milestone. |
-| `v1.0` | First complete release: the last group of changes required to call it v1 — real art, polish, onboarding, final integration. |
+| `v0.6` | **First real-art / de-graybox pass.** Replace the graybox placeholders with real art — both the Candy Cottage UI chrome (HUD, dialogue panel, onboarding, settings; visual direction from [#65](https://github.com/derekwinters/lucas-doggiehood/issues/65)) *and* the world/house visuals — so the working v0.4 graybox starts to look like the real game. Larger art/UI work that outgrows v0.5's playtest-fix scope lands here. |
+| `v1.0` | First complete release: the last group of changes required to call it v1 — final art polish, onboarding, and integration on top of v0.6's real-art pass. |
 | `v1.1` | Improvements, changes, and playtest fixes made after v1. |
 | `v2.0` | Major redesigns and large expansions. |
 
-Between the named milestones we spin up further version milestones (`v0.6`, `v0.7`, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.
+Between the named milestones we spin up further version milestones (`v0.7`, `v0.8`, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.
 
 **Closing a milestone to new work.** When a version is done taking new issues, *freeze* it: mark its row here **and its GitHub milestone `description`** as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions ([pipeline-analysis](../engineering/issue-pipeline.md)), so freezing one and activating the next is what reroutes new intake — **existing approved issues in the frozen milestone stay put and finish**, only new issues are redirected. `/focus` still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner `/approve` or `/milestone` can still place an issue anywhere.)
 
