@@ -2,6 +2,7 @@
 
 *Wireframe issue: [#218](https://github.com/derekwinters/lucas-doggiehood/issues/218). Implements/covers: the in-game settings menu ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)). Approved: Derek, 2026-07-25 (in-session).*
 *Mockup: [mockups/settings.html](mockups/settings.html).*
+*Status: **implemented** ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)) — Unity `SettingsPanel` (`Assets/Scripts/Unity/SettingsPanel.cs`) built under the [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256) `UiCanvas` CanvasScaler; unlock gesture + debug-toggle registry in `Doggiehood.Core.Debugging`; opened from the `HudOverlay` gear.*
 
 ## Purpose
 

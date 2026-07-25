@@ -41,6 +41,14 @@ stripped from player builds:
 - **`Doggiehood ▸ Build Catalog Gallery`** — procedurally rebuilds the house-catalog authoring gallery scene (`CatalogGalleryBuilder`, [#126](https://github.com/derekwinters/lucas-doggiehood/issues/126)).
 - **`Doggiehood ▸ Reset Save Data`** — deletes the local save file (`doggiehood-save.txt` in `Application.persistentDataPath`) after a confirmation dialog, so the next launch starts a fresh game ([#187](https://github.com/derekwinters/lucas-doggiehood/issues/187)). The disk work is the testable `SaveStore.DeleteSave()` seam; the menu only adds the confirmation.
 
+## On-device debug menu: toggles in the Debug tab
+
+*[#219](https://github.com/derekwinters/lucas-doggiehood/issues/219) — the standard for all future debug affordances*
+
+Editor menus above only help at an authoring machine. Debugging a **real build on a tablet** goes through the in-game **Settings ▸ Debug tab** instead (`SettingsPanel`, `docs/specs/ui/settings.md`), unlocked the Android developer-options way — tap the version label 10× within 10s. The unlock is engine-free Core logic (`Doggiehood.Core.Debugging.DebugUnlockGesture`) and **resets each session** (ships hidden, re-hidden every launch); the Debug menu is in the build but has no stray entry point.
+
+**Standard:** a new debug affordance is a **toggle or action registered in the Debug tab**, never a temporary code edit (e.g. hand-setting a static seam and reverting it). Register it in `Doggiehood.Core.Debugging.DebugToggleRegistry` (name → bool, unknown names handled safely) and bind its effect in the thin Unity layer. The first toggle, **Show backyard fences**, drives the existing `WorldBuilder.ForceFencesVisible` seam and calls `WorldBuilder.RebuildFences` so the enclosures show/hide on a live build ([#152](https://github.com/derekwinters/lucas-doggiehood/issues/152)). The gesture and registry are unit-tested in the Core suite; the panel/toggle wiring is EditMode-tested against the wireframe constants.
+
 ## Repo hygiene
 
 - **Git LFS** tracks common binary asset types (`.png`, `.psd`, `.fbx`, `.wav`, `.mp3`, `.ttf`, etc.) from the first commit. ([#79](https://github.com/derekwinters/lucas-doggiehood/issues/79))

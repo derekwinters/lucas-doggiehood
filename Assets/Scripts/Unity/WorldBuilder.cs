@@ -100,13 +100,13 @@ namespace Doggiehood.Unity
         private const float YardLandscapingFallbackHeight = YardLandscaping.TreeFootprintRadius * 4f;
 
         /// <summary>
-        /// Editor-check/test seam (#146): builds every lot's backyard
-        /// fence even though HouseLot.HasFence defaults false (fences are
-        /// hidden until a future quest purchases them, #147). To eyeball
-        /// the enclosures in the Editor, set this to true at the top of
-        /// WorldBootstrap.Awake (one temporary line:
-        /// <c>WorldBuilder.ForceFencesVisible = true;</c>), enter Play
-        /// mode, then remove the line. Never set in production code.
+        /// Seam (#146) that builds every lot's backyard fence even though
+        /// HouseLot.HasFence defaults false (fences are hidden until a future
+        /// quest purchases them, #147). Since #219 this is driven at runtime
+        /// by the Settings ▸ Debug tab's "Show backyard fences" toggle: the
+        /// toggle sets this flag and calls <see cref="RebuildFences"/> so the
+        /// enclosures show/hide on a live build — used to check #152 on-device
+        /// without the Unity Editor. Not part of normal gameplay state.
         /// </summary>
         public static bool ForceFencesVisible { get; set; }
 
@@ -528,6 +528,27 @@ namespace Doggiehood.Unity
         /// per run (same pattern as the walkways). All geometry comes from
         /// Core either way — nothing here decides where a fence goes.
         /// </summary>
+        /// <summary>
+        /// Rebuilds only the backyard fences on an already-built world
+        /// (#219): destroys the existing "Fence - N" containers and rebuilds
+        /// them from the current <see cref="ForceFencesVisible"/> state. The
+        /// Settings ▸ Debug fence toggle calls this so fences show/hide live
+        /// without a full scene reload, leaving houses, dogs, and quests
+        /// untouched. All geometry still comes from Core (LotFence/FenceTiling).
+        /// </summary>
+        public static void RebuildFences(Transform root)
+        {
+            var existing = root.Cast<Transform>()
+                .Where(child => child.name.StartsWith(FenceNamePrefix))
+                .ToList();
+            foreach (var container in existing)
+            {
+                Object.DestroyImmediate(container.gameObject);
+            }
+
+            BuildFences(root);
+        }
+
         private static void BuildFences(Transform parent)
         {
             var piece = ForcePrimitiveFallback

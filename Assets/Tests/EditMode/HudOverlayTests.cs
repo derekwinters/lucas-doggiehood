@@ -46,5 +46,44 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(overlay.Label, Is.EqualTo("Coins: 10"));
         }
+
+        [Test]
+        public void Gear_SitsInTheTopRightCorner()
+        {
+            // #219 / wireframe decision ①: the Settings gear takes the very
+            // top-right corner, inset by the wireframe margin (88px @ 32px in).
+            var gear = HudOverlay.ComputeGearRect(1920f, 1200f);
+
+            Assert.That(gear.width, Is.EqualTo(88f));
+            Assert.That(gear.height, Is.EqualTo(88f));
+            Assert.That(gear.xMax, Is.EqualTo(1920f - 32f), "gear inset from the right edge by GearMarginPx");
+            Assert.That(gear.yMin, Is.EqualTo(32f), "gear inset from the top edge by GearMarginPx");
+        }
+
+        [Test]
+        public void CurrencyChip_MovesInboardToTheGearsLeft()
+        {
+            // #219 / wireframe decision ①: the coins chip is nudged inboard so
+            // the gear owns the corner — the chip ends left of the gear.
+            var gear = HudOverlay.ComputeGearRect(1920f, 1200f);
+            var chip = HudOverlay.ComputeChipRect(1920f, 1200f);
+
+            Assert.That(chip.xMax, Is.LessThanOrEqualTo(gear.xMin),
+                "the currency chip sits entirely to the left of the gear");
+        }
+
+        [Test]
+        public void TapGear_RaisesGearTapped_SoTheBootstrapCanOpenSettings()
+        {
+            var overlay = host.AddComponent<HudOverlay>();
+            overlay.Init(GameState.CreateNew());
+
+            var opened = 0;
+            overlay.GearTapped += () => opened++;
+
+            overlay.TapGear();
+
+            Assert.That(opened, Is.EqualTo(1));
+        }
     }
 }
