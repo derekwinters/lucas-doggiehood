@@ -67,7 +67,12 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
 
-            Assert.That(state.TryAddDecoration(BedFor(9999, 0)), Is.False);
+            // An unknown house has no lot, so YardPlacement can't compute a
+            // slot for it — build the decoration with a raw position and let
+            // TryAddDecoration reject it on the (zero) capacity.
+            var decoration = new Decoration("bed", 9999, new GridPoint(0f, 0f));
+
+            Assert.That(state.TryAddDecoration(decoration), Is.False);
             Assert.That(state.DecorationCountForHouse(9999), Is.EqualTo(0));
         }
 
