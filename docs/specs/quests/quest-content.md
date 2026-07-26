@@ -12,6 +12,8 @@ v1.0 ships with exactly 3 quest types. Expanding variety is explicitly deferred 
 
 A dog's conversation reveals it has lost something — a toy, or its own puppy — and needs the player's help finding it. Resolved via the hidden-object search mechanic: the item is placed somewhere visible in the main neighborhood scene (behind a bush, on a roof, etc.); the player pans/zooms around and taps it when spotted. No separate hidden-object scene, hint system, or radar. ([#31](https://github.com/derekwinters/lucas-doggiehood/issues/31))
 
+The hidden item's position is generated in Core and kept clear of every house footprint: candidates within a named house-clearance buffer (`QuestManager.HouseClearanceBuffer`) of any house are rejected and re-rolled, so the item always sits in open, tappable ground rather than behind a house where the geometry occludes the tap. The buffer clears the full lost-item tap radius with margin, and placement stays deterministic per quest/seed. This mirrors the collision-aware footprint check yard landscaping already uses (see [World](../world/world.md) § Yard landscaping). ([#290](https://github.com/derekwinters/lucas-doggiehood/issues/290))
+
 ### 2. Buy something
 
 *[#13](https://github.com/derekwinters/lucas-doggiehood/issues/13)*

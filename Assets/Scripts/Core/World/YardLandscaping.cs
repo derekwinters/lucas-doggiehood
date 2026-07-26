@@ -343,17 +343,12 @@ namespace Doggiehood.Core.World
             return picks;
         }
 
+        /// <summary>The lot's house footprint rect — delegates to the shared
+        /// <see cref="HousePlacement.HouseFootprint"/> (#290) so yard trees
+        /// and quest hidden items reject against the exact same geometry.</summary>
         private static LotRect HouseFootprintOf(HouseLot lot)
         {
-            var facing = HousePlacement.FrontFacing(lot);
-            var house = HousePlacement.Position(lot, HousePlacement.KitScale);
-            var model = HouseModelCatalog.ForHouse(lot.HouseId);
-            var halfWidth = HousePlacement.KitScale * model.FootprintX / 2f;
-            var halfDepth = HousePlacement.KitScale * model.FootprintZ / 2f;
-
-            return facing.X != 0f
-                ? new LotRect(house.X - halfDepth, house.X + halfDepth, house.Z - halfWidth, house.Z + halfWidth)
-                : new LotRect(house.X - halfWidth, house.X + halfWidth, house.Z - halfDepth, house.Z + halfDepth);
+            return HousePlacement.HouseFootprint(lot);
         }
 
         private static int SeedFor(HouseLot lot, int salt)

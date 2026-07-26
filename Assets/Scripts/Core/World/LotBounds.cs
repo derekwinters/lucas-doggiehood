@@ -61,6 +61,19 @@ namespace Doggiehood.Core.World
             return other.MinX >= MinX && other.MaxX <= MaxX && other.MinZ >= MinZ && other.MaxZ <= MaxZ;
         }
 
+        /// <summary>The shortest distance from <paramref name="point"/> to
+        /// this rect, in meters: 0 when the point is inside or on an edge,
+        /// otherwise the straight-line distance to the nearest edge. The
+        /// engine-free primitive both yard landscaping (#170) and quest
+        /// hidden-item placement (#290) use to keep points clear of a house
+        /// footprint.</summary>
+        public float DistanceTo(GridPoint point)
+        {
+            var dx = Math.Max(MinX - point.X, Math.Max(0f, point.X - MaxX));
+            var dz = Math.Max(MinZ - point.Z, Math.Max(0f, point.Z - MaxZ));
+            return (float)Math.Sqrt(dx * dx + dz * dz);
+        }
+
         /// <summary>Whether this rect shares any positive-area overlap with
         /// <paramref name="other"/> — rects that only touch at an edge
         /// (e.g. two lot quadrants meeting at the road centerline) do NOT

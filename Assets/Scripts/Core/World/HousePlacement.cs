@@ -141,6 +141,29 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// The house's axis-aligned ground footprint at <see cref="KitScale"/>:
+        /// the scaled model footprint (<see cref="HouseModelCatalog"/>)
+        /// centered on <see cref="Position"/>, with width/depth swapped when
+        /// the house faces along X so the rect matches the house's actual
+        /// orientation. The single shared source of the footprint rect —
+        /// yard landscaping (#170) rejection-samples trees against it and
+        /// quest hidden-item placement (#290) keeps lost toys clear of it,
+        /// so both compute the same rect the same way.
+        /// </summary>
+        public static LotRect HouseFootprint(HouseLot lot)
+        {
+            var facing = FrontFacing(lot);
+            var house = Position(lot, KitScale);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var halfWidth = KitScale * model.FootprintX / 2f;
+            var halfDepth = KitScale * model.FootprintZ / 2f;
+
+            return facing.X != 0f
+                ? new LotRect(house.X - halfDepth, house.X + halfDepth, house.Z - halfWidth, house.Z + halfWidth)
+                : new LotRect(house.X - halfWidth, house.X + halfWidth, house.Z - halfDepth, house.Z + halfDepth);
+        }
+
+        /// <summary>
         /// Pure form of <see cref="Position"/> for a known sidewalk attach
         /// point (a point on the sidewalk CENTERLINE the lot connects to)
         /// — no network lookup, so WalkNetwork.BuildFrom can use it
