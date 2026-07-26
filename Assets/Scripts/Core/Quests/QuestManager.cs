@@ -17,7 +17,28 @@ namespace Doggiehood.Core.Quests
     public sealed class QuestManager
     {
         private const float LostItemTapRadius = 1.5f;
-        private const float HiddenItemExtent = 25f;
+
+        /// <summary>Half-width of the square area (centered on the world
+        /// origin) a lost item can spawn in: the generated
+        /// <see cref="Quest.HiddenItemPosition"/> stays within
+        /// [-<see cref="HiddenItemExtent"/>, +<see cref="HiddenItemExtent"/>]
+        /// on each axis.</summary>
+        public const float HiddenItemExtent = 25f;
+
+        /// <summary>#290: minimum clearance a lost toy keeps from every
+        /// house footprint, so the house geometry/collider never occludes
+        /// the tap. Tunable placeholder (no spec pins a number): 2.0m clears
+        /// the full <see cref="LostItemTapRadius"/> (1.5m) with margin, so
+        /// the entire tap hit-radius lands off the footprint — not just the
+        /// point. Named Core constant per #161.</summary>
+        public const float HouseClearanceBuffer = 2f;
+
+        /// <summary>#290: rejection-sampling attempt budget when placing a
+        /// lost item clear of every house footprint. The clear area is the
+        /// overwhelming majority of the <see cref="HiddenItemExtent"/>
+        /// square, so a valid point is found almost immediately; this cap
+        /// only guarantees the loop always terminates.</summary>
+        private const int MaxHiddenItemPlacementAttempts = 64;
 
         private static readonly QuestType[] RotationTypes =
         {
@@ -81,9 +102,7 @@ namespace Doggiehood.Core.Quests
                 case QuestType.LostItem:
                     var lostItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Lost);
                     item = lostItems[rng.Next(lostItems.Count)];
-                    hidden = new GridPoint(
-                        (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent,
-                        (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent);
+                    hidden = GenerateHiddenItemPosition(rng);
                     break;
                 case QuestType.BuyGift:
                     var giftItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Gift);
@@ -273,6 +292,47 @@ namespace Doggiehood.Core.Quests
         private Dog FindDog(Quest quest)
         {
             return state.Dogs.First(d => d.Name == quest.DogName);
+        }
+
+        /// <summary>#31/#290: a uniformly random point in the
+        /// <see cref="HiddenItemExtent"/> square, rejection-sampled so it
+        /// keeps at least <see cref="HouseClearanceBuffer"/> from every
+        /// house footprint (<see cref="HousePlacement.HouseFootprint"/>) —
+        /// so the lost toy always sits in open, tappable ground rather than
+        /// behind a house. Deterministic per <paramref name="rng"/>: the
+        /// draw count is bounded and the last candidate is returned if the
+        /// (practically unreachable) attempt budget is exhausted, so the
+        /// result stays within the placement bounds and reproducible per
+        /// seed.</summary>
+        private static GridPoint GenerateHiddenItemPosition(Random rng)
+        {
+            var candidate = default(GridPoint);
+            for (var attempt = 0; attempt < MaxHiddenItemPlacementAttempts; attempt++)
+            {
+                candidate = new GridPoint(
+                    (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent,
+                    (float)(rng.NextDouble() * 2 - 1) * HiddenItemExtent);
+
+                if (ClearsAllHouseFootprints(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return candidate;
+        }
+
+        private static bool ClearsAllHouseFootprints(GridPoint point)
+        {
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                if (HousePlacement.HouseFootprint(lot).DistanceTo(point) < HouseClearanceBuffer)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

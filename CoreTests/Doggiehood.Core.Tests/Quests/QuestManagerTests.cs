@@ -268,6 +268,66 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void LostItem_HiddenPositionClearsEveryHouseFootprintByBuffer()
+        {
+            // #290: a lost toy must never spawn within HouseClearanceBuffer
+            // of any house footprint, or the house geometry/collider
+            // occludes the tap and the item is unreachable.
+            for (var seed = 0; seed < 500; seed++)
+            {
+                var state = NewState();
+                var quest = state.Quests.GiveQuestTo(
+                    state.Dogs[0], QuestType.LostItem, new Random(seed));
+                var pos = quest.HiddenItemPosition.Value;
+
+                foreach (var lot in NeighborhoodLayout.HouseLots)
+                {
+                    var footprint = HousePlacement.HouseFootprint(lot);
+                    Assert.That(footprint.DistanceTo(pos),
+                        Is.GreaterThanOrEqualTo(QuestManager.HouseClearanceBuffer),
+                        $"seed {seed}: lost item {pos} too close to house "
+                        + $"{lot.HouseId} footprint");
+                }
+            }
+        }
+
+        [Test]
+        public void LostItem_HiddenPositionStaysWithinExtentBounds()
+        {
+            // #290: rejection sampling must always terminate with a valid
+            // position inside the existing placement bounds.
+            for (var seed = 0; seed < 500; seed++)
+            {
+                var state = NewState();
+                var pos = state.Quests
+                    .GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(seed))
+                    .HiddenItemPosition.Value;
+
+                Assert.That(Math.Abs(pos.X),
+                    Is.LessThanOrEqualTo(QuestManager.HiddenItemExtent), $"seed {seed}");
+                Assert.That(Math.Abs(pos.Z),
+                    Is.LessThanOrEqualTo(QuestManager.HiddenItemExtent), $"seed {seed}");
+            }
+        }
+
+        [Test]
+        public void LostItem_HiddenPositionIsDeterministicPerSeed()
+        {
+            // #290: placement stays deterministic per quest/seed even with
+            // rejection sampling in the loop.
+            for (var seed = 0; seed < 50; seed++)
+            {
+                var first = NewState()
+                    .Quests.GiveQuestTo(NewState().Dogs[0], QuestType.LostItem, new Random(seed));
+                var second = NewState()
+                    .Quests.GiveQuestTo(NewState().Dogs[0], QuestType.LostItem, new Random(seed));
+
+                Assert.That(first.HiddenItemPosition.Value,
+                    Is.EqualTo(second.HiddenItemPosition.Value), $"seed {seed}");
+            }
+        }
+
+        [Test]
         public void QuestSchema_HasNoExpiryOrFailFields()
         {
             // #28: structurally no timers/fail states. (Invariant guard.)
