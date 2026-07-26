@@ -62,7 +62,40 @@ Instead:
 
 `Assets/Tests/EditMode/AppIconTests.cs` and `SplashScreenTests.cs` are the reference implementations.
 
-### 5. Simulate the assertions before pushing
+### 5. Runtime-built UGUI needs its shader in Always-Included and a bundled font
+
+UGUI built **procedurally at runtime** (`gameObject.AddComponent<Image>()` /
+`<Text>()`, no serialized scene/prefab) is a serialization trap in disguise:
+nothing on disk references the shader or font those components need, so the
+Android build **strips both** and the Editor never shows it.
+
+**Case study (#291):** the Settings panel (#219) — the game's first runtime-built
+UGUI (HUD/onboarding are IMGUI) — shipped as a **magenta box with invisible
+text**. Two independent causes:
+
+- **The UI shader was stripped.** A plain `Image` renders through the default UI
+  material → the built-in `UI/Default` shader. It lives in `unity_builtin_extra`
+  (GUID `0000000000000000f000000000000000`) and must be listed in
+  `ProjectSettings/GraphicsSettings.asset` → `m_AlwaysIncludedShaders` or it is
+  dropped from the build → every Image renders Unity's missing-shader **magenta**.
+  Verified built-in UGUI shader fileIDs (from real project files — do **not**
+  guess, the YAML carries no name comment): `10770 = UI/Default`,
+  `10753 = Sprites/Default`.
+- **The font was Editor-only.** `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")`
+  works in the Editor but is **not build-reliable** → labels draw nothing on
+  device. Fix: bundle a real, license-clean `.ttf` under a `Resources/` folder
+  (with `includeFontData: 1` in its committed `.meta`) and `Resources.Load<Font>`
+  it. Watch **glyph coverage** — the bundled font must actually contain every
+  glyph the UI uses (e.g. DejaVu Sans has ✕ U+2715 but not the fullwidth plus
+  U+FF0B).
+
+Guard both at the serialization level: assert the `UI/Default` entry is present
+in the `GraphicsSettings.asset` YAML text, and assert the font's `.meta` carries
+`includeFontData: 1` at its pinned GUID. `Assets/Tests/EditMode/UiBuildResourcesTests.cs`
+is the reference implementation. This is **build-only** — EditMode/CI can't
+reproduce Android shader stripping, so an on-device playtest is the final confirmation.
+
+### 6. Simulate the assertions before pushing
 
 The sandbox can't run Unity, but every serialization-level assertion is plain text matching — simulate the exact regexes/contains-checks against the final files with a quick Python script before committing. This proves red→green locally-in-spirit and catches regex/formatting mistakes without burning a ~5-minute CI round trip. (YAML formatting details matter: e.g. Unity writes a trailing space after empty scalar keys like `m_SubKind: ` — copy formatting exactly.)
 
