@@ -1,4 +1,6 @@
 using Doggiehood.Core.Debugging;
+using Doggiehood.Core.Economy;
+using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
 using UnityEngine;
@@ -20,6 +22,7 @@ namespace Doggiehood.Unity.EditModeTests
         private GameObject canvasHost;
         private GameObject panelHost;
         private SettingsPanel panel;
+        private GameState state;
         private bool forceFencesAtStart;
 
         [SetUp]
@@ -31,10 +34,12 @@ namespace Doggiehood.Unity.EditModeTests
             canvasHost = new GameObject("ui-canvas", typeof(Canvas));
             canvasHost.AddComponent<UiCanvas>().Configure();
 
+            state = GameState.CreateNew();
+
             panelHost = new GameObject("settings-panel");
             panelHost.transform.SetParent(canvasHost.transform, false);
             panel = panelHost.AddComponent<SettingsPanel>();
-            panel.Init(TestVersion);
+            panel.Init(state, TestVersion);
         }
 
         [TearDown]
@@ -218,6 +223,71 @@ namespace Doggiehood.Unity.EditModeTests
         {
             Assert.That(panel.FenceToggleRect.sizeDelta.x, Is.EqualTo(SettingsPanel.ToggleTrackWidthPx));
             Assert.That(panel.FenceToggleRect.sizeDelta.y, Is.EqualTo(SettingsPanel.ToggleTrackHeightPx));
+        }
+
+        // --- #286: Debug-tab "Add coins" action ---
+
+        [Test]
+        public void AddCoinsAmount_IsTheNamedConstant()
+        {
+            Assert.That(SettingsPanel.DebugAddCoinsAmount, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void DebugPane_RendersAnAddCoinsRow_BelowTheFenceRow()
+        {
+            Assert.That(panel.AddCoinsRowRect, Is.Not.Null,
+                "the Debug pane lists an Add coins action row (#286)");
+            Assert.That(panel.AddCoinsRowRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugRowHeightPx),
+                "the action row reuses the approved debug-row height (#218)");
+            Assert.That(panel.AddCoinsRowRect.anchoredPosition.y,
+                Is.EqualTo(-(SettingsPanel.DebugRowHeightPx + SettingsPanel.DebugRowGapPx)),
+                "it stacks one row-and-gap below the fence toggle, inventing no new layout");
+        }
+
+        [Test]
+        public void AddCoinsButton_IsPresentInTheAddCoinsRow()
+        {
+            Assert.That(panel.AddCoinsButtonRect, Is.Not.Null);
+            Assert.That(panel.AddCoinsButtonRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugActionHeightPx));
+        }
+
+        [Test]
+        public void AddCoins_DepositsTheNamedConstantIntoTheLiveWallet()
+        {
+            var before = state.Wallet.Coins;
+
+            panel.AddCoins();
+
+            Assert.That(state.Wallet.Coins, Is.EqualTo(before + SettingsPanel.DebugAddCoinsAmount),
+                "the action grants coins via the Core wallet's Deposit seam (#286)");
+        }
+
+        [Test]
+        public void AddCoins_IsRepeatable_EachTapStacks()
+        {
+            panel.AddCoins();
+            panel.AddCoins();
+
+            Assert.That(state.Wallet.Coins,
+                Is.EqualTo(2 * SettingsPanel.DebugAddCoinsAmount));
+        }
+
+        [Test]
+        public void HudCurrencyChip_ReflectsTheBalanceAfterADebugDeposit()
+        {
+            var hudHost = new GameObject("hud");
+            var hud = hudHost.AddComponent<HudOverlay>();
+            hud.Init(state);
+            var before = hud.Label;
+
+            panel.AddCoins();
+
+            Assert.That(hud.Label, Is.EqualTo(CurrencyChip.Label(state.Wallet.Coins)),
+                "the HUD chip reads the live wallet, so it shows the debug payout immediately");
+            Assert.That(hud.Label, Is.Not.EqualTo(before));
+
+            Object.DestroyImmediate(hudHost);
         }
 
         private void UnlockDebug()

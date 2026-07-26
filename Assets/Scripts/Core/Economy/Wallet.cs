@@ -3,9 +3,11 @@ using System;
 namespace Doggiehood.Core.Economy
 {
     /// <summary>
-    /// The player's coin balance (#24, #25). Coins enter only via quest
-    /// completion (QuestManager is the sole depositor) and can never go
-    /// negative — a rejected spend leaves the balance untouched.
+    /// The player's coin balance (#24, #25). In normal play coins enter only
+    /// via quest completion (QuestManager is the sole gameplay depositor); the
+    /// on-device Debug "Add coins" action (#286) is the one other, debug-only
+    /// depositor. The balance can never go negative — a rejected spend leaves
+    /// it untouched.
     /// </summary>
     public sealed class Wallet
     {

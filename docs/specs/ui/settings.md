@@ -19,7 +19,7 @@ An in-game **Settings menu**, opened from a gear on the HUD: a left **sidebar of
 | Entry point | **Gear** button on the HUD that opens this panel | [Shared panel chrome](shared-components.md) |
 
 **About pane:** app name · a tappable **version** label (also the debug-unlock target) · a small credits line.
-**Debug pane** (hidden until unlocked): a list of on-device toggles/actions — first is **Show backyard fences** (drives `WorldBuilder.ForceFencesVisible`, [#152](https://github.com/derekwinters/lucas-doggiehood/issues/152)); room for more (e.g. **Add coins**, [#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)).
+**Debug pane** (hidden until unlocked): a list of on-device toggles/actions — first is **Show backyard fences** (drives `WorldBuilder.ForceFencesVisible`, [#152](https://github.com/derekwinters/lucas-doggiehood/issues/152)), followed by **Add coins** (a gold **＋100** action that grants `DebugAddCoinsAmount` = 100 coins to the wallet via the Core `Wallet.Deposit` seam, so neighborhood expansion can be tested without grinding quests, [#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)); room for more.
 
 ## Anchors & layout constants
 
@@ -39,6 +39,10 @@ An in-game **Settings menu**, opened from a gear on the HUD: a left **sidebar of
 | `ToggleTrackHeightPx` | `56` | Debug toggle switch track |
 | `ToggleKnobPx` | `44` | Debug toggle switch knob |
 | `DebugRowHeightPx` | `96` | Each debug toggle/action row |
+| `DebugRowGapPx` | `20` | Gap between stacked debug rows |
+| `DebugActionWidthPx` | `200` | Gold action pill (e.g. **＋100**) width |
+| `DebugActionHeightPx` | `72` | Debug action pill height |
+| `DebugAddCoinsAmount` | `100` | Coins granted per **Add coins** tap ([#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)) |
 | `GearButtonSizePx` | `88` | HUD settings entry point |
 | `GearMarginPx` | `32` | Gear inset from its HUD corner |
 | `CloseButtonSizePx` | `72` | Close (✕) button, top-right |

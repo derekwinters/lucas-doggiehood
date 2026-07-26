@@ -40,7 +40,7 @@ namespace Doggiehood.Unity
             // Settings panel (#219): built under the #256 CanvasScaler, opened
             // from the HUD gear. Version comes from the build (release-please
             // owns it); the Debug fence toggle rebuilds only the fences live.
-            var settings = BuildSettingsPanel(root.transform);
+            var settings = BuildSettingsPanel(state, root.transform);
 
             // Persistent HUD (#159): graybox currency chip, restyled by #65.
             // The top-right gear opens Settings (#219).
@@ -68,11 +68,12 @@ namespace Doggiehood.Unity
         /// <summary>
         /// Creates the UI canvas (#256) and the Settings panel (#219) under
         /// it, wiring the fence debug toggle to a live, fence-only rebuild of
-        /// the given world root. Version text comes from the build via
-        /// <c>Application.version</c> — release-please owns the value, this
-        /// only reads it (never hand-edited).
+        /// the given world root. The panel takes the live <paramref name="state"/>
+        /// so its Debug "Add coins" action (#286) can deposit into the wallet.
+        /// Version text comes from the build via <c>Application.version</c> —
+        /// release-please owns the value, this only reads it (never hand-edited).
         /// </summary>
-        private SettingsPanel BuildSettingsPanel(Transform worldRoot)
+        private SettingsPanel BuildSettingsPanel(GameState state, Transform worldRoot)
         {
             var canvasObject = new GameObject("UiCanvas", typeof(Canvas), typeof(UiCanvas));
             canvasObject.transform.SetParent(gameObject.transform);
@@ -81,7 +82,7 @@ namespace Doggiehood.Unity
             var panelObject = new GameObject("SettingsPanel");
             panelObject.transform.SetParent(canvasObject.transform, false);
             var settings = panelObject.AddComponent<SettingsPanel>();
-            settings.Init(Application.version);
+            settings.Init(state, Application.version);
             settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot);
             return settings;
         }
