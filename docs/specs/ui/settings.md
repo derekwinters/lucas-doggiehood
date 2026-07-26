@@ -19,7 +19,7 @@ An in-game **Settings menu**, opened from a gear on the HUD: a left **sidebar of
 | Entry point | **Gear** button on the HUD that opens this panel | [Shared panel chrome](shared-components.md) |
 
 **About pane:** app name · a tappable **version** label (also the debug-unlock target) · a small credits line.
-**Debug pane** (hidden until unlocked): a list of on-device toggles/actions — first is **Show backyard fences** (drives `WorldBuilder.ForceFencesVisible`, [#152](https://github.com/derekwinters/lucas-doggiehood/issues/152)), followed by **Add coins** (a gold **＋100** action that grants `DebugAddCoinsAmount` = 100 coins to the wallet via the Core `Wallet.Deposit` seam, so neighborhood expansion can be tested without grinding quests, [#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)); room for more.
+**Debug pane** (hidden until unlocked): a list of on-device toggles/actions — first is **Show backyard fences** (drives `WorldBuilder.ForceFencesVisible`, [#152](https://github.com/derekwinters/lucas-doggiehood/issues/152)), followed by **Add coins** (a gold **+100** action that grants `DebugAddCoinsAmount` = 100 coins to the wallet via the Core `Wallet.Deposit` seam, so neighborhood expansion can be tested without grinding quests, [#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)); room for more.
 
 ## Anchors & layout constants
 
@@ -40,7 +40,7 @@ An in-game **Settings menu**, opened from a gear on the HUD: a left **sidebar of
 | `ToggleKnobPx` | `44` | Debug toggle switch knob |
 | `DebugRowHeightPx` | `96` | Each debug toggle/action row |
 | `DebugRowGapPx` | `20` | Gap between stacked debug rows |
-| `DebugActionWidthPx` | `200` | Gold action pill (e.g. **＋100**) width |
+| `DebugActionWidthPx` | `200` | Gold action pill (e.g. **+100**) width |
 | `DebugActionHeightPx` | `72` | Debug action pill height |
 | `DebugAddCoinsAmount` | `100` | Coins granted per **Add coins** tap ([#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)) |
 | `GearButtonSizePx` | `88` | HUD settings entry point |
@@ -53,6 +53,7 @@ The panel **chrome** (outline 6 / corner radius 40 / drop-shadow 12) and the **p
 
 - **Debug unlock gesture.** Tapping the **version** label **10 times within 10 seconds** reveals the Debug tab in the sidebar; fewer taps, or 10 spread over more than 10s, does not. The gesture + the debug-toggle registry are engine-free **Core** logic (unit-tested); the panel/tabs/version display/toggle wiring is the Unity layer ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)).
 - **Debug ships hidden.** The Debug menu is in the build but unreachable without the gesture — no stray entry point.
+- **Bundled UI font.** This is the game's first runtime-built UGUI (the HUD/onboarding are IMGUI), so its shader and font must be pulled into the build explicitly or the Android build strips them — the panel rendered as a magenta box with invisible text on device ([#291](https://github.com/derekwinters/lucas-doggiehood/issues/291)). Fixed by retaining `UI/Default` in **Always Included Shaders** and bundling **DejaVu Sans** (`Assets/UI/Fonts/Resources/DejaVuSans.ttf` — deliberately outside the `Assets/Art` low-poly-scanned tree, loaded via `Resources.Load`) instead of the Editor-only `Resources.GetBuiltinResource` lookup. DejaVu covers the ✕ close glyph but not the fullwidth plus, so the **Add coins** action uses a plain ASCII `+`. See `docs/engineering/unity-serialization.md`.
 - **Standard this sets.** New debug affordances live as **toggles/actions in this Debug tab**, not as temporary code edits ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)).
 - **Future tabs** (audio, save/reset) are out of scope, but the sidebar leaves room for them.
 - **Reference resolution.** Constants are authored at the 1920×1200 (16:10) reference per [Overview](index.md); a Unity `CanvasScaler` scales from this so each px constant has a fixed meaning across tablet sizes.

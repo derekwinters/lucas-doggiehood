@@ -41,7 +41,7 @@ namespace Doggiehood.Unity
 
         // --- #286: the Debug-tab "Add coins" action ---
         // Grant amount is a named constant (#161); the wireframe's single
-        // gold action is "＋100" (docs/specs/ui/settings.md mockup).
+        // gold action is "+100" (docs/specs/ui/settings.md mockup).
         public const int DebugAddCoinsAmount = 100;
         public const float DebugRowGapPx = 20f;       // mockup .drow margin-bottom
         public const float DebugActionWidthPx = 200f; // graybox width for the gold action pill
@@ -73,7 +73,16 @@ namespace Doggiehood.Unity
         private const string FenceRowSubtitleText = "Drives WorldBuilder.ForceFencesVisible (#152)";
         private const string AddCoinsRowLabelText = "Add coins";
         private const string AddCoinsRowSubtitleText = "Grant coins to test expansion (#286)";
-        private const string AddCoinsGlyph = "＋"; // fullwidth plus, per the mockup
+        // ASCII "+" — the bundled UI font (DejaVu Sans, #291) does not carry the
+        // mockup's fullwidth plus (U+FF0B), so it would draw nothing in the build.
+        private const string AddCoinsGlyph = "+";
+
+        /// <summary>#291: the bundled UI font, loaded from a Resources folder so
+        /// it ships in the Android build. Runtime-built UGUI cannot rely on
+        /// <c>Resources.GetBuiltinResource</c> (Editor-only, stripped from the
+        /// player), which left every label invisible on device.</summary>
+        private const string LabelFontResource = "DejaVuSans";
+        private static Font labelFont;
 
         /// <summary>Debug-toggle registry key for the first on-device toggle,
         /// the show/hide backyard fences switch (#152).</summary>
@@ -467,7 +476,7 @@ namespace Doggiehood.Unity
             addCoinsButtonRect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
             addCoinsButtonRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
 
-            // "＋100" built from the named amount — no bare literal (#161).
+            // "+100" built from the named amount — no bare literal (#161).
             CreateLabel("Glyph", addCoinsButtonRect, AddCoinsGlyph + DebugAddCoinsAmount, DebugActionFontSizePx, TextAnchor.MiddleCenter);
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(AddCoins);
         }
@@ -518,14 +527,20 @@ namespace Doggiehood.Unity
             text.color = InkColor;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
-            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null)
+            text.font = LabelFont();
+            return text;
+        }
+
+        /// <summary>Loads (and caches) the bundled UI font from Resources so a
+        /// build actually ships glyphs. See <see cref="LabelFontResource"/>.</summary>
+        private static Font LabelFont()
+        {
+            if (labelFont == null)
             {
-                font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                labelFont = Resources.Load<Font>(LabelFontResource);
             }
 
-            text.font = font;
-            return text;
+            return labelFont;
         }
 
         private static void Stretch(RectTransform rect)

@@ -3,6 +3,7 @@ using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,6 +19,7 @@ namespace Doggiehood.Unity.EditModeTests
     public class SettingsPanelTests
     {
         private const string TestVersion = "0.4.0-abc1234";
+        private const string BundledFontPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
 
         private GameObject canvasHost;
         private GameObject panelHost;
@@ -28,6 +30,11 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreatePanel()
         {
+            // #291: the panel binds its bundled UI font via Resources.Load in
+            // Build(); force-import it so a fresh CI Library resolves it before
+            // the panel is constructed (docs/engineering/unity-serialization.md §4).
+            AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
+
             forceFencesAtStart = WorldBuilder.ForceFencesVisible;
             WorldBuilder.ForceFencesVisible = false;
 
@@ -125,6 +132,22 @@ namespace Doggiehood.Unity.EditModeTests
         public void VersionLabel_UsesTheWireframeFontSize()
         {
             Assert.That(panel.VersionLabel.fontSize, Is.EqualTo(SettingsPanel.VersionFontSizePx));
+        }
+
+        // --- #291: labels use a bundled font, not an Editor-only built-in lookup ---
+
+        [Test]
+        public void Labels_UseTheBundledFont_NotAnEditorOnlyBuiltinLookup()
+        {
+            var font = panel.VersionLabel.font;
+
+            Assert.That(font, Is.Not.Null,
+                "the version label has no font — it would draw nothing in the Android build (#291)");
+            Assert.That(font.name, Does.Contain("DejaVu"),
+                "labels must use the bundled DejaVu font; Resources.GetBuiltinResource " +
+                "(Arial/LegacyRuntime) is Editor-only and gets stripped from the build (#291)");
+            Assert.That(font.name, Does.Not.Contain("Arial"));
+            Assert.That(font.name, Does.Not.Contain("LegacyRuntime"));
         }
 
         // --- open / close ---
