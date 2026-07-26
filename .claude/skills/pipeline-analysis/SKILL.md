@@ -91,7 +91,9 @@ Propose the milestone by matching the issue against the **live milestone
 descriptions** from the milestones API — never a hard-coded `00`–`08` list, so
 this survives the version-numbering rework (#192). Pick the milestone whose
 description best fits the work; state which one and why in the analysis. Derek's
-`/approve` accepts it; `/milestone` overrides it.
+`/approve` accepts it; `/milestone` overrides it. See `docs/engineering/issue-pipeline.md`
+→ "Fetching live milestones" for the exact recipe (no MCP milestone tool
+exists; use the JSON API, not the HTML page).
 
 ## Dependencies — always structured, never prose (#248)
 
