@@ -1481,6 +1481,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#auto-revisit-when-a-blocker-clears" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-revisit when a blocker clears
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1677,6 +1686,15 @@
   <a href="#the-approve-milestone-gate-ready-for-work-has-milestone" class="md-nav__link">
     <span class="md-ellipsis">
       The /approve milestone gate — ready-for-work ⇒ has milestone
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-revisit-when-a-blocker-clears" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-revisit when a blocker clears
     </span>
   </a>
   
@@ -1939,6 +1957,27 @@ done as an order-independent finalization, so <code>/approve\n/milestone 07</cod
 <strong>order</strong> gate onto the same resolved value (the milestone must not precede a
 blocker's milestone); the two chain <strong>resolve → presence (#247) → order (#212)</strong>,
 so the order check only runs once a milestone exists.</p>
+<h3 id="auto-revisit-when-a-blocker-clears">Auto-revisit when a blocker clears<a class="headerlink" href="#auto-revisit-when-a-blocker-clears" title="Permanent link">&para;</a></h3>
+<p>An issue can be parked in <code>needs-clarification</code> <strong>only because</strong> it is
+<code>Blocked by: #N</code> — it needed a decision that lives in its blocker (e.g. issue 1
+blocks issue 2; issue 2 was sent back for clarification only because it awaits a
+call on issue 1). Nothing was re-examining those issues once the blocker
+resolved: analysis only acts on <code>ai-triage</code>, and the gatekeeper otherwise only
+acts on Derek's comments — so the question stalled indefinitely
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/241">#241</a>).</p>
+<p>The gatekeeper closes that gap with a <strong>state-derived transition</strong> (not a
+comment command): the deterministic <code>check_revisits.py::check_blocker_revisits</code>
+takes the open-issue snapshot (number, labels, body) and returns a revisit —
+add <code>ai-triage</code>, remove <code>needs-clarification</code> — for every <code>needs-clarification</code>
+issue whose structured <code>Blocked by: #N</code> blockers have <strong>all</strong> resolved. A
+blocker is resolved when it is closed/merged (absent from the open snapshot) or
+carries <code>ready-for-work</code>/<code>in-progress</code>. An issue with multiple blockers revisits
+only once every one is resolved; an issue with no structured <code>Blocked by:</code> line,
+a still-open unresolved blocker, a prose-only mention, or a <code>parked</code> label is
+never touched (no false triggers). It runs in the gatekeeper step <strong>after</strong>
+comment-driven moves, so it reconciles against the labels those commands just
+set, and posts a short auto-comment naming the cleared blocker(s) ending in the
+<code>back-to-analysis</code> menu.</p>
 <h2 id="where-focus-is-stored">Where <code>/focus</code> is stored<a class="headerlink" href="#where-focus-is-stored" title="Permanent link">&para;</a></h2>
 <p>The active nightly-development milestone lives in a hidden marker on the
 <strong>first line of the dashboard issue (#193) body</strong>:</p>
@@ -2154,7 +2193,10 @@ findings. Both share the one <code>reconcile.py</code> implementation.</p>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
 place: focus-milestone pie (green done / yellow ready-for-work / red
 remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
-please separated), intake, pending-approval, needs-clarification, a read-only
+please separated), intake, pending-approval and needs-clarification (each of
+these three tables carries a <strong>"Blocked by"</strong> column listing the issue's
+structured <code>Blocked by: #N</code> hard blockers as links, so blockers surface on every
+stage the way the focus queue already flags them — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/241">#241</a>), a read-only
 <strong>"⏸️ Parked"</strong> section listing every open <code>parked</code> issue so parked work stays
 visible and easy to <code>/unpark</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/249">#249</a>),
 a <strong>"⚠️ Reconcile"</strong> section listing the sweep's flag findings (merged-but-open,
@@ -2178,7 +2220,8 @@ only live milestones outside the focus are shown (<a href="https://github.com/de
 <p>Each stage is a self-contained skill directory under <code>.claude/skills/</code>:</p>
 <ul>
 <li><code>pipeline-gatekeeper/</code> — <code>SKILL.md</code> + <code>parse_commands.py</code> (deterministic
-  command parser) + tests.</li>
+  command parser) + <code>check_revisits.py</code> (blocker auto-revisit transition) +
+  tests.</li>
 <li><code>pipeline-analysis/</code> — <code>SKILL.md</code> (model-driven triage/design).</li>
 <li><code>pipeline-dashboard/</code> — <code>SKILL.md</code> + <code>render_dashboard.py</code> + golden test;
   driven in production by <code>.github/workflows/dashboard.yml</code>.</li>
