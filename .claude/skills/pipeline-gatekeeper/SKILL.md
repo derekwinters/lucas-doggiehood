@@ -85,8 +85,10 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
    ```
 
    Provide `repo_owner: "derekwinters"` and `milestones` (the live list of
-   open milestone titles, from the milestones API) in the payload. The script
-   returns `{"actions": [...], "skipped": [...]}`.
+   open milestone titles, from the milestones API — see
+   `docs/engineering/issue-pipeline.md` → "Fetching live milestones" for the
+   exact recipe) in the payload. The script returns
+   `{"actions": [...], "skipped": [...]}`.
 
 3. **Apply each action** with the GitHub MCP tools, in the order returned:
    - Add/remove the labels in `add_labels` / `remove_labels`.

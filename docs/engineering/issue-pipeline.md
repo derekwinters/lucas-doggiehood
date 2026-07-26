@@ -138,6 +138,31 @@ stored. Relocating the marker out of the dashboard body into a dedicated
 single-writer store is tracked upstream in
 [ai-skills#8](https://github.com/derekwinters/ai-skills/issues/8).
 
+## Fetching live milestones
+
+GitHub's MCP toolset exposed to this pipeline has **no dedicated
+milestone-list or milestone-set tool** — don't spend time hunting for one that
+doesn't exist.
+
+The reliable recipe is a direct call to the milestones REST endpoint:
+
+```
+GET https://api.github.com/repos/derekwinters/lucas-doggiehood/milestones?state=open&per_page=100
+```
+
+Issue this via `WebFetch` (or an equivalent authenticated GitHub API call).
+The response is clean JSON giving each open milestone's `number`, `title`,
+and `description`.
+
+`issue_write`'s `milestone` parameter takes the milestone's **`number`**, not
+its `title`. Match the issue against the live `title`/`description` text
+first, then use that milestone's `number` when writing.
+
+Prefer this JSON endpoint over WebFetching the HTML `/milestones` page: the
+HTML page needs JS rendering to enumerate milestones and has been observed to
+under-report — dropping closed-milestone titles from the same fetch
+([#227](https://github.com/derekwinters/lucas-doggiehood/issues/227)).
+
 ## Routines and the dashboard workflow
 
 The gatekeeper runs first in each AI routine so downstream stages see fresh
