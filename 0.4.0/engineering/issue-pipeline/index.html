@@ -1505,6 +1505,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fetching-live-milestones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fetching live milestones
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routines-and-the-dashboard-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       Routines and the dashboard workflow
@@ -1709,6 +1718,15 @@
   <a href="#where-focus-is-stored" class="md-nav__link">
     <span class="md-ellipsis">
       Where /focus is stored
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fetching-live-milestones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fetching live milestones
     </span>
   </a>
   
@@ -2001,6 +2019,23 @@ milestone that matches no live milestone is rejected rather than silently
 stored. Relocating the marker out of the dashboard body into a dedicated
 single-writer store is tracked upstream in
 <a href="https://github.com/derekwinters/ai-skills/issues/8">ai-skills#8</a>.</p>
+<h2 id="fetching-live-milestones">Fetching live milestones<a class="headerlink" href="#fetching-live-milestones" title="Permanent link">&para;</a></h2>
+<p>GitHub's MCP toolset exposed to this pipeline has <strong>no dedicated
+milestone-list or milestone-set tool</strong> — don't spend time hunting for one that
+doesn't exist.</p>
+<p>The reliable recipe is a direct call to the milestones REST endpoint:</p>
+<div class="highlight"><pre><span></span><code>GET https://api.github.com/repos/derekwinters/lucas-doggiehood/milestones?state=open&amp;per_page=100
+</code></pre></div>
+<p>Issue this via <code>WebFetch</code> (or an equivalent authenticated GitHub API call).
+The response is clean JSON giving each open milestone's <code>number</code>, <code>title</code>,
+and <code>description</code>.</p>
+<p><code>issue_write</code>'s <code>milestone</code> parameter takes the milestone's <strong><code>number</code></strong>, not
+its <code>title</code>. Match the issue against the live <code>title</code>/<code>description</code> text
+first, then use that milestone's <code>number</code> when writing.</p>
+<p>Prefer this JSON endpoint over WebFetching the HTML <code>/milestones</code> page: the
+HTML page needs JS rendering to enumerate milestones and has been observed to
+under-report — dropping closed-milestone titles from the same fetch
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/227">#227</a>).</p>
 <h2 id="routines-and-the-dashboard-workflow">Routines and the dashboard workflow<a class="headerlink" href="#routines-and-the-dashboard-workflow" title="Permanent link">&para;</a></h2>
 <p>The gatekeeper runs first in each AI routine so downstream stages see fresh
 labels.</p>
