@@ -310,6 +310,51 @@ class TestParseCommands(unittest.TestCase):
         self.assertIn("ready-for-work", a["add_labels"])
         self.assertIn("ready-for-work", b["add_labels"])
 
+    def test_cap_sets_cap_on_dashboard(self):
+        # /cap <n> is honored on the dashboard issue (#193) and resolves to a
+        # set_cap action, mirroring /focus's dashboard carve-out (#240).
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/cap 5", cid=10)]),
+        ]))
+        acts = self.actions_for(193, out)
+        self.assertEqual(len(acts), 1)
+        a = acts[0]
+        self.assertEqual(a["set_cap"], 5)
+        self.assertEqual(a["add_labels"], [])
+        self.assertEqual(a["remove_labels"], [])
+        self.assertIsNone(a["menu"])
+
+    def test_cap_non_numeric_is_rejected(self):
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/cap banana", cid=11)]),
+        ]))
+        self.assertEqual(self.actions_for(193, out), [])
+        self.assertTrue(any(
+            s.get("comment_id") == 11 and s.get("reason") == "cap-invalid"
+            for s in out["skipped"]))
+
+    def test_cap_non_positive_is_rejected(self):
+        out = run(payload([
+            base_issue(number=193, is_dashboard=True,
+                       comments=[comment("/cap 0", cid=12)]),
+        ]))
+        self.assertEqual(self.actions_for(193, out), [])
+        self.assertTrue(any(
+            s.get("comment_id") == 12 and s.get("reason") == "cap-invalid"
+            for s in out["skipped"]))
+        # No marker/action change accompanies the rejection.
+        self.assertEqual(out["actions"], [])
+
+    def test_cap_ignored_on_non_dashboard_issue(self):
+        # /cap is honored ONLY on the dashboard issue, unlike /focus which is
+        # honored everywhere (#240).
+        out = run(payload([
+            base_issue(number=185, comments=[comment("/cap 5", cid=13)]),
+        ]))
+        self.assertEqual(self.actions_for(185, out), [])
+
     def test_non_approve_command_unaffected_by_milestone_gate(self):
         # The milestone gate is scoped to /approve only: /admit and /park still
         # act on a milestone-less issue.

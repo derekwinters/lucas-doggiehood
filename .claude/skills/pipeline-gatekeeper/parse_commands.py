@@ -20,6 +20,11 @@ Design rules encoded here (see issue #194 and docs/engineering/issue-pipeline.md
     the focus marker to a dedicated single-writer control store (a control
     issue or a repo variable) is tracked as decision #8; until then the marker
     lives on the dashboard body and `/focus` is accepted on the dashboard.
+  * `/cap <n>` (issue #240) is the nightly build-cap tunable and, unlike
+    `/focus`, is honored ONLY on the dashboard issue — everywhere else it is
+    silently ignored (a no-op), never surfaced as a per-issue command. A
+    non-numeric or non-positive argument is REJECTED (`cap-invalid` in
+    `skipped`) with no `set_cap` change, mirroring `focus-no-match`.
   * A `parked` issue only honors `/unpark`; every other command is ignored
     while it is parked.
   * `/focus <arg>` and `/milestone <arg>` are REJECTED when the argument
@@ -60,6 +65,7 @@ Output schema (stdout):
        "add_labels": ["ready-for-work"], "remove_labels": ["pending-approval"],
        "set_milestone": "07 - Polish & Onboarding" | null,
        "set_focus": "04 - Quests & Economy" | null,
+       "set_cap": 5 | null,
        "propose": false, "revise_notes": null, "redo": false,
        "react": 7,
        "menu": "ready-for-work"}
@@ -68,7 +74,7 @@ Output schema (stdout):
   }
 
 Skip reasons: "not-owner", "no-op", "parked-ignored", "focus-no-match",
-"milestone-no-match", "approve-no-milestone".
+"milestone-no-match", "approve-no-milestone", "cap-invalid".
 """
 
 import json
@@ -76,9 +82,9 @@ import re
 import sys
 
 # Commands that carry a free-text argument to end of line.
-_ARG_COMMANDS = {"revise", "milestone", "focus"}
+_ARG_COMMANDS = {"revise", "milestone", "focus", "cap"}
 _KNOWN = ["admit", "approve", "revise", "redo", "propose",
-          "park", "unpark", "milestone", "focus"]
+          "park", "unpark", "milestone", "focus", "cap"]
 
 # A command is `/word` at start-of-line or after whitespace; the rest of the
 # line (for arg commands) is captured in group 2.
@@ -133,6 +139,22 @@ def _match_milestone(arg, milestones):
     return None
 
 
+def _match_cap(arg):
+    """Resolve a `/cap` argument to a positive integer, or None if invalid.
+
+    Rejects non-numeric input (letters, decimals, blank) and non-positive
+    integers (zero or negative) — mirrors `_match_milestone`'s "no match"
+    shape but for an integer instead of a milestone title (issue #240).
+    """
+    arg = (arg or "").strip().strip("`").strip()
+    if not re.fullmatch(r"-?\d+", arg):
+        return None
+    n = int(arg)
+    if n <= 0:
+        return None
+    return n
+
+
 def _parse_comment(body):
     """Return an ordered list of (command, arg) tuples found in a comment."""
     found = []
@@ -162,6 +184,7 @@ def _build_action(issue, comment, commands, milestones, is_parked,
         "remove_labels": remove,
         "set_milestone": None,
         "set_focus": None,
+        "set_cap": None,
         "propose": False,
         "revise_notes": None,
         "redo": False,
@@ -192,9 +215,14 @@ def _build_action(issue, comment, commands, milestones, is_parked,
         # A parked issue only responds to /unpark.
         if is_parked and cmd != "unpark":
             continue
-        # On the dashboard issue, /focus is the only honored (global) command;
+        # On the dashboard issue, /focus (global, honored everywhere) and
+        # /cap (dashboard-only, see below) are the only commands honored;
         # every issue-scoped command is ignored there.
-        if dashboard_only and cmd != "focus":
+        if dashboard_only and cmd not in ("focus", "cap"):
+            continue
+        # /cap is the mirror image of /focus: honored ONLY on the dashboard
+        # issue, silently ignored everywhere else (#240).
+        if cmd == "cap" and not dashboard_only:
             continue
 
         if cmd == "milestone":
@@ -218,6 +246,17 @@ def _build_action(issue, comment, commands, milestones, is_parked,
             # menu/ack, so the dashboard body isn't churned by acknowledgments.
             if action["menu"] is None and not dashboard_only:
                 action["menu"] = "focus"
+            continue
+        if cmd == "cap":
+            resolved = _match_cap(arg)
+            if resolved is None:
+                reject("cap-invalid")
+                continue
+            action["commands"].append(cmd)
+            action["set_cap"] = resolved
+            # /cap only ever fires on the dashboard issue, so — like /focus
+            # there — keep ONLY the cap marker change, no menu/ack, so the
+            # dashboard body isn't churned by acknowledgments.
             continue
 
         action["commands"].append(cmd)

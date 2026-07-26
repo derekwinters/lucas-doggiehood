@@ -39,7 +39,10 @@ The workflow runs `render_dashboard.py --write`, which:
 ## What it renders
 
 Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
-marker (first line — the shared focus source of truth), the focus-milestone pie
+marker (first line — the shared focus source of truth) and the hidden
+`<!-- pipeline-cap: N -->` marker (second line — the shared nightly-build-cap
+source of truth, issue #240, displayed as "Nightly build cap: **N**" in the
+ready-for-work section), the focus-milestone pie
 (green done / yellow ready-for-work / red remaining), the focus ready-for-work
 queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and sorted
 first — #250), the "Your move" counts, PRs, intake, pending-approval,
@@ -63,9 +66,10 @@ open-issues chart — that section shows only live milestones outside the focus.
 ## Tests
 
 `tests/test_render.py` checks structural invariants (pie values and colors,
-focus marker, section headers, exclusions) and a **golden snapshot**
-(`tests/expected_dashboard.md`) rendered from `tests/fixture_state.json`, so any
-format drift fails CI. Run:
+focus marker, section headers, exclusions), the cap marker/display and the
+`_read_cap_marker` / `_resolve_cap` precedence (override → marker → default,
+issue #240), and a **golden snapshot** (`tests/expected_dashboard.md`)
+rendered from `tests/fixture_state.json`, so any format drift fails CI. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-dashboard/tests
