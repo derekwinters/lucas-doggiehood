@@ -1657,7 +1657,7 @@
 </tbody>
 </table>
 <p><strong>About pane:</strong> app name · a tappable <strong>version</strong> label (also the debug-unlock target) · a small credits line.
-<strong>Debug pane</strong> (hidden until unlocked): a list of on-device toggles/actions — first is <strong>Show backyard fences</strong> (drives <code>WorldBuilder.ForceFencesVisible</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/152">#152</a>), followed by <strong>Add coins</strong> (a gold <strong>＋100</strong> action that grants <code>DebugAddCoinsAmount</code> = 100 coins to the wallet via the Core <code>Wallet.Deposit</code> seam, so neighborhood expansion can be tested without grinding quests, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/286">#286</a>); room for more.</p>
+<strong>Debug pane</strong> (hidden until unlocked): a list of on-device toggles/actions — first is <strong>Show backyard fences</strong> (drives <code>WorldBuilder.ForceFencesVisible</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/152">#152</a>), followed by <strong>Add coins</strong> (a gold <strong>+100</strong> action that grants <code>DebugAddCoinsAmount</code> = 100 coins to the wallet via the Core <code>Wallet.Deposit</code> seam, so neighborhood expansion can be tested without grinding quests, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/286">#286</a>); room for more.</p>
 <h2 id="anchors-layout-constants">Anchors &amp; layout constants<a class="headerlink" href="#anchors-layout-constants" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1746,7 +1746,7 @@
 <tr>
 <td><code>DebugActionWidthPx</code></td>
 <td><code>200</code></td>
-<td>Gold action pill (e.g. <strong>＋100</strong>) width</td>
+<td>Gold action pill (e.g. <strong>+100</strong>) width</td>
 </tr>
 <tr>
 <td><code>DebugActionHeightPx</code></td>
@@ -1780,6 +1780,7 @@
 <ul>
 <li><strong>Debug unlock gesture.</strong> Tapping the <strong>version</strong> label <strong>10 times within 10 seconds</strong> reveals the Debug tab in the sidebar; fewer taps, or 10 spread over more than 10s, does not. The gesture + the debug-toggle registry are engine-free <strong>Core</strong> logic (unit-tested); the panel/tabs/version display/toggle wiring is the Unity layer (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>).</li>
 <li><strong>Debug ships hidden.</strong> The Debug menu is in the build but unreachable without the gesture — no stray entry point.</li>
+<li><strong>Bundled UI font.</strong> This is the game's first runtime-built UGUI (the HUD/onboarding are IMGUI), so its shader and font must be pulled into the build explicitly or the Android build strips them — the panel rendered as a magenta box with invisible text on device (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). Fixed by retaining <code>UI/Default</code> in <strong>Always Included Shaders</strong> and bundling <strong>DejaVu Sans</strong> (<code>Assets/UI/Fonts/Resources/DejaVuSans.ttf</code> — deliberately outside the <code>Assets/Art</code> low-poly-scanned tree, loaded via <code>Resources.Load</code>) instead of the Editor-only <code>Resources.GetBuiltinResource</code> lookup. DejaVu covers the ✕ close glyph but not the fullwidth plus, so the <strong>Add coins</strong> action uses a plain ASCII <code>+</code>. See <code>docs/engineering/unity-serialization.md</code>.</li>
 <li><strong>Standard this sets.</strong> New debug affordances live as <strong>toggles/actions in this Debug tab</strong>, not as temporary code edits (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>).</li>
 <li><strong>Future tabs</strong> (audio, save/reset) are out of scope, but the sidebar leaves room for them.</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a>; a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>

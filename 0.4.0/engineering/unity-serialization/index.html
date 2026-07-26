@@ -1510,9 +1510,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-simulate-the-assertions-before-pushing" class="md-nav__link">
+  <a href="#5-runtime-built-ugui-needs-its-shader-in-always-included-and-a-bundled-font" class="md-nav__link">
     <span class="md-ellipsis">
-      5. Simulate the assertions before pushing
+      5. Runtime-built UGUI needs its shader in Always-Included and a bundled font
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-simulate-the-assertions-before-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Simulate the assertions before pushing
     </span>
   </a>
   
@@ -1630,9 +1639,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-simulate-the-assertions-before-pushing" class="md-nav__link">
+  <a href="#5-runtime-built-ugui-needs-its-shader-in-always-included-and-a-bundled-font" class="md-nav__link">
     <span class="md-ellipsis">
-      5. Simulate the assertions before pushing
+      5. Runtime-built UGUI needs its shader in Always-Included and a bundled font
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-simulate-the-assertions-before-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Simulate the assertions before pushing
     </span>
   </a>
   
@@ -1727,7 +1745,37 @@
 <li>For pinned sub-asset IDs, <code>AssetDatabase.TryGetGUIDAndLocalFileIdentifier</code> verifies both GUID and fileID.</li>
 </ul>
 <p><code>Assets/Tests/EditMode/AppIconTests.cs</code> and <code>SplashScreenTests.cs</code> are the reference implementations.</p>
-<h3 id="5-simulate-the-assertions-before-pushing">5. Simulate the assertions before pushing<a class="headerlink" href="#5-simulate-the-assertions-before-pushing" title="Permanent link">&para;</a></h3>
+<h3 id="5-runtime-built-ugui-needs-its-shader-in-always-included-and-a-bundled-font">5. Runtime-built UGUI needs its shader in Always-Included and a bundled font<a class="headerlink" href="#5-runtime-built-ugui-needs-its-shader-in-always-included-and-a-bundled-font" title="Permanent link">&para;</a></h3>
+<p>UGUI built <strong>procedurally at runtime</strong> (<code>gameObject.AddComponent&lt;Image&gt;()</code> /
+<code>&lt;Text&gt;()</code>, no serialized scene/prefab) is a serialization trap in disguise:
+nothing on disk references the shader or font those components need, so the
+Android build <strong>strips both</strong> and the Editor never shows it.</p>
+<p><strong>Case study (#291):</strong> the Settings panel (#219) — the game's first runtime-built
+UGUI (HUD/onboarding are IMGUI) — shipped as a <strong>magenta box with invisible
+text</strong>. Two independent causes:</p>
+<ul>
+<li><strong>The UI shader was stripped.</strong> A plain <code>Image</code> renders through the default UI
+  material → the built-in <code>UI/Default</code> shader. It lives in <code>unity_builtin_extra</code>
+  (GUID <code>0000000000000000f000000000000000</code>) and must be listed in
+  <code>ProjectSettings/GraphicsSettings.asset</code> → <code>m_AlwaysIncludedShaders</code> or it is
+  dropped from the build → every Image renders Unity's missing-shader <strong>magenta</strong>.
+  Verified built-in UGUI shader fileIDs (from real project files — do <strong>not</strong>
+  guess, the YAML carries no name comment): <code>10770 = UI/Default</code>,
+  <code>10753 = Sprites/Default</code>.</li>
+<li><strong>The font was Editor-only.</strong> <code>Resources.GetBuiltinResource&lt;Font&gt;("LegacyRuntime.ttf")</code>
+  works in the Editor but is <strong>not build-reliable</strong> → labels draw nothing on
+  device. Fix: bundle a real, license-clean <code>.ttf</code> under a <code>Resources/</code> folder
+  (with <code>includeFontData: 1</code> in its committed <code>.meta</code>) and <code>Resources.Load&lt;Font&gt;</code>
+  it. Watch <strong>glyph coverage</strong> — the bundled font must actually contain every
+  glyph the UI uses (e.g. DejaVu Sans has ✕ U+2715 but not the fullwidth plus
+  U+FF0B).</li>
+</ul>
+<p>Guard both at the serialization level: assert the <code>UI/Default</code> entry is present
+in the <code>GraphicsSettings.asset</code> YAML text, and assert the font's <code>.meta</code> carries
+<code>includeFontData: 1</code> at its pinned GUID. <code>Assets/Tests/EditMode/UiBuildResourcesTests.cs</code>
+is the reference implementation. This is <strong>build-only</strong> — EditMode/CI can't
+reproduce Android shader stripping, so an on-device playtest is the final confirmation.</p>
+<h3 id="6-simulate-the-assertions-before-pushing">6. Simulate the assertions before pushing<a class="headerlink" href="#6-simulate-the-assertions-before-pushing" title="Permanent link">&para;</a></h3>
 <p>The sandbox can't run Unity, but every serialization-level assertion is plain text matching — simulate the exact regexes/contains-checks against the final files with a quick Python script before committing. This proves red→green locally-in-spirit and catches regex/formatting mistakes without burning a ~5-minute CI round trip. (YAML formatting details matter: e.g. Unity writes a trailing space after empty scalar keys like <code>m_SubKind:</code> — copy formatting exactly.)</p>
 <h2 id="checklist-for-a-new-hand-authored-block">Checklist for a new hand-authored block<a class="headerlink" href="#checklist-for-a-new-hand-authored-block" title="Permanent link">&para;</a></h2>
 <ul>
