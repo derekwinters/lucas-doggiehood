@@ -1496,9 +1496,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-focus-is-stored" class="md-nav__link">
+  <a href="#where-focus-and-cap-are-stored" class="md-nav__link">
     <span class="md-ellipsis">
-      Where /focus is stored
+      Where /focus and /cap are stored
     </span>
   </a>
   
@@ -1715,9 +1715,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-focus-is-stored" class="md-nav__link">
+  <a href="#where-focus-and-cap-are-stored" class="md-nav__link">
     <span class="md-ellipsis">
-      Where /focus is stored
+      Where /focus and /cap are stored
     </span>
   </a>
   
@@ -1939,6 +1939,10 @@ commands act):</p>
 <td><code>/focus &lt;name&gt;</code></td>
 <td>Set the active milestone for nightly development.</td>
 </tr>
+<tr>
+<td><code>/cap &lt;n&gt;</code></td>
+<td>Set the nightly dev build cap. <strong>Dashboard issue (#193) only</strong> — rejects non-numeric or non-positive <code>n</code>.</td>
+</tr>
 </tbody>
 </table>
 <p>Every AI hand-back comment ends with the context-appropriate "Your move" menu.</p>
@@ -1996,24 +2000,48 @@ never touched (no false triggers). It runs in the gatekeeper step <strong>after<
 comment-driven moves, so it reconciles against the labels those commands just
 set, and posts a short auto-comment naming the cleared blocker(s) ending in the
 <code>back-to-analysis</code> menu.</p>
-<h2 id="where-focus-is-stored">Where <code>/focus</code> is stored<a class="headerlink" href="#where-focus-is-stored" title="Permanent link">&para;</a></h2>
-<p>The active nightly-development milestone lives in a hidden marker on the
-<strong>first line of the dashboard issue (#193) body</strong>:</p>
+<h2 id="where-focus-and-cap-are-stored">Where <code>/focus</code> and <code>/cap</code> are stored<a class="headerlink" href="#where-focus-and-cap-are-stored" title="Permanent link">&para;</a></h2>
+<p>The active nightly-development milestone and the nightly build cap
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/240">#240</a>) each
+live in a hidden marker on the <strong>first two lines of the dashboard issue (#193)
+body</strong>:</p>
 <div class="highlight"><pre><span></span><code>&lt;!-- pipeline-focus: v0.4 --&gt;
+&lt;!-- pipeline-cap: 3 --&gt;
 </code></pre></div>
-<p>This is the single source of truth shared by the gatekeeper (sets it on
-<code>/focus</code>), <code>pipeline-dev</code> (reads it to pick the queue), and the dashboard
-renderer (reads it, displays it, and re-emits it). It was chosen over a
-committed state file (no routine needs to push a commit just to record focus)
-and over a separate issue (the value sits next to where it's shown). If the
-marker is absent, focus defaults to the lowest version milestone with open
-<code>ready-for-work</code> issues.</p>
+<p>This is the single source of truth shared by the gatekeeper (sets them on
+<code>/focus</code> / <code>/cap</code>), <code>pipeline-dev</code> (reads them to pick the queue and the
+cap), and the dashboard renderer (reads them, displays them, and re-emits
+them). It was chosen over a committed state file (no routine needs to push a
+commit just to record focus/cap) and over a separate issue (the value sits
+next to where it's shown). If the focus marker is absent, focus defaults to
+the lowest version milestone with open <code>ready-for-work</code> issues; if the cap
+marker is absent, cap defaults to <strong>3</strong> (matching <code>select_queue.py</code>'s own
+<code>cap = data.get("cap", 3)</code> fallback).</p>
+<p><code>/cap</code> sets its marker by <strong>re-rendering the dashboard</strong> with a
+<code>DASHBOARD_SET_CAP</code> override (<code>render_dashboard.py::_resolve_cap</code>: override →
+marker → default) — it never hand-edits #193's body directly, so it cannot hit
+the HTML-entity/Mermaid corruption bug described below. Unlike <code>/focus</code>,
+<code>/cap</code> is honored <strong>only</strong> on the dashboard issue; it is silently ignored
+everywhere else.</p>
 <p>The gatekeeper sets focus by <strong>re-rendering the dashboard</strong> with a
 <code>DASHBOARD_SET_FOCUS</code> override, which writes the new marker into a freshly
 rendered (raw) body — it never hand-edits #193's body directly. Reading and
 writing that body back through the GitHub tools re-HTML-encodes it (<code>"</code> →
 <code>&amp;#34;</code>, <code>&amp;</code> → <code>&amp;amp;</code>) and breaks the Mermaid charts
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/204">#204</a>).</p>
+<blockquote>
+<p><strong>Note (found while building #240):</strong> the <code>DASHBOARD_SET_FOCUS</code> override and
+its <code>_resolve_focus</code> precedence, described above and originally shipped in
+<a href="https://github.com/derekwinters/lucas-doggiehood/pull/230">#230</a>, are no
+longer present in <code>render_dashboard.py</code> — they were dropped when the shared
+<code>ai-skills</code> pipeline bundle was adopted
+(<a href="https://github.com/derekwinters/lucas-doggiehood/pull/238">#238</a>) without
+this doc being updated to match. <code>/cap</code>'s <code>DASHBOARD_SET_CAP</code> override was
+implemented fresh for #240 following this same documented pattern and <em>is</em>
+present in code today (see <code>_resolve_cap</code>). Restoring <code>/focus</code>'s override is
+a pre-existing gap outside #240's scope — flagged here rather than fixed
+silently; it should be filed as its own follow-up issue.</p>
+</blockquote>
 <p><code>/focus</code> is now honored on the dashboard issue itself, and a <code>/focus</code> naming a
 milestone that matches no live milestone is rejected rather than silently
 stored. Relocating the marker out of the dashboard body into a dedicated
@@ -2136,8 +2164,10 @@ line for that number (see <strong>Prose-only dependency</strong> below).</p>
 <p>A serial nightly builder wrapping the <code>doggiehood-dev</code> agent. It builds the
 eligible set — <code>ready-for-work</code> <strong>and</strong> in the focus milestone <strong>and</strong> all hard
 blockers closed/merged <strong>and</strong> not <code>parked</code> <strong>and</strong> no open PR — in topological
-order (dependencies first, then issue number), up to a nightly cap (<strong>3</strong> to
-start). Each issue is built on <strong>its own branch</strong> and opened as <strong>its own PR</strong>
+order (dependencies first, then issue number), up to the nightly cap read from
+the <code>&lt;!-- pipeline-cap: N --&gt;</code> marker on #193 (default <strong>3</strong>, settable with
+<code>/cap &lt;n&gt;</code> — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/240">#240</a>).
+Each issue is built on <strong>its own branch</strong> and opened as <strong>its own PR</strong>
 (title = that issue's single Conventional line; body = <code>## Deviations and
 Decisions</code> + <code>Closes #N</code>); a failing issue is dropped — its branch deleted, no
 PR — and the loop continues. Because each PR resolves exactly one issue, its
@@ -2227,7 +2257,10 @@ findings. Both share the one <code>reconcile.py</code> implementation.</p>
 <h3 id="dashboard-pipeline-dashboard-dashboardyml">Dashboard (<code>pipeline-dashboard</code> + <code>dashboard.yml</code>)<a class="headerlink" href="#dashboard-pipeline-dashboard-dashboardyml" title="Permanent link">&para;</a></h3>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
 place: focus-milestone pie (green done / yellow ready-for-work / red
-remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
+remaining), the focus ready-for-work queue (headed by the nightly build cap,
+"Nightly build cap: <strong>N</strong>", read from the <code>&lt;!-- pipeline-cap: N --&gt;</code> marker —
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/240">#240</a>), "Your
+move" counts, PRs (release-
 please separated), intake, pending-approval and needs-clarification (each of
 these three tables carries a <strong>"Blocked by"</strong> column listing the issue's
 structured <code>Blocked by: #N</code> hard blockers as links, so blockers surface on every
