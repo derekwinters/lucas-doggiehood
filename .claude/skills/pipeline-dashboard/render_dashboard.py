@@ -30,10 +30,15 @@ REPO_DEFAULT = "derekwinters/lucas-doggiehood"
 DASHBOARD_ISSUE = 193
 API = "https://api.github.com"
 
-# Focus-milestone pie colors (done / ready-for-work / remaining).
+# Focus-milestone pie colors — one slice per real pipeline-state label plus
+# Done, so every focus-milestone issue maps to exactly one slice (#265).
 PIE_DONE = "#3fae5a"
 PIE_READY = "#e6c200"
-PIE_REMAIN = "#d64545"
+PIE_IN_PROGRESS = "#3f8fae"
+PIE_NEEDS_TRIAGE = "#e6862e"
+PIE_PENDING_APPROVAL = "#8a5fd6"
+PIE_NEEDS_CLARIFICATION = "#d68a45"
+PIE_PARKED = "#8a8a8a"
 
 BAR_CELLS = 10  # width of the ▰▱ progress bars in "Other milestones"
 
@@ -90,8 +95,15 @@ def render_body(state):
     repo = state.get("repo", REPO_DEFAULT)
     focus = state["focus"]
     fm = focus["milestone"]
-    done, ready, remaining = focus["done"], focus["ready"], focus["remaining"]
-    total = done + ready + remaining
+    done = focus["done"]
+    ready = focus["ready"]
+    in_progress = focus["in_progress"]
+    needs_triage = focus["needs_triage"]
+    pending_approval = focus["pending_approval"]
+    needs_clarification = focus["needs_clarification"]
+    parked = focus["parked"]
+    total = (done + ready + in_progress + needs_triage + pending_approval
+             + needs_clarification + parked)
     ym = state["your_move"]
     cap = state.get("cap", DEFAULT_CAP)
 
@@ -117,11 +129,20 @@ def render_body(state):
     a("")
     a("```mermaid")
     a('%%{init: {"themeVariables": {"pie1": "' + PIE_DONE
-      + '", "pie2": "' + PIE_READY + '", "pie3": "' + PIE_REMAIN + '"}}}%%')
+      + '", "pie2": "' + PIE_READY
+      + '", "pie3": "' + PIE_IN_PROGRESS
+      + '", "pie4": "' + PIE_NEEDS_TRIAGE
+      + '", "pie5": "' + PIE_PENDING_APPROVAL
+      + '", "pie6": "' + PIE_NEEDS_CLARIFICATION
+      + '", "pie7": "' + PIE_PARKED + '"}}}%%')
     a("pie showData title %s" % fm)
     a('    "Done" : %d' % done)
     a('    "Ready for work" : %d' % ready)
-    a('    "Remaining" : %d' % remaining)
+    a('    "In progress" : %d' % in_progress)
+    a('    "Needs triage" : %d' % needs_triage)
+    a('    "Pending approval" : %d' % pending_approval)
+    a('    "Needs clarification" : %d' % needs_clarification)
+    a('    "Parked" : %d' % parked)
     a("```")
     a("")
     a("**▶️ Ready-for-work queue** _(this milestone only, in nightly build order)_")
@@ -429,6 +450,31 @@ def _milestone_num(title):
     return int(m.group(1)) if m else 9999
 
 
+def _focus_bucket(lbl):
+    """Classify one open focus-milestone issue's labels into a pie slice (#265).
+
+    Priority order (highest wins), matching the state table in
+    docs/engineering/issue-pipeline.md: parked > ready-for-work > in-progress
+    > ai-triage > pending-approval > needs-clarification > (no pipeline label
+    at all, e.g. a pre-`/admit` raw idea, folds into needs-triage). Every
+    open, non-excluded focus-milestone issue maps to exactly one bucket so
+    none can silently vanish from the pie total.
+    """
+    if "parked" in lbl:
+        return "parked"
+    if "ready-for-work" in lbl:
+        return "ready"
+    if "in-progress" in lbl:
+        return "in_progress"
+    if "ai-triage" in lbl:
+        return "needs_triage"
+    if "pending-approval" in lbl:
+        return "pending_approval"
+    if "needs-clarification" in lbl:
+        return "needs_clarification"
+    return "needs_triage"
+
+
 def fetch_state(repo, token, as_of):
     raw = _paginate("/repos/%s/issues?state=all" % repo, token)
     issues = [i for i in raw if "pull_request" not in i]
@@ -465,7 +511,24 @@ def fetch_state(repo, token, as_of):
         ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
         pool = ready_ms or list(milestones)
         focus_title = min(pool, key=_milestone_num) if pool else "(none)"
-    fb = milestones.get(focus_title, {"done": 0, "ready": 0, "remaining": 0})
+    # Focus-milestone pie tally: a dedicated 7-bucket pass, separate from the
+    # generic `milestones` roll-up above. Unlike that roll-up, this pass
+    # *includes* `parked` issues — giving them their own slice instead of
+    # letting them vanish from the total (#265) — while still excluding
+    # `dashboard`/`type:epic` bookkeeping issues.
+    fb = {"done": 0, "ready": 0, "in_progress": 0, "needs_triage": 0,
+          "pending_approval": 0, "needs_clarification": 0, "parked": 0}
+    for i in issues:
+        ms = i.get("milestone")
+        if not ms or ms["title"] != focus_title:
+            continue
+        lbl = labels_of(i)
+        if "dashboard" in lbl or "type:epic" in lbl:
+            continue
+        if i["state"] == "closed":
+            fb["done"] += 1
+        else:
+            fb[_focus_bucket(lbl)] += 1
 
     # Nightly build cap (#240): DASHBOARD_SET_CAP override (a `/cap`
     # re-render) > #193 marker > DEFAULT_CAP.
@@ -569,8 +632,11 @@ def fetch_state(repo, token, as_of):
         "as_of": as_of,
         "cap": cap,
         "focus": {"milestone": focus_title, "done": fb["done"],
-                  "ready": fb["ready"], "remaining": fb["remaining"],
-                  "queue": queue},
+                  "ready": fb["ready"], "in_progress": fb["in_progress"],
+                  "needs_triage": fb["needs_triage"],
+                  "pending_approval": fb["pending_approval"],
+                  "needs_clarification": fb["needs_clarification"],
+                  "parked": fb["parked"], "queue": queue},
         "your_move": {"prs": len(awaiting), "release_please": len(automation),
                       "new_ideas": len(intake), "approvals": len(pending),
                       "questions": len(needs)},

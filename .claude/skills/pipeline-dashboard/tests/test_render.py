@@ -51,14 +51,35 @@ class TestRender(unittest.TestCase):
         self.assertIn("Nightly build cap: **5**", section)
 
     def test_pie_values(self):
+        # #265: 7-slice breakdown — one slice per real pipeline-state label
+        # plus Done, so every focus-milestone issue maps to exactly one slice.
         self.assertIn('"Done" : 18', self.body)
         self.assertIn('"Ready for work" : 3', self.body)
-        self.assertIn('"Remaining" : 2', self.body)
+        self.assertIn('"In progress" : 1', self.body)
+        self.assertIn('"Needs triage" : 0', self.body)
+        self.assertIn('"Pending approval" : 0', self.body)
+        self.assertIn('"Needs clarification" : 0', self.body)
+        self.assertIn('"Parked" : 1', self.body)
 
     def test_pie_colors(self):
-        # done=green, ready=yellow, remaining=red
+        # done=green, ready=yellow, in-progress=blue, needs-triage=orange,
+        # pending-approval=purple, needs-clarification=tan, parked=gray (#265)
         self.assertIn('"pie1": "#3fae5a"', self.body)
-        self.assertIn('"pie3": "#d64545"', self.body)
+        self.assertIn('"pie2": "#e6c200"', self.body)
+        self.assertIn('"pie3": "#3f8fae"', self.body)
+        self.assertIn('"pie4": "#e6862e"', self.body)
+        self.assertIn('"pie5": "#8a5fd6"', self.body)
+        self.assertIn('"pie6": "#d68a45"', self.body)
+        self.assertIn('"pie7": "#8a8a8a"', self.body)
+
+    def test_pie_total_matches_all_seven_buckets(self):
+        # #265: guards against a future unclassified label silently vanishing
+        # from the pie total the way `parked` used to.
+        f = self.state["focus"]
+        total = (f["done"] + f["ready"] + f["in_progress"] + f["needs_triage"]
+                  + f["pending_approval"] + f["needs_clarification"]
+                  + f["parked"])
+        self.assertIn("%d / %d complete" % (f["done"], total), self.body)
 
     def test_complete_headline(self):
         self.assertIn("18 / 23 complete", self.body)
