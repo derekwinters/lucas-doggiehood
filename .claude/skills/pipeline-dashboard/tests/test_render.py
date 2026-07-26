@@ -39,6 +39,17 @@ class TestRender(unittest.TestCase):
             first, "<!-- pipeline-focus: 03 - Dogs & Conversations -->"
         )
 
+    def test_cap_marker_present_near_top(self):
+        # Mirrors the focus marker's treatment (#240): a hidden marker is
+        # emitted on every render, so the nightly cap is never lost.
+        second = self.body.splitlines()[1]
+        self.assertEqual(second, "<!-- pipeline-cap: 5 -->")
+
+    def test_cap_displayed_in_ready_for_work_section(self):
+        section = self._section(
+            "## 🎯 Focus milestone", "### 🔔 Your move")
+        self.assertIn("Nightly build cap: **5**", section)
+
     def test_pie_values(self):
         self.assertIn('"Done" : 18', self.body)
         self.assertIn('"Ready for work" : 3', self.body)
@@ -296,6 +307,47 @@ class TestQueueUnblockerRendering(unittest.TestCase):
         body = render_dashboard.render_body(state)
         self.assertIn("Nothing queued yet", body)
         self.assertNotIn("⭐", body)
+
+
+class TestReadCapMarker(unittest.TestCase):
+    """Pure marker parsing (#240), mirroring `_read_focus_marker`."""
+
+    def test_reads_value(self):
+        self.assertEqual(
+            render_dashboard._read_cap_marker("<!-- pipeline-cap: 5 -->"), 5)
+
+    def test_absent_returns_none(self):
+        self.assertIsNone(render_dashboard._read_cap_marker("no marker here"))
+
+    def test_non_numeric_marker_returns_none(self):
+        self.assertIsNone(
+            render_dashboard._read_cap_marker("<!-- pipeline-cap: banana -->"))
+
+
+class TestResolveCap(unittest.TestCase):
+    """Cap precedence (#240): DASHBOARD_SET_CAP override > #193 marker >
+    default (3, matching select_queue.py's own fallback) — mirrors the
+    historical `_resolve_focus` precedence."""
+
+    def test_override_wins(self):
+        self.assertEqual(render_dashboard._resolve_cap("5", 3), 5)
+
+    def test_marker_used_with_no_override(self):
+        self.assertEqual(render_dashboard._resolve_cap(None, 7), 7)
+
+    def test_default_when_neither_present(self):
+        self.assertEqual(
+            render_dashboard._resolve_cap(None, None),
+            render_dashboard.DEFAULT_CAP)
+
+    def test_invalid_override_falls_back_to_marker(self):
+        self.assertEqual(render_dashboard._resolve_cap("banana", 4), 4)
+
+    def test_non_positive_override_falls_back_to_marker(self):
+        self.assertEqual(render_dashboard._resolve_cap("0", 4), 4)
+
+    def test_blank_override_falls_back_to_marker(self):
+        self.assertEqual(render_dashboard._resolve_cap("  ", 4), 4)
 
 
 if __name__ == "__main__":

@@ -44,24 +44,32 @@ See `docs/engineering/issue-pipeline.md` for the full model.
 | `/park` / `/unpark` | add / remove `parked` |
 | `/milestone <name>` | set the milestone (accepts `04`, a title fragment, or the full title) |
 | `/focus <name>` | record the active nightly-dev milestone (stored in the dashboard marker — see below) |
+| `/cap <n>` | set the nightly dev build cap (**dashboard issue only** — see below); rejects non-numeric or non-positive `n` |
 
 A `parked` issue only responds to `/unpark`.
 
-## Where `/focus` is stored
+## Where `/focus` and `/cap` are stored
 
-The active nightly-dev milestone lives in a **hidden marker on the dashboard
-issue (#193)** body:
+The active nightly-dev milestone and the nightly build cap each live in a
+**hidden marker on the dashboard issue (#193)** body:
 
 ```
 <!-- pipeline-focus: 04 - Quests & Economy -->
+<!-- pipeline-cap: 3 -->
 ```
 
 This is the single source of truth read by both `pipeline-dev` (queue
 selection) and the dashboard workflow. It was chosen over a committed state
-file so no routine needs to push a commit just to record focus, and over a
+file so no routine needs to push a commit just to record focus/cap, and over a
 separate issue so the value sits next to where it's displayed. When `/focus`
-fires, update this marker (see step 5). If the marker is absent, focus defaults
-to the lowest-numbered milestone with open `ready-for-work` issues.
+or `/cap` fires, update the corresponding marker (see step 3). If the focus
+marker is absent, focus defaults to the lowest-numbered milestone with open
+`ready-for-work` issues; if the cap marker is absent, the cap defaults to
+**3** (the same default `select_queue.py` itself falls back to).
+
+Unlike `/focus`, which is honored from **any** issue as well as the
+dashboard, `/cap` is honored **only** on the dashboard issue (#193) — it is
+silently ignored everywhere else.
 
 ## Procedure
 
@@ -104,6 +112,18 @@ to the lowest-numbered milestone with open `ready-for-work` issues.
      hand-back (see below) rather than moving it to `ready-for-work`.
    - If `set_focus` is non-null, update the `<!-- pipeline-focus: ... -->`
      marker on #193 (add it if missing).
+   - If `set_cap` is non-null, update the `<!-- pipeline-cap: N -->` marker on
+     #193 by **re-rendering** the dashboard with a `DASHBOARD_SET_CAP`
+     override — never hand-edit the marker into #193's body directly (a
+     read-modify-write re-HTML-encodes it and breaks the Mermaid charts, the
+     same failure mode `/focus` hit in [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)):
+
+     ```bash
+     DASHBOARD_SET_CAP='<n>' python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
+     ```
+
+     The renderer writes the new `<!-- pipeline-cap: <n> -->` marker itself
+     (raw) as part of the freshly rendered body.
 
 4. **Acknowledge.** React to the source comment with 👍 (`+1`) to confirm the
    action, and — where it moves the issue to a state awaiting Derek — post a
@@ -160,7 +180,10 @@ epic/dashboard exclusion, each command's label move, milestone matching, the
 `/approve` milestone gate (`ready-for-work` ⇒ has milestone — refused with an
 `approve-no-milestone` skip when none resolves, honored when an inline
 `/milestone`, the issue's current milestone, or the analysis-proposed milestone
-resolves one), and the parked-issue rule. `tests/test_check_revisits.py` covers
+resolves one), the parked-issue rule, and `/cap` (#240: honored only on the
+dashboard issue, resolves to `set_cap`, rejects non-numeric/non-positive input
+with `cap-invalid`, ignored on every other issue).
+`tests/test_check_revisits.py` covers
 the blocker auto-revisit (#241): single/multiple blockers, closed vs.
 `ready-for-work`/`in-progress` blockers, the all-must-resolve rule, and the
 regression guards (no `Blocked by:` line, still-open blocker, prose-only

@@ -43,6 +43,7 @@ commands act):
 | `/park` / `/unpark` | Hide from the pipeline / bring it back. |
 | `/milestone <name>` | Override the milestone (`04`, a title fragment, or the full title). |
 | `/focus <name>` | Set the active milestone for nightly development. |
+| `/cap <n>` | Set the nightly dev build cap. **Dashboard issue (#193) only** — rejects non-numeric or non-positive `n`. |
 
 Every AI hand-back comment ends with the context-appropriate "Your move" menu.
 
@@ -108,22 +109,34 @@ comment-driven moves, so it reconciles against the labels those commands just
 set, and posts a short auto-comment naming the cleared blocker(s) ending in the
 `back-to-analysis` menu.
 
-## Where `/focus` is stored
+## Where `/focus` and `/cap` are stored
 
-The active nightly-development milestone lives in a hidden marker on the
-**first line of the dashboard issue (#193) body**:
+The active nightly-development milestone and the nightly build cap
+([#240](https://github.com/derekwinters/lucas-doggiehood/issues/240)) each
+live in a hidden marker on the **first two lines of the dashboard issue (#193)
+body**:
 
 ```
 <!-- pipeline-focus: v0.4 -->
+<!-- pipeline-cap: 3 -->
 ```
 
-This is the single source of truth shared by the gatekeeper (sets it on
-`/focus`), `pipeline-dev` (reads it to pick the queue), and the dashboard
-renderer (reads it, displays it, and re-emits it). It was chosen over a
-committed state file (no routine needs to push a commit just to record focus)
-and over a separate issue (the value sits next to where it's shown). If the
-marker is absent, focus defaults to the lowest version milestone with open
-`ready-for-work` issues.
+This is the single source of truth shared by the gatekeeper (sets them on
+`/focus` / `/cap`), `pipeline-dev` (reads them to pick the queue and the
+cap), and the dashboard renderer (reads them, displays them, and re-emits
+them). It was chosen over a committed state file (no routine needs to push a
+commit just to record focus/cap) and over a separate issue (the value sits
+next to where it's shown). If the focus marker is absent, focus defaults to
+the lowest version milestone with open `ready-for-work` issues; if the cap
+marker is absent, cap defaults to **3** (matching `select_queue.py`'s own
+`cap = data.get("cap", 3)` fallback).
+
+`/cap` sets its marker by **re-rendering the dashboard** with a
+`DASHBOARD_SET_CAP` override (`render_dashboard.py::_resolve_cap`: override →
+marker → default) — it never hand-edits #193's body directly, so it cannot hit
+the HTML-entity/Mermaid corruption bug described below. Unlike `/focus`,
+`/cap` is honored **only** on the dashboard issue; it is silently ignored
+everywhere else.
 
 The gatekeeper sets focus by **re-rendering the dashboard** with a
 `DASHBOARD_SET_FOCUS` override, which writes the new marker into a freshly
@@ -131,6 +144,18 @@ rendered (raw) body — it never hand-edits #193's body directly. Reading and
 writing that body back through the GitHub tools re-HTML-encodes it (`"` →
 `&#34;`, `&` → `&amp;`) and breaks the Mermaid charts
 ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
+
+> **Note (found while building #240):** the `DASHBOARD_SET_FOCUS` override and
+> its `_resolve_focus` precedence, described above and originally shipped in
+> [#230](https://github.com/derekwinters/lucas-doggiehood/pull/230), are no
+> longer present in `render_dashboard.py` — they were dropped when the shared
+> `ai-skills` pipeline bundle was adopted
+> ([#238](https://github.com/derekwinters/lucas-doggiehood/pull/238)) without
+> this doc being updated to match. `/cap`'s `DASHBOARD_SET_CAP` override was
+> implemented fresh for #240 following this same documented pattern and *is*
+> present in code today (see `_resolve_cap`). Restoring `/focus`'s override is
+> a pre-existing gap outside #240's scope — flagged here rather than fixed
+> silently; it should be filed as its own follow-up issue.
 
 `/focus` is now honored on the dashboard issue itself, and a `/focus` naming a
 milestone that matches no live milestone is rejected rather than silently
@@ -249,8 +274,10 @@ line for that number (see **Prose-only dependency** below).
 A serial nightly builder wrapping the `doggiehood-dev` agent. It builds the
 eligible set — `ready-for-work` **and** in the focus milestone **and** all hard
 blockers closed/merged **and** not `parked` **and** no open PR — in topological
-order (dependencies first, then issue number), up to a nightly cap (**3** to
-start). Each issue is built on **its own branch** and opened as **its own PR**
+order (dependencies first, then issue number), up to the nightly cap read from
+the `<!-- pipeline-cap: N -->` marker on #193 (default **3**, settable with
+`/cap <n>` — see [#240](https://github.com/derekwinters/lucas-doggiehood/issues/240)).
+Each issue is built on **its own branch** and opened as **its own PR**
 (title = that issue's single Conventional line; body = `## Deviations and
 Decisions` + `Closes #N`); a failing issue is dropped — its branch deleted, no
 PR — and the loop continues. Because each PR resolves exactly one issue, its
@@ -321,7 +348,10 @@ findings. Both share the one `reconcile.py` implementation.
 
 Read-only. `render_dashboard.py` recomputes live state and rewrites **#193** in
 place: focus-milestone pie (green done / yellow ready-for-work / red
-remaining), the focus ready-for-work queue, "Your move" counts, PRs (release-
+remaining), the focus ready-for-work queue (headed by the nightly build cap,
+"Nightly build cap: **N**", read from the `<!-- pipeline-cap: N -->` marker —
+[#240](https://github.com/derekwinters/lucas-doggiehood/issues/240)), "Your
+move" counts, PRs (release-
 please separated), intake, pending-approval and needs-clarification (each of
 these three tables carries a **"Blocked by"** column listing the issue's
 structured `Blocked by: #N` hard blockers as links, so blockers surface on every

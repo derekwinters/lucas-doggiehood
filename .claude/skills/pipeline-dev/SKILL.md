@@ -25,7 +25,8 @@ after the gatekeeper. See `docs/engineering/issue-pipeline.md`.
    one Conventional Commit and release-please emits one clean changelog entry.
    If an issue fails to build cleanly, drop it entirely (delete its branch, no
    PR) and continue to the next.
-4. **Respect the focus milestone and the nightly cap** (3 to start).
+4. **Respect the focus milestone and the nightly cap** (read from the #193
+   marker, default 3 — see below).
 
 ## Focus milestone
 
@@ -34,9 +35,19 @@ the dashboard issue (#193), written by the gatekeeper on `/focus`. If the
 marker is absent, default to the lowest-numbered milestone that has open
 `ready-for-work` issues.
 
+## Nightly build cap
+
+The nightly build cap is read from the `<!-- pipeline-cap: N -->` marker on
+the dashboard issue (#193), written by the gatekeeper on `/cap <n>` (issue
+#240). If the marker is absent, default to **3** — the same default
+`select_queue.py` itself falls back to (`cap = data.get("cap", 3)`), so an
+unset marker and an unset `cap` input agree. `/cap` is honored **only** on the
+dashboard issue.
+
 ## Procedure
 
-1. **Read focus** from the #193 marker (or default as above).
+1. **Read focus and cap** from the #193 marker (or their documented defaults
+   above).
 
 2. **Gather the snapshot** with the GitHub MCP tools: every open issue that has
    `ready-for-work`, with its `labels`, `milestone`, `is_epic`, whether it has
@@ -46,7 +57,8 @@ marker is absent, default to the lowest-numbered milestone that has open
    sub-issues or soft prerequisites). Also collect `open_issue_numbers` (all
    currently-open issue numbers) so blockers can be resolved.
 
-3. **Select the queue** deterministically:
+3. **Select the queue** deterministically, passing the cap read in step 1 as
+   the `cap` input:
 
    ```bash
    python3 .claude/skills/pipeline-dev/select_queue.py < snapshot.json
@@ -104,9 +116,10 @@ marker is absent, default to the lowest-numbered milestone that has open
 
 ## Coordination
 
-- `/focus` storage is shared with `pipeline-gatekeeper` (the #193 marker).
-- The nightly cap starts at **3**; change it in one place — the `cap` passed to
-  `select_queue.py` in this procedure.
+- `/focus` and `/cap` storage is shared with `pipeline-gatekeeper` (both live
+  on the #193 marker).
+- The nightly cap defaults to **3**; Derek changes it with `/cap <n>` on the
+  dashboard issue rather than editing this skill.
 
 ## Tests
 

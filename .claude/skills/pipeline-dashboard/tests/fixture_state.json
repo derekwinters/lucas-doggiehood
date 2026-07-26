@@ -1,6 +1,7 @@
 {
   "repo": "derekwinters/lucas-doggiehood",
   "as_of": "2026-07-17 07:00 CT",
+  "cap": 5,
   "focus": {
     "milestone": "03 - Dogs & Conversations",
     "done": 18,
