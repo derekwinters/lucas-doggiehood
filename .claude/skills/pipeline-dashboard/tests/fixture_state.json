@@ -6,7 +6,11 @@
     "milestone": "03 - Dogs & Conversations",
     "done": 18,
     "ready": 3,
-    "remaining": 2,
+    "in_progress": 1,
+    "needs_triage": 0,
+    "pending_approval": 0,
+    "needs_clarification": 0,
+    "parked": 1,
     "queue": [
       {"number": 109, "title": "Tile grid foundation", "blocked": false, "unblocks": [57, 58, 178]},
       {"number": 210, "title": "Standalone bark sound polish", "blocked": false, "unblocks": []},

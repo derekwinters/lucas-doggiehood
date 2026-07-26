@@ -347,8 +347,12 @@ findings. Both share the one `reconcile.py` implementation.
 ### Dashboard (`pipeline-dashboard` + `dashboard.yml`)
 
 Read-only. `render_dashboard.py` recomputes live state and rewrites **#193** in
-place: focus-milestone pie (green done / yellow ready-for-work / red
-remaining), the focus ready-for-work queue (headed by the nightly build cap,
+place: a 7-slice focus-milestone pie — Done, Ready for work, In progress,
+Needs triage, Pending approval, Needs clarification, Parked — one slice per
+real pipeline-state label plus Done, so every focus-milestone issue maps to
+exactly one slice and none (including a milestone-tagged `parked` issue) can
+silently vanish from the total ([#265](https://github.com/derekwinters/lucas-doggiehood/issues/265)),
+the focus ready-for-work queue (headed by the nightly build cap,
 "Nightly build cap: **N**", read from the `<!-- pipeline-cap: N -->` marker —
 [#240](https://github.com/derekwinters/lucas-doggiehood/issues/240)), "Your
 move" counts, PRs (release-
@@ -369,10 +373,14 @@ and it sorts to the top of the queue; blocked rows keep their `⛔ _blocked_` fl
 and fully-independent rows stay unmarked. The unblocker set is derived from the
 same structured `Blocked by:` graph the nightly builder and reconcile read — never
 prose — by the pure `compute_unblockers` helper. It excludes #193 itself,
-and keeps `parked` issues out of every *active* queue and count (pie, ready-for-
-work queue, "Your move", intake, pending-approval, needs-clarification, reconcile)
-— the Parked section is a separate listing, not a re-admission — and mutates
-nothing else. **Closed milestones** (100% done)
+and keeps `parked` issues out of every *active work* queue and count
+(ready-for-work queue, "Your move", intake, pending-approval, needs-clarification,
+reconcile) — the Parked section is a separate listing, not a re-admission.
+The one exception is the focus-milestone pie, which counts a milestone-tagged
+`parked` issue in its own dedicated "Parked" slice ([#265](https://github.com/derekwinters/lucas-doggiehood/issues/265))
+so it stays visible in the total instead of vanishing; the generic "Other
+milestones" roll-up still excludes `parked` entirely, unchanged. Nothing here
+mutates anything else. **Closed milestones** (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown ([#214](https://github.com/derekwinters/lucas-doggiehood/issues/214)).
 

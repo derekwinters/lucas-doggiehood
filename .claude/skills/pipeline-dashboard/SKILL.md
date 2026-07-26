@@ -42,8 +42,11 @@ Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
 marker (first line — the shared focus source of truth) and the hidden
 `<!-- pipeline-cap: N -->` marker (second line — the shared nightly-build-cap
 source of truth, issue #240, displayed as "Nightly build cap: **N**" in the
-ready-for-work section), the focus-milestone pie
-(green done / yellow ready-for-work / red remaining), the focus ready-for-work
+ready-for-work section), a **7-slice** focus-milestone pie — Done, Ready for
+work, In progress, Needs triage, Pending approval, Needs clarification, Parked
+— one slice per real pipeline-state label plus Done, so every focus-milestone
+issue maps to exactly one slice and none can silently vanish from the total
+(#265), the focus ready-for-work
 queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and sorted
 first — #250), the "Your move" counts, PRs, intake, pending-approval,
 needs-clarification, a read-only **"⏸️ Parked"** section listing open `parked`
@@ -51,10 +54,14 @@ issues (#249), other-milestone progress bars, the open-issues bar chart,
 and the command reference. Issue **titles** are used as the summary text
 (deterministic — no model), which is the tradeoff for a fully-scripted body.
 
-`#193` itself and any `parked` issue are excluded from every *active* queue and
-count; parked issues appear only in the read-only "⏸️ Parked" listing. **Closed
-milestones** (100% done) are omitted from the "Other milestones" section and the
-open-issues chart — that section shows only live milestones outside the focus.
+`#193` itself and any `parked` issue are excluded from every *active work*
+queue and count (ready-for-work queue, "Your move", intake, pending-approval,
+needs-clarification, reconcile); parked issues appear in the read-only
+"⏸️ Parked" listing and, if milestone-tagged, in the focus pie's own "Parked"
+slice (#265) — the "Other milestones" roll-up still excludes them entirely,
+unchanged. **Closed milestones** (100% done) are omitted from the "Other
+milestones" section and the open-issues chart — that section shows only live
+milestones outside the focus.
 
 ## Manual / preview use
 
