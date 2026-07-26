@@ -2256,8 +2256,12 @@ set), which applies the two auto-fixes; the <strong>dashboard</strong> render li
 findings. Both share the one <code>reconcile.py</code> implementation.</p>
 <h3 id="dashboard-pipeline-dashboard-dashboardyml">Dashboard (<code>pipeline-dashboard</code> + <code>dashboard.yml</code>)<a class="headerlink" href="#dashboard-pipeline-dashboard-dashboardyml" title="Permanent link">&para;</a></h3>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
-place: focus-milestone pie (green done / yellow ready-for-work / red
-remaining), the focus ready-for-work queue (headed by the nightly build cap,
+place: a 7-slice focus-milestone pie — Done, Ready for work, In progress,
+Needs triage, Pending approval, Needs clarification, Parked — one slice per
+real pipeline-state label plus Done, so every focus-milestone issue maps to
+exactly one slice and none (including a milestone-tagged <code>parked</code> issue) can
+silently vanish from the total (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/265">#265</a>),
+the focus ready-for-work queue (headed by the nightly build cap,
 "Nightly build cap: <strong>N</strong>", read from the <code>&lt;!-- pipeline-cap: N --&gt;</code> marker —
 <a href="https://github.com/derekwinters/lucas-doggiehood/issues/240">#240</a>), "Your
 move" counts, PRs (release-
@@ -2278,10 +2282,14 @@ and it sorts to the top of the queue; blocked rows keep their <code>⛔ _blocked
 and fully-independent rows stay unmarked. The unblocker set is derived from the
 same structured <code>Blocked by:</code> graph the nightly builder and reconcile read — never
 prose — by the pure <code>compute_unblockers</code> helper. It excludes #193 itself,
-and keeps <code>parked</code> issues out of every <em>active</em> queue and count (pie, ready-for-
-work queue, "Your move", intake, pending-approval, needs-clarification, reconcile)
-— the Parked section is a separate listing, not a re-admission — and mutates
-nothing else. <strong>Closed milestones</strong> (100% done)
+and keeps <code>parked</code> issues out of every <em>active work</em> queue and count
+(ready-for-work queue, "Your move", intake, pending-approval, needs-clarification,
+reconcile) — the Parked section is a separate listing, not a re-admission.
+The one exception is the focus-milestone pie, which counts a milestone-tagged
+<code>parked</code> issue in its own dedicated "Parked" slice (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/265">#265</a>)
+so it stays visible in the total instead of vanishing; the generic "Other
+milestones" roll-up still excludes <code>parked</code> entirely, unchanged. Nothing here
+mutates anything else. <strong>Closed milestones</strong> (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/214">#214</a>).</p>
 <h2 id="skills">Skills<a class="headerlink" href="#skills" title="Permanent link">&para;</a></h2>
