@@ -1,3 +1,4 @@
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -64,6 +65,56 @@ namespace Doggiehood.Unity.EditModeTests
             view.Refresh();
 
             Assert.That(host.GetComponent<SpriteRenderer>().sprite, Is.SameAs(affordableSprite));
+        }
+
+        [Test]
+        public void Refresh_FacesTheLiveCameraYaw_AsTheCameraRotates()
+        {
+            // #266: the lock icon never rotated before — it was pinned to the
+            // pre-#203 fixed yaw. It must now billboard to the live
+            // CameraController.Yaw so it reads head-on at every rotation.
+            var state = GameState.CreateNew();
+            var rigObject = new GameObject("yaw-rig", typeof(Camera), typeof(CameraRig));
+            var rig = rigObject.GetComponent<CameraRig>();
+            try
+            {
+                rig.Controller.Rotate(75f); // 45 default + 75 => 120
+
+                view.Init(state, affordableSprite, lockedSprite);
+                view.Refresh();
+
+                var live = CameraFacing.Resolve(rig.Controller.Yaw);
+                var expected = Quaternion.Euler(
+                    live.PitchDegrees, live.YawDegrees, live.RollDegrees);
+                Assert.That(Quaternion.Angle(host.transform.rotation, expected), Is.LessThan(0.1f),
+                    "lock icon must face the live camera yaw, not the fixed default");
+
+                var fixedFacing = CameraFacing.Resolve(CameraController.DefaultYaw);
+                var fixedRotation = Quaternion.Euler(
+                    fixedFacing.PitchDegrees, fixedFacing.YawDegrees, fixedFacing.RollDegrees);
+                Assert.That(Quaternion.Angle(host.transform.rotation, fixedRotation), Is.GreaterThan(1f),
+                    "a rotated camera must move the lock icon off the old fixed 45° facing");
+            }
+            finally
+            {
+                Object.DestroyImmediate(rigObject);
+            }
+        }
+
+        [Test]
+        public void Refresh_AtTheDefaultYaw_FacesTheOriginalFixedOrientation()
+        {
+            // #266 regression guard: with no CameraRig the facing falls back
+            // to the fixed default yaw, so on-launch appearance is unchanged.
+            var state = GameState.CreateNew();
+
+            view.Init(state, affordableSprite, lockedSprite);
+
+            var facing = CameraFacing.Resolve(CameraController.DefaultYaw);
+            var expected = Quaternion.Euler(
+                facing.PitchDegrees, facing.YawDegrees, facing.RollDegrees);
+            Assert.That(Quaternion.Angle(host.transform.rotation, expected), Is.LessThan(0.1f),
+                "lock icon must face the fixed default yaw when no camera rig exists");
         }
 
         [Test]

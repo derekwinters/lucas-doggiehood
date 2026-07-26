@@ -568,13 +568,15 @@ namespace Doggiehood.Unity.EditModeTests
             // #148 follow-up: the bubble is a billboard. As a child of the
             // dog root it inherits the dog's rotation (wander steering,
             // window anchors), so DogView must re-assert the Core-defined
-            // camera-facing orientation — at Init and every frame.
+            // camera-facing orientation — at Init and every frame. With no
+            // CameraRig in this fixture, the facing falls back to the fixed
+            // default yaw (#266 regression guard: on-launch appearance
+            // unchanged).
             var view = worldRoot.GetComponentsInChildren<DogView>()[0];
             var bubble = view.transform.Find(DogView.BubbleName);
+            var facing = CameraFacing.Resolve(CameraController.DefaultYaw);
             var expected = Quaternion.Euler(
-                Doggiehood.Core.Cameras.SpeechBubbleBillboard.PitchDegrees,
-                Doggiehood.Core.Cameras.SpeechBubbleBillboard.YawDegrees,
-                Doggiehood.Core.Cameras.SpeechBubbleBillboard.RollDegrees);
+                facing.PitchDegrees, facing.YawDegrees, facing.RollDegrees);
 
             Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
                 "bubble must face the camera straight out of Init");
@@ -585,6 +587,44 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
                 "bubble world rotation must stay camera-facing whatever the dog's facing");
+        }
+
+        [Test]
+        public void SpeechBubble_FollowsTheLiveCameraYaw_AsTheCameraRotates()
+        {
+            // #266: after #203 added free continuous yaw rotation, the bubble
+            // must track the live CameraController.Yaw rather than the fixed
+            // 45° starting yaw it was pinned to. Rotate the rig off the
+            // default and the bubble's world facing must follow.
+            var view = worldRoot.GetComponentsInChildren<DogView>()[0];
+            var bubble = view.transform.Find(DogView.BubbleName);
+
+            var rigObject = new GameObject("yaw-rig", typeof(Camera), typeof(CameraRig));
+            var rig = rigObject.GetComponent<CameraRig>();
+            try
+            {
+                rig.Controller.Rotate(75f); // 45 default + 75 => 120
+                Assert.That(rig.Controller.Yaw, Is.EqualTo(120f).Within(0.001f),
+                    "sanity: the rig yaw is rotated off the default");
+
+                view.FaceBubbleToCamera();
+
+                var live = CameraFacing.Resolve(rig.Controller.Yaw);
+                var expected = Quaternion.Euler(
+                    live.PitchDegrees, live.YawDegrees, live.RollDegrees);
+                Assert.That(Quaternion.Angle(bubble.rotation, expected), Is.LessThan(0.1f),
+                    "bubble must face the live camera yaw, not the fixed default");
+
+                var fixedFacing = CameraFacing.Resolve(CameraController.DefaultYaw);
+                var fixedRotation = Quaternion.Euler(
+                    fixedFacing.PitchDegrees, fixedFacing.YawDegrees, fixedFacing.RollDegrees);
+                Assert.That(Quaternion.Angle(bubble.rotation, fixedRotation), Is.GreaterThan(1f),
+                    "a rotated camera must move the bubble off the old fixed 45° facing");
+            }
+            finally
+            {
+                Object.DestroyImmediate(rigObject);
+            }
         }
 
         [Test]

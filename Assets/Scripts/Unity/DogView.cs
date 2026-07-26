@@ -55,6 +55,7 @@ namespace Doggiehood.Unity
         private WanderBehavior wander;
         private MovementProfile profile;
         private GameObject bubble;
+        private CameraRig cameraRig;
         private Transform body;
         private Vector3 currentTarget;
         private DogState appliedState;
@@ -163,19 +164,32 @@ namespace Doggiehood.Unity
             FaceBubbleToCamera();
         }
 
-        /// <summary>#148 follow-up: billboards the bubble at the
-        /// Core-defined camera-facing orientation (SpeechBubbleBillboard —
-        /// the fixed rig angles, since the orthographic camera never
-        /// rotates). The bubble inherits the dog's rotation as a child, so
-        /// this world-space re-assert runs at Init and every frame. Purely
+        /// <summary>#148 follow-up / #266: billboards the bubble at the
+        /// Core-defined camera-facing orientation (<see cref="CameraFacing"/>),
+        /// sourced from the live camera yaw so the bubble stays head-on at
+        /// every rotation (#203) rather than pinned to the old fixed 45° yaw.
+        /// The bubble inherits the dog's rotation as a child, so this
+        /// world-space re-assert runs at Init and every frame. Purely
         /// rotational: the collider stays a sphere and the tap routing is
         /// unaffected.</summary>
         public void FaceBubbleToCamera()
         {
-            bubble.transform.rotation = Quaternion.Euler(
-                SpeechBubbleBillboard.PitchDegrees,
-                SpeechBubbleBillboard.YawDegrees,
-                SpeechBubbleBillboard.RollDegrees);
+            WorldMarkerBillboard.Face(bubble.transform, ResolveCameraRig());
+        }
+
+        /// <summary>Lazily finds and caches the scene's <see cref="CameraRig"/>
+        /// so the bubble can read live yaw (#266) without a per-frame scene
+        /// scan. Re-searches while null, so a rig created after Init is still
+        /// picked up; null (no rig) makes <see cref="WorldMarkerBillboard"/>
+        /// fall back to the fixed default yaw.</summary>
+        private CameraRig ResolveCameraRig()
+        {
+            if (cameraRig == null)
+            {
+                cameraRig = FindFirstObjectByType<CameraRig>();
+            }
+
+            return cameraRig;
         }
 
         public void OnTapped()
