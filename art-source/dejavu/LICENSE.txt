@@ -2,7 +2,7 @@ DejaVu Fonts — License
 ======================
 
 Font: DejaVu Sans (DejaVuSans.ttf)
-Shipped in the game at: Assets/Art/UI/Fonts/Resources/DejaVuSans.ttf
+Shipped in the game at: Assets/UI/Fonts/Resources/DejaVuSans.ttf
 Source: https://dejavu-fonts.github.io/ (via the Debian fonts-dejavu-core package)
 
 The DejaVu fonts are based on the Bitstream Vera fonts. The Bitstream Vera

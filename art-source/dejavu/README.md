@@ -8,7 +8,8 @@ device (#291).
 **DejaVu Sans** is bundled to fix this:
 
 - Shipped copy (imported, `includeFontData: 1`, loaded via `Resources.Load`):
-  `Assets/Art/UI/Fonts/Resources/DejaVuSans.ttf`
+  `Assets/UI/Fonts/Resources/DejaVuSans.ttf` (kept outside `Assets/Art` so the
+  low-poly art budget guard doesn't scan a UI font's `GUI/Text Shader` material)
 - Source: <https://dejavu-fonts.github.io/> (obtained from the Debian
   `fonts-dejavu-core` package, file unmodified).
 - License: Bitstream Vera + public-domain DejaVu changes — redistributable and

@@ -28,7 +28,7 @@ namespace Doggiehood.Unity.EditModeTests
         private const string SpritesDefaultShaderEntry =
             "{fileID: 10753, guid: 0000000000000000f000000000000000, type: 0}";
 
-        private const string FontAssetPath = "Assets/Art/UI/Fonts/Resources/DejaVuSans.ttf";
+        private const string FontAssetPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
         private const string FontMetaPath = FontAssetPath + ".meta";
         private const string FontGuid = "e02e85fa80aa47bf8881400c475f94c5";
 
@@ -92,6 +92,19 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(font, Is.Not.Null,
                 "the bundled font is not reachable via Resources.Load, which is how the " +
                 "procedurally-built SettingsPanel binds it in the player (#291)");
+        }
+
+        [Test]
+        public void BundledFont_LivesOutsideTheArtScannedTree()
+        {
+            // The low-poly art budget guard (LowPolyBudgetTests) scans every
+            // material under Assets/Art against a mesh/material shader allowlist.
+            // A .ttf's embedded default font material uses Unity's built-in
+            // 'GUI/Text Shader', which is legitimately not on that low-poly *art*
+            // allowlist — so a UI font must not live under Assets/Art (#291).
+            Assert.That(FontAssetPath, Does.Not.StartWith("Assets/Art/"),
+                "the bundled UI font is under Assets/Art, where the low-poly art budget " +
+                "guard would (correctly) flag its GUI/Text Shader material");
         }
     }
 }

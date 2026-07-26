@@ -19,7 +19,7 @@ namespace Doggiehood.Unity.EditModeTests
     public class SettingsPanelTests
     {
         private const string TestVersion = "0.4.0-abc1234";
-        private const string BundledFontPath = "Assets/Art/UI/Fonts/Resources/DejaVuSans.ttf";
+        private const string BundledFontPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
 
         private GameObject canvasHost;
         private GameObject panelHost;
