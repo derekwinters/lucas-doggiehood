@@ -1,5 +1,6 @@
 using System;
 using Doggiehood.Core.Debugging;
+using Doggiehood.Core.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,6 +39,14 @@ namespace Doggiehood.Unity
         public const float DebugRowHeightPx = 96f;
         public const float CloseButtonSizePx = 72f;
 
+        // --- #286: the Debug-tab "Add coins" action ---
+        // Grant amount is a named constant (#161); the wireframe's single
+        // gold action is "＋100" (docs/specs/ui/settings.md mockup).
+        public const int DebugAddCoinsAmount = 100;
+        public const float DebugRowGapPx = 20f;       // mockup .drow margin-bottom
+        public const float DebugActionWidthPx = 200f; // graybox width for the gold action pill
+        public const float DebugActionHeightPx = 72f; // mockup .action height
+
         // Type sizes read off the mockup CSS (#161 — no inline literals).
         private const int TitleFontSizePx = 52;
         private const int AppNameFontSizePx = 64;
@@ -48,6 +57,7 @@ namespace Doggiehood.Unity
         private const int CloseGlyphFontSizePx = 38;
         private const int DebugRowLabelFontSizePx = 34;
         private const int DebugRowSubtitleFontSizePx = 20;
+        private const int DebugActionFontSizePx = 30; // mockup .action font-size
         private const float KnobInsetPx = 6f;
 
         // --- Display strings ---
@@ -61,6 +71,9 @@ namespace Doggiehood.Unity
         private const string CloseGlyphText = "✕"; // ✕
         private const string FenceRowLabelText = "Show backyard fences";
         private const string FenceRowSubtitleText = "Drives WorldBuilder.ForceFencesVisible (#152)";
+        private const string AddCoinsRowLabelText = "Add coins";
+        private const string AddCoinsRowSubtitleText = "Grant coins to test expansion (#286)";
+        private const string AddCoinsGlyph = "＋"; // fullwidth plus, per the mockup
 
         /// <summary>Debug-toggle registry key for the first on-device toggle,
         /// the show/hide backyard fences switch (#152).</summary>
@@ -77,7 +90,10 @@ namespace Doggiehood.Unity
         private static readonly Color ToggleOffColor = new Color(0.847f, 0.824f, 0.776f, 1f);
         private static readonly Color KnobColor = new Color(1f, 0.99f, 0.97f, 1f);
         private static readonly Color InkColor = new Color(0.180f, 0.165f, 0.149f, 1f);
+        // Gold action pill (#FFC23C, mockup --gold).
+        private static readonly Color ActionColor = new Color(1f, 0.761f, 0.235f, 1f);
 
+        private GameState state;
         private DebugUnlockGesture gesture;
         private DebugToggleRegistry toggles;
 
@@ -93,6 +109,8 @@ namespace Doggiehood.Unity
         private RectTransform fenceToggleRect;
         private Image fenceToggleImage;
         private RectTransform fenceKnobRect;
+        private RectTransform addCoinsRowRect;
+        private RectTransform addCoinsButtonRect;
         private Text versionLabel;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
@@ -106,6 +124,8 @@ namespace Doggiehood.Unity
         public RectTransform DebugTabRect => debugTabRect;
         public RectTransform CloseButtonRect => closeButtonRect;
         public RectTransform FenceToggleRect => fenceToggleRect;
+        public RectTransform AddCoinsRowRect => addCoinsRowRect;
+        public RectTransform AddCoinsButtonRect => addCoinsButtonRect;
         public Text VersionLabel => versionLabel;
 
         /// <summary>Whether the panel is currently shown.</summary>
@@ -125,14 +145,19 @@ namespace Doggiehood.Unity
 
         /// <summary>
         /// Builds the panel hierarchy under this GameObject (expected to sit
-        /// under a <see cref="UiCanvas"/>). <paramref name="version"/> is the
-        /// build version string (the bootstrap passes <c>Application.version</c>
-        /// — release-please owns the value, this only reads it). The panel
-        /// starts closed and with the Debug tab hidden; both reset each
-        /// session because a fresh panel is built on launch.
+        /// under a <see cref="UiCanvas"/>). <paramref name="state"/> is the
+        /// live game state — the Debug tab's "Add coins" action (#286)
+        /// deposits into its <see cref="GameState.Wallet"/>, mirroring how
+        /// <see cref="HudOverlay"/> takes the state. <paramref name="version"/>
+        /// is the build version string (the bootstrap passes
+        /// <c>Application.version</c> — release-please owns the value, this
+        /// only reads it). The panel starts closed and with the Debug tab
+        /// hidden; both reset each session because a fresh panel is built on
+        /// launch.
         /// </summary>
-        public void Init(string version)
+        public void Init(GameState state, string version)
         {
+            this.state = state;
             gesture = new DebugUnlockGesture();
             toggles = new DebugToggleRegistry();
             toggles.Register(FenceToggleKey, WorldBuilder.ForceFencesVisible);
@@ -177,6 +202,18 @@ namespace Doggiehood.Unity
         public void ToggleFence()
         {
             toggles.Toggle(FenceToggleKey);
+        }
+
+        /// <summary>#286: the Debug-tab "Add coins" action — grants
+        /// <see cref="DebugAddCoinsAmount"/> coins to the live wallet so
+        /// neighborhood expansion can be tested without grinding quests. A
+        /// plain action (not a persisted toggle), so it doesn't go through the
+        /// bool-only <see cref="DebugToggleRegistry"/>; it deposits straight
+        /// through the Core wallet seam. The HUD chip reads the wallet live,
+        /// so the new balance shows immediately.</summary>
+        public void AddCoins()
+        {
+            state?.Wallet.Deposit(DebugAddCoinsAmount);
         }
 
         private void OnToggleChanged(string key, bool value)
@@ -362,18 +399,27 @@ namespace Doggiehood.Unity
             debugPaneRect.offsetMax = new Vector2(-SettingsPanelPaddingPx, -SettingsPanelPaddingPx);
 
             BuildFenceRow(debugPaneRect);
+            BuildAddCoinsRow(debugPaneRect);
             debugPaneRect.gameObject.SetActive(false);
         }
 
-        private void BuildFenceRow(RectTransform parent)
+        /// <summary>Creates one full-width debug row, stacked from the top of
+        /// the Debug pane by <paramref name="order"/> (0 = fence toggle,
+        /// 1 = add-coins, …), each separated by <see cref="DebugRowGapPx"/>.</summary>
+        private static RectTransform CreateDebugRow(RectTransform parent, string name, int order)
         {
-            var row = CreateImage("FenceRow", parent, RowColor);
-            var rect = row.rectTransform;
+            var rect = CreateImage(name, parent, RowColor).rectTransform;
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, DebugRowHeightPx);
-            rect.anchoredPosition = Vector2.zero;
+            rect.anchoredPosition = new Vector2(0f, -order * (DebugRowHeightPx + DebugRowGapPx));
+            return rect;
+        }
+
+        private void BuildFenceRow(RectTransform parent)
+        {
+            var rect = CreateDebugRow(parent, "FenceRow", order: 0);
 
             var label = CreateLabel("Label", rect, FenceRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
@@ -399,6 +445,31 @@ namespace Doggiehood.Unity
 
             fenceToggleImage.gameObject.AddComponent<Button>().onClick.AddListener(ToggleFence);
             SyncFenceToggleVisual(FenceToggleOn);
+        }
+
+        private void BuildAddCoinsRow(RectTransform parent)
+        {
+            addCoinsRowRect = CreateDebugRow(parent, "AddCoinsRow", order: 1);
+
+            var label = CreateLabel("Label", addCoinsRowRect, AddCoinsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
+            label.rectTransform.offsetMin = new Vector2(TabRadiusPx, label.rectTransform.offsetMin.y);
+
+            var subtitle = CreateLabel("Subtitle", addCoinsRowRect, AddCoinsRowSubtitleText, DebugRowSubtitleFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(subtitle.rectTransform, DebugRowLabelFontSizePx * 1.4f, DebugRowSubtitleFontSizePx * 1.3f);
+            subtitle.rectTransform.offsetMin = new Vector2(TabRadiusPx, subtitle.rectTransform.offsetMin.y);
+
+            var actionImage = CreateImage("Action", addCoinsRowRect, ActionColor);
+            addCoinsButtonRect = actionImage.rectTransform;
+            addCoinsButtonRect.anchorMin = new Vector2(1f, 0.5f);
+            addCoinsButtonRect.anchorMax = new Vector2(1f, 0.5f);
+            addCoinsButtonRect.pivot = new Vector2(1f, 0.5f);
+            addCoinsButtonRect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
+            addCoinsButtonRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+
+            // "＋100" built from the named amount — no bare literal (#161).
+            CreateLabel("Glyph", addCoinsButtonRect, AddCoinsGlyph + DebugAddCoinsAmount, DebugActionFontSizePx, TextAnchor.MiddleCenter);
+            actionImage.gameObject.AddComponent<Button>().onClick.AddListener(AddCoins);
         }
 
         private void SyncFenceToggleVisual(bool on)
