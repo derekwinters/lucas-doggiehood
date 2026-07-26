@@ -1,6 +1,6 @@
 # House profile
 
-*Wireframe issue: [#293](https://github.com/derekwinters/lucas-doggiehood/issues/293) (unblocks [#208](https://github.com/derekwinters/lucas-doggiehood/issues/208)). Implements/covers: house profile view (opened by tapping a house). Approved: PROPOSED — awaiting Derek/Lucas.*
+*Wireframe issue: [#293](https://github.com/derekwinters/lucas-doggiehood/issues/293) (unblocks [#208](https://github.com/derekwinters/lucas-doggiehood/issues/208)). Implements/covers: house profile view (opened by tapping a house). Approved: Derek, 2026-07-26 (in-session).*
 *Mockup: [mockups/house-profile.html](mockups/house-profile.html).*
 
 ## Purpose
