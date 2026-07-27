@@ -28,11 +28,15 @@ namespace Doggiehood.Unity
             presenter.State = state;
             presenter.Director = director;
 
-            // Day-one rotation. Real once-per-calendar-day gating lands with
-            // the vertical-slice integration (milestone 08).
+            // Initial quest seeding (#312). Before onboarding completes this
+            // seeds exactly one easy lost-item quest and suppresses the 2-4
+            // rotation; afterwards it's the normal day-one rotation. The Core
+            // seam owns that branch — no game logic here. Real once-per-
+            // calendar-day gating lands with the vertical-slice integration
+            // (milestone 08).
             if (!System.Linq.Enumerable.Any(state.Quests.ActiveQuests))
             {
-                state.Quests.StartNewDay(new System.Random());
+                state.Quests.BeginInitialQuests(new System.Random());
             }
 
             gameObject.AddComponent<SfxPlayer>();
