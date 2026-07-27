@@ -1533,9 +1533,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#analysis-pipeline-analysis" class="md-nav__link">
+  <a href="#analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill" class="md-nav__link">
     <span class="md-ellipsis">
-      Analysis (pipeline-analysis)
+      Analysis (pipeline-analysis → discovery script → dispatcher → single-issue skill)
     </span>
   </a>
   
@@ -1568,26 +1568,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#dashboard-pipeline-dashboard-dashboardyml" class="md-nav__link">
-    <span class="md-ellipsis">
-      Dashboard (pipeline-dashboard + dashboard.yml)
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skills" class="md-nav__link">
-    <span class="md-ellipsis">
-      Skills
-    </span>
-  </a>
   
 </li>
       
@@ -1752,9 +1734,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#analysis-pipeline-analysis" class="md-nav__link">
+  <a href="#analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill" class="md-nav__link">
     <span class="md-ellipsis">
-      Analysis (pipeline-analysis)
+      Analysis (pipeline-analysis → discovery script → dispatcher → single-issue skill)
     </span>
   </a>
   
@@ -1787,26 +1769,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#dashboard-pipeline-dashboard-dashboardyml" class="md-nav__link">
-    <span class="md-ellipsis">
-      Dashboard (pipeline-dashboard + dashboard.yml)
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skills" class="md-nav__link">
-    <span class="md-ellipsis">
-      Skills
-    </span>
-  </a>
   
 </li>
       
@@ -1866,7 +1830,7 @@ comments (<code>derekwinters</code>) are honored — the bad-actor gate. Everyon
 <tr>
 <td><code>pending-approval</code></td>
 <td>analysis</td>
-<td>Bug diagnosis / spec-covered plan posted; awaiting <code>/approve</code>.</td>
+<td>Bug diagnosis / spec-covered plan posted; awaiting <code>/approve</code>. Analysis also <strong>sets the issue's milestone field</strong> here (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — the gatekeeper no longer resolves or proposes one.</td>
 </tr>
 <tr>
 <td><code>needs-clarification</code></td>
@@ -1876,7 +1840,7 @@ comments (<code>derekwinters</code>) are honored — the bad-actor gate. Everyon
 <tr>
 <td><code>ready-for-work</code></td>
 <td>gatekeeper (on <code>/approve</code>)</td>
-<td>Approved + milestone set; in the dev queue. <strong>Invariant: <code>ready-for-work</code> ⇒ the issue has a milestone</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>) — the gatekeeper refuses any <code>/approve</code> that would land here milestone-less, so the nightly builder (which only sees the focus milestone) never silently skips an approved issue.</td>
+<td>Approved; in the dev queue. <strong>Invariant: <code>ready-for-work</code> ⇒ the issue has a milestone</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>) — the gatekeeper refuses any <code>/approve</code> on a milestone-less issue, so the nightly builder (which only sees the focus milestone) never silently skips an approved issue.</td>
 </tr>
 <tr>
 <td><code>in-progress</code></td>
@@ -1913,7 +1877,7 @@ commands act):</p>
 </tr>
 <tr>
 <td><code>/approve</code></td>
-<td>Accept the analysis → <code>ready-for-work</code>, set the proposed (or <code>/milestone</code>-overridden) milestone. <strong>Refused if no milestone resolves</strong> (see the <code>/approve</code> milestone gate below).</td>
+<td>Accept the analysis → <code>ready-for-work</code>. A pure presence-check + label flip (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — analysis already set the milestone at <code>pending-approval</code>, so approve does no milestone resolution of its own. <strong>Refused if the issue has no milestone set</strong> (see the <code>/approve</code> milestone gate below).</td>
 </tr>
 <tr>
 <td><code>/revise &lt;notes&gt;</code></td>
@@ -1958,16 +1922,24 @@ judgment.</p>
 "approved and ready" yet silently never picked up. To close that gap
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/247">#247</a>) the parser
 enforces the invariant <strong><code>ready-for-work</code> ⇒ the issue has a milestone</strong>.</p>
-<p>On <code>/approve</code> the parser resolves an <strong>effective milestone</strong> from, in order: an
-inline <code>/milestone</code> in the same comment, the issue's current milestone, then the
-milestone analysis proposed in its <code>pending-approval</code> comment (the snapshot
-carries <code>milestone</code> and <code>proposed_milestone</code> for exactly this). Resolution is
-done as an order-independent finalization, so <code>/approve\n/milestone 07</code> and
-<code>/milestone 07\n/approve</code> behave identically.</p>
+<p><strong>Analysis now owns milestone assignment</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>):
+it sets the issue's milestone <strong>field</strong> directly (via <code>issue_write</code>) when it
+routes an issue to <code>pending-approval</code>, rather than only proposing one in the
+comment's prose. This lets <code>/approve</code> collapse to a <strong>pure presence-check +
+label flip</strong> — <code>issue.milestone is not None</code>? add <code>ready-for-work</code> / drop the
+prior state label : refuse. There is no resolution, no name→number matching,
+and — deliberately — <strong>no comment-scraping</strong>: the parser reads only the
+issue's already-set milestone field, nothing else. An inline <code>/milestone</code> in
+the <em>same</em> comment as <code>/approve</code> does <strong>not</strong> feed this gate — it is a
+separate, independent command that fires (and writes the field) on its own;
+setting the milestone and approving are now two actions, so <code>/milestone
+&lt;name&gt;</code> followed by a <strong>later</strong> <code>/approve</code> (once the field has actually
+updated) is the supported flow for approving a milestone-less issue.</p>
 <ul>
-<li><strong>A milestone resolves</strong> → the move proceeds and that milestone rides along on
-  the action, so <code>ready-for-work</code> is never set milestone-less.</li>
-<li><strong>No milestone resolves</strong> → the transition is <strong>refused</strong>: no label change,
+<li><strong>The field is already set</strong> → the move proceeds; <code>/approve</code> does not
+  re-write the milestone (it's already correct), so its action's
+  <code>set_milestone</code> stays null.</li>
+<li><strong>The field is null</strong> → the transition is <strong>refused</strong>: no label change,
   the issue stays in its prior state (<code>pending-approval</code> / <code>needs-clarification</code>),
   and the parser emits an <code>approve-no-milestone</code> skip carrying a
   <code>which-milestone</code> hand-back menu. The gatekeeper posts a "which milestone?"
@@ -1975,10 +1947,12 @@ done as an order-independent finalization, so <code>/approve\n/milestone 07</cod
   reply <code>/milestone &lt;name&gt;</code> then <code>/approve</code>"</em>).</li>
 </ul>
 <p>This is the <strong>presence</strong> gate. Its sibling
-<a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a> layers an
-<strong>order</strong> gate onto the same resolved value (the milestone must not precede a
-blocker's milestone); the two chain <strong>resolve → presence (#247) → order (#212)</strong>,
-so the order check only runs once a milestone exists.</p>
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a> — an
+<strong>order</strong> gate (the milestone must not precede a blocker's milestone) — is not
+yet built; now that milestone ownership has moved to analysis (#319), #212
+belongs in <strong>analysis or the dashboard</strong>, layered onto the value analysis
+already resolved, never back in the gatekeeper's <code>/approve</code> presence-check.
+This is a forward-looking placement note, not an implementation.</p>
 <h3 id="auto-revisit-when-a-blocker-clears">Auto-revisit when a blocker clears<a class="headerlink" href="#auto-revisit-when-a-blocker-clears" title="Permanent link">&para;</a></h3>
 <p>An issue can be parked in <code>needs-clarification</code> <strong>only because</strong> it is
 <code>Blocked by: #N</code> — it needed a decision that lives in its blocker (e.g. issue 1
@@ -1996,9 +1970,11 @@ blocker is resolved when it is closed/merged (absent from the open snapshot) or
 carries <code>ready-for-work</code>/<code>in-progress</code>. An issue with multiple blockers revisits
 only once every one is resolved; an issue with no structured <code>Blocked by:</code> line,
 a still-open unresolved blocker, a prose-only mention, or a <code>parked</code> label is
-never touched (no false triggers). It runs in the gatekeeper step <strong>after</strong>
-comment-driven moves, so it reconciles against the labels those commands just
-set, and posts a short auto-comment naming the cleared blocker(s) ending in the
+never touched (no false triggers). It runs board-wide in <strong><code>gatekeeper-sweep.yml</code></strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — on
+every event and cron pass alike, since a blocker can resolve via a bare label
+move (<code>ready-for-work</code>/<code>in-progress</code>) with no comment at all — and posts a
+short auto-comment naming the cleared blocker(s) ending in the
 <code>back-to-analysis</code> menu.</p>
 <h2 id="where-focus-and-cap-are-stored">Where <code>/focus</code> and <code>/cap</code> are stored<a class="headerlink" href="#where-focus-and-cap-are-stored" title="Permanent link">&para;</a></h2>
 <p>The active nightly-development milestone and the nightly build cap
@@ -2065,8 +2041,28 @@ HTML page needs JS rendering to enumerate milestones and has been observed to
 under-report — dropping closed-milestone titles from the same fetch
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/227">#227</a>).</p>
 <h2 id="routines-and-the-dashboard-workflow">Routines and the dashboard workflow<a class="headerlink" href="#routines-and-the-dashboard-workflow" title="Permanent link">&para;</a></h2>
-<p>The gatekeeper runs first in each AI routine so downstream stages see fresh
-labels.</p>
+<p><strong>The gatekeeper is no longer a step inside the AI routines</strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>). It is
+now two deterministic — no LLM — GitHub Actions workflows, matching the
+precedent <code>.github/workflows/dashboard.yml</code> already set:</p>
+<ul>
+<li><strong><code>gatekeeper-comment.yml</code></strong> — <code>on: issue_comment: [created]</code>, scoped to the
+  single issue the comment lands on. Derek's <code>/commands</code> apply near-instantly
+  instead of waiting for the next scheduled routine. Owner-gated (both by the
+  workflow's own <code>if:</code> and, as defense-in-depth, the script), skips PR
+  comments and bot-authored comments, and authenticates with <code>GITHUB_TOKEN</code>
+  only — never a PAT, since a PAT-authored ack comment would defeat the
+  platform's own no-recursive-trigger guard for <code>GITHUB_TOKEN</code>-authored events.</li>
+<li><strong><code>gatekeeper-sweep.yml</code></strong> — <code>on: issues: [closed, labeled]</code> +
+  <code>pull_request: [closed]</code> + a low-frequency <code>schedule</code> backstop (every 6
+  hours), <code>concurrency</code>-serialized. Runs the board-wide <code>check_revisits</code> +
+  <code>reconcile</code> auto-fixes; the schedule/<code>workflow_dispatch</code> run additionally
+  requeues stalled <code>in-progress</code> issues and re-processes any <code>issue_comment</code>
+  command the primary workflow missed (a dropped webhook) — see
+  <strong>Reconciliation</strong> below for why <code>requeue</code> is cron-only.</li>
+</ul>
+<p>The <strong>AI routines drop their gatekeeper step entirely</strong> — they now start
+directly at analysis / development:</p>
 <table>
 <thead>
 <tr>
@@ -2079,17 +2075,27 @@ labels.</p>
 <tr>
 <td>7:00 AM / <code>0 12 * * *</code></td>
 <td>AI routine</td>
-<td>gatekeeper → analysis</td>
+<td>analysis</td>
 </tr>
 <tr>
 <td>6:00 PM / <code>0 23 * * *</code></td>
 <td>AI routine</td>
-<td>gatekeeper (review refresh)</td>
+<td>(review refresh — no gatekeeper step)</td>
 </tr>
 <tr>
 <td>1:00 AM / <code>0 6 * * *</code></td>
 <td>AI routine</td>
-<td>gatekeeper → dev</td>
+<td>development</td>
+</tr>
+<tr>
+<td>on <code>issue_comment</code></td>
+<td><strong>Actions workflow</strong></td>
+<td>gatekeeper — per-issue commands (<code>gatekeeper-comment.yml</code>)</td>
+</tr>
+<tr>
+<td>on <code>issues</code>/<code>pull_request</code> events + every 6h</td>
+<td><strong>Actions workflow</strong></td>
+<td>gatekeeper — board sweep (<code>gatekeeper-sweep.yml</code>)</td>
 </tr>
 <tr>
 <td>13:00, 00:00, 07:00 UTC</td>
@@ -2100,28 +2106,64 @@ labels.</p>
 </table>
 <p>Fixed-UTC cron drifts one hour across US daylight-saving changes — accepted and
 noted here rather than worked around.</p>
-<p><strong>Why the dashboard is a workflow, not an AI step.</strong> The dashboard body is a
-pure function of repo state, so it is rendered by a deterministic script on a
-GitHub Actions schedule — no model in the loop. That is cheaper, byte-stable,
-and authenticates its headless PATCH with the built-in <code>GITHUB_TOKEN</code>, so no
-extra secret is needed. The workflow runs ~1 hour after each AI routine so it
-reflects the gatekeeper's label moves. (The original epic folded the dashboard
-into each AI routine; this pivot supersedes that.)</p>
+<p><strong>Why the dashboard (and now the gatekeeper) is a workflow, not an AI step.</strong>
+Both are pure functions of repo state, rendered/applied by a deterministic
+script on GitHub Actions — no model in the loop. That is cheaper, byte-stable,
+instant (for the gatekeeper's comment path) rather than batch-scheduled, and
+authenticates its headless writes with the built-in <code>GITHUB_TOKEN</code>, so no
+extra secret is needed. (The original epic folded both into each AI routine;
+this pivot supersedes that for the dashboard, then #319 completed it for the
+gatekeeper.)</p>
 <h2 id="stage-behavior">Stage behavior<a class="headerlink" href="#stage-behavior" title="Permanent link">&para;</a></h2>
-<h3 id="analysis-pipeline-analysis">Analysis (<code>pipeline-analysis</code>)<a class="headerlink" href="#analysis-pipeline-analysis" title="Permanent link">&para;</a></h3>
-<p>Digs into every <code>ai-triage</code> issue in parallel and routes it to await Derek —
-<strong>never inventing design</strong>:</p>
+<h3 id="analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill">Analysis (<code>pipeline-analysis</code> → discovery script → dispatcher → single-issue skill)<a class="headerlink" href="#analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill" title="Permanent link">&para;</a></h3>
+<p>The analysis stage is a <strong>three-way split</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/320">#320</a>),
+so single-issue triage is a reusable unit instead of being welded to "run a
+big round":</p>
+<ol>
+<li><strong><code>select_triage.py</code></strong> — a deterministic, unit-tested discovery script
+   (pure <code>process(data)</code> + stdin/stdout <code>main()</code>, no GitHub I/O, mirroring
+   <code>select_queue.py</code> / <code>reconcile.py</code>). Eligible = <strong>open</strong> and labeled
+   <code>ai-triage</code> and <strong>not</strong> <code>type:epic</code>, the dashboard issue (#193), or
+   <code>parked</code>. Its output carries the eligible issue numbers plus each one's
+   context — current <strong>milestone</strong> and the latest owner
+   <code>/revise</code>/<code>/redo</code>/<code>/propose</code> note.</li>
+<li><strong><code>pipeline-analysis</code></strong> (the <strong>dispatcher</strong>) — runs <code>select_triage.py</code>,
+   then invokes <code>triage-issue</code> once per eligible issue with bounded
+   concurrency (a model-orchestration concern, not hard-coded in the script).
+   This is the "big AM round," now a thin loop over the reusable unit.</li>
+<li><strong><code>triage-issue</code></strong> — the <strong>single-issue triage flow</strong>. Digs into exactly
+   one <code>ai-triage</code> issue and routes it to await Derek — <strong>never inventing
+   design</strong>. It reads other issues <strong>read-only</strong> for context (e.g. checking a
+   candidate blocker's state) but only ever writes to the one issue it was
+   invoked for, and it <strong>never</strong> sets <code>ready-for-work</code> (gatekeeper-only, on
+   Derek's <code>/approve</code>). It is runnable <strong>standalone on a single issue
+   number</strong> for a quick one-off triage (e.g. right after an <code>/admit</code>, or to
+   re-triage one issue after a <code>/revise</code>) without a full round — see
+   <code>triage-issue/SKILL.md</code> → "Invocation". This also <strong>composes with
+   <a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a></strong>: the
+   event-driven gatekeeper could trigger <code>triage-issue</code> on the single issue
+   that just gained <code>ai-triage</code>, making triage per-issue and near-instant too
+   — a forward-looking composition, not something #320 wires up.</li>
+</ol>
+<p><code>triage-issue</code> <strong>owns milestone assignment</strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>): every
+route that lands on <code>pending-approval</code> also <strong>sets the issue's milestone
+field</strong> (matching <strong>live milestone descriptions</strong>), not just a proposal in
+the comment's prose — this is what lets the gatekeeper's <code>/approve</code> collapse
+to a plain presence-check (see <strong>The <code>/approve</code> milestone gate</strong> above):</p>
 <ul>
 <li><strong>Bug</strong> → root-cause diagnosis + fix approach, ending with a <code>## Build
-  checklist</code> of acceptance criteria → <code>pending-approval</code> (adds <code>type:bug</code>).</li>
-<li><strong>Spec-covered feature</strong> → implementation plan + a milestone proposed by
-  matching <strong>live milestone descriptions</strong> + a closing <code>## Build checklist</code> of
-  acceptance criteria → <code>pending-approval</code>.</li>
+  checklist</code> of acceptance criteria → milestone set → <code>pending-approval</code>
+  (adds <code>type:bug</code>).</li>
+<li><strong>Spec-covered feature</strong> → implementation plan + a matched milestone (set on
+  the field) + a closing <code>## Build checklist</code> of acceptance criteria →
+  <code>pending-approval</code>.</li>
 <li><strong>Feature needing a new design call or a UI wireframe</strong> (CLAUDE.md rule #8) →
   <strong>stops and asks</strong> with a concrete <code>❓ Needs from Derek/Lucas:</code> question →
-  <code>needs-clarification</code> (no plan or checklist).</li>
-<li><strong><code>/propose</code> set</strong> → authorized to draft the design as a marked PROPOSAL, with
-  a <code>## Build checklist</code> of acceptance criteria → <code>pending-approval</code>.</li>
+  <code>needs-clarification</code> (no plan, no checklist, no milestone set).</li>
+<li><strong><code>/propose</code> set</strong> → authorized to draft the design as a marked PROPOSAL,
+  with a <code>## Build checklist</code> of acceptance criteria → milestone set →
+  <code>pending-approval</code>.</li>
 </ul>
 <p>The <code>## Build checklist</code> is TDD-ordered checkbox acceptance criteria seeded from
 the relevant <code>docs/specs/**</code> page's own build checklist — what Derek approves
@@ -2208,12 +2250,12 @@ dashboard for Derek):</p>
 <tr>
 <td><strong>Closed + stale label</strong></td>
 <td><code>closed</code> issue still carrying any pipeline-state label (<code>ai-triage</code>, <code>pending-approval</code>, <code>needs-clarification</code>, <code>ready-for-work</code>, <code>in-progress</code>)</td>
-<td><strong>auto-fix</strong> — strip those labels (the <code>Closes #N</code> label-leak seen on #211)</td>
+<td><strong>auto-fix</strong> — strip those labels (the <code>Closes #N</code> label-leak seen on #211); runs on every sweep (event or cron)</td>
 </tr>
 <tr>
 <td><strong>Stalled <code>in-progress</code></strong></td>
 <td>open, <code>in-progress</code>, no open PR, not on <code>main</code></td>
-<td><strong>auto-fix</strong> — requeue <code>in-progress</code> → <code>ready-for-work</code> so the builder retries</td>
+<td><strong>auto-fix</strong> — requeue <code>in-progress</code> → <code>ready-for-work</code> so the builder retries; <strong>cron-only</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a> — see below)</td>
 </tr>
 <tr>
 <td><strong>Merged-but-open</strong> (incl. bundled squash)</td>
@@ -2237,6 +2279,23 @@ is either ambiguous or already owned by <a href="https://github.com/derekwinters
 (auto-close-on-merge), so it is flagged, never applied. The sweep <strong>never closes
 an issue.</strong> An open <code>in-progress</code> issue that is already on <code>main</code> classifies as
 merged-but-open, never as a stall — that guard stops the #109 re-pick loop.</p>
+<p><strong><code>requeue</code> is gated to the cron backstop only</strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>;
+<code>reconcile.process(data, events_only=True)</code> on the event path omits it
+entirely, <code>events_only=False</code> — the cron path's default — still emits it).
+The event-triggered sweep (<code>gatekeeper-sweep.yml</code>'s <code>issues: [closed,
+labeled]</code> / <code>pull_request: [closed]</code> paths) runs <code>pull_request: [closed]</code>
+<em>before</em> GitHub finishes auto-closing the <code>Closes #N</code> issue and before the
+merge is reliably visible on <code>main</code>. In that instant a just-merged
+<code>in-progress</code> issue can transiently look exactly like a stalled one — no
+open PR, not yet on <code>main</code> — and requeuing it right then would re-arm the</p>
+<h1 id="109-re-pick-loop-the-on-main-guard-above-exists-to-prevent-strip_labels">109 re-pick loop the on-<code>main</code> guard above exists to prevent. <code>strip_labels</code><a class="headerlink" href="#109-re-pick-loop-the-on-main-guard-above-exists-to-prevent-strip_labels" title="Permanent link">&para;</a></h1>
+<p>is unaffected: it only ever acts on an <em>already-closed</em> issue, so it can't
+fire early. A genuine stall has no triggering event anyway (nothing happens
+when a build silently drops its commits), so nothing is lost by leaving
+<code>requeue</code> for the low-frequency cron pass; the follow-up <code>issues: [closed]</code>
+event, once GitHub finishes the auto-close, is the authoritative cleanup for
+anything the merge event saw mid-flight.</p>
 <p><strong>Done-ness is decided by a merged commit <em>body</em> <em>closing-keyword</em> reference
 (<code>Closes</code> / <code>Fixes</code> / <code>Resolves #N</code> and their tense/case variants) or
 deliverables on <code>HEAD</code> — never a PR/commit <em>title</em>, and never a bare <code>#N</code> /
@@ -2250,9 +2309,10 @@ requeue. Titles are excluded separately: the nightly builder squash-merges
 several issues under one lead PR title, so a title-only match keeps missing
 bundled squashes (verified on #109/#58/#57/#190/#170). Both guards are locked in
 unit tests.</p>
-<p>The sweep runs in the <strong>gatekeeper</strong> step of each scheduled routine (after
-command processing, so it reconciles against the labels those commands just
-set), which applies the two auto-fixes; the <strong>dashboard</strong> render lists the flag
+<p>The sweep runs in <strong><code>gatekeeper-sweep.yml</code></strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>;
+see <strong>Routines and the dashboard workflow</strong> above) — no longer a step inside a
+scheduled AI routine — which applies <code>strip_labels</code> always and <code>requeue</code> only
+on its cron/<code>workflow_dispatch</code> path; the <strong>dashboard</strong> render lists the flag
 findings. Both share the one <code>reconcile.py</code> implementation.</p>
 <h3 id="dashboard-pipeline-dashboard-dashboardyml">Dashboard (<code>pipeline-dashboard</code> + <code>dashboard.yml</code>)<a class="headerlink" href="#dashboard-pipeline-dashboard-dashboardyml" title="Permanent link">&para;</a></h3>
 <p>Read-only. <code>render_dashboard.py</code> recomputes live state and rewrites <strong>#193</strong> in
@@ -2297,20 +2357,36 @@ only live milestones outside the focus are shown (<a href="https://github.com/de
 <ul>
 <li><code>pipeline-gatekeeper/</code> — <code>SKILL.md</code> + <code>parse_commands.py</code> (deterministic
   command parser) + <code>check_revisits.py</code> (blocker auto-revisit transition) +
-  tests.</li>
-<li><code>pipeline-analysis/</code> — <code>SKILL.md</code> (model-driven triage/design).</li>
+  <code>fetch_comment_event.py</code> (per-issue snapshot builder from a raw
+  <code>issue_comment</code> event, #319) + <code>apply_actions.py</code> (label-merge/ack/reaction
+  computation, #319) + tests for all four, plus the (untested, pure I/O glue)
+  <code>run_comment_event.py</code> / <code>run_sweep.py</code> / <code>_github_api.py</code> that the two
+  workflows below actually invoke.</li>
+<li><code>pipeline-analysis/</code> — <code>SKILL.md</code> (the <strong>dispatcher</strong>, #320: runs
+  <code>select_triage.py</code> then invokes <code>triage-issue</code> per issue) +
+  <code>select_triage.py</code> (deterministic triage-eligibility discovery, mirroring
+  <code>select_queue.py</code>/<code>reconcile.py</code>'s pure <code>process(data)</code> shape) + tests.</li>
+<li><code>triage-issue/</code> — <code>SKILL.md</code> (the <strong>single-issue triage flow</strong>, #320:
+  model-driven routing/design; sets the milestone field at
+  <code>pending-approval</code> — #319). Reads other issues read-only for context, never
+  sets <code>ready-for-work</code>, and is runnable standalone on one issue number.</li>
 <li><code>pipeline-dashboard/</code> — <code>SKILL.md</code> + <code>render_dashboard.py</code> + golden test;
   driven in production by <code>.github/workflows/dashboard.yml</code>.</li>
 <li><code>pipeline-dev/</code> — <code>SKILL.md</code> + <code>select_queue.py</code> (eligibility + topological
   ordering) + tests.</li>
 <li><code>pipeline-reconcile/</code> — <code>SKILL.md</code> + <code>reconcile.py</code> (drift detection +
-  auto-fix/flag classification) + tests; run in the gatekeeper step and
-  surfaced by the dashboard render.</li>
+  auto-fix/flag classification, with the <code>events_only</code> cron-only <code>requeue</code>
+  gate — #319) + tests; run by <code>gatekeeper-sweep.yml</code> and surfaced by the
+  dashboard render.</li>
 </ul>
+<p>The gatekeeper is now driven by two workflows —
+<a href="#routines-and-the-dashboard-workflow"><code>gatekeeper-comment.yml</code></a> (per-issue,
+instant) and <code>gatekeeper-sweep.yml</code> (board-wide, event + cron) — both
+deterministic and <code>GITHUB_TOKEN</code>-only, mirroring <code>dashboard.yml</code>.</p>
 <p>The deterministic parts (command parsing, queue selection, dashboard render,
-reconciliation) are scripted and unit-tested (run in CI via
-<a href="../ci-cd/"><code>pipeline-tests.yml</code></a>); the model does only analysis, development,
-and light acknowledgments.</p>
+reconciliation, and now the gatekeeper's own fetch/apply glue) are scripted
+and unit-tested (run in CI via <a href="../ci-cd/"><code>pipeline-tests.yml</code></a>); the model
+does only analysis, development, and light acknowledgments.</p>
 
 
 
