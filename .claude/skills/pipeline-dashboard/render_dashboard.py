@@ -151,8 +151,8 @@ def render_body(state):
     a("")
     queue = focus.get("queue", [])
     if queue:
-        a("| Issue | Title | |")
-        a("| - | - | - |")
+        a("| Issue | Title | Milestone | |")
+        a("| - | - | - | - |")
         for it in queue:
             if it.get("blocked"):
                 flag = " ⛔ _blocked_"
@@ -164,7 +164,11 @@ def render_body(state):
                 flag = " ⭐ unblocks %s" % deps
             else:
                 flag = ""
-            a("| %s | %s |%s |" % (_issue_link(repo, it["number"]), it["title"], flag))
+            # Milestone is the focus milestone for every queued item (#336) —
+            # shown for consistency with the other issue tables.
+            a("| %s | %s | %s |%s |" % (_issue_link(repo, it["number"]),
+                                        it["title"], it.get("milestone") or "",
+                                        flag))
     else:
         a("_Nothing queued yet. `/approve` an analysis into this milestone and "
           "it lands here, blockers first. Set the active milestone anytime with "
@@ -392,28 +396,34 @@ def _reconcile_section(a, repo, rec):
 def _issue_table(a, repo, issues, show_blocked_by=False):
     """Render an issue table.
 
-    When ``show_blocked_by`` is set (#241) a third **Blocked by** column lists
+    Every issue table carries a **Milestone** column (#336) listing the issue's
+    milestone title, or an empty cell when it has none.
+
+    When ``show_blocked_by`` is set (#241) a fourth **Blocked by** column lists
     each issue's structured ``Blocked by: #N`` hard blockers as links (empty
     cell when it has none), so every pipeline stage surfaces its blockers the
     same way the focus ready-for-work queue does. The Parked listing keeps the
-    two-column form.
+    milestone-only three-column form.
     """
     if not issues:
         a("_None right now._")
         return
     if show_blocked_by:
-        a("| Issue | Summary | Blocked by |")
-        a("| - | - | - |")
+        a("| Issue | Summary | Milestone | Blocked by |")
+        a("| - | - | - | - |")
         for it in issues:
             blockers = ", ".join(_issue_link(repo, n)
                                  for n in it.get("blocked_by", []))
-            a("| %s | %s | %s |"
-              % (_issue_link(repo, it["number"]), it["title"], blockers))
+            a("| %s | %s | %s | %s |"
+              % (_issue_link(repo, it["number"]), it["title"],
+                 it.get("milestone") or "", blockers))
         return
-    a("| Issue | Summary |")
-    a("| - | - |")
+    a("| Issue | Summary | Milestone |")
+    a("| - | - | - |")
     for it in issues:
-        a("| %s | %s |" % (_issue_link(repo, it["number"]), it["title"]))
+        a("| %s | %s | %s |"
+          % (_issue_link(repo, it["number"]), it["title"],
+             it.get("milestone") or ""))
 
 
 # --------------------------------------------------------------------------
@@ -546,6 +556,7 @@ def fetch_state(repo, token, as_of):
                 continue
             if label(lbl):
                 out.append({"number": i["number"], "title": _clean(i["title"]),
+                            "milestone": _milestone_title(i),
                             "blocked_by": _blocked_by(i.get("body") or "")})
         return out
 
@@ -566,7 +577,8 @@ def fetch_state(repo, token, as_of):
         if i["number"] == DASHBOARD_ISSUE or "type:epic" in lbl:
             continue
         if "parked" in lbl:
-            parked.append({"number": i["number"], "title": _clean(i["title"])})
+            parked.append({"number": i["number"], "title": _clean(i["title"]),
+                           "milestone": _milestone_title(i)})
 
     # Unblocker graph over ALL open issues (#250): read the same structured
     # `Blocked by:` hard-blocker set the nightly builder / reconcile use, then
@@ -592,6 +604,7 @@ def fetch_state(repo, token, as_of):
                 and ms and ms["title"] == focus_title and "parked" not in lbl):
             blocked = any(b in open_numbers for b in _blocked_by(i.get("body") or ""))
             queue.append({"number": i["number"], "title": _clean(i["title"]),
+                          "milestone": _milestone_title(i),
                           "blocked": blocked,
                           "unblocks": unblocker_map.get(i["number"], [])})
     # Unblockers sort to the top (highest-leverage picks first), blocked issues
@@ -688,6 +701,16 @@ def _reconcile_block(repo, token, issues):
 def _clean(title):
     # GitHub API returns raw titles; collapse whitespace, keep it one line.
     return " ".join((title or "").split())
+
+
+def _milestone_title(issue):
+    """Milestone title for one issue's per-issue state dict (#336).
+
+    Returns the milestone's title when set, or ``""`` when the issue has no
+    milestone — the empty string renders as a blank Milestone cell.
+    """
+    ms = issue.get("milestone")
+    return ms["title"] if ms else ""
 
 
 def _read_focus_marker(body):

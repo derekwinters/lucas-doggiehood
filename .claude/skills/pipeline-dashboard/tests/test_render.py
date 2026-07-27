@@ -172,17 +172,63 @@ class TestRender(unittest.TestCase):
 
     def test_intake_table_has_blocked_by_column(self):
         # #241: intake gets a "Blocked by" column matching the focus-queue
-        # convention of surfacing blockers on the table.
+        # convention of surfacing blockers on the table. #336 slots a
+        # "Milestone" column before it.
         section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
-        self.assertIn("| Issue | Summary | Blocked by |", section)
+        self.assertIn("| Issue | Summary | Milestone | Blocked by |", section)
 
     def test_pending_approval_table_has_blocked_by_column(self):
         section = self._section("## ✅ Pending approval", "## ❓ Needs clarification")
-        self.assertIn("| Issue | Summary | Blocked by |", section)
+        self.assertIn("| Issue | Summary | Milestone | Blocked by |", section)
 
     def test_needs_clarification_table_has_blocked_by_column(self):
         section = self._section("## ❓ Needs clarification", "## ⏸️ Parked")
-        self.assertIn("| Issue | Summary | Blocked by |", section)
+        self.assertIn("| Issue | Summary | Milestone | Blocked by |", section)
+
+    def test_intake_table_has_milestone_column(self):
+        # #336: every issue table surfaces the issue's milestone.
+        section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
+        self.assertIn("| Issue | Summary | Milestone | Blocked by |", section)
+
+    def test_intake_set_milestone_shows_title(self):
+        # #336: #192 carries milestone "07 - Polish & Onboarding" in the
+        # fixture -> its Milestone cell shows that title.
+        section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
+        row = next(ln for ln in section.splitlines() if "/issues/192)" in ln)
+        self.assertIn("07 - Polish & Onboarding", row)
+
+    def test_intake_unset_milestone_blank_cell(self):
+        # #336: #180 has no milestone -> its Milestone cell is blank.
+        section = self._section("## 🆕 New ideas", "## ✅ Pending approval")
+        row = next(ln for ln in section.splitlines() if "/issues/180)" in ln)
+        cells = [c.strip() for c in row.split("|")]
+        # | Issue | Summary | Milestone | Blocked by | -> cells[3] is Milestone.
+        self.assertEqual(cells[3], "")
+
+    def test_pending_approval_milestone_shows_title(self):
+        # #336: #181 carries milestone "04 - Quests & Economy" in the fixture.
+        section = self._section("## ✅ Pending approval", "## ❓ Needs clarification")
+        row = next(ln for ln in section.splitlines() if "/issues/181)" in ln)
+        self.assertIn("04 - Quests & Economy", row)
+
+    def test_queue_table_has_milestone_column(self):
+        # #336: the focus ready-for-work queue surfaces the milestone too
+        # (constant — the focus milestone — but shown for consistency).
+        section = self._section("## 🎯 Focus milestone", "### 🔔 Your move")
+        self.assertIn("| Issue | Title | Milestone | |", section)
+
+    def test_queue_row_shows_focus_milestone(self):
+        section = self._section("## 🎯 Focus milestone", "### 🔔 Your move")
+        row = next(ln for ln in self.body.splitlines()
+                   if ln.startswith("| ") and "/issues/109)" in ln)
+        self.assertIn("03 - Dogs & Conversations", row)
+
+    def test_parked_table_has_milestone_column(self):
+        # #336: the two-column Parked variant gains a Milestone column.
+        section = self._section("## ⏸️ Parked", "## ⚠️ Reconcile")
+        self.assertIn("| Issue | Summary | Milestone |", section)
+        row = next(ln for ln in section.splitlines() if "/issues/172)" in ln)
+        self.assertIn("05 - Decorations & Happiness", row)
 
     def test_needs_clarification_row_shows_blocker_link(self):
         # #241: #185 is Blocked by #186 in the fixture — its row must link #186.

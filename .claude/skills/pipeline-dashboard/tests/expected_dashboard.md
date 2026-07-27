@@ -24,11 +24,11 @@ pie showData title 03 - Dogs & Conversations
 
 Nightly build cap: **5**
 
-| Issue | Title | |
-| - | - | - |
-| [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) | Tile grid foundation | ⭐ unblocks [#57](https://github.com/derekwinters/lucas-doggiehood/issues/57), [#58](https://github.com/derekwinters/lucas-doggiehood/issues/58), [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) |
-| [#210](https://github.com/derekwinters/lucas-doggiehood/issues/210) | Standalone bark sound polish | |
-| [#205](https://github.com/derekwinters/lucas-doggiehood/issues/205) | Quest reward wiring | ⛔ _blocked_ |
+| Issue | Title | Milestone | |
+| - | - | - | - |
+| [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) | Tile grid foundation | 03 - Dogs & Conversations | ⭐ unblocks [#57](https://github.com/derekwinters/lucas-doggiehood/issues/57), [#58](https://github.com/derekwinters/lucas-doggiehood/issues/58), [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) |
+| [#210](https://github.com/derekwinters/lucas-doggiehood/issues/210) | Standalone bark sound polish | 03 - Dogs & Conversations | |
+| [#205](https://github.com/derekwinters/lucas-doggiehood/issues/205) | Quest reward wiring | 03 - Dogs & Conversations | ⛔ _blocked_ |
 
 ---
 
@@ -57,10 +57,10 @@ Nightly build cap: **5**
 ## 🆕 New ideas — awaiting your call
 _Raw, ungated issues. `/admit` pulls one into analysis · `/park` hides it._
 
-| Issue | Summary | Blocked by |
-| - | - | - |
-| [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) | Dogs playing in yard |  |
-| [#192](https://github.com/derekwinters/lucas-doggiehood/issues/192) | Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles) | [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) |
+| Issue | Summary | Milestone | Blocked by |
+| - | - | - | - |
+| [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) | Dogs playing in yard |  |  |
+| [#192](https://github.com/derekwinters/lucas-doggiehood/issues/192) | Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles) | 07 - Polish & Onboarding | [#180](https://github.com/derekwinters/lucas-doggiehood/issues/180) |
 
 > **Your move:** `/admit` · `/park`
 
@@ -69,11 +69,11 @@ _Raw, ungated issues. `/admit` pulls one into analysis · `/park` hides it._
 ## ✅ Pending approval — analysis done, awaiting you
 _AI has triaged these; read the analysis on each, then act._
 
-| Issue | Summary | Blocked by |
-| - | - | - |
-| [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) | Buy-something quest: no way to actually buy the item from the conversation panel |  |
-| [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) | Lost Dog | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
-| [#163](https://github.com/derekwinters/lucas-doggiehood/issues/163) | Make EditMode tests required |  |
+| Issue | Summary | Milestone | Blocked by |
+| - | - | - | - |
+| [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) | Buy-something quest: no way to actually buy the item from the conversation panel | 03 - Dogs & Conversations |  |
+| [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) | Lost Dog | 04 - Quests & Economy | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
+| [#163](https://github.com/derekwinters/lucas-doggiehood/issues/163) | Make EditMode tests required |  |  |
 
 > **Your move:** `/approve` (→ ready-for-work; milestone already set by analysis) · `/revise <notes>` · `/redo` · `/park`
 
@@ -82,9 +82,9 @@ _AI has triaged these; read the analysis on each, then act._
 ## ❓ Needs clarification — blocked on your answer
 _A specific question is posted on each issue — open it to read and reply._
 
-| Issue | Summary | Blocked by |
-| - | - | - |
-| [#185](https://github.com/derekwinters/lucas-doggiehood/issues/185) | Conversation panel has no way to decline/say no to a quest request | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
+| Issue | Summary | Milestone | Blocked by |
+| - | - | - | - |
+| [#185](https://github.com/derekwinters/lucas-doggiehood/issues/185) | Conversation panel has no way to decline/say no to a quest request | 03 - Dogs & Conversations | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
 
 > **Your move:** `/revise <notes>` · `/redo` · `/propose` · `/park`
 
@@ -93,9 +93,9 @@ _A specific question is posted on each issue — open it to read and reply._
 ## ⏸️ Parked
 _Hidden from the pipeline and every active queue above. `/unpark` brings one back into intake._
 
-| Issue | Summary |
-| - | - |
-| [#172](https://github.com/derekwinters/lucas-doggiehood/issues/172) | Seasonal weather effects |
+| Issue | Summary | Milestone |
+| - | - | - |
+| [#172](https://github.com/derekwinters/lucas-doggiehood/issues/172) | Seasonal weather effects | 05 - Decorations & Happiness |
 
 ---
 
