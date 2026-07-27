@@ -13,6 +13,11 @@ namespace Doggiehood.Unity
     /// touch is not — so a tap that visually reads as "on the bubble" but
     /// lands a little outside its exact rendered mesh would otherwise miss
     /// outright on mobile.
+    ///
+    /// #311: the active lost item gets the same treatment
+    /// (LostItemView.TryHandleLostItemTap) — its SphereCollider is tiny and
+    /// sits atop the full-map ground Plane, so an imprecise tap otherwise
+    /// lands on the ground instead of the ball and silently does nothing.
     /// </summary>
     public static class TapRouter
     {
@@ -21,6 +26,11 @@ namespace Doggiehood.Unity
         public static bool RouteTap(Camera camera, Vector2 screenPosition)
         {
             if (TryHandleBubbleTaps(camera, screenPosition))
+            {
+                return true;
+            }
+
+            if (TryHandleLostItemTaps(camera, screenPosition))
             {
                 return true;
             }
@@ -46,6 +56,19 @@ namespace Doggiehood.Unity
             foreach (var view in Object.FindObjectsByType<DogView>(FindObjectsSortMode.None))
             {
                 if (view.TryHandleBubbleTap(camera, screenPosition))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryHandleLostItemTaps(Camera camera, Vector2 screenPosition)
+        {
+            foreach (var view in Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None))
+            {
+                if (view.TryHandleLostItemTap(camera, screenPosition))
                 {
                     return true;
                 }
