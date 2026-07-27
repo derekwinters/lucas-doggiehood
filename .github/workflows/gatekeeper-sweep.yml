@@ -1,0 +1,57 @@
+name: gatekeeper-sweep
+
+# Board-wide gatekeeper sweep (issue #319, Part B): blocker auto-revisit
+# (#241) + reconciliation auto-fixes (#246), deterministic — no LLM, same
+# GITHUB_TOKEN-only shape as dashboard.yml and gatekeeper-comment.yml.
+#
+# Triggers on the events that can actually change the board-wide picture —
+# closure, a label move (a blocker can resolve by gaining `ready-for-work`/
+# `in-progress` WITHOUT closing), and a PR merge — plus a low-frequency
+# schedule backstop for anything no single event announces (a silently
+# stalled `in-progress` issue, merged-but-open lag, a dropped webhook).
+#
+# The `requeue` auto-fix (stalled `in-progress` -> `ready-for-work`) is
+# CRON-ONLY: at the instant a PR merges, `pull_request: [closed]` fires
+# before GitHub finishes auto-closing the `Closes #N` issue and before the
+# merge is reliably visible on `main`, so a just-merged `in-progress` issue
+# can transiently look exactly like a stall — requeuing it right then would
+# re-arm the #109 re-pick loop. See reconcile.py's `events_only` docstring.
+# See docs/engineering/issue-pipeline.md.
+
+on:
+  issues:
+    types: [closed, labeled]
+  pull_request:
+    types: [closed]
+  schedule:
+    # Low-frequency backstop, UTC. Not the primary trigger — see above.
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: gatekeeper-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run the sweep
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python3 .claude/skills/pipeline-gatekeeper/run_sweep.py --cron
+          else
+            python3 .claude/skills/pipeline-gatekeeper/run_sweep.py
+          fi

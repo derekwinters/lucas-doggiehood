@@ -30,12 +30,16 @@ Design rules encoded here (see issue #194 and docs/engineering/issue-pipeline.md
   * `/focus <arg>` and `/milestone <arg>` are REJECTED when the argument
     resolves to no live milestone (`focus-no-match` / `milestone-no-match` in
     `skipped`) rather than silently writing a null milestone.
-  * `ready-for-work` implies a milestone (issue #247): `/approve` only moves an
-    issue to `ready-for-work` when a milestone resolves — an inline `/milestone`
-    in the same comment, the issue's current milestone, or the milestone
-    proposed by analysis. If none resolves, the approve is REFUSED
-    (`approve-no-milestone` in `skipped`, carrying the `which-milestone` menu)
-    with no label move, leaving the issue in its prior state.
+  * `ready-for-work` implies a milestone (issue #247): `/approve` is a
+    presence-check + label flip (issue #319, Part A) — it moves an issue to
+    `ready-for-work` only when the issue's milestone FIELD is already set (by
+    analysis, at `pending-approval`). No resolution, no name→number matching,
+    no comment-scraping: an inline `/milestone` in the SAME comment does NOT
+    feed this gate (it is a separate, independent command; see it applied on
+    a later run once the field updates). If the field is null, the approve is
+    REFUSED (`approve-no-milestone` in `skipped`, carrying the
+    `which-milestone` menu) with no label move, leaving the issue in its
+    prior state.
   * A command must start at a line start or after whitespace, so URLs and file
     paths such as `http://x/approve/y` never trigger it.
 
@@ -47,16 +51,17 @@ Input schema (stdin):
       {"number": 181, "labels": ["pending-approval"],
        "is_epic": false, "is_dashboard": false,
        "milestone": "04 - Quests & Economy" | null,
-       "proposed_milestone": "04 - Quests & Economy" | null,
        "comments": [
          {"id": 7, "author": "derekwinters", "body": "...", "processed": false}
        ]}
     ]
   }
 
-  `milestone` is the issue's currently-set milestone title (or null);
-  `proposed_milestone` is the milestone analysis proposed in its
-  `pending-approval` comment (or null). Both feed the `/approve` milestone gate.
+  `milestone` is the issue's currently-set milestone title (or null) — the
+  ONLY thing the `/approve` milestone gate reads (issue #319, Part A). Analysis
+  now sets this field directly when it routes an issue to `pending-approval`
+  (rather than only proposing one in prose), so this parser no longer reads or
+  resolves any analysis-proposed-milestone comment-scrape at all.
 
 Output schema (stdout):
   {
@@ -293,31 +298,32 @@ def _build_action(issue, comment, commands, milestones, is_parked,
             want_remove("parked")
             action["menu"] = "unparked"
 
-    # Post-loop: enforce ready-for-work ⇒ has milestone (issue #247). Resolve
-    # /approve's effective milestone from, in order, an inline /milestone in the
-    # same comment (already captured in set_milestone), the issue's current
-    # milestone, then the analysis-proposed milestone. Doing it after the loop
-    # makes it order-independent — `/approve\n/milestone 07` and the reverse
-    # behave identically. If none resolves, refuse the transition: undo the
-    # labels /approve added, drop it from the command list, and record an
-    # `approve-no-milestone` skip carrying the which-milestone hand-back so the
-    # issue stays in its prior state.
-    if "approve" in action["commands"]:
-        effective = (action["set_milestone"]
-                     or issue.get("milestone")
-                     or issue.get("proposed_milestone"))
-        if effective is None:
-            reject("approve-no-milestone", menu="which-milestone")
-            action["commands"].remove("approve")
-            if "ready-for-work" in add:
-                add.remove("ready-for-work")
-            for lbl in ("pending-approval", "needs-clarification", "ai-triage"):
-                if lbl in remove:
-                    remove.remove(lbl)
-            if action["menu"] == "ready-for-work":
-                action["menu"] = None
-        else:
-            action["set_milestone"] = effective
+    # Post-loop: enforce ready-for-work ⇒ has milestone (issue #247), as a pure
+    # presence-check (issue #319, Part A) — analysis now sets the milestone
+    # FIELD directly at pending-approval, so /approve does no resolution of its
+    # own: it neither reads an inline /milestone from this same comment nor
+    # re-writes the field on success (it is already correct). If the field is
+    # null, refuse the transition: undo the labels /approve added, drop it from
+    # the command list, and record an `approve-no-milestone` skip carrying the
+    # which-milestone hand-back so the issue stays in its prior state. (A
+    # /milestone command in the same comment is unaffected by this refusal —
+    # it is a separate, independent command handled in the loop above.)
+    #
+    # NOTE (#212, forward-looking): this is the PRESENCE gate only. A sibling
+    # ORDER gate (the milestone must not precede a blocker's milestone) is not
+    # yet built. Now that milestone ownership lives in analysis (#319), #212
+    # belongs there (or in the dashboard) — layered onto the value analysis
+    # already resolved — never re-added here to /approve's presence-check.
+    if "approve" in action["commands"] and not issue.get("milestone"):
+        reject("approve-no-milestone", menu="which-milestone")
+        action["commands"].remove("approve")
+        if "ready-for-work" in add:
+            add.remove("ready-for-work")
+        for lbl in ("pending-approval", "needs-clarification", "ai-triage"):
+            if lbl in remove:
+                remove.remove(lbl)
+        if action["menu"] == "ready-for-work":
+            action["menu"] = None
 
     if not action["commands"]:
         return None, rejected

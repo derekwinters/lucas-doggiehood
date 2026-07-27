@@ -40,12 +40,14 @@ Then route:
 
 1. **Bug** → root-cause **diagnosis** + a recommended fix approach, ending with
    a **`## Build checklist`** (acceptance criteria — see below). Add
-   `type:bug`. Post the analysis, set `pending-approval`.
+   `type:bug`. Post the analysis, **set the milestone field** (see milestone
+   matching below), set `pending-approval`.
 
 2. **Feature fully covered by the specs** → a concrete **implementation plan**
-   grounded in the relevant `docs/specs/` pages, a **proposed milestone**
-   (see milestone matching), and a closing **`## Build checklist`** (acceptance
-   criteria — see below). Post it, set `pending-approval`.
+   grounded in the relevant `docs/specs/` pages, a matched milestone **set on
+   the issue's milestone field** (see milestone matching), and a closing
+   **`## Build checklist`** (acceptance criteria — see below). Post it, set
+   `pending-approval`.
 
 3. **Feature needing a new design decision or a UI wireframe (rule #8)** →
    **stop and ask.** Post a clearly-labeled block:
@@ -63,8 +65,9 @@ Then route:
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your
    approval):`), ending with a **`## Build checklist`** (acceptance criteria —
-   see below). Then set `pending-approval`. This is the single opt-in that
-   lets analysis suggest design; without it, case 3 applies.
+   see below). Set the milestone field (see milestone matching), then set
+   `pending-approval`. This is the single opt-in that lets analysis suggest
+   design; without it, case 3 applies.
 
 When re-triaging after a `/revise`, read Derek's revise notes and address them
 directly in the new analysis.
@@ -85,15 +88,24 @@ logic leads with a **Core** NUnit test before the Unity wiring. Keep each item
 checkable — "Core test: building on an empty lot deducts the flat house cost
 (named constant)", not "implement house costs".
 
-## Milestone matching — read milestones live
+## Milestone matching — read milestones live, and SET the field (#319)
 
-Propose the milestone by matching the issue against the **live milestone
-descriptions** from the milestones API — never a hard-coded `00`–`08` list, so
-this survives the version-numbering rework (#192). Pick the milestone whose
-description best fits the work; state which one and why in the analysis. Derek's
-`/approve` accepts it; `/milestone` overrides it. See `docs/engineering/issue-pipeline.md`
-→ "Fetching live milestones" for the exact recipe (no MCP milestone tool
-exists; use the JSON API, not the HTML page).
+Match the issue against the **live milestone descriptions** from the
+milestones API — never a hard-coded `00`–`08` list, so this survives the
+version-numbering rework (#192). Pick the milestone whose description best
+fits the work, state which one and why in the analysis, and **set the
+issue's milestone field directly** (via `issue_write`) as part of routing it
+to `pending-approval` — do not only propose it in the comment's prose. This
+is what lets the gatekeeper's `/approve` collapse to a plain presence-check
+on the field (issue #319, Part A): the gate no longer scrapes a proposed
+milestone out of your analysis comment, so if the field isn't set here,
+`/approve` has nothing to check and refuses with a which-milestone hand-back.
+Derek's bare `/approve` accepts the milestone you set; `/milestone <name>`
+overrides it (its own separate command, unaffected by this rule). See
+`docs/engineering/issue-pipeline.md` → "Fetching live milestones" for the
+exact recipe (no MCP milestone tool exists; use the JSON API, not the HTML
+page, and `issue_write`'s `milestone` parameter takes the milestone's
+**number**, not its title).
 
 ## Dependencies — always structured, never prose (#248)
 

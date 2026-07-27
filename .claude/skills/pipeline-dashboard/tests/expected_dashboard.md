@@ -75,7 +75,7 @@ _AI has triaged these; read the analysis on each, then act._
 | [#181](https://github.com/derekwinters/lucas-doggiehood/issues/181) | Lost Dog | [#186](https://github.com/derekwinters/lucas-doggiehood/issues/186) |
 | [#163](https://github.com/derekwinters/lucas-doggiehood/issues/163) | Make EditMode tests required |  |
 
-> **Your move:** `/approve` (→ ready-for-work, milestone as proposed) · `/revise <notes>` · `/redo` · `/park`
+> **Your move:** `/approve` (→ ready-for-work; milestone already set by analysis) · `/revise <notes>` · `/redo` · `/park`
 
 ---
 
@@ -155,7 +155,7 @@ Comment on any issue (only Derek's commands are honored):
 | Command | Effect |
 | - | - |
 | `/admit` | Pull a raw idea into AI analysis |
-| `/approve` | Accept the analysis → ready-for-work, sets proposed milestone |
+| `/approve` | Accept the analysis → ready-for-work (milestone already set by analysis) |
 | `/revise <notes>` | Send back to analysis with your feedback |
 | `/redo` | Discard the analysis and start it over |
 | `/propose` | Authorize AI to draft the missing design/wireframe as a proposal |

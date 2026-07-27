@@ -29,6 +29,17 @@ findings).
    stalled issues. Merged-but-open issues are **flagged**, never auto-closed —
    `#211` owns auto-close-on-merge, and the done-ness heuristic can
    false-positive.
+1a. **`requeue` runs on the cron backstop only** (issue #319). `process(data,
+    events_only=True)` — used by the event-triggered sweep
+    (`issues: [closed, labeled]` / `pull_request: [closed]`) — omits `requeue`
+    entirely; only a cron run (`events_only=False`, the default) emits it. At
+    the instant a PR merges, `pull_request: [closed]` fires before GitHub
+    finishes auto-closing the `Closes #N` issue and before the merge is
+    reliably visible on `main`, so a just-merged `in-progress` issue can
+    transiently look exactly like a stalled one — requeuing it there would
+    re-arm the #109 re-pick loop. `strip_labels` and every `flag_*` fire in
+    both modes (they can't hit that race: `strip_labels` only ever touches an
+    already-*closed* issue, and the `flag_*` findings are read-only).
 2. **Done-ness is decided by a merged commit *body* *closing-keyword* reference
    (`Closes`/`Fixes`/`Resolves #N` + tense/case variants) or deliverables on
    `HEAD`, never a PR/commit *title* and never a bare `#N` / `Refs #N`.** Only a
@@ -89,10 +100,14 @@ throughout, matching the rest of the pipeline.
    python3 .claude/skills/pipeline-reconcile/reconcile.py < snapshot.json
    # or, headless with GITHUB_TOKEN set:
    python3 .claude/skills/pipeline-reconcile/reconcile.py --live
+   # event-triggered sweep (gatekeeper-sweep.yml's close/label/merge paths):
+   # add --events-only so `requeue` is never emitted (see non-negotiable 1a).
+   python3 .claude/skills/pipeline-reconcile/reconcile.py --live --events-only
    ```
 
    Returns `strip_labels`, `requeue`, `flag_done`, `flag_orphaned_ready`,
-   `flag_prose_dep` — each a list sorted by issue number.
+   `flag_prose_dep` — each a list sorted by issue number. `requeue` is always
+   `[]` when `--events-only` (or `process(..., events_only=True)`) is used.
 
 3. **Apply the auto-fixes** with the GitHub MCP tools — and only these:
    - `strip_labels`: remove exactly the named labels from each closed issue.
@@ -125,7 +140,10 @@ stretch flags, the epic/dashboard/parked exclusions, and the healthy/empty
 board. `TestProseDepDetection` pins `prose_deps_in` (#248): prose-only
 `depends on #N` / `blocked by #N` is flagged, a matching structured
 `Blocked by:` / `Depends on:` line (or a native relationship) clears it, and a
-bare `#N` that is not a dependency phrase is never flagged. Run:
+bare `#N` that is not a dependency phrase is never flagged. `TestEventsOnlyMode`
+(#319) pins the cron-only `requeue` gate: `events_only=True` (and its CLI
+`--events-only` twin) omits `requeue` while leaving `strip_labels`/`flag_done`
+untouched; the default (cron) mode still requeues. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-reconcile/tests
