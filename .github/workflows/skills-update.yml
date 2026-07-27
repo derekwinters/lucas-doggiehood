@@ -12,12 +12,20 @@
 #     can't reach ai-skills.
 # One repo setting is required: Settings → Actions → General →
 #   "Allow GitHub Actions to create and approve pull requests".
+#
+# ── DISABLED (see #325) ────────────────────────────────────────────────────
+# This repo is the *source* of the pipeline-* skills; the ai-skills registry is
+# stale relative to the local copies, so a sync reverts local work (it opened
+# #324: +273/-1309). The auto schedule is removed and the job is guarded off
+# until upstream is reconciled. To re-enable after #325 lands: restore the
+# `schedule` trigger below and delete the `if: ${{ false }}` job guard.
+# ───────────────────────────────────────────────────────────────────────────
 name: skills-update
 
 on:
-  schedule:
-    - cron: "23 7 * * 1" # Mondays ~07:23 UTC
-  workflow_dispatch: {}
+  # schedule:                       # DISABLED (see #325) — restore to re-enable
+  #   - cron: "23 7 * * 1"          # Mondays ~07:23 UTC
+  workflow_dispatch: {} # manual only; job is guarded off until #325
 
 permissions:
   contents: write
@@ -25,6 +33,7 @@ permissions:
 
 jobs:
   update:
+    if: ${{ false }} # DISABLED (see #325) — delete this line to re-enable
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
