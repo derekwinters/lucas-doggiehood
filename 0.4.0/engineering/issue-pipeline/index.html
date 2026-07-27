@@ -2330,7 +2330,13 @@ these three tables carries a <strong>"Blocked by"</strong> column listing the is
 structured <code>Blocked by: #N</code> hard blockers as links, so blockers surface on every
 stage the way the focus queue already flags them — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/241">#241</a>), a read-only
 <strong>"⏸️ Parked"</strong> section listing every open <code>parked</code> issue so parked work stays
-visible and easy to <code>/unpark</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/249">#249</a>),
+visible and easy to <code>/unpark</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/249">#249</a>).
+Every issue table — the focus ready-for-work queue, intake, pending-approval,
+needs-clarification and the Parked listing — also carries a <strong>"Milestone"</strong>
+column showing each issue's milestone title (blank when it has none), so the
+milestone is visible at every stage of the flow (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/336">#336</a>);
+on the focus ready-for-work queue it is constant (the focus milestone) and is
+shown for consistency. The dashboard also carries
 a <strong>"⚠️ Reconcile"</strong> section listing the sweep's flag findings (merged-but-open,
 orphaned ready, prose-only dependencies — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>),
 other-milestone progress, and the command reference. In the focus ready-for-work
