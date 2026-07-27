@@ -12,9 +12,9 @@
     "needs_clarification": 0,
     "parked": 1,
     "queue": [
-      {"number": 109, "title": "Tile grid foundation", "blocked": false, "unblocks": [57, 58, 178]},
-      {"number": 210, "title": "Standalone bark sound polish", "blocked": false, "unblocks": []},
-      {"number": 205, "title": "Quest reward wiring", "blocked": true, "unblocks": []}
+      {"number": 109, "title": "Tile grid foundation", "milestone": "03 - Dogs & Conversations", "blocked": false, "unblocks": [57, 58, 178]},
+      {"number": 210, "title": "Standalone bark sound polish", "milestone": "03 - Dogs & Conversations", "blocked": false, "unblocks": []},
+      {"number": 205, "title": "Quest reward wiring", "milestone": "03 - Dogs & Conversations", "blocked": true, "unblocks": []}
     ]
   },
   "your_move": {
@@ -31,19 +31,19 @@
     ]
   },
   "intake": [
-    {"number": 180, "title": "Dogs playing in yard", "blocked_by": []},
-    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)", "blocked_by": [180]}
+    {"number": 180, "title": "Dogs playing in yard", "milestone": "", "blocked_by": []},
+    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)", "milestone": "07 - Polish & Onboarding", "blocked_by": [180]}
   ],
   "pending_approval": [
-    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel", "blocked_by": []},
-    {"number": 181, "title": "Lost Dog", "blocked_by": [186]},
-    {"number": 163, "title": "Make EditMode tests required", "blocked_by": []}
+    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel", "milestone": "03 - Dogs & Conversations", "blocked_by": []},
+    {"number": 181, "title": "Lost Dog", "milestone": "04 - Quests & Economy", "blocked_by": [186]},
+    {"number": 163, "title": "Make EditMode tests required", "milestone": "", "blocked_by": []}
   ],
   "needs_clarification": [
-    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request", "blocked_by": [186]}
+    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request", "milestone": "03 - Dogs & Conversations", "blocked_by": [186]}
   ],
   "parked": [
-    {"number": 172, "title": "Seasonal weather effects"}
+    {"number": 172, "title": "Seasonal weather effects", "milestone": "05 - Decorations & Happiness"}
   ],
   "other_milestones": [
     {"title": "00 - Concepts & Core Mechanics", "done": 12, "open": 0, "post_mvp": false, "closed": true},

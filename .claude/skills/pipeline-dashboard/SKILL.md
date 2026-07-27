@@ -51,7 +51,11 @@ queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and so
 first — #250), the "Your move" counts, PRs, intake, pending-approval,
 needs-clarification, a read-only **"⏸️ Parked"** section listing open `parked`
 issues (#249), other-milestone progress bars, the open-issues bar chart,
-and the command reference. Issue **titles** are used as the summary text
+and the command reference. Every issue table — the focus ready-for-work queue,
+intake, pending-approval, needs-clarification and the Parked listing — carries a
+**"Milestone"** column showing each issue's milestone title, blank when unset
+(#336); column order is `Issue | Summary | Milestone | Blocked by` (the queue
+uses `Issue | Title | Milestone | …`). Issue **titles** are used as the summary text
 (deterministic — no model), which is the tradeoff for a fully-scripted body.
 
 `#193` itself and any `parked` issue are excluded from every *active work*
