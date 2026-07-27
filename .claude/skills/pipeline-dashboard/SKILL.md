@@ -30,38 +30,21 @@ The workflow runs `render_dashboard.py --write`, which:
 
 1. `fetch_state()` — queries the GitHub REST API (stdlib `urllib`, no pip
    deps) for issues by label, milestone roll-ups, open PRs (release-please
-   broken out), the focus marker on #193, blocked state, and the unblocker
-   graph (`compute_unblockers`, derived from the structured `Blocked by:`
-   lines) that stars the highest-leverage queue picks (#250).
+   broken out), the focus marker on #193, and blocked state.
 2. `render_body(state)` — renders the approved markdown (see below).
 3. PATCHes **only** #193's body. Mutates nothing else.
 
 ## What it renders
 
 Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
-marker (first line — the shared focus source of truth) and the hidden
-`<!-- pipeline-cap: N -->` marker (second line — the shared nightly-build-cap
-source of truth, issue #240, displayed as "Nightly build cap: **N**" in the
-ready-for-work section), a **7-slice** focus-milestone pie — Done, Ready for
-work, In progress, Needs triage, Pending approval, Needs clarification, Parked
-— one slice per real pipeline-state label plus Done, so every focus-milestone
-issue maps to exactly one slice and none can silently vanish from the total
-(#265), the focus ready-for-work
-queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and sorted
-first — #250), the "Your move" counts, PRs, intake, pending-approval,
-needs-clarification, a read-only **"⏸️ Parked"** section listing open `parked`
-issues (#249), other-milestone progress bars, the open-issues bar chart,
+marker (first line — the shared focus source of truth), the focus-milestone pie
+(green done / yellow ready-for-work / red remaining), the focus ready-for-work
+queue (blockers flagged), the "Your move" counts, PRs, intake, pending-approval,
+needs-clarification, other-milestone progress bars, the open-issues bar chart,
 and the command reference. Issue **titles** are used as the summary text
 (deterministic — no model), which is the tradeoff for a fully-scripted body.
 
-`#193` itself and any `parked` issue are excluded from every *active work*
-queue and count (ready-for-work queue, "Your move", intake, pending-approval,
-needs-clarification, reconcile); parked issues appear in the read-only
-"⏸️ Parked" listing and, if milestone-tagged, in the focus pie's own "Parked"
-slice (#265) — the "Other milestones" roll-up still excludes them entirely,
-unchanged. **Closed milestones** (100% done) are omitted from the "Other
-milestones" section and the open-issues chart — that section shows only live
-milestones outside the focus.
+`#193` itself and any `parked` issue are excluded from every queue.
 
 ## Manual / preview use
 
@@ -73,10 +56,9 @@ milestones outside the focus.
 ## Tests
 
 `tests/test_render.py` checks structural invariants (pie values and colors,
-focus marker, section headers, exclusions), the cap marker/display and the
-`_read_cap_marker` / `_resolve_cap` precedence (override → marker → default,
-issue #240), and a **golden snapshot** (`tests/expected_dashboard.md`)
-rendered from `tests/fixture_state.json`, so any format drift fails CI. Run:
+focus marker, section headers, exclusions) and a **golden snapshot**
+(`tests/expected_dashboard.md`) rendered from `tests/fixture_state.json`, so any
+format drift fails CI. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-dashboard/tests

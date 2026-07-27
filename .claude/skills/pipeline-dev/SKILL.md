@@ -3,30 +3,26 @@ name: pipeline-dev
 description: >
   Nightly serial builder for the Doggiehood issue pipeline. Selects the
   eligible ready-for-work issues in the focus milestone, builds each with the
-  doggiehood-dev agent (strict TDD) on its own branch, and opens one PR per
-  issue. Never merges, never closes. Use in the nightly development routine,
-  after the gatekeeper has run.
+  doggiehood-dev agent (strict TDD) onto one shared branch, and opens a single
+  combined PR. Never merges, never closes. Use in the nightly development
+  routine, after the gatekeeper has run.
 ---
 
 # Pipeline dev — nightly serial builder
 
 Wraps the existing `doggiehood-dev` agent with queue selection, a serial build
-loop, and per-issue PR assembly. Runs in the **nightly** routine (1 AM CT),
+loop, and combined-PR assembly. Runs in the **nightly** routine (1 AM CT),
 after the gatekeeper. See `docs/engineering/issue-pipeline.md`.
 
 ## Non-negotiables
 
-1. **Never merges, never closes.** This skill opens one PR per built issue and
-   stops. Derek reviews and merges; PR-babysitting keeps each green.
+1. **Never merges, never closes.** This skill opens exactly one PR and stops.
+   Derek reviews and merges; PR-babysitting keeps it green.
 2. **Strict TDD per issue** — every issue is built by the `doggiehood-dev`
    agent, which enforces red-green-refactor. Do not bypass it.
-3. **One issue → one branch → one PR.** Each issue is built on its own branch
-   off `main` and opened as its own PR, so its squash-merge lands as exactly
-   one Conventional Commit and release-please emits one clean changelog entry.
-   If an issue fails to build cleanly, drop it entirely (delete its branch, no
-   PR) and continue to the next.
-4. **Respect the focus milestone and the nightly cap** (read from the #193
-   marker, default 3 — see below).
+3. **Keep the branch green.** If an issue fails to build cleanly, drop its
+   commits so the shared branch stays buildable, and continue to the next.
+4. **Respect the focus milestone and the nightly cap** (3 to start).
 
 ## Focus milestone
 
@@ -35,19 +31,9 @@ the dashboard issue (#193), written by the gatekeeper on `/focus`. If the
 marker is absent, default to the lowest-numbered milestone that has open
 `ready-for-work` issues.
 
-## Nightly build cap
-
-The nightly build cap is read from the `<!-- pipeline-cap: N -->` marker on
-the dashboard issue (#193), written by the gatekeeper on `/cap <n>` (issue
-#240). If the marker is absent, default to **3** — the same default
-`select_queue.py` itself falls back to (`cap = data.get("cap", 3)`), so an
-unset marker and an unset `cap` input agree. `/cap` is honored **only** on the
-dashboard issue.
-
 ## Procedure
 
-1. **Read focus and cap** from the #193 marker (or their documented defaults
-   above).
+1. **Read focus** from the #193 marker (or default as above).
 
 2. **Gather the snapshot** with the GitHub MCP tools: every open issue that has
    `ready-for-work`, with its `labels`, `milestone`, `is_epic`, whether it has
@@ -57,8 +43,7 @@ dashboard issue.
    sub-issues or soft prerequisites). Also collect `open_issue_numbers` (all
    currently-open issue numbers) so blockers can be resolved.
 
-3. **Select the queue** deterministically, passing the cap read in step 1 as
-   the `cap` input:
+3. **Select the queue** deterministically:
 
    ```bash
    python3 .claude/skills/pipeline-dev/select_queue.py < snapshot.json
@@ -68,58 +53,44 @@ dashboard issue.
    (truncated to the cap), `capped_out`, and `skipped` (with reasons). Build
    only `selected`, in order.
 
-4. **Serial per-issue build loop** — for each issue in `selected`, in order:
-   - **Create a fresh branch** for that one issue off the latest `main`
-     (e.g. `pipeline/issue-NN-YYYYMMDD`). One issue per branch — never batch
-     several issues onto a shared branch.
-   - Run the `doggiehood-dev` agent on that single issue, committing onto its
-     branch with a Conventional Commit message. Mark the issue `in-progress`.
+4. **Create one shared branch** off the latest `main`
+   (e.g. `pipeline/nightly-YYYYMMDD`).
+
+5. **Serial build loop** — for each issue in `selected`, in order:
+   - Run the `doggiehood-dev` agent on that single issue, committing onto the
+     shared branch with a Conventional Commit message that references the issue
+     (`Refs #NN`). Mark the issue `in-progress`.
    - If the agent cannot make it pass (tests red, blocked, or it flags a
-     docs/spec gap): **drop the issue entirely** — delete its branch and open
-     no PR — remove any `in-progress` it added back to `ready-for-work`, and
-     record the reason. Continue to the next issue.
+     docs/spec gap): **drop that issue's commits** (`git reset --hard` back to
+     the last good commit) so the branch stays green, remove any `in-progress`
+     it added back to `ready-for-work`, and record the reason. Continue.
 
-5. **Open one PR for that issue** (never merge), before moving to the next:
-   - **Title** = that issue's single Conventional line, e.g.
-     `feat: give approach-to-rest real walk-to-decoration movement`. Because
-     the PR resolves exactly one issue, its squash-merge lands as one
-     Conventional Commit and release-please emits one clean changelog entry —
-     no raw-lines-in-body trick is needed or allowed. See
-     `docs/engineering/versioning.md`.
+6. **Open one combined PR** (never merge):
+   - **Title** = the lead (first built) issue's Conventional line, e.g.
+     `feat: give approach-to-rest real walk-to-decoration movement`.
    - **Body** starts with the required `## Deviations and Decisions` section
-     (per `docs/engineering/agent-workflow.md`), followed by a `Closes #NN`
-     line so merging auto-closes the issue. Example body:
+     (per `docs/engineering/agent-workflow.md`), then a list of **raw**
+     Conventional-commit lines — one per built issue, no leading `*` or `-` —
+     so release-please emits one changelog entry per issue on squash-merge.
+     See `docs/engineering/versioning.md`. Example body block:
 
      ```
-     ## Deviations and Decisions
-
-     Deviations: None.
-     Decisions: None.
-
-     Closes #185
+     feat: add decline action to the conversation panel (#185)
+     fix: make the lost-dog sphere reachable (#181)
      ```
 
-   - **If the PR touches no `docs/**` page, apply the `skip-docs` label
-     immediately after `create_pull_request` — before any other post-open work
-     (babysitting, comments, moving to the next issue).** The label can't be set
-     atomically at creation, so the `docs-test` gate absorbs the brief
-     `opened`→`labeled` gap with a live-label grace poll ([#254](https://github.com/derekwinters/lucas-doggiehood/issues/254));
-     labeling first keeps that window as small as possible. A PR that *does*
-     reconcile docs needs no label — the gate passes on the docs change.
+   - List any dropped issues and why, and any `capped_out` issues deferred to
+     the next night. **Log the cap explicitly** so a truncated queue never
+     reads as "everything was built."
 
-6. **After the loop, report the run**: list any dropped issues and why, and any
-   `capped_out` issues deferred to the next night. **Log the cap explicitly** so
-   a truncated queue never reads as "everything was built."
-
-7. **Babysit** each opened PR to keep CI green (the standard PR-activity flow);
-   do not merge or close.
+7. **Babysit** the PR to keep CI green (the standard PR-activity flow); do not
+   merge or close.
 
 ## Coordination
 
-- `/focus` and `/cap` storage is shared with `pipeline-gatekeeper` (both live
-  on the #193 marker).
-- The nightly cap defaults to **3**; Derek changes it with `/cap <n>` on the
-  dashboard issue rather than editing this skill.
+- `/focus` storage is shared with `pipeline-gatekeeper` (the #193 marker).
+- The nightly cap starts at **3**; change it in one place — the `cap` passed to
+  `select_queue.py` in this procedure.
 
 ## Tests
 

@@ -1,21 +1,12 @@
 {
   "repo": "derekwinters/lucas-doggiehood",
   "as_of": "2026-07-17 07:00 CT",
-  "cap": 5,
   "focus": {
     "milestone": "03 - Dogs & Conversations",
     "done": 18,
-    "ready": 3,
-    "in_progress": 1,
-    "needs_triage": 0,
-    "pending_approval": 0,
-    "needs_clarification": 0,
-    "parked": 1,
-    "queue": [
-      {"number": 109, "title": "Tile grid foundation", "blocked": false, "unblocks": [57, 58, 178]},
-      {"number": 210, "title": "Standalone bark sound polish", "blocked": false, "unblocks": []},
-      {"number": 205, "title": "Quest reward wiring", "blocked": true, "unblocks": []}
-    ]
+    "ready": 0,
+    "remaining": 5,
+    "queue": []
   },
   "your_move": {
     "prs": 0,
@@ -31,22 +22,18 @@
     ]
   },
   "intake": [
-    {"number": 180, "title": "Dogs playing in yard", "blocked_by": []},
-    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)", "blocked_by": [180]}
+    {"number": 180, "title": "Dogs playing in yard"},
+    {"number": 192, "title": "Rework milestones into version-numbered scopes (pre-v1 functionality/polish cycles)"}
   ],
   "pending_approval": [
-    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel", "blocked_by": []},
-    {"number": 181, "title": "Lost Dog", "blocked_by": [186]},
-    {"number": 163, "title": "Make EditMode tests required", "blocked_by": []}
+    {"number": 186, "title": "Buy-something quest: no way to actually buy the item from the conversation panel"},
+    {"number": 181, "title": "Lost Dog"},
+    {"number": 163, "title": "Make EditMode tests required"}
   ],
   "needs_clarification": [
-    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request", "blocked_by": [186]}
-  ],
-  "parked": [
-    {"number": 172, "title": "Seasonal weather effects"}
+    {"number": 185, "title": "Conversation panel has no way to decline/say no to a quest request"}
   ],
   "other_milestones": [
-    {"title": "00 - Concepts & Core Mechanics", "done": 12, "open": 0, "post_mvp": false, "closed": true},
     {"title": "04 - Quests & Economy", "done": 18, "open": 3, "post_mvp": false},
     {"title": "05 - Decorations & Happiness", "done": 8, "open": 1, "post_mvp": false},
     {"title": "07 - Polish & Onboarding", "done": 3, "open": 11, "post_mvp": false},
@@ -56,18 +43,5 @@
     "labels": ["m03", "m04", "m05", "m06", "m07"],
     "values": [5, 3, 1, 9, 11],
     "ymax": 12
-  },
-  "reconcile": {
-    "flag_done": [
-      {"number": 56, "title": "Pity counter for gacha pulls"},
-      {"number": 189, "title": "Opener/closer conversation lines"}
-    ],
-    "orphaned_ready": [
-      {"number": 250, "title": "Ready-for-work issue with no milestone set"}
-    ],
-    "prose_dep": [
-      {"number": 178, "title": "Depends on the tile grid in prose", "refs": [109]}
-    ],
-    "auto_fixed": {"strip_labels": 2, "requeue": 1}
   }
 }

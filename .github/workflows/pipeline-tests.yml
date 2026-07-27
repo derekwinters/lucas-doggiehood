@@ -32,7 +32,7 @@ jobs:
       - name: Run pipeline skill unit tests
         run: |
           set -e
-          for suite in pipeline-gatekeeper pipeline-dev pipeline-dashboard pipeline-reconcile pipeline-analysis; do
+          for suite in pipeline-gatekeeper pipeline-dev pipeline-dashboard; do
             echo "== $suite =="
             python3 -m unittest discover -s ".claude/skills/$suite/tests"
           done
