@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -9,6 +10,10 @@ namespace Doggiehood.Unity.EditModeTests
 {
     public class QuestDirectorTests
     {
+        /// <summary>An axis-aligned bounding box has 8 corners; used by
+        /// ProjectedScreenBounds (#311).</summary>
+        private const int BoundsCornerCount = 8;
+
         private GameObject worldRoot;
         private GameState state;
         private QuestDirector director;
@@ -127,8 +132,18 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // #12/#31/#157: end-to-end lost-item path — accepting spawns a
             // visible, physically hittable item at the Core-chosen position;
-            // a camera raycast tap on it routes to Core and completes the
-            // quest (guards the collider wiring the way #148 did for dogs).
+            // a camera raycast tap dead-center on it routes to Core and
+            // completes the quest (guards the collider wiring the way #148
+            // did for dogs).
+            //
+            // #311: this test deliberately isolates the item and uses an
+            // artificial close-up camera so it *only* exercises "does a
+            // pixel-exact tap on the collider still work" — it must NOT be
+            // read as coverage for real taps in the real scene (ground
+            // Plane present, 45-degree rig, imprecise finger touch); that
+            // was exactly the false confidence #311 diagnosed. See
+            // AcceptingALostItemQuest_TapNearButNotOnTheBall_CompletesTheQuest_InTheRealScene
+            // below for that coverage.
             var dog = state.Dogs[0];
             var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(9));
             Assert.That(state.Quests.Accept(quest), Is.True);
@@ -137,7 +152,8 @@ namespace Doggiehood.Unity.EditModeTests
 
             var view = Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None).Single();
 
-            // Isolate the item so no ground/house/fence intercepts the ray.
+            // Isolate the item so no ground/house/fence intercepts the ray —
+            // intentional here, unlike the real-scene test below.
             view.transform.position = new Vector3(500f, 0.3f, 500f);
 
             var camGo = new GameObject("tap-cam", typeof(Camera));
@@ -171,6 +187,111 @@ namespace Doggiehood.Unity.EditModeTests
                 Object.DestroyImmediate(texture);
                 Object.DestroyImmediate(camGo);
             }
+        }
+
+        [Test]
+        public void AcceptingALostItemQuest_TapNearButNotOnTheBall_CompletesTheQuest_InTheRealScene()
+        {
+            // #311: the item is left exactly where Core placed it — inside
+            // the full-map ground Plane (WorldBuilder.BuildGround,
+            // GroundExtent 30, comfortably covering the item's
+            // QuestManager.HiddenItemExtent 25 spawn square) and clear of
+            // house footprints (#290) — and viewed through the real rig's
+            // 45-degree pitch/DefaultZoom, unlike the isolated dead-center
+            // test above. Under that real view the ball's SphereCollider
+            // (radius 0.3) projects to only ~18px, so a tap that lands near
+            // — not exactly on — its rendered silhouette must still
+            // complete the quest via the #311 padded screen-space fallback
+            // (LostItemTapZone), not just a pixel-exact Physics.Raycast hit.
+            var dog = state.Dogs[0];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(9));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            director.OnQuestAccepted(quest);
+
+            var view = Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None).Single();
+            var target = view.transform.position;
+
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var cam = camGo.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = CameraController.DefaultZoom;
+            cam.transform.rotation = Quaternion.Euler(
+                CameraRigConfig.PitchDegrees, CameraController.DefaultYaw, 0f);
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                cam.transform.position = target - cam.transform.forward * CameraRigConfig.RigDistance;
+                Physics.SyncTransforms();
+
+                var screenBounds = ProjectedScreenBounds(cam, view.transform);
+
+                // Just beyond the ball's own rendered/collider bounds
+                // (halfway into the #311 padding margin), directly above
+                // its screen-space top edge — exactly how a real, slightly
+                // imprecise touch tap would land.
+                var probeScreen = new Vector3(
+                    (screenBounds.minX + screenBounds.maxX) / 2f,
+                    screenBounds.maxY + LostItemTapZone.PaddingPixels / 2f,
+                    0f);
+
+                var rawRaycastHitTheItem =
+                    Physics.Raycast(cam.ScreenPointToRay(probeScreen), out var rawHit, Mathf.Infinity)
+                    && rawHit.collider.GetComponentInParent<LostItemView>() == view;
+                Assert.That(rawRaycastHitTheItem, Is.False,
+                    "test setup sanity: the probe point must sit outside the ball's raw collider, " +
+                    "so this test exercises the #311 padding rather than redundantly re-testing dead center");
+
+                var before = state.Wallet.Coins;
+                var routed = TapRouter.RouteTap(cam, probeScreen);
+
+                Assert.That(routed, Is.True,
+                    "a tap just beyond the ball's rendered bounds, but within the #311 padding margin, " +
+                    "must still route to the lost item — in the real scene, ground Plane and all");
+                Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed),
+                    "tapping near (not just exactly on) the lost item completes the quest");
+                Assert.That(state.Wallet.Coins, Is.EqualTo(before + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout),
+                    "completion pays the flat quest payout");
+                Assert.That(Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None), Is.Empty,
+                    "the found item disappears once collected");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        private static (float minX, float minY, float maxX, float maxY) ProjectedScreenBounds(
+            Camera camera, Transform root)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>();
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            var minX = float.MaxValue;
+            var maxX = float.MinValue;
+            var minY = float.MaxValue;
+            var maxY = float.MinValue;
+            for (var i = 0; i < BoundsCornerCount; i++)
+            {
+                var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                    (i & 1) == 0 ? -1f : 1f,
+                    (i & 2) == 0 ? -1f : 1f,
+                    (i & 4) == 0 ? -1f : 1f));
+                var screen = camera.WorldToScreenPoint(corner);
+                minX = Mathf.Min(minX, screen.x);
+                maxX = Mathf.Max(maxX, screen.x);
+                minY = Mathf.Min(minY, screen.y);
+                maxY = Mathf.Max(maxY, screen.y);
+            }
+
+            return (minX, minY, maxX, maxY);
         }
 
         private static float PerpendicularDistanceFromLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)

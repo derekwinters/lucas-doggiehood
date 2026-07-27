@@ -230,8 +230,8 @@ def render_body(state):
     a("")
     _issue_table(a, repo, state.get("pending_approval", []), show_blocked_by=True)
     a("")
-    a("> **Your move:** `/approve` (→ ready-for-work, milestone as proposed) · "
-      "`/revise <notes>` · `/redo` · `/park`")
+    a("> **Your move:** `/approve` (→ ready-for-work; milestone already set "
+      "by analysis) · `/revise <notes>` · `/redo` · `/park`")
     a("")
     a("---")
     a("")
@@ -306,7 +306,7 @@ def render_body(state):
     a("| Command | Effect |")
     a("| - | - |")
     a("| `/admit` | Pull a raw idea into AI analysis |")
-    a("| `/approve` | Accept the analysis → ready-for-work, sets proposed milestone |")
+    a("| `/approve` | Accept the analysis → ready-for-work (milestone already set by analysis) |")
     a("| `/revise <notes>` | Send back to analysis with your feedback |")
     a("| `/redo` | Discard the analysis and start it over |")
     a("| `/propose` | Authorize AI to draft the missing design/wireframe as a proposal |")

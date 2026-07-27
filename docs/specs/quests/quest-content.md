@@ -14,6 +14,8 @@ A dog's conversation reveals it has lost something — a toy, or its own puppy �
 
 The hidden item's position is generated in Core and kept clear of every house footprint: candidates within a named house-clearance buffer (`QuestManager.HouseClearanceBuffer`) of any house are rejected and re-rolled, so the item always sits in open, tappable ground rather than behind a house where the geometry occludes the tap. The buffer clears the full lost-item tap radius with margin, and placement stays deterministic per quest/seed. This mirrors the collision-aware footprint check yard landscaping already uses (see [World](../world/world.md) § Yard landscaping). ([#290](https://github.com/derekwinters/lucas-doggiehood/issues/290))
 
+Tapping is forgiving on two levels, mirroring how the dog speech bubble already handles imprecise touch input: the game-logic tolerance (`QuestManager.LostItemTapRadius`) accepts any tap within 1.5m of the hidden item, and the item also offers a padded screen-space tap zone so that tolerance genuinely applies to real taps — a mouse cursor is pixel-precise, a finger touch is not, and the item's small on-screen footprint under the fixed camera pitch would otherwise leave a raw hit-test with no forgiveness at all. ([#311](https://github.com/derekwinters/lucas-doggiehood/issues/311))
+
 ### 2. Buy something
 
 *[#13](https://github.com/derekwinters/lucas-doggiehood/issues/13)*

@@ -1,0 +1,44 @@
+name: gatekeeper-comment
+
+# Per-issue, comment-triggered gatekeeper (issue #319, Part B). Fires the
+# instant Derek comments a `/command` on an issue, instead of waiting for the
+# next scheduled AI routine. Deterministic — no LLM — same shape as
+# dashboard.yml: GITHUB_TOKEN only, never a PAT. Using GITHUB_TOKEN is what
+# keeps this workflow's own acknowledgment comment from ever looping back in
+# (events authored by the default token do not start new workflow runs), on
+# top of the in-script owner-gate below. See docs/engineering/issue-pipeline.md.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+
+concurrency:
+  group: gatekeeper-comment-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    # Workflow-level gate (belt): only the repo owner's comments on an ISSUE
+    # (not a pull request — issue_comment fires for PRs too) from a non-bot
+    # author reach the job at all. run_comment_event.py re-checks the owner
+    # (suspenders) and skips PR/bot comments itself as defense-in-depth, so
+    # neither gate is the sole line of defense.
+    if: >-
+      github.event.comment.user.login == 'derekwinters' &&
+      github.event.issue.pull_request == null &&
+      github.event.comment.user.type != 'Bot'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Process the comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .claude/skills/pipeline-gatekeeper/run_comment_event.py

@@ -32,7 +32,6 @@ def base_issue(**kw):
         "is_epic": False,
         "is_dashboard": False,
         "milestone": None,
-        "proposed_milestone": None,
         "comments": [],
     }
     issue.update(kw)
@@ -64,7 +63,7 @@ class TestParseCommands(unittest.TestCase):
     def test_approve_by_owner(self):
         out = run(payload([
             base_issue(number=181, labels=["pending-approval"],
-                       proposed_milestone="07 - Polish & Onboarding",
+                       milestone="07 - Polish & Onboarding",
                        comments=[comment("looks good /approve", cid=7)]),
         ]))
         acts = self.actions_for(181, out)
@@ -73,9 +72,11 @@ class TestParseCommands(unittest.TestCase):
         self.assertIn("approve", a["commands"])
         self.assertIn("ready-for-work", a["add_labels"])
         self.assertIn("pending-approval", a["remove_labels"])
-        # ready-for-work ⇒ has milestone (#247): the resolved milestone rides
-        # along on the action so the move is never milestone-less.
-        self.assertEqual(a["set_milestone"], "07 - Polish & Onboarding")
+        # Part A (#319): /approve is now a presence-check + label flip only —
+        # the milestone is already set (by analysis, at pending-approval), so
+        # approve does NOT re-set it; set_milestone stays null on a bare
+        # /approve.
+        self.assertIsNone(a["set_milestone"])
         self.assertEqual(a["react"], 7)
 
     def test_non_owner_is_noop(self):
@@ -133,14 +134,27 @@ class TestParseCommands(unittest.TestCase):
         a = self.actions_for(181, out)[0]
         self.assertEqual(a["set_milestone"], "04 - Quests & Economy")
 
-    def test_approve_with_inline_milestone(self):
+    def test_approve_no_longer_resolves_inline_milestone(self):
+        # Part A (#319): the /approve gate now checks ONLY the issue's
+        # already-set milestone field — an inline /milestone in the SAME
+        # comment is a separate command and no longer feeds the gate (no more
+        # resolution / comment-scraping). On a milestone-less issue, /approve
+        # is refused even though /milestone is right there in the same
+        # comment; /milestone still fires as its own independent command.
         out = run(payload([
             base_issue(number=181, labels=["pending-approval"],
                        comments=[comment("/approve\n/milestone 07", cid=8)]),
         ]))
-        a = self.actions_for(181, out)[0]
-        self.assertIn("ready-for-work", a["add_labels"])
+        acts = self.actions_for(181, out)
+        self.assertEqual(len(acts), 1)
+        a = acts[0]
+        self.assertEqual(a["commands"], ["milestone"])
         self.assertEqual(a["set_milestone"], "07 - Polish & Onboarding")
+        self.assertEqual(a["add_labels"], [])
+        self.assertEqual(a["remove_labels"], [])
+        reasons = {s.get("reason") for s in out["skipped"]
+                   if s.get("comment_id") == 8}
+        self.assertIn("approve-no-milestone", reasons)
 
     def test_focus_sets_focus_not_labels(self):
         out = run(payload([
@@ -267,8 +281,9 @@ class TestParseCommands(unittest.TestCase):
         self.assertEqual(refusal[0].get("menu"), "which-milestone")
 
     def test_approve_uses_issue_current_milestone(self):
-        # #247: an issue that already carries a milestone approves cleanly, and
-        # the resolved milestone rides along on the action.
+        # #247: an issue that already carries a milestone approves cleanly.
+        # Part A (#319): approve no longer re-sets it — set_milestone stays
+        # null since the field is already correct.
         out = run(payload([
             base_issue(number=181, labels=["pending-approval"],
                        milestone="04 - Quests & Economy",
@@ -276,38 +291,27 @@ class TestParseCommands(unittest.TestCase):
         ]))
         a = self.actions_for(181, out)[0]
         self.assertIn("ready-for-work", a["add_labels"])
-        self.assertEqual(a["set_milestone"], "04 - Quests & Economy")
+        self.assertIsNone(a["set_milestone"])
 
-    def test_approve_uses_proposed_milestone(self):
-        # #247: the analysis-proposed milestone resolves the gate when nothing
-        # else is present.
-        out = run(payload([
+    def test_milestone_then_approve_in_separate_comments_now_required(self):
+        # Part A (#319): since /approve's gate no longer resolves an inline
+        # /milestone in the same comment, setting the milestone and approving
+        # must now happen as two separate actions/comments — this is the new
+        # expected flow. A /milestone command run first (its own action)...
+        out_milestone = run(payload([
             base_issue(number=181, labels=["pending-approval"],
-                       proposed_milestone="03 - Dogs & Conversations",
-                       comments=[comment("/approve", cid=8)]),
+                       comments=[comment("/milestone 07", cid=8)]),
         ]))
-        a = self.actions_for(181, out)[0]
-        self.assertIn("ready-for-work", a["add_labels"])
-        self.assertEqual(a["set_milestone"], "03 - Dogs & Conversations")
-
-    def test_approve_inline_milestone_overrides_proposed(self):
-        # An inline /milestone wins over the proposed one, and order does not
-        # matter: /milestone before /approve resolves identically.
-        out_a = run(payload([
-            base_issue(number=181, labels=["pending-approval"],
-                       proposed_milestone="03 - Dogs & Conversations",
-                       comments=[comment("/approve\n/milestone 07", cid=8)]),
-        ]))
-        out_b = run(payload([
-            base_issue(number=181, labels=["pending-approval"],
-                       proposed_milestone="03 - Dogs & Conversations",
-                       comments=[comment("/milestone 07\n/approve", cid=8)]),
-        ]))
-        a = self.actions_for(181, out_a)[0]
-        b = self.actions_for(181, out_b)[0]
+        a = self.actions_for(181, out_milestone)[0]
         self.assertEqual(a["set_milestone"], "07 - Polish & Onboarding")
-        self.assertEqual(b["set_milestone"], "07 - Polish & Onboarding")
-        self.assertIn("ready-for-work", a["add_labels"])
+        # ...then, once the field is actually set (a fresh snapshot), a later
+        # /approve comment resolves cleanly.
+        out_approve = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="07 - Polish & Onboarding",
+                       comments=[comment("/approve", cid=9)]),
+        ]))
+        b = self.actions_for(181, out_approve)[0]
         self.assertIn("ready-for-work", b["add_labels"])
 
     def test_cap_sets_cap_on_dashboard(self):

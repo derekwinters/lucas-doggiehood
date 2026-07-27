@@ -83,7 +83,20 @@ def _is_done(number, body_refs, deliverables):
     return bool(deliverables.get(number, deliverables.get(str(number), False)))
 
 
-def process(data):
+def process(data, events_only=False):
+    """Classify drift from ``data`` into auto-fixes and flags.
+
+    ``events_only`` (issue #319) gates the ``requeue`` auto-fix to the cron
+    backstop ONLY — pass ``True`` from the event-triggered sweep
+    (``issues: [closed, labeled]`` / ``pull_request: [closed]``) and it is
+    omitted entirely; ``strip_labels`` and every ``flag_*`` are unaffected in
+    either mode. This exists because ``pull_request: [closed]`` fires before
+    GitHub finishes auto-closing a ``Closes #N`` issue and before the merge is
+    reliably visible on ``main`` — in that instant a just-merged `in-progress`
+    issue can transiently look like a stalled one, and requeuing it right then
+    would re-arm the #109 re-pick loop. A genuine stall has no triggering
+    event anyway, so nothing is lost by leaving it for cron.
+    """
     body_refs = set(data.get("merged_commit_body_refs", []))
     deliverables = data.get("deliverables_present", {}) or {}
 
@@ -119,9 +132,12 @@ def process(data):
             # The classification split — a done issue is NEVER requeued, which
             # is what stops the #109 re-pick loop.
             flag_done.append({"number": number, "reason": FLAG_DONE_REASON})
-        elif "in-progress" in labels and not issue.get("has_open_pr"):
+        elif ("in-progress" in labels and not issue.get("has_open_pr")
+              and not events_only):
             # Stalled: picked up by a nightly build that dropped its commits,
             # no open PR, not on main -> return to the queue so it retries.
+            # Cron-only (events_only=False) — see the events_only docstring
+            # above for the auto-close race this avoids.
             requeue.append({"number": number, "from": "in-progress",
                             "to": "ready-for-work"})
 
@@ -302,6 +318,7 @@ def fetch_state(repo, token):
 
 
 def main(argv):
+    events_only = "--events-only" in argv
     if "--live" in argv:
         # Fetch live GitHub state, then classify.
         repo = os.environ.get("RECONCILE_REPO", REPO_DEFAULT)
@@ -313,7 +330,7 @@ def main(argv):
     else:
         # Default: state JSON on stdin (tests, local preview, gatekeeper pipe).
         data = json.load(sys.stdin)
-    json.dump(process(data), sys.stdout, indent=2)
+    json.dump(process(data, events_only=events_only), sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
 

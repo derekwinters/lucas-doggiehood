@@ -110,6 +110,64 @@ class TestStalledInProgress(unittest.TestCase):
         self.assertEqual(out["requeue"], [])
 
 
+class TestEventsOnlyMode(unittest.TestCase):
+    """`process(data, events_only=...)` (issue #319): the event-triggered sweep
+    workflow (`issues: [closed, labeled]` / `pull_request: [closed]`) must NOT
+    emit `requeue` — only the cron backstop does. Running `requeue` on an event
+    can race GitHub's own `Closes #N` auto-close: right at merge, a just-merged
+    `in-progress` issue can transiently look like a stalled `in-progress` (PR no
+    longer open, `main` not yet showing the merge), and requeuing it there would
+    re-arm the #109 re-pick loop. `strip_labels` and `flag_done` are unaffected
+    in either mode — they can't fire early (strip only ever touches an
+    already-closed issue) or aren't a write at all (flag is read-only).
+    """
+
+    def test_events_only_omits_requeue(self):
+        out = reconcile.process(
+            payload([issue(109, labels=["in-progress"])]), events_only=True)
+        self.assertEqual(out["requeue"], [])
+
+    def test_cron_mode_still_requeues(self):
+        out = reconcile.process(
+            payload([issue(109, labels=["in-progress"])]), events_only=False)
+        self.assertEqual(numbers(out["requeue"]), [109])
+
+    def test_default_mode_is_cron_shaped(self):
+        # No events_only argument at all -> full behavior (existing callers,
+        # e.g. the cron path and every other test in this file, are unaffected).
+        out = reconcile.process(payload([issue(109, labels=["in-progress"])]))
+        self.assertEqual(numbers(out["requeue"]), [109])
+
+    def test_events_only_keeps_strip_labels_and_flag_done(self):
+        out = reconcile.process(payload(
+            [issue(211, state="closed", labels=["in-progress"]),
+             issue(56, labels=["in-progress"])],
+            merged_commit_body_refs=[56],
+        ), events_only=True)
+        self.assertEqual(numbers(out["strip_labels"]), [211])
+        self.assertEqual(numbers(out["flag_done"]), [56])
+
+    def test_cli_events_only_flag_omits_requeue(self):
+        # The sweep workflow's event path invokes the CLI with --events-only
+        # (see gatekeeper-sweep.yml); the cron path omits the flag.
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, "--events-only"],
+            input=json.dumps(payload([issue(109, labels=["in-progress"])])),
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(proc.stdout)["requeue"], [])
+
+    def test_cli_without_flag_still_requeues(self):
+        proc = subprocess.run(
+            [sys.executable, SCRIPT],
+            input=json.dumps(payload([issue(109, labels=["in-progress"])])),
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(numbers(json.loads(proc.stdout)["requeue"]), [109])
+
+
 class TestMergedButOpen(unittest.TestCase):
     def test_merged_but_open_via_commit_body_flags(self):
         # #56 landed on main (its number is in a merged commit body) but is
