@@ -248,10 +248,38 @@ gatekeeper.)
 
 ## Stage behavior
 
-### Analysis (`pipeline-analysis`)
+### Analysis (`pipeline-analysis` → discovery script → dispatcher → single-issue skill)
 
-Digs into every `ai-triage` issue in parallel and routes it to await Derek —
-**never inventing design**. **Analysis owns milestone assignment**
+The analysis stage is a **three-way split** ([#320](https://github.com/derekwinters/lucas-doggiehood/issues/320)),
+so single-issue triage is a reusable unit instead of being welded to "run a
+big round":
+
+1. **`select_triage.py`** — a deterministic, unit-tested discovery script
+   (pure `process(data)` + stdin/stdout `main()`, no GitHub I/O, mirroring
+   `select_queue.py` / `reconcile.py`). Eligible = **open** and labeled
+   `ai-triage` and **not** `type:epic`, the dashboard issue (#193), or
+   `parked`. Its output carries the eligible issue numbers plus each one's
+   context — current **milestone** and the latest owner
+   `/revise`/`/redo`/`/propose` note.
+2. **`pipeline-analysis`** (the **dispatcher**) — runs `select_triage.py`,
+   then invokes `triage-issue` once per eligible issue with bounded
+   concurrency (a model-orchestration concern, not hard-coded in the script).
+   This is the "big AM round," now a thin loop over the reusable unit.
+3. **`triage-issue`** — the **single-issue triage flow**. Digs into exactly
+   one `ai-triage` issue and routes it to await Derek — **never inventing
+   design**. It reads other issues **read-only** for context (e.g. checking a
+   candidate blocker's state) but only ever writes to the one issue it was
+   invoked for, and it **never** sets `ready-for-work` (gatekeeper-only, on
+   Derek's `/approve`). It is runnable **standalone on a single issue
+   number** for a quick one-off triage (e.g. right after an `/admit`, or to
+   re-triage one issue after a `/revise`) without a full round — see
+   `triage-issue/SKILL.md` → "Invocation". This also **composes with
+   [#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)**: the
+   event-driven gatekeeper could trigger `triage-issue` on the single issue
+   that just gained `ai-triage`, making triage per-issue and near-instant too
+   — a forward-looking composition, not something #320 wires up.
+
+`triage-issue` **owns milestone assignment**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)): every
 route that lands on `pending-approval` also **sets the issue's milestone
 field** (matching **live milestone descriptions**), not just a proposal in
@@ -456,8 +484,14 @@ Each stage is a self-contained skill directory under `.claude/skills/`:
   computation, #319) + tests for all four, plus the (untested, pure I/O glue)
   `run_comment_event.py` / `run_sweep.py` / `_github_api.py` that the two
   workflows below actually invoke.
-- `pipeline-analysis/` — `SKILL.md` (model-driven triage/design; now also sets
-  the milestone field at `pending-approval` — #319).
+- `pipeline-analysis/` — `SKILL.md` (the **dispatcher**, #320: runs
+  `select_triage.py` then invokes `triage-issue` per issue) +
+  `select_triage.py` (deterministic triage-eligibility discovery, mirroring
+  `select_queue.py`/`reconcile.py`'s pure `process(data)` shape) + tests.
+- `triage-issue/` — `SKILL.md` (the **single-issue triage flow**, #320:
+  model-driven routing/design; sets the milestone field at
+  `pending-approval` — #319). Reads other issues read-only for context, never
+  sets `ready-for-work`, and is runnable standalone on one issue number.
 - `pipeline-dashboard/` — `SKILL.md` + `render_dashboard.py` + golden test;
   driven in production by `.github/workflows/dashboard.yml`.
 - `pipeline-dev/` — `SKILL.md` + `select_queue.py` (eligibility + topological
