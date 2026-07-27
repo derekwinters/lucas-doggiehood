@@ -16,6 +16,53 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
+        public void FirstLaunchSeeding_TargetsTheSingleSeededLostItemDog()
+        {
+            // #312: the initial seam seeds exactly one lost-item quest, so the
+            // sequence's TargetDog resolves to that dog and step 4 is the
+            // gentle tap-to-find on the one and only quest.
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+
+            var onboarding = new OnboardingSequence(state);
+
+            var seededDog = state.Dogs.Single(d => d.HasActiveQuest);
+            Assert.That(onboarding.TargetDog, Is.SameAs(seededDog));
+            var quest = state.Quests.ActiveQuests.Single();
+            Assert.That(quest.DogName, Is.EqualTo(onboarding.TargetDog.Name));
+            Assert.That(quest.Type, Is.EqualTo(QuestType.LostItem));
+        }
+
+        [Test]
+        public void CompletingOnboarding_BeginsTheFirstNormalRotation_ExactlyOnce()
+        {
+            // #312: onboarding-time suppression ends when onboarding completes
+            // — the Done transition begins the first normal 2-4 rotation once,
+            // handing off to #310's recurrence. Re-signalling never re-runs it.
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+            onboarding.NotifyConversationOpened(onboarding.TargetDog);
+
+            var quest = state.Quests.ActiveQuests.First(q => q.DogName == onboarding.TargetDog.Name);
+            state.Quests.Accept(quest);
+            state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value);
+            onboarding.NotifyQuestCompleted(quest);
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+            var afterCompletion = state.Quests.ActiveQuests.Count();
+            Assert.That(afterCompletion, Is.InRange(2, 4),
+                "completing onboarding begins the first normal 2-4 rotation");
+
+            // Idempotent: signalling completion again must not start a second rotation.
+            onboarding.NotifyQuestCompleted(quest);
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(afterCompletion),
+                "the first rotation begins exactly once");
+        }
+
+        [Test]
         public void FirstLaunchFlag_PersistsAcrossSaveLoad_AndPreventsReruns()
         {
             // #44: onboarding runs once, ever.

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Quests;
@@ -24,13 +25,24 @@ namespace Doggiehood.Core.Onboarding
     public sealed class OnboardingSequence
     {
         private readonly GameState state;
+        private readonly Random rng;
 
         public Dog TargetDog { get; }
         public OnboardingStep CurrentStep { get; private set; }
 
         public OnboardingSequence(GameState state)
+            : this(state, new Random())
+        {
+        }
+
+        /// <summary>#312: the onboarding-completion handoff kicks off the first
+        /// normal daily rotation (<see cref="QuestManager.StartNewDay"/>), so
+        /// the RNG is injectable for deterministic tests — matching
+        /// <see cref="QuestManager"/>'s pattern.</summary>
+        public OnboardingSequence(GameState state, Random rng)
         {
             this.state = state;
+            this.rng = rng;
             TargetDog = state.Dogs.FirstOrDefault(d => d.HasActiveQuest);
             CurrentStep = OnboardingStep.Pan;
         }
@@ -72,8 +84,7 @@ namespace Doggiehood.Core.Onboarding
                 && TargetDog != null
                 && !TargetDog.HasActiveQuest)
             {
-                CurrentStep = OnboardingStep.Done;
-                state.MarkOnboardingComplete();
+                Complete();
             }
         }
 
@@ -83,9 +94,21 @@ namespace Doggiehood.Core.Onboarding
                 && quest.DogName == TargetDog.Name
                 && quest.Status == QuestStatus.Completed)
             {
-                CurrentStep = OnboardingStep.Done;
-                state.MarkOnboardingComplete();
+                Complete();
             }
+        }
+
+        /// <summary>The one Done transition: marks onboarding complete and,
+        /// per #312, hands off to the normal daily rotation by kicking off the
+        /// first <see cref="QuestManager.StartNewDay"/> — the onboarding-time
+        /// single-lost-item suppression no longer applies. Guarded by the
+        /// callers' <see cref="OnboardingStep.CompleteQuest"/> check so it runs
+        /// exactly once; #310 owns recurrence beyond this first rotation.</summary>
+        private void Complete()
+        {
+            CurrentStep = OnboardingStep.Done;
+            state.MarkOnboardingComplete();
+            state.Quests.StartNewDay(rng);
         }
     }
 }

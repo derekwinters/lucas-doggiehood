@@ -7,6 +7,7 @@
 The overall goal is helping dogs around the neighborhood by completing their requests, combined with a daily rotation of active quests. ([#23](https://github.com/derekwinters/lucas-doggiehood/issues/23))
 
 - **Pacing**: each day, a small number of dogs (2-4) have new requests available, mixing quest types. Keeps sessions short and gives a reason to return daily. ([#26](https://github.com/derekwinters/lucas-doggiehood/issues/26))
+    - **First launch is the exception**: the daily 2-4 rotation is suppressed during [onboarding](../onboarding.md#first-launch-quest-seeding-312) — the world seeds exactly one easy lost-item quest so the tutorial has a single gentle target. The first normal rotation begins the moment onboarding completes, and recurring once-per-day rotation is owned by [#310](https://github.com/derekwinters/lucas-doggiehood/issues/310). ([#312](https://github.com/derekwinters/lucas-doggiehood/issues/312))
 - **Permanence**: items/decorations delivered or found through completed quests stay in the world permanently — nothing resets with the daily rotation. ([#27](https://github.com/derekwinters/lucas-doggiehood/issues/27))
 - **No pressure**: quests never expire and there is no timer or fail condition anywhere. ([#28](https://github.com/derekwinters/lucas-doggiehood/issues/28))
 

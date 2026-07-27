@@ -30,6 +30,43 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void BeginInitialQuests_BeforeOnboarding_SeedsExactlyOneLostItemOnOneDog()
+        {
+            // #312: first launch seeds a single easy lost-item quest and
+            // suppresses the 2-4 daily rotation until onboarding completes,
+            // so the tutorial has exactly one gentle tap-to-find target.
+            for (var seed = 0; seed < 20; seed++)
+            {
+                var state = NewState();
+                Assert.That(state.OnboardingComplete, Is.False);
+
+                state.Quests.BeginInitialQuests(new System.Random(seed));
+
+                var active = state.Quests.ActiveQuests.ToList();
+                Assert.That(active.Count, Is.EqualTo(1), $"seed {seed}: exactly one quest");
+                Assert.That(active[0].Type, Is.EqualTo(QuestType.LostItem), $"seed {seed}");
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.EqualTo(1),
+                    $"seed {seed}: exactly one dog holds a quest");
+            }
+        }
+
+        [Test]
+        public void BeginInitialQuests_AfterOnboarding_RunsTheNormalRotation()
+        {
+            // #312: once onboarding is complete the seam is just the normal
+            // 2-4 daily rotation — no more single-lost-item suppression.
+            for (var seed = 0; seed < 10; seed++)
+            {
+                var state = NewState();
+                state.MarkOnboardingComplete();
+
+                state.Quests.BeginInitialQuests(new System.Random(seed));
+
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.InRange(2, 4), $"seed {seed}");
+            }
+        }
+
+        [Test]
         public void NewDay_AssignsQuestsToTwoToFourDogs()
         {
             // #26: daily rotation of a few active quests.

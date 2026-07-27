@@ -75,6 +75,31 @@ namespace Doggiehood.Core.Quests
             get { return quests.Where(q => q.Status != QuestStatus.Completed); }
         }
 
+        /// <summary>#312: first-launch quest seeding. Until onboarding
+        /// completes, exactly one quest-free dog is seeded with a single easy
+        /// <see cref="QuestType.LostItem"/> quest and the 2-4 daily rotation
+        /// is suppressed, so the tutorial has one gentle tap-to-find target
+        /// and nothing else competes. Once onboarding is complete this is just
+        /// the normal <see cref="StartNewDay"/> rotation. RNG is injectable
+        /// for deterministic tests, matching <see cref="StartNewDay"/>.</summary>
+        public void BeginInitialQuests(Random rng)
+        {
+            if (state.OnboardingComplete)
+            {
+                StartNewDay(rng);
+                return;
+            }
+
+            var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
+            if (freeDogs.Count == 0)
+            {
+                return;
+            }
+
+            var dog = freeDogs[rng.Next(freeDogs.Count)];
+            GiveQuestTo(dog, QuestType.LostItem, rng);
+        }
+
         /// <summary>Daily rotation (#26): 2-4 quest-free dogs get new quests;
         /// dogs holding an uncompleted quest are never overwritten.</summary>
         public void StartNewDay(Random rng)
