@@ -1202,6 +1202,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#first-launch-quest-seeding-312" class="md-nav__link">
+    <span class="md-ellipsis">
+      First-launch quest seeding (#312)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -1508,6 +1517,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#first-launch-quest-seeding-312" class="md-nav__link">
+    <span class="md-ellipsis">
+      First-launch quest seeding (#312)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -1543,6 +1561,10 @@
 <p><em>Epic: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/18">#18</a></em></p>
 <p>The first time the game is opened, the first dog with a speech bubble walks the player through panning/zooming, tapping the speech bubble, and completing one simple quest — teaching the core loop naturally, without a separate tutorial screen. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/44">#44</a>)</p>
 <p>The guidance is presented as a slim <strong>bottom-center coach prompt</strong> (not a top banner) that is layered over live gameplay, never blocks input, advances itself through the four steps as the player performs each real action, and auto-dismisses once the first quest is complete. Its layout — regions, anchors, and named size/margin constants — is the approved wireframe in <a href="../ui/onboarding-overlay/">UI Wireframes → Onboarding overlay</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/176">#176</a>). The old graybox top-banner rendering in <code>OnboardingOverlay</code> has been replaced by that bottom-center coach prompt, and the prompt now correctly advances on the real pan/zoom/tap interactions and dismisses after the first quest completes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/207">#207</a>).</p>
+<h2 id="first-launch-quest-seeding-312">First-launch quest seeding (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>)<a class="headerlink" href="#first-launch-quest-seeding-312" title="Permanent link">&para;</a></h2>
+<p>On the very first launch the world seeds <strong>exactly one</strong> dog with a single easy <strong>lost-item</strong> quest, and the normal 2-4 daily <a href="../quests/economy/#core-loop">rotation</a> is <strong>suppressed until onboarding completes</strong>. This guarantees the tutorial has one and only one gentle tap-to-find target — the <code>OnboardingSequence</code> resolves that seeded dog as its <code>TargetDog</code>, so step 4 ("complete a quest") is always the low-friction lost-item tap rather than, say, a purchase or pest-control errand competing for attention.</p>
+<p>The branch lives in Core (<code>QuestManager.BeginInitialQuests(rng)</code>): with onboarding incomplete it seeds the one lost-item quest and returns; once onboarding is complete it is just the normal <code>StartNewDay</code> rotation. The thin Unity layer (<code>WorldBootstrap</code>) calls the seam behind its existing "no active quests" guard — no game logic in the <code>MonoBehaviour</code>.</p>
+<p>When onboarding finishes, its <code>Done</code> transition kicks off the <strong>first</strong> normal daily rotation exactly once (2-4 other dogs get quests) — the handoff point to recurring rotation (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a>), which owns once-per-day recurrence beyond that first rotation.</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] First-launch state is tracked (so onboarding only runs once)</li>

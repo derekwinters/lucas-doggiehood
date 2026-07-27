@@ -1678,7 +1678,10 @@
 <h2 id="core-loop">Core loop<a class="headerlink" href="#core-loop" title="Permanent link">&para;</a></h2>
 <p>The overall goal is helping dogs around the neighborhood by completing their requests, combined with a daily rotation of active quests. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/23">#23</a>)</p>
 <ul>
-<li><strong>Pacing</strong>: each day, a small number of dogs (2-4) have new requests available, mixing quest types. Keeps sessions short and gives a reason to return daily. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/26">#26</a>)</li>
+<li><strong>Pacing</strong>: each day, a small number of dogs (2-4) have new requests available, mixing quest types. Keeps sessions short and gives a reason to return daily. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/26">#26</a>)<ul>
+<li><strong>First launch is the exception</strong>: the daily 2-4 rotation is suppressed during <a href="../../onboarding/#first-launch-quest-seeding-312">onboarding</a> — the world seeds exactly one easy lost-item quest so the tutorial has a single gentle target. The first normal rotation begins the moment onboarding completes, and recurring once-per-day rotation is owned by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a>. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>)</li>
+</ul>
+</li>
 <li><strong>Permanence</strong>: items/decorations delivered or found through completed quests stay in the world permanently — nothing resets with the daily rotation. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/27">#27</a>)</li>
 <li><strong>No pressure</strong>: quests never expire and there is no timer or fail condition anywhere. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/28">#28</a>)</li>
 </ul>
