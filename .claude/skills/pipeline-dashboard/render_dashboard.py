@@ -514,13 +514,16 @@ def fetch_state(repo, token, as_of):
         else:
             b["remaining"] += 1
 
-    # Focus: marker on #193 if present, else lowest milestone with ready work.
+    # Focus precedence (#204/#234): DASHBOARD_SET_FOCUS override (a `/focus`
+    # re-render) > #193 marker > lowest version milestone with ready work.
     dash = _api_get("/repos/%s/issues/%d" % (repo, DASHBOARD_ISSUE), token)
-    focus_title = _read_focus_marker(dash.get("body") or "")
-    if not focus_title:
-        ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
-        pool = ready_ms or list(milestones)
-        focus_title = min(pool, key=_milestone_num) if pool else "(none)"
+    ready_ms = [t for t, b in milestones.items() if b["ready"] > 0]
+    pool = ready_ms or list(milestones)
+    fallback = min(pool, key=_milestone_num) if pool else "(none)"
+    focus_title = _resolve_focus(
+        os.environ.get("DASHBOARD_SET_FOCUS"),
+        _read_focus_marker(dash.get("body") or ""),
+        fallback)
     # Focus-milestone pie tally: a dedicated 7-bucket pass, separate from the
     # generic `milestones` roll-up above. Unlike that roll-up, this pass
     # *includes* `parked` issues — giving them their own slice instead of
@@ -754,6 +757,29 @@ def _resolve_cap(override, marker_value):
     if marker_value is not None:
         return marker_value
     return DEFAULT_CAP
+
+
+def _resolve_focus(override, marker_value, fallback):
+    """Focus precedence: an explicit override (the `DASHBOARD_SET_FOCUS` env
+    var, set when a `/focus` command re-renders the dashboard) wins; else the
+    #193 marker; else `fallback` (the lowest version milestone with open
+    ready-for-work issues). Mirrors `_resolve_cap`'s override → marker →
+    default precedence, and restores the `DASHBOARD_SET_FOCUS` override dropped
+    in #238 (the parked #204/#234 gap).
+
+    A blank/whitespace-only override is treated as absent and falls through to
+    the marker. Unlike `/cap`'s numeric check, an override's *validity*
+    (naming a live milestone) is enforced upstream at the parser layer
+    (`parse_commands` rejects an unmatched `/focus` as `focus-no-match`), so a
+    non-blank override reaching here is trusted verbatim.
+    """
+    if override is not None:
+        text = str(override).strip()
+        if text:
+            return text
+    if marker_value:
+        return marker_value
+    return fallback
 
 
 def _blocked_by(body):

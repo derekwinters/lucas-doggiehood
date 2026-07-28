@@ -16,6 +16,7 @@ functions (`fetch_comment_event.build_snapshot`, `parse_commands.process`,
 
 import json
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +27,7 @@ from _github_api import request  # noqa: E402
 
 REPO_DEFAULT = "derekwinters/lucas-doggiehood"
 REPO_OWNER = "derekwinters"
+DASHBOARD_ISSUE = 193
 
 
 def _fetch_open_milestones(repo, token):
@@ -79,6 +81,32 @@ def _apply_skip(repo, token, skip):
                     % (repo, comment_id), token, {"content": reaction})
 
 
+def _rerender_dashboard(repo, token, focus_title, cap):
+    """Persist a `/focus` / `/cap` marker by RE-RENDERING #193 — never a body
+    PATCH.
+
+    A read-modify-write of #193's body re-HTML-encodes it and breaks the
+    Mermaid charts (#204); the renderer instead writes the `<!-- pipeline-focus
+    -->` / `<!-- pipeline-cap -->` marker into a freshly rendered raw body via
+    the `DASHBOARD_SET_FOCUS` / `DASHBOARD_SET_CAP` overrides. This is the
+    documented mechanism (gatekeeper SKILL.md); it restores the `/focus` path
+    dropped in #238 (the parked #204/#234 gap) and reuses `/cap`'s seam (#240).
+    """
+    if focus_title is None and cap is None:
+        return
+    env = dict(os.environ)
+    env["GITHUB_TOKEN"] = token
+    env["DASHBOARD_REPO"] = repo
+    if focus_title is not None:
+        env["DASHBOARD_SET_FOCUS"] = focus_title
+    if cap is not None:
+        env["DASHBOARD_SET_CAP"] = str(cap)
+    renderer = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir,
+        "pipeline-dashboard", "render_dashboard.py")
+    subprocess.run([sys.executable, renderer, "--write"], env=env, check=True)
+
+
 def main():
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     if not event_path:
@@ -121,6 +149,21 @@ def main():
         _apply_skip(repo, token, skip)
         sys.stderr.write("#%s skipped: %s\n"
                           % (skip.get("issue"), skip.get("reason")))
+
+    # A `/focus` or `/cap` command persists its marker by re-rendering #193
+    # (never a body PATCH — see _rerender_dashboard / #204). Take the last
+    # value each command carries across the processed actions.
+    focus_title = None
+    cap = None
+    for action in out["actions"]:
+        if action.get("set_focus") is not None:
+            focus_title = action["set_focus"]
+        if action.get("set_cap") is not None:
+            cap = action["set_cap"]
+    if focus_title is not None or cap is not None:
+        _rerender_dashboard(repo, token, focus_title, cap)
+        sys.stderr.write("dashboard re-rendered: focus=%s cap=%s\n"
+                          % (focus_title, cap))
 
     return 0
 
