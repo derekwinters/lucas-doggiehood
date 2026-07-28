@@ -1211,6 +1211,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#step-gated-speech-bubble-self-heal-329" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-gated speech bubble &amp; self-heal (#329)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -1526,6 +1535,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#step-gated-speech-bubble-self-heal-329" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-gated speech bubble &amp; self-heal (#329)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -1565,6 +1583,13 @@
 <p>On the very first launch the world seeds <strong>exactly one</strong> dog with a single easy <strong>lost-item</strong> quest, and the normal 2-4 daily <a href="../quests/economy/#core-loop">rotation</a> is <strong>suppressed until onboarding completes</strong>. This guarantees the tutorial has one and only one gentle tap-to-find target — the <code>OnboardingSequence</code> resolves that seeded dog as its <code>TargetDog</code>, so step 4 ("complete a quest") is always the low-friction lost-item tap rather than, say, a purchase or pest-control errand competing for attention.</p>
 <p>The branch lives in Core (<code>QuestManager.BeginInitialQuests(rng)</code>): with onboarding incomplete it seeds the one lost-item quest and returns; once onboarding is complete it is just the normal <code>StartNewDay</code> rotation. The thin Unity layer (<code>WorldBootstrap</code>) calls the seam behind its existing "no active quests" guard — no game logic in the <code>MonoBehaviour</code>.</p>
 <p>When onboarding finishes, its <code>Done</code> transition kicks off the <strong>first</strong> normal daily rotation exactly once (2-4 other dogs get quests) — the handoff point to recurring rotation (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a>), which owns once-per-day recurrence beyond that first rotation.</p>
+<h2 id="step-gated-speech-bubble-self-heal-329">Step-gated speech bubble &amp; self-heal (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>)<a class="headerlink" href="#step-gated-speech-bubble-self-heal-329" title="Permanent link">&para;</a></h2>
+<p>The four steps run in order — <code>Pan → Zoom → TapBubble → CompleteQuest → Done</code> — and the "tap the speech bubble" action is gated to its own step so each step is the obvious next thing to do:</p>
+<ul>
+<li><strong>The target dog's speech bubble is hidden until the <code>TapBubble</code> step.</strong> While onboarding is running, the seeded dog's bubble does not appear (and cannot be tapped) during <code>Pan</code>/<code>Zoom</code>; it becomes visible and tappable for the first time exactly when the flow reaches <code>TapBubble</code>. The gating decision lives in Core (<code>OnboardingSequence.ShouldSuppressBubble</code>); the thin Unity layer (<code>DogView</code> via <code>OnboardingOverlay.SuppressesBubbleFor</code>) just consults it. Only the target dog is gated — other dogs are unaffected (and during the single-seeded onboarding, #312, there are none). Once onboarding is complete, bubbles follow their normal <code>HasActiveQuest</code> binding.</li>
+<li><strong>The <code>TapBubble</code> step self-heals if the interaction already happened.</strong> Should the conversation somehow have been opened early (or the quest already accepted/resolved before the step), the sequence does not strand. <code>OnboardingSequence</code> remembers that the target dog's conversation was opened even if it fired before <code>TapBubble</code>, and on entering <code>TapBubble</code> — or on any overlay poll (<code>OnboardingSequence.Reconcile</code>) — it auto-advances when the conversation was already opened or the target dog's quest is no longer <code>Available</code>, cascading on through <code>CompleteQuest</code>/<code>Done</code> when the quest is already fully resolved. This closes the soft-lock where an early bubble tap left the coach bar pinned on <code>TapBubble</code> forever.</li>
+<li><strong>The conversation dialog is always dismissible.</strong> The "Not now" decline (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/185">#185</a>) stays reachable in every onboarding state, so no path leaves the dialog stuck open.</li>
+</ul>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] First-launch state is tracked (so onboarding only runs once)</li>
