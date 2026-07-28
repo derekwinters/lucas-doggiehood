@@ -107,14 +107,18 @@ acts on Derek's comments — so the question stalled indefinitely
 
 The gatekeeper closes that gap with a **state-derived transition** (not a
 comment command): the deterministic `check_revisits.py::check_blocker_revisits`
-takes the open-issue snapshot (number, labels, body) and returns a revisit —
-add `ai-triage`, remove `needs-clarification` — for every `needs-clarification`
-issue whose structured `Blocked by: #N` blockers have **all** resolved. A
-blocker is resolved when it is closed/merged (absent from the open snapshot) or
-carries `ready-for-work`/`in-progress`. An issue with multiple blockers revisits
-only once every one is resolved; an issue with no structured `Blocked by:` line,
-a still-open unresolved blocker, a prose-only mention, or a `parked` label is
-never touched (no false triggers). It runs board-wide in **`gatekeeper-sweep.yml`**
+takes the open-issue snapshot (number, labels, body, and native
+`native_blocked_by`) and returns a revisit — add `ai-triage`, remove
+`needs-clarification` — for every `needs-clarification` issue whose hard blockers
+have **all** resolved. Hard blockers are the structured `Blocked by: #N` text
+lines **unioned** with the issue's native GitHub issue-dependency relationships
+([#321](https://github.com/derekwinters/lucas-doggiehood/issues/321)), so an
+issue whose only blocker was recorded natively still revisits. A blocker is
+resolved when it is closed/merged (absent from the open snapshot) or carries
+`ready-for-work`/`in-progress`. An issue with multiple blockers revisits only
+once every one is resolved; an issue with no hard blocker at all (no
+`Blocked by:` line and no native relationship), a still-open unresolved blocker,
+a prose-only mention, or a `parked` label is never touched (no false triggers). It runs board-wide in **`gatekeeper-sweep.yml`**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)) — on
 every event and cron pass alike, since a blocker can resolve via a bare label
 move (`ready-for-work`/`in-progress`) with no comment at all — and posts a
@@ -330,14 +334,35 @@ There are exactly **two** supported ways to record a dependency:
    without it (e.g. `blocked by #57` mid-sentence) is prose, not a structured
    line. The hard-vs-soft semantics are settled in
    [#197](https://github.com/derekwinters/lucas-doggiehood/issues/197).
-2. **A native GitHub relationship** — a real issue-dependency or a sub-issue
-   parent link, where the tooling can read it.
+2. **A native GitHub relationship** — a real issue-dependency (or a sub-issue
+   parent link), read from the dependencies REST API
+   (`GET /repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by`).
+
+**Native relationships are canonical for hard blockers, and the two forms cover
+different needs — do not conflate them**
+([#321](https://github.com/derekwinters/lucas-doggiehood/issues/321)):
+
+- **Hard blockers (`Blocked by:`)** have a native GitHub form, which is now the
+  **canonical** source. Every deterministic reader — the nightly builder, the
+  reconciliation sweep, the dashboard "Blocked by" columns + unblocker graph,
+  the blocker auto-revisit, and the [#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)
+  milestone-order gate — fetches an issue's native `blocked_by` set and
+  **unions** it with the text-line parse through one canonical `merge_blockers`
+  helper (native ∪ text line, de-duped), so the blocker graph is identical
+  everywhere. With native in place the `Blocked by: #N` text line becomes
+  **optional/redundant** — it is still read throughout (migration-safe: nothing
+  breaks mid-transition), but a native relationship alone is sufficient.
+- **Soft ordering (`Depends on:`)** has **no** native equivalent — GitHub has no
+  native soft-ordering relationship. So `Depends on:` stays **text-line-only**;
+  it is parsed from the structured line and nothing merges a native set into it.
+  Never try to move soft ordering to native.
 
 Writing the issue number in a sentence is **not** sufficient even when the prose
-already names it — the structured line (or native relationship) must be present.
-The reconciliation sweep enforces this: it flags any open issue whose body
-mentions `depends on #N` / `blocked by #N` in prose with no matching structured
-line for that number (see **Prose-only dependency** below).
+already names it — a structured line, or a native relationship for hard
+blockers, must be present. The reconciliation sweep enforces this: it flags any
+open issue whose body mentions `depends on #N` / `blocked by #N` in prose with no
+matching structured line **and** no native relationship for that number (see
+**Prose-only dependency** below).
 
 ### Development (`pipeline-dev`)
 
@@ -387,7 +412,7 @@ dashboard for Derek):
 | **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries; **cron-only** ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319) — see below) |
 | **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
-| **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line for that number ([#248](https://github.com/derekwinters/lucas-doggiehood/issues/248), detected by `reconcile.prose_deps_in`) | **flag** |
+| **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line **and** no native GitHub relationship for that number ([#248](https://github.com/derekwinters/lucas-doggiehood/issues/248), [#321](https://github.com/derekwinters/lucas-doggiehood/issues/321), detected by `reconcile.prose_deps_in` with native refs from `reconcile.native_blocked_by`) | **flag** |
 
 The two auto-fixes are safe and unambiguous; everything about *closing* an issue
 is either ambiguous or already owned by [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)
@@ -446,8 +471,9 @@ the focus ready-for-work queue (headed by the nightly build cap,
 [#240](https://github.com/derekwinters/lucas-doggiehood/issues/240)), "Your
 move" counts, PRs (release-
 please separated), intake, pending-approval and needs-clarification (each of
-these three tables carries a **"Blocked by"** column listing the issue's
-structured `Blocked by: #N` hard blockers as links, so blockers surface on every
+these three tables carries a **"Blocked by"** column listing the issue's hard
+blockers — the structured `Blocked by: #N` text lines unioned with native GitHub
+issue-dependency relationships ([#321](https://github.com/derekwinters/lucas-doggiehood/issues/321)) — as links, so blockers surface on every
 stage the way the focus queue already flags them — [#241](https://github.com/derekwinters/lucas-doggiehood/issues/241)), a read-only
 **"⏸️ Parked"** section listing every open `parked` issue so parked work stays
 visible and easy to `/unpark` ([#249](https://github.com/derekwinters/lucas-doggiehood/issues/249)).
@@ -462,11 +488,12 @@ orphaned ready, prose-only dependencies — [#246](https://github.com/derekwinte
 other-milestone progress, and the command reference. In the focus ready-for-work
 queue, **unblocking issues are starred** ([#250](https://github.com/derekwinters/lucas-doggiehood/issues/250)):
 an issue that is open, not itself blocked by any open issue, and listed in at
-least one other open issue's structured `Blocked by:` set is the highest-leverage
+least one other open issue's hard-blocker set is the highest-leverage
 pick, so its row is marked `⭐ unblocks #57, #58, …` (the open issues it frees)
 and it sorts to the top of the queue; blocked rows keep their `⛔ _blocked_` flag
 and fully-independent rows stay unmarked. The unblocker set is derived from the
-same structured `Blocked by:` graph the nightly builder and reconcile read — never
+same merged hard-blocker graph — structured `Blocked by:` lines unioned with
+native relationships ([#321](https://github.com/derekwinters/lucas-doggiehood/issues/321)) — that the nightly builder and reconcile read, never
 prose — by the pure `compute_unblockers` helper. It excludes #193 itself,
 and keeps `parked` issues out of every *active work* queue and count
 (ready-for-work queue, "Your move", intake, pending-approval, needs-clarification,

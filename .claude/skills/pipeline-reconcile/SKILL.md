@@ -91,8 +91,12 @@ throughout, matching the rest of the pipeline.
      layer can cheaply confirm an issue's Build-checklist files exist at `HEAD`);
    - `prose_deps` per issue — dependency numbers named only in prose
      (`depends on #N` / `blocked by #N`) with no matching structured
-     `Blocked by:` / `Depends on:` line. `fetch_state` (`--live`) populates this
-     from each issue body via `prose_deps_in` (#248).
+     `Blocked by:` / `Depends on:` line **and no native GitHub relationship**.
+     `fetch_state` (`--live`) populates this from each issue body via
+     `prose_deps_in`, passing the issue's native `blocked_by` set (fetched with
+     `native_blocked_by` from the dependencies API) as `native_refs=` so a
+     native hard-blocker relationship clears the flag just like a structured
+     line (#248, #321).
 
 2. **Classify** deterministically:
 
@@ -139,8 +143,11 @@ commit body, the title-only guard, the done-vs-stall classification split, the
 stretch flags, the epic/dashboard/parked exclusions, and the healthy/empty
 board. `TestProseDepDetection` pins `prose_deps_in` (#248): prose-only
 `depends on #N` / `blocked by #N` is flagged, a matching structured
-`Blocked by:` / `Depends on:` line (or a native relationship) clears it, and a
-bare `#N` that is not a dependency phrase is never flagged. `TestEventsOnlyMode`
+`Blocked by:` / `Depends on:` line (or a native relationship, via the
+`native_refs=` path) clears it, and a bare `#N` that is not a dependency phrase
+is never flagged. `TestMergeBlockers` (#321) pins the canonical
+`merge_blockers` rule — text-line `Blocked by:` ∪ native `blocked_by`, de-duped
+and sorted — that every reader shares. `TestEventsOnlyMode`
 (#319) pins the cron-only `requeue` gate: `events_only=True` (and its CLI
 `--events-only` twin) omits `requeue` while leaving `strip_labels`/`flag_done`
 untouched; the default (cron) mode still requeues. Run:

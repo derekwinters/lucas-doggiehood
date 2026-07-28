@@ -286,6 +286,35 @@ class TestRender(unittest.TestCase):
         self.assertEqual(self.body, expected)
 
 
+class TestMergedBlockedBy(unittest.TestCase):
+    """`_merged_blocked_by(body, native_refs)` (#321): the dashboard's per-issue
+    hard-blocker set is the structured `Blocked by: #N` text lines UNIONED with
+    native GitHub issue-dependency blockers, via the one canonical
+    `merge_blockers` helper shared with reconcile. This feeds both the
+    "Blocked by" columns and the `compute_unblockers` graph, so both read native
+    the same way — never prose.
+    """
+
+    def test_text_line_only(self):
+        self.assertEqual(
+            render_dashboard._merged_blocked_by("Blocked by: #5", []), [5])
+
+    def test_native_only(self):
+        # No text line at all — the blocker is a native relationship.
+        self.assertEqual(
+            render_dashboard._merged_blocked_by("just prose", [7]), [7])
+
+    def test_union_deduped_sorted(self):
+        self.assertEqual(
+            render_dashboard._merged_blocked_by("Blocked by: #5", [7, 5]),
+            [5, 7])
+
+    def test_default_native_arg_is_text_only(self):
+        # Migration-safe: callers with only the text line still work.
+        self.assertEqual(
+            render_dashboard._merged_blocked_by("Blocked by: #9"), [9])
+
+
 class TestComputeUnblockers(unittest.TestCase):
     """Pure unblocker-graph computation (#250).
 

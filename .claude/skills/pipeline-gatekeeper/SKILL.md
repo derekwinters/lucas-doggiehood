@@ -166,8 +166,11 @@ silently ignored everywhere else.
    it needed a decision that lives in its blocker. This is a **state-derived
    transition, not a comment command**, so it runs here after the
    comment-driven moves above, once those labels are set. Build a snapshot of
-   the **open** issues (each `number`, `labels`, and `body` — the body carries
-   the structured `Blocked by: #N` lines) and pipe it in:
+   the **open** issues (each `number`, `labels`, `body` — the body carries the
+   structured `Blocked by: #N` lines — and `native_blocked_by`, the issue's
+   native GitHub issue-dependency hard blockers read from
+   `GET /repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by`, #321) and pipe
+   it in:
 
    ```bash
    python3 .claude/skills/pipeline-gatekeeper/check_revisits.py < snapshot.json
@@ -179,8 +182,11 @@ silently ignored everywhere else.
    `back-to-analysis` menu — e.g. *"Blocker #N reached `ready-for-work` —
    revisiting."* A blocker counts as resolved when it is closed/merged (absent
    from the open snapshot) or carries `ready-for-work`/`in-progress`; an issue
-   with **multiple** blockers only revisits once **all** are resolved. Only
-   structured `Blocked by: #N` lines gate this — a prose mention never fires it.
+   with **multiple** blockers only revisits once **all** are resolved. Hard
+   blockers are the union of structured `Blocked by: #N` lines and native
+   relationships (`native_blocked_by`), so a natively-recorded blocker gates and
+   clears a revisit too (#321); a prose mention never fires it, and soft
+   `Depends on:` (no native form) never gates a revisit.
 
 7. **Run the reconciliation sweep** (`pipeline-reconcile`) against live state,
    now that the commands above have set their labels. Apply only its
@@ -241,8 +247,9 @@ rejects non-numeric/non-positive input with `cap-invalid`, ignored on every
 other issue).
 `tests/test_check_revisits.py` covers
 the blocker auto-revisit (#241): single/multiple blockers, closed vs.
-`ready-for-work`/`in-progress` blockers, the all-must-resolve rule, and the
-regression guards (no `Blocked by:` line, still-open blocker, prose-only
+`ready-for-work`/`in-progress` blockers, the all-must-resolve rule, native-only
+blockers and the native∪text union (#321), and the regression guards (no
+`Blocked by:` line and no native blocker, still-open blocker, prose-only
 mention, non-`needs-clarification` and `parked` issues never fire).
 `tests/test_fetch_comment_event.py` (#319) covers `build_snapshot`: the
 one-element snapshot shape, PR-comment and bot-comment skips, epic/dashboard

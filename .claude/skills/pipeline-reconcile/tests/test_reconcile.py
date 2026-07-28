@@ -361,6 +361,25 @@ class TestProseDepDetection(unittest.TestCase):
             [],
         )
 
+    def test_native_refs_clear_only_their_own_number(self):
+        # A native relationship for #109 clears that number, but a different
+        # prose-only dependency (#57) with no native/structured backing stays
+        # flagged — parity with the structured-line behavior. This is the
+        # `native_refs` fetch path `fetch_state` wires in for #321: a native
+        # hard-blocker relationship is as good as a `Blocked by:` line.
+        self.assertEqual(
+            reconcile.prose_deps_in(
+                "depends on #109 and it is blocked by #57", native_refs=[109]),
+            [57],
+        )
+
+    def test_native_refs_multiple_numbers_cleared(self):
+        self.assertEqual(
+            reconcile.prose_deps_in(
+                "blocked by #57 and depends on #109", native_refs=[57, 109]),
+            [],
+        )
+
     # --- negative: non-dependency mentions are never flagged --------------
     def test_bare_hash_not_flagged(self):
         for text in ["See #58 for context", "Part of #191", "Relates to #250",
@@ -416,6 +435,40 @@ class TestExclusionsAndHealth(unittest.TestCase):
             issue(200, labels=["in-progress"]),
         ]))
         self.assertEqual(numbers(out["requeue"]), [100, 200, 300])
+
+
+class TestMergeBlockers(unittest.TestCase):
+    """`merge_blockers(text_line, native)` (issue #321): the single canonical
+    merge rule every pipeline reader shares — the text-line `Blocked by: #N`
+    hard blockers UNIONED with the native GitHub issue-dependency blockers,
+    de-duplicated and sorted. Keeping one helper means the blocker graph the
+    nightly builder, reconcile, the dashboard, and the #212 milestone-order
+    gate consume is identical everywhere.
+    """
+
+    def test_text_only(self):
+        self.assertEqual(reconcile.merge_blockers([57, 109], []), [57, 109])
+
+    def test_native_only(self):
+        self.assertEqual(reconcile.merge_blockers([], [312]), [312])
+
+    def test_union_deduped_and_sorted(self):
+        # Overlap (#109 in both) collapses; result is sorted ascending.
+        self.assertEqual(
+            reconcile.merge_blockers([109, 57], [312, 109]),
+            [57, 109, 312],
+        )
+
+    def test_empty_both(self):
+        self.assertEqual(reconcile.merge_blockers([], []), [])
+
+    def test_default_native_arg(self):
+        # Migration-safe: a caller that only has the text line still works.
+        self.assertEqual(reconcile.merge_blockers([57]), [57])
+
+    def test_accepts_sets_and_strings(self):
+        # Numbers may arrive as a set (native fetch) or numeric strings.
+        self.assertEqual(reconcile.merge_blockers({"57"}, ["109"]), [57, 109])
 
 
 if __name__ == "__main__":
