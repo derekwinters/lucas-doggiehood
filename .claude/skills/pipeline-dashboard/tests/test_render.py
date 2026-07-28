@@ -446,5 +446,33 @@ class TestResolveCap(unittest.TestCase):
         self.assertEqual(render_dashboard._resolve_cap("  ", 4), 4)
 
 
+class TestResolveFocus(unittest.TestCase):
+    """Focus precedence (#204/#234): DASHBOARD_SET_FOCUS override > #193 marker
+    > fallback (lowest version milestone with open ready-for-work). Mirrors
+    `_resolve_cap`'s override → marker → default. The override's validity
+    (naming a live milestone) is enforced upstream by parse_commands
+    (`focus-no-match`), so a non-blank override reaching here is trusted."""
+
+    def test_override_wins(self):
+        self.assertEqual(
+            render_dashboard._resolve_focus("v0.6", "v0.5", "v0.4"), "v0.6")
+
+    def test_marker_used_with_no_override(self):
+        self.assertEqual(
+            render_dashboard._resolve_focus(None, "v0.5", "v0.4"), "v0.5")
+
+    def test_fallback_when_neither_present(self):
+        self.assertEqual(
+            render_dashboard._resolve_focus(None, None, "v0.4"), "v0.4")
+
+    def test_blank_override_falls_back_to_marker(self):
+        self.assertEqual(
+            render_dashboard._resolve_focus("   ", "v0.5", "v0.4"), "v0.5")
+
+    def test_blank_override_and_no_marker_uses_fallback(self):
+        self.assertEqual(
+            render_dashboard._resolve_focus("", None, "v0.4"), "v0.4")
+
+
 if __name__ == "__main__":
     unittest.main()

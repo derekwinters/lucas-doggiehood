@@ -161,17 +161,21 @@ writing that body back through the GitHub tools re-HTML-encodes it (`"` →
 `&#34;`, `&` → `&amp;`) and breaks the Mermaid charts
 ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)).
 
-> **Note (found while building #240):** the `DASHBOARD_SET_FOCUS` override and
-> its `_resolve_focus` precedence, described above and originally shipped in
-> [#230](https://github.com/derekwinters/lucas-doggiehood/pull/230), are no
-> longer present in `render_dashboard.py` — they were dropped when the shared
-> `ai-skills` pipeline bundle was adopted
-> ([#238](https://github.com/derekwinters/lucas-doggiehood/pull/238)) without
-> this doc being updated to match. `/cap`'s `DASHBOARD_SET_CAP` override was
-> implemented fresh for #240 following this same documented pattern and *is*
-> present in code today (see `_resolve_cap`). Restoring `/focus`'s override is
-> a pre-existing gap outside #240's scope — flagged here rather than fixed
-> silently; it should be filed as its own follow-up issue.
+> **Note (history):** the `DASHBOARD_SET_FOCUS` override and its
+> `_resolve_focus` precedence, originally shipped in
+> [#230](https://github.com/derekwinters/lucas-doggiehood/pull/230), were
+> dropped when the shared `ai-skills` pipeline bundle was adopted
+> ([#238](https://github.com/derekwinters/lucas-doggiehood/pull/238)) — and,
+> separately, the comment-triggered gatekeeper (`run_comment_event.py`) never
+> applied `set_focus` **or** `set_cap`, so a `/focus` comment was acknowledged
+> but never actually moved focus (the marker stayed pinned to whatever the
+> dashboard's own fallback first wrote). Both gaps are now fixed
+> ([#204](https://github.com/derekwinters/lucas-doggiehood/issues/204) /
+> [#234](https://github.com/derekwinters/lucas-doggiehood/issues/234)):
+> `_resolve_focus` is restored in `render_dashboard.py` (mirroring
+> `_resolve_cap`), and `run_comment_event.py` re-renders #193 with the
+> matching `DASHBOARD_SET_FOCUS` / `DASHBOARD_SET_CAP` override whenever a
+> processed action carries `set_focus` / `set_cap`.
 
 `/focus` is now honored on the dashboard issue itself, and a `/focus` naming a
 milestone that matches no live milestone is rejected rather than silently

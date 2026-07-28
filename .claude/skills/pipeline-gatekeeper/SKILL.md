@@ -131,20 +131,23 @@ silently ignored everywhere else.
      rather than moving it to `ready-for-work`. (If the same comment also
      contained a `/milestone` command, that command's own action still
      applies — just not as part of this approve.)
-   - If `set_focus` is non-null, update the `<!-- pipeline-focus: ... -->`
-     marker on #193 (add it if missing).
-   - If `set_cap` is non-null, update the `<!-- pipeline-cap: N -->` marker on
-     #193 by **re-rendering** the dashboard with a `DASHBOARD_SET_CAP`
-     override — never hand-edit the marker into #193's body directly (a
-     read-modify-write re-HTML-encodes it and breaks the Mermaid charts, the
-     same failure mode `/focus` hit in [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)):
+   - If `set_focus` or `set_cap` is non-null, update the corresponding
+     `<!-- pipeline-focus: ... -->` / `<!-- pipeline-cap: N -->` marker on #193
+     by **re-rendering** the dashboard with a `DASHBOARD_SET_FOCUS` /
+     `DASHBOARD_SET_CAP` override — never hand-edit the marker into #193's body
+     directly (a read-modify-write re-HTML-encodes it and breaks the Mermaid
+     charts, the failure mode `/focus` hit in [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204)):
 
      ```bash
+     DASHBOARD_SET_FOCUS='<milestone>' python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
      DASHBOARD_SET_CAP='<n>' python3 .claude/skills/pipeline-dashboard/render_dashboard.py --write
      ```
 
-     The renderer writes the new `<!-- pipeline-cap: <n> -->` marker itself
-     (raw) as part of the freshly rendered body.
+     The renderer writes the new marker itself (raw) as part of the freshly
+     rendered body. In the deterministic workflow, `run_comment_event.py` does
+     this automatically for any processed action carrying `set_focus` /
+     `set_cap` (`_rerender_dashboard`); restoring the `/focus` override closed
+     the parked [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204) / [#234](https://github.com/derekwinters/lucas-doggiehood/issues/234) gap.
 
 4. **Acknowledge.** React to the source comment with 👍 (`+1`) to confirm the
    action, and — where it moves the issue to a state awaiting Derek — post a
