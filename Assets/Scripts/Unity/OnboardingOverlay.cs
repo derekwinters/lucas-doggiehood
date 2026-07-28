@@ -1,3 +1,4 @@
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -75,10 +76,31 @@ namespace Doggiehood.Unity
 
             AdvanceCameraSteps();
 
+            // #329: self-heal the TapBubble step if the bubble interaction
+            // already happened (opened/accepted early during Pan/Zoom) so the
+            // flow never strands with "nothing to tap".
+            sequence.Reconcile();
+
             if (sequence.CurrentStep == OnboardingStep.CompleteQuest)
             {
                 CheckQuestCompletion();
             }
+
+            if (sequence.CurrentStep == OnboardingStep.Done)
+            {
+                SaveStore.Save(state);
+            }
+        }
+
+        /// <summary>#329: whether the target dog's speech bubble should stay
+        /// hidden this frame because onboarding hasn't reached the TapBubble
+        /// step yet. <see cref="DogView"/> consults this so the bubble is
+        /// first tappable exactly at step 3. False when onboarding isn't
+        /// running (no sequence) — the bubble follows its normal quest
+        /// binding.</summary>
+        public bool SuppressesBubbleFor(Dog dog)
+        {
+            return sequence != null && sequence.ShouldSuppressBubble(dog);
         }
 
         private void Update()
@@ -124,10 +146,8 @@ namespace Doggiehood.Unity
             }
 
             sequence.NotifyTargetDogQuestResolved();
-            if (sequence.CurrentStep == OnboardingStep.Done)
-            {
-                SaveStore.Save(state);
-            }
+            // Persistence on reaching Done is handled centrally in Poll (#329),
+            // which also covers the self-heal cascade path to Done.
         }
 
         /// <summary>Computes the coach bar rect for the given screen size:

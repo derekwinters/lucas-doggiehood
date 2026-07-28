@@ -125,6 +125,73 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Poll_SelfHealsTapBubble_WhenTheConversationWasOpenedEarly()
+        {
+            // #329: the player taps the target dog's bubble during Pan/Zoom —
+            // an early open fired through the presenter. The overlay must
+            // remember it (not skip pan/zoom) and, once the flow reaches
+            // TapBubble, self-heal rather than strand with "nothing to tap".
+            overlay.Init(state, rig, presenter);
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Pan));
+
+            Assert.That(presenter.TryOpen(targetDog), Is.True);
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Pan),
+                "an early open doesn't skip the pan/zoom teaching steps");
+
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            rig.HandlePinch(60f, 1000f);
+            overlay.Poll();
+
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest),
+                "TapBubble self-heals because the bubble was already opened early");
+
+            targetDog.ClearQuest();
+            overlay.Poll();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done),
+                "onboarding still reaches Done rather than stranding");
+            Assert.That(state.OnboardingComplete, Is.True);
+        }
+
+        [Test]
+        public void SuppressesBubbleForTargetDog_UntilTheTapBubbleStep()
+        {
+            // #329: the overlay gates the target dog's speech bubble to the
+            // TapBubble step — DogView consults this so the bubble is first
+            // tappable at step 3. Non-target dogs are never gated.
+            overlay.Init(state, rig, presenter);
+
+            var otherDog = state.Dogs.First(d => d != targetDog);
+            Assert.That(overlay.SuppressesBubbleFor(targetDog), Is.True, "Pan: target dog gated");
+            Assert.That(overlay.SuppressesBubbleFor(otherDog), Is.False, "non-target never gated");
+
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.SuppressesBubbleFor(targetDog), Is.True, "Zoom: still gated");
+
+            rig.HandlePinch(60f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.SuppressesBubbleFor(targetDog), Is.False,
+                "TapBubble: the bubble becomes tappable for the first time");
+        }
+
+        [Test]
+        public void ConversationDeclineStaysReachable_DuringOnboarding()
+        {
+            // #329 regression guard (#185): no onboarding state may leave the
+            // conversation dialog stuck open — the "Not now" decline always
+            // dismisses it. The real reported symptom was a pinned coach bar,
+            // not an un-closable dialog; this pins that invariant down.
+            overlay.Init(state, rig, presenter);
+
+            Assert.That(presenter.TryOpen(targetDog), Is.True);
+            Assert.That(presenter.Current, Is.Not.Null, "the conversation opened");
+
+            presenter.DeclineCurrent();
+            Assert.That(presenter.Current, Is.Null, "the decline dismisses the dialog");
+        }
+
+        [Test]
         public void CompletedSave_SuppressesTheOverlayEntirely()
         {
             // #44/#207: a save with OnboardingComplete already true must never

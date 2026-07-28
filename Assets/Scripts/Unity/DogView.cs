@@ -56,6 +56,7 @@ namespace Doggiehood.Unity
         private MovementProfile profile;
         private GameObject bubble;
         private CameraRig cameraRig;
+        private OnboardingOverlay onboardingOverlay;
         private Transform body;
         private Vector3 currentTarget;
         private DogState appliedState;
@@ -298,7 +299,28 @@ namespace Doggiehood.Unity
 
         public void RefreshBubble()
         {
-            bubble.SetActive(Dog.HasActiveQuest);
+            // #329: the bubble follows the dog's active quest, except that
+            // during onboarding the target dog's bubble is gated to appear
+            // only at the TapBubble step — so the player can't open the
+            // conversation during Pan/Zoom and strand the tutorial.
+            bubble.SetActive(Dog.HasActiveQuest && !SuppressedByOnboarding());
+        }
+
+        /// <summary>#329: consults the live onboarding overlay (if one exists)
+        /// for whether this dog's bubble is currently gated shut. Only ever
+        /// true for the onboarding target dog before the TapBubble step; the
+        /// short-circuit in <see cref="RefreshBubble"/> keeps the lookup off
+        /// the path for dogs without a quest, and the resolved overlay is
+        /// cached like the camera rig. No overlay (post-onboarding, or a save
+        /// with onboarding already complete) means no suppression.</summary>
+        private bool SuppressedByOnboarding()
+        {
+            if (onboardingOverlay == null)
+            {
+                onboardingOverlay = FindFirstObjectByType<OnboardingOverlay>();
+            }
+
+            return onboardingOverlay != null && onboardingOverlay.SuppressesBubbleFor(Dog);
         }
 
         private void Update()

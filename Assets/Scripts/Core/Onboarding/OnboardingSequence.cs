@@ -27,6 +27,13 @@ namespace Doggiehood.Core.Onboarding
         private readonly GameState state;
         private readonly Random rng;
 
+        /// <summary>#329: remembers that the target dog's conversation was
+        /// opened at least once, even if the open happened before the
+        /// <see cref="OnboardingStep.TapBubble"/> step. Without this an early
+        /// open (during Pan/Zoom) is silently dropped and the step later
+        /// strands with "nothing to tap".</summary>
+        private bool conversationOpenedForTargetDog;
+
         public Dog TargetDog { get; }
         public OnboardingStep CurrentStep { get; private set; }
 
@@ -65,15 +72,74 @@ namespace Doggiehood.Core.Onboarding
             if (CurrentStep == OnboardingStep.Zoom)
             {
                 CurrentStep = OnboardingStep.TapBubble;
+
+                // #329: self-heal on arrival — if the bubble interaction
+                // already happened during Pan/Zoom, don't strand on a step
+                // with nothing left to do.
+                Reconcile();
             }
         }
 
         public void NotifyConversationOpened(Dog dog)
         {
-            if (CurrentStep == OnboardingStep.TapBubble && dog == TargetDog)
+            if (dog != TargetDog)
+            {
+                return;
+            }
+
+            // #329: remember the open even if it happens before the TapBubble
+            // step, so an early tap during Pan/Zoom isn't discarded and can
+            // self-heal the step on arrival.
+            conversationOpenedForTargetDog = true;
+
+            if (CurrentStep == OnboardingStep.TapBubble)
             {
                 CurrentStep = OnboardingStep.CompleteQuest;
             }
+        }
+
+        /// <summary>#329: whether the target dog's speech bubble should stay
+        /// hidden (and untappable) right now. During onboarding the bubble is
+        /// gated to its <see cref="OnboardingStep.TapBubble"/> step, so the
+        /// player can't open the conversation during Pan/Zoom and strand the
+        /// flow — the tap becomes the third guided action. Only the target dog
+        /// is gated; any other dog (there are none during the single-seeded
+        /// onboarding, #312) is never suppressed, and nothing is suppressed
+        /// once the flow reaches TapBubble or completes.</summary>
+        public bool ShouldSuppressBubble(Dog dog)
+        {
+            return dog == TargetDog
+                && (CurrentStep == OnboardingStep.Pan || CurrentStep == OnboardingStep.Zoom);
+        }
+
+        /// <summary>#329 self-heal: if the flow is sitting on
+        /// <see cref="OnboardingStep.TapBubble"/> but the bubble interaction
+        /// has effectively already happened — the target dog's conversation
+        /// was opened once, or its quest has left <c>Available</c> (accepted
+        /// early) so there is nothing left to re-present — advance past
+        /// TapBubble instead of stranding. Cascades on through
+        /// CompleteQuest/Done when the quest is already fully resolved.
+        /// Idempotent and safe to call on every poll.</summary>
+        public void Reconcile()
+        {
+            if (CurrentStep == OnboardingStep.TapBubble
+                && TargetDog != null
+                && (conversationOpenedForTargetDog || !TargetDogHasAvailableQuest()))
+            {
+                CurrentStep = OnboardingStep.CompleteQuest;
+            }
+
+            if (CurrentStep == OnboardingStep.CompleteQuest)
+            {
+                NotifyTargetDogQuestResolved();
+            }
+        }
+
+        private bool TargetDogHasAvailableQuest()
+        {
+            return TargetDog != null
+                && state.Quests.ActiveQuests.Any(q =>
+                    q.DogName == TargetDog.Name && q.Status == QuestStatus.Available);
         }
 
         /// <summary>Observer-friendly completion signal: the target dog's
