@@ -63,12 +63,13 @@ namespace Doggiehood.Core.World
                     door,
                     walkwayStart: door,
                     walkwayEnd: new GridPoint(door.X, scaledFacadeZ - WalkwayEndBeyondFacade),
-                    // #146: the REAL backyard fence outline — the same Core
-                    // API the game path uses, at the gallery placement
-                    // (yaw 0 = facing world -Z) and the derived in-game
-                    // rear line distance behind the facade.
+                    // #342 (adopting #147): the REAL backyard fence outline
+                    // — the same Core API the game path uses, at the gallery
+                    // placement (yaw 0 = facing world -Z). With no lot, the
+                    // lot-free overload applies the boundary offset against a
+                    // standard quadrant synthesised around the house.
                     fenceRuns: LotFence.BackyardRuns(model, position,
-                        new GridPoint(0f, -1f), scale, LotFence.RearLineBehindFacade)));
+                        new GridPoint(0f, -1f), scale)));
             }
 
             return entries;

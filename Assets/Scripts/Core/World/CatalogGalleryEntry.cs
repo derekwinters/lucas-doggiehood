@@ -8,9 +8,10 @@ namespace Doggiehood.Core.World
     /// yawed, and the annotation geometry (door marker, walkway
     /// placeholder, backyard fence outline) — all derived from the same
     /// Core APIs the game path uses so the Editor rendering can never
-    /// drift from reality. Since #146 the fence annotation is the REAL
-    /// backyard fence (<see cref="LotFence.BackyardRuns"/>: side-wall
-    /// midpoint anchors + rear line), no longer an authored-footprint
+    /// drift from reality. Since #146 (reshaped by #342) the fence
+    /// annotation is the REAL backyard fence
+    /// (<see cref="LotFence.BackyardRuns"/>: the lot-boundary-offset outline
+    /// with side-wall connectors), no longer an authored-footprint
     /// placeholder.
     /// </summary>
     public sealed class CatalogGalleryEntry

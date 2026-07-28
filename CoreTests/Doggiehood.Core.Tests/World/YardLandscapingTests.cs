@@ -191,6 +191,41 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void BackTrees_StillFitAgainstTheWiderDeeperLotBoundaryFence()
+        {
+            // #342: the backyard fence now traces the offset lot boundary
+            // (wider and deeper than #146's house-footprint-width fence), and
+            // YardLandscaping rejection-samples back candidates against it via
+            // LotFence.GeometryFor regardless of visibility. Confirm the back
+            // yard still has room: every real lot fills its full 3-5 back tree
+            // selection and each placed tree clears the wider/deeper fence.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var fenceRuns = LotFence.GeometryFor(lot);
+                Assert.That(fenceRuns.Count, Is.EqualTo(5),
+                    $"lot {lot.HouseId}: the fence is the five-run lot-boundary shape");
+
+                var backTrees = YardLandscaping.BackTreesFor(lot);
+                Assert.That(backTrees.Count, Is.InRange(YardLandscaping.BackSelectMin, YardLandscaping.BackSelectMax),
+                    $"lot {lot.HouseId}: the back yard must still fit its full 3-5 tree selection "
+                    + "against the wider/deeper fence");
+
+                var backYard = LotBounds.BackYard(lot);
+                foreach (var tree in backTrees)
+                {
+                    Assert.That(backYard.Contains(tree.Position), Is.True,
+                        $"lot {lot.HouseId}: back tree {tree.Position} must sit inside the back yard");
+                    foreach (var run in fenceRuns)
+                    {
+                        Assert.That(DistanceToSegment(tree.Position, run.A, run.B),
+                            Is.GreaterThanOrEqualTo(YardLandscaping.TreeFootprintRadius),
+                            $"lot {lot.HouseId}: back tree {tree.Position} must clear the wider/deeper fence line");
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void SelectFront_AlwaysPicksOneOrTwo_AndBothOccurAcrossManySeeds()
         {
             var pool = FarApartCandidates(YardLandscaping.FrontCandidateCount);
