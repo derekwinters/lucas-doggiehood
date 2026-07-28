@@ -65,7 +65,6 @@
   .verrow{display:inline-flex;flex-direction:column;gap:6px;}
   .verk{font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);opacity:.6;}
   .verv{font-size:44px;color:var(--ink);border:5px dashed var(--accent);border-radius:18px;padding:10px 22px;display:inline-block;}
-  .abmeta{margin-top:52px;font-size:24px;color:var(--ink);opacity:.55;}
 
   /* Debug pane rows */
   .drow{display:flex;align-items:center;height:96px;padding:0 30px;background:var(--panel);border:5px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink);margin-bottom:20px;}
@@ -128,12 +127,11 @@
           </div>
           <div class="pane">
             <h3 class="appname rounded">Doggiehood</h3>
-            <p class="apptag rounded">A neighborhood of dogs</p>
+            <p class="apptag rounded">Designed by Lucas</p>
             <div class="verrow">
               <span class="verk rounded">Version</span>
               <span class="verv rounded">0.4.0</span>
             </div>
-            <p class="abmeta rounded">Made by Derek &amp; Lucas</p>
           </div>
         </div>
       </div>
@@ -213,7 +211,7 @@
     <div>
       <h2>Regions</h2>
       <p class="note"><b>Title</b> (Settings) · <b>Sidebar</b> (tab rail: About, + Debug when unlocked) · <b>Content pane</b> (active tab's body) · <b>Close</b> (top-right ✕). Entry: a <b>gear</b> in the HUD's top-right corner (coins chip moved inboard, to its left).</p>
-      <p class="note"><b>About:</b> app name + tappable <b>version</b> label (also the debug-unlock target) + a small credits line.</p>
+      <p class="note"><b>About:</b> app name + a <b>"Designed by Lucas"</b> tagline line + tappable <b>version</b> label (also the debug-unlock target).</p>
       <p class="note"><b>Debug</b> (hidden until unlocked): a list of on-device toggles/actions. First toggle <b>Show backyard fences</b> drives <code>WorldBuilder.ForceFencesVisible</code> (#152). Room for more (e.g. <b>Add coins</b>, #286).</p>
       <h2 style="margin-top:22px;">Design decisions (approved)</h2>
       <p class="q"><b>① Entry point:</b> a <b>gear button in the HUD's top-right corner (furthest right)</b>, with the <b>currency chip moved just inboard, to the gear's left</b>. This nudges the currency-chip placement, so the HUD wireframe (#174) is flagged to reconcile — the gear takes the corner.</p>

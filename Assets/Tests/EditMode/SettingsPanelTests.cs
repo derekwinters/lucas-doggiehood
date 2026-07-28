@@ -134,6 +134,44 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(panel.VersionLabel.fontSize, Is.EqualTo(SettingsPanel.VersionFontSizePx));
         }
 
+        // --- #328: About-pane copy (tagline reads "Designed by Lucas"; no credit line) ---
+
+        [Test]
+        public void AboutPane_TaglineReadsDesignedByLucas()
+        {
+            var tagline = FindAboutLabel("Tagline");
+
+            Assert.That(tagline, Is.Not.Null, "the About pane still shows a tagline line");
+            Assert.That(tagline.text, Is.EqualTo("Designed by Lucas"),
+                "the About-pane tagline reads the #328 copy");
+        }
+
+        [Test]
+        public void AboutPane_HasNoCreditLine()
+        {
+            Assert.That(FindAboutLabel("Credits"), Is.Null,
+                "the 'Made by Derek & Lucas' credit line was dropped (#328)");
+
+            foreach (var label in panel.AboutPaneRect.GetComponentsInChildren<Text>(true))
+            {
+                Assert.That(label.text, Does.Not.Contain("Made by"),
+                    "no About-pane label carries the removed 'Made by …' credit copy (#328)");
+            }
+        }
+
+        private Text FindAboutLabel(string name)
+        {
+            foreach (var label in panel.AboutPaneRect.GetComponentsInChildren<Text>(true))
+            {
+                if (label.gameObject.name == name)
+                {
+                    return label;
+                }
+            }
+
+            return null;
+        }
+
         // --- #291: labels use a bundled font, not an Editor-only built-in lookup ---
 
         [Test]
