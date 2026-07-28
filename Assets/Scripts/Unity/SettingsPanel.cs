@@ -51,7 +51,6 @@ namespace Doggiehood.Unity
         private const int TitleFontSizePx = 52;
         private const int AppNameFontSizePx = 64;
         private const int TaglineFontSizePx = 26;
-        private const int CreditsFontSizePx = 24;
         private const int VersionCaptionFontSizePx = 22;
         private const int TabFontSizePx = 36;
         private const int CloseGlyphFontSizePx = 38;
@@ -63,8 +62,7 @@ namespace Doggiehood.Unity
         // --- Display strings ---
         private const string TitleText = "Settings";
         private const string AppNameText = "Doggiehood";
-        private const string TaglineText = "A neighborhood of dogs";
-        private const string CreditsText = "Made by Derek & Lucas";
+        private const string TaglineText = "Designed by Lucas";
         private const string AboutTabText = "About";
         private const string DebugTabText = "Debug";
         private const string VersionCaptionText = "Version";
@@ -135,6 +133,7 @@ namespace Doggiehood.Unity
         public RectTransform FenceToggleRect => fenceToggleRect;
         public RectTransform AddCoinsRowRect => addCoinsRowRect;
         public RectTransform AddCoinsButtonRect => addCoinsButtonRect;
+        public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
 
         /// <summary>Whether the panel is currently shown.</summary>
@@ -395,9 +394,6 @@ namespace Doggiehood.Unity
             AnchorTop(versionLabel.rectTransform, AppNameFontSizePx * 2.6f + VersionCaptionFontSizePx * 1.6f, VersionFontSizePx * 1.4f);
             versionLabel.gameObject.AddComponent<Button>().onClick.AddListener(
                 () => TapVersion(Time.unscaledTimeAsDouble));
-
-            var credits = CreateLabel("Credits", aboutPaneRect, CreditsText, CreditsFontSizePx, TextAnchor.UpperLeft);
-            AnchorTop(credits.rectTransform, AppNameFontSizePx * 4.2f, CreditsFontSizePx * 1.5f);
         }
 
         private void BuildDebugPane(RectTransform parent)
