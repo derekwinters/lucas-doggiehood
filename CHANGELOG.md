@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.4.0...v0.5.0) (2026-07-28)
+
+
+### Features
+
+* add "Add coins" debug action to the settings Debug tab ([#306](https://github.com/derekwinters/lucas-doggiehood/issues/306)) ([ca5cf89](https://github.com/derekwinters/lucas-doggiehood/commit/ca5cf89c4b361393f227d9e7fd6a2a71728d371c)), closes [#286](https://github.com/derekwinters/lucas-doggiehood/issues/286)
+* add /cap command to configure the nightly dev build limit ([#314](https://github.com/derekwinters/lucas-doggiehood/issues/314)) ([8e1ee2b](https://github.com/derekwinters/lucas-doggiehood/commit/8e1ee2b2aaa1af6a015a564329d4c9024e303479))
+* **dashboard:** add a Milestone column to every issue table ([#337](https://github.com/derekwinters/lucas-doggiehood/issues/337)) ([3ad77b0](https://github.com/derekwinters/lucas-doggiehood/commit/3ad77b040c9db51539c14f16b98f37b3bcad2eb4))
+* expand dashboard focus pie to a 7-slice pipeline-state breakdown ([#315](https://github.com/derekwinters/lucas-doggiehood/issues/315)) ([4d78c08](https://github.com/derekwinters/lucas-doggiehood/commit/4d78c08dfe9c05ea926118411ff6b21f738411fa))
+* house leveling system — upgrade 1→4, decoration cap, model-swap visuals ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59)) ([#302](https://github.com/derekwinters/lucas-doggiehood/issues/302)) ([a56119d](https://github.com/derekwinters/lucas-doggiehood/commit/a56119da1f501ed49658ee0b2c727692b3d96600))
+* **pipeline:** read native GitHub issue-dependency blockers alongside the text line ([#346](https://github.com/derekwinters/lucas-doggiehood/issues/346)) ([84a2afd](https://github.com/derekwinters/lucas-doggiehood/commit/84a2afd341754dcddd9b94ef22c432abbfcb1657))
+* seed one easy lost-item quest on first launch, suppress rotation until onboarding completes ([#323](https://github.com/derekwinters/lucas-doggiehood/issues/323)) ([92f360c](https://github.com/derekwinters/lucas-doggiehood/commit/92f360cce0c0b769bd9c7cb16faf152492da5efb))
+* show blockers on every dashboard section and auto-revisit unblocked questions ([#304](https://github.com/derekwinters/lucas-doggiehood/issues/304)) ([4586238](https://github.com/derekwinters/lucas-doggiehood/commit/4586238dd2c05ca1d0910494d4701085330066a2)), closes [#241](https://github.com/derekwinters/lucas-doggiehood/issues/241)
+* **ui:** simplify the About pane credit to "Designed by Lucas" ([#339](https://github.com/derekwinters/lucas-doggiehood/issues/339)) ([4913697](https://github.com/derekwinters/lucas-doggiehood/commit/4913697cc77a86ad34d4b211d1935d566d669a5a))
+* **world:** widen backyard fences to trace the lot boundary ([#342](https://github.com/derekwinters/lucas-doggiehood/issues/342)) ([c97902d](https://github.com/derekwinters/lucas-doggiehood/commit/c97902daeab0a4b9e0c73e62d3aa23d8222ca197))
+
+
+### Bug Fixes
+
+* face world markers to live camera yaw under free rotation ([#305](https://github.com/derekwinters/lucas-doggiehood/issues/305)) ([ab7e04a](https://github.com/derekwinters/lucas-doggiehood/commit/ab7e04afab6e079f23d25908378107902804ce48)), closes [#266](https://github.com/derekwinters/lucas-doggiehood/issues/266)
+* keep lost-item spawns clear of house footprints ([#307](https://github.com/derekwinters/lucas-doggiehood/issues/307)) ([d8372d4](https://github.com/derekwinters/lucas-doggiehood/commit/d8372d4500fbb2d614e4dedc5acbf91002179f48)), closes [#290](https://github.com/derekwinters/lucas-doggiehood/issues/290)
+* **onboarding:** gate the speech-bubble step and self-heal if it was already done ([#340](https://github.com/derekwinters/lucas-doggiehood/issues/340)) ([b29d1f9](https://github.com/derekwinters/lucas-doggiehood/commit/b29d1f9315f1cf95798f7ee13e98e5bc13cefda6))
+* **quests:** make the pest-quest house indicator clearly visible ([#341](https://github.com/derekwinters/lucas-doggiehood/issues/341)) ([799940a](https://github.com/derekwinters/lucas-doggiehood/commit/799940aa1aac11868712e3b18ea9d9f2f3783899))
+* retain UI/Default shader and bundle a font so the settings panel renders in builds ([#308](https://github.com/derekwinters/lucas-doggiehood/issues/308)) ([721d9ce](https://github.com/derekwinters/lucas-doggiehood/commit/721d9cec75cc59527441b8bb9d0e895a7067aecb)), closes [#291](https://github.com/derekwinters/lucas-doggiehood/issues/291)
+* route real lost-item taps through a padded screen-space tap zone ([#322](https://github.com/derekwinters/lucas-doggiehood/issues/322)) ([edcaeea](https://github.com/derekwinters/lucas-doggiehood/commit/edcaeeacdb24d2311f4828274d5e48b42f2254d6))
+* **ui:** create an EventSystem at bootstrap so Settings UGUI controls receive taps ([#338](https://github.com/derekwinters/lucas-doggiehood/issues/338)) ([c3161cf](https://github.com/derekwinters/lucas-doggiehood/commit/c3161cfc69febadb237d8f7637b748788ccd5745))
+
 ## [0.4.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.3.0...v0.4.0) (2026-07-25)
 
 
