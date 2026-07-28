@@ -39,14 +39,16 @@
   .scrim{position:absolute;inset:0;background:rgba(46,42,38,.42);}
 
   /* centered confirmation card */
-  .card{position:absolute;left:580px;top:396px;width:760px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);padding:48px;}
+  .card{position:absolute;left:580px;top:400px;width:760px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);padding:48px;}
   .title{font-size:44px;color:var(--ink);margin:0 0 20px;line-height:1.1;}
   .body{font-size:32px;color:var(--ink);margin:0;line-height:1.4;}
-  .body .coin{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);font-size:20px;vertical-align:-8px;margin:0 2px;}
   .actions{display:flex;gap:20px;margin-top:40px;}
-  .cc-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:16px;height:96px;padding:0 48px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);}
+  .cc-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:16px;height:96px;padding:0 40px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);}
   .btn-no{background:var(--cream);}
   .btn-yes{background:var(--leaf);}
+  /* optional cost group inside the Yes button — coin token + amount */
+  .cost{display:inline-flex;align-items:center;gap:8px;}
+  .cost .coin{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;background:var(--gold);border:5px solid var(--ink);font-size:22px;color:var(--ink);}
 
   .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
   @media (max-width:640px){ .info{grid-template-columns:1fr;} }
@@ -67,23 +69,24 @@
   <p class="eyebrow">Doggiehood · UI Wireframe · Confirmation Dialog · Reusable Overlay · Tablet · Landscape · 1920×1200</p>
   <h1 class="rounded">Confirmation dialog</h1>
   <p class="lede">A small, reusable centered card over a dimmed scene that asks the player to confirm one action.
-    The <b>title and body text are dynamic</b> — supplied by whatever opened it — and the two actions are simple
-    <b>No / Yes</b> pill buttons. First consumer: the map-expansion zone unlock (<a href="#">#343</a>), shown here
-    with placeholder copy.</p>
-  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. The title/body copy is a placeholder — real text is passed in by the caller.</p>
+    The <b>title and body text are dynamic</b> — supplied by whatever opened it — and the two actions are always
+    <b>No / Yes</b> (kept literal for young players). When the action costs coins, the <b>Yes button carries a coin +
+    amount</b> so the price is unmistakable. First consumer: the map-expansion zone unlock (<a href="#">#343</a>),
+    shown here with placeholder copy.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. The title/body copy and the 100-coin cost are placeholders — real text and amount are passed in by the caller.</p>
 
   <div class="viewer">
-    <div class="screen" role="img" aria-label="Landscape tablet with a dimmed neighborhood behind a centered confirmation card asking 'Unlock this area?' with No and Yes buttons">
+    <div class="screen" role="img" aria-label="Landscape tablet with a dimmed neighborhood behind a centered confirmation card asking 'Unlock this area?' with a No button and a Yes button showing a 100-coin cost">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
       <div class="lock rounded">🔒</div>
       <div class="scrim"></div>
       <div class="card">
         <h2 class="title rounded">Unlock this area?</h2>
-        <p class="body rounded">Spend <span class="coin rounded">¢</span> 100 coins to unlock the next neighborhood zone? You can build houses here once it's open.</p>
+        <p class="body rounded">Open up the next neighborhood zone so you can build houses here.</p>
         <div class="actions">
           <button class="cc-btn btn-no rounded">No</button>
-          <button class="cc-btn btn-yes rounded">Yes</button>
+          <button class="cc-btn btn-yes rounded">Yes <span class="cost"><span class="coin rounded">¢</span>100</span></button>
         </div>
       </div>
     </div>
@@ -101,23 +104,25 @@
         <tr><td>BodyFontSizePx</td><td class="val">32</td><td>dynamic body</td></tr>
         <tr><td>TitleBodyGapPx</td><td class="val">20</td><td>title → body</td></tr>
         <tr><td>ActionRowMarginPx</td><td class="val">40</td><td>body → buttons</td></tr>
-        <tr><td>ActionGapPx</td><td class="val">20</td><td>between the two buttons</td></tr>
+        <tr><td>ActionGapPx</td><td class="val">20</td><td>between No and Yes</td></tr>
+        <tr><td>CostCoinDiameterPx</td><td class="val">40</td><td>coin token in the Yes cost group</td></tr>
+        <tr><td>CostGapPx</td><td class="val">8</td><td>coin → amount</td></tr>
         <tr><td>&nbsp;↳ panel chrome</td><td class="val">#173</td><td>outline 6 / radius 40 / shadow 12–14</td></tr>
-        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>No + Yes (96px, equal width)</td></tr>
+        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>No + Yes (96px, equal width; IconGap 16 → cost)</td></tr>
       </table>
     </div>
     <div>
       <h2>Regions</h2>
       <p class="note"><b>Scrim</b> (full-screen dim; tapping it = <b>cancel</b> = No) · <b>Title</b> (dynamic) · <b>Body</b> (dynamic) · <b>Action row</b> (two equal-width pill buttons).</p>
       <p class="note"><b>Dynamic text:</b> title and body are set by the caller; the card grows vertically with the body length. Messages are meant to be short (one question + a sentence), so no scrolling — keep copy tight.</p>
-      <p class="note"><b>Buttons:</b> <b>No</b> = neutral/cream (left, the safe default), <b>Yes</b> = positive/leaf (right). The confirm tint is overridable to <b>coral</b> for a spend or destructive action (per the shared role-tint map); labels default to Yes/No but a caller may override (e.g. “Unlock” / “Cancel”). Both reuse the shared <b>PillButton</b> (#173).</p>
-      <p class="note"><b>Reusable:</b> one overlay any screen can raise. First use is the zone-unlock confirm (#343, tap the lock icon → this dialog → <code>TryUnlockNextZone()</code>); later uses (house build/upgrade spend, etc.) reuse it by passing their own copy.</p>
+      <p class="note"><b>Buttons:</b> always <b>No</b> (neutral/cream, left, the safe default) and <b>Yes</b> (positive/<b>leaf</b>, right) — labels stay literal Yes/No for a kids' game. The confirm is <b>always leaf</b>. When the action has a coin cost, <b>Yes shows a coin token + amount</b> after the word (a `CostCoinDiameterPx` gold token + tabular number, `IconGapPx` from the label); a cost-free confirmation shows just “Yes”. Both reuse the shared <b>PillButton</b> (#173).</p>
+      <p class="note"><b>Reusable:</b> one overlay any screen raises. First use is the zone-unlock confirm (#343, tap the lock icon → this dialog with the zone cost on Yes → <code>TryUnlockNextZone()</code>); later spend confirms (house build/upgrade) reuse it by passing their own copy + amount.</p>
     </div>
   </div>
 
   <footer>
     Reusable overlay · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built dialog against them.
-    <br><span class="status">Proposed — awaiting approval (Derek)</span>
+    <br><span class="status">Proposed (rev. 2) — awaiting approval (Derek)</span>
   </footer>
 </div>
 </body>
