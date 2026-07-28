@@ -24,6 +24,8 @@ Unity Test Framework (EditMode tests, run headless via `-batchmode -nographics` 
 
 **Default new logic to Core** unless it genuinely requires Unity APIs (rendering, input, physics, scene management). See [Testing Strategy](testing.md) for how this plays into TDD.
 
+**Runtime UGUI needs a bootstrapped `EventSystem`.** The runtime-built UI stack (`UiCanvas` + `GraphicRaycaster`, the `SettingsPanel`) only receives pointer input when an active `EventSystem` with an input module also exists — Unity auto-creates one only from the Editor's UI menu, never for runtime-built UI. `WorldBootstrap` ensures exactly one persistent `EventSystem` + `StandaloneInputModule` (`UiEventSystem.Ensure()`) beside the canvas; the module is the **legacy** `StandaloneInputModule` because the project pins `activeInputHandler: 0` (legacy Input Manager). Without it, UGUI controls are silently inert even though their handlers are wired ([#327](https://github.com/derekwinters/lucas-doggiehood/issues/327)).
+
 ### Geometry, layout, and tuning values are named variables
 
 *[#161](https://github.com/derekwinters/lucas-doggiehood/issues/161) — applies to every feature, graybox included*

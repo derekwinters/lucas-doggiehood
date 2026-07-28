@@ -83,6 +83,14 @@ namespace Doggiehood.Unity
             canvasObject.transform.SetParent(gameObject.transform);
             canvasObject.GetComponent<UiCanvas>().Configure();
 
+            // #327: the canvas's GraphicRaycaster is inert without an
+            // EventSystem driving it, and Unity never auto-creates one for
+            // runtime-built UI — so no UGUI control in the panel (close ✕,
+            // version-tap unlock, scrim, debug toggles) received taps on
+            // device. Ensure the single legacy-input EventSystem exists here,
+            // guarded against duplicates.
+            UiEventSystem.Ensure();
+
             var panelObject = new GameObject("SettingsPanel");
             panelObject.transform.SetParent(canvasObject.transform, false);
             var settings = panelObject.AddComponent<SettingsPanel>();
