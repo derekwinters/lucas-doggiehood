@@ -1,6 +1,6 @@
 # Confirmation dialog
 
-*Wireframe issue: [#344](https://github.com/derekwinters/lucas-doggiehood/issues/344). Implements/covers: `ConfirmationDialog` (reusable overlay). Approved: <pending>.*
+*Wireframe issue: [#344](https://github.com/derekwinters/lucas-doggiehood/issues/344). Implements/covers: `ConfirmationDialog` (reusable overlay). Approved: Derek, 2026-07-28 (in-session).*
 *Mockup: [mockups/confirmation-dialog.html](mockups/confirmation-dialog.html).*
 
 ## Purpose
