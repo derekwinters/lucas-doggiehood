@@ -210,5 +210,136 @@ namespace Doggiehood.Core.Tests.Onboarding
 
             Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.TapBubble));
         }
+
+        [Test]
+        public void OpeningTargetConversationEarly_IsRemembered_AndTapBubbleSelfHeals()
+        {
+            // #329: an early bubble tap during Pan/Zoom must not be silently
+            // dropped. The open is remembered (it doesn't skip the pan/zoom
+            // teaching steps), and on arriving at TapBubble the step
+            // self-heals instead of stranding with "nothing to tap".
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Pan));
+            onboarding.NotifyConversationOpened(onboarding.TargetDog);
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Pan),
+                "an early open must not skip the pan/zoom teaching steps");
+
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest),
+                "arriving at TapBubble self-heals because the bubble was already opened");
+        }
+
+        [Test]
+        public void AcceptingTheQuestEarlyDuringPanZoom_StillReachesDone_NotStranded()
+        {
+            // #329 core regression: opening AND accepting the seeded lost-item
+            // quest before the TapBubble step moves it out of Available, so the
+            // bubble can never re-present. The flow must self-heal past
+            // TapBubble and still reach Done rather than pinning the coach bar.
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+            var target = onboarding.TargetDog;
+
+            // Open and accept the quest during the very first (Pan) step.
+            onboarding.NotifyConversationOpened(target);
+            var quest = state.Quests.ActiveQuests.Single(q => q.DogName == target.Name);
+            state.Quests.Accept(quest);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted));
+
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest),
+                "TapBubble auto-advances when the quest already left Available");
+
+            // Finish the quest through the standard lost-item path.
+            state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value);
+            onboarding.NotifyQuestCompleted(quest);
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+            Assert.That(state.OnboardingComplete, Is.True);
+        }
+
+        [Test]
+        public void ReconcileOnPoll_SelfHealsTapBubble_WhenTheQuestAlreadyLeftAvailable()
+        {
+            // #329: even without an explicit early NotifyConversationOpened,
+            // a poll must self-heal if the target dog's quest is no longer
+            // Available (nothing left for the bubble to re-present).
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+            var target = onboarding.TargetDog;
+
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+
+            // The quest leaves Available by some other path; a fresh sequence
+            // sitting on TapBubble must reconcile rather than strand.
+            var quest = state.Quests.ActiveQuests.Single(q => q.DogName == target.Name);
+            state.Quests.Accept(quest);
+
+            var poller = new OnboardingSequence(state, new System.Random(7));
+            poller.NotifyPanned();
+            poller.NotifyZoomed();
+            Assert.That(poller.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest),
+                "entering TapBubble with no Available quest self-heals via reconcile");
+
+            poller.Reconcile();
+            Assert.That(poller.CurrentStep, Is.EqualTo(OnboardingStep.CompleteQuest),
+                "reconcile is idempotent while the quest is still being worked");
+        }
+
+        [Test]
+        public void ReconcileCascades_ToDone_WhenTheQuestIsAlreadyResolved()
+        {
+            // #329: if the whole interaction (open + accept + complete) already
+            // happened before TapBubble, reconcile cascades through
+            // CompleteQuest to Done in one poll rather than stranding.
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+            var target = onboarding.TargetDog;
+
+            var quest = state.Quests.ActiveQuests.Single(q => q.DogName == target.Name);
+            onboarding.NotifyConversationOpened(target);
+            state.Quests.Accept(quest);
+            state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value);
+            Assert.That(target.HasActiveQuest, Is.False, "quest fully resolved early");
+
+            onboarding.NotifyPanned();
+            onboarding.NotifyZoomed();
+
+            Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done),
+                "an already-resolved quest cascades TapBubble -> CompleteQuest -> Done");
+            Assert.That(state.OnboardingComplete, Is.True);
+        }
+
+        [Test]
+        public void ShouldSuppressBubble_HidesTheTargetDogsBubble_OnlyBeforeTapBubble()
+        {
+            // #329: the target dog's speech bubble is gated to the TapBubble
+            // step — suppressed during Pan/Zoom, tappable from TapBubble on.
+            var state = GameState.CreateNew();
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var onboarding = new OnboardingSequence(state, new System.Random(7));
+            var target = onboarding.TargetDog;
+            var other = state.Dogs.First(d => d != target);
+
+            Assert.That(onboarding.ShouldSuppressBubble(target), Is.True, "Pan: suppressed");
+            Assert.That(onboarding.ShouldSuppressBubble(other), Is.False, "non-target never suppressed");
+
+            onboarding.NotifyPanned();
+            Assert.That(onboarding.ShouldSuppressBubble(target), Is.True, "Zoom: still suppressed");
+
+            onboarding.NotifyZoomed();
+            Assert.That(onboarding.ShouldSuppressBubble(target), Is.False,
+                "TapBubble: the bubble becomes tappable for the first time");
+        }
     }
 }

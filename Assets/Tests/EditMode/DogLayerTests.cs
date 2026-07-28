@@ -1,6 +1,7 @@
 using System.Linq;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -73,6 +74,40 @@ namespace Doggiehood.Unity.EditModeTests
             view.Dog.ClearQuest();
             view.RefreshBubble();
             Assert.That(bubble.activeSelf, Is.False, "resolved -> bubble gone");
+        }
+
+        [Test]
+        public void TargetDogsBubble_IsGatedUntilTheTapBubbleStep_DuringOnboarding()
+        {
+            // #329: while onboarding runs, the target dog's speech bubble is
+            // gated to appear only at the TapBubble step, so it can't be
+            // tapped during Pan/Zoom and strand the tutorial. Once the flow
+            // reaches TapBubble the bubble shows and is tappable.
+            state.Quests.BeginInitialQuests(new System.Random(3));
+            var targetDog = state.Dogs.Single(d => d.HasActiveQuest);
+            var view = worldRoot.GetComponentsInChildren<DogView>().First(v => v.Dog == targetDog);
+            var bubble = view.transform.Find(DogView.BubbleName).gameObject;
+
+            var presenterHost = new GameObject("presenter");
+            var presenter = presenterHost.AddComponent<ConversationPresenter>();
+            presenter.State = state;
+            var overlayHost = new GameObject("onboarding-overlay");
+            var overlay = overlayHost.AddComponent<OnboardingOverlay>();
+            overlay.Init(state, null, presenter);
+
+            view.RefreshBubble();
+            Assert.That(bubble.activeSelf, Is.False, "Pan: the target dog's bubble is gated shut");
+
+            // A null-rig poll satisfies the pan/zoom steps, advancing to
+            // TapBubble; the real Available quest means it does not self-heal.
+            overlay.Poll();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.TapBubble));
+
+            view.RefreshBubble();
+            Assert.That(bubble.activeSelf, Is.True, "TapBubble: the bubble is now shown and tappable");
+
+            Object.DestroyImmediate(overlayHost);
+            Object.DestroyImmediate(presenterHost);
         }
 
         [Test]
