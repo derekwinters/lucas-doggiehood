@@ -2010,17 +2010,21 @@ writing that body back through the GitHub tools re-HTML-encodes it (<code>"</cod
 <code>&amp;#34;</code>, <code>&amp;</code> → <code>&amp;amp;</code>) and breaks the Mermaid charts
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/204">#204</a>).</p>
 <blockquote>
-<p><strong>Note (found while building #240):</strong> the <code>DASHBOARD_SET_FOCUS</code> override and
-its <code>_resolve_focus</code> precedence, described above and originally shipped in
-<a href="https://github.com/derekwinters/lucas-doggiehood/pull/230">#230</a>, are no
-longer present in <code>render_dashboard.py</code> — they were dropped when the shared
-<code>ai-skills</code> pipeline bundle was adopted
-(<a href="https://github.com/derekwinters/lucas-doggiehood/pull/238">#238</a>) without
-this doc being updated to match. <code>/cap</code>'s <code>DASHBOARD_SET_CAP</code> override was
-implemented fresh for #240 following this same documented pattern and <em>is</em>
-present in code today (see <code>_resolve_cap</code>). Restoring <code>/focus</code>'s override is
-a pre-existing gap outside #240's scope — flagged here rather than fixed
-silently; it should be filed as its own follow-up issue.</p>
+<p><strong>Note (history):</strong> the <code>DASHBOARD_SET_FOCUS</code> override and its
+<code>_resolve_focus</code> precedence, originally shipped in
+<a href="https://github.com/derekwinters/lucas-doggiehood/pull/230">#230</a>, were
+dropped when the shared <code>ai-skills</code> pipeline bundle was adopted
+(<a href="https://github.com/derekwinters/lucas-doggiehood/pull/238">#238</a>) — and,
+separately, the comment-triggered gatekeeper (<code>run_comment_event.py</code>) never
+applied <code>set_focus</code> <strong>or</strong> <code>set_cap</code>, so a <code>/focus</code> comment was acknowledged
+but never actually moved focus (the marker stayed pinned to whatever the
+dashboard's own fallback first wrote). Both gaps are now fixed
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/204">#204</a> /
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/234">#234</a>):
+<code>_resolve_focus</code> is restored in <code>render_dashboard.py</code> (mirroring
+<code>_resolve_cap</code>), and <code>run_comment_event.py</code> re-renders #193 with the
+matching <code>DASHBOARD_SET_FOCUS</code> / <code>DASHBOARD_SET_CAP</code> override whenever a
+processed action carries <code>set_focus</code> / <code>set_cap</code>.</p>
 </blockquote>
 <p><code>/focus</code> is now honored on the dashboard issue itself, and a <code>/focus</code> naming a
 milestone that matches no live milestone is rejected rather than silently
