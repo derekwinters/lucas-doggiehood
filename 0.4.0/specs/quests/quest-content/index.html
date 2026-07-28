@@ -1676,6 +1676,7 @@
 <h3 id="3-bug-problem">3. Bug problem<a class="headerlink" href="#3-bug-problem" title="Permanent link">&para;</a></h3>
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/53">#53</a></em></p>
 <p>A dog's house has a bug problem; the player helps by spraying to clear it out. While the quest is active, a bug swarm hovers over the affected house so the player can tell which one needs attention; tapping that house sprays it, which clears the swarm and completes the quest. There's no separate spray tool or aiming — the house itself is the tap target. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/157">#157</a>)</p>
+<p>The indicator must be <strong>clearly visible, not merely present</strong>: a first-time player must be able to tell which house needs spraying without guessing. It is a world-space marker (no HUD overlay), positioned above the house's <strong>actual</strong> roofline — measured from the house mesh, not a blind fixed height — and made deliberately readable under the fixed 45° orthographic camera: a bright, tall beacon topped by a chunky pest swarm, rising far enough to poke into open sky so a tall roof can't occlude it. It stays purely feedback (no collider — the house underneath remains the tap target) and clears the instant the house is sprayed. The current form is graybox; the final low-poly pest art swaps in via <a href="https://github.com/derekwinters/lucas-doggiehood/issues/334">#334</a>. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/331">#331</a>)</p>
 <h2 id="not-a-quest-type-decoration-requests">Not a quest type: decoration requests<a class="headerlink" href="#not-a-quest-type-decoration-requests" title="Permanent link">&para;</a></h2>
 <p>Decoration requests (a dog wants something comfy for its yard) are handled by the <a href="../../decorations/">Decorations</a> system — mechanically similar to "buy something" but with a generic prompt and a small set of player-chosen options rather than one named item.</p>
 <h2 id="authoring">Authoring<a class="headerlink" href="#authoring" title="Permanent link">&para;</a></h2>
@@ -1686,6 +1687,7 @@
 <li>[ ] "Lost something" quest: item placed in-scene, resolved by pan/zoom + tap, no separate search screen</li>
 <li>[ ] "Buy something" quest: accept → currency deducted → delivery truck spawns → dog walks home and sits → truck delivers to the door → dog "receives" it (decoration/item appears)</li>
 <li>[ ] "Bug problem" quest: spray interaction clears the bug state and completes the quest</li>
+<li>[ ] "Bug problem" quest: the affected house carries a <strong>clearly visible</strong> world-space indicator (readable under the 45° camera, clears the roofline, feedback-only) that clears the moment the house is sprayed (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/331">#331</a>)</li>
 <li>[ ] All 3 types are driven by the shared quest template system, not hard-coded per instance</li>
 <li>[ ] Each quest type correctly triggers the flat 10-coin payout on completion (see <a href="../economy/">Quest &amp; Economy</a>)</li>
 </ul>
