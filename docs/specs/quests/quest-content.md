@@ -28,6 +28,8 @@ A dog asks the player to buy it something — a toy, or a pool for its house. Re
 
 A dog's house has a bug problem; the player helps by spraying to clear it out. While the quest is active, a bug swarm hovers over the affected house so the player can tell which one needs attention; tapping that house sprays it, which clears the swarm and completes the quest. There's no separate spray tool or aiming — the house itself is the tap target. ([#157](https://github.com/derekwinters/lucas-doggiehood/issues/157))
 
+The indicator must be **clearly visible, not merely present**: a first-time player must be able to tell which house needs spraying without guessing. It is a world-space marker (no HUD overlay), positioned above the house's **actual** roofline — measured from the house mesh, not a blind fixed height — and made deliberately readable under the fixed 45° orthographic camera: a bright, tall beacon topped by a chunky pest swarm, rising far enough to poke into open sky so a tall roof can't occlude it. It stays purely feedback (no collider — the house underneath remains the tap target) and clears the instant the house is sprayed. The current form is graybox; the final low-poly pest art swaps in via [#334](https://github.com/derekwinters/lucas-doggiehood/issues/334). ([#331](https://github.com/derekwinters/lucas-doggiehood/issues/331))
+
 ## Not a quest type: decoration requests
 
 Decoration requests (a dog wants something comfy for its yard) are handled by the [Decorations](../decorations.md) system — mechanically similar to "buy something" but with a generic prompt and a small set of player-chosen options rather than one named item.
@@ -43,5 +45,6 @@ Item/subject names for all 3 types (and for decoration requests) are drawn from 
 - [ ] "Lost something" quest: item placed in-scene, resolved by pan/zoom + tap, no separate search screen
 - [ ] "Buy something" quest: accept → currency deducted → delivery truck spawns → dog walks home and sits → truck delivers to the door → dog "receives" it (decoration/item appears)
 - [ ] "Bug problem" quest: spray interaction clears the bug state and completes the quest
+- [ ] "Bug problem" quest: the affected house carries a **clearly visible** world-space indicator (readable under the 45° camera, clears the roofline, feedback-only) that clears the moment the house is sprayed ([#331](https://github.com/derekwinters/lucas-doggiehood/issues/331))
 - [ ] All 3 types are driven by the shared quest template system, not hard-coded per instance
 - [ ] Each quest type correctly triggers the flat 10-coin payout on completion (see [Quest & Economy](economy.md))
