@@ -21,8 +21,11 @@ import check_revisits  # noqa: E402
 SCRIPT = os.path.join(HERE, os.pardir, "check_revisits.py")
 
 
-def issue(number, labels=None, body=""):
-    return {"number": number, "labels": labels or [], "body": body}
+def issue(number, labels=None, body="", native_blocked_by=None):
+    d = {"number": number, "labels": labels or [], "body": body}
+    if native_blocked_by is not None:
+        d["native_blocked_by"] = native_blocked_by
+    return d
 
 
 def revisits_for(number, out):
@@ -123,6 +126,51 @@ class TestCheckBlockerRevisits(unittest.TestCase):
             issue(1, labels=["ready-for-work"]),
             issue(2, labels=["needs-clarification", "parked"],
                   body="Blocked by: #1"),
+        ])
+        self.assertEqual(revisits_for(2, out), [])
+
+    def test_native_only_blocker_triggers_revisit(self):
+        # Issue 2's ONLY blocker is a native GitHub relationship (#321) — no
+        # `Blocked by:` text line at all. Once blocker #1 is closed (absent from
+        # the open snapshot), issue 2 must still revisit. The gatekeeper SKILL
+        # feeds native blockers into the snapshot's `native_blocked_by` field.
+        out = check_revisits.check_blocker_revisits([
+            issue(2, labels=["needs-clarification"], body="just a question",
+                  native_blocked_by=[1]),
+        ])
+        r = revisits_for(2, out)
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["blockers_resolved"], [1])
+
+    def test_native_only_blocker_unresolved_does_not_revisit(self):
+        # Native blocker #1 is open and unresolved -> no revisit (regression
+        # guard, parity with the text-line path).
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["pending-approval"]),
+            issue(2, labels=["needs-clarification"], body="",
+                  native_blocked_by=[1]),
+        ])
+        self.assertEqual(revisits_for(2, out), [])
+
+    def test_native_and_text_blockers_union(self):
+        # Text line names #1, native relationship names #3 — the union gates the
+        # revisit and both are reported once all resolve (1 ready, 3 absent).
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["ready-for-work"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1",
+                  native_blocked_by=[3]),
+        ])
+        r = revisits_for(2, out)
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["blockers_resolved"], [1, 3])
+
+    def test_native_and_text_blockers_partial_does_not_revisit(self):
+        # Text blocker #1 resolved but native blocker #3 still unresolved -> stay.
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["ready-for-work"]),
+            issue(3, labels=["pending-approval"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1",
+                  native_blocked_by=[3]),
         ])
         self.assertEqual(revisits_for(2, out), [])
 

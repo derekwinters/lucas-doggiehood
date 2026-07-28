@@ -233,6 +233,53 @@ _STRUCTURED_DEP_LINE_RE = re.compile(
 _HASH_NUM_RE = re.compile(r"#(\d+)")
 
 
+# --------------------------------------------------------------------------
+# Native hard-blocker source + canonical merge (issue #321). GitHub's native
+# issue-dependency relationships cover the HARD-blocker form only (`Blocked by:`
+# semantics); there is NO native equivalent for the soft-ordering `Depends on:`
+# form (#197), which stays text-line-only. Every deterministic reader unions the
+# native `blocked_by` set with the text-line parse through `merge_blockers`, so
+# the blocker graph the nightly builder, reconcile, the dashboard, and the #212
+# milestone-order gate consume is identical everywhere — one canonical rule, no
+# duplicated parsing. Migration-safe: the text line keeps being read throughout.
+# --------------------------------------------------------------------------
+
+def merge_blockers(text_blockers, native_blockers=()):
+    """Canonical hard-blocker merge: text-line `Blocked by:` ∪ native.
+
+    Returns the union of the structured ``Blocked by: #N`` numbers and the
+    native GitHub issue-dependency ``blocked_by`` numbers, coerced to ``int``,
+    de-duplicated and sorted ascending. ``native_blockers`` defaults to empty so
+    a caller that only has the text line still works during migration.
+    """
+    merged = {int(n) for n in text_blockers}
+    merged |= {int(n) for n in native_blockers}
+    return sorted(merged)
+
+
+def native_blocked_by(repo, number, token):
+    """Set of issue **numbers** ``#number`` is natively "blocked by".
+
+    Reads the GitHub issue-dependencies REST API
+    (``GET /repos/{repo}/issues/{n}/dependencies/blocked_by``), which returns
+    full issue objects — so each blocker's identity is its ``number`` field.
+    (The write side, ``POST …/blocked_by``, takes a numeric ``issue_id`` instead
+    — a read/write asymmetry this reader deliberately does not conflate.)
+
+    I/O only, not exercised by the unit tests (same split as the rest of this
+    fetch layer). Any HTTP error — e.g. the dependencies API being unavailable —
+    degrades safely to an empty set so the sweep falls back to the text line
+    rather than crashing (migration-safe).
+    """
+    try:
+        items = _paginate(
+            "/repos/%s/issues/%d/dependencies/blocked_by" % (repo, number),
+            token)
+    except urllib.error.HTTPError:
+        return set()
+    return {i["number"] for i in items if isinstance(i, dict) and "number" in i}
+
+
 def prose_deps_in(body, native_refs=()):
     """Issue numbers referenced as a dependency **only in prose** in ``body``.
 
@@ -299,6 +346,13 @@ def fetch_state(repo, token):
     for i in issues_raw:
         labels = labels_of(i)
         ms = i.get("milestone")
+        # Native hard-blocker relationships satisfy a dependency just like a
+        # structured `Blocked by:` line (#321), so they must clear the
+        # prose-only-dependency flag. Only open issues are fetched — closed ones
+        # are excluded from the prose-dep flag by `process` anyway, and skipping
+        # them avoids needless API calls.
+        native_refs = (native_blocked_by(repo, i["number"], token)
+                       if i["state"] == "open" else set())
         issues.append({
             "number": i["number"],
             "state": i["state"],
@@ -307,7 +361,8 @@ def fetch_state(repo, token):
             "is_epic": "type:epic" in labels,
             "is_dashboard": i["number"] == DASHBOARD_ISSUE,
             "has_open_pr": i["number"] in open_pr_refs,
-            "prose_deps": prose_deps_in(i.get("body") or ""),
+            "prose_deps": prose_deps_in(i.get("body") or "",
+                                        native_refs=native_refs),
         })
 
     return {

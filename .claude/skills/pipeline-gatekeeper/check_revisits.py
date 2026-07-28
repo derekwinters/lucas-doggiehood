@@ -21,11 +21,16 @@ via the GitHub MCP tools and applies each returned action.
 
 Input schema (stdin / ``process``):
   {"issues": [{"number": 2, "labels": ["needs-clarification"],
-               "body": "Blocked by: #1"}]}
+               "body": "Blocked by: #1", "native_blocked_by": [1]}]}
 
-  ``issues`` is the snapshot of **open** issues only (number, labels, body); a
-  closed/merged blocker is therefore simply absent from the list and counts as
-  resolved.
+  ``issues`` is the snapshot of **open** issues only (number, labels, body, and
+  optional ``native_blocked_by``); a closed/merged blocker is therefore simply
+  absent from the list and counts as resolved. ``native_blocked_by`` (issue
+  #321) carries the issue's native GitHub issue-dependency hard blockers, which
+  the gatekeeper SKILL reads from the dependencies API and unions with the
+  structured ``Blocked by: #N`` text lines — so a blocker recorded only natively
+  still gates (and clears) a revisit. There is no native soft-ordering form;
+  ``Depends on:`` never gates a revisit.
 
 Output schema (stdout / ``process``):
   {"revisits": [{"issue": 2, "add_labels": ["ai-triage"],
@@ -34,8 +39,9 @@ Output schema (stdout / ``process``):
 
 A blocker is **resolved** when it is absent from the open snapshot (closed) or
 carries ``ready-for-work`` / ``in-progress``. An issue is revisited only when it
-is ``needs-clarification``, not ``parked``, has at least one structured
-``Blocked by: #N`` line, and **every** such blocker is resolved.
+is ``needs-clarification``, not ``parked``, has at least one hard blocker (from a
+structured ``Blocked by: #N`` line or a native GitHub relationship), and
+**every** such blocker is resolved.
 """
 
 import json
@@ -93,7 +99,15 @@ def check_blocker_revisits(issues):
         labels = set(i.get("labels", []))
         if "needs-clarification" not in labels or "parked" in labels:
             continue
-        blockers = _structured_blockers(i.get("body", ""))
+        # Hard blockers gating a revisit come from BOTH the structured
+        # `Blocked by: #N` text lines and native GitHub issue-dependency
+        # relationships (#321) — the gatekeeper SKILL populates the snapshot's
+        # `native_blocked_by` from the dependencies API. An issue whose only
+        # blocker was recorded natively (no text line) still revisits once that
+        # blocker resolves. Soft `Depends on:` ordering has no native form and
+        # never gates a revisit.
+        blockers = set(_structured_blockers(i.get("body", "")))
+        blockers |= {int(n) for n in i.get("native_blocked_by") or []}
         if not blockers:
             continue
         if all(resolved(b) for b in blockers):
@@ -101,7 +115,7 @@ def check_blocker_revisits(issues):
                 "issue": i["number"],
                 "add_labels": list(REVISIT_ADD),
                 "remove_labels": list(REVISIT_REMOVE),
-                "blockers_resolved": sorted(set(blockers)),
+                "blockers_resolved": sorted(blockers),
                 "menu": REVISIT_MENU,
             })
     return revisits

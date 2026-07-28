@@ -94,6 +94,29 @@ class TestSelectQueue(unittest.TestCase):
         ))
         self.assertEqual(out["selected"], [210, 211])
 
+    def test_native_only_blocker_gates_eligibility(self):
+        # #321: an issue whose hard blocker was recorded ONLY as a native
+        # GitHub issue-dependency (no `Blocked by:` text line) must gate exactly
+        # like a text-line blocker. `select_queue` is pure and reads the merged
+        # `blocked_by` the SKILL snapshot step populates (native ∪ text line),
+        # so a native-sourced blocker arrives here as an ordinary `blocked_by`
+        # entry. While the native blocker #109 is open, the dependent stays out.
+        out = run(payload(
+            [issue(210), issue(211, blocked_by=[109])],
+            open_numbers=[109, 210, 211],
+        ))
+        self.assertEqual(out["selected"], [210])
+        self.assertTrue(any(s["number"] == 211 for s in out["skipped"]))
+
+    def test_native_only_blocker_clears_when_closed(self):
+        # Once the natively-recorded blocker #109 closes (absent from the open
+        # set), the dependent becomes eligible — same as the text-line path.
+        out = run(payload(
+            [issue(210), issue(211, blocked_by=[109])],
+            open_numbers=[210, 211],
+        ))
+        self.assertEqual(out["selected"], [210, 211])
+
     def test_topological_order_dependency_first(self):
         # 210 depends on 212 for ordering (both eligible, no hard blocker) ->
         # 212 must build before 210 even though 210 has the lower number.

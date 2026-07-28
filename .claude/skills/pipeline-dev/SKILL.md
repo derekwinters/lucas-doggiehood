@@ -51,11 +51,18 @@ dashboard issue.
 
 2. **Gather the snapshot** with the GitHub MCP tools: every open issue that has
    `ready-for-work`, with its `labels`, `milestone`, `is_epic`, whether it has
-   an open PR (`has_open_pr`), its hard blockers (`blocked_by` — issues it
-   can't start until they close/merge, from sub-issue parents and
-   `Blocked by: #N` lines), and its ordering hints (`depends_on` — sibling
-   sub-issues or soft prerequisites). Also collect `open_issue_numbers` (all
-   currently-open issue numbers) so blockers can be resolved.
+   an open PR (`has_open_pr`), its hard blockers (`blocked_by`), and its ordering
+   hints (`depends_on` — sibling sub-issues or soft prerequisites). Also collect
+   `open_issue_numbers` (all currently-open issue numbers) so blockers can be
+   resolved.
+
+   **`blocked_by` is the union of native and text (#321).** Populate each issue's
+   `blocked_by` from **both** sources, de-duped: the **native** GitHub
+   issue-dependency relationships (read `GET /repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by`
+   — canonical for hard blockers) **and** the structured `Blocked by: #N` lines
+   in the body (still read throughout migration). Native alone is sufficient; the
+   text line is optional/redundant. `depends_on` (soft ordering) has **no** native
+   form — parse it from the `Depends on: #N` text line only, never from native.
 
 3. **Select the queue** deterministically, passing the cap read in step 1 as
    the `cap` input:
@@ -124,7 +131,10 @@ dashboard issue.
 ## Tests
 
 `tests/test_select_queue.py` covers eligibility (label, milestone, parked,
-epic, open PR, hard blockers), topological ordering, and the cap. Run:
+epic, open PR, hard blockers — including a native-only blocker, #321),
+topological ordering, and the cap. Because `select_queue.py` is pure and reads
+the merged `blocked_by` the snapshot step populates, a native-sourced blocker
+gates identically to a text-line one. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-dev/tests

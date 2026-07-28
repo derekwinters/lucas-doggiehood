@@ -31,8 +31,12 @@ The workflow runs `render_dashboard.py --write`, which:
 1. `fetch_state()` — queries the GitHub REST API (stdlib `urllib`, no pip
    deps) for issues by label, milestone roll-ups, open PRs (release-please
    broken out), the focus marker on #193, blocked state, and the unblocker
-   graph (`compute_unblockers`, derived from the structured `Blocked by:`
-   lines) that stars the highest-leverage queue picks (#250).
+   graph (`compute_unblockers`, derived from the merged hard-blocker set —
+   structured `Blocked by:` text lines **unioned** with native GitHub
+   issue-dependency relationships via `_merged_blocked_by` / reconcile's shared
+   `merge_blockers`, #321) that stars the highest-leverage queue picks (#250).
+   The "Blocked by" columns read the same merged set, so native relationships
+   surface everywhere the text line does; soft `Depends on:` has no native form.
 2. `render_body(state)` — renders the approved markdown (see below).
 3. PATCHes **only** #193's body. Mutates nothing else.
 
@@ -79,8 +83,10 @@ milestones outside the focus.
 `tests/test_render.py` checks structural invariants (pie values and colors,
 focus marker, section headers, exclusions), the cap marker/display and the
 `_read_cap_marker` / `_resolve_cap` precedence (override → marker → default,
-issue #240), and a **golden snapshot** (`tests/expected_dashboard.md`)
-rendered from `tests/fixture_state.json`, so any format drift fails CI. Run:
+issue #240), the `compute_unblockers` graph, `_merged_blocked_by` (the
+native ∪ text-line hard-blocker merge, #321), and a **golden snapshot**
+(`tests/expected_dashboard.md`) rendered from `tests/fixture_state.json`, so any
+format drift fails CI. Run:
 
 ```bash
 python3 -m unittest discover -s .claude/skills/pipeline-dashboard/tests

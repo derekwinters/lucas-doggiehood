@@ -69,9 +69,10 @@ def compute_unblockers(graph):
     """Map each unblocking issue to the sorted open issues it unblocks (#250).
 
     ``graph`` is a list of ``{"number": int, "blocked_by": [int, ...]}`` for the
-    OPEN issues only; ``blocked_by`` holds the hard blockers parsed from the
-    structured ``Blocked by: #N`` lines (see ``_blocked_by``). Reads the same
-    blocker graph the nightly builder / reconcile use — not prose.
+    OPEN issues only; ``blocked_by`` holds the hard blockers — the structured
+    ``Blocked by: #N`` text lines UNIONED with native GitHub issue-dependency
+    relationships (``_merged_blocked_by``, #321). Reads the same merged blocker
+    graph the nightly builder / reconcile use — never prose.
 
     An **unblocking issue** is one that is open, is **not itself blocked** by any
     open issue, and appears in at least one other open issue's ``blocked_by``
@@ -492,6 +493,16 @@ def fetch_state(repo, token, as_of):
     def labels_of(i):
         return {l["name"] for l in i.get("labels", [])}
 
+    # Native GitHub issue-dependency hard blockers per OPEN issue (#321), read
+    # from the dependencies API via reconcile's shared fetcher. Merged with the
+    # text-line `Blocked by:` parse (`_merged_blocked_by`) everywhere a blocker
+    # graph is built below, so the "Blocked by" columns and the unblocker graph
+    # both see native relationships. Only open issues are fetched — closed ones
+    # never appear in a blocker graph.
+    native_bb = {i["number"]: _reconcile_mod().native_blocked_by(
+                     repo, i["number"], token)
+                 for i in issues if i["state"] == "open"}
+
     # Milestone roll-up.
     milestones = {}
     for i in issues:
@@ -557,7 +568,9 @@ def fetch_state(repo, token, as_of):
             if label(lbl):
                 out.append({"number": i["number"], "title": _clean(i["title"]),
                             "milestone": _milestone_title(i),
-                            "blocked_by": _blocked_by(i.get("body") or "")})
+                            "blocked_by": _merged_blocked_by(
+                                i.get("body") or "",
+                                native_bb.get(i["number"], ()))})
         return out
 
     intake = open_issues_with(lambda l: not (l & {
@@ -589,7 +602,8 @@ def fetch_state(repo, token, as_of):
     open_numbers = {i["number"] for i in issues if i["state"] == "open"}
     open_graph = [
         {"number": i["number"],
-         "blocked_by": [b for b in _blocked_by(i.get("body") or "")
+         "blocked_by": [b for b in _merged_blocked_by(
+                            i.get("body") or "", native_bb.get(i["number"], ()))
                         if b in open_numbers]}
         for i in issues if i["state"] == "open"
     ]
@@ -602,7 +616,8 @@ def fetch_state(repo, token, as_of):
         ms = i.get("milestone")
         if (i["state"] == "open" and "ready-for-work" in lbl
                 and ms and ms["title"] == focus_title and "parked" not in lbl):
-            blocked = any(b in open_numbers for b in _blocked_by(i.get("body") or ""))
+            blocked = any(b in open_numbers for b in _merged_blocked_by(
+                i.get("body") or "", native_bb.get(i["number"], ())))
             queue.append({"number": i["number"], "title": _clean(i["title"]),
                           "milestone": _milestone_title(i),
                           "blocked": blocked,
@@ -665,6 +680,43 @@ def fetch_state(repo, token, as_of):
     }
 
 
+_RECONCILE_MOD = None
+
+
+def _reconcile_mod():
+    """Load ``pipeline-reconcile``'s ``reconcile`` module once and cache it.
+
+    The dashboard reuses reconcile's canonical helpers — ``merge_blockers`` (the
+    one shared hard-blocker merge rule, #321) and ``native_blocked_by`` (the
+    native issue-dependency fetcher) — so the blocker graph the dashboard reads
+    is identical to the one reconcile / the nightly builder / the #212
+    milestone-order gate read. No duplicated parsing.
+    """
+    global _RECONCILE_MOD
+    if _RECONCILE_MOD is None:
+        import importlib.util
+        here = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(here, os.pardir, "pipeline-reconcile", "reconcile.py")
+        spec = importlib.util.spec_from_file_location("pipeline_reconcile", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _RECONCILE_MOD = mod
+    return _RECONCILE_MOD
+
+
+def _merged_blocked_by(body, native_refs=()):
+    """One issue's hard blockers: structured ``Blocked by: #N`` text lines
+    UNIONED with native GitHub issue-dependency blockers (``native_refs``),
+    de-duped and sorted via the canonical ``merge_blockers`` helper (#321).
+
+    Feeds both the "Blocked by" columns and the ``compute_unblockers`` graph, so
+    both read native the same way — never prose. ``native_refs`` defaults to
+    empty so the text line alone still works during migration. Soft
+    ``Depends on:`` ordering has no native form and is not merged here.
+    """
+    return _reconcile_mod().merge_blockers(_blocked_by(body), native_refs)
+
+
 def _reconcile_block(repo, token, issues):
     """Populate the dashboard's ``reconcile`` block from the sweep's findings.
 
@@ -673,13 +725,7 @@ def _reconcile_block(repo, token, issues):
     issue numbers to titles from the issues this renderer already fetched.
     I/O-layer only; not exercised by the render unit tests.
     """
-    import importlib.util
-    here = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(here, os.pardir, "pipeline-reconcile", "reconcile.py")
-    spec = importlib.util.spec_from_file_location("pipeline_reconcile", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
+    mod = _reconcile_mod()
     findings = mod.process(mod.fetch_state(repo, token))
     titles = {i["number"]: _clean(i["title"]) for i in issues}
 
