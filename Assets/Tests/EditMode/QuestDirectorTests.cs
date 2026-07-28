@@ -128,6 +128,46 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void BugSwarmIndicator_IsReadable_RisesClearOfTheRoof_IsTall_Bright_AndFeedbackOnly()
+        {
+            // #331: the indicator machinery worked but read as nothing on
+            // device — three tiny (0.35m) near-black cubes hovering a blind 3m
+            // over the roof under the 45-deg ortho camera. This locks in a
+            // legibility contract so it can't regress to "tiny dark cubes":
+            // the marker must rise clear of the affected house's ACTUAL roof
+            // (so a roof can't occlude it), have obvious vertical extent, be
+            // brightly colored, and stay feedback-only (no collider, so the
+            // house underneath remains the tap target). On-screen readability
+            // itself is confirmed by Derek on device — headless CI can't
+            // assert visual legibility.
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.PestControl, new System.Random(5));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            director.OnQuestAccepted(quest);
+
+            var swarm = Object.FindObjectsByType<BugSwarmView>(FindObjectsSortMode.None).Single();
+            var houseView = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
+                .Single(h => h.HouseId == dog.HouseId);
+
+            var roofTop = CombinedRendererBounds(houseView.GetComponentsInChildren<Renderer>()).max.y;
+            var indicator = CombinedRendererBounds(swarm.GetComponentsInChildren<Renderer>());
+
+            Assert.That(indicator.max.y, Is.GreaterThan(roofTop + 1.5f),
+                "the indicator must rise well clear of the roof so the roof can't hide it");
+            Assert.That(indicator.size.y, Is.GreaterThan(1.5f),
+                "the indicator needs obvious vertical extent, not three tiny cubes at one height");
+
+            var brightest = swarm.GetComponentsInChildren<Renderer>()
+                .Max(r => r.sharedMaterial.color.maxColorComponent);
+            Assert.That(brightest, Is.GreaterThan(0.6f),
+                "the indicator must be brightly colored, not the old near-black swarm");
+
+            Assert.That(swarm.GetComponentsInChildren<Collider>(), Is.Empty,
+                "the indicator is feedback-only — no collider may intercept the tap meant for the house");
+        }
+
+        [Test]
         public void AcceptingALostItemQuest_SpawnsATappableItem_ThatCompletesOnRaycastTap()
         {
             // #12/#31/#157: end-to-end lost-item path — accepting spawns a
@@ -292,6 +332,18 @@ namespace Doggiehood.Unity.EditModeTests
             }
 
             return (minX, minY, maxX, maxY);
+        }
+
+        private static Bounds CombinedRendererBounds(Renderer[] renderers)
+        {
+            Assert.That(renderers, Is.Not.Empty, "expected at least one renderer to bound");
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            return bounds;
         }
 
         private static float PerpendicularDistanceFromLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
