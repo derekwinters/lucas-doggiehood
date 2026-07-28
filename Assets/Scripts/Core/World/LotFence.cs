@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Doggiehood.Core.World
 {
-    /// <summary>One straight fence line (#129, reshaped by #146): a
+    /// <summary>One straight fence line (#129, reshaped by #146/#342): a
     /// segment of a lot's backyard fence, on the ground plane. Purely
     /// geometric — the tiling into kit pieces is
     /// <see cref="FenceTiling"/>'s job.</summary>
@@ -31,62 +31,58 @@ namespace Doggiehood.Core.World
     }
 
     /// <summary>
-    /// Per-lot backyard fence geometry (#146, replacing #129's boundary
-    /// square with a gate gap): three continuous runs anchored at the
-    /// midpoint of each side wall of the HOUSE, wrapping around the back
-    /// yard only. The front yard stays open — no fence line ever crosses
-    /// the front, so the walkway (#128, door → sidewalk) needs no gate.
-    /// The fence rotates with the house facing: side anchors sit
-    /// ±(scaled FootprintX / 2) perpendicular to
-    /// <see cref="HousePlacement.FrontFacing"/> at the house's depth
-    /// midpoint, and the rear line sits
-    /// <see cref="RearBoundaryFromLotCenter"/> behind the lot center, away
-    /// from the faced street.
+    /// Per-lot backyard fence geometry (#342, adopting #147's settled
+    /// rules; supersedes #146's house-footprint-width fence). The fence
+    /// line traces the LOT BOUNDARY rather than the house: it is inset from
+    /// EVERY edge of the lot's <see cref="LotBounds.QuadrantBounds"/> by one
+    /// <see cref="BoundaryOffset"/> — uniform whether that edge borders a
+    /// sidewalk, a neighbouring yard, or the map edge (so #146's corner-lot
+    /// house-anchoring dissolves).
+    ///
+    /// The shape is FIVE runs, front open: two side runs plus one rear run
+    /// trace the offset boundary rectangle around the back yard, and two
+    /// short connectors turn perpendicular-inward from each side run's front
+    /// end (truncated at the house's depth midpoint) to the house side-wall
+    /// midpoints. The front yard stays open — no fence line ever crosses the
+    /// front, so the walkway (#128, door → sidewalk) needs no gate. The
+    /// whole shape rotates with the house facing
+    /// (<see cref="HousePlacement.FrontFacing"/>).
     ///
     /// Fences are defined for every lot but HIDDEN by default
-    /// (<see cref="HouseLot.HasFence"/> defaults false since #146; a
-    /// future quest, #147, purchases them). The flag-respecting
+    /// (<see cref="HouseLot.HasFence"/> defaults false since #146; a future
+    /// fence-purchase quest, #147/#318, purchases them). The flag-respecting
     /// <see cref="RunsFor"/> is what WorldBuilder consumes — empty while
-    /// hidden — while <see cref="GeometryFor"/> keeps the geometry
-    /// queryable for a disabled lot.
+    /// hidden — while <see cref="GeometryFor"/> keeps the geometry queryable
+    /// for a disabled lot.
     /// </summary>
     public static class LotFence
     {
         /// <summary>
-        /// Distance from the lot center to the rear fence line, in meters
-        /// away from the street the house faces. Decision (#146,
-        /// 2026-07-14): reuses #129's 7.5m boundary half-extent for the
-        /// REAR ONLY — it stays inside the starting tile quadrant
-        /// (14 + 7.5 &lt; 30) and clears every model's setback-shifted rear
-        /// wall at the fixed ×7 kit scale (#145) by at least 3m (the
-        /// deepest model, building-type-m at 10.00m, keeps 3.0m;
-        /// test-enforced at ≥ 0.5m). Exact alignment with property layouts
-        /// is deferred to #147.
+        /// How far the fence line is inset from every lot-quadrant boundary,
+        /// in meters. Decision (#147 "Settled", adopted by #342): one raised
+        /// <see cref="WorldDimensions.SidewalkWidth"/> (2m), uniform on every
+        /// edge — a sidewalk-width strip of ground sits between each
+        /// quadrant boundary and the fence line, whether that boundary is a
+        /// sidewalk, a neighbouring yard, or the map edge. Named rather than
+        /// a bare literal (#161).
         /// </summary>
-        public const float RearBoundaryFromLotCenter = 7.5f;
+        public const float BoundaryOffset = WorldDimensions.SidewalkWidth;
 
         private const float Epsilon = 0.001f;
 
         /// <summary>
-        /// The rear fence line's distance behind the scaled FRONT FACADE
-        /// plane — the house-relative form of
-        /// <see cref="RearBoundaryFromLotCenter"/>, and the one the #126
-        /// gallery (which has no lots or streets) feeds to
-        /// <see cref="BackyardRuns"/>. Derived, identical for every lot
-        /// and model: the #127 setback puts every facade
-        /// LotDistanceFromCenter − sidewalk outer edge − FrontSetback =
-        /// 5.5m street-ward of its lot center, so the rear line lands
-        /// 5.5 + 7.5 = 13m behind the facade.
+        /// The lot-free / #126-gallery standard quadrant's front edge sits
+        /// this far in front of the house facade, in meters: the same
+        /// street corridor + front setback a real lot's quadrant front edge
+        /// (on the faced-road centerline) sits ahead of the facade. Derived
+        /// from <see cref="LotBounds.StreetCorridorInset"/> +
+        /// <see cref="HousePlacement.FrontSetback"/> (#127/#244), identical
+        /// for every model, so the gallery reproduces a real lot's fence
+        /// outline without a real quadrant.
         /// </summary>
-        public static float RearLineBehindFacade
+        public static float StandardQuadrantFrontEdgeAheadOfFacade
         {
-            get
-            {
-                var sidewalkOuterEdge = WorldDimensions.RoadWidth / 2f
-                    + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
-                return NeighborhoodLayout.LotDistanceFromCenter - sidewalkOuterEdge
-                    - HousePlacement.FrontSetback + RearBoundaryFromLotCenter;
-            }
+            get { return LotBounds.StreetCorridorInset + HousePlacement.FrontSetback; }
         }
 
         /// <summary>
@@ -104,30 +100,58 @@ namespace Doggiehood.Core.World
         /// The lot's backyard fence geometry regardless of the
         /// <see cref="HouseLot.HasFence"/> flag — queryable for a disabled
         /// lot (the #147 purchase flow needs to describe what it sells).
-        /// Reads <see cref="NeighborhoodLayout.WalkNetwork"/> via
-        /// HousePlacement, like #129's version did; it is only ever called
-        /// after the network is built.
+        /// Traces the lot's actual <see cref="LotBounds.QuadrantBounds"/>,
+        /// inset by <see cref="BoundaryOffset"/>. Reads
+        /// <see cref="NeighborhoodLayout.WalkNetwork"/> via HousePlacement,
+        /// like #129's version did; it is only ever called after the network
+        /// is built.
         /// </summary>
         public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot)
         {
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
             var facing = HousePlacement.FrontFacing(lot);
             var position = HousePlacement.Position(lot, HousePlacement.KitScale);
-            return BackyardRuns(model, position, facing, HousePlacement.KitScale, RearLineBehindFacade);
+            var quadrant = LotBounds.QuadrantBounds(lot);
+            return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale);
         }
 
         /// <summary>
-        /// Pure form (no network lookup — the #126 gallery reuses it with
-        /// its own placement): the three backyard fence runs for a house
-        /// model at <paramref name="housePosition"/> facing the unit
-        /// cardinal <paramref name="facing"/> at
-        /// <paramref name="uniformScale"/>, with the rear line
-        /// <paramref name="rearLineBehindFacade"/> meters behind the scaled
-        /// front facade plane. Runs chain side anchor → rear corner → rear
-        /// corner → side anchor, continuous with no gap.
+        /// Lot-free form (no quadrant — the #126 gallery reuses it with its
+        /// own placement): the backyard fence for a house model at
+        /// <paramref name="housePosition"/> facing the unit cardinal
+        /// <paramref name="facing"/> at <paramref name="uniformScale"/>. Per
+        /// #147's approved resolution, the <see cref="BoundaryOffset"/> is
+        /// applied against a STANDARD quadrant (<see cref="WorldDimensions.TileSize"/>/2
+        /// per side, identical for every lot) synthesised around the house
+        /// so the gallery shows the real offset outline without a per-model
+        /// boundary.
         /// </summary>
         public static IReadOnlyList<FenceRun> BackyardRuns(HouseModel model, GridPoint housePosition,
-            GridPoint facing, float uniformScale, float rearLineBehindFacade)
+            GridPoint facing, float uniformScale)
+        {
+            if (uniformScale <= 0f)
+            {
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
+            }
+
+            var quadrant = StandardQuadrantAround(model, housePosition, facing, uniformScale);
+            return BackyardRuns(quadrant, model, housePosition, facing, uniformScale);
+        }
+
+        /// <summary>
+        /// Pure builder: the five backyard fence runs tracing
+        /// <paramref name="quadrantBounds"/> inset by
+        /// <see cref="BoundaryOffset"/>, for a house of
+        /// <paramref name="model"/> at <paramref name="housePosition"/>
+        /// facing the unit cardinal <paramref name="facing"/> at
+        /// <paramref name="uniformScale"/>. Runs chain
+        /// sideWallMidpoint → (connector) → side-run front end →
+        /// (side run) → rear corner → (rear run) → rear corner →
+        /// (side run) → side-run front end → (connector) → sideWallMidpoint,
+        /// continuous with the front left open.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> BackyardRuns(LotRect quadrantBounds, HouseModel model,
+            GridPoint housePosition, GridPoint facing, float uniformScale)
         {
             if (uniformScale <= 0f)
             {
@@ -135,37 +159,114 @@ namespace Doggiehood.Core.World
             }
 
             var halfWidth = uniformScale * model.FootprintX / 2f;
-            var halfDepth = uniformScale * model.FootprintZ / 2f;
 
-            // The facade sits halfDepth in FRONT of the house center, so
-            // the rear line sits (rearLineBehindFacade - halfDepth) behind
-            // the center along the facing axis.
-            var rearBehindCenter = rearLineBehindFacade - halfDepth;
-            if (rearBehindCenter <= Epsilon)
+            // Facing basis: f along the facing (front toward +f), p across it.
+            var f = facing;
+            var p = new GridPoint(-f.Z, f.X);
+
+            // Offset (inset) boundary rectangle.
+            var inset = new LotRect(
+                quadrantBounds.MinX + BoundaryOffset, quadrantBounds.MaxX - BoundaryOffset,
+                quadrantBounds.MinZ + BoundaryOffset, quadrantBounds.MaxZ - BoundaryOffset);
+
+            // Project the inset corners onto the facing basis: the rear edge
+            // is the least-along boundary; the two side edges are the cross
+            // extremes.
+            var corners = new[]
             {
-                throw new ArgumentException(
-                    "Rear line must sit behind the house center.", nameof(rearLineBehindFacade));
+                new GridPoint(inset.MinX, inset.MinZ),
+                new GridPoint(inset.MinX, inset.MaxZ),
+                new GridPoint(inset.MaxX, inset.MinZ),
+                new GridPoint(inset.MaxX, inset.MaxZ),
+            };
+
+            var alongRear = float.PositiveInfinity;
+            var crossLo = float.PositiveInfinity;
+            var crossHi = float.NegativeInfinity;
+            foreach (var corner in corners)
+            {
+                var along = Dot(corner, f);
+                var cross = Dot(corner, p);
+                if (along < alongRear)
+                {
+                    alongRear = along;
+                }
+
+                if (cross < crossLo)
+                {
+                    crossLo = cross;
+                }
+
+                if (cross > crossHi)
+                {
+                    crossHi = cross;
+                }
             }
 
-            // Perpendicular to the facing on the ground plane; the side
-            // walls run along the facing (depth) axis at ±halfWidth.
-            var perp = new GridPoint(-facing.Z, facing.X);
+            // The side runs are truncated at the house's depth midpoint; the
+            // connectors reach inward from there to the side-wall midpoints.
+            var alongHouse = Dot(housePosition, f);
+            var houseCross = Dot(housePosition, p);
 
-            var sideA = new GridPoint(
-                housePosition.X + perp.X * halfWidth, housePosition.Z + perp.Z * halfWidth);
-            var sideB = new GridPoint(
-                housePosition.X - perp.X * halfWidth, housePosition.Z - perp.Z * halfWidth);
-            var rearA = new GridPoint(
-                sideA.X - facing.X * rearBehindCenter, sideA.Z - facing.Z * rearBehindCenter);
-            var rearB = new GridPoint(
-                sideB.X - facing.X * rearBehindCenter, sideB.Z - facing.Z * rearBehindCenter);
+            if (alongHouse - alongRear <= Epsilon)
+            {
+                throw new ArgumentException(
+                    "The house must sit in front of the offset rear boundary.", nameof(housePosition));
+            }
+
+            var midLow = Reconstruct(f, alongHouse, p, houseCross - halfWidth);
+            var midHigh = Reconstruct(f, alongHouse, p, houseCross + halfWidth);
+            var sideFrontLow = Reconstruct(f, alongHouse, p, crossLo);
+            var sideFrontHigh = Reconstruct(f, alongHouse, p, crossHi);
+            var rearLow = Reconstruct(f, alongRear, p, crossLo);
+            var rearHigh = Reconstruct(f, alongRear, p, crossHi);
 
             return new[]
             {
-                new FenceRun(sideA, rearA),
-                new FenceRun(rearA, rearB),
-                new FenceRun(rearB, sideB),
+                new FenceRun(midLow, sideFrontLow),   // connector (perpendicular-inward)
+                new FenceRun(sideFrontLow, rearLow),  // side run
+                new FenceRun(rearLow, rearHigh),      // rear run tracing the offset boundary
+                new FenceRun(rearHigh, sideFrontHigh), // side run
+                new FenceRun(sideFrontHigh, midHigh), // connector (perpendicular-inward)
             };
+        }
+
+        /// <summary>
+        /// The standard quadrant (<see cref="WorldDimensions.TileSize"/>/2
+        /// per side) synthesised around a lot-free placement, matching how a
+        /// real lot's quadrant sits relative to its house: cross-centred on
+        /// the house, with the front edge
+        /// <see cref="StandardQuadrantFrontEdgeAheadOfFacade"/> in front of
+        /// the scaled facade.
+        /// </summary>
+        private static LotRect StandardQuadrantAround(HouseModel model, GridPoint housePosition,
+            GridPoint facing, float uniformScale)
+        {
+            var half = WorldDimensions.TileSize / 4f;
+            var halfDepth = uniformScale * model.FootprintZ / 2f;
+            var frontEdgeAheadOfCenter = halfDepth + StandardQuadrantFrontEdgeAheadOfFacade;
+
+            // Quadrant centre: back from the front edge by half a quadrant,
+            // along the facing axis only (so it stays cross-centred on the
+            // house).
+            var centreAlongOffset = frontEdgeAheadOfCenter - half;
+            var centre = new GridPoint(
+                housePosition.X + facing.X * centreAlongOffset,
+                housePosition.Z + facing.Z * centreAlongOffset);
+
+            return new LotRect(centre.X - half, centre.X + half, centre.Z - half, centre.Z + half);
+        }
+
+        private static float Dot(GridPoint a, GridPoint unit)
+        {
+            return a.X * unit.X + a.Z * unit.Z;
+        }
+
+        /// <summary>Rebuild a world point from its projections onto the
+        /// orthonormal cardinal basis {f, p}.</summary>
+        private static GridPoint Reconstruct(GridPoint f, float along, GridPoint p, float cross)
+        {
+            return new GridPoint(f.X * along + p.X * cross, f.Z * along + p.Z * cross);
         }
     }
 }

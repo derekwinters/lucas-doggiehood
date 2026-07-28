@@ -7,14 +7,19 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #146 (reshaping #129): each fence anchors at the midpoint of each
-    /// side wall of the HOUSE and wraps around the back yard only — the
-    /// front yard stays open, so the #129 gate gap is gone (the walkway
-    /// runs door → sidewalk through the open front and never meets a
-    /// fence). Fences are defined for every lot but HIDDEN by default:
-    /// HouseLot.HasFence defaults false, the geometry stays queryable via
-    /// LotFence.GeometryFor for a disabled lot, and a future quest (#147)
-    /// purchases them.
+    /// #342 (adopting #147's settled geometry): the backyard fence traces
+    /// the lot boundary rather than the house-footprint width. The fence
+    /// line is inset from EVERY edge of the lot's
+    /// <see cref="LotBounds.QuadrantBounds"/> by one
+    /// <see cref="WorldDimensions.SidewalkWidth"/> (uniform on every edge —
+    /// no corner-lot special-casing). The shape is five runs: two side runs
+    /// plus one rear run trace the offset boundary rectangle, and two short
+    /// connectors turn perpendicular-inward from each side run's front end
+    /// to the house side-wall midpoints. The front stays open (the #128
+    /// walkway never meets a fence). Fences stay defined for every lot but
+    /// HIDDEN by default: HouseLot.HasFence defaults false, the geometry
+    /// stays queryable via LotFence.GeometryFor for a disabled lot, and a
+    /// future quest (#147/#318) purchases them.
     /// </summary>
     public class LotFenceTests
     {
@@ -23,8 +28,8 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void HouseLots_AllHaveFencesHiddenByDefault()
         {
-            // #146: the built world renders NO fences by default — a future
-            // quest (#147) purchases them per lot.
+            // The built world renders NO fences by default — a future quest
+            // (#147/#318) purchases them per lot.
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 Assert.That(lot.HasFence, Is.False,
@@ -71,22 +76,115 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Runs_StartAtEachSideWallMidpoint_AndEncloseOnlyTheBackYard()
+        public void Fence_SitsOneSidewalkWidthInsideEveryQuadrantBoundsEdge_RealLots()
+        {
+            // #342/#147, full pipeline: for every starting lot, the rear run
+            // and both side runs trace the OFFSET boundary rectangle —
+            // QuadrantBounds inset by one SidewalkWidth on every edge.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var quadrant = LotBounds.QuadrantBounds(lot);
+                var facing = HousePlacement.FrontFacing(lot);
+                var runs = LotFence.GeometryFor(lot);
+                AssertOffsetBoundary(runs, quadrant, facing, $"lot {lot.HouseId}");
+            }
+        }
+
+        [Test]
+        public void Fence_SitsOneSidewalkWidthInsideEveryQuadrantBoundsEdge_EveryCardinalFacing()
+        {
+            // The uniform offset holds in EVERY orientation. The starting
+            // lots all face along X, so the two Z-facing cardinals are
+            // exercised through the pure builder with a synthetic square
+            // quadrant and a real model — no per-neighbour special-casing.
+            var model = HouseModelCatalog.ForHouse(1);
+            var quadrant = new LotRect(0f, 30f, 0f, 30f);
+
+            var cardinals = new[]
+            {
+                new GridPoint(1f, 0f), new GridPoint(-1f, 0f),
+                new GridPoint(0f, 1f), new GridPoint(0f, -1f),
+            };
+
+            foreach (var facing in cardinals)
+            {
+                var perp = new GridPoint(-facing.Z, facing.X);
+                // Place the house cross-centred in the quadrant, 10m behind
+                // the front (max-along) edge.
+                var alongFront = FrontEdgeAlong(quadrant, facing);
+                var alongHouse = alongFront - 10f;
+                var crossCentre = CrossOf(quadrant.Center, perp);
+                var house = new GridPoint(
+                    facing.X * alongHouse + perp.X * crossCentre,
+                    facing.Z * alongHouse + perp.Z * crossCentre);
+
+                var runs = LotFence.BackyardRuns(quadrant, model, house, facing, HousePlacement.KitScale);
+                AssertOffsetBoundary(runs, quadrant, facing, $"facing ({facing.X},{facing.Z})");
+            }
+        }
+
+        private static void AssertOffsetBoundary(
+            IReadOnlyList<FenceRun> runs, LotRect quadrant, GridPoint facing, string who)
+        {
+            var offset = WorldDimensions.SidewalkWidth;
+            var perp = new GridPoint(-facing.Z, facing.X);
+
+            // Every fence point stays within the offset (inset) rectangle —
+            // no point sits closer than one SidewalkWidth to any quadrant edge.
+            foreach (var run in runs)
+            {
+                foreach (var point in new[] { run.A, run.B })
+                {
+                    Assert.That(point.X, Is.GreaterThanOrEqualTo(quadrant.MinX + offset - Epsilon),
+                        $"{who}: fence point {point} is under one SidewalkWidth from the MinX edge");
+                    Assert.That(point.X, Is.LessThanOrEqualTo(quadrant.MaxX - offset + Epsilon),
+                        $"{who}: fence point {point} is under one SidewalkWidth from the MaxX edge");
+                    Assert.That(point.Z, Is.GreaterThanOrEqualTo(quadrant.MinZ + offset - Epsilon),
+                        $"{who}: fence point {point} is under one SidewalkWidth from the MinZ edge");
+                    Assert.That(point.Z, Is.LessThanOrEqualTo(quadrant.MaxZ - offset + Epsilon),
+                        $"{who}: fence point {point} is under one SidewalkWidth from the MaxZ edge");
+                }
+            }
+
+            // The rear run sits exactly one SidewalkWidth inside the rear
+            // quadrant edge (the edge opposite the facing).
+            var rear = RearRunOf(runs);
+            var rearAlong = AlongOf(rear.A, facing);
+            Assert.That(AlongOf(rear.B, facing), Is.EqualTo(rearAlong).Within(Epsilon),
+                $"{who}: the rear run is a single boundary-parallel line");
+            Assert.That(rearAlong, Is.EqualTo(RearEdgeAlong(quadrant, facing) + offset).Within(Epsilon),
+                $"{who}: rear run must sit one SidewalkWidth inside the rear quadrant edge");
+
+            // The two side runs sit exactly one SidewalkWidth inside the two
+            // side quadrant edges (the cross-axis extremes).
+            var sideCrosses = SideRunsOf(runs).Select(r => CrossOf(r.A, perp)).OrderBy(c => c).ToList();
+            var cornerCrossA = CrossOf(new GridPoint(quadrant.MinX, quadrant.MinZ), perp);
+            var cornerCrossB = CrossOf(new GridPoint(quadrant.MaxX, quadrant.MaxZ), perp);
+            var quadrantCrossLo = Math.Min(cornerCrossA, cornerCrossB);
+            var quadrantCrossHi = Math.Max(cornerCrossA, cornerCrossB);
+            Assert.That(sideCrosses[0], Is.EqualTo(quadrantCrossLo + offset).Within(Epsilon),
+                $"{who}: the low-side run must sit one SidewalkWidth inside its quadrant edge");
+            Assert.That(sideCrosses[1], Is.EqualTo(quadrantCrossHi - offset).Within(Epsilon),
+                $"{who}: the high-side run must sit one SidewalkWidth inside its quadrant edge");
+        }
+
+        [Test]
+        public void Fence_IsFiveRuns_TwoConnectorsToTheSideWallMidpoints_FrontOpen()
         {
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var runs = LotFence.RunsFor(FencedCloneOf(lot));
-                Assert.That(runs.Count, Is.EqualTo(3),
-                    $"lot {lot.HouseId}: two side runs plus one rear run");
+                Assert.That(runs.Count, Is.EqualTo(5),
+                    $"lot {lot.HouseId}: two side runs + one rear run + two connectors");
 
                 var facing = HousePlacement.FrontFacing(lot);
                 var house = HousePlacement.Position(lot, HousePlacement.KitScale);
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
                 var halfWidth = HousePlacement.KitScale * model.FootprintX / 2f;
 
-                // The side walls run along the facing (depth) axis at
-                // ±halfWidth perpendicular to it; their midpoints sit at the
-                // house center depth-wise.
+                // The two open ends of the polyline are the house side-wall
+                // midpoints (the connectors reach perpendicular-inward to
+                // them), sitting at the house center depth-wise.
                 var perp = new GridPoint(-facing.Z, facing.X);
                 var expectedAnchors = new[]
                 {
@@ -94,21 +192,33 @@ namespace Doggiehood.Core.Tests.World
                     new GridPoint(house.X - perp.X * halfWidth, house.Z - perp.Z * halfWidth),
                 };
 
-                // The open ends of the fence polyline (endpoints appearing
-                // exactly once) are exactly the two side-wall midpoints.
                 var openEnds = OpenEndsOf(runs);
                 Assert.That(openEnds.Count, Is.EqualTo(2),
                     $"lot {lot.HouseId}: the fence must be one open polyline with two ends");
                 foreach (var anchor in expectedAnchors)
                 {
                     Assert.That(openEnds.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
-                        $"lot {lot.HouseId}: a fence run must start at the side wall midpoint {anchor}");
+                        $"lot {lot.HouseId}: a connector must reach the side wall midpoint {anchor}");
                 }
 
-                // Nothing in front of the side midpoints — the front yard
-                // stays open. Every run endpoint sits at or behind the house
-                // center along the facing axis (runs are straight, so
-                // endpoint checks cover the whole line).
+                // The two connectors are the runs touching an open end. Each
+                // turns perpendicular to the facing (it runs along the cross
+                // axis) inward to a side-wall midpoint.
+                var connectors = runs.Where(r =>
+                    openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B))).ToList();
+                Assert.That(connectors.Count, Is.EqualTo(2),
+                    $"lot {lot.HouseId}: exactly two connectors");
+                foreach (var connector in connectors)
+                {
+                    var alongComponent = (connector.A.X - connector.B.X) * facing.X
+                        + (connector.A.Z - connector.B.Z) * facing.Z;
+                    Assert.That(Math.Abs(alongComponent), Is.LessThan(Epsilon),
+                        $"lot {lot.HouseId}: a connector must run perpendicular to the facing");
+                }
+
+                // Front stays open: every run endpoint sits at or behind the
+                // house center along the facing axis, so nothing crosses in
+                // front of the house facade (runs are straight).
                 foreach (var run in runs)
                 {
                     foreach (var point in new[] { run.A, run.B })
@@ -129,7 +239,7 @@ namespace Doggiehood.Core.Tests.World
                 var runs = LotFence.RunsFor(FencedCloneOf(lot));
 
                 // Continuous: every non-end corner is shared by exactly two
-                // runs — no gap anywhere (the #129 gate gap is gone).
+                // runs — no gap anywhere.
                 var endpoints = runs.SelectMany(r => new[] { r.A, r.B }).ToList();
                 foreach (var point in endpoints)
                 {
@@ -157,116 +267,46 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void RearLine_SitsAtTheLotRearBoundary_AndClearsEveryModelsRearWall()
+        public void EnclosedWidth_IsMeaningfullyWiderThanTheHouseFootprint_EvenForTheNarrowModel()
         {
-            // Decision (#146): the rear fence line reuses the #129 boundary
-            // distance — RearBoundaryFromLotCenter (7.5m) away from the
-            // street the house faces, measured from the lot center. Exact
-            // alignment with property layouts is deferred to #147.
-            foreach (var lot in NeighborhoodLayout.HouseLots)
-            {
-                var runs = LotFence.RunsFor(FencedCloneOf(lot));
-                var facing = HousePlacement.FrontFacing(lot);
-                var house = HousePlacement.Position(lot, HousePlacement.KitScale);
-                var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            // #342: the point of the widening. The enclosed span (the rear
+            // run's length, tracing the offset boundary) must be much wider
+            // than the house's scaled FootprintX — asserted most sharply on
+            // the narrowest starting model, building-type-k (house 3, a
+            // 6.45m footprint at ×7).
+            var narrowLot = NeighborhoodLayout.HouseLots.Single(l => l.HouseId == 3);
+            Assert.That(HouseModelCatalog.ForHouse(narrowLot.HouseId).ModelName,
+                Is.EqualTo("building-type-k"), "house 3 is expected to be the narrow building-type-k");
 
-                // The rear run is the one not touching an open end.
-                var openEnds = OpenEndsOf(runs);
-                var rearRuns = runs.Where(r =>
-                    !openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B))).ToList();
-                Assert.That(rearRuns.Count, Is.EqualTo(1),
-                    $"lot {lot.HouseId}: exactly one rear run");
-                var rear = rearRuns[0];
-
-                var expectedRearAlongFacing =
-                    (lot.Position.X * facing.X + lot.Position.Z * facing.Z)
-                    - LotFence.RearBoundaryFromLotCenter;
-                foreach (var point in new[] { rear.A, rear.B })
-                {
-                    Assert.That(point.X * facing.X + point.Z * facing.Z,
-                        Is.EqualTo(expectedRearAlongFacing).Within(Epsilon),
-                        $"lot {lot.HouseId}: rear line must sit {LotFence.RearBoundaryFromLotCenter}m"
-                        + " behind the lot center, away from the street");
-                }
-
-                // The rear line clears the scaled rear wall by >= 0.5m —
-                // the guard that sized the rear boundary against the
-                // setback-shifted deepest model (building-type-m, 10.00m).
-                var rearWallAlongFacing = (house.X * facing.X + house.Z * facing.Z)
-                    - HousePlacement.KitScale * model.FootprintZ / 2f;
-                Assert.That(rearWallAlongFacing - expectedRearAlongFacing,
-                    Is.GreaterThanOrEqualTo(0.5f),
-                    $"lot {lot.HouseId}: the rear fence line must clear the rear wall by at least 0.5m");
-            }
-        }
-
-        [Test]
-        public void Runs_WidthTracksTheScaledHouseWidthPerModel()
-        {
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var runs = LotFence.RunsFor(FencedCloneOf(lot));
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
-                var scaledWidth = HousePlacement.KitScale * model.FootprintX;
+                var scaledFootprintX = HousePlacement.KitScale * model.FootprintX;
 
-                // The rear run spans exactly the scaled house width...
-                var openEnds = OpenEndsOf(runs);
-                var rear = runs.Single(r =>
-                    !openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B)));
-                Assert.That(rear.Length, Is.EqualTo(scaledWidth).Within(Epsilon),
-                    $"lot {lot.HouseId}: rear run must span the scaled width of {model.ModelName}");
+                // The rear run spans the offset boundary width: the quadrant
+                // width (30m) minus one SidewalkWidth per side (2 * 2m).
+                var expectedEnclosed = LotBounds.QuadrantBounds(lot).Width
+                    - 2f * WorldDimensions.SidewalkWidth;
+                var rear = RearRunOf(runs);
+                Assert.That(rear.Length, Is.EqualTo(expectedEnclosed).Within(Epsilon),
+                    $"lot {lot.HouseId}: rear run must span the offset boundary width");
 
-                // ...and so does the distance between the two side anchors.
-                var dx = openEnds[0].X - openEnds[1].X;
-                var dz = openEnds[0].Z - openEnds[1].Z;
-                Assert.That(Math.Sqrt(dx * dx + dz * dz), Is.EqualTo(scaledWidth).Within(Epsilon),
-                    $"lot {lot.HouseId}: side anchors must sit a scaled house width apart");
+                // Meaningfully wider than the house footprint (at least twice
+                // as wide — for building-type-k, 26m vs 6.45m).
+                Assert.That(rear.Length, Is.GreaterThan(2f * scaledFootprintX),
+                    $"lot {lot.HouseId}: the enclosed width ({rear.Length:F2}m) must be much wider than "
+                    + $"the house footprint ({scaledFootprintX:F2}m)");
             }
-        }
 
-        [Test]
-        public void Runs_StayClearOfTheSidewalks_AndInsideTheStartingTile()
-        {
-            // A corner lot has streets on two sides: no fence point may
-            // reach either sidewalk's outer edge, and the whole fence stays
-            // inside the starting 60m tile's quadrant.
-            var sidewalkOuterEdge = WorldDimensions.RoadWidth / 2f
-                + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
-
-            foreach (var lot in NeighborhoodLayout.HouseLots)
-            {
-                foreach (var run in LotFence.RunsFor(FencedCloneOf(lot)))
-                {
-                    foreach (var point in new[] { run.A, run.B })
-                    {
-                        Assert.That(Math.Abs(point.X), Is.GreaterThan(sidewalkOuterEdge),
-                            $"lot {lot.HouseId}: fence point {point} reaches the north-south sidewalk");
-                        Assert.That(Math.Abs(point.Z), Is.GreaterThan(sidewalkOuterEdge),
-                            $"lot {lot.HouseId}: fence point {point} reaches the east-west sidewalk");
-                        Assert.That(Math.Abs(point.X), Is.LessThanOrEqualTo(WorldDimensions.TileSize / 2f),
-                            $"lot {lot.HouseId}: fence point {point} leaves the starting tile (X)");
-                        Assert.That(Math.Abs(point.Z), Is.LessThanOrEqualTo(WorldDimensions.TileSize / 2f),
-                            $"lot {lot.HouseId}: fence point {point} leaves the starting tile (Z)");
-                    }
-                }
-            }
-        }
-
-        [Test]
-        public void RearLineBehindFacade_DerivesFromTheLotRearBoundary()
-        {
-            // The house-relative form the #126 gallery uses: the facade sits
-            // LotDistanceFromCenter - sidewalk outer edge - FrontSetback
-            // street-ward of the lot center (5.5m), so the rear line lands
-            // 5.5 + 7.5 = 13m behind the scaled front facade — the same
-            // world line as RearBoundaryFromLotCenter for every lot.
-            var sidewalkOuterEdge = WorldDimensions.RoadWidth / 2f
-                + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth;
-            var expected = NeighborhoodLayout.LotDistanceFromCenter - sidewalkOuterEdge
-                - HousePlacement.FrontSetback + LotFence.RearBoundaryFromLotCenter;
-
-            Assert.That(LotFence.RearLineBehindFacade, Is.EqualTo(expected).Within(Epsilon));
-            Assert.That(LotFence.RearLineBehindFacade, Is.EqualTo(13f).Within(Epsilon));
+            // Spelled out on the narrow model specifically.
+            var narrowRear = RearRunOf(LotFence.RunsFor(FencedCloneOf(narrowLot)));
+            var narrowFootprintX = HousePlacement.KitScale
+                * HouseModelCatalog.ForHouse(narrowLot.HouseId).FootprintX;
+            Assert.That(narrowFootprintX, Is.EqualTo(6.447f).Within(0.01f),
+                "building-type-k footprint width at ×7");
+            Assert.That(narrowRear.Length, Is.GreaterThan(narrowFootprintX + 15f),
+                "building-type-k's enclosed back yard must be far wider than its own footprint");
         }
 
         [Test]
@@ -274,13 +314,126 @@ namespace Doggiehood.Core.Tests.World
         {
             var model = HouseModelCatalog.ForHouse(1);
             Assert.That(() => LotFence.BackyardRuns(model, new GridPoint(0f, 0f),
-                new GridPoint(0f, -1f), 0f, LotFence.RearLineBehindFacade),
+                new GridPoint(0f, -1f), 0f),
                 Throws.ArgumentException);
+        }
+
+        [Test]
+        public void BackyardRuns_LotFreeGalleryForm_UsesTheSameOffsetAgainstTheStandardQuadrant()
+        {
+            // #126 gallery / lot-free path: no lot means no real quadrant, so
+            // the offset is applied against the STANDARD quadrant
+            // (TileSize/2 per side, identical for every lot). The gallery
+            // therefore shows the real offset outline: five runs, the rear
+            // run tracing the offset boundary, and the two open ends at the
+            // scaled side-wall midpoints.
+            var model = HouseModelCatalog.ForHouse(1);
+            var facing = new GridPoint(0f, -1f);
+            var position = new GridPoint(0f, 0f);
+            var halfWidth = HousePlacement.KitScale * model.FootprintX / 2f;
+
+            var runs = LotFence.BackyardRuns(model, position, facing, HousePlacement.KitScale);
+            Assert.That(runs.Count, Is.EqualTo(5), "the gallery outline is the same five-run shape");
+
+            // The rear run spans the standard offset boundary width.
+            var expectedEnclosed = WorldDimensions.TileSize / 2f - 2f * WorldDimensions.SidewalkWidth;
+            Assert.That(RearRunOf(runs).Length, Is.EqualTo(expectedEnclosed).Within(Epsilon),
+                "the gallery rear run spans the standard offset boundary");
+
+            // The two open ends sit at the scaled side-wall midpoints.
+            var openEnds = OpenEndsOf(runs);
+            Assert.That(openEnds.Count, Is.EqualTo(2), "one open polyline");
+            foreach (var end in openEnds)
+            {
+                Assert.That(Math.Abs(end.X) - halfWidth, Is.EqualTo(0f).Within(Epsilon),
+                    "an open end sits at a scaled side-wall midpoint (X)");
+                Assert.That(end.Z, Is.EqualTo(position.Z).Within(Epsilon),
+                    "an open end sits at the house depth midpoint (Z)");
+            }
         }
 
         private static HouseLot FencedCloneOf(HouseLot lot)
         {
             return new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, hasFence: true);
+        }
+
+        private static float AlongOf(GridPoint p, GridPoint facing)
+        {
+            return p.X * facing.X + p.Z * facing.Z;
+        }
+
+        private static float CrossOf(GridPoint p, GridPoint perp)
+        {
+            return p.X * perp.X + p.Z * perp.Z;
+        }
+
+        /// <summary>The along-axis coordinate of the quadrant's rear edge —
+        /// the boundary opposite the facing direction (its most negative
+        /// projection onto the facing).</summary>
+        private static float RearEdgeAlong(LotRect quadrant, GridPoint facing)
+        {
+            var corners = new[]
+            {
+                new GridPoint(quadrant.MinX, quadrant.MinZ),
+                new GridPoint(quadrant.MinX, quadrant.MaxZ),
+                new GridPoint(quadrant.MaxX, quadrant.MinZ),
+                new GridPoint(quadrant.MaxX, quadrant.MaxZ),
+            };
+            return corners.Min(c => AlongOf(c, facing));
+        }
+
+        /// <summary>The along-axis coordinate of the quadrant's front edge —
+        /// the boundary in the facing direction (its most positive
+        /// projection onto the facing).</summary>
+        private static float FrontEdgeAlong(LotRect quadrant, GridPoint facing)
+        {
+            var corners = new[]
+            {
+                new GridPoint(quadrant.MinX, quadrant.MinZ),
+                new GridPoint(quadrant.MinX, quadrant.MaxZ),
+                new GridPoint(quadrant.MaxX, quadrant.MinZ),
+                new GridPoint(quadrant.MaxX, quadrant.MaxZ),
+            };
+            return corners.Max(c => AlongOf(c, facing));
+        }
+
+        /// <summary>The rear run: the one run touching no open end.</summary>
+        private static FenceRun RearRunOf(IReadOnlyList<FenceRun> runs)
+        {
+            var openEnds = OpenEndsOf(runs);
+            return runs.Single(r =>
+                !openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B))
+                && !SharesACornerWithAConnector(r, runs, openEnds));
+        }
+
+        /// <summary>The two side runs: touch no open end, but each shares a
+        /// corner with a connector (a run that does touch an open end).</summary>
+        private static IReadOnlyList<FenceRun> SideRunsOf(IReadOnlyList<FenceRun> runs)
+        {
+            var openEnds = OpenEndsOf(runs);
+            return runs.Where(r =>
+                !openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B))
+                && SharesACornerWithAConnector(r, runs, openEnds)).ToList();
+        }
+
+        private static bool SharesACornerWithAConnector(
+            FenceRun run, IReadOnlyList<FenceRun> runs, List<GridPoint> openEnds)
+        {
+            bool IsConnector(FenceRun r) =>
+                openEnds.Any(e => PointsNearlyEqual(e, r.A) || PointsNearlyEqual(e, r.B));
+
+            foreach (var other in runs.Where(IsConnector))
+            {
+                foreach (var p in new[] { run.A, run.B })
+                {
+                    if (PointsNearlyEqual(p, other.A) || PointsNearlyEqual(p, other.B))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Endpoints that appear exactly once across all runs —

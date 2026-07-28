@@ -141,18 +141,18 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void Compute_FenceRuns_AreTheRealBackyardFence_FromTheGamePathApi()
         {
-            // #146: the fence derives from house geometry (side-wall
-            // midpoints + rear line), so the gallery shows the REAL
-            // backyard fence outline per model — exactly what
-            // LotFence.BackyardRuns returns for the entry's placement (the
-            // same API the game path uses), replacing the old authored-
-            // footprint-outline placeholder.
+            // #342 (adopting #147): the fence traces the offset lot boundary
+            // (via a standard quadrant for the lot-free gallery), so the
+            // gallery shows the REAL backyard fence outline per model —
+            // exactly what LotFence.BackyardRuns returns for the entry's
+            // placement (the same API the game path uses), replacing the old
+            // authored-footprint-outline placeholder.
             var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
 
             foreach (var entry in entries)
             {
                 var expected = LotFence.BackyardRuns(entry.Model, entry.Position,
-                    new GridPoint(0f, -1f), entry.UniformScale, LotFence.RearLineBehindFacade);
+                    new GridPoint(0f, -1f), entry.UniformScale);
 
                 Assert.That(entry.FenceRuns.Count, Is.EqualTo(expected.Count),
                     entry.Model.ModelName + " fence run count");
@@ -171,32 +171,63 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Compute_FenceRuns_AnchorAtTheScaledSideWallMidpoints_AndTheRearLine()
+        public void Compute_FenceRuns_TraceTheOffsetStandardQuadrant_WithSideWallConnectors()
         {
-            // Geometric sanity at gallery yaw 0 (front facade faces -Z, so
-            // the back yard extends toward +Z): the side anchors sit at
-            // ±(scaled width / 2) on the entry's X, at the entry's Z (the
-            // side walls' depth midpoint), and the rear line sits
-            // RearLineBehindFacade beyond the scaled front facade plane.
+            // #342 (adopting #147): geometric sanity at gallery yaw 0 (front
+            // facade faces -Z, so the back yard extends toward +Z). The two
+            // side runs sit one BoundaryOffset inside the standard quadrant's
+            // side edges (±(TileSize/4 - offset) on the entry's X); the two
+            // connectors reach inward to the scaled side-wall midpoints
+            // (±(scaled width/2) on X, at the entry's Z depth midpoint); and
+            // the rear run traces the offset boundary at the far +Z edge.
             var entries = CatalogGalleryLayout.Compute(Scale, Spacing);
+            var offset = LotFence.BoundaryOffset;
+            var sideEdge = WorldDimensions.TileSize / 4f - offset;
 
             foreach (var entry in entries)
             {
                 var halfX = entry.UniformScale * entry.Model.FootprintX / 2f;
                 var halfZ = entry.UniformScale * entry.Model.FootprintZ / 2f;
-                var rearZ = entry.Position.Z - halfZ + LotFence.RearLineBehindFacade;
+                var rearZ = entry.Position.Z - halfZ + WorldDimensions.TileSize / 2f
+                    - LotFence.StandardQuadrantFrontEdgeAheadOfFacade - offset;
 
                 var xs = entry.FenceRuns.SelectMany(r => new[] { r.A.X, r.B.X }).ToList();
                 var zs = entry.FenceRuns.SelectMany(r => new[] { r.A.Z, r.B.Z }).ToList();
 
-                Assert.That(xs.Min(), Is.EqualTo(entry.Position.X - halfX).Within(0.0001f),
-                    entry.Model.ModelName + " left side anchor");
-                Assert.That(xs.Max(), Is.EqualTo(entry.Position.X + halfX).Within(0.0001f),
-                    entry.Model.ModelName + " right side anchor");
+                Assert.That(entry.FenceRuns.Count, Is.EqualTo(5),
+                    entry.Model.ModelName + " fence run count");
+
+                // Outer extent is the offset boundary side edges.
+                Assert.That(xs.Min(), Is.EqualTo(entry.Position.X - sideEdge).Within(0.0001f),
+                    entry.Model.ModelName + " left side run at the offset boundary");
+                Assert.That(xs.Max(), Is.EqualTo(entry.Position.X + sideEdge).Within(0.0001f),
+                    entry.Model.ModelName + " right side run at the offset boundary");
+
+                // The connectors reach in to the scaled side-wall midpoints,
+                // which are the open ends of the polyline at the depth midpoint.
+                var openEnds = entry.FenceRuns
+                    .SelectMany(r => new[] { r.A, r.B })
+                    .GroupBy(pt => (System.Math.Round(pt.X, 3), System.Math.Round(pt.Z, 3)))
+                    .Where(g => g.Count() == 1)
+                    .Select(g => g.First())
+                    .ToList();
+                Assert.That(openEnds.Count, Is.EqualTo(2), entry.Model.ModelName + " two open ends");
+                Assert.That(openEnds.Min(e => e.X), Is.EqualTo(entry.Position.X - halfX).Within(0.0001f),
+                    entry.Model.ModelName + " left side-wall midpoint");
+                Assert.That(openEnds.Max(e => e.X), Is.EqualTo(entry.Position.X + halfX).Within(0.0001f),
+                    entry.Model.ModelName + " right side-wall midpoint");
+                foreach (var end in openEnds)
+                {
+                    Assert.That(end.Z, Is.EqualTo(entry.Position.Z).Within(0.0001f),
+                        entry.Model.ModelName + " side-wall midpoint at the depth midpoint");
+                }
+
+                // The front-most fence line is the connectors/side-run fronts
+                // at the depth midpoint; the rear run is at the offset boundary.
                 Assert.That(zs.Min(), Is.EqualTo(entry.Position.Z).Within(0.0001f),
-                    entry.Model.ModelName + " side anchors at the side walls' depth midpoint");
+                    entry.Model.ModelName + " front-most fence line at the depth midpoint");
                 Assert.That(zs.Max(), Is.EqualTo(rearZ).Within(0.0001f),
-                    entry.Model.ModelName + " rear line");
+                    entry.Model.ModelName + " rear run at the offset boundary");
             }
         }
 
