@@ -214,5 +214,89 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(rect.x, Is.EqualTo((1920f - 900f) / 2f).Within(0.01f), "centered horizontally");
             Assert.That(rect.y, Is.EqualTo(1200f - 88f - 56f).Within(0.01f), "bottom margin above the screen edge");
         }
+
+        [Test]
+        public void CoachBar_AppliesTheSharedCandyCottageBaseline()
+        {
+            // #297 restyle: the graybox GUI.Box becomes the Candy Cottage coach
+            // bar, styled to the shared baseline (shared-components.md #65) —
+            // thick ink outline, hard straight-down shadow, full pill radius.
+            Assert.That(OnboardingOverlay.OutlineThicknessPx, Is.EqualTo(6f), "shared OutlineThicknessPx");
+            Assert.That(OnboardingOverlay.ShadowOffsetPx, Is.EqualTo(8f), "shared ShadowOffsetPx");
+            Assert.That(OnboardingOverlay.PillRadiusPx, Is.EqualTo(999f), "shared PillRadiusPx (full pill)");
+        }
+
+        [Test]
+        public void CoachBar_LayoutConstants_MatchTheMockup()
+        {
+            // #297 / mockups/onboarding-overlay.html: padding 0 34px, gap 22px,
+            // a 52px leaf paw badge (5px ink ring), and 16px dots (4px ink ring)
+            // spaced 12px apart. No inline geometry literals (#161).
+            Assert.That(OnboardingOverlay.CoachPadXPx, Is.EqualTo(34f), "coach content x-padding");
+            Assert.That(OnboardingOverlay.CoachGapPx, Is.EqualTo(22f), "gap between regions");
+            Assert.That(OnboardingOverlay.PawDiameterPx, Is.EqualTo(52f), "leaf paw badge diameter");
+            Assert.That(OnboardingOverlay.PawOutlineThicknessPx, Is.EqualTo(5f), "paw badge ink ring");
+            Assert.That(OnboardingOverlay.DotDiameterPx, Is.EqualTo(16f), "step dot diameter");
+            Assert.That(OnboardingOverlay.DotOutlineThicknessPx, Is.EqualTo(4f), "step dot ink ring");
+            Assert.That(OnboardingOverlay.DotGapPx, Is.EqualTo(12f), "gap between step dots");
+        }
+
+        [Test]
+        public void CoachBar_Colors_MatchTheFixedCandyCottagePalette()
+        {
+            // shared-components.md palette: Cream #FFF3D9, Ink #2E2A26, Leaf #58C06A.
+            AssertHex(OnboardingOverlay.CreamColor, 0xFF, 0xF3, 0xD9, "Cream fill");
+            AssertHex(OnboardingOverlay.InkColor, 0x2E, 0x2A, 0x26, "Ink outline/shadow/text");
+            AssertHex(OnboardingOverlay.LeafColor, 0x58, 0xC0, 0x6A, "Leaf paw badge");
+        }
+
+        [Test]
+        public void LabelFont_IsTheBundledDejaVuSans_NotAnEditorOnlyBuiltin()
+        {
+            // #291: the runtime-drawn message text must use the bundled font,
+            // never an editor-only built-in (which renders invisible on device).
+            Assert.That(OnboardingOverlay.LabelFontResource, Is.EqualTo("DejaVuSans"));
+        }
+
+        [Test]
+        public void MessageText_ShowsCurrentOnboardingStepText_WithDogSubstitution()
+        {
+            // The coach message is the current OnboardingSequence step's text;
+            // the tap-bubble step substitutes the live target dog's name.
+            overlay.Init(state, rig, presenter);
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Pan));
+            Assert.That(overlay.MessageText, Does.Contain("look around the neighborhood"),
+                "step 1 shows the pan guidance");
+
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            rig.HandlePinch(60f, 1000f);
+            overlay.Poll();
+
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.TapBubble));
+            Assert.That(overlay.MessageText, Does.Contain(targetDog.Name),
+                "step 3 substitutes the live target dog's name");
+            Assert.That(overlay.MessageText, Does.Contain("speech bubble"));
+        }
+
+        [Test]
+        public void FilledDotCount_TracksTheCurrentStep()
+        {
+            // The trailing dots row fills up to and including the current step:
+            // one dot per guided step out of StepDotCount.
+            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Pan), Is.EqualTo(1));
+            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Zoom), Is.EqualTo(2));
+            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.TapBubble), Is.EqualTo(3));
+            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.CompleteQuest), Is.EqualTo(4));
+            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Done), Is.EqualTo(4));
+        }
+
+        private static void AssertHex(Color color, byte r, byte g, byte b, string what)
+        {
+            var c32 = (Color32)color;
+            Assert.That(c32.r, Is.EqualTo(r), what + " red channel");
+            Assert.That(c32.g, Is.EqualTo(g), what + " green channel");
+            Assert.That(c32.b, Is.EqualTo(b), what + " blue channel");
+        }
     }
 }

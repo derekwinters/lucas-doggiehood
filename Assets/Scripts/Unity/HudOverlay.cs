@@ -63,10 +63,9 @@ namespace Doggiehood.Unity
         private const float GearMarginPx = 32f;
         private const string GearGlyph = "⚙"; // gear
 
-        // Procedural chrome: one white AA circle, tinted per layer. Used as a
-        // full disc (coin) and, cap-and-stretched, as a stadium (pill).
-        private const int CircleTextureSize = 128;
-        private static Texture2D circleTexture;
+        // Procedural chrome is drawn by the shared CandyChrome helper (#297) —
+        // the same white-AA-circle routine established here in #296, extracted
+        // so the onboarding coach bar draws identical chrome without duplication.
         private static GUIStyle labelStyle;
 
         private GameState state;
@@ -155,59 +154,26 @@ namespace Doggiehood.Unity
         private void DrawChip(Rect chip, string label)
         {
             var shadow = new Rect(chip.x, chip.y + ShadowOffsetPx, chip.width, chip.height);
-            DrawStadium(shadow, InkColor);
-            DrawStadium(chip, InkColor);
+            CandyChrome.DrawStadium(shadow, InkColor);
+            CandyChrome.DrawStadium(chip, InkColor);
 
             var fill = new Rect(
                 chip.x + OutlineThicknessPx,
                 chip.y + OutlineThicknessPx,
                 chip.width - 2f * OutlineThicknessPx,
                 chip.height - 2f * OutlineThicknessPx);
-            DrawStadium(fill, CreamColor);
+            CandyChrome.DrawStadium(fill, CreamColor);
 
             var coinX = chip.x + OutlineThicknessPx + PaddingLeftPx;
             var coinY = chip.center.y - CoinDiameterPx / 2f;
-            DrawCircle(new Rect(coinX, coinY, CoinDiameterPx, CoinDiameterPx), InkColor);
+            CandyChrome.DrawCircle(new Rect(coinX, coinY, CoinDiameterPx, CoinDiameterPx), InkColor);
             var inner = CoinDiameterPx - 2f * CoinOutlineThicknessPx;
-            DrawCircle(new Rect(coinX + CoinOutlineThicknessPx, coinY + CoinOutlineThicknessPx, inner, inner), GoldColor);
+            CandyChrome.DrawCircle(new Rect(coinX + CoinOutlineThicknessPx, coinY + CoinOutlineThicknessPx, inner, inner), GoldColor);
 
             var numX = coinX + CoinDiameterPx + IconGapPx;
             var numRight = chip.xMax - OutlineThicknessPx - PaddingRightPx;
             var numRect = new Rect(numX, chip.y, Mathf.Max(0f, numRight - numX), chip.height);
             GUI.Label(numRect, label, LabelStyle());
-        }
-
-        private static void DrawStadium(Rect rect, Color color)
-        {
-            if (rect.width <= 0f || rect.height <= 0f)
-            {
-                return;
-            }
-
-            var previous = GUI.color;
-            GUI.color = color;
-
-            var circle = CircleTexture();
-            var diameter = rect.height;
-            var halfH = rect.height / 2f;
-            GUI.DrawTexture(new Rect(rect.x, rect.y, diameter, diameter), circle);
-            GUI.DrawTexture(new Rect(rect.xMax - diameter, rect.y, diameter, diameter), circle);
-
-            var midWidth = rect.width - diameter;
-            if (midWidth > 0f)
-            {
-                GUI.DrawTexture(new Rect(rect.x + halfH, rect.y, midWidth, rect.height), Texture2D.whiteTexture);
-            }
-
-            GUI.color = previous;
-        }
-
-        private static void DrawCircle(Rect rect, Color color)
-        {
-            var previous = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(rect, CircleTexture());
-            GUI.color = previous;
         }
 
         private static GUIStyle LabelStyle()
@@ -225,45 +191,6 @@ namespace Doggiehood.Unity
             }
 
             return labelStyle;
-        }
-
-        /// <summary>Builds (once) the white anti-aliased circle used to compose
-        /// all chip chrome — a full disc for the coin, cap-and-stretched into a
-        /// stadium for the pill. Procedural; no external art asset.</summary>
-        private static Texture2D CircleTexture()
-        {
-            if (circleTexture != null)
-            {
-                return circleTexture;
-            }
-
-            var size = CircleTextureSize;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-            };
-
-            var pixels = new Color32[size * size];
-            var center = (size - 1) * 0.5f;
-            var radius = size * 0.5f - 0.5f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var dx = x - center;
-                    var dy = y - center;
-                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
-                    var coverage = Mathf.Clamp01(radius - distance + 0.5f);
-                    var alpha = (byte)Mathf.RoundToInt(coverage * 255f);
-                    pixels[y * size + x] = new Color32(255, 255, 255, alpha);
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply();
-            circleTexture = texture;
-            return circleTexture;
         }
     }
 }
