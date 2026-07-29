@@ -24,9 +24,45 @@ namespace Doggiehood.Unity
         private const float CoachBottomMarginPx = 56f;
         private const int StepDotCount = 4;
         private const int MsgFontPx = 30;
-        private const float PadPx = 34f;
-        private const char FilledDotGlyph = '●';
-        private const char EmptyDotGlyph = '○';
+
+        // --- Shared Candy Cottage baseline (shared-components.md #65/#173) ---
+        // #297 restyle: the graybox GUI.Box becomes the Candy Cottage coach bar
+        // (mockups/onboarding-overlay.html), drawn procedurally via CandyChrome.
+        public const float OutlineThicknessPx = 6f;   // ink outline on the bar
+        public const float ShadowOffsetPx = 8f;       // hard drop-shadow, straight down
+        public const float PillRadiusPx = 999f;       // full pill (stadium) ends
+
+        // --- Coach bar layout (mockup .coach) ---
+        public const float CoachPadXPx = 34f;   // content x-padding inside the bar
+        public const float CoachGapPx = 22f;    // gap between the three inline regions
+
+        // --- Leaf paw badge (mockup .paw) ---
+        public const float PawDiameterPx = 52f;         // round leaf badge
+        public const float PawOutlineThicknessPx = 5f;  // badge's ink ring
+        // Procedural ink paw-print inside the badge (no emoji glyph / raster art).
+        private const float PawPadDiameterPx = 15f;       // main foot pad
+        private const float PawToeDiameterPx = 9f;        // each toe pad
+        private const float PawToeSpreadPx = 12f;         // outer toe x-offset from center
+        private const float PawToeRisePx = 11f;           // toe y-offset above center
+        private const float PawCenterToeExtraRisePx = 5f; // middle toe sits a touch higher
+        private const float PawPadDropPx = 6f;            // main pad below center
+
+        // --- Trailing step dots (mockup .dots) ---
+        public const float DotDiameterPx = 16f;         // each progress dot
+        public const float DotOutlineThicknessPx = 4f;  // hollow dot's ink ring
+        public const float DotGapPx = 12f;              // gap between dots
+
+        // --- Fixed Candy Cottage palette (shared-components.md), via CandyChrome ---
+        public static readonly Color InkColor = CandyChrome.InkColor;
+        public static readonly Color CreamColor = CandyChrome.CreamColor;
+        public static readonly Color LeafColor = CandyChrome.LeafColor;
+
+        /// <summary>#291: the bundled UI font, loaded from Resources so it ships
+        /// in the Android build — never an editor-only built-in font, which
+        /// renders invisible in the player. Same asset the HUD chip uses.</summary>
+        public const string LabelFontResource = "DejaVuSans";
+
+        private static GUIStyle messageStyle;
 
         private OnboardingSequence sequence;
         private GameState state;
@@ -163,6 +199,24 @@ namespace Doggiehood.Unity
             return new Rect(x, y, width, height);
         }
 
+        /// <summary>The coach bar's current message: the live
+        /// <see cref="OnboardingSequence"/> step text, with the target dog's
+        /// name substituted on the tap-bubble step. Empty once onboarding is
+        /// done (nothing to show). Public so wiring tests can assert the text
+        /// without rendering.</summary>
+        public string MessageText
+        {
+            get { return sequence == null ? string.Empty : PromptFor(sequence.CurrentStep); }
+        }
+
+        /// <summary>How many of the <c>StepDotCount</c> trailing dots are filled
+        /// for the given step — one per guided step, up to and including the
+        /// current one. The terminal Done state keeps them all filled.</summary>
+        public static int FilledDotCount(OnboardingStep step)
+        {
+            return StepIndex(step) + 1;
+        }
+
         private void OnGUI()
         {
             if (!ShouldDraw)
@@ -171,16 +225,120 @@ namespace Doggiehood.Unity
             }
 
             var scale = Screen.height / ReferenceHeightPx;
-            var rect = ComputeCoachRect(Screen.width, Screen.height);
+            DrawCoachBar(ComputeCoachRect(Screen.width, Screen.height), scale);
+        }
 
-            var style = new GUIStyle(GUI.skin.box)
+        /// <summary>Draws the Candy Cottage coach bar (#297), back to front:
+        /// hard straight-down shadow, ink outline, cream pill fill, the leading
+        /// leaf paw badge, the trailing step dots, then the message text
+        /// centered between them. All chrome is procedural (CandyChrome) — no
+        /// external raster art.</summary>
+        private void DrawCoachBar(Rect coach, float scale)
+        {
+            var outline = OutlineThicknessPx * scale;
+
+            var shadow = new Rect(coach.x, coach.y + ShadowOffsetPx * scale, coach.width, coach.height);
+            CandyChrome.DrawStadium(shadow, InkColor);
+            CandyChrome.DrawStadium(coach, InkColor);
+
+            var fill = new Rect(
+                coach.x + outline,
+                coach.y + outline,
+                coach.width - 2f * outline,
+                coach.height - 2f * outline);
+            CandyChrome.DrawStadium(fill, CreamColor);
+
+            var padX = CoachPadXPx * scale;
+            var contentLeft = coach.x + outline + padX;
+            var contentRight = coach.xMax - outline - padX;
+
+            var pawDiameter = PawDiameterPx * scale;
+            var pawRect = new Rect(contentLeft, coach.center.y - pawDiameter / 2f, pawDiameter, pawDiameter);
+            DrawPawBadge(pawRect, scale);
+
+            var dotsLeft = DrawStepDots(contentRight, coach.center.y, scale);
+
+            var gap = CoachGapPx * scale;
+            var msgLeft = pawRect.xMax + gap;
+            var msgRight = dotsLeft - gap;
+            var msgRect = new Rect(msgLeft, coach.y, Mathf.Max(0f, msgRight - msgLeft), coach.height);
+            GUI.Label(msgRect, MessageText, MessageStyle(scale));
+        }
+
+        /// <summary>The leaf paw badge: an ink-ringed leaf disc with a
+        /// procedural ink paw-print (one pad + three toes) — no emoji glyph or
+        /// raster art, so it renders identically on device.</summary>
+        private static void DrawPawBadge(Rect badge, float scale)
+        {
+            CandyChrome.DrawCircle(badge, InkColor);
+            var ring = PawOutlineThicknessPx * scale;
+            var leaf = new Rect(badge.x + ring, badge.y + ring, badge.width - 2f * ring, badge.height - 2f * ring);
+            CandyChrome.DrawCircle(leaf, LeafColor);
+
+            var cx = badge.center.x;
+            var cy = badge.center.y;
+
+            var padDiameter = PawPadDiameterPx * scale;
+            var pad = new Rect(cx - padDiameter / 2f, cy - padDiameter / 2f + PawPadDropPx * scale, padDiameter, padDiameter);
+            CandyChrome.DrawCircle(pad, InkColor);
+
+            var toeDiameter = PawToeDiameterPx * scale;
+            var spread = PawToeSpreadPx * scale;
+            var rise = PawToeRisePx * scale;
+            DrawToe(cx - spread, cy - rise, toeDiameter);
+            DrawToe(cx, cy - rise - PawCenterToeExtraRisePx * scale, toeDiameter);
+            DrawToe(cx + spread, cy - rise, toeDiameter);
+        }
+
+        private static void DrawToe(float centerX, float centerY, float diameter)
+        {
+            CandyChrome.DrawCircle(new Rect(centerX - diameter / 2f, centerY - diameter / 2f, diameter, diameter), InkColor);
+        }
+
+        /// <summary>Draws the trailing row of <c>StepDotCount</c> progress dots,
+        /// right-aligned to <paramref name="rightEdge"/>: filled dots are solid
+        /// ink discs, remaining dots are hollow (cream inner over an ink ring).
+        /// Returns the row's left edge so the message can stop short of it.</summary>
+        private float DrawStepDots(float rightEdge, float centerY, float scale)
+        {
+            var dotDiameter = DotDiameterPx * scale;
+            var dotGap = DotGapPx * scale;
+            var rowWidth = StepDotCount * dotDiameter + (StepDotCount - 1) * dotGap;
+            var left = rightEdge - rowWidth;
+
+            var filled = FilledDotCount(sequence.CurrentStep);
+            var inset = DotOutlineThicknessPx * scale;
+            for (var i = 0; i < StepDotCount; i++)
             {
-                fontSize = Mathf.RoundToInt(MsgFontPx * scale),
-                alignment = TextAnchor.MiddleLeft,
-                padding = new RectOffset(Mathf.RoundToInt(PadPx * scale), Mathf.RoundToInt(PadPx * scale), 0, 0),
-            };
+                var x = left + i * (dotDiameter + dotGap);
+                var dot = new Rect(x, centerY - dotDiameter / 2f, dotDiameter, dotDiameter);
+                CandyChrome.DrawCircle(dot, InkColor);
+                if (i >= filled)
+                {
+                    var inner = new Rect(dot.x + inset, dot.y + inset, dot.width - 2f * inset, dot.height - 2f * inset);
+                    CandyChrome.DrawCircle(inner, CreamColor);
+                }
+            }
 
-            GUI.Box(rect, $"{PromptFor(sequence.CurrentStep)}    {StepDots(sequence.CurrentStep)}", style);
+            return left;
+        }
+
+        private static GUIStyle MessageStyle(float scale)
+        {
+            if (messageStyle == null)
+            {
+                messageStyle = new GUIStyle
+                {
+                    font = Resources.Load<Font>(LabelFontResource),
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleLeft,
+                    wordWrap = false,
+                };
+                messageStyle.normal.textColor = InkColor;
+            }
+
+            messageStyle.fontSize = Mathf.RoundToInt(MsgFontPx * scale);
+            return messageStyle;
         }
 
         private string PromptFor(OnboardingStep step)
@@ -197,20 +355,6 @@ namespace Doggiehood.Unity
                 default:
                     return "Help them out to finish your first quest!";
             }
-        }
-
-        /// <summary>The trailing step-dots region (#176): StepDotCount dots,
-        /// filled up to and including the current step.</summary>
-        private static string StepDots(OnboardingStep step)
-        {
-            var current = StepIndex(step);
-            var dots = new char[StepDotCount];
-            for (var i = 0; i < StepDotCount; i++)
-            {
-                dots[i] = i <= current ? FilledDotGlyph : EmptyDotGlyph;
-            }
-
-            return new string(dots);
         }
 
         private static int StepIndex(OnboardingStep step)
