@@ -696,17 +696,24 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void OnlyDogsAndHouses_AreInteractable()
+        public void OnlyDogsHousesAndTheExpansionLock_AreInteractable()
         {
-            // #37: no other interactable character exists in the world.
-            // Houses stay tappable scenery (#20); dogs are the only
-            // interactable characters.
+            // #37: no other interactable CHARACTER exists in the world — dogs
+            // are the only interactable characters. The rest are tappable
+            // scenery/affordances (#20): houses, and since #343 the
+            // map-expansion lock indicator (Option A — tapping the gold lock
+            // raises the unlock confirmation; the tap itself is gated to an
+            // affordable/visible lock in ExpansionIndicatorView, this guard
+            // only pins the allowed interactable KINDS). Any other interactable
+            // kind slipping into the built world is still a failure.
             var interactables = worldRoot.GetComponentsInChildren<MonoBehaviour>(true)
                 .OfType<IInteractable>()
                 .ToList();
 
             Assert.That(interactables, Is.Not.Empty);
-            Assert.That(interactables.All(i => i is DogView || i is HouseView), Is.True,
+            Assert.That(
+                interactables.All(i => i is DogView || i is HouseView || i is ExpansionIndicatorView),
+                Is.True,
                 "unexpected interactable kind found");
         }
     }
