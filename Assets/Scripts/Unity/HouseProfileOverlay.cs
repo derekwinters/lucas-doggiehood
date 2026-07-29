@@ -186,6 +186,7 @@ namespace Doggiehood.Unity
             }
 
             RebuildResidents(residentDogs);
+            emptyStateLabel.text = profile.EmptyStateText;
             emptyStateLabel.gameObject.SetActive(residents.Count == 0);
 
             LayoutBelowResidents(residents.Count);
