@@ -61,8 +61,9 @@ namespace Doggiehood.Unity
             // coins directly via GameState.TryUpgradeHouse — no confirmation.
             BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
 
-            // Persistent HUD (#159): graybox currency chip, restyled by #65.
-            // The top-right gear opens Settings (#219).
+            // Persistent HUD (#159): the currency chip now wears the full Candy
+            // Cottage chrome (#65/#296) — cream pill, Ink outline, hard shadow,
+            // gold coin token. The top-right gear opens Settings (#219).
             var hud = gameObject.AddComponent<HudOverlay>();
             hud.Init(state);
             hud.GearTapped += settings.Open;

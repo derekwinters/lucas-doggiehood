@@ -70,6 +70,8 @@ Role tints: Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Dis
 
 The HUD coin indicator — a coin token plus the live balance. Sits in a screen corner (its anchor is fixed in the HUD wireframe, [#174](https://github.com/derekwinters/lucas-doggiehood/issues/174)).
 
+*Status: **implemented** in the HUD ([#296](https://github.com/derekwinters/lucas-doggiehood/issues/296)) — `Assets/Scripts/Unity/HudOverlay.cs` draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning).*
+
 **Regions:** coin token (left) · balance number (right, tabular figures), inside a cream pill.
 
 | Constant | Value | Region |

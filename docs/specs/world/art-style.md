@@ -34,6 +34,6 @@ A reference mockup exists at [this artifact](https://claude.ai/code/artifact/e3f
 
 - [x] Defined color palette (bright/saturated hex values, or the kit's equivalent hand-painted textures for houses) applied consistently across houses, dogs, UI
 - [x] 4 distinct house silhouettes (real kit models, one per house, painted with a distinct kit texture variant per house — the Level-1 mesh r/h/k/q of each house's [#59](https://github.com/derekwinters/lucas-doggiehood/issues/59) upgrade path, per Derek's 2026-07-25 call resolving the [#122](https://github.com/derekwinters/lucas-doggiehood/issues/122) placeholder picks; r/h/q door anchors provisional pending a gallery pass)
-- [ ] UI components (buttons, chips, dialogue box) use thick dark outlines + flat hard drop-shadows
-- [ ] Currency chip, speech bubble icon, dialogue box, and choice buttons all follow the Candy Cottage direction
+- [ ] UI components (buttons, chips, dialogue box) use thick dark outlines + flat hard drop-shadows *(in progress: the HUD currency chip lands the full chrome — thick Ink outline + hard drop-shadow — in [#296](https://github.com/derekwinters/lucas-doggiehood/issues/296); buttons and dialogue box still to come)*
+- [ ] Currency chip, speech bubble icon, dialogue box, and choice buttons all follow the Candy Cottage direction *(currency chip done — [#296](https://github.com/derekwinters/lucas-doggiehood/issues/296); speech bubble, dialogue box, and choice buttons remain)*
 - [ ] Menus/settings screens follow the same UI chrome for consistency

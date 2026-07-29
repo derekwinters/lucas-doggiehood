@@ -2,6 +2,7 @@
 
 *Wireframe issue: [#174](https://github.com/derekwinters/lucas-doggiehood/issues/174). Implements/covers: `HudOverlay`. Approved: Derek, 2026-07-23 (in-session).*
 *Mockup: [mockups/hud.html](mockups/hud.html).*
+*Status: **implemented** — the graybox chip was restyled to the full Candy Cottage [CurrencyChip](shared-components.md) chrome in [#296](https://github.com/derekwinters/lucas-doggiehood/issues/296) (`Assets/Scripts/Unity/HudOverlay.cs`, IMGUI).*
 
 ## Purpose
 
@@ -26,5 +27,7 @@ The chip's own size (`CurrencyChip.HeightPx` = 64, `CurrencyChip.CoinDiameterPx`
 ## Notes
 
 - **Retroactive coverage.** This wireframe retrofits the already-shipped `HudOverlay` chip. It keeps the shipped **top-right** anchor, but supersedes the graybox 140×32 `GUI.Box` with the real [CurrencyChip](shared-components.md) and measures the inset from the **safe-area** edges rather than the raw screen edge. The old top banner is being removed ([#207](https://github.com/derekwinters/lucas-doggiehood/issues/207)).
+- **Gear co-tenant ([#296](https://github.com/derekwinters/lucas-doggiehood/issues/296)).** The Settings gear ([settings.md](settings.md) decision ①) owns the very corner, so the chip's `HudEdgeMarginPx` governs its inset from the **safe-area top**, while its right edge is pinned just inboard-left of the gear rather than to the safe-area right edge. The gear keeps its own raw-screen-edge rect (unchanged by this pass); only the chip measures from the safe area.
+- **Rendering.** The chip stays on IMGUI alongside the gear; its Candy Cottage chrome (stadium pill, Ink outline, hard drop-shadow, gold coin token) is drawn procedurally from a single runtime-generated white circle texture tinted per layer — no external raster art asset. The tabular balance uses the bundled `DejaVuSans` font (never an editor-only built-in), per the [#291](https://github.com/derekwinters/lucas-doggiehood/issues/291) precedent.
 - **Reference resolution.** Constants are authored at the 1920×1200 (16:10) reference per [Overview](index.md) ([#256](https://github.com/derekwinters/lucas-doggiehood/issues/256)); a Unity `CanvasScaler` scales from this so each px constant has a fixed meaning across tablet sizes.
 - Style itself (outlines, flat shadows, pill shapes, rounded type) lives in [Art & UI Style](../world/art-style.md); this page is layout only.
