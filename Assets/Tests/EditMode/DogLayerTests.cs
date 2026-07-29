@@ -111,23 +111,50 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TappingADogWithAQuest_OpensItsConversation()
+        public void TappingADogsSpeechBubble_OpensItsConversation()
         {
-            // #11: tap -> conversation for that dog's quest.
+            // #11: the speech bubble is the conversation surface (#165 moved
+            // the body tap to the profile). OpenConversation is the bubble's
+            // action; Core still gates it on an active quest.
             var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
             var presenter = presenterHost.GetComponent<ConversationPresenter>();
             var view = worldRoot.GetComponentsInChildren<DogView>()
                 .Single(v => v.Dog.Name == "Pepper");
 
-            view.OnTapped();
-            Assert.That(presenter.IsOpen, Is.False, "no quest -> tap is a no-op");
+            view.OpenConversation();
+            Assert.That(presenter.IsOpen, Is.False, "no quest -> bubble tap is a no-op");
 
             view.Dog.GiveQuest();
-            view.OnTapped();
+            view.OpenConversation();
 
             Assert.That(presenter.IsOpen, Is.True);
             Assert.That(presenter.Current.Lines.Any(l => l.Contains("Pepper")), Is.True,
                 "conversation is scoped to the tapped dog");
+
+            Object.DestroyImmediate(presenterHost);
+        }
+
+        [Test]
+        public void TappingADogsBody_OpensItsProfile()
+        {
+            // #165 / docs/specs/ui/dog-profile.md: the body tap opens the
+            // dog's profile view, scoped to that dog.
+            var canvasHost = new GameObject("ui-canvas", typeof(Canvas));
+            canvasHost.AddComponent<UiCanvas>().Configure();
+            var overlayHost = new GameObject("dog-profile-overlay");
+            overlayHost.transform.SetParent(canvasHost.transform, false);
+            var overlay = overlayHost.AddComponent<DogProfileOverlay>();
+            overlay.Init();
+
+            var view = worldRoot.GetComponentsInChildren<DogView>()
+                .Single(v => v.Dog.Name == "Pepper");
+
+            view.OnTapped();
+
+            Assert.That(overlay.IsOpen, Is.True, "tapping the dog's body opens its profile");
+            Assert.That(overlay.CurrentDog, Is.SameAs(view.Dog), "the profile is scoped to the tapped dog");
+
+            Object.DestroyImmediate(canvasHost);
         }
 
         [Test]
@@ -293,20 +320,24 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TapRaycast_OnADogsBody_OpensItsConversation()
+        public void TapRaycast_OnADogsBody_OpensItsProfile()
         {
             // #148 regression: the imported Cube Pets FBX carries no
             // collider (unlike the primitive fallback rig, whose capsule and
             // sphere brought their own), so TapRouter's Physics.Raycast
             // sailed straight through every dog and taps were dead in the
             // editor. A DogView must be physically hittable end-to-end:
-            // camera ray at the body -> collider -> OnTapped -> conversation.
-            var presenterHost = new GameObject("presenter", typeof(ConversationPresenter));
-            var presenter = presenterHost.GetComponent<ConversationPresenter>();
+            // camera ray at the body -> collider -> OnTapped -> profile (#165
+            // moved the body tap from the conversation to the dog profile).
+            var canvasHost = new GameObject("ui-canvas", typeof(Canvas));
+            canvasHost.AddComponent<UiCanvas>().Configure();
+            var overlayHost = new GameObject("dog-profile-overlay");
+            overlayHost.transform.SetParent(canvasHost.transform, false);
+            var overlay = overlayHost.AddComponent<DogProfileOverlay>();
+            overlay.Init();
+
             var view = worldRoot.GetComponentsInChildren<DogView>()
                 .Single(v => v.Dog.Name == "Pepper");
-            view.Dog.GiveQuest();
-            view.RefreshBubble();
 
             // Isolate the dog so no house/fence can intercept the ray.
             view.transform.position = new Vector3(400f, 0f, 400f);
@@ -328,14 +359,16 @@ namespace Doggiehood.Unity.EditModeTests
 
                 Assert.That(routed, Is.True,
                     "a raycast tap at the dog's body must hit a collider that routes to its DogView");
-                Assert.That(presenter.IsOpen, Is.True,
-                    "tapping a bubbled dog opens its conversation");
+                Assert.That(overlay.IsOpen, Is.True,
+                    "tapping a dog's body opens its profile");
+                Assert.That(overlay.CurrentDog, Is.SameAs(view.Dog));
             }
             finally
             {
                 cam.targetTexture = null;
                 Object.DestroyImmediate(texture);
                 Object.DestroyImmediate(camGo);
+                Object.DestroyImmediate(canvasHost);
             }
         }
 

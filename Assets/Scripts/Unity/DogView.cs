@@ -18,8 +18,9 @@ namespace Doggiehood.Unity
     /// the speech bubble bound to
     /// HasActiveQuest, wander movement driven by Core's
     /// WanderBehavior/MovementProfile, and pose application per DogState
-    /// (#66). Tapping forwards to the conversation presenter (#11) — Core
-    /// decides whether anything opens.
+    /// (#66). Tapping the body opens the dog profile (#165); tapping the
+    /// speech bubble opens the conversation (#11) — the two affordances are
+    /// split so the bubble stays the sole quest-discovery surface.
     /// </summary>
     public sealed class DogView : MonoBehaviour, IInteractable
     {
@@ -200,7 +201,27 @@ namespace Doggiehood.Unity
             return cameraRig;
         }
 
+        /// <summary>Tapping a dog's body opens its profile (#165,
+        /// docs/specs/ui/dog-profile.md). The conversation is reached instead
+        /// by tapping the speech bubble — the sole quest-discovery surface
+        /// (conversation-system.md, #11) — routed through
+        /// <see cref="OpenConversation"/>.</summary>
         public void OnTapped()
+        {
+            Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.Bark);
+
+            var overlay = FindFirstObjectByType<DogProfileOverlay>();
+            if (overlay != null)
+            {
+                overlay.Open(Dog);
+            }
+        }
+
+        /// <summary>Opens this dog's conversation (#11) — the speech bubble's
+        /// action. Core decides whether anything opens; a dog with no active
+        /// quest is a silent no-op. Separate from <see cref="OnTapped"/> so the
+        /// bubble surfaces the quest while the body opens the profile (#165).</summary>
+        public void OpenConversation()
         {
             Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.Bark);
 
@@ -262,7 +283,7 @@ namespace Doggiehood.Unity
                 return false;
             }
 
-            OnTapped();
+            OpenConversation();
             return true;
         }
 
