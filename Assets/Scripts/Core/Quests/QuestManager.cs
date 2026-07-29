@@ -47,8 +47,20 @@ namespace Doggiehood.Core.Quests
             QuestType.PestControl,
         };
 
+        /// <summary>#310: the no-cost quest types — accepting them never
+        /// spends coins. The always-one-free-quest invariant draws from these
+        /// so the player is never dead-ended at 0 coins. Confirmed against
+        /// <see cref="Quest"/> (cost is carried only by BuyGift /
+        /// DecorationRequest).</summary>
+        private static readonly QuestType[] FreeQuestTypes =
+        {
+            QuestType.LostItem,
+            QuestType.PestControl,
+        };
+
         private readonly GameState state;
         private readonly Random moveInRng;
+        private readonly QuestPacingPolicy pacing = new QuestPacingPolicy();
         private readonly List<Quest> quests = new List<Quest>();
         private int nextQuestId = 1;
 
@@ -100,19 +112,88 @@ namespace Doggiehood.Core.Quests
             GiveQuestTo(dog, QuestType.LostItem, rng);
         }
 
-        /// <summary>Daily rotation (#26): 2-4 quest-free dogs get new quests;
-        /// dogs holding an uncompleted quest are never overwritten.</summary>
+        /// <summary>#310: the recurring refresh boundary. Asks
+        /// <see cref="QuestPacingPolicy.ShouldRefresh"/> whether the 8h UTC
+        /// cadence has been crossed and, if so, runs one <see cref="StartNewDay"/>
+        /// top-up and records the instant. Purely a boundary <em>check</em> —
+        /// nothing is removed and no quest can fail (economy.md #28). Elapsed
+        /// time only decides <em>whether</em> to refresh, never <em>how many</em>
+        /// to add: away 8h or 4 days is one top-up to the cap, no per-interval
+        /// catch-up. <paramref name="nowUtc"/> is a UTC instant
+        /// (<c>DateTime.UtcNow</c> in production).</summary>
+        public void MaybeStartNewDay(DateTime nowUtc, Random rng)
+        {
+            if (!pacing.ShouldRefresh(nowUtc, state))
+            {
+                return;
+            }
+
+            StartNewDay(rng);
+            state.RecordRotationUtc(nowUtc);
+        }
+
+        /// <summary>Daily rotation (#26, #310): tops up toward the pacing
+        /// policy's population-scaled <see cref="QuestPacingPolicy.TargetActiveCount"/>
+        /// — adds <c>min(batch, target − activeCount, freeDogs)</c>, floored at
+        /// 0, so once the neighborhood already holds the target number of
+        /// uncompleted quests a rotation adds nothing. Dogs holding an
+        /// uncompleted quest are never overwritten. Enforces the
+        /// always-one-free-quest invariant (#310): if the top-up would leave an
+        /// all-paid active set, one added quest is forced to a free type.</summary>
         public void StartNewDay(Random rng)
         {
             var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
-            var count = Math.Min(freeDogs.Count, 2 + rng.Next(3));
+            var batch = EconomyNumbers.RotationBatchMin
+                + rng.Next(EconomyNumbers.RotationBatchMax - EconomyNumbers.RotationBatchMin + 1);
+            var headroom = pacing.TargetActiveCount(state) - ActiveQuests.Count();
+            var toAdd = Math.Max(0, Math.Min(batch, Math.Min(headroom, freeDogs.Count)));
 
-            for (var i = 0; i < count; i++)
+            // Decide every (dog, type) up front so the free-quest invariant can
+            // inspect the whole would-be active set before any quest is created.
+            var assignments = new List<(Dog Dog, QuestType Type)>();
+            for (var i = 0; i < toAdd; i++)
             {
                 var dog = freeDogs[rng.Next(freeDogs.Count)];
                 freeDogs.Remove(dog);
-                GiveQuestTo(dog, RotationTypes[rng.Next(RotationTypes.Length)], rng);
+                assignments.Add((dog, RotationTypes[rng.Next(RotationTypes.Length)]));
             }
+
+            EnsureOneFreeQuest(assignments, rng);
+
+            foreach (var assignment in assignments)
+            {
+                GiveQuestTo(assignment.Dog, assignment.Type, rng);
+            }
+        }
+
+        /// <summary>#310 always-one-free-quest invariant (boundary-only, never
+        /// on completion): if neither an existing active quest nor any quest
+        /// this batch would add is a free type, the post-refresh set would be
+        /// all-paid — a soft-lock at 0 coins. In that case force the first
+        /// added quest to a free type. A no-op when the batch is empty (a
+        /// temporary "no free quest" window of up to one interval is
+        /// acceptable) or a free quest is already present/queued.</summary>
+        private void EnsureOneFreeQuest(List<(Dog Dog, QuestType Type)> assignments, Random rng)
+        {
+            if (assignments.Count == 0)
+            {
+                return;
+            }
+
+            var existingHasFree = ActiveQuests.Any(q => IsFreeType(q.Type));
+            var batchHasFree = assignments.Any(a => IsFreeType(a.Type));
+            if (existingHasFree || batchHasFree)
+            {
+                return;
+            }
+
+            var freeType = FreeQuestTypes[rng.Next(FreeQuestTypes.Length)];
+            assignments[0] = (assignments[0].Dog, freeType);
+        }
+
+        private static bool IsFreeType(QuestType type)
+        {
+            return Array.IndexOf(FreeQuestTypes, type) >= 0;
         }
 
         public Quest GiveQuestTo(Dog dog, QuestType type, Random rng)

@@ -24,6 +24,17 @@ namespace Doggiehood.Core.World
             builder.Append("coins=").Append(state.Wallet.Coins.ToString(CultureInfo.InvariantCulture)).Append('\n');
             builder.Append("onboarded=").Append(state.OnboardingComplete ? "1" : "0").Append('\n');
 
+            // #310: the quest-rotation cadence marker. UTC round-trip format
+            // ("O") preserves the exact instant and its UTC kind; the line is
+            // omitted entirely until the first rotation has run (null marker).
+            if (state.LastRotationUtc.HasValue)
+            {
+                builder.Append("rotatedUtc=")
+                    .Append(state.LastRotationUtc.Value.ToUniversalTime()
+                        .ToString("O", CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             foreach (var item in state.PlacedItems)
             {
                 builder.Append("placed=")
@@ -75,6 +86,11 @@ namespace Doggiehood.Core.World
                     {
                         state.MarkOnboardingComplete();
                     }
+                }
+                else if (key == "rotatedUtc")
+                {
+                    state.RecordRotationUtc(DateTime.Parse(
+                        value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
                 }
                 else if (key == "coins")
                 {

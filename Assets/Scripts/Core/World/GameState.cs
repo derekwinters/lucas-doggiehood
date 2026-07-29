@@ -310,5 +310,21 @@ namespace Doggiehood.Core.World
         {
             OnboardingComplete = true;
         }
+
+        /// <summary>#310: UTC instant of the most recent quest-rotation
+        /// refresh, or null until the first refresh runs. Persists in the save
+        /// (like <see cref="OnboardingComplete"/>) so the 8h refresh cadence
+        /// (<see cref="Quests.QuestPacingPolicy.ShouldRefresh"/>) holds across
+        /// sessions. Stored as UTC so it is unaffected by device-timezone
+        /// changes.</summary>
+        public DateTime? LastRotationUtc { get; private set; }
+
+        /// <summary>#310: records that a rotation refresh happened at
+        /// <paramref name="nowUtc"/>. Caller passes a UTC instant
+        /// (<c>DateTime.UtcNow</c> in production) — never a local time.</summary>
+        public void RecordRotationUtc(DateTime nowUtc)
+        {
+            LastRotationUtc = nowUtc;
+        }
     }
 }

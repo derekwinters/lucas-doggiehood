@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Expansion;
+using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -311,14 +312,47 @@ namespace Doggiehood.Core.Tests.Expansion
             Assert.That(state.Dogs, Does.Contain(newDog));
             Assert.That(newDog.HasActiveQuest, Is.False, "a freshly moved-in dog starts quest-free");
 
+            // #310: the rotation now tops up only toward the population-scaled
+            // cap, so the whole neighborhood never all holds quests at once.
+            // Eligibility means the moved-in dog is in the same free-dog pool
+            // the top-up draws from — so with quests being completed (freeing
+            // slots) each day it is eventually selected, exactly like any
+            // starting dog. Fund the wallet for the BuyGift acceptance cost.
+            state.Wallet.Deposit(1000);
             var everGotAQuest = false;
             for (var day = 0; day < 40 && !everGotAQuest; day++)
             {
                 state.Quests.StartNewDay(new Random(day));
                 everGotAQuest = newDog.HasActiveQuest;
+                CompleteAllActiveQuests(state);
             }
 
             Assert.That(everGotAQuest, Is.True, "new dog was never included in any daily rotation across 40 days");
+        }
+
+        /// <summary>Resolves every currently-active quest through its real
+        /// completion flow so the rotation's free-dog pool churns. All starting
+        /// houses are occupied, so the move-in roll on completion never grows
+        /// the roster.</summary>
+        private static void CompleteAllActiveQuests(GameState state)
+        {
+            foreach (var quest in state.Quests.ActiveQuests.ToList())
+            {
+                state.Quests.Accept(quest);
+                switch (quest.Type)
+                {
+                    case QuestType.LostItem:
+                        state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value);
+                        break;
+                    case QuestType.PestControl:
+                        state.Quests.SprayHouse(quest.TargetHouseId.Value);
+                        break;
+                    default: // BuyGift
+                        state.Quests.NotifyDogArrivedHome(quest);
+                        state.Quests.DeliverPackage(quest);
+                        break;
+                }
+            }
         }
 
         [Test]

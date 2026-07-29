@@ -28,13 +28,18 @@ namespace Doggiehood.Unity
             presenter.State = state;
             presenter.Director = director;
 
-            // Initial quest seeding (#312). Before onboarding completes this
-            // seeds exactly one easy lost-item quest and suppresses the 2-4
-            // rotation; afterwards it's the normal day-one rotation. The Core
-            // seam owns that branch — no game logic here. Real once-per-
-            // calendar-day gating lands with the vertical-slice integration
-            // (milestone 08).
-            if (!System.Linq.Enumerable.Any(state.Quests.ActiveQuests))
+            // Quest pacing (#310 / #312). Before onboarding completes, the #312
+            // seam seeds exactly one easy lost-item quest and suppresses the
+            // 2-4 rotation. Once onboarding is complete, the recurring refresh
+            // is owned by the Core QuestPacingPolicy: MaybeStartNewDay checks
+            // the 8h UTC boundary (DateTime.UtcNow — never device-local) and
+            // tops up toward the population-scaled cap. No pacing logic lives
+            // here; this only picks the pre- vs post-onboarding entry point.
+            if (state.OnboardingComplete)
+            {
+                state.Quests.MaybeStartNewDay(System.DateTime.UtcNow, new System.Random());
+            }
+            else if (!System.Linq.Enumerable.Any(state.Quests.ActiveQuests))
             {
                 state.Quests.BeginInitialQuests(new System.Random());
             }
