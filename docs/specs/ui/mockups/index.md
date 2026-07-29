@@ -15,3 +15,4 @@ This folder is populated as wireframes are approved (epic #171).
 - [Onboarding Overlay](onboarding-overlay.html) — the first-launch bottom-center coach prompt ([#176](https://github.com/derekwinters/lucas-doggiehood/issues/176)).
 - [Dog Profile](dog-profile.html) — the centered profile card opened by tapping a dog ([#177](https://github.com/derekwinters/lucas-doggiehood/issues/177)).
 - [Settings menu](settings.html) — sidebar tabs, About (version), and a hidden Debug tab ([#218](https://github.com/derekwinters/lucas-doggiehood/issues/218)).
+- [Onboarding reward panel](onboarding-reward.html) — the bespoke celebration panel raised on completing each onboarding step ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)). *(Proposed — awaiting approval.)*
