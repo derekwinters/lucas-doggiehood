@@ -31,6 +31,8 @@ Inherited by every component; a component's own table adds only what is specific
 | `PillRadiusPx` | 999 | buttons & chips (full pill) |
 | `PanelRadiusPx` | 40 | dialogue box / panel chrome |
 
+These baseline constants + the palette below are realized in code from this single source (no per-screen hand-picked values, [#161](../../engineering/tech-stack.md#geometry-layout-and-tuning-values-are-named-variables)): the IMGUI overlays draw them via `CandyChrome` (HUD chip [#296](https://github.com/derekwinters/lucas-doggiehood/issues/296), onboarding), and the retained-UGUI panels via `CandyChromeUgui` (Settings [#298](https://github.com/derekwinters/lucas-doggiehood/issues/298)) — both procedural, no raster art asset.
+
 ### Shared palette
 
 The fixed Candy Cottage component colors (the same values regardless of viewer theme).

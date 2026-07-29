@@ -20,6 +20,14 @@ namespace Doggiehood.Unity
     /// (docs/specs/ui/settings.md, #161/#218), asserted by EditMode tests.
     /// Built under the #256 <see cref="UiCanvas"/> CanvasScaler so each px
     /// constant keeps a fixed on-screen meaning across tablet sizes.
+    ///
+    /// Its chrome is the shared "Candy Cottage" direction (#298/#65): the panel,
+    /// tabs, close button, debug rows, add-coins action and switch are drawn by
+    /// <see cref="CandyChromeUgui"/> — thick Ink outlines, flat hard
+    /// drop-shadows, rounded/pill shapes and the shared palette
+    /// (docs/specs/ui/shared-components.md) — with the wireframe layout unchanged.
+    /// The chrome is procedural and device-safe (no raster art; only the
+    /// always-included <c>UI/Default</c> shader plus the bundled font, #291).
     /// </summary>
     public sealed class SettingsPanel : MonoBehaviour
     {
@@ -59,6 +67,15 @@ namespace Doggiehood.Unity
         private const int DebugActionFontSizePx = 30; // mockup .action font-size
         private const float KnobInsetPx = 6f;
 
+        // --- Candy Cottage chrome corner radii (#298) ---
+        // Panel/pill radii come from the shared baseline (CandyChromeUgui:
+        // PanelRadiusPx / PillRadiusPx). These two are the wireframe mockup's own
+        // corner radii, transcribed off mockups/settings.html (#161 — no invented
+        // values): the content pane and each debug row. The sidebar tabs keep
+        // their locked wireframe corner radius (TabRadiusPx = 24).
+        private const float PaneRadiusPx = 28f;      // mockup .pane border-radius
+        private const float DebugRowRadiusPx = 22f;  // mockup .drow border-radius
+
         // --- Display strings ---
         private const string TitleText = "Settings";
         private const string AppNameText = "Doggiehood";
@@ -86,19 +103,24 @@ namespace Doggiehood.Unity
         /// the show/hide backyard fences switch (#152).</summary>
         public const string FenceToggleKey = "show-backyard-fences";
 
-        // --- Palette (graybox, restyled by the #173 shared chrome pass) ---
+        // --- Palette (#298: the shared Candy Cottage palette, one source) ---
+        // Every solid fill maps to a named CandyChromeUgui palette color
+        // (docs/specs/ui/shared-components.md) — no hand-picked hex here.
+        private static readonly Color PanelColor = CandyChromeUgui.Panel;
+        private static readonly Color TabColor = CandyChromeUgui.Cream;         // inactive tab / close
+        private static readonly Color TabActiveColor = CandyChromeUgui.Coral;   // active tab
+        private static readonly Color RowColor = CandyChromeUgui.Panel;         // debug row backing
+        private static readonly Color ToggleOnColor = CandyChromeUgui.Leaf;
+        private static readonly Color ToggleOffColor = CandyChromeUgui.Disabled;
+        private static readonly Color KnobColor = CandyChromeUgui.Panel;
+        private static readonly Color InkColor = CandyChromeUgui.Ink;
+        private static readonly Color ActionColor = CandyChromeUgui.Gold;       // gold add-coins action
+
+        // The scrim (translucent dim) and the content pane's neutral stage tone
+        // are not Candy Cottage component fills — the scrim is the shared 46%
+        // ink dim (settings.md) and the stage is the mockup's --stage neutral.
         private static readonly Color ScrimColor = new Color(46f / 255f, 42f / 255f, 38f / 255f, 0.46f);
-        private static readonly Color PanelColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color PaneColor = new Color(0.906f, 0.875f, 0.808f, 1f);
-        private static readonly Color TabColor = new Color(1f, 0.953f, 0.851f, 1f);
-        private static readonly Color TabActiveColor = new Color(1f, 0.478f, 0.361f, 1f);
-        private static readonly Color RowColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color ToggleOnColor = new Color(0.345f, 0.753f, 0.416f, 1f);
-        private static readonly Color ToggleOffColor = new Color(0.847f, 0.824f, 0.776f, 1f);
-        private static readonly Color KnobColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color InkColor = new Color(0.180f, 0.165f, 0.149f, 1f);
-        // Gold action pill (#FFC23C, mockup --gold).
-        private static readonly Color ActionColor = new Color(1f, 0.761f, 0.235f, 1f);
+        private static readonly Color PaneColor = new Color32(0xE7, 0xDF, 0xCE, 0xFF); // mockup --stage
 
         private GameState state;
         private DebugUnlockGesture gesture;
@@ -131,6 +153,7 @@ namespace Doggiehood.Unity
         public RectTransform DebugTabRect => debugTabRect;
         public RectTransform CloseButtonRect => closeButtonRect;
         public RectTransform FenceToggleRect => fenceToggleRect;
+        public RectTransform FenceKnobRect => fenceKnobRect;
         public RectTransform AddCoinsRowRect => addCoinsRowRect;
         public RectTransform AddCoinsButtonRect => addCoinsButtonRect;
         public RectTransform AboutPaneRect => aboutPaneRect;
@@ -294,6 +317,9 @@ namespace Doggiehood.Unity
             var panelImage = CreateImage("Panel", parent, PanelColor);
             panelRect = panelImage.rectTransform;
             Center(panelRect, SettingsPanelWidthPx, SettingsPanelHeightPx);
+            // Panel chrome: Panel fill + Ink outline + flat hard drop-shadow at
+            // the shared PanelRadiusPx corner radius (#298, checklist item 1).
+            CandyChromeUgui.ApplyRounded(panelImage, PanelColor, CandyChromeUgui.PanelRadiusPx, withShadow: true);
 
             BuildCloseButton(panelRect);
             BuildTitle(panelRect);
@@ -312,6 +338,9 @@ namespace Doggiehood.Unity
             closeButtonRect.pivot = Vector2.one;
             closeButtonRect.sizeDelta = new Vector2(CloseButtonSizePx, CloseButtonSizePx);
             closeButtonRect.anchoredPosition = Vector2.zero;
+            // Close chrome: a cream pill (a 72px square is a full circle) with the
+            // Candy Cottage outline + hard shadow (#298, checklist item 4).
+            CandyChromeUgui.ApplyPill(closeImage, TabColor, CloseButtonSizePx, withShadow: true);
 
             CreateLabel("Glyph", closeButtonRect, CloseGlyphText, CloseGlyphFontSizePx, TextAnchor.MiddleCenter);
             closeImage.gameObject.AddComponent<Button>().onClick.AddListener(Close);
@@ -352,6 +381,11 @@ namespace Doggiehood.Unity
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, TabHeightPx);
             rect.anchoredPosition = new Vector2(0f, -order * (TabHeightPx + TabGapPx));
+            // Tab chrome: a PillButton-styled row — Ink outline + hard shadow at
+            // the locked wireframe TabRadiusPx corner radius; the role tint
+            // (active Coral / inactive Cream) is applied by SetActiveTab (#298,
+            // checklist item 2).
+            CandyChromeUgui.ApplyRounded(tabImage, TabColor, TabRadiusPx, withShadow: true);
 
             var text = CreateLabel("Label", rect, label, TabFontSizePx, TextAnchor.MiddleLeft);
             text.rectTransform.offsetMin = new Vector2(TabRadiusPx, 0f);
@@ -369,6 +403,9 @@ namespace Doggiehood.Unity
             rect.pivot = new Vector2(1f, 1f);
             rect.offsetMin = new Vector2(SettingsPanelPaddingPx + SidebarWidthPx + SidebarContentGapPx, SettingsPanelPaddingPx);
             rect.offsetMax = new Vector2(-SettingsPanelPaddingPx, -BodyTopInset());
+            // Content pane: a rounded stage surface inside the panel — Ink outline,
+            // no drop-shadow (it is an inset interior surface, per the mockup).
+            CandyChromeUgui.ApplyRounded(pane, PaneColor, PaneRadiusPx, withShadow: false);
 
             BuildAboutPane(rect, version);
             BuildDebugPane(rect);
@@ -413,12 +450,16 @@ namespace Doggiehood.Unity
         /// 1 = add-coins, …), each separated by <see cref="DebugRowGapPx"/>.</summary>
         private static RectTransform CreateDebugRow(RectTransform parent, string name, int order)
         {
-            var rect = CreateImage(name, parent, RowColor).rectTransform;
+            var image = CreateImage(name, parent, RowColor);
+            var rect = image.rectTransform;
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, DebugRowHeightPx);
             rect.anchoredPosition = new Vector2(0f, -order * (DebugRowHeightPx + DebugRowGapPx));
+            // Row chrome: a rounded Panel-fill card with the Ink outline + hard
+            // shadow, matching the mockup .drow (#298).
+            CandyChromeUgui.ApplyRounded(image, RowColor, DebugRowRadiusPx, withShadow: true);
             return rect;
         }
 
@@ -441,12 +482,19 @@ namespace Doggiehood.Unity
             fenceToggleRect.pivot = new Vector2(1f, 0.5f);
             fenceToggleRect.sizeDelta = new Vector2(ToggleTrackWidthPx, ToggleTrackHeightPx);
             fenceToggleRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            // Switch track: a full pill with the Ink outline, no drop-shadow — the
+            // Candy Cottage switch styling (#298, checklist item 3). The on/off
+            // fill (Leaf/Disabled) is driven by SyncFenceToggleVisual.
+            CandyChromeUgui.ApplyPill(fenceToggleImage, ToggleOffColor, ToggleTrackHeightPx, withShadow: false);
 
-            fenceKnobRect = CreateImage("Knob", fenceToggleRect, KnobColor).rectTransform;
+            var knobImage = CreateImage("Knob", fenceToggleRect, KnobColor);
+            fenceKnobRect = knobImage.rectTransform;
             fenceKnobRect.sizeDelta = new Vector2(ToggleKnobPx, ToggleKnobPx);
             fenceKnobRect.anchorMin = new Vector2(0f, 0.5f);
             fenceKnobRect.anchorMax = new Vector2(0f, 0.5f);
             fenceKnobRect.pivot = new Vector2(0f, 0.5f);
+            // Knob: a round Panel-fill cap with the Ink outline (no drop-shadow).
+            CandyChromeUgui.ApplyPill(knobImage, KnobColor, ToggleKnobPx, withShadow: false);
 
             fenceToggleImage.gameObject.AddComponent<Button>().onClick.AddListener(ToggleFence);
             SyncFenceToggleVisual(FenceToggleOn);
@@ -471,6 +519,9 @@ namespace Doggiehood.Unity
             addCoinsButtonRect.pivot = new Vector2(1f, 0.5f);
             addCoinsButtonRect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
             addCoinsButtonRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            // Add-coins action: a Gold pill with the Ink outline + hard shadow
+            // (#298, checklist item 3).
+            CandyChromeUgui.ApplyPill(actionImage, ActionColor, DebugActionHeightPx, withShadow: true);
 
             // "+100" built from the named amount — no bare literal (#161).
             CreateLabel("Glyph", addCoinsButtonRect, AddCoinsGlyph + DebugAddCoinsAmount, DebugActionFontSizePx, TextAnchor.MiddleCenter);

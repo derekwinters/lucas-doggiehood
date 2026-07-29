@@ -2,7 +2,7 @@
 
 *Wireframe issue: [#218](https://github.com/derekwinters/lucas-doggiehood/issues/218). Implements/covers: the in-game settings menu ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)). Approved: Derek, 2026-07-25 (in-session).*
 *Mockup: [mockups/settings.html](mockups/settings.html).*
-*Status: **implemented** ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)) — Unity `SettingsPanel` (`Assets/Scripts/Unity/SettingsPanel.cs`) built under the [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256) `UiCanvas` CanvasScaler; unlock gesture + debug-toggle registry in `Doggiehood.Core.Debugging`; opened from the `HudOverlay` gear.*
+*Status: **implemented** ([#219](https://github.com/derekwinters/lucas-doggiehood/issues/219)) — Unity `SettingsPanel` (`Assets/Scripts/Unity/SettingsPanel.cs`) built under the [#256](https://github.com/derekwinters/lucas-doggiehood/issues/256) `UiCanvas` CanvasScaler; unlock gesture + debug-toggle registry in `Doggiehood.Core.Debugging`; opened from the `HudOverlay` gear. **Candy Cottage restyle** ([#298](https://github.com/derekwinters/lucas-doggiehood/issues/298)): the graybox chrome is replaced with the shared [Candy Cottage](../world/art-style.md) direction — thick Ink outlines, flat hard drop-shadows, rounded panel + pill tabs/close/add-coins action + switch, from the shared palette — drawn procedurally by the UGUI `CandyChromeUgui` helper (device-safe per [#291](https://github.com/derekwinters/lucas-doggiehood/issues/291); layout unchanged).*
 
 ## Purpose
 
@@ -47,7 +47,7 @@ An in-game **Settings menu**, opened from a gear on the HUD: a left **sidebar of
 | `GearMarginPx` | `32` | Gear inset from its HUD corner |
 | `CloseButtonSizePx` | `72` | Close (✕) button, top-right |
 
-The panel **chrome** (outline 6 / corner radius 40 / drop-shadow 12) and the **pill/tab** styling are owned by the shared components ([#173](https://github.com/derekwinters/lucas-doggiehood/issues/173)) — not re-specified here; this page places those components and sizes the panel, sidebar, tabs, version label, debug rows, and gear.
+The panel **chrome** and the **pill/tab** styling are owned by the shared components ([#173](https://github.com/derekwinters/lucas-doggiehood/issues/173), [shared-components.md](shared-components.md)) — not re-specified here; the shared baseline is a thick Ink outline (`OutlineThicknessPx` = 6), corner radius `PanelRadiusPx` = 40, and a single flat hard drop-shadow with no blur (`ShadowOffsetPx` = 8). This page places those components and sizes the panel, sidebar, tabs, version label, debug rows, and gear.
 
 ## Notes
 
