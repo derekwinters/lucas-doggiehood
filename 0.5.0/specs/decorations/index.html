@@ -1663,7 +1663,7 @@
 <p>A decoration request is <strong>generic</strong> (e.g. "my yard could use something comfy") rather than naming one specific item — the player picks which item to send from a small set of options. This differs from the toy/pool quest, which asks for one specific named thing. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/50">#50</a>)</p>
 <h2 id="v10-category-comfort-items">v1.0 category: comfort items<a class="headerlink" href="#v10-category-comfort-items" title="Permanent link">&para;</a></h2>
 <p>Starting scope is <strong>comfort items</strong> — dog beds, cushions, blankets. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/51">#51</a>) Other categories considered for later: play items (pool, sprinkler), yard dressing (flowers, fence), food/bowls.</p>
-<p>Once delivered, the dog periodically wanders over and rests on the comfort item on its own — no player tap/trigger needed, consistent with dogs already behaving autonomously. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/52">#52</a>) See the "Rest" pose in <a href="../dogs/behavior/#animations">Dog Behavior</a>.</p>
+<p>Once delivered, the dog periodically decides — on its own, no player tap/trigger, consistent with dogs already behaving autonomously — to walk over to the comfort item and settle onto it. The dog actually paths there over the <a href="../world/sidewalks/">walk network</a> (sidewalks, crosswalks, its house's front walkway) from wherever it is, then enters the "Rest" pose <strong>on arrival</strong> — it never teleports into the pose. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/52">#52</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/112">#112</a>) See the "Rest" pose in <a href="../dogs/behavior/#animations">Dog Behavior</a>.</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] Decoration requests are scoped to a single dog's own yard; no shared-space decorating exists</li>
@@ -1672,7 +1672,7 @@
 <li>[ ] Decoration requests come from the same quest rotation as other requests, not a separate shop screen</li>
 <li>[ ] A decoration request presents a small set of item choices (not one named item) for the player to pick from</li>
 <li>[ ] At least the 3 comfort items (bed, cushion, blanket) exist as deliverable decorations</li>
-<li>[ ] A dog with a comfort decoration periodically and automatically uses the "Rest" pose on it</li>
+<li>[ ] A dog with a comfort decoration periodically and automatically walks over to it via the walk network and uses the "Rest" pose on it on arrival (no teleport into the pose)</li>
 </ul>
 
 
