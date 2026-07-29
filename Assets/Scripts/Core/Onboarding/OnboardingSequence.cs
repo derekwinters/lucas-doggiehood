@@ -25,7 +25,6 @@ namespace Doggiehood.Core.Onboarding
     public sealed class OnboardingSequence
     {
         private readonly GameState state;
-        private readonly Random rng;
 
         /// <summary>#329: remembers that the target dog's conversation was
         /// opened at least once, even if the open happened before the
@@ -42,14 +41,14 @@ namespace Doggiehood.Core.Onboarding
         {
         }
 
-        /// <summary>#312: the onboarding-completion handoff kicks off the first
-        /// normal daily rotation (<see cref="QuestManager.StartNewDay"/>), so
-        /// the RNG is injectable for deterministic tests — matching
-        /// <see cref="QuestManager"/>'s pattern.</summary>
+        /// <summary>The RNG overload is retained for call-site compatibility
+        /// (deterministic tests, matching <see cref="QuestManager"/>'s pattern).
+        /// Since #316 the completion handoff grants the reward-chain bonus
+        /// rather than seeding a rotation, so the sequence no longer needs the
+        /// RNG itself — the parameter is accepted but unused.</summary>
         public OnboardingSequence(GameState state, Random rng)
         {
             this.state = state;
-            this.rng = rng;
             TargetDog = state.Dogs.FirstOrDefault(d => d.HasActiveQuest);
             CurrentStep = OnboardingStep.Pan;
         }
@@ -165,16 +164,18 @@ namespace Doggiehood.Core.Onboarding
         }
 
         /// <summary>The one Done transition: marks onboarding complete and,
-        /// per #312, hands off to the normal daily rotation by kicking off the
-        /// first <see cref="QuestManager.StartNewDay"/> — the onboarding-time
-        /// single-lost-item suppression no longer applies. Guarded by the
-        /// callers' <see cref="OnboardingStep.CompleteQuest"/> check so it runs
-        /// exactly once; #310 owns recurrence beyond this first rotation.</summary>
+        /// per #316, grants step 1 of the onboarding reward chain (the
+        /// completion bonus) instead of starting the daily rotation. The
+        /// rotation now stays suppressed while the guided chain runs
+        /// (upgrade -> expand -> build) and is released only when the chain
+        /// completes at the build step — the #312 -> #310 handoff. Guarded by
+        /// the callers' <see cref="OnboardingStep.CompleteQuest"/> check so it
+        /// runs exactly once.</summary>
         private void Complete()
         {
             CurrentStep = OnboardingStep.Done;
             state.MarkOnboardingComplete();
-            state.Quests.StartNewDay(rng);
+            state.GrantOnboardingCompletionReward();
         }
     }
 }

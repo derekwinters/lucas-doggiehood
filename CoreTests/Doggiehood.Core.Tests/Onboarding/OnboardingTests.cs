@@ -34,11 +34,13 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
-        public void CompletingOnboarding_BeginsTheFirstNormalRotation_ExactlyOnce()
+        public void CompletingOnboarding_PaysTheChainBonus_AndKeepsRotationSuppressed_ExactlyOnce()
         {
-            // #312: onboarding-time suppression ends when onboarding completes
-            // — the Done transition begins the first normal 2-4 rotation once,
-            // handing off to #310's recurrence. Re-signalling never re-runs it.
+            // #316: completing the guided first quest no longer starts the
+            // normal rotation. It grants step 1 of the onboarding reward chain
+            // (a 100-coin completion bonus) and advances the chain to the next
+            // guided step, leaving the rotation suppressed until the chain
+            // completes at the build step (#312 -> #310 handoff moves to build).
             var state = GameState.CreateNew();
             state.Quests.BeginInitialQuests(new System.Random(3));
             var onboarding = new OnboardingSequence(state, new System.Random(7));
@@ -47,19 +49,26 @@ namespace Doggiehood.Core.Tests.Onboarding
             onboarding.NotifyConversationOpened(onboarding.TargetDog);
 
             var quest = state.Quests.ActiveQuests.First(q => q.DogName == onboarding.TargetDog.Name);
+            var coinsBefore = state.Wallet.Coins;
             state.Quests.Accept(quest);
             state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value);
             onboarding.NotifyQuestCompleted(quest);
 
             Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
-            var afterCompletion = state.Quests.ActiveQuests.Count();
-            Assert.That(afterCompletion, Is.InRange(2, 4),
-                "completing onboarding begins the first normal 2-4 rotation");
+            Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse),
+                "the reward chain advances to the next guided step");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0),
+                "the normal rotation stays suppressed while the guided chain runs");
+            Assert.That(state.Wallet.Coins - coinsBefore,
+                Is.EqualTo(Doggiehood.Core.Economy.EconomyNumbers.QuestPayout
+                    + OnboardingRewardChainNumbers.RewardPerStep),
+                "the standard quest payout plus the 100-coin onboarding-completion bonus");
 
-            // Idempotent: signalling completion again must not start a second rotation.
+            // Idempotent: re-signalling completion never pays the bonus twice
+            // nor starts a rotation.
             onboarding.NotifyQuestCompleted(quest);
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(afterCompletion),
-                "the first rotation begins exactly once");
+            Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0));
         }
 
         [Test]
@@ -110,9 +119,11 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
-        public void CompletingTheRealQuest_FinishesOnboarding_WithTheStandardPayout()
+        public void CompletingTheRealQuest_FinishesOnboarding_WithTheStandardPayoutPlusTheChainBonus()
         {
-            // #44/#24: the reward is the normal quest payout, nothing special.
+            // #44/#24 + #316: the quest pays the normal flat payout, and
+            // finishing onboarding now also grants the 100-coin reward-chain
+            // completion bonus (step 1).
             var state = StateWithQuests();
             state.Wallet.Deposit(60);
             var onboarding = new OnboardingSequence(state);
@@ -146,7 +157,8 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
             Assert.That(state.OnboardingComplete, Is.True);
             Assert.That(state.Wallet.Coins - before,
-                Is.EqualTo(Doggiehood.Core.Economy.EconomyNumbers.QuestPayout - (quest.Cost ?? 0)));
+                Is.EqualTo(Doggiehood.Core.Economy.EconomyNumbers.QuestPayout - (quest.Cost ?? 0)
+                    + OnboardingRewardChainNumbers.RewardPerStep));
         }
 
         [Test]

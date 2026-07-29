@@ -12,7 +12,24 @@ On the very first launch the world seeds **exactly one** dog with a single easy 
 
 The branch lives in Core (`QuestManager.BeginInitialQuests(rng)`): with onboarding incomplete it seeds the one lost-item quest and returns; once onboarding is complete it is just the normal `StartNewDay` rotation. The thin Unity layer (`WorldBootstrap`) calls the seam behind its existing "no active quests" guard — no game logic in the `MonoBehaviour`.
 
-When onboarding finishes, its `Done` transition kicks off the **first** normal daily rotation exactly once (2-4 other dogs get quests) — the handoff point to recurring rotation ([#310](https://github.com/derekwinters/lucas-doggiehood/issues/310)), which owns once-per-day recurrence beyond that first rotation.
+When onboarding finishes, its `Done` transition now grants **step 1 of the [onboarding reward-chain](#onboarding-reward-chain-316)** (a 100-coin completion bonus) rather than starting the daily rotation. The normal rotation stays suppressed across the rest of the guided chain and is released only when the chain completes at its final (build) step — at which point recurring rotation ([#310](https://github.com/derekwinters/lucas-doggiehood/issues/310)) takes over. ([#316](https://github.com/derekwinters/lucas-doggiehood/issues/316))
+
+## Onboarding reward-chain ([#316](https://github.com/derekwinters/lucas-doggiehood/issues/316))
+
+*Design settled with Derek, review session 2026-07-28.*
+
+Immediately after the first-quest tutorial, a **one-time, first-run scripted reward-chain** walks a new player through every core early mechanic and seeds enough coins that they never stall. It is a fixed four-step sequence — **not** the random rotation — that fires each step **exactly once, in guaranteed order**, paying a flat **100 coins** per step (`OnboardingRewardChainNumbers.RewardPerStep`) by reusing the quest reward-payout path (a wallet deposit):
+
+1. **Complete the first quest** (samples the quest loop) → 100 bonus. Core entry: `GameState.GrantOnboardingCompletionReward`, fired by `OnboardingSequence` when the guided quest completes.
+2. **Upgrade a house** (L1 → L2, cost 100) → 100. Core entry: `GameState.TryUpgradeHouse`.
+3. **Expand the map** (first zone, cost 100) → 100. Core entry: `GameState.TryUnlockNextZone`; the player-facing lock-icon trigger lands with [#343](https://github.com/derekwinters/lucas-doggiehood/issues/343)/[#344](https://github.com/derekwinters/lucas-doggiehood/issues/344).
+4. **Build a house** on the newly unlocked lot (cost 50) → 100. Core entry: `GameState.TryBuildHouse`.
+
+**Self-funding ladder.** The 100 bonus covers the 100 upgrade; the upgrade reward covers the 100 expand; the expand reward covers the 50 build; and because the build costs only 50, the player ends the chain with a small cushion. The costs are the shipped v0.4 sink prices — see [Neighborhood Expansion → pricing](expansion.md#pricing) and [Economy → Numbers](quests/economy.md#numbers-placeholder-expect-tuning).
+
+**Ordering and one-time guarantee.** The chain (`OnboardingRewardChain`, engine-free Core) tracks the step it is waiting on. A tracked action taken out of turn — or repeated after it already paid — neither pays nor advances; the chain simply keeps waiting on its current step. Progress round-trips through the save (`SaveCodec`), so the chain resumes where it left off and is never restarted or re-paid on reload; a pre-#316 save that had already finished onboarding is treated as a completed chain.
+
+**Rotation handoff (#312 → #310).** The normal quest rotation stays suppressed while the chain is in progress and is released **exactly when step 4 (build) completes**, at which point the recurring #310 pacing takes over — no rotation is seeded mid-chain. The single Core decision `QuestManager.EnsureQuestsForLaunch` applies this at every launch (pre-chain seed → mid-chain suppression → post-chain refresh), so the thin Unity bootstrap carries no pacing logic.
 
 ## Step-gated speech bubble & self-heal ([#329](https://github.com/derekwinters/lucas-doggiehood/issues/329))
 

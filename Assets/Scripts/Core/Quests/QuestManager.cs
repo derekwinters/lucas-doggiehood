@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 
 namespace Doggiehood.Core.Quests
@@ -110,6 +111,42 @@ namespace Doggiehood.Core.Quests
 
             var dog = freeDogs[rng.Next(freeDogs.Count)];
             GiveQuestTo(dog, QuestType.LostItem, rng);
+        }
+
+        /// <summary>#316: the single launch-time quest-seeding decision the
+        /// thin Unity bootstrap defers to, so no phase logic lives in the
+        /// MonoBehaviour. Pre-chain (still on the first guided step, with no
+        /// active quests) seeds the one tutorial quest; mid-chain (the guided
+        /// upgrade/expand/build steps) stays suppressed; post-chain runs the
+        /// #310 recurring 8h refresh. <paramref name="nowUtc"/> is a UTC instant
+        /// (<c>DateTime.UtcNow</c> in production).</summary>
+        public void EnsureQuestsForLaunch(DateTime nowUtc, Random rng)
+        {
+            if (state.RewardChain.IsComplete)
+            {
+                MaybeStartNewDay(nowUtc, rng);
+                return;
+            }
+
+            if (state.RewardChain.CurrentStep == OnboardingRewardStep.FirstQuest
+                && !ActiveQuests.Any())
+            {
+                BeginInitialQuests(rng);
+            }
+
+            // Mid-chain (steps 2-4): the guided upgrade/expand/build actions are
+            // not quests, so the rotation stays suppressed until the chain
+            // completes at the build step and releases it.
+        }
+
+        /// <summary>#316: releases the onboarding reward-chain rotation
+        /// suppression by seeding the first normal rotation exactly once, when
+        /// the 4-step chain completes at the build step. The handoff point to
+        /// #310 recurring pacing; uses the manager's own RNG since the build
+        /// entry point has no caller-supplied one.</summary>
+        public void ReleaseInitialRotation()
+        {
+            StartNewDay(moveInRng);
         }
 
         /// <summary>#310: the recurring refresh boundary. Asks

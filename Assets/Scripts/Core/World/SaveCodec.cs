@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Doggiehood.Core.Onboarding;
 
 namespace Doggiehood.Core.World
 {
@@ -23,6 +24,11 @@ namespace Doggiehood.Core.World
             builder.Append("version=").Append(Version).Append('\n');
             builder.Append("coins=").Append(state.Wallet.Coins.ToString(CultureInfo.InvariantCulture)).Append('\n');
             builder.Append("onboarded=").Append(state.OnboardingComplete ? "1" : "0").Append('\n');
+
+            // #316: the onboarding reward-chain step, so the one-time chain
+            // resumes where it left off and is never restarted or re-paid on
+            // reload. Stored by name so it survives any future enum reordering.
+            builder.Append("rewardChain=").Append(state.RewardChain.CurrentStep.ToString()).Append('\n');
 
             // #310: the quest-rotation cadence marker. UTC round-trip format
             // ("O") preserves the exact instant and its UTC kind; the line is
@@ -68,6 +74,7 @@ namespace Doggiehood.Core.World
             }
 
             var state = GameState.CreateNew();
+            var sawRewardChain = false;
 
             foreach (var line in saved.Split('\n'))
             {
@@ -85,6 +92,14 @@ namespace Doggiehood.Core.World
                     if (value == "1")
                     {
                         state.MarkOnboardingComplete();
+                    }
+                }
+                else if (key == "rewardChain")
+                {
+                    sawRewardChain = true;
+                    if (Enum.TryParse(value, out OnboardingRewardStep step))
+                    {
+                        state.RestoreRewardChainStep(step);
                     }
                 }
                 else if (key == "rotatedUtc")
@@ -116,6 +131,15 @@ namespace Doggiehood.Core.World
                             float.Parse(parts[2], CultureInfo.InvariantCulture),
                             float.Parse(parts[3], CultureInfo.InvariantCulture))));
                 }
+            }
+
+            // #316 legacy migration: a pre-#316 save that finished onboarding
+            // but carries no rewardChain field is a player long past onboarding
+            // — treat the guided chain as already complete so it is never
+            // re-offered and their rotation is never re-suppressed.
+            if (!sawRewardChain && state.OnboardingComplete)
+            {
+                state.RestoreRewardChainStep(OnboardingRewardStep.Done);
             }
 
             return state;
