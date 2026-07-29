@@ -1,5 +1,7 @@
 using System.Linq;
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Decorations;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -302,6 +304,56 @@ namespace Doggiehood.Unity.EditModeTests
                 Object.DestroyImmediate(texture);
                 Object.DestroyImmediate(camGo);
             }
+        }
+
+        [Test]
+        public void RestApproach_WalksTheDogToItsComfortDecoration_ThenRestsOnArrival_NoTeleport()
+        {
+            // #52/#112: rest mode used to be an instant state flip — the dog
+            // teleported into the Rest pose. Now Core computes a walk-over
+            // route to the comfort decoration and the DogView follows it frame
+            // by frame, only settling into Rest once it arrives. This drives
+            // the real view step (TickRestApproach) the Play-mode Update loop
+            // would call, proving the dog moves across the world before
+            // resting rather than snapping straight into the pose.
+            var dog = state.Dogs.First(d => d.HouseId == 3); // SouthEast house, (14, -14)
+            var yard = YardPlacement.PositionFor(dog.HouseId, 0);
+            state.AddDecoration(new Decoration("bed", dog.HouseId, yard));
+            var decoration = state.Decorations.Last();
+
+            var view = worldRoot.GetComponentsInChildren<DogView>().Single(v => v.Dog.Name == dog.Name);
+
+            // Put the dog out on the network, away from its own yard.
+            var start = new Vector3(NeighborhoodLayout.Intersection.X, 0f, NeighborhoodLayout.Intersection.Z);
+            view.transform.position = start;
+
+            var approach = RestApproach.Begin(
+                new GridPoint(start.x, start.z), decoration, NeighborhoodLayout.WalkNetwork);
+            Assert.That(approach.Waypoints.Count, Is.GreaterThan(0), "a real route to the decoration must exist");
+
+            view.BeginRestApproach(approach);
+            Assert.That(view.IsApproachingRest, Is.True);
+
+            // One step in: the dog has moved but is still walking, not resting —
+            // the no-teleport guarantee.
+            view.TickRestApproach(0.05f);
+            Assert.That(view.Dog.State, Is.EqualTo(DogState.IdleWander), "must not rest before arriving");
+            Assert.That(Vector3.Distance(view.transform.position, start), Is.GreaterThan(0f),
+                "the dog moved off its start toward the decoration");
+            var arrivedXz = new Vector2(yard.X, yard.Z);
+            Assert.That(
+                Vector2.Distance(new Vector2(view.transform.position.x, view.transform.position.z), arrivedXz),
+                Is.GreaterThan(1f), "one step in, the dog is still en route, not already on the decoration");
+
+            for (var step = 0; step < 5000 && view.Dog.State != DogState.Rest; step++)
+            {
+                view.TickRestApproach(0.05f);
+            }
+
+            Assert.That(view.Dog.State, Is.EqualTo(DogState.Rest), "the dog rests once it reaches the decoration");
+            Assert.That(view.IsApproachingRest, Is.False, "the approach is cleared on arrival");
+            Assert.That(view.transform.position.x, Is.EqualTo(yard.X).Within(0.01f));
+            Assert.That(view.transform.position.z, Is.EqualTo(yard.Z).Within(0.01f));
         }
 
         private static (float minX, float minY, float maxX, float maxY) ProjectedScreenBounds(

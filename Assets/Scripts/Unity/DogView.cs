@@ -1,4 +1,5 @@
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Decorations;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -62,6 +63,12 @@ namespace Doggiehood.Unity
         private DogState appliedState;
         private bool hasTarget;
         private bool usingImportedModel;
+
+        // #112: the in-progress walk-over to a comfort decoration, when the
+        // dog has decided to rest. Core owns the route and the per-step
+        // position; this view just mirrors Position onto the transform each
+        // frame and commits the Rest flip on arrival. Null while wandering.
+        private RestApproach restApproach;
 
         // Cube Pets animation state: the pack's takes (idle/walk/...) are
         // clip sub-assets of the FBX, played through a PlayableGraph because
@@ -333,7 +340,11 @@ namespace Doggiehood.Unity
             }
 
             var moving = false;
-            if (Dog.WantsToWander)
+            if (restApproach != null)
+            {
+                moving = TickRestApproach(Time.deltaTime);
+            }
+            else if (Dog.WantsToWander)
             {
                 if (!hasTarget)
                 {
@@ -365,6 +376,57 @@ namespace Doggiehood.Unity
 
             TickAnimation(Time.deltaTime, moving);
             FaceBubbleToCamera();
+        }
+
+        /// <summary>True while the dog is walking over to a comfort decoration
+        /// (#112) — QuestDirector checks this so it doesn't start a second
+        /// approach for a dog already en route.</summary>
+        public bool IsApproachingRest => restApproach != null;
+
+        /// <summary>#112: hand this dog a Core-computed walk-over to its comfort
+        /// decoration. The dog abandons its current wander target and follows
+        /// the route until it arrives, then settles into the Rest pose.</summary>
+        public void BeginRestApproach(RestApproach approach)
+        {
+            restApproach = approach;
+            hasTarget = false;
+        }
+
+        /// <summary>Advances the active rest approach one frame: Core moves the
+        /// route position, this view mirrors it onto the transform (preserving
+        /// the dog's ground height), faces the direction of travel, and on
+        /// arrival commits the Rest flip and clears the approach. Returns
+        /// whether the dog visibly moved this frame (drives the walk take).
+        /// A no-op returning false when no approach is active. Public so
+        /// EditMode tests can drive the walk-over without the Play-mode Update
+        /// loop, exactly like <see cref="TickAnimation"/>.</summary>
+        public bool TickRestApproach(float deltaTime)
+        {
+            if (restApproach == null)
+            {
+                return false;
+            }
+
+            var before = transform.position;
+            restApproach.Advance(RestApproach.ApproachSpeed * deltaTime);
+
+            transform.position = new Vector3(
+                restApproach.Position.X, transform.position.y, restApproach.Position.Z);
+
+            var toward = transform.position - before;
+            var moving = toward.sqrMagnitude > 0.001f;
+            if (moving)
+            {
+                transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
+            }
+
+            if (restApproach.HasArrived)
+            {
+                Dog.TryRest(comfortDecorationSelected: true);
+                restApproach = null;
+            }
+
+            return moving;
         }
 
         /// <summary>Advances the Cube Pets animation by one frame: walk take
