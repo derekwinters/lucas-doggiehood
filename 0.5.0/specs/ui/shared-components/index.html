@@ -1827,6 +1827,7 @@
 <p>Role tints: Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Disabled = grey (outline + text dim together).</p>
 <h3 id="currency-chip-currencychip">Currency chip (<code>CurrencyChip</code>)<a class="headerlink" href="#currency-chip-currencychip" title="Permanent link">&para;</a></h3>
 <p>The HUD coin indicator — a coin token plus the live balance. Sits in a screen corner (its anchor is fixed in the HUD wireframe, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/174">#174</a>).</p>
+<p><em>Status: </em><em>implemented</em><em> in the HUD (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>) — <code>Assets/Scripts/Unity/HudOverlay.cs</code> draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning).</em></p>
 <p><strong>Regions:</strong> coin token (left) · balance number (right, tabular figures), inside a cream pill.</p>
 <table>
 <thead>

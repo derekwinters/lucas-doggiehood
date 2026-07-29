@@ -1597,7 +1597,8 @@
 
 <h1 id="hud">HUD<a class="headerlink" href="#hud" title="Permanent link">&para;</a></h1>
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/174">#174</a>. Implements/covers: <code>HudOverlay</code>. Approved: Derek, 2026-07-23 (in-session).</em>
-<em>Mockup: <a href="../mockups/hud.html">mockups/hud.html</a>.</em></p>
+<em>Mockup: <a href="../mockups/hud.html">mockups/hud.html</a>.</em>
+<em>Status: </em><em>implemented</em><em> — the graybox chip was restyled to the full Candy Cottage <a href="../shared-components/">CurrencyChip</a> chrome in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a> (<code>Assets/Scripts/Unity/HudOverlay.cs</code>, IMGUI).</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>The persistent heads-up layer drawn over the neighborhood on the primary target — a landscape tablet (device #22, 1920×1200 reference; see <a href="../">Overview</a>). It is always on screen during play. Today it carries exactly one element, the currency chip; the layout reserves room for future HUD elements without re-deciding the chip's placement.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
@@ -1648,6 +1649,8 @@
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Retroactive coverage.</strong> This wireframe retrofits the already-shipped <code>HudOverlay</code> chip. It keeps the shipped <strong>top-right</strong> anchor, but supersedes the graybox 140×32 <code>GUI.Box</code> with the real <a href="../shared-components/">CurrencyChip</a> and measures the inset from the <strong>safe-area</strong> edges rather than the raw screen edge. The old top banner is being removed (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/207">#207</a>).</li>
+<li><strong>Gear co-tenant (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>).</strong> The Settings gear (<a href="../settings/">settings.md</a> decision ①) owns the very corner, so the chip's <code>HudEdgeMarginPx</code> governs its inset from the <strong>safe-area top</strong>, while its right edge is pinned just inboard-left of the gear rather than to the safe-area right edge. The gear keeps its own raw-screen-edge rect (unchanged by this pass); only the chip measures from the safe area.</li>
+<li><strong>Rendering.</strong> The chip stays on IMGUI alongside the gear; its Candy Cottage chrome (stadium pill, Ink outline, hard drop-shadow, gold coin token) is drawn procedurally from a single runtime-generated white circle texture tinted per layer — no external raster art asset. The tabular balance uses the bundled <code>DejaVuSans</code> font (never an editor-only built-in), per the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a> precedent.</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/256">#256</a>); a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>
 <li>Style itself (outlines, flat shadows, pill shapes, rounded type) lives in <a href="../../world/art-style/">Art &amp; UI Style</a>; this page is layout only.</li>
 </ul>
