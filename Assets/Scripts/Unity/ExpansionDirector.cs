@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -18,14 +19,28 @@ namespace Doggiehood.Unity
         public GameState State { get; private set; }
 
         private Transform worldRoot;
+        private readonly HashSet<EmptyLotView> wiredLots = new HashSet<EmptyLotView>();
 
         public void Init(GameState state, Transform worldRoot)
         {
             State = state;
             this.worldRoot = worldRoot;
+            WireLots();
+        }
 
+        /// <summary>Subscribes every EmptyLotView in the scene to the build
+        /// path, skipping any already wired — idempotent, so it can be called
+        /// again after a mid-game zone unlock (#343) builds new lot markers,
+        /// without double-firing existing ones.</summary>
+        public void WireLots()
+        {
             foreach (var lotView in Object.FindObjectsByType<EmptyLotView>(FindObjectsSortMode.None))
             {
+                if (!wiredLots.Add(lotView))
+                {
+                    continue;
+                }
+
                 var houseId = lotView.HouseId;
                 lotView.Tapped += () => OnLotTapped(houseId);
             }

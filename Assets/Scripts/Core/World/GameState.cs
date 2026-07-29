@@ -307,6 +307,28 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// #343: restores <paramref name="count"/> already-unlocked zones on
+        /// load — replays the first <paramref name="count"/> authored
+        /// <see cref="ZoneCatalog.Zones"/> onto <see cref="Map"/> and
+        /// <see cref="UnlockedZones"/> in sequence, WITHOUT charging the
+        /// wallet or advancing the reward chain (both persist separately).
+        /// The parallel of <see cref="RestoreRewardChainStep"/>: round-trips
+        /// progress so a persisted zone is never re-paid on reload. A no-op
+        /// for 0; ignores a count beyond the authored zones (a save can only
+        /// legitimately hold what was unlockable when it was written).
+        /// </summary>
+        public void RestoreUnlockedZoneCount(int count)
+        {
+            var target = Math.Min(count, ZoneCatalog.Zones.Count);
+            while (unlockedZones.Count < target)
+            {
+                var zone = ZoneCatalog.Zones[unlockedZones.Count];
+                zone.PlaceOnto(Map);
+                unlockedZones.Add(zone);
+            }
+        }
+
+        /// <summary>
         /// Resolves the <see cref="HouseLot"/> for any known house id — the
         /// starting layout's lots (#38) or an unlocked zone's lots (#56) —
         /// for callers (Unity's WorldBuilder) that need a built house's

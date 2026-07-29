@@ -25,6 +25,18 @@ namespace Doggiehood.Core.World
             builder.Append("coins=").Append(state.Wallet.Coins.ToString(CultureInfo.InvariantCulture)).Append('\n');
             builder.Append("onboarded=").Append(state.OnboardingComplete ? "1" : "0").Append('\n');
 
+            // #343: how many authored zones have been unlocked. Zones are
+            // deterministic (ZoneCatalog), so the count alone rebuilds both
+            // Map and UnlockedZones on load — an unlocked zone survives a
+            // relaunch instead of resetting each session. Omitted (loads as 0)
+            // for a game that has unlocked nothing.
+            if (state.UnlockedZones.Count > 0)
+            {
+                builder.Append("zones=")
+                    .Append(state.UnlockedZones.Count.ToString(CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             // #316: the onboarding reward-chain step, so the one-time chain
             // resumes where it left off and is never restarted or re-paid on
             // reload. Stored by name so it survives any future enum reordering.
@@ -106,6 +118,10 @@ namespace Doggiehood.Core.World
                 {
                     state.RecordRotationUtc(DateTime.Parse(
                         value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                }
+                else if (key == "zones")
+                {
+                    state.RestoreUnlockedZoneCount(int.Parse(value, CultureInfo.InvariantCulture));
                 }
                 else if (key == "coins")
                 {

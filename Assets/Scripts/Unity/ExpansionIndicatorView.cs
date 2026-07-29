@@ -1,3 +1,4 @@
+using System;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -15,8 +16,17 @@ namespace Doggiehood.Unity
     /// wallet label. The sprite also billboards to the live camera yaw
     /// (#266) via <see cref="WorldMarkerBillboard"/> so the lock icon reads
     /// head-on at every camera rotation (#203), not just the fixed 45° yaw.
+    ///
+    /// #343: the lock itself is the unlock affordance (Derek's Option A) —
+    /// this view is tappable (<see cref="IInteractable"/>). Tapping an
+    /// affordable (gold) lock raises <see cref="UnlockRequested"/> (the
+    /// scene wires that to the confirmation dialog → GameState.TryUnlockNextZone);
+    /// a grey/unaffordable lock, or one with nothing left to unlock, is a
+    /// no-op. The affordability gate is Core's own live
+    /// <see cref="ExpansionIndicator.Resolve"/> — the same value that tints
+    /// the icon, so what the tint promises is exactly what the tap does.
     /// </summary>
-    public sealed class ExpansionIndicatorView : MonoBehaviour
+    public sealed class ExpansionIndicatorView : MonoBehaviour, IInteractable
     {
         /// <summary>World-Y the indicator hovers at. Purely visual —
         /// "hovering" carries no Core state, just an above-ground height so
@@ -28,6 +38,13 @@ namespace Doggiehood.Unity
         private Sprite affordableSprite;
         private Sprite lockedSprite;
         private CameraRig cameraRig;
+        private BoxCollider tapCollider;
+
+        /// <summary>Raised when an affordable lock is tapped — the scene wires
+        /// this to raise the confirmation dialog whose Yes calls
+        /// GameState.TryUnlockNextZone (#343). Never raised for a
+        /// grey/unaffordable lock or when nothing is left to unlock.</summary>
+        public event Action UnlockRequested;
 
         public void Init(GameState state, Sprite affordableSprite, Sprite lockedSprite)
         {
@@ -35,7 +52,49 @@ namespace Doggiehood.Unity
             this.affordableSprite = affordableSprite;
             this.lockedSprite = lockedSprite;
             spriteRenderer = GetComponent<SpriteRenderer>();
+            EnsureTapCollider();
             Refresh();
+        }
+
+        /// <summary>#343 (Option A): a lock tap is an unlock request, but only
+        /// when the lock is currently affordable — the same live Core state
+        /// that tints it gold gates the tap, so a grey lock does nothing.
+        /// Fitting TapRouter's IInteractable contract.</summary>
+        public void OnTapped()
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            var indicator = ExpansionIndicator.Resolve(state);
+            if (indicator == null || !indicator.Value.IsAffordable)
+            {
+                return;
+            }
+
+            UnlockRequested?.Invoke();
+        }
+
+        /// <summary>Adds a BoxCollider sized to the sprite so TapRouter's
+        /// Physics.Raycast can hit the billboarded lock (imported sprites carry
+        /// none, same reason houses/dogs need a fitted collider). Sized from the
+        /// sprite's local bounds; the transform scale applied by WorldBuilder
+        /// grows it to the on-map footprint.</summary>
+        private void EnsureTapCollider()
+        {
+            tapCollider = GetComponent<BoxCollider>();
+            if (tapCollider == null)
+            {
+                tapCollider = gameObject.AddComponent<BoxCollider>();
+            }
+
+            var sprite = affordableSprite != null ? affordableSprite : lockedSprite;
+            if (sprite != null)
+            {
+                tapCollider.size = sprite.bounds.size;
+                tapCollider.center = sprite.bounds.center;
+            }
         }
 
         private void Update()
@@ -61,14 +120,27 @@ namespace Doggiehood.Unity
             if (indicator == null)
             {
                 spriteRenderer.enabled = false;
+                SetColliderEnabled(false);
                 return;
             }
 
             spriteRenderer.enabled = true;
+            SetColliderEnabled(true);
             var position = indicator.Value.Position;
             transform.position = new Vector3(position.X, HoverHeight, position.Z);
             WorldMarkerBillboard.Face(transform, ResolveCameraRig());
             spriteRenderer.sprite = indicator.Value.IsAffordable ? affordableSprite : lockedSprite;
+        }
+
+        /// <summary>Keeps the tap collider's enabled state in lockstep with the
+        /// renderer — a hidden lock (nothing left to unlock) must not stay
+        /// tappable.</summary>
+        private void SetColliderEnabled(bool enabled)
+        {
+            if (tapCollider != null)
+            {
+                tapCollider.enabled = enabled;
+            }
         }
 
         /// <summary>Lazily finds and caches the scene's <see cref="CameraRig"/>

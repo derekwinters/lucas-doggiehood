@@ -128,5 +128,78 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(host.GetComponent<SpriteRenderer>().enabled, Is.False);
         }
+
+        // --- #343: the lock itself is the unlock affordance (Option A) ---
+
+        [Test]
+        public void OnTapped_WhenAffordable_RaisesUnlockRequestedOnce()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost); // now affordable (gold)
+            view.Init(state, affordableSprite, lockedSprite);
+
+            var requests = 0;
+            view.UnlockRequested += () => requests++;
+            view.OnTapped();
+
+            Assert.That(requests, Is.EqualTo(1),
+                "tapping the affordable/gold lock requests an unlock (raises the confirm dialog)");
+        }
+
+        [Test]
+        public void OnTapped_WhenNotAffordable_IsANoOp()
+        {
+            var state = GameState.CreateNew(); // fresh wallet: the lock is grey
+            view.Init(state, affordableSprite, lockedSprite);
+
+            var requests = 0;
+            view.UnlockRequested += () => requests++;
+            view.OnTapped();
+
+            Assert.That(requests, Is.EqualTo(0),
+                "a grey/unaffordable lock's tap does nothing (docs/specs/expansion.md)");
+        }
+
+        [Test]
+        public void OnTapped_WhenNoLockedZoneRemains_IsANoOp()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
+            state.TryUnlockNextZone(); // nothing left to unlock
+            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost * 10); // plenty of coins, but no zone
+            view.Init(state, affordableSprite, lockedSprite);
+
+            var requests = 0;
+            view.UnlockRequested += () => requests++;
+            view.OnTapped();
+
+            Assert.That(requests, Is.EqualTo(0),
+                "with every zone unlocked there is nothing to request");
+        }
+
+        [Test]
+        public void Init_AddsATapCollider_WhoseEnabledTracksTheRenderer()
+        {
+            var lockedState = GameState.CreateNew(); // a locked zone remains
+            view.Init(lockedState, affordableSprite, lockedSprite);
+
+            var collider = host.GetComponent<BoxCollider>();
+            Assert.That(collider, Is.Not.Null, "the lock needs a collider so TapRouter can raycast it");
+            Assert.That(collider.enabled, Is.True,
+                "the collider is active while a lock is shown");
+        }
+
+        [Test]
+        public void Refresh_DisablesTheColliderWithTheRenderer_WhenNothingRemains()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
+            state.TryUnlockNextZone();
+            view.Init(state, affordableSprite, lockedSprite);
+
+            var collider = host.GetComponent<BoxCollider>();
+            Assert.That(collider.enabled, Is.False,
+                "a hidden lock is not tappable — the collider follows the renderer");
+        }
     }
 }
