@@ -2177,8 +2177,9 @@ to a plain presence-check (see <strong>The <code>/approve</code> milestone gate<
 the relevant <code>docs/specs/**</code> page's own build checklist — what Derek approves
 and the reviewer checks the PR against.</p>
 <p>Dependencies are recorded as first-class GitHub relationships — sub-issues for
-decomposition, <code>Blocked by: #N</code> for hard peer dependencies, <code>Depends on: #N</code>
-for soft sibling ordering. See <strong>Recording dependencies</strong> below.</p>
+decomposition, <strong>native issue-dependencies</strong> (set with the <code>issue-blockers</code>
+skill) for hard <code>Blocked by</code> gates, and <code>Depends on: #N</code> lines for soft sibling
+ordering. See <strong>Recording dependencies</strong> below.</p>
 <h3 id="recording-dependencies">Recording dependencies<a class="headerlink" href="#recording-dependencies" title="Permanent link">&para;</a></h3>
 <p><strong>Every dependency between issues is recorded as a structured relationship —
 never as prose alone</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/248">#248</a>).
@@ -2192,8 +2193,10 @@ prose-only deps and were treated as eligible.</p>
 <ol>
 <li><strong>A structured line</strong> in the issue body — one reference per line, the keyword
    followed by a colon and <code>#N</code>:<ul>
-<li><code>Blocked by: #N</code> — <strong>hard gate.</strong> The dependent is ineligible for dev
-   until <code>#N</code> is closed/merged (parsed into <code>blocked_by</code>).</li>
+<li><code>Blocked by: #N</code> — <strong>hard gate</strong>, <em>legacy fallback only.</em> New hard
+   blockers are recorded natively (see below); this text line is still
+   parsed into <code>blocked_by</code> for pre-migration issues but must not be the
+   source of truth for new work.</li>
 <li><code>Depends on: #N</code> — <strong>soft ordering.</strong> The dependent may build, but a
    prerequisite sorts first (parsed into <code>depends_on</code>).
    The colon is what makes the line canonical/structured; a keyword mention
@@ -2210,16 +2213,21 @@ prose-only deps and were treated as eligible.</p>
 different needs — do not conflate them</strong>
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/321">#321</a>):</p>
 <ul>
-<li><strong>Hard blockers (<code>Blocked by:</code>)</strong> have a native GitHub form, which is now the
-  <strong>canonical</strong> source. Every deterministic reader — the nightly builder, the
-  reconciliation sweep, the dashboard "Blocked by" columns + unblocker graph,
-  the blocker auto-revisit, and the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a>
+<li><strong>Hard blockers (<code>Blocked by:</code>)</strong> are recorded as a <strong>native GitHub
+  issue-dependency relationship</strong>, set with the <code>issue-blockers</code> skill
+  (<code>.claude/skills/issue-blockers/</code>, <code>set_blocker.py</code>) — the required, canonical
+  form (CLAUDE.md rule #11).
+  Writing a <code>Blocked by: #N</code> <strong>text line</strong> as the source of truth is no longer
+  allowed. Every deterministic reader — the nightly builder, the reconciliation
+  sweep, the dashboard "Blocked by" columns + unblocker graph, the blocker
+  auto-revisit, and the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a>
   milestone-order gate — fetches an issue's native <code>blocked_by</code> set and
-  <strong>unions</strong> it with the text-line parse through one canonical <code>merge_blockers</code>
-  helper (native ∪ text line, de-duped), so the blocker graph is identical
-  everywhere. With native in place the <code>Blocked by: #N</code> text line becomes
-  <strong>optional/redundant</strong> — it is still read throughout (migration-safe: nothing
-  breaks mid-transition), but a native relationship alone is sufficient.</li>
+  <strong>unions</strong> it with any legacy text-line parse through one canonical
+  <code>merge_blockers</code> helper (native ∪ text line, de-duped), so the blocker graph
+  is identical everywhere. The <code>Blocked by: #N</code> text line is retained <strong>only</strong>
+  as a read-time legacy fallback for issues authored before this migration; new
+  blockers must be native, and a lingering prose blocker should be converted
+  with the skill and its line removed.</li>
 <li><strong>Soft ordering (<code>Depends on:</code>)</strong> has <strong>no</strong> native equivalent — GitHub has no
   native soft-ordering relationship. So <code>Depends on:</code> stays <strong>text-line-only</strong>;
   it is parsed from the structured line and nothing merges a native set into it.
@@ -2415,6 +2423,11 @@ only live milestones outside the focus are shown (<a href="https://github.com/de
   auto-fix/flag classification, with the <code>events_only</code> cron-only <code>requeue</code>
   gate — #319) + tests; run by <code>gatekeeper-sweep.yml</code> and surfaced by the
   dashboard render.</li>
+<li><code>issue-blockers/</code> — <code>SKILL.md</code> + <code>set_blocker.py</code> (write side for <strong>native</strong>
+  issue-dependency relationships — add/remove/list, resolving the write API's
+  numeric <code>issue_id</code>) + tests. The manual/agent counterpart to the readers in
+  <code>reconcile.py</code> (<code>native_blocked_by</code>) and <code>select_queue.py</code>; use it instead of
+  writing a prose <code>Blocked by #N</code> line (CLAUDE.md rule #11).</li>
 </ul>
 <p>The gatekeeper is now driven by two workflows —
 <a href="#routines-and-the-dashboard-workflow"><code>gatekeeper-comment.yml</code></a> (per-issue,
