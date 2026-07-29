@@ -41,10 +41,19 @@ namespace Doggiehood.Unity
 
             gameObject.AddComponent<SfxPlayer>();
 
-            // Settings panel (#219): built under the #256 CanvasScaler, opened
-            // from the HUD gear. Version comes from the build (release-please
-            // owns it); the Debug fence toggle rebuilds only the fences live.
-            var settings = BuildSettingsPanel(state, root.transform);
+            // Shared UI canvas (#256): the Settings panel and the dog profile
+            // overlay both live under it so each px constant keeps a fixed
+            // on-screen meaning across tablet sizes.
+            var canvas = BuildUiCanvas();
+
+            // Settings panel (#219): opened from the HUD gear. Version comes
+            // from the build (release-please owns it); the Debug fence toggle
+            // rebuilds only the fences live.
+            var settings = BuildSettingsPanel(canvas, state, root.transform);
+
+            // Dog profile overlay (#165): tapping a dog's body opens it. Its
+            // Home button flies the camera to that dog's house.
+            BuildDogProfileOverlay(canvas, root.transform);
 
             // Persistent HUD (#159): graybox currency chip, restyled by #65.
             // The top-right gear opens Settings (#219).
@@ -70,33 +79,83 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// Creates the UI canvas (#256) and the Settings panel (#219) under
-        /// it, wiring the fence debug toggle to a live, fence-only rebuild of
-        /// the given world root. The panel takes the live <paramref name="state"/>
-        /// so its Debug "Add coins" action (#286) can deposit into the wallet.
-        /// Version text comes from the build via <c>Application.version</c> —
-        /// release-please owns the value, this only reads it (never hand-edited).
+        /// Creates the shared UI canvas (#256) with the CanvasScaler configured
+        /// and the single legacy-input EventSystem present. #327: the canvas's
+        /// GraphicRaycaster is inert without an EventSystem driving it, and
+        /// Unity never auto-creates one for runtime-built UI, so every UGUI
+        /// control (close ✕, scrim, buttons) needs it to receive taps on device.
         /// </summary>
-        private SettingsPanel BuildSettingsPanel(GameState state, Transform worldRoot)
+        private GameObject BuildUiCanvas()
         {
             var canvasObject = new GameObject("UiCanvas", typeof(Canvas), typeof(UiCanvas));
             canvasObject.transform.SetParent(gameObject.transform);
             canvasObject.GetComponent<UiCanvas>().Configure();
-
-            // #327: the canvas's GraphicRaycaster is inert without an
-            // EventSystem driving it, and Unity never auto-creates one for
-            // runtime-built UI — so no UGUI control in the panel (close ✕,
-            // version-tap unlock, scrim, debug toggles) received taps on
-            // device. Ensure the single legacy-input EventSystem exists here,
-            // guarded against duplicates.
             UiEventSystem.Ensure();
+            return canvasObject;
+        }
 
+        /// <summary>
+        /// Builds the Settings panel (#219) under the shared canvas, wiring the
+        /// fence debug toggle to a live, fence-only rebuild of the given world
+        /// root. The panel takes the live <paramref name="state"/> so its Debug
+        /// "Add coins" action (#286) can deposit into the wallet. Version text
+        /// comes from the build via <c>Application.version</c> — release-please
+        /// owns the value, this only reads it (never hand-edited).
+        /// </summary>
+        private SettingsPanel BuildSettingsPanel(GameObject canvas, GameState state, Transform worldRoot)
+        {
             var panelObject = new GameObject("SettingsPanel");
-            panelObject.transform.SetParent(canvasObject.transform, false);
+            panelObject.transform.SetParent(canvas.transform, false);
             var settings = panelObject.AddComponent<SettingsPanel>();
             settings.Init(state, Application.version);
             settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot);
             return settings;
+        }
+
+        /// <summary>
+        /// Builds the dog profile overlay (#165) under the shared canvas and
+        /// wires its Home button to fly the camera to the tapped dog's house.
+        /// The overlay decides nothing about the camera — Core
+        /// (<see cref="Doggiehood.Core.Cameras.CameraController.FocusOn"/>) owns
+        /// the move; this only resolves the house's world position and applies
+        /// the resulting controller state to the live rig.
+        /// </summary>
+        private DogProfileOverlay BuildDogProfileOverlay(GameObject canvas, Transform worldRoot)
+        {
+            var overlayObject = new GameObject("DogProfileOverlay");
+            overlayObject.transform.SetParent(canvas.transform, false);
+            var overlay = overlayObject.AddComponent<DogProfileOverlay>();
+            overlay.Init();
+            overlay.HomeRequested += houseId => FlyCameraToHouse(houseId, worldRoot);
+            return overlay;
+        }
+
+        /// <summary>Recentres the camera on a house lot (#165 Home button):
+        /// resolves the house's world position from its <see cref="HouseView"/>,
+        /// asks the Core controller to focus there (clamped to bounds), and
+        /// re-applies the state to the live rig. A no-op if the house or rig
+        /// can't be found.</summary>
+        private static void FlyCameraToHouse(int houseId, Transform worldRoot)
+        {
+            HouseView house = null;
+            foreach (var view in worldRoot.GetComponentsInChildren<HouseView>())
+            {
+                if (view.HouseId == houseId)
+                {
+                    house = view;
+                    break;
+                }
+            }
+
+            var rig = FindFirstObjectByType<CameraRig>();
+            if (house == null || rig == null)
+            {
+                return;
+            }
+
+            var position = house.transform.position;
+            rig.Controller.FocusOn(new Doggiehood.Core.World.GridPoint(position.x, position.z));
+            rig.ApplyConfiguration();
         }
     }
 }

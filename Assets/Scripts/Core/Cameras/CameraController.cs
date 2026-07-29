@@ -50,6 +50,15 @@ namespace Doggiehood.Core.Cameras
                 Bounds.ClampZ(Position.Z + deltaZ));
         }
 
+        /// <summary>Moves the camera to an absolute target point, clamped to
+        /// the world bounds (#165). Unlike <see cref="Pan"/> (a relative
+        /// delta), this recentres on a place — the dog profile's Home button
+        /// flies the camera to that dog's house.</summary>
+        public void FocusOn(GridPoint target)
+        {
+            Position = new GridPoint(Bounds.ClampX(target.X), Bounds.ClampZ(target.Z));
+        }
+
         public void ZoomBy(float delta)
         {
             Zoom = ClampZoom(Zoom + delta);

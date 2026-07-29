@@ -45,6 +45,30 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
+        public void FocusOn_MovesThePositionToTheTargetPoint()
+        {
+            // #165: the dog profile's Home button flies the camera to the
+            // dog's house — an absolute focus, not a relative pan.
+            var camera = NewController();
+
+            camera.FocusOn(new GridPoint(5f, -7f));
+
+            Assert.That(camera.Position.X, Is.EqualTo(5f));
+            Assert.That(camera.Position.Z, Is.EqualTo(-7f));
+        }
+
+        [Test]
+        public void FocusOn_IsClampedToTheWorldBounds()
+        {
+            var camera = NewController();
+
+            camera.FocusOn(new GridPoint(10000f, 10000f));
+
+            Assert.That(camera.Position.X, Is.EqualTo(camera.Bounds.MaxX));
+            Assert.That(camera.Position.Z, Is.EqualTo(camera.Bounds.MaxZ));
+        }
+
+        [Test]
         public void WorldBounds_EncloseEveryHouseLot()
         {
             var camera = NewController();
