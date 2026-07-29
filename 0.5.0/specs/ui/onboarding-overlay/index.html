@@ -1076,6 +1076,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#standard-onboarding-coverage-374-proposed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard onboarding coverage (#374 — proposed)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1126,6 +1135,27 @@
   
   <span class="md-ellipsis">
     Settings menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../onboarding-reward/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding reward panel
   </span>
   
 
@@ -1564,6 +1594,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#standard-onboarding-coverage-374-proposed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard onboarding coverage (#374 — proposed)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1671,6 +1710,19 @@
 </tbody>
 </table>
 <p>The bar's <strong>style</strong> — thick outline, hard drop shadow, pill (999 px) radius — is the shared Candy Cottage baseline from <a href="../shared-components/">Shared UI Components</a> / <a href="../../world/art-style/">Art &amp; UI Style</a> and is not re-specified here; this page places the bar and sizes it and its message text.</p>
+<h2 id="standard-onboarding-coverage-374-proposed">Standard onboarding coverage (#374 — proposed)<a class="headerlink" href="#standard-onboarding-coverage-374-proposed" title="Permanent link">&para;</a></h2>
+<p><em>Proposed extension, awaiting approval on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>. This coach bar is the </em><em>one standard guidance surface</em><em> for </em><em>all</em><em> onboarding steps — not just the first four — so no new prompt design is invented per flow.</em></p>
+<ul>
+<li><strong>Coverage across the whole guided journey.</strong> The same coach bar now guides the <a href="../../onboarding/#onboarding-reward-chain-316">onboarding reward-chain</a> steps (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/316">#316</a>) as well as the original four: after the first quest it re-appears for <strong>upgrade a house → expand the map → build a house</strong>, advancing on each real action, then dismisses for good when the chain completes (implementation <a href="https://github.com/derekwinters/lucas-doggiehood/issues/371">#371</a>). <strong>Proposed added step copy</strong> (refine at review):<ol>
+<li><strong>Upgrade a house</strong> — "Tap a house, then Upgrade to make it even nicer!"</li>
+<li><strong>Expand the map</strong> — "Tap the glowing lock to open up a new street!"</li>
+<li><strong>Build a house</strong> — "Tap the empty lot to build a new house!"</li>
+</ol>
+</li>
+<li><strong>Grow-to-fit width (folds in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/369">#369</a>).</strong> <code>CoachWidthPx</code> (900) becomes a <strong>minimum</strong>, not a fixed width: the bar sizes its width to the measured message (plus the paw badge, step-dots, and paddings), clamped to a <code>CoachMaxWidthPx</code> beyond which the text <strong>wraps</strong> to a second line and the bar grows in height instead — so no step string ever overflows the pill or runs off-screen. Bottom-center anchor and the panel-open behavior are unchanged. New constants: <code>CoachMaxWidthPx</code> (proposed <code>1500</code>) and, when wrapping, the bar height grows by one <code>MsgFontPx</code> line + existing vertical padding.</li>
+<li><strong>Step-dots (open sub-decision).</strong> With seven guided steps, either extend <code>StepDotCount</code> to the full guided count, or keep the dots only for the first-launch four and drop them for the post-first-quest reward-chain steps. Flagged for Derek at review; the mockup still shows the original four-dot bar.</li>
+<li><strong>Completion hands off to the reward panel.</strong> Each step's completion raises the bespoke <a href="../onboarding-reward/">onboarding reward panel</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) celebrating the step + its coin reward; the coach bar then shows the next step's prompt (or dismisses after the last).</li>
+</ul>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Restyle status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/297">#297</a>): implemented.</strong> The coach bar renders the Candy Cottage chrome — a cream pill with a thick Ink outline, a hard straight-down drop-shadow, a round Leaf paw badge, the message text, and a trailing row of outlined step-dots (the current step filled). It is drawn <strong>procedurally on IMGUI</strong> via the shared <code>CandyChrome</code> helper (the same runtime white-AA-circle routine established by the HUD chip <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>), with the message set in the bundled <code>DejaVuSans</code> Resources font (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). The bar stays on <strong>IMGUI</strong> rather than migrating to UGUI: the procedural-chrome path avoids the #291 UGUI shader/font-stripping build risk and keeps the coach bar consistent with the HUD. The leaf badge draws a <strong>procedural ink paw-print</strong> (one pad + three toes) rather than the mockup's 🐾 emoji glyph, since the bundled font carries no paw-emoji glyph (it would render as tofu on device). Implemented in <code>Assets/Scripts/Unity/OnboardingOverlay.cs</code>; on-device re-playtest is the final visual check.</li>
