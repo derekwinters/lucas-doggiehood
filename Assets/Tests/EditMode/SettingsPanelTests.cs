@@ -351,6 +351,129 @@ namespace Doggiehood.Unity.EditModeTests
             Object.DestroyImmediate(hudHost);
         }
 
+        // --- #298: Candy Cottage chrome restyle (shared-components.md via CandyChromeUgui) ---
+
+        [Test]
+        public void Panel_HasCandyCottageChrome_FillOutlineRadiusAndHardShadow()
+        {
+            var image = panel.PanelRect.GetComponent<Image>();
+
+            AssertHex(image.color, 0xFF, 0xFD, 0xF7, "panel fill (#FFFDF7)");
+            Assert.That(image.type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(image.sprite, Is.Not.Null);
+            Assert.That(image.sprite.border,
+                Is.EqualTo(new Vector4(CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx,
+                    CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx)),
+                "the panel corner radius is the shared PanelRadiusPx = 40");
+
+            AssertInkOutline(panel.PanelRect.gameObject);
+            AssertHardShadow(panel.PanelRect.gameObject);
+        }
+
+        [Test]
+        public void CloseButton_HasCandyCottageChrome_OutlineAndHardShadow()
+        {
+            AssertInkOutline(panel.CloseButtonRect.gameObject);
+            AssertHardShadow(panel.CloseButtonRect.gameObject);
+            AssertHex(panel.CloseButtonRect.GetComponent<Image>().color, 0xFF, 0xF3, 0xD9,
+                "the close affordance is a cream pill");
+        }
+
+        [Test]
+        public void SidebarTabs_ArePillStyled_WithRoleTintsAndInkOutline()
+        {
+            // Built default: About is the active tab (Coral), Debug inactive (Cream).
+            AssertHex(panel.AboutTabRect.GetComponent<Image>().color, 0xFF, 0x7A, 0x5C,
+                "the active tab takes the primary Coral role tint");
+            AssertHex(panel.DebugTabRect.GetComponent<Image>().color, 0xFF, 0xF3, 0xD9,
+                "an inactive tab takes the neutral Cream role tint");
+
+            AssertInkOutline(panel.AboutTabRect.gameObject);
+            AssertInkOutline(panel.DebugTabRect.gameObject);
+        }
+
+        [Test]
+        public void AddCoinsAction_IsAGoldPill_WithOutlineAndHardShadow()
+        {
+            AssertHex(panel.AddCoinsButtonRect.GetComponent<Image>().color, 0xFF, 0xC2, 0x3C,
+                "the Add coins action is a Gold #FFC23C pill (#286/#298)");
+            AssertInkOutline(panel.AddCoinsButtonRect.gameObject);
+            AssertHardShadow(panel.AddCoinsButtonRect.gameObject);
+        }
+
+        [Test]
+        public void FenceSwitch_FollowsCandyCottageSwitchStyling_OutlineNoShadow()
+        {
+            // Track + knob carry the Ink outline but no drop-shadow (wireframe switch).
+            AssertInkOutline(panel.FenceToggleRect.gameObject);
+            AssertInkOutline(panel.FenceKnobRect.gameObject);
+            Assert.That(PureShadowOf(panel.FenceToggleRect.gameObject), Is.Null,
+                "the switch track has no drop-shadow, matching the mockup toggle");
+
+            AssertHex(panel.FenceToggleRect.GetComponent<Image>().color, 0xD8, 0xD2, 0xC6,
+                "the switch reads Disabled grey when off (default)");
+
+            UnlockDebug();
+            panel.ToggleFence();
+            AssertHex(panel.FenceToggleRect.GetComponent<Image>().color, 0x58, 0xC0, 0x6A,
+                "the switch reads Leaf green when on");
+        }
+
+        [Test]
+        public void AllChromeImages_UseTheDefaultUiMaterial_DeviceSafeNoStrippedShader()
+        {
+            // #291 by construction: no chrome Image assigns a custom material, so
+            // each renders through the always-included UI/Default material.
+            foreach (var image in panel.PanelRect.GetComponentsInChildren<Image>(true))
+            {
+                Assert.That(image.material, Is.EqualTo(image.defaultMaterial),
+                    image.name + " must render through the always-included UI/Default material (#291)");
+            }
+
+            Assert.That(panel.ScrimRect.GetComponent<Image>().material,
+                Is.EqualTo(panel.ScrimRect.GetComponent<Image>().defaultMaterial));
+        }
+
+        private static void AssertInkOutline(GameObject go)
+        {
+            var outline = go.GetComponent<Outline>();
+            Assert.That(outline, Is.Not.Null, go.name + " has no Candy Cottage outline");
+            AssertHex(outline.effectColor, 0x2E, 0x2A, 0x26, go.name + " outline");
+            Assert.That(outline.effectDistance,
+                Is.EqualTo(new Vector2(CandyChromeUgui.OutlineThicknessPx, CandyChromeUgui.OutlineThicknessPx)),
+                go.name + " outline thickness is not the shared OutlineThicknessPx = 6");
+        }
+
+        private static void AssertHardShadow(GameObject go)
+        {
+            var shadow = PureShadowOf(go);
+            Assert.That(shadow, Is.Not.Null, go.name + " has no hard drop-shadow");
+            AssertHex(shadow.effectColor, 0x2E, 0x2A, 0x26, go.name + " shadow");
+            Assert.That(shadow.effectDistance, Is.EqualTo(new Vector2(0f, -CandyChromeUgui.ShadowOffsetPx)),
+                go.name + " shadow is not a single hard offset at the shared ShadowOffsetPx = 8 (no blur)");
+        }
+
+        private static void AssertHex(Color color, byte r, byte g, byte b, string what)
+        {
+            var c32 = (Color32)color;
+            Assert.That(c32.r, Is.EqualTo(r), what + " red channel");
+            Assert.That(c32.g, Is.EqualTo(g), what + " green channel");
+            Assert.That(c32.b, Is.EqualTo(b), what + " blue channel");
+        }
+
+        private static Shadow PureShadowOf(GameObject go)
+        {
+            foreach (var shadow in go.GetComponents<Shadow>())
+            {
+                if (shadow.GetType() == typeof(Shadow))
+                {
+                    return shadow;
+                }
+            }
+
+            return null;
+        }
+
         private void UnlockDebug()
         {
             for (var i = 0; i < DebugUnlockGesture.TapsToUnlock; i++)
