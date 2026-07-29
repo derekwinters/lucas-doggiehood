@@ -72,11 +72,11 @@ namespace Doggiehood.Unity
         private RectTransform yesButtonRect;
         private RectTransform costGroupRect;
         private RectTransform costCoinRect;
-        private Text titleLabel;
-        private Text bodyLabel;
-        private Text noLabel;
-        private Text yesLabel;
-        private Text costAmountLabel;
+        private Text titleText;
+        private Text bodyText;
+        private Text noText;
+        private Text yesText;
+        private Text costAmountText;
         private Button noButton;
         private Button yesButton;
         private Image noButtonImage;
@@ -87,11 +87,11 @@ namespace Doggiehood.Unity
         // --- Test/wiring surface ---
         public RectTransform CardRect => cardRect;
         public RectTransform ScrimRect => scrimRect;
-        public Text TitleLabel => titleLabel;
-        public Text BodyLabel => bodyLabel;
-        public Text NoLabel => noLabel;
-        public Text YesLabel => yesLabel;
-        public Text CostAmountLabel => costAmountLabel;
+        public Text TitleLabel => titleText;
+        public Text BodyLabel => bodyText;
+        public Text NoLabel => noText;
+        public Text YesLabel => yesText;
+        public Text CostAmountLabel => costAmountText;
         public Button NoButton => noButton;
         public Button YesButton => yesButton;
         public Image NoButtonImage => noButtonImage;
@@ -115,24 +115,26 @@ namespace Doggiehood.Unity
         /// <paramref name="body"/> are the dynamic caller-supplied copy;
         /// <paramref name="onConfirm"/> runs on Yes. When
         /// <paramref name="cost"/> is non-null the Yes button shows a gold coin
-        /// token + that amount (a spend); null shows just "Yes". Labels and the
-        /// confirm tint default to Yes/No + leaf but are overridable for reuse.
+        /// token + that amount (a spend); null shows just "Yes".
+        /// <paramref name="yesLabel"/>, <paramref name="noLabel"/> and
+        /// <paramref name="confirmTint"/> default to Yes/No + leaf but are
+        /// overridable so the one overlay is genuinely reusable.
         /// </summary>
         public void Open(string title, string body, Action onConfirm, int? cost = null,
-            string yesLabelText = null, string noLabelText = null, Color? confirmTint = null)
+            string yesLabel = null, string noLabel = null, Color? confirmTint = null)
         {
             pendingConfirm = onConfirm;
 
-            titleLabel.text = title;
-            bodyLabel.text = body;
-            yesLabel.text = string.IsNullOrEmpty(yesLabelText) ? DefaultYesLabel : yesLabelText;
-            noLabel.text = string.IsNullOrEmpty(noLabelText) ? DefaultNoLabel : noLabelText;
+            titleText.text = title;
+            bodyText.text = body;
+            yesText.text = string.IsNullOrEmpty(yesLabel) ? DefaultYesLabel : yesLabel;
+            noText.text = string.IsNullOrEmpty(noLabel) ? DefaultNoLabel : noLabel;
             yesButtonImage.color = confirmTint ?? CandyChromeUgui.Leaf;
 
             costGroupRect.gameObject.SetActive(cost.HasValue);
             if (cost.HasValue)
             {
-                costAmountLabel.text = cost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                costAmountText.text = cost.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
 
             LayoutCard();
@@ -193,12 +195,12 @@ namespace Doggiehood.Unity
             Center(cardRect, DialogWidthPx, DialogPaddingPx * 2f);
             CandyChromeUgui.ApplyRounded(cardImage, CandyChromeUgui.Panel, CandyChromeUgui.PanelRadiusPx, withShadow: true);
 
-            titleLabel = CreateLabel("Title", cardRect, string.Empty, TitleFontSizePx, TextAnchor.UpperLeft);
-            titleRect = titleLabel.rectTransform;
+            titleText = CreateLabel("Title", cardRect, string.Empty, TitleFontSizePx, TextAnchor.UpperLeft);
+            titleRect = titleText.rectTransform;
 
-            bodyLabel = CreateLabel("Body", cardRect, string.Empty, BodyFontSizePx, TextAnchor.UpperLeft);
-            bodyLabel.horizontalOverflow = HorizontalWrapMode.Wrap;
-            bodyRect = bodyLabel.rectTransform;
+            bodyText = CreateLabel("Body", cardRect, string.Empty, BodyFontSizePx, TextAnchor.UpperLeft);
+            bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            bodyRect = bodyText.rectTransform;
 
             BuildActionRow(cardRect);
         }
@@ -210,15 +212,15 @@ namespace Doggiehood.Unity
             noButtonImage = CreateImage("NoButton", parent, CandyChromeUgui.Cream);
             noButtonRect = noButtonImage.rectTransform;
             CandyChromeUgui.ApplyPill(noButtonImage, CandyChromeUgui.Cream, ButtonHeightPx, withShadow: true);
-            noLabel = CreateLabel("NoLabel", noButtonRect, DefaultNoLabel, ButtonFontSizePx, TextAnchor.MiddleCenter);
-            InsetX(noLabel.rectTransform, ButtonPaddingXPx);
+            noText = CreateLabel("NoLabel", noButtonRect, DefaultNoLabel, ButtonFontSizePx, TextAnchor.MiddleCenter);
+            InsetX(noText.rectTransform, ButtonPaddingXPx);
             noButton = noButtonRect.gameObject.AddComponent<Button>();
             noButton.onClick.AddListener(Cancel);
 
             yesButtonImage = CreateImage("YesButton", parent, CandyChromeUgui.Leaf);
             yesButtonRect = yesButtonImage.rectTransform;
             CandyChromeUgui.ApplyPill(yesButtonImage, CandyChromeUgui.Leaf, ButtonHeightPx, withShadow: true);
-            yesLabel = CreateLabel("YesLabel", yesButtonRect, DefaultYesLabel, ButtonFontSizePx, TextAnchor.MiddleCenter);
+            yesText = CreateLabel("YesLabel", yesButtonRect, DefaultYesLabel, ButtonFontSizePx, TextAnchor.MiddleCenter);
 
             BuildCostGroup(yesButtonRect);
 
@@ -247,11 +249,11 @@ namespace Doggiehood.Unity
             costCoinRect.anchoredPosition = Vector2.zero;
             CandyChromeUgui.ApplyPill(coinImage, CandyChromeUgui.Gold, CostCoinDiameterPx, withShadow: false);
 
-            costAmountLabel = CreateLabel("Amount", costGroupRect, string.Empty, CostAmountFontSizePx, TextAnchor.MiddleLeft);
-            costAmountLabel.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            costAmountLabel.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            costAmountLabel.rectTransform.pivot = new Vector2(0f, 0.5f);
-            costAmountLabel.rectTransform.anchoredPosition = new Vector2(CostCoinDiameterPx + CostGapPx, 0f);
+            costAmountText = CreateLabel("Amount", costGroupRect, string.Empty, CostAmountFontSizePx, TextAnchor.MiddleLeft);
+            costAmountText.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            costAmountText.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            costAmountText.rectTransform.pivot = new Vector2(0f, 0.5f);
+            costAmountText.rectTransform.anchoredPosition = new Vector2(CostCoinDiameterPx + CostGapPx, 0f);
             costGroupRect.gameObject.SetActive(false);
         }
 
@@ -266,7 +268,7 @@ namespace Doggiehood.Unity
             // Width first (anchorMin==anchorMax makes rect.width == sizeDelta.x
             // synchronously), so preferredHeight wraps at the inner width.
             PlaceTopLeft(bodyRect, DialogPaddingPx, bodyTop, InnerWidth(), BodyFontSizePx);
-            var bodyHeight = Mathf.Max(BodyFontSizePx, bodyLabel.preferredHeight);
+            var bodyHeight = Mathf.Max(BodyFontSizePx, bodyText.preferredHeight);
             bodyRect.sizeDelta = new Vector2(InnerWidth(), bodyHeight);
 
             var actionTop = bodyTop + bodyHeight + ActionRowMarginPx;
@@ -288,23 +290,23 @@ namespace Doggiehood.Unity
         {
             if (!hasCost)
             {
-                yesLabel.alignment = TextAnchor.MiddleCenter;
-                InsetX(yesLabel.rectTransform, ButtonPaddingXPx);
+                yesText.alignment = TextAnchor.MiddleCenter;
+                InsetX(yesText.rectTransform, ButtonPaddingXPx);
                 return;
             }
 
-            var labelWidth = yesLabel.preferredWidth;
-            var amountWidth = costAmountLabel.preferredWidth;
+            var labelWidth = yesText.preferredWidth;
+            var amountWidth = costAmountText.preferredWidth;
             var groupWidth = IconGapPx + CostCoinDiameterPx + CostGapPx + amountWidth;
             var totalWidth = labelWidth + groupWidth;
             var startX = Mathf.Max(ButtonPaddingXPx, (yesButtonRect.sizeDelta.x - totalWidth) / 2f);
 
-            yesLabel.alignment = TextAnchor.MiddleLeft;
-            yesLabel.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            yesLabel.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            yesLabel.rectTransform.pivot = new Vector2(0f, 0.5f);
-            yesLabel.rectTransform.sizeDelta = new Vector2(labelWidth, ButtonFontSizePx);
-            yesLabel.rectTransform.anchoredPosition = new Vector2(startX, 0f);
+            yesText.alignment = TextAnchor.MiddleLeft;
+            yesText.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            yesText.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            yesText.rectTransform.pivot = new Vector2(0f, 0.5f);
+            yesText.rectTransform.sizeDelta = new Vector2(labelWidth, ButtonFontSizePx);
+            yesText.rectTransform.anchoredPosition = new Vector2(startX, 0f);
 
             costGroupRect.sizeDelta = new Vector2(groupWidth, CostCoinDiameterPx);
             costGroupRect.anchoredPosition = new Vector2(startX + labelWidth + IconGapPx, 0f);
