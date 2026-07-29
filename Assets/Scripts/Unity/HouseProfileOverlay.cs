@@ -22,10 +22,18 @@ namespace Doggiehood.Unity
     /// number is a named constant from the approved wireframe
     /// (#161/#293), asserted by EditMode tests. Built under the #256
     /// <see cref="UiCanvas"/> CanvasScaler. Graybox chrome (flat fills, no
-    /// outlines) until the #173 shared-component styling pass. This builds only
-    /// the entry-point affordance; the upgrade flow's own confirmation UI is
-    /// #294, so the Upgrade button raises <see cref="UpgradeRequested"/> rather
-    /// than performing the upgrade.
+    /// outlines) until the #173 shared-component styling pass.
+    ///
+    /// Upgrade action (#294, Derek's Option A): tapping the Upgrade button
+    /// spends coins <b>directly</b> — no confirmation screen — through the Core
+    /// entry point wired via <see cref="ConfigureUpgrade"/>
+    /// (<see cref="World.GameState.TryUpgradeHouse"/>). The button shows the
+    /// next level's cost, disables into a <i>Max level</i> state at the cap, and
+    /// greys out when the live wallet balance can't cover the next step
+    /// (affordability is re-read at each render, never cached — the same "never
+    /// cache" contract the HUD currency chip uses). On a successful upgrade the
+    /// open profile re-renders so the new level / next cost / affordability show
+    /// immediately.
     /// </summary>
     public sealed class HouseProfileOverlay : MonoBehaviour
     {
@@ -130,16 +138,17 @@ namespace Doggiehood.Unity
         private readonly List<ResidentRowView> residents = new List<ResidentRowView>();
 
         private House currentHouse;
+        private IReadOnlyList<Dog> currentResidents = System.Array.Empty<Dog>();
+
+        // #294: the live wallet read + the Core upgrade entry point, injected by
+        // the bootstrap. Both stay null in display-only tests, where the button
+        // simply reads a zero balance and performs no spend.
+        private Func<int> coinBalanceProvider;
+        private Func<int, bool> upgradeAction;
 
         /// <summary>Raised when a resident row is tapped, carrying that dog —
         /// the bootstrap wires this to open the dog profile (#165).</summary>
         public event Action<Dog> ResidentSelected;
-
-        /// <summary>Raised when the Upgrade button is pressed, carrying this
-        /// house — the entry point to the house-upgrade action (#59). The
-        /// upgrade flow's own confirmation UI is #294, so nothing here performs
-        /// the upgrade.</summary>
-        public event Action<House> UpgradeRequested;
 
         public RectTransform CardRect => cardRect;
         public RectTransform ScrimRect => scrimRect;
@@ -170,13 +179,40 @@ namespace Doggiehood.Unity
             content.SetActive(false);
         }
 
+        /// <summary>Wires the Upgrade button (#294) to Core: a live wallet-balance
+        /// read (for the affordability state) and the upgrade entry point
+        /// (<see cref="World.GameState.TryUpgradeHouse"/>) tapping calls directly.
+        /// The bootstrap injects these; display-only tests may leave them unset.</summary>
+        public void ConfigureUpgrade(Func<int> coinBalanceProvider, Func<int, bool> upgradeAction)
+        {
+            this.coinBalanceProvider = coinBalanceProvider;
+            this.upgradeAction = upgradeAction;
+        }
+
         /// <summary>Opens the profile for the given house, filling the level
         /// badge, resident rows (from the passed <paramref name="residentDogs"/>),
         /// and Upgrade button from the house's Core <see cref="HouseProfile"/>.</summary>
         public void Open(House house, IReadOnlyList<Dog> residentDogs)
         {
             currentHouse = house;
-            var profile = HouseProfile.For(house);
+            currentResidents = residentDogs ?? System.Array.Empty<Dog>();
+
+            Render();
+
+            if (content != null)
+            {
+                content.SetActive(true);
+            }
+        }
+
+        /// <summary>Renders the open profile from the current house + residents,
+        /// re-reading the live wallet balance for the Upgrade button's
+        /// affordability. Called on <see cref="Open"/> and again after a
+        /// successful <see cref="Upgrade"/> so the new level / next cost /
+        /// affordability show immediately (#294).</summary>
+        private void Render()
+        {
+            var profile = HouseProfile.For(currentHouse);
 
             levelLabel.text = profile.LevelText;
             FilledPipCount = profile.FilledPipCount;
@@ -185,7 +221,7 @@ namespace Doggiehood.Unity
                 levelPips[i].color = i < FilledPipCount ? PipFilledColor : PipEmptyColor;
             }
 
-            RebuildResidents(residentDogs);
+            RebuildResidents(currentResidents);
             emptyStateLabel.text = profile.EmptyStateText;
             emptyStateLabel.gameObject.SetActive(residents.Count == 0);
 
@@ -195,14 +231,18 @@ namespace Doggiehood.Unity
             if (profile.ShowsUpgradeAction)
             {
                 upgradeButtonLabel.text = profile.UpgradeButtonText;
-                upgradeButton.interactable = !profile.IsMaxLevel;
-                upgradeButtonImage.color = profile.IsMaxLevel ? UpgradeDisabledColor : UpgradeButtonColor;
+                var affordable = profile.CanAffordUpgrade(CurrentCoinBalance());
+                upgradeButton.interactable = affordable;
+                upgradeButtonImage.color = affordable ? UpgradeButtonColor : UpgradeDisabledColor;
             }
+        }
 
-            if (content != null)
-            {
-                content.SetActive(true);
-            }
+        /// <summary>The live wallet balance from the wired provider (#294), or 0
+        /// when none is configured (display-only tests) — a zero balance simply
+        /// leaves the button un-affordable, never crashes.</summary>
+        private int CurrentCoinBalance()
+        {
+            return coinBalanceProvider != null ? coinBalanceProvider() : 0;
         }
 
         /// <summary>Hides the profile.</summary>
@@ -215,17 +255,24 @@ namespace Doggiehood.Unity
             }
         }
 
-        /// <summary>Upgrade button (#59 entry point): requests the house-upgrade
-        /// action for the current house. A no-op if nothing is open. The flow
-        /// itself (confirmation UI, spend) is #294.</summary>
+        /// <summary>Upgrade button (#294, Option A): spends coins directly via
+        /// the wired Core entry point (<see cref="World.GameState.TryUpgradeHouse"/>)
+        /// for the open house — no confirmation screen. On success the open
+        /// profile re-renders so the new level / next cost / affordability show
+        /// immediately. A no-op if nothing is open or no upgrade action is wired;
+        /// the Core call itself is the sole authority on whether the spend
+        /// happens (it rejects an unaffordable / max-level / unknown house).</summary>
         public void Upgrade()
         {
-            if (currentHouse == null)
+            if (currentHouse == null || upgradeAction == null)
             {
                 return;
             }
 
-            UpgradeRequested?.Invoke(currentHouse);
+            if (upgradeAction(currentHouse.Id))
+            {
+                Render();
+            }
         }
 
         // ---------------------------------------------------------------
