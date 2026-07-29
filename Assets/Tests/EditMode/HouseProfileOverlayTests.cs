@@ -16,8 +16,10 @@ namespace Doggiehood.Unity.EditModeTests
     /// #161/#293). Covers the centered card + scrim, the level badge
     /// (`Lv N` + N-of-4 pips), 0–3 resident link rows sourced from the dogs'
     /// Core <see cref="DogProfile"/> (each opening that dog's profile, #165),
-    /// the vacant empty-state, and the footer Upgrade entry point (#59) with
-    /// its next cost / disabled Max-level state.
+    /// the vacant empty-state, and the footer Upgrade action (#59/#294): its
+    /// next cost, the disabled Max-level state, the live affordability greying
+    /// against the wallet, and Option A direct-spend (tapping calls
+    /// <see cref="GameState.TryUpgradeHouse"/> once, then re-renders).
     /// </summary>
     public class HouseProfileOverlayTests
     {
@@ -175,12 +177,37 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void OccupiedHouse_ShowsTheUpgradeButtonWithTheNextCost()
         {
+            // #294: the button is enabled only when the live wallet can cover the
+            // next step; wire a balance that comfortably affords the 200-coin step.
+            overlay.ConfigureUpgrade(() => 1000, _ => false);
             overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
 
             Assert.That(overlay.UpgradeButtonRect.gameObject.activeSelf, Is.True);
             Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 200"));
             Assert.That(overlay.UpgradeButton.interactable, Is.True);
             Assert.That(overlay.UpgradeButtonRect.sizeDelta.y, Is.EqualTo(HouseProfileOverlay.UpgradeButtonHeightPx));
+        }
+
+        [Test]
+        public void UpgradeButton_IsEnabled_WhenTheWalletCoversTheNextCost()
+        {
+            overlay.ConfigureUpgrade(() => 200, _ => false); // exactly the level 2 -> 3 cost
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButton.interactable, Is.True,
+                "a balance equal to the next cost affords the upgrade (#294)");
+        }
+
+        [Test]
+        public void UpgradeButton_IsDisabled_WhenTheWalletCannotCoverTheNextCost()
+        {
+            overlay.ConfigureUpgrade(() => 199, _ => false); // one coin short of 200
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButton.interactable, Is.False,
+                "the button greys out when the player can't afford the next step (#294)");
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 200"),
+                "the label still names the cost even while unaffordable");
         }
 
         [Test]
@@ -194,17 +221,58 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void UpgradeButton_RaisesTheUpgradeEntryPointEvent_ForThisHouse()
+        public void TappingUpgrade_SpendsCoinsDirectlyViaCore_ThenReRendersTheProfile()
         {
-            var house = HouseAt(2, false);
-            House requested = null;
-            overlay.UpgradeRequested += h => requested = h;
+            // #294 Option A: no confirmation — tapping calls TryUpgradeHouse
+            // once and the open profile re-renders to the new level / next cost /
+            // affordability. Exercise the real Core entry point end to end.
+            var state = GameState.CreateNew();
+            var house = state.Houses[0];           // occupied, level 1 (cost L1->L2 = 100)
+            state.Wallet.Deposit(100);             // exactly the first step, nothing left over
 
-            overlay.Open(house, new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
-            overlay.Upgrade();
+            var upgradeCalls = 0;
+            overlay.ConfigureUpgrade(
+                () => state.Wallet.Coins,
+                houseId => { upgradeCalls++; return state.TryUpgradeHouse(houseId); });
+            overlay.Open(house, new List<Dog> { ResidentDog("Rex", Breed.Beagle) });
 
-            Assert.That(requested, Is.SameAs(house),
-                "the Upgrade button is the #59 entry point — the flow itself is #294");
+            Assert.That(overlay.UpgradeButton.interactable, Is.True, "100 coins affords the 100-coin step");
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 100"));
+
+            overlay.UpgradeButton.onClick.Invoke(); // tap
+
+            Assert.That(upgradeCalls, Is.EqualTo(1), "the Core entry point is called exactly once");
+            Assert.That(house.Level, Is.EqualTo(2), "the house upgraded one level via Core");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0), "the coins were spent directly (no confirmation)");
+            Assert.That(overlay.LevelLabel.text, Is.EqualTo("Lv 2"), "the profile re-rendered the new level");
+            Assert.That(overlay.FilledPipCount, Is.EqualTo(2));
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 200"),
+                "the button now shows the next step's cost");
+            Assert.That(overlay.UpgradeButton.interactable, Is.False,
+                "affordability re-read against the reduced balance disables the now-unaffordable button");
+        }
+
+        [Test]
+        public void UpgradingIntoTheCap_ReRendersIntoTheDisabledMaxLevelState()
+        {
+            var state = GameState.CreateNew();
+            var house = state.Houses[0];  // level 1
+            state.Wallet.Deposit(100 + 200 + 400);
+            state.TryUpgradeHouse(house.Id); // -> 2
+            state.TryUpgradeHouse(house.Id); // -> 3 (now 400 left, one step from the cap)
+
+            overlay.ConfigureUpgrade(() => state.Wallet.Coins, houseId => state.TryUpgradeHouse(houseId));
+            overlay.Open(house, new List<Dog> { ResidentDog("Rex", Breed.Beagle) });
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 400"));
+
+            overlay.UpgradeButton.onClick.Invoke(); // tap into the cap
+
+            Assert.That(house.Level, Is.EqualTo(4));
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Max level"),
+                "reaching the cap re-renders into the Max level state (#294)");
+            Assert.That(overlay.UpgradeButton.interactable, Is.False);
+            Assert.That(overlay.UpgradeButtonRect.gameObject.activeSelf, Is.True,
+                "the footer still shows the disabled Max-level button");
         }
 
         [Test]

@@ -86,5 +86,45 @@ namespace Doggiehood.Core.Tests.World
                 "no Upgrade action is offered for a vacant house (house-profile.md)");
             Assert.That(profile.EmptyStateText, Is.EqualTo("No dogs live here yet."));
         }
+
+        [Test]
+        public void CanAffordUpgrade_IsTrue_WhenTheBalanceCoversTheNextCost()
+        {
+            var profile = HouseProfile.For(HouseAt(2, false)); // next step costs 200
+
+            Assert.That(profile.CanAffordUpgrade(200), Is.True,
+                "a balance exactly equal to the next cost affords the upgrade");
+            Assert.That(profile.CanAffordUpgrade(1000), Is.True);
+        }
+
+        [Test]
+        public void CanAffordUpgrade_IsFalse_WhenTheBalanceIsShortOfTheNextCost()
+        {
+            var profile = HouseProfile.For(HouseAt(2, false)); // next step costs 200
+
+            Assert.That(profile.CanAffordUpgrade(199), Is.False,
+                "a balance below the next cost cannot afford the upgrade (disabled)");
+            Assert.That(profile.CanAffordUpgrade(0), Is.False);
+        }
+
+        [Test]
+        public void CanAffordUpgrade_IsFalse_AtMaxLevel_RegardlessOfBalance()
+        {
+            var profile = HouseProfile.For(HouseAt(4, false));
+
+            Assert.That(profile.IsMaxLevel, Is.True);
+            Assert.That(profile.CanAffordUpgrade(int.MaxValue), Is.False,
+                "there is no upgrade step to buy at the cap");
+        }
+
+        [Test]
+        public void CanAffordUpgrade_IsFalse_ForAVacantHouse_RegardlessOfBalance()
+        {
+            var profile = HouseProfile.For(HouseAt(1, true));
+
+            Assert.That(profile.ShowsUpgradeAction, Is.False);
+            Assert.That(profile.CanAffordUpgrade(int.MaxValue), Is.False,
+                "a vacant house offers no Upgrade action to afford");
+        }
     }
 }

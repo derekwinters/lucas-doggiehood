@@ -73,5 +73,14 @@ namespace Doggiehood.Core.World
         /// or the disabled Max-level label at the cap.</summary>
         public string UpgradeButtonText =>
             IsMaxLevel ? MaxLevelLabel : UpgradeLabel + UpgradeCostSeparator + UpgradeCost;
+
+        /// <summary>Whether the player can buy the next upgrade step given a
+        /// live wallet <paramref name="coinBalance"/> (#294, Option A — tapping
+        /// spends coins directly). False when there is no step to buy (a vacant
+        /// house, or one already at the cap) and false when the balance is short
+        /// of <see cref="UpgradeCost"/>. The overlay reads this against the live
+        /// balance to enable/grey the Upgrade button — it is never cached.</summary>
+        public bool CanAffordUpgrade(int coinBalance) =>
+            ShowsUpgradeAction && !IsMaxLevel && coinBalance >= UpgradeCost;
     }
 }

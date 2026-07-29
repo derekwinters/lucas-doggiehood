@@ -57,8 +57,8 @@ namespace Doggiehood.Unity
 
             // House profile overlay (#208): tapping a house opens it. A
             // resident row opens that dog's profile (the reciprocal of the dog
-            // profile's Home button); the Upgrade button is the #59 entry point
-            // (the flow itself is #294).
+            // profile's Home button); the Upgrade button (#294, Option A) spends
+            // coins directly via GameState.TryUpgradeHouse — no confirmation.
             BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
 
             // Persistent HUD (#159): graybox currency chip, restyled by #65.
@@ -141,10 +141,13 @@ namespace Doggiehood.Unity
         /// wires it up: tapping any <see cref="HouseView"/> opens the profile
         /// for that house and its residents (the dogs living there); a resident
         /// row opens that dog's profile via the dog overlay; the Upgrade button
-        /// raises the #59 entry-point event (whose own flow is #294, so nothing
-        /// is subscribed to it here yet). The overlay decides its own display
-        /// from Core (<see cref="Doggiehood.Core.World.HouseProfile"/>); this
-        /// only resolves which dogs live in the tapped house.
+        /// (#294, Derek's Option A) spends coins directly through the Core entry
+        /// point <see cref="Doggiehood.Core.World.GameState.TryUpgradeHouse"/> —
+        /// no confirmation screen — with the button's affordability read live
+        /// from the wallet. The overlay decides its own display from Core
+        /// (<see cref="Doggiehood.Core.World.HouseProfile"/>); this only resolves
+        /// which dogs live in the tapped house and injects the wallet/upgrade
+        /// wiring.
         /// </summary>
         private HouseProfileOverlay BuildHouseProfileOverlay(
             GameObject canvas, GameState state, Transform worldRoot, DogProfileOverlay dogProfile)
@@ -153,6 +156,11 @@ namespace Doggiehood.Unity
             overlayObject.transform.SetParent(canvas.transform, false);
             var overlay = overlayObject.AddComponent<HouseProfileOverlay>();
             overlay.Init();
+
+            // #294: live wallet read for affordability + the direct-spend upgrade
+            // call. The overlay re-reads the balance every render (never cached),
+            // the same contract the currency HUD uses.
+            overlay.ConfigureUpgrade(() => state.Wallet.Coins, houseId => state.TryUpgradeHouse(houseId));
 
             overlay.ResidentSelected += dog => dogProfile.Open(dog);
 
