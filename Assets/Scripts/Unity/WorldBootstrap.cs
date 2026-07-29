@@ -28,21 +28,13 @@ namespace Doggiehood.Unity
             presenter.State = state;
             presenter.Director = director;
 
-            // Quest pacing (#310 / #312). Before onboarding completes, the #312
-            // seam seeds exactly one easy lost-item quest and suppresses the
-            // 2-4 rotation. Once onboarding is complete, the recurring refresh
-            // is owned by the Core QuestPacingPolicy: MaybeStartNewDay checks
-            // the 8h UTC boundary (DateTime.UtcNow — never device-local) and
-            // tops up toward the population-scaled cap. No pacing logic lives
-            // here; this only picks the pre- vs post-onboarding entry point.
-            if (state.OnboardingComplete)
-            {
-                state.Quests.MaybeStartNewDay(System.DateTime.UtcNow, new System.Random());
-            }
-            else if (!System.Linq.Enumerable.Any(state.Quests.ActiveQuests))
-            {
-                state.Quests.BeginInitialQuests(new System.Random());
-            }
+            // Quest pacing (#310 / #312 / #316). The whole phase decision lives
+            // in Core (QuestManager.EnsureQuestsForLaunch): pre-chain it seeds
+            // the one tutorial quest, mid-chain (the guided upgrade/expand/build
+            // reward-chain steps) it stays suppressed, and post-chain it runs
+            // the recurring 8h #310 refresh (DateTime.UtcNow — never
+            // device-local). No pacing logic lives in this MonoBehaviour.
+            state.Quests.EnsureQuestsForLaunch(System.DateTime.UtcNow, new System.Random());
 
             gameObject.AddComponent<SfxPlayer>();
 

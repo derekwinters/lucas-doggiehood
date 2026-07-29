@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Onboarding;
 
 namespace Doggiehood.Core.World
 {
@@ -40,6 +41,12 @@ namespace Doggiehood.Core.World
 
         public Economy.Wallet Wallet { get; }
         public Quests.QuestManager Quests { get; }
+
+        /// <summary>#316: the one-time first-run reward chain (first-quest ->
+        /// upgrade -> expand -> build), paying a flat reward per step and
+        /// gating normal rotation until it completes. Persisted in the save so
+        /// it is never restarted on reload.</summary>
+        public OnboardingRewardChain RewardChain { get; } = new OnboardingRewardChain();
 
         /// <summary>The grid-coordinate tile map (#109), seeded with just
         /// the starting FourWay intersection until zones are unlocked (#56).</summary>
@@ -186,6 +193,7 @@ namespace Doggiehood.Core.World
             var zone = ZoneCatalog.Zones[zoneNumber - 1];
             zone.PlaceOnto(Map);
             unlockedZones.Add(zone);
+            AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
             return true;
         }
 
@@ -226,6 +234,7 @@ namespace Doggiehood.Core.World
             }
 
             houses.Add(new House(houseId, lot.Quadrant));
+            AdvanceRewardChain(OnboardingRewardStep.BuildHouse);
             return true;
         }
 
@@ -261,7 +270,40 @@ namespace Doggiehood.Core.World
             }
 
             house.RaiseLevel();
+            AdvanceRewardChain(OnboardingRewardStep.UpgradeHouse);
             return true;
+        }
+
+        /// <summary>#316: the onboarding-completion bonus — step 1 of the reward
+        /// chain. Fired once by <see cref="Onboarding.OnboardingSequence"/> when
+        /// the guided first quest completes (the same "first quest completed"
+        /// event, scoped to the genuine onboarding run so it pays exactly once
+        /// and never perturbs ordinary quest completions). Reuses the quest
+        /// reward-payout path (a wallet deposit), not the random rotation.</summary>
+        public void GrantOnboardingCompletionReward()
+        {
+            AdvanceRewardChain(OnboardingRewardStep.FirstQuest);
+        }
+
+        /// <summary>#316: notifies the reward chain that a tracked action just
+        /// succeeded. When it is the step the chain is waiting on, the chain
+        /// pays the flat reward into <see cref="Wallet"/> and advances; the
+        /// moment that advance completes the chain (step 4, build), the normal
+        /// quest rotation is released — the #312 -> #310 handoff.</summary>
+        private void AdvanceRewardChain(OnboardingRewardStep action)
+        {
+            if (RewardChain.TryAdvance(action, Wallet) && RewardChain.IsComplete)
+            {
+                Quests.ReleaseInitialRotation();
+            }
+        }
+
+        /// <summary>#316: restores the persisted reward-chain step on load
+        /// without paying — round-tripping progress so the one-time chain is
+        /// never restarted or re-paid.</summary>
+        public void RestoreRewardChainStep(OnboardingRewardStep step)
+        {
+            RewardChain.RestoreStep(step);
         }
 
         /// <summary>
