@@ -30,7 +30,7 @@ A decoration request is **generic** (e.g. "my yard could use something comfy") r
 
 Starting scope is **comfort items** — dog beds, cushions, blankets. ([#51](https://github.com/derekwinters/lucas-doggiehood/issues/51)) Other categories considered for later: play items (pool, sprinkler), yard dressing (flowers, fence), food/bowls.
 
-Once delivered, the dog periodically wanders over and rests on the comfort item on its own — no player tap/trigger needed, consistent with dogs already behaving autonomously. ([#52](https://github.com/derekwinters/lucas-doggiehood/issues/52)) See the "Rest" pose in [Dog Behavior](dogs/behavior.md#animations).
+Once delivered, the dog periodically decides — on its own, no player tap/trigger, consistent with dogs already behaving autonomously — to walk over to the comfort item and settle onto it. The dog actually paths there over the [walk network](world/sidewalks.md) (sidewalks, crosswalks, its house's front walkway) from wherever it is, then enters the "Rest" pose **on arrival** — it never teleports into the pose. ([#52](https://github.com/derekwinters/lucas-doggiehood/issues/52), [#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) See the "Rest" pose in [Dog Behavior](dogs/behavior.md#animations).
 
 ## Build checklist
 
@@ -40,4 +40,4 @@ Once delivered, the dog periodically wanders over and rests on the comfort item 
 - [ ] Decoration requests come from the same quest rotation as other requests, not a separate shop screen
 - [ ] A decoration request presents a small set of item choices (not one named item) for the player to pick from
 - [ ] At least the 3 comfort items (bed, cushion, blanket) exist as deliverable decorations
-- [ ] A dog with a comfort decoration periodically and automatically uses the "Rest" pose on it
+- [ ] A dog with a comfort decoration periodically and automatically walks over to it via the walk network and uses the "Rest" pose on it on arrival (no teleport into the pose)

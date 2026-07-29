@@ -1,6 +1,6 @@
 # Sidewalks & Walk Network
 
-*Related: [#106](https://github.com/derekwinters/lucas-doggiehood/issues/106) (this page), [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105) (locked world dimensions this page consumes), [#128](https://github.com/derekwinters/lucas-doggiehood/issues/128) (front walkways, which replaced the driveway stubs on this page), [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) (deferred multi-tile grid, out of scope here), [#112](https://github.com/derekwinters/lucas-doggiehood/issues/112) (deferred approach-to-rest movement, out of scope here)*
+*Related: [#106](https://github.com/derekwinters/lucas-doggiehood/issues/106) (this page), [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105) (locked world dimensions this page consumes), [#128](https://github.com/derekwinters/lucas-doggiehood/issues/128) (front walkways, which replaced the driveway stubs on this page), [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) (deferred multi-tile grid, out of scope here), [#112](https://github.com/derekwinters/lucas-doggiehood/issues/112) (approach-to-rest movement, which routes dogs to their comfort decorations over this network)*
 
 ## Symmetric sidewalk placement
 

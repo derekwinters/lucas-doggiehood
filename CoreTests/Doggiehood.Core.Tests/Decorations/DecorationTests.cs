@@ -227,35 +227,58 @@ namespace Doggiehood.Core.Tests.Decorations
 
     public class AutoRestTests
     {
-        [Test]
-        public void DogWithAComfortDecoration_PeriodicallyRestsOnItsOwn()
+        private static WalkNetwork Network()
         {
-            // #52: no player trigger needed.
+            return WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, NeighborhoodLayout.HouseLots);
+        }
+
+        [Test]
+        public void DogWithAComfortDecoration_PeriodicallyWalksOverAndRestsOnItsOwn()
+        {
+            // #52/#112: no player trigger needed, and the dog walks over the
+            // walk network to the decoration before settling — no teleport.
             var state = GameState.CreateNew();
             var dog = state.Dogs[0];
             state.AddDecoration(new Decoration("bed", dog.HouseId, YardPlacement.PositionFor(dog.HouseId, 0)));
 
             var rng = new System.Random(11);
-            var rested = false;
-            for (var tick = 0; tick < 200 && !rested; tick++)
+            var network = Network();
+            var dogPosition = NeighborhoodLayout.Intersection;
+
+            RestApproach approach = null;
+            for (var tick = 0; tick < 200 && approach == null; tick++)
             {
-                RestBehavior.Tick(dog, state, rng);
-                rested = dog.State == Doggiehood.Core.Dogs.DogState.Rest;
+                approach = RestBehavior.TryBeginApproach(dog, state, dogPosition, network, rng);
             }
 
-            Assert.That(rested, Is.True, "dog never rested despite having a comfort decoration");
+            Assert.That(approach, Is.Not.Null, "dog never chose to approach its comfort decoration");
+            Assert.That(dog.State, Is.EqualTo(Doggiehood.Core.Dogs.DogState.IdleWander),
+                "the dog must still be walking, not resting, before it arrives");
+
+            for (var step = 0; step < 1000 && !approach.HasArrived; step++)
+            {
+                approach.Advance(RestApproach.ApproachSpeed);
+            }
+
+            Assert.That(approach.HasArrived, Is.True, "dog never reached the decoration");
+            dog.TryRest(comfortDecorationSelected: true);
+            Assert.That(dog.State, Is.EqualTo(Doggiehood.Core.Dogs.DogState.Rest),
+                "dog rests only after arriving at the decoration");
         }
 
         [Test]
-        public void DogWithNoComfortDecoration_NeverRests()
+        public void DogWithNoComfortDecoration_NeverApproachesOrRests()
         {
             var state = GameState.CreateNew();
             var dog = state.Dogs[0];
 
             var rng = new System.Random(11);
+            var network = Network();
             for (var tick = 0; tick < 500; tick++)
             {
-                RestBehavior.Tick(dog, state, rng);
+                var approach = RestBehavior.TryBeginApproach(
+                    dog, state, NeighborhoodLayout.Intersection, network, rng);
+                Assert.That(approach, Is.Null);
                 Assert.That(dog.State, Is.Not.EqualTo(Doggiehood.Core.Dogs.DogState.Rest));
             }
         }

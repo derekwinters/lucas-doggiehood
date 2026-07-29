@@ -136,14 +136,39 @@ namespace Doggiehood.Unity
         {
             Tick(Time.deltaTime);
 
-            // Autonomous comfort use (#52): Core decides who rests and when.
+            // Autonomous comfort use (#52, #112): Core decides who walks over
+            // to their comfort item and when; the walk-over itself is driven
+            // frame-by-frame by each DogView. No teleport into the Rest pose.
             restTickTimer += Time.deltaTime;
             if (restTickTimer >= RestTickInterval)
             {
                 restTickTimer = 0f;
-                foreach (var dog in State.Dogs)
+                TickRestApproaches();
+            }
+        }
+
+        /// <summary>#112: on each rest tick, ask Core whether any wandering dog
+        /// with a comfort decoration should start walking over to it. The
+        /// gating roll and the route both live in Core
+        /// (<see cref="Doggiehood.Core.Decorations.RestBehavior.TryBeginApproach"/>);
+        /// this layer only hands the returned approach to the dog's view to
+        /// walk. Dogs already en route are skipped.</summary>
+        private void TickRestApproaches()
+        {
+            var network = NeighborhoodLayout.WalkNetwork;
+            foreach (var view in Object.FindObjectsByType<DogView>(FindObjectsSortMode.None))
+            {
+                if (view.IsApproachingRest)
                 {
-                    Doggiehood.Core.Decorations.RestBehavior.Tick(dog, State, restRng);
+                    continue;
+                }
+
+                var position = new GridPoint(view.transform.position.x, view.transform.position.z);
+                var approach = Doggiehood.Core.Decorations.RestBehavior.TryBeginApproach(
+                    view.Dog, State, position, network, restRng);
+                if (approach != null)
+                {
+                    view.BeginRestApproach(approach);
                 }
             }
         }
