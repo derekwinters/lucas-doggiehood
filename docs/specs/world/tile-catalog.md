@@ -19,29 +19,43 @@ These 7 measurements are locked in Core (`WorldDimensions`, [#105](https://githu
 | Cul-de-sac bulb radius | 9m |
 | Opposing-turn arch radius | quarter-circle, 15m (peak of arch reaches ~15m from tile center) |
 
+## Grid coordinates
+
+The world is an integer tile grid addressed as **`(x, y)`** — `x` runs east/west, `y` runs north/south. In Core these map to `TileCoordinate.Col` (`x`) and `TileCoordinate.Row` (`y`); world-space is derived by `TileGeometry` (`Col → +X`, `Row → +Z`). The starting `FourWay` intersection is the origin **`(0, 0)`**; the tile directly north of it is **`(0, 1)`**, directly east is **`(1, 0)`**.
+
+A tile's identity is its integer `(x, y)`; a type name's compass suffix (e.g. `CulDeSacEast`) describes *which edge carries the road*, **not** where the tile sits on the map. Position comes from the coordinate, connectivity from the type/code below — keeping the two separate avoids the "is that northwest or is that an east-facing cul-de-sac?" confusion.
+
 ## The 17 tile types
 
 Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. `FourWay` is the existing starting tile ([#7](https://github.com/derekwinters/lucas-doggiehood/issues/7), [#38](https://github.com/derekwinters/lucas-doggiehood/issues/38)); the other 16 are built for the multi-tile grid ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)).
 
-| Type | Road edges | Sketch |
-|---|---|---|
-| `FourWay` | N,S,E,W | `╋` — the starting tile |
-| `StraightNS` | N,S | `┃` |
-| `StraightEW` | E,W | `━` |
-| `TurnNE` | N,E | `┗` |
-| `TurnNW` | N,W | `┛` |
-| `TurnSE` | S,E | `┏` |
-| `TurnSW` | S,W | `┓` |
-| `TeeNorth` | E,W,N | `┻` (east/west with north half only — upside-down T) |
-| `TeeSouth` | E,W,S | `┳` (east/west with south half only — T) |
-| `TeeEast` | N,S,E | `┣` (north/south with east only) |
-| `TeeWest` | N,S,W | `┫` (north/south with west only) |
-| `CulDeSacNorth` | N | `╹` road enters from the north edge, ends in a bulb |
-| `CulDeSacSouth` | S | `╻` |
-| `CulDeSacEast` | E | `╺` |
-| `CulDeSacWest` | W | `╸` |
-| `OpposingTurnsNS` | N,E,S,W | `⬭` a NE-corner turn arc and an unrelated SW-corner turn arc — one bowing north(-east), one bowing south(-west) — enclosing a central island, **not** connected to each other |
-| `OpposingTurnsEW` | N,E,S,W | `⬯` the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other |
+The **Code** column is the compact authoring token (see [Tile codes](#tile-codes-connectivity-as-a-single-source) below); it encodes the same road edges as the "Road edges" column.
+
+| Type | Code | Road edges | Sketch |
+|---|---|---|---|
+| `FourWay` | `NSEW.` | N,S,E,W | `╋` — the starting tile |
+| `StraightNS` | `NS--.` | N,S | `┃` |
+| `StraightEW` | `--EW.` | E,W | `━` |
+| `TurnNE` | `N-E-.` | N,E | `┗` |
+| `TurnNW` | `N--W.` | N,W | `┛` |
+| `TurnSE` | `-SE-.` | S,E | `┏` |
+| `TurnSW` | `-S-W.` | S,W | `┓` |
+| `TeeNorth` | `N-EW.` | E,W,N | `┻` (east/west with north half only — upside-down T) |
+| `TeeSouth` | `-SEW.` | E,W,S | `┳` (east/west with south half only — T) |
+| `TeeEast` | `NSE-.` | N,S,E | `┣` (north/south with east only) |
+| `TeeWest` | `NS-W.` | N,S,W | `┫` (north/south with west only) |
+| `CulDeSacNorth` | `N---.` | N | `╹` road enters from the north edge, ends in a bulb |
+| `CulDeSacSouth` | `-S--.` | S | `╻` |
+| `CulDeSacEast` | `--E-.` | E | `╺` |
+| `CulDeSacWest` | `---W.` | W | `╸` |
+| `OpposingTurnsNS` | `NSEW\` | N,E,S,W | `⬭` a NE-corner turn arc and an unrelated SW-corner turn arc — one bowing north(-east), one bowing south(-west) — enclosing a central island, **not** connected to each other |
+| `OpposingTurnsEW` | `NSEW/` | N,E,S,W | `⬯` the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other |
+
+### Tile codes — connectivity as a single source
+
+The **Code** is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, `-` = none) and slot 5 is the junction tag — `.` for an ordinary single junction or dead-end, and `\` / `/` for the two `OpposingTurns` tiles, where the slash marks the wall between the tile's two disconnected arcs: `\` separates {N,E} from {S,W} (so the arcs are NE + SW = `OpposingTurnsNS`), `/` separates {N,W} from {S,E} (NW + SE = `OpposingTurnsEW`).
+
+Because the first four slots *are* the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the **single source** the Core `TileCatalog`, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see [#359](https://github.com/derekwinters/lucas-doggiehood/issues/359) for the Core unification that removes today's duplication (edges hand-listed in `TileCatalog.BuildDefinitions()` *and* re-typed in this table).
 
 ## Resolved: opposing-turn arches do not join into a loop
 
