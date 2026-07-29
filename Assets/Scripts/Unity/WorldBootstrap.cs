@@ -17,7 +17,8 @@ namespace Doggiehood.Unity
 
             // #57: wires tapping an empty lot in an unlocked zone to
             // GameState.TryBuildHouse.
-            gameObject.AddComponent<ExpansionDirector>().Init(state, root.transform);
+            var expansionDirector = gameObject.AddComponent<ExpansionDirector>();
+            expansionDirector.Init(state, root.transform);
 
             var presenter = FindFirstObjectByType<ConversationPresenter>();
             if (presenter == null)
@@ -57,6 +58,14 @@ namespace Doggiehood.Unity
             // profile's Home button); the Upgrade button (#294, Option A) spends
             // coins directly via GameState.TryUpgradeHouse — no confirmation.
             BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
+
+            // Map-expansion unlock trigger (#343, Option A): tapping the
+            // affordable lock indicator raises the reusable confirmation dialog,
+            // and Yes calls GameState.TryUnlockNextZone (spend + zone appears +
+            // save). The dialog is a device-safe UGUI overlay (#298/#291).
+            var confirmationDialog = BuildConfirmationDialog(canvas);
+            gameObject.AddComponent<ExpansionUnlockDirector>()
+                .Init(state, root.transform, confirmationDialog, expansionDirector);
 
             // Persistent HUD (#159): the currency chip now wears the full Candy
             // Cottage chrome (#65/#296) — cream pill, Ink outline, hard shadow,
@@ -114,6 +123,21 @@ namespace Doggiehood.Unity
             settings.Init(state, Application.version);
             settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot);
             return settings;
+        }
+
+        /// <summary>
+        /// Builds the reusable confirmation dialog (#343/#344) under the shared
+        /// canvas, starting closed. Any spend-confirming affordance raises it by
+        /// supplying its own title/body/cost + confirm callback; the first
+        /// consumer is the zone-unlock trigger wired above.
+        /// </summary>
+        private ConfirmationDialog BuildConfirmationDialog(GameObject canvas)
+        {
+            var dialogObject = new GameObject("ConfirmationDialog");
+            dialogObject.transform.SetParent(canvas.transform, false);
+            var dialog = dialogObject.AddComponent<ConfirmationDialog>();
+            dialog.Init();
+            return dialog;
         }
 
         /// <summary>
