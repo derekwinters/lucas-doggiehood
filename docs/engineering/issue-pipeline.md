@@ -312,8 +312,9 @@ the relevant `docs/specs/**` page's own build checklist — what Derek approves
 and the reviewer checks the PR against.
 
 Dependencies are recorded as first-class GitHub relationships — sub-issues for
-decomposition, `Blocked by: #N` for hard peer dependencies, `Depends on: #N`
-for soft sibling ordering. See **Recording dependencies** below.
+decomposition, **native issue-dependencies** (set with the `issue-blockers`
+skill) for hard `Blocked by` gates, and `Depends on: #N` lines for soft sibling
+ordering. See **Recording dependencies** below.
 
 ### Recording dependencies
 
@@ -330,8 +331,10 @@ There are exactly **two** supported ways to record a dependency:
 
 1. **A structured line** in the issue body — one reference per line, the keyword
    followed by a colon and `#N`:
-     - `Blocked by: #N` — **hard gate.** The dependent is ineligible for dev
-       until `#N` is closed/merged (parsed into `blocked_by`).
+     - `Blocked by: #N` — **hard gate**, *legacy fallback only.* New hard
+       blockers are recorded natively (see below); this text line is still
+       parsed into `blocked_by` for pre-migration issues but must not be the
+       source of truth for new work.
      - `Depends on: #N` — **soft ordering.** The dependent may build, but a
        prerequisite sorts first (parsed into `depends_on`).
    The colon is what makes the line canonical/structured; a keyword mention
@@ -346,16 +349,21 @@ There are exactly **two** supported ways to record a dependency:
 different needs — do not conflate them**
 ([#321](https://github.com/derekwinters/lucas-doggiehood/issues/321)):
 
-- **Hard blockers (`Blocked by:`)** have a native GitHub form, which is now the
-  **canonical** source. Every deterministic reader — the nightly builder, the
-  reconciliation sweep, the dashboard "Blocked by" columns + unblocker graph,
-  the blocker auto-revisit, and the [#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)
+- **Hard blockers (`Blocked by:`)** are recorded as a **native GitHub
+  issue-dependency relationship**, set with the `issue-blockers` skill
+  (`.claude/skills/issue-blockers/`, `set_blocker.py`) — the required, canonical
+  form (CLAUDE.md rule #11).
+  Writing a `Blocked by: #N` **text line** as the source of truth is no longer
+  allowed. Every deterministic reader — the nightly builder, the reconciliation
+  sweep, the dashboard "Blocked by" columns + unblocker graph, the blocker
+  auto-revisit, and the [#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)
   milestone-order gate — fetches an issue's native `blocked_by` set and
-  **unions** it with the text-line parse through one canonical `merge_blockers`
-  helper (native ∪ text line, de-duped), so the blocker graph is identical
-  everywhere. With native in place the `Blocked by: #N` text line becomes
-  **optional/redundant** — it is still read throughout (migration-safe: nothing
-  breaks mid-transition), but a native relationship alone is sufficient.
+  **unions** it with any legacy text-line parse through one canonical
+  `merge_blockers` helper (native ∪ text line, de-duped), so the blocker graph
+  is identical everywhere. The `Blocked by: #N` text line is retained **only**
+  as a read-time legacy fallback for issues authored before this migration; new
+  blockers must be native, and a lingering prose blocker should be converted
+  with the skill and its line removed.
 - **Soft ordering (`Depends on:`)** has **no** native equivalent — GitHub has no
   native soft-ordering relationship. So `Depends on:` stays **text-line-only**;
   it is parsed from the structured line and nothing merges a native set into it.
@@ -537,6 +545,11 @@ Each stage is a self-contained skill directory under `.claude/skills/`:
   auto-fix/flag classification, with the `events_only` cron-only `requeue`
   gate — #319) + tests; run by `gatekeeper-sweep.yml` and surfaced by the
   dashboard render.
+- `issue-blockers/` — `SKILL.md` + `set_blocker.py` (write side for **native**
+  issue-dependency relationships — add/remove/list, resolving the write API's
+  numeric `issue_id`) + tests. The manual/agent counterpart to the readers in
+  `reconcile.py` (`native_blocked_by`) and `select_queue.py`; use it instead of
+  writing a prose `Blocked by #N` line (CLAUDE.md rule #11).
 
 The gatekeeper is now driven by two workflows —
 [`gatekeeper-comment.yml`](#routines-and-the-dashboard-workflow) (per-issue,
