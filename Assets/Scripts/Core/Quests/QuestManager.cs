@@ -248,16 +248,20 @@ namespace Doggiehood.Core.Quests
                     hidden = GenerateHiddenItemPosition(rng);
                     break;
                 case QuestType.BuyGift:
-                    var giftItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Gift);
+                    // #317: the purchasable subject pool is population-gated
+                    // through the pacing seam — pricier gift entries only enter
+                    // the candidate set as the neighborhood grows.
+                    var giftItems = pacing.EligibleSubjectPool(ItemEligibility.Gift, state);
                     item = giftItems[rng.Next(giftItems.Count)];
                     cost = ItemCatalog.Get(item).Cost;
                     break;
                 case QuestType.DecorationRequest:
                     // Generic request (#50): no pre-named item — the player
-                    // chooses from the comfort options at acceptance.
+                    // chooses from the comfort options at acceptance. #317: the
+                    // offered options are population-gated through the same seam.
                     var decoQuest = new Quest(nextQuestId++, type, dog.Name, null,
                         QuestTemplates.For(type).Render(dog, "something comfy", rng),
-                        null, null, null, Decorations.ComfortDecorations.ItemNames);
+                        null, null, null, pacing.EligibleSubjectPool(ItemEligibility.Decoration, state));
                     quests.Add(decoQuest);
                     dog.GiveQuest();
                     return decoQuest;

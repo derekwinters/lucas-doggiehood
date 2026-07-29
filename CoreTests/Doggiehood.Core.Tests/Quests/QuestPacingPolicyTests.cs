@@ -92,5 +92,37 @@ namespace Doggiehood.Core.Tests.Quests
             Assert.That(EconomyNumbers.TargetActiveFloor, Is.EqualTo(3));
             Assert.That(EconomyNumbers.TargetActiveCeiling, Is.EqualTo(12));
         }
+
+        [Test]
+        public void EligibleSubjectPool_DelegatesToThePopulationGate_OverTheLiveCatalog()
+        {
+            // #317: the pacing seam owns pool selection — it feeds the live
+            // ItemCatalog and the neighborhood's population through the pure
+            // QuestCostTiers gate, so difficulty scaling changes in one place.
+            var policy = new QuestPacingPolicy();
+            var state = StateWithDogs(12);
+
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Gift, state),
+                Is.EqualTo(QuestCostTiers.EligibleNames(
+                    ItemCatalog.Items, ItemEligibility.Gift, state.Dogs.Count)));
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Decoration, state),
+                Is.EqualTo(QuestCostTiers.EligibleNames(
+                    ItemCatalog.Items, ItemEligibility.Decoration, state.Dogs.Count)));
+        }
+
+        [Test]
+        public void EligibleSubjectPool_AtTheStartingPopulation_MatchesTodaysGiftAndDecorationPools()
+        {
+            // #317 checklist: early game is unchanged — every current
+            // purchasable entry sits in the starter band (30-50 coins), so the
+            // gated pool at the starting population equals the full tagged pool.
+            var policy = new QuestPacingPolicy();
+            var state = GameState.CreateNew();
+
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Gift, state),
+                Is.EquivalentTo(ItemCatalog.NamesEligibleFor(ItemEligibility.Gift)));
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Decoration, state),
+                Is.EquivalentTo(ItemCatalog.NamesEligibleFor(ItemEligibility.Decoration)));
+        }
     }
 }
