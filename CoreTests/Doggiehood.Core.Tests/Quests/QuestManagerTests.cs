@@ -287,6 +287,47 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void BuyGiftSubjects_AreDrawnFromThePopulationGatedPool()
+        {
+            // #317: BuyGift subjects come through the population-gated seam,
+            // never a catalog entry outside the population-eligible bands.
+            var state = NewState();
+            var eligible = new QuestPacingPolicy()
+                .EligibleSubjectPool(ItemEligibility.Gift, state);
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
+                Assert.That(eligible, Does.Contain(quest.ItemName), $"seed {seed}");
+            }
+        }
+
+        [Test]
+        public void TierGate_LeavesLostItemAndPestControlSubjectsUntouched()
+        {
+            // #317: the cost-tier gate filters only purchasable subjects.
+            // LostItem draws the full Lost pool — including the null-cost
+            // "puppy" a cost filter would drop — and PestControl carries no
+            // item cost at all, so neither is affected by population.
+            var state = NewState();
+            var lostSubjects = new HashSet<string>();
+            for (var seed = 0; seed < 200; seed++)
+            {
+                lostSubjects.Add(
+                    state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(seed)).ItemName);
+            }
+
+            Assert.That(lostSubjects, Is.EquivalentTo(
+                ItemCatalog.NamesEligibleFor(ItemEligibility.Lost)));
+            Assert.That(lostSubjects, Does.Contain("puppy"),
+                "null-cost find-only subject must remain — the gate is purchasable-only");
+
+            var pest = state.Quests.GiveQuestTo(state.Dogs[2], QuestType.PestControl, new Random(7));
+            Assert.That(pest.ItemName, Is.EqualTo("bug spray"));
+            Assert.That(pest.Cost, Is.Null);
+        }
+
+        [Test]
         public void NoParallelItemArrays_RemainOnQuestManager()
         {
             // #190 guard: LostItems/GiftItems/DecorationItems are deleted —

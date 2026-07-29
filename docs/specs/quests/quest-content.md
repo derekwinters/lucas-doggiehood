@@ -6,6 +6,9 @@
 
 v1.0 ships with exactly 3 quest types. Expanding variety is explicitly deferred — see [#60](https://github.com/derekwinters/lucas-doggiehood/issues/60).
 
+!!! note "Cost tiers are not new quest types"
+    The population-gated [cost tiers](economy.md#cost-tiers-population-gated-317) ([#317](https://github.com/derekwinters/lucas-doggiehood/issues/317)) add **higher-cost bands within these same 3 quest types** as the neighborhood grows — bigger-ticket BuyGift and decoration-request subjects, nothing more. They are **not** new quest mechanics, so this frozen-types rule is unaffected: no new resolution mechanic, screen, or interaction is introduced, only a wider price range on the existing purchasable subjects.
+
 ### 1. Lost something
 
 *[#12](https://github.com/derekwinters/lucas-doggiehood/issues/12)*

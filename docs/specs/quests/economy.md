@@ -10,7 +10,7 @@ The overall goal is helping dogs around the neighborhood by completing their req
     - **Cadence — every 8 hours (UTC)**: the recurring refresh is owned by [#310](https://github.com/derekwinters/lucas-doggiehood/issues/310). A refresh runs when at least `EconomyNumbers.RefreshInterval` (**8 hours**) has elapsed since the last one, measured against a persisted **UTC timestamp** (`GameState.LastRotationUtc`). UTC — never the device-local clock — so changing the device timezone can neither double-fire nor stall the boundary. It is a boundary *check*, not a countdown/expiry: nothing is ever removed and no quest can fail (see **No pressure** below). **Missed time is a single top-up**: away 8 hours or 4 days, returning triggers exactly one refresh to the cap — the elapsed span only decides *whether* to refresh, never *how many* to add, so there is no catch-up flood and no not-playing-to-hoard exploit.
     - **Concurrent-quest cap — population-scaled**: a refresh is a **top-up toward** a target, never a blind add — it adds `min(2-4 batch, target − activeCount, freeDogs)`, floored at 0, so once the neighborhood already holds the target number of uncompleted quests a refresh adds nothing until the player clears some. The target is `clamp(round(dogCount / 3), 3, 12)` — divisor, floor (3), and ceiling (12) are all named `EconomyNumbers` constants. Sample ramp: 8 dogs → 3, 12 → 4, 18 → 6, 24 → 8, 36 → 12, 100 → 12. The **ceiling (12) is the playtest flood-control dial** — drop it first if a mid-game map feels busy.
     - **Always one free quest — soft-lock protection**: to prevent a dead-end of 0 coins with every active quest requiring coins to accept, every refresh guarantees the post-refresh active set holds **≥1 free-type quest** (the no-cost types, LostItem / PestControl; the paid types are BuyGift / DecorationRequest). If a top-up would otherwise leave an all-paid set, one added quest is forced to a free type. This is enforced **only at the refresh boundary, never on quest completion** — instant replenish would be an unlimited-coin faucet. A temporary "no free quest" window of up to one interval is fine (completing anything frees a slot and the next refresh restores a free option); only *locked progress with no exit* is prevented.
-    - **The pacing seam** (`QuestPacingPolicy`): both decisions — `ShouldRefresh(nowUtc, state)` (cadence) and `TargetActiveCount(state)` (cap) — live in one Unity-independent Core class that `QuestManager` asks, rather than reading raw constants inline. Both take `GameState`, so future scaling rules (by dog count already, by a progression/"hidden level" later) change here only, never in the quest engine or the Unity layer.
+    - **The pacing seam** (`QuestPacingPolicy`): the pacing decisions — `ShouldRefresh(nowUtc, state)` (cadence), `TargetActiveCount(state)` (cap), and `EligibleSubjectPool(tag, state)` (the population-gated purchasable subject pool — see [Cost tiers](#cost-tiers-population-gated-317)) — live in one Unity-independent Core class that `QuestManager` asks, rather than reading raw constants inline. All take `GameState`, so scaling rules driven by dog population change here only, never in the quest engine or the Unity layer.
     - **First launch is the exception**: the batch rotation is suppressed during [onboarding](../onboarding.md#first-launch-quest-seeding-312) — the world seeds exactly one easy lost-item quest so the tutorial has a single gentle target. Suppression now extends across the whole [onboarding reward-chain](../onboarding.md#onboarding-reward-chain-316): the first normal rotation is held back until the player finishes the four guided steps (quest → upgrade → expand → build), then released the moment the chain completes at the build step. The recurring 8h refresh ([#310](https://github.com/derekwinters/lucas-doggiehood/issues/310)) takes over from there. The single Core decision `QuestManager.EnsureQuestsForLaunch` picks the pre-chain seed / mid-chain suppression / post-chain refresh at each launch. ([#312](https://github.com/derekwinters/lucas-doggiehood/issues/312), [#316](https://github.com/derekwinters/lucas-doggiehood/issues/316))
 - **Permanence**: items/decorations delivered or found through completed quests stay in the world permanently — nothing resets with the daily rotation. ([#27](https://github.com/derekwinters/lucas-doggiehood/issues/27))
 - **No pressure**: quests never expire and there is no timer or fail condition anywhere. ([#28](https://github.com/derekwinters/lucas-doggiehood/issues/28))
@@ -25,7 +25,17 @@ The overall goal is helping dogs around the neighborhood by completing their req
 *Source: [#62](https://github.com/derekwinters/lucas-doggiehood/issues/62)*
 
 - A completed quest pays a **flat 10 coins**, regardless of quest type.
-- A typical gift/decoration item costs **roughly 30-50 coins** (3-5 quests' worth of saving).
+- A typical gift/decoration item costs **roughly 30-50 coins** (3-5 quests' worth of saving) — this is the **starter cost tier**, the only tier eligible early on (see [Cost tiers](#cost-tiers-population-gated-317) below).
+
+Population-gated cost tiers *(decision 2026-07-28, Derek — see [#317](https://github.com/derekwinters/lucas-doggiehood/issues/317))*:
+
+- Purchasable-quest difficulty scales with **total dog population** (`state.Dogs.Count`) — as the neighborhood grows, higher-cost tiers become eligible. All boundaries are draft placeholders, named `QuestCostTiers` constants (one-line tunes):
+
+    | Tier | Cost band | Eligible once `Dogs.Count` ≥ |
+    |------|-----------|------------------------------|
+    | **Starter** | 30-50 coins (today's baseline) | 1 (always) |
+    | **Mid** | 60-90 coins | 5 |
+    | **Premium** | 100+ coins (no ceiling) | 10 |
 
 v0.4 expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Expansion](../expansion.md#pricing))*:
 
@@ -49,7 +59,19 @@ The priced catalog and every quest type's subject pool are **one source of truth
 - **Cost** — optional. Purchasable items (gift/decoration) carry a cost in the 30-50 range above; find-only items (e.g. a lost puppy) carry none, since they're found rather than bought.
 - **Eligibility tags** for which quest type(s) it can appear in — Lost, Gift, Decoration. An item can carry more than one tag (a toy or ball is both lost- and gift-eligible).
 
-Each quest type's subject pool is a query over the catalog's tags (e.g. "every Gift-eligible item"), and the decoration-request options are the Decoration-eligible slice of the same catalog — there is no second, independently maintained item list anywhere. Adding a new item is a single catalog entry with its tags and cost; it then appears automatically in every rotation pool it's tagged for. The 30-50 coin rule above is a tested invariant on every Gift- or Decoration-eligible catalog entry.
+Each quest type's subject pool is a query over the catalog's tags (e.g. "every Gift-eligible item"), and the decoration-request options are the Decoration-eligible slice of the same catalog — there is no second, independently maintained item list anywhere. Adding a new item is a single catalog entry with its tags and cost; it then appears automatically in every rotation pool it's tagged for. The 30-50 coin rule above is a tested invariant on every Gift- or Decoration-eligible catalog entry priced in the **starter tier** — the only tier the current catalog carries.
+
+### Cost tiers — population-gated (#317)
+
+*Source: [#317](https://github.com/derekwinters/lucas-doggiehood/issues/317), decision 2026-07-28 (Derek).*
+
+Purchasable quest difficulty ramps with the neighborhood's size so a new player is never offered an unaffordable request before banking coins. This is **new cost tiers within the existing 3 quest types**, *not* new quest mechanics — the [frozen-types rule](quest-content.md#v10-quest-types) holds. There is **no hidden level and no new persisted state**: total dog population (`state.Dogs.Count`) is already known, and drives everything.
+
+- A **cost tier** is a cost band over the existing item catalog — nothing but a classification of entries already priced. The bands and the population gate that unlocks each are in the [Numbers § table](#numbers-placeholder-expect-tuning) above.
+- Eligibility is **cumulative and monotonic** — reaching a higher population only ever *adds* tiers to the eligible pool, never removes the cheaper ones, so an established player still gets affordable requests mixed in. The pure `QuestCostTiers.EligibleCostTiers(dogCount)` function computes this.
+- The gate filters only the **purchasable subject pool** — BuyGift subjects and decoration-request options. Catalog entries priced above the population-eligible ceiling are excluded from the candidate set, and the injectable RNG picks only from the eligible slice (deterministic per seed). **Find-only LostItem subjects (no cost) and PestControl (no item cost) are unaffected.**
+- At the starting population the eligible pool is **identical to today's** (starter tier only), so onboarding and early game are unchanged.
+- The filter is consumed through the [pacing seam](#core-loop)'s `QuestPacingPolicy.EligibleSubjectPool(tag, state)`, which feeds the live `ItemCatalog` and `state.Dogs.Count` into `QuestCostTiers` — one population source of truth shared with [#310](https://github.com/derekwinters/lucas-doggiehood/issues/310)'s availability pacing, not a second parallel signal.
 
 ## Quest authoring
 
@@ -88,3 +110,4 @@ This generalizes what earlier drafts did with a single default line and a single
 - [ ] At least the 3 v1.0 quest types (see [Quest Content](quest-content.md)) are expressed as templates, not hard-coded per-dog text
 - [x] Opener and closer lines are drawn from a default pool ∪ per-personality pool, uniform-random per string, via an injectable RNG — no anti-repeat memory or per-dog persisted state ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189))
 - [x] All quest subject pools (and decoration-request options) are queries over one tagged item catalog — no per-type parallel item lists; every Gift/Decoration-eligible entry costs 30-50 coins, find-only entries carry no cost ([#190](https://github.com/derekwinters/lucas-doggiehood/issues/190))
+- [x] Purchasable-quest cost tiers are gated by total dog population — `QuestCostTiers.EligibleCostTiers(dogCount)` is monotonic (starter-only at 1, +mid at 5, +premium at 10), the pacing seam's `EligibleSubjectPool` excludes catalog entries above the population-eligible ceiling, and LostItem/PestControl are unaffected; no new persisted state ([#317](https://github.com/derekwinters/lucas-doggiehood/issues/317))

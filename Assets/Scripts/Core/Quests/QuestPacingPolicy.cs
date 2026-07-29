@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
 
@@ -63,6 +64,21 @@ namespace Doggiehood.Core.Quests
             }
 
             return raw;
+        }
+
+        /// <summary>#317: the population-gated purchasable subject pool for a
+        /// quest type — every <see cref="ItemCatalog"/> entry tagged
+        /// <paramref name="tag"/> whose cost falls in a tier eligible at the
+        /// neighborhood's current population (<c>state.Dogs.Count</c>). The
+        /// pacing seam owns pool selection so difficulty scaling lives here,
+        /// not in the quest engine; the pure classification is
+        /// <see cref="QuestCostTiers.EligibleNames"/>. No new persisted state —
+        /// population is already known. Find-only (no-cost) entries and the
+        /// no-item PestControl type are unaffected, since this filters only
+        /// purchasable subjects.</summary>
+        public IReadOnlyList<string> EligibleSubjectPool(ItemEligibility tag, GameState state)
+        {
+            return QuestCostTiers.EligibleNames(ItemCatalog.Items, tag, state.Dogs.Count);
         }
     }
 }
