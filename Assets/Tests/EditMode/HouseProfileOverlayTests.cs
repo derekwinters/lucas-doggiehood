@@ -1,0 +1,245 @@
+using System.Collections.Generic;
+using Doggiehood.Core.Dogs;
+using Doggiehood.Core.World;
+using Doggiehood.Unity;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Doggiehood.Unity.EditModeTests
+{
+    /// <summary>
+    /// #208: the house profile overlay, built under the #256 CanvasScaler and
+    /// asserted against the approved wireframe's named constants
+    /// (docs/specs/ui/house-profile.md / mockups/house-profile.html,
+    /// #161/#293). Covers the centered card + scrim, the level badge
+    /// (`Lv N` + N-of-4 pips), 0–3 resident link rows sourced from the dogs'
+    /// Core <see cref="DogProfile"/> (each opening that dog's profile, #165),
+    /// the vacant empty-state, and the footer Upgrade entry point (#59) with
+    /// its next cost / disabled Max-level state.
+    /// </summary>
+    public class HouseProfileOverlayTests
+    {
+        private const string BundledFontPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
+
+        private GameObject canvasHost;
+        private GameObject overlayHost;
+        private HouseProfileOverlay overlay;
+
+        [SetUp]
+        public void CreateOverlay()
+        {
+            // #291: labels bind a bundled UI font via Resources.Load; force-import
+            // it so a fresh CI Library resolves it before the overlay is built.
+            AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
+
+            canvasHost = new GameObject("ui-canvas", typeof(Canvas));
+            canvasHost.AddComponent<UiCanvas>().Configure();
+
+            overlayHost = new GameObject("house-profile-overlay");
+            overlayHost.transform.SetParent(canvasHost.transform, false);
+            overlay = overlayHost.AddComponent<HouseProfileOverlay>();
+            overlay.Init();
+        }
+
+        [TearDown]
+        public void Cleanup()
+        {
+            Object.DestroyImmediate(canvasHost);
+        }
+
+        private static House HouseAt(int level, bool vacant)
+        {
+            return new House(2, Quadrant.NorthWest, isVacant: vacant, level: level);
+        }
+
+        private static Dog ResidentDog(string name, Breed breed)
+        {
+            return new Dog(name, breed, Personality.Brave, 2, isPuppy: false);
+        }
+
+        [Test]
+        public void LayoutConstants_MatchTheApprovedWireframe()
+        {
+            Assert.That(HouseProfileOverlay.ProfileWidthPx, Is.EqualTo(900f));
+            Assert.That(HouseProfileOverlay.ProfilePaddingPx, Is.EqualTo(48f));
+            Assert.That(HouseProfileOverlay.ThumbnailSizePx, Is.EqualTo(220f));
+            Assert.That(HouseProfileOverlay.CloseButtonSizePx, Is.EqualTo(72f));
+            Assert.That(HouseProfileOverlay.LevelPipCount, Is.EqualTo(4));
+            Assert.That(HouseProfileOverlay.LevelPipDiameterPx, Is.EqualTo(28f));
+            Assert.That(HouseProfileOverlay.LevelPipGapPx, Is.EqualTo(12f));
+            Assert.That(HouseProfileOverlay.ResidentRowHeightPx, Is.EqualTo(120f));
+            Assert.That(HouseProfileOverlay.ResidentRowGapPx, Is.EqualTo(16f));
+            Assert.That(HouseProfileOverlay.ResidentAvatarSizePx, Is.EqualTo(96f));
+            Assert.That(HouseProfileOverlay.UpgradeButtonHeightPx, Is.EqualTo(96f),
+                "the Upgrade button reuses the shared 96px PillButton (#173)");
+        }
+
+        [Test]
+        public void Card_IsCenteredAtTheWireframeWidth()
+        {
+            Assert.That(overlay.CardRect.sizeDelta.x, Is.EqualTo(HouseProfileOverlay.ProfileWidthPx));
+            Assert.That(overlay.CardRect.anchorMin, Is.EqualTo(new Vector2(0.5f, 0.5f)),
+                "the card is centered over the scrim (ProfileAnchor = Center)");
+            Assert.That(overlay.CardRect.anchorMax, Is.EqualTo(new Vector2(0.5f, 0.5f)));
+        }
+
+        [Test]
+        public void Scrim_StretchesAcrossTheWholeCanvas()
+        {
+            Assert.That(overlay.ScrimRect.anchorMin, Is.EqualTo(Vector2.zero));
+            Assert.That(overlay.ScrimRect.anchorMax, Is.EqualTo(Vector2.one));
+        }
+
+        [Test]
+        public void CloseButton_IsTheWireframeSizeAndAnchoredTopRight()
+        {
+            Assert.That(overlay.CloseButtonRect.sizeDelta.x, Is.EqualTo(HouseProfileOverlay.CloseButtonSizePx));
+            Assert.That(overlay.CloseButtonRect.sizeDelta.y, Is.EqualTo(HouseProfileOverlay.CloseButtonSizePx));
+            Assert.That(overlay.CloseButtonRect.anchorMin, Is.EqualTo(Vector2.one));
+            Assert.That(overlay.CloseButtonRect.anchorMax, Is.EqualTo(Vector2.one));
+        }
+
+        [Test]
+        public void Thumbnail_IsTheWireframeSize()
+        {
+            Assert.That(overlay.ThumbnailRect.sizeDelta.x, Is.EqualTo(HouseProfileOverlay.ThumbnailSizePx));
+            Assert.That(overlay.ThumbnailRect.sizeDelta.y, Is.EqualTo(HouseProfileOverlay.ThumbnailSizePx));
+        }
+
+        [Test]
+        public void LevelBadge_ShowsLvNPlusFourPips_WithTheCurrentLevelFilled()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.LevelLabel.text, Is.EqualTo("Lv 2"));
+            Assert.That(overlay.LevelPips.Count, Is.EqualTo(4));
+            Assert.That(overlay.FilledPipCount, Is.EqualTo(2),
+                "filled pips = current level");
+        }
+
+        [Test]
+        public void Overlay_StartsClosed()
+        {
+            Assert.That(overlay.IsOpen, Is.False);
+        }
+
+        [Test]
+        public void Open_BuildsAResidentRowPerDog_FromTheirCoreData()
+        {
+            var residents = new List<Dog>
+            {
+                ResidentDog("Biscuit", Breed.FrenchBulldog),
+                ResidentDog("Nugget", Breed.FrenchBulldog),
+            };
+
+            overlay.Open(HouseAt(2, false), residents);
+
+            Assert.That(overlay.IsOpen, Is.True);
+            Assert.That(overlay.Residents.Count, Is.EqualTo(2));
+            Assert.That(overlay.Residents[0].NameLabel.text, Is.EqualTo("Biscuit"));
+            Assert.That(overlay.Residents[0].BreedChipLabel.text, Is.EqualTo("French Bulldog"));
+            Assert.That(overlay.Residents[1].NameLabel.text, Is.EqualTo("Nugget"));
+            Assert.That(overlay.EmptyStateLabel.gameObject.activeSelf, Is.False,
+                "the empty state is hidden when the house has residents");
+        }
+
+        [Test]
+        public void TappingAResidentRow_RequestsThatDogsProfile()
+        {
+            var biscuit = ResidentDog("Biscuit", Breed.FrenchBulldog);
+            var nugget = ResidentDog("Nugget", Breed.FrenchBulldog);
+            Dog selected = null;
+            overlay.ResidentSelected += dog => selected = dog;
+
+            overlay.Open(HouseAt(2, false), new List<Dog> { biscuit, nugget });
+            overlay.Residents[1].Button.onClick.Invoke();
+
+            Assert.That(selected, Is.SameAs(nugget),
+                "a resident row opens that dog's profile (#165)");
+        }
+
+        [Test]
+        public void VacantHouse_ShowsTheEmptyState_AndOffersNoUpgrade()
+        {
+            overlay.Open(HouseAt(1, true), new List<Dog>());
+
+            Assert.That(overlay.Residents.Count, Is.EqualTo(0));
+            Assert.That(overlay.EmptyStateLabel.gameObject.activeSelf, Is.True);
+            Assert.That(overlay.EmptyStateLabel.text, Is.EqualTo("No dogs live here yet."));
+            Assert.That(overlay.UpgradeButtonRect.gameObject.activeSelf, Is.False,
+                "no Upgrade action is offered for a vacant house (house-profile.md)");
+        }
+
+        [Test]
+        public void OccupiedHouse_ShowsTheUpgradeButtonWithTheNextCost()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButtonRect.gameObject.activeSelf, Is.True);
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Upgrade · 200"));
+            Assert.That(overlay.UpgradeButton.interactable, Is.True);
+            Assert.That(overlay.UpgradeButtonRect.sizeDelta.y, Is.EqualTo(HouseProfileOverlay.UpgradeButtonHeightPx));
+        }
+
+        [Test]
+        public void MaxLevelHouse_DisablesTheUpgradeButtonIntoAMaxLevelState()
+        {
+            overlay.Open(HouseAt(4, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButtonRect.gameObject.activeSelf, Is.True);
+            Assert.That(overlay.UpgradeButtonLabel.text, Is.EqualTo("Max level"));
+            Assert.That(overlay.UpgradeButton.interactable, Is.False);
+        }
+
+        [Test]
+        public void UpgradeButton_RaisesTheUpgradeEntryPointEvent_ForThisHouse()
+        {
+            var house = HouseAt(2, false);
+            House requested = null;
+            overlay.UpgradeRequested += h => requested = h;
+
+            overlay.Open(house, new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+            overlay.Upgrade();
+
+            Assert.That(requested, Is.SameAs(house),
+                "the Upgrade button is the #59 entry point — the flow itself is #294");
+        }
+
+        [Test]
+        public void Close_HidesThePanel()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+            overlay.Close();
+
+            Assert.That(overlay.IsOpen, Is.False);
+        }
+
+        [Test]
+        public void Reopening_RebuildsTheResidentRows_ForTheNewHouse()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog>
+            {
+                ResidentDog("Biscuit", Breed.FrenchBulldog),
+                ResidentDog("Nugget", Breed.FrenchBulldog),
+            });
+            overlay.Open(HouseAt(1, false), new List<Dog> { ResidentDog("Rex", Breed.Beagle) });
+
+            Assert.That(overlay.Residents.Count, Is.EqualTo(1));
+            Assert.That(overlay.Residents[0].NameLabel.text, Is.EqualTo("Rex"));
+        }
+
+        [Test]
+        public void Labels_UseTheBundledFont_NotAnEditorOnlyBuiltinLookup()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+            var font = overlay.LevelLabel.font;
+
+            Assert.That(font, Is.Not.Null,
+                "the level label has no font — it would draw nothing in the Android build (#291)");
+            Assert.That(font.name, Does.Contain("DejaVu"));
+            Assert.That(font.name, Does.Not.Contain("Arial"));
+        }
+    }
+}

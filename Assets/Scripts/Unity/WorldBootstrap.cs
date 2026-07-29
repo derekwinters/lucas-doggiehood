@@ -53,7 +53,13 @@ namespace Doggiehood.Unity
 
             // Dog profile overlay (#165): tapping a dog's body opens it. Its
             // Home button flies the camera to that dog's house.
-            BuildDogProfileOverlay(canvas, root.transform);
+            var dogProfile = BuildDogProfileOverlay(canvas, root.transform);
+
+            // House profile overlay (#208): tapping a house opens it. A
+            // resident row opens that dog's profile (the reciprocal of the dog
+            // profile's Home button); the Upgrade button is the #59 entry point
+            // (the flow itself is #294).
+            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
 
             // Persistent HUD (#159): graybox currency chip, restyled by #65.
             // The top-right gear opens Settings (#219).
@@ -128,6 +134,68 @@ namespace Doggiehood.Unity
             overlay.Init();
             overlay.HomeRequested += houseId => FlyCameraToHouse(houseId, worldRoot);
             return overlay;
+        }
+
+        /// <summary>
+        /// Builds the house profile overlay (#208) under the shared canvas and
+        /// wires it up: tapping any <see cref="HouseView"/> opens the profile
+        /// for that house and its residents (the dogs living there); a resident
+        /// row opens that dog's profile via the dog overlay; the Upgrade button
+        /// raises the #59 entry-point event (whose own flow is #294, so nothing
+        /// is subscribed to it here yet). The overlay decides its own display
+        /// from Core (<see cref="Doggiehood.Core.World.HouseProfile"/>); this
+        /// only resolves which dogs live in the tapped house.
+        /// </summary>
+        private HouseProfileOverlay BuildHouseProfileOverlay(
+            GameObject canvas, GameState state, Transform worldRoot, DogProfileOverlay dogProfile)
+        {
+            var overlayObject = new GameObject("HouseProfileOverlay");
+            overlayObject.transform.SetParent(canvas.transform, false);
+            var overlay = overlayObject.AddComponent<HouseProfileOverlay>();
+            overlay.Init();
+
+            overlay.ResidentSelected += dog => dogProfile.Open(dog);
+
+            foreach (var view in worldRoot.GetComponentsInChildren<HouseView>())
+            {
+                var houseId = view.HouseId;
+                view.Tapped += () => OpenHouseProfile(overlay, state, houseId);
+            }
+
+            return overlay;
+        }
+
+        /// <summary>Opens the house profile (#208) for the tapped house,
+        /// resolving its Core <see cref="House"/> and the dogs that live there
+        /// (residents) from the live state. A no-op if the house id isn't found
+        /// (e.g. a lot with no committed house yet).</summary>
+        private static void OpenHouseProfile(HouseProfileOverlay overlay, GameState state, int houseId)
+        {
+            House house = null;
+            foreach (var candidate in state.Houses)
+            {
+                if (candidate.Id == houseId)
+                {
+                    house = candidate;
+                    break;
+                }
+            }
+
+            if (house == null)
+            {
+                return;
+            }
+
+            var residents = new System.Collections.Generic.List<Doggiehood.Core.Dogs.Dog>();
+            foreach (var dog in state.Dogs)
+            {
+                if (dog.HouseId == houseId)
+                {
+                    residents.Add(dog);
+                }
+            }
+
+            overlay.Open(house, residents);
         }
 
         /// <summary>Recentres the camera on a house lot (#165 Home button):
