@@ -710,11 +710,35 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#grid-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grid coordinates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-17-tile-types" class="md-nav__link">
     <span class="md-ellipsis">
       The 17 tile types
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="The 17 tile types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tile codes — connectivity as a single source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1537,11 +1561,35 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#grid-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grid coordinates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-17-tile-types" class="md-nav__link">
     <span class="md-ellipsis">
       The 17 tile types
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="The 17 tile types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tile codes — connectivity as a single source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1623,12 +1671,17 @@
 </tr>
 </tbody>
 </table>
+<h2 id="grid-coordinates">Grid coordinates<a class="headerlink" href="#grid-coordinates" title="Permanent link">&para;</a></h2>
+<p>The world is an integer tile grid addressed as <strong><code>(x, y)</code></strong> — <code>x</code> runs east/west, <code>y</code> runs north/south. In Core these map to <code>TileCoordinate.Col</code> (<code>x</code>) and <code>TileCoordinate.Row</code> (<code>y</code>); world-space is derived by <code>TileGeometry</code> (<code>Col → +X</code>, <code>Row → +Z</code>). The starting <code>FourWay</code> intersection is the origin <strong><code>(0, 0)</code></strong>; the tile directly north of it is <strong><code>(0, 1)</code></strong>, directly east is <strong><code>(1, 0)</code></strong>.</p>
+<p>A tile's identity is its integer <code>(x, y)</code>; a type name's compass suffix (e.g. <code>CulDeSacEast</code>) describes <em>which edge carries the road</em>, <strong>not</strong> where the tile sits on the map. Position comes from the coordinate, connectivity from the type/code below — keeping the two separate avoids the "is that northwest or is that an east-facing cul-de-sac?" confusion.</p>
 <h2 id="the-17-tile-types">The 17 tile types<a class="headerlink" href="#the-17-tile-types" title="Permanent link">&para;</a></h2>
 <p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the other 16 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>).</p>
+<p>The <strong>Code</strong> column is the compact authoring token (see <a href="#tile-codes-connectivity-as-a-single-source">Tile codes</a> below); it encodes the same road edges as the "Road edges" column.</p>
 <table>
 <thead>
 <tr>
 <th>Type</th>
+<th>Code</th>
 <th>Road edges</th>
 <th>Sketch</th>
 </tr>
@@ -1636,91 +1689,111 @@
 <tbody>
 <tr>
 <td><code>FourWay</code></td>
+<td><code>NSEW.</code></td>
 <td>N,S,E,W</td>
 <td><code>╋</code> — the starting tile</td>
 </tr>
 <tr>
 <td><code>StraightNS</code></td>
+<td><code>NS--.</code></td>
 <td>N,S</td>
 <td><code>┃</code></td>
 </tr>
 <tr>
 <td><code>StraightEW</code></td>
+<td><code>--EW.</code></td>
 <td>E,W</td>
 <td><code>━</code></td>
 </tr>
 <tr>
 <td><code>TurnNE</code></td>
+<td><code>N-E-.</code></td>
 <td>N,E</td>
 <td><code>┗</code></td>
 </tr>
 <tr>
 <td><code>TurnNW</code></td>
+<td><code>N--W.</code></td>
 <td>N,W</td>
 <td><code>┛</code></td>
 </tr>
 <tr>
 <td><code>TurnSE</code></td>
+<td><code>-SE-.</code></td>
 <td>S,E</td>
 <td><code>┏</code></td>
 </tr>
 <tr>
 <td><code>TurnSW</code></td>
+<td><code>-S-W.</code></td>
 <td>S,W</td>
 <td><code>┓</code></td>
 </tr>
 <tr>
 <td><code>TeeNorth</code></td>
+<td><code>N-EW.</code></td>
 <td>E,W,N</td>
 <td><code>┻</code> (east/west with north half only — upside-down T)</td>
 </tr>
 <tr>
 <td><code>TeeSouth</code></td>
+<td><code>-SEW.</code></td>
 <td>E,W,S</td>
 <td><code>┳</code> (east/west with south half only — T)</td>
 </tr>
 <tr>
 <td><code>TeeEast</code></td>
+<td><code>NSE-.</code></td>
 <td>N,S,E</td>
 <td><code>┣</code> (north/south with east only)</td>
 </tr>
 <tr>
 <td><code>TeeWest</code></td>
+<td><code>NS-W.</code></td>
 <td>N,S,W</td>
 <td><code>┫</code> (north/south with west only)</td>
 </tr>
 <tr>
 <td><code>CulDeSacNorth</code></td>
+<td><code>N---.</code></td>
 <td>N</td>
 <td><code>╹</code> road enters from the north edge, ends in a bulb</td>
 </tr>
 <tr>
 <td><code>CulDeSacSouth</code></td>
+<td><code>-S--.</code></td>
 <td>S</td>
 <td><code>╻</code></td>
 </tr>
 <tr>
 <td><code>CulDeSacEast</code></td>
+<td><code>--E-.</code></td>
 <td>E</td>
 <td><code>╺</code></td>
 </tr>
 <tr>
 <td><code>CulDeSacWest</code></td>
+<td><code>---W.</code></td>
 <td>W</td>
 <td><code>╸</code></td>
 </tr>
 <tr>
 <td><code>OpposingTurnsNS</code></td>
+<td><code>NSEW\</code></td>
 <td>N,E,S,W</td>
 <td><code>⬭</code> a NE-corner turn arc and an unrelated SW-corner turn arc — one bowing north(-east), one bowing south(-west) — enclosing a central island, <strong>not</strong> connected to each other</td>
 </tr>
 <tr>
 <td><code>OpposingTurnsEW</code></td>
+<td><code>NSEW/</code></td>
 <td>N,E,S,W</td>
 <td><code>⬯</code> the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other</td>
 </tr>
 </tbody>
 </table>
+<h3 id="tile-codes-connectivity-as-a-single-source">Tile codes — connectivity as a single source<a class="headerlink" href="#tile-codes-connectivity-as-a-single-source" title="Permanent link">&para;</a></h3>
+<p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag — <code>.</code> for an ordinary single junction or dead-end, and <code>\</code> / <code>/</code> for the two <code>OpposingTurns</code> tiles, where the slash marks the wall between the tile's two disconnected arcs: <code>\</code> separates {N,E} from {S,W} (so the arcs are NE + SW = <code>OpposingTurnsNS</code>), <code>/</code> separates {N,W} from {S,E} (NW + SE = <code>OpposingTurnsEW</code>).</p>
+<p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
 <h2 id="resolved-opposing-turn-arches-do-not-join-into-a-loop">Resolved: opposing-turn arches do not join into a loop<a class="headerlink" href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" title="Permanent link">&para;</a></h2>
 <p><em>Resolved 2026-07-18 by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, overriding the earlier #105 "loop/island" framing below</em></p>
 <blockquote>
