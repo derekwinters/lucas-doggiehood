@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Onboarding;
 
@@ -233,7 +234,11 @@ namespace Doggiehood.Core.World
                 return false;
             }
 
-            houses.Add(new House(houseId, lot.Quadrant));
+            // #299: a zone-built house rolls its art variant (ladder + tint)
+            // once, here — assign-once, deterministic per id, and persisted
+            // (SaveCodec) so it survives relaunch and its L1->L4 upgrades.
+            houses.Add(new House(houseId, lot.Quadrant,
+                variant: HouseVariantAssignment.ForHouse(houseId)));
             AdvanceRewardChain(OnboardingRewardStep.BuildHouse);
             return true;
         }
@@ -326,6 +331,33 @@ namespace Doggiehood.Core.World
                 zone.PlaceOnto(Map);
                 unlockedZones.Add(zone);
             }
+        }
+
+        /// <summary>
+        /// #299: restores a zone-built house on load — recreates the
+        /// <see cref="House"/> at its persisted level/vacancy carrying its
+        /// persisted <see cref="HouseVariant"/> (ladder + tint), WITHOUT
+        /// charging the wallet or advancing the reward chain (the parallel of
+        /// <see cref="RestoreUnlockedZoneCount"/> / <see cref="RestoreRewardChainStep"/>).
+        /// The house's quadrant comes from its lot in the already-restored
+        /// unlocked zones, so <see cref="RestoreUnlockedZoneCount"/> must run
+        /// first (SaveCodec emits zones before houses). Defensively a no-op if
+        /// the lot already has a house or its zone isn't unlocked.
+        /// </summary>
+        public void RestoreBuiltHouse(int houseId, int level, bool isVacant, HouseVariant variant)
+        {
+            if (!IsLotBuildable(houseId))
+            {
+                return;
+            }
+
+            var lot = FindLotInUnlockedZones(houseId);
+            if (lot == null)
+            {
+                return;
+            }
+
+            houses.Add(new House(houseId, lot.Quadrant, isVacant, level, variant));
         }
 
         /// <summary>

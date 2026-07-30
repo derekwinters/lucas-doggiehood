@@ -81,5 +81,41 @@ namespace Doggiehood.Core.Art
         /// "Grey or black lock icon if can't purchase.").
         /// </summary>
         public const string ExpansionIndicatorLockedHex = "#4A4A4A";
+
+        /// <summary>Fixed saturation of every generated house tint (#299,
+        /// Derek 2026-07-28): 20 hues evenly around the wheel all share this
+        /// S so the whole palette reads as one bright, playful family.</summary>
+        public const float HouseTintSaturation = 0.70f;
+
+        /// <summary>Fixed value (brightness) of every generated house tint
+        /// (#299).</summary>
+        public const float HouseTintValue = 0.90f;
+
+        /// <summary>Hue spacing (degrees) between consecutive house tints —
+        /// derived from the palette size so the 20 tints sit evenly around the
+        /// wheel (H_i = i x 18 deg). Retuning the count retunes the spacing;
+        /// there is no second hard-coded 18.</summary>
+        public const float HouseTintHueStepDegrees = 360f / HouseVariantAssignment.TintCount;
+
+        /// <summary>
+        /// The #299 zone-house tint at <paramref name="index"/> (0-based, in
+        /// 0..<see cref="HouseVariantAssignment.TintCount"/>-1), GENERATED from
+        /// the even-hue HSV rule (hue = index x <see cref="HouseTintHueStepDegrees"/>,
+        /// fixed <see cref="HouseTintSaturation"/>/<see cref="HouseTintValue"/>)
+        /// rather than stored as a literal — so a house persists its tint
+        /// INDEX (SaveCodec) and survives any palette retune. Applied as a
+        /// material color-multiply over the mesh (the ApplyVacancyTint
+        /// technique), not a kit-texture-variant swap.
+        /// </summary>
+        public static string HouseTintHex(int index)
+        {
+            if (index < 0 || index >= HouseVariantAssignment.TintCount)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(index), index, $"House tint index must be 0..{HouseVariantAssignment.TintCount - 1}.");
+            }
+
+            return ColorRgb.FromHsv(index * HouseTintHueStepDegrees, HouseTintSaturation, HouseTintValue).ToHex();
+        }
     }
 }

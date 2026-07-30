@@ -855,26 +855,53 @@ namespace Doggiehood.Unity
             anchor.localRotation = Quaternion.LookRotation(facing, Vector3.up);
             view.WindowAnchor = anchor;
 
-            // #59: render the mesh for the house's CURRENT level from
-            // HouseLevelModelTable — a level-1 house shows its anchored
-            // as-built mesh, and upgrading swaps in the next rung. Two things
-            // steer to the graybox fallback below instead: a house built on a
-            // zone lot beyond the starting 4 has no ladder (#57,
-            // per-zone-house styling undesigned), and the L2-L4 upgrade
-            // meshes have no authored HouseModelCatalog geometry yet
-            // (HasModel false) so they render graybox until a later art pass.
-            // The lot footprint is untouched either way — leveling never
-            // resizes the lot.
-            var levelModelName = HouseLevelModelTable.HasHouse(house.Id)
-                ? HouseModelResourcePath(house.Id, house.Level)
-                : null;
+            // Render the mesh for the house's CURRENT level, then steer to the
+            // graybox fallback below only when no kit mesh can be resolved.
+            // Two kinds of house resolve a mesh:
+            //   * a starter house (ids 1-4, #59): its fixed per-house ladder
+            //     from HouseLevelModelTable, tinted by its HouseStyleTable kit
+            //     texture variant.
+            //   * a zone-built house (id >= 5, #299): its rolled HouseVariant's
+            //     ladder mesh, tinted by the generated palette color-multiply.
+            // Leveling swaps the mesh within the same ladder and never resizes
+            // the lot. A zone house with no rolled variant (constructed
+            // directly, or an unknown expansion id) resolves no mesh and falls
+            // back to graybox, as does any mesh missing a catalog entry.
+            var isZoneHouse = HouseVariantAssignment.IsZoneHouse(house.Id);
+            string levelModelName;
+            if (isZoneHouse)
+            {
+                levelModelName = house.Variant.HasValue
+                    ? HouseLevelModelTable.ForHouseLevel(house.Variant.Value.LadderId, house.Level)
+                    : null;
+            }
+            else
+            {
+                levelModelName = HouseLevelModelTable.HasHouse(house.Id)
+                    ? HouseModelResourcePath(house.Id, house.Level)
+                    : null;
+            }
+
             var model = (ForcePrimitiveFallback || levelModelName == null || !HouseModelCatalog.HasModel(levelModelName))
                 ? null
                 : Resources.Load<GameObject>(levelModelName);
             if (model != null)
             {
-                var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
-                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant, house.IsVacant);
+                if (isZoneHouse)
+                {
+                    // #299: no HouseStyleTable style for zone houses — the
+                    // per-house look is the generated palette tint (Colormap
+                    // texture, no variant swap), applied as a color-multiply.
+                    var paletteTintHex = Palette.HouseTintHex(house.Variant.Value.TintIndex);
+                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot),
+                        HouseTintVariant.Colormap, paletteTintHex, house.IsVacant);
+                }
+                else
+                {
+                    var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
+                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant, null, house.IsVacant);
+                }
+
                 return houseRoot;
             }
 
@@ -927,7 +954,7 @@ namespace Doggiehood.Unity
         /// walls/roof/porch are built in this path.
         /// </summary>
         private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing,
-            HouseTintVariant tintVariant, bool isVacant)
+            HouseTintVariant tintVariant, string paletteTintHex, bool isVacant)
         {
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
@@ -937,6 +964,7 @@ namespace Doggiehood.Unity
             visual.transform.localScale = Vector3.one * HouseKitScale;
 
             ApplyTintVariant(visual, tintVariant);
+            ApplyPaletteTint(visual, paletteTintHex);
             ApplyVacancyTint(visual, isVacant);
 
             // houseRoot has identity rotation and unit scale at this point,
@@ -997,6 +1025,34 @@ namespace Doggiehood.Unity
                     ? new Material(renderer.sharedMaterial)
                     : new Material(Shader.Find("Standard"));
                 material.mainTexture = texture;
+                renderer.sharedMaterial = material;
+            }
+        }
+
+        /// <summary>
+        /// Multiplies a zone-built house's rolled palette tint over its mesh
+        /// (#299): the generated <see cref="Palette.HouseTintHex"/> color for
+        /// the house's <see cref="HouseVariant.TintIndex"/>, applied with the
+        /// same material color-multiply technique as
+        /// <see cref="ApplyVacancyTint"/> and DogView.PaintModel — NOT a
+        /// kit-texture-variant swap. No-op when <paramref name="tintHex"/> is
+        /// null (a starter house, which is tinted by ApplyTintVariant instead).
+        /// Runs before ApplyVacancyTint so the vacancy grey still wins while a
+        /// house is vacant; the palette color shows once a dog moves in.
+        /// </summary>
+        private static void ApplyPaletteTint(GameObject visual, string tintHex)
+        {
+            if (tintHex == null)
+            {
+                return;
+            }
+
+            foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.color = CoreColors.FromHex(tintHex);
                 renderer.sharedMaterial = material;
             }
         }

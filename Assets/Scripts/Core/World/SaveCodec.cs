@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.Onboarding;
 
 namespace Doggiehood.Core.World
@@ -34,6 +35,28 @@ namespace Doggiehood.Core.World
             {
                 builder.Append("zones=")
                     .Append(state.UnlockedZones.Count.ToString(CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
+            // #299: zone-built houses (id >= 5). The 4 starters are recreated
+            // by GameState.CreateNew every load, so only zone houses need
+            // persisting — each as id|level|isVacant|ladderId|tintIndex so its
+            // rolled art variant (ladder + tint) and progress survive relaunch.
+            // Emitted AFTER zones= so the lots exist when the load replays them.
+            foreach (var house in state.Houses)
+            {
+                if (!HouseVariantAssignment.IsZoneHouse(house.Id) || !house.Variant.HasValue)
+                {
+                    continue;
+                }
+
+                var variant = house.Variant.Value;
+                builder.Append("house=")
+                    .Append(house.Id.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(house.Level.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(house.IsVacant ? "1" : "0").Append('|')
+                    .Append(variant.LadderId.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(variant.TintIndex.ToString(CultureInfo.InvariantCulture))
                     .Append('\n');
             }
 
@@ -122,6 +145,20 @@ namespace Doggiehood.Core.World
                 else if (key == "zones")
                 {
                     state.RestoreUnlockedZoneCount(int.Parse(value, CultureInfo.InvariantCulture));
+                }
+                else if (key == "house")
+                {
+                    // #299: id|level|isVacant|ladderId|tintIndex — restore the
+                    // zone house with its persisted variant. Relies on zones=
+                    // having been processed already (emitted earlier).
+                    var parts = value.Split('|');
+                    state.RestoreBuiltHouse(
+                        int.Parse(parts[0], CultureInfo.InvariantCulture),
+                        int.Parse(parts[1], CultureInfo.InvariantCulture),
+                        parts[2] == "1",
+                        new HouseVariant(
+                            int.Parse(parts[3], CultureInfo.InvariantCulture),
+                            int.Parse(parts[4], CultureInfo.InvariantCulture)));
                 }
                 else if (key == "coins")
                 {
