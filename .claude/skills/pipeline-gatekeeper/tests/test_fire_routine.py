@@ -57,5 +57,40 @@ class TestBuildFireRequest(unittest.TestCase):
         self.assertIn(self.REPO, text)
 
 
+class TestInterpretFireResponse(unittest.TestCase):
+    """`interpret_fire_response(status, body)` decides whether a fire actually
+    created a session — so the workflow log stops reporting a false "fired" on
+    any 2xx (#380). Success requires a real `routine_fire` body carrying a
+    session URL; anything else is a failure whose detail names the status and
+    body so the cause is visible in the log."""
+
+    ROUTINE_FIRE = (b'{"type": "routine_fire", "claude_code_session_id": '
+                    b'"session_01X", "claude_code_session_url": '
+                    b'"https://claude.ai/code/session_01X"}')
+
+    def test_real_routine_fire_is_success_and_returns_session_url(self):
+        ok, detail = fire_routine.interpret_fire_response(200, self.ROUTINE_FIRE)
+        self.assertTrue(ok)
+        self.assertIn("https://claude.ai/code/session_01X", detail)
+
+    def test_2xx_without_session_url_is_not_success(self):
+        # e.g. AI_TRIAGE_URL pointed at a page that returned a 200 HTML body.
+        ok, detail = fire_routine.interpret_fire_response(
+            200, b"<!doctype html><html>...</html>")
+        self.assertFalse(ok)
+        self.assertIn("200", detail)
+
+    def test_http_error_status_and_body_surface_in_detail(self):
+        ok, detail = fire_routine.interpret_fire_response(
+            401, b'{"error": {"message": "invalid bearer token"}}')
+        self.assertFalse(ok)
+        self.assertIn("401", detail)
+        self.assertIn("invalid bearer token", detail)
+
+    def test_empty_body_is_not_success(self):
+        ok, _ = fire_routine.interpret_fire_response(200, b"")
+        self.assertFalse(ok)
+
+
 if __name__ == "__main__":
     unittest.main()
