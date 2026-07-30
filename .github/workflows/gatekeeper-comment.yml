@@ -46,4 +46,9 @@ jobs:
       - name: Process the comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Reactive triage (#378): when a command newly adds `ai-triage`, the
+          # script fires the analysis Routine via this per-routine endpoint +
+          # bearer token. Absent → the fire is a clean no-op.
+          AI_TRIAGE_URL: ${{ secrets.AI_TRIAGE_URL }}
+          AI_TRIAGE_SECRET: ${{ secrets.AI_TRIAGE_SECRET }}
         run: python3 .claude/skills/pipeline-gatekeeper/run_comment_event.py

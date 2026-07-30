@@ -25,6 +25,24 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from parse_commands import MENUS  # noqa: E402
 
+TRIAGE_LABEL = "ai-triage"
+
+
+def fires_triage(current_labels, new_labels):
+    """True when a label transition *newly* adds ``ai-triage``.
+
+    The reactive-triage hook (#378): the instant the gatekeeper adds
+    ``ai-triage`` to an issue, the workflow fires the analysis Routine for that
+    issue (``fire_routine.fire``) so triage runs immediately instead of waiting
+    for the next scheduled routine. Computed from the transition — the label
+    set *before* vs *after* the PATCH — not from ``action["add_labels"]``
+    alone, so a no-op re-add of a label the issue already carries never
+    re-fires (idempotent re-runs, e.g. the cron missed-command net
+    re-processing an already-admitted issue, stay silent).
+    """
+    return (TRIAGE_LABEL in set(new_labels)
+            and TRIAGE_LABEL not in set(current_labels))
+
 
 def merge_labels(current_labels, action):
     """Compute the full label list to PATCH.
