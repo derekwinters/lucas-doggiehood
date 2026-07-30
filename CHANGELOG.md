@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.6.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.5.0...v0.6.0) (2026-07-30)
+
+
+### Features
+
+* add 4-step onboarding reward-chain ([#365](https://github.com/derekwinters/lucas-doggiehood/issues/365)) ([174e147](https://github.com/derekwinters/lucas-doggiehood/commit/174e1478d7f1e34d39e8427c14d8cdb556051085))
+* add house profile view (level, residents, upgrade entry point) ([#355](https://github.com/derekwinters/lucas-doggiehood/issues/355)) ([9a9c047](https://github.com/derekwinters/lucas-doggiehood/commit/9a9c047758b1f58a10e0b53d21e2e70dc6b896a6))
+* add HouseModelCatalog rows for 5th-ladder meshes o/p/a ([#387](https://github.com/derekwinters/lucas-doggiehood/issues/387)) ([0f42d8b](https://github.com/derekwinters/lucas-doggiehood/commit/0f42d8b0615e52a2ad3a2430f9049048187c472a)), closes [#348](https://github.com/derekwinters/lucas-doggiehood/issues/348)
+* gate quest cost tiers by dog population ([#366](https://github.com/derekwinters/lucas-doggiehood/issues/366)) ([81f622f](https://github.com/derekwinters/lucas-doggiehood/commit/81f622f74f484ac8748cc529dd2584073d32274f))
+* give approach-to-rest real walk-to-decoration movement ([#353](https://github.com/derekwinters/lucas-doggiehood/issues/353)) ([580db4c](https://github.com/derekwinters/lucas-doggiehood/commit/580db4c4240eb6345a31f154a0e9959e58a2f9fd))
+* open a dog profile view when tapping a dog ([#354](https://github.com/derekwinters/lucas-doggiehood/issues/354)) ([f130c66](https://github.com/derekwinters/lucas-doggiehood/commit/f130c6698a1ae4b0f431310917ccb9101c7e7dc9))
+* **pipeline:** fire analysis Routine reactively when an issue gains ai-triage ([#379](https://github.com/derekwinters/lucas-doggiehood/issues/379)) ([b2ce425](https://github.com/derekwinters/lucas-doggiehood/commit/b2ce425c271ac09994dcb1966bddee83b2860ac9))
+* render lost-item puppy with the shared dog model ([#388](https://github.com/derekwinters/lucas-doggiehood/issues/388)) ([4079599](https://github.com/derekwinters/lucas-doggiehood/commit/4079599b2f7264a6b8347b46644072340d8860c2)), closes [#335](https://github.com/derekwinters/lucas-doggiehood/issues/335)
+* restyle empty-lot marker as a raised foundation slab ([#390](https://github.com/derekwinters/lucas-doggiehood/issues/390)) ([1af926c](https://github.com/derekwinters/lucas-doggiehood/commit/1af926cc064268ec48aec72454398978667b8eee)), closes [#300](https://github.com/derekwinters/lucas-doggiehood/issues/300)
+* restyle HUD currency chip to Candy Cottage chrome ([#361](https://github.com/derekwinters/lucas-doggiehood/issues/361)) ([1625bdc](https://github.com/derekwinters/lucas-doggiehood/commit/1625bdc59bf48b934d2075217d63b02d5d165e98))
+* restyle onboarding overlay to Candy Cottage chrome ([#362](https://github.com/derekwinters/lucas-doggiehood/issues/362)) ([4566679](https://github.com/derekwinters/lucas-doggiehood/commit/456667951e3d6a72d53cd7fdd99dca69f73be102))
+* restyle settings panel to Candy Cottage chrome ([#363](https://github.com/derekwinters/lucas-doggiehood/issues/363)) ([f5f872b](https://github.com/derekwinters/lucas-doggiehood/commit/f5f872bb1db7dadfe074f56226d9bb79fa939ab7))
+* wire map-expansion unlock trigger to the tappable lock icon ([#367](https://github.com/derekwinters/lucas-doggiehood/issues/367)) ([5919eb1](https://github.com/derekwinters/lucas-doggiehood/commit/5919eb18894d8da09a0f7c203ac0f1246792f1c6))
+* **world:** real art pass for zone-built houses (rolled ladder + palette tint) ([#391](https://github.com/derekwinters/lucas-doggiehood/issues/391)) ([240b711](https://github.com/derekwinters/lucas-doggiehood/commit/240b7113d683a661348c3d3dc1ca673c2fb76fbc)), closes [#299](https://github.com/derekwinters/lucas-doggiehood/issues/299)
+
+
+### Bug Fixes
+
+* attach release APK from the release-please run ([#386](https://github.com/derekwinters/lucas-doggiehood/issues/386)) ([d3d5b88](https://github.com/derekwinters/lucas-doggiehood/commit/d3d5b8817f2bbff6a9dcb65e813a270f201a749f))
+* **pipeline:** persist /focus (and /cap) by re-rendering the dashboard ([#350](https://github.com/derekwinters/lucas-doggiehood/issues/350)) ([aa421e3](https://github.com/derekwinters/lucas-doggiehood/commit/aa421e3003b843424f3f56b32c52f76c86bbb3a0))
+* **pipeline:** validate the routine_fire response so triage fires aren't false positives ([#381](https://github.com/derekwinters/lucas-doggiehood/issues/381)) ([26316bb](https://github.com/derekwinters/lucas-doggiehood/commit/26316bbba62a097903025b75e41063973a286388))
+* **world:** offset backyard fences from the sidewalk on road-bordering lot edges ([#389](https://github.com/derekwinters/lucas-doggiehood/issues/389)) ([e5998a4](https://github.com/derekwinters/lucas-doggiehood/commit/e5998a42f76e916627e5113efcbc649f06479e55)), closes [#147](https://github.com/derekwinters/lucas-doggiehood/issues/147)
+
 ## [0.5.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.4.0...v0.5.0) (2026-07-28)
 
 
