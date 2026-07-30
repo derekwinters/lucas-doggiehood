@@ -186,6 +186,34 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Models_RecordTheMeasuredFootprints_ForTheFifthLadderMeshes()
+        {
+            // The 5th-house-ladder meshes staged for #299 (#348 asset step,
+            // Derek-approved option B — agent-computed footprints). Footprints
+            // measured from each kit FBX bounding-box extent / 100 — the same
+            // model-local convention b/g/k/m and the r/h/q L1 starters use.
+            // building-type-m already carries its own row (asserted above).
+            AssertEntry("building-type-o", 1.2700f, 1.0280f);
+            AssertEntry("building-type-p", 1.2400f, 0.9900f);
+            AssertEntry("building-type-a", 1.3000f, 1.0281f);
+        }
+
+        [Test]
+        public void Models_DoorLocalPoints_ForTheFifthLadderMeshes_ArePlaceholders()
+        {
+            // PLACEHOLDER door anchors for the 5th-ladder meshes, NOT authored
+            // measurements: centered on X and a quarter of the way toward the
+            // street (z = -FootprintZ/4) — the same provisional pattern as the
+            // r/h/q L1 starters and the L2-L4 ladder meshes, pending a Derek
+            // gallery authoring pass (the mechanism that produced the #126
+            // pass-1 door data for b/g/k/m). They sit strictly inside the
+            // footprint so the within-footprint guardrail holds.
+            AssertDoor("building-type-o", 0f, -0.2570f);
+            AssertDoor("building-type-p", 0f, -0.2475f);
+            AssertDoor("building-type-a", 0f, -0.2570f);
+        }
+
+        [Test]
         public void Models_DoorLocalPoints_LieStrictlyWithinTheFootprint()
         {
             // Guardrail (replacing the pre-gallery facade-plane rule): a

@@ -89,6 +89,22 @@ namespace Doggiehood.Core.World
             new HouseModel("building-type-e", 1.3000f, 1.0280f, 0f, -0.2570f),
             new HouseModel("building-type-u", 1.4280f, 1.0869f, 0f, -0.2717f),
             new HouseModel("building-type-n", 1.7843f, 1.3779f, 0f, -0.3445f),
+
+            // 5th-house-ladder meshes staged for the #299 houses art pass
+            // (#348 asset step; building-type-m above already carries its
+            // own row). Footprints measured from each kit FBX bounding-box
+            // extent / 100 — the same model-local convention b/g/k/m, the
+            // r/h/q L1 starters, and the L2-L4 ladder meshes use.
+            //
+            // Door points are PROVISIONAL PLACEHOLDERS, not authored data:
+            // centered on X, a quarter of the footprint toward the street
+            // (z = -FootprintZ/4) — the same provisional pattern as the r/h/q
+            // and L2-L4 entries. They sit strictly inside the footprint so
+            // the within-footprint guardrail holds, and await a Derek gallery
+            // authoring pass to replace them with each mesh's real door anchor.
+            new HouseModel("building-type-o", 1.2700f, 1.0280f, 0f, -0.2570f),
+            new HouseModel("building-type-p", 1.2400f, 0.9900f, 0f, -0.2475f),
+            new HouseModel("building-type-a", 1.3000f, 1.0281f, 0f, -0.2570f),
         };
 
         public static HouseModel ForModel(string modelName)
