@@ -1,3 +1,5 @@
+using Doggiehood.Core.Art;
+
 namespace Doggiehood.Core.World
 {
     /// <summary>A house in the neighborhood, keyed to its lot (#38).</summary>
@@ -34,12 +36,26 @@ namespace Doggiehood.Core.World
         /// docs/specs/expansion.md#house-leveling.</summary>
         public int Level { get; private set; }
 
-        public House(int id, Quadrant quadrant, bool isVacant = true, int level = InitialLevel)
+        /// <summary>
+        /// This zone-built house's rolled art identity (#299): which of the
+        /// five ladders it renders through and which generated palette tint
+        /// multiplies over it (<see cref="HouseVariant"/>). Assigned once at
+        /// build (<see cref="GameState.TryBuildHouse"/>) from
+        /// <see cref="HouseVariantAssignment"/> and never re-rolled — leveling
+        /// swaps the mesh within the same ladder. Null for the four starting
+        /// houses (ids 1-4), which keep their fixed
+        /// <see cref="HouseStyleTable"/> ladder/tint.
+        /// </summary>
+        public HouseVariant? Variant { get; }
+
+        public House(int id, Quadrant quadrant, bool isVacant = true, int level = InitialLevel,
+            HouseVariant? variant = null)
         {
             Id = id;
             Quadrant = quadrant;
             IsVacant = isVacant;
             Level = level;
+            Variant = variant;
         }
 
         /// <summary>A household has moved in (#54) — vacancy never

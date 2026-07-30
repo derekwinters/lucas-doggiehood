@@ -27,6 +27,35 @@ namespace Doggiehood.Core.Tests.Art
         }
 
         [Test]
+        public void ForHouseLevel_ResolvesTheFifthZoneLadder()
+        {
+            // #299: zone-built houses (id >= 5) roll one of five ladders. The
+            // 5th ladder is size-ordered L1->L4 o -> p -> a -> m (Derek's
+            // approved draft order, 2026-07-28; m is the largest/top rung and
+            // was already catalogued).
+            Assert.That(HouseLevelModelTable.HasHouse(5), Is.True,
+                "the 5th zone ladder exists");
+            AssertLadder(5, "building-type-o", "building-type-p", "building-type-a", "building-type-m");
+        }
+
+        [Test]
+        public void FifthLadder_HasExactlyFourDistinctRungs_LikeTheOthers()
+        {
+            // #299 completeness: the new ladder is 4 rungs like every starter
+            // ladder — one past the cap is out of range, and no mesh repeats.
+            var meshes = new List<string>();
+            for (var level = HouseLevelModelTable.MinLevel; level <= HouseUpgradeNumbers.MaxLevel; level++)
+            {
+                meshes.Add(HouseLevelModelTable.ForHouseLevel(5, level));
+            }
+
+            Assert.That(meshes, Is.Unique, "the 5th ladder reuses a mesh across its levels");
+            Assert.That(() => HouseLevelModelTable.ForHouseLevel(5, HouseUpgradeNumbers.MaxLevel + 1),
+                Throws.InstanceOf<System.ArgumentOutOfRangeException>(),
+                "the 5th ladder must have exactly MaxLevel levels");
+        }
+
+        [Test]
         public void Level1_IsAnchoredOnTheHouseStyleTableMesh()
         {
             // The table is "anchored on L1": every house's level-1 entry must

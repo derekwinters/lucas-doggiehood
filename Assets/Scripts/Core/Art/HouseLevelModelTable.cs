@@ -37,6 +37,15 @@ namespace Doggiehood.Core.Art
             { 2, new[] { "building-type-h", "building-type-i", "building-type-g", "building-type-f" } },
             { 3, new[] { "building-type-k", "building-type-l", "building-type-j", "building-type-d" } },
             { 4, new[] { "building-type-q", "building-type-e", "building-type-u", "building-type-n" } },
+
+            // #299: the 5th ladder, added for the zone-house art pass. Unlike
+            // ladders 1-4 (each a starting house's fixed upgrade path), this
+            // one is a shared pool ladder that any zone-built house (id >= 5)
+            // may roll via Doggiehood.Core.Art.HouseVariantAssignment. Size-
+            // ordered L1->L4 o -> p -> a -> m (Derek's approved draft order,
+            // 2026-07-28; m is the largest/top rung and was already catalogued
+            // — every rung has a HouseModelCatalog entry as of #348).
+            { 5, new[] { "building-type-o", "building-type-p", "building-type-a", "building-type-m" } },
         };
 
         /// <summary>Non-throwing existence check: a house built beyond the
