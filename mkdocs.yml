@@ -90,4 +90,6 @@ nav:
       - CI/CD: engineering/ci-cd.md
       - Development Agent & Workflow: engineering/agent-workflow.md
       - AI Issue-Management Pipeline: engineering/issue-pipeline.md
+  - Tools:
+      - Map Builder: tools/index.md
       - Hand-Authoring Unity Serialized Assets: engineering/unity-serialization.md

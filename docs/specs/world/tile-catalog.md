@@ -57,6 +57,20 @@ The **Code** is a fixed-width connectivity token: slots 1–4 are the N/S/E/W ed
 
 Because the first four slots *are* the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the **single source** the Core `TileCatalog`, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see [#359](https://github.com/derekwinters/lucas-doggiehood/issues/359) for the Core unification that removes today's duplication (edges hand-listed in `TileCatalog.BuildDefinitions()` *and* re-typed in this table).
 
+Maps are drawn and validated with the [Map Builder](../../tools/index.md) tool, which reads these codes.
+
+## Property lots per tile
+
+*Design decisions 2026-07-30 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md); Core lot/geometry implementation tracked with the map-definition work ([#359](https://github.com/derekwinters/lucas-doggiehood/issues/359)).*
+
+Each tile offers up to four **property lots**, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see [Neighborhood Expansion](../expansion.md)):
+
+- **Twin bends (`OpposingTurnsNS`/`OpposingTurnsEW`): no lots.** Their two arcs leave no clean buildable quadrant.
+- **Bends (`Turn*`): three lots — drop the small corner the curve cups** (the bend's own corner: `TurnNE` drops NE, `TurnSW` drops SW, etc.). A bend renders as a **curved corner**, not two straight bands meeting at a right angle.
+- **All other types** (`FourWay`, `Straight*`, `Tee*`, `CulDeSac*`): all four quadrant lots.
+
+**Open question — house facing (undecided):** on bends and cul-de-sacs the road curves, so corner houses no longer face it square-on. Either **rotate** each house to face its nearest road (keeping every lot; cul-de-sac houses fan around the bulb) or **remove** the lots that can't face a road (turning them into green space). Not yet decided — the Map Builder currently draws these houses axis-aligned as a placeholder.
+
 ## Resolved: opposing-turn arches do not join into a loop
 
 *Resolved 2026-07-18 by Derek on [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), overriding the earlier #105 "loop/island" framing below*
