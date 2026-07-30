@@ -7,12 +7,15 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #342 (adopting #147's settled geometry): the backyard fence traces
-    /// the lot boundary rather than the house-footprint width. The fence
-    /// line is inset from EVERY edge of the lot's
-    /// <see cref="LotBounds.QuadrantBounds"/> by one
-    /// <see cref="WorldDimensions.SidewalkWidth"/> (uniform on every edge —
-    /// no corner-lot special-casing). The shape is five runs: two side runs
+    /// #342 (adopting #147's settled geometry) + #147 offset fix: the
+    /// backyard fence traces the lot boundary rather than the house-footprint
+    /// width. The fence line leaves one <see cref="WorldDimensions.SidewalkWidth"/>
+    /// strip of grass beyond the pavement on every edge: a road-bordering
+    /// quadrant edge (one whose centerline lies ON the edge) is offset from
+    /// the sidewalk's OUTER edge (<see cref="LotBounds.StreetCorridorInset"/>)
+    /// by one <see cref="LotFence.BoundaryOffset"/>, and a neighbour-yard /
+    /// map edge is offset from the quadrant boundary by that same
+    /// <see cref="LotFence.BoundaryOffset"/>. The shape is five runs: two side runs
     /// plus one rear run trace the offset boundary rectangle, and two short
     /// connectors turn perpendicular-inward from each side run's front end
     /// to the house side-wall midpoints. The front stays open (the #128
@@ -76,27 +79,65 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Fence_SitsOneSidewalkWidthInsideEveryQuadrantBoundsEdge_RealLots()
+        public void Fence_TracesTheRoadAwareOffsetBoundary_RealLots()
         {
             // #342/#147, full pipeline: for every starting lot, the rear run
-            // and both side runs trace the OFFSET boundary rectangle —
-            // QuadrantBounds inset by one SidewalkWidth on every edge.
+            // and both side runs trace the OFFSET boundary rectangle — a
+            // road-bordering quadrant edge offset from the sidewalk's outer
+            // edge (StreetCorridorInset) by one BoundaryOffset, a neighbour /
+            // map edge offset from the quadrant boundary by one BoundaryOffset.
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var quadrant = LotBounds.QuadrantBounds(lot);
                 var facing = HousePlacement.FrontFacing(lot);
                 var runs = LotFence.GeometryFor(lot);
-                AssertOffsetBoundary(runs, quadrant, facing, $"lot {lot.HouseId}");
+                AssertOffsetBoundary(runs, quadrant, facing, NeighborhoodLayout.Roads, $"lot {lot.HouseId}");
             }
         }
 
         [Test]
-        public void Fence_SitsOneSidewalkWidthInsideEveryQuadrantBoundsEdge_EveryCardinalFacing()
+        public void Fence_LeavesOneSidewalkWidthGrassStrip_BeyondTheSidewalk_OnRoadBorderingEdges()
         {
-            // The uniform offset holds in EVERY orientation. The starting
-            // lots all face along X, so the two Z-facing cardinals are
-            // exercised through the pure builder with a synthetic square
-            // quadrant and a real model — no per-neighbour special-casing.
+            // #147 offset fix (Derek playtest): on a road-bordering edge the
+            // fence must sit one grass strip BEYOND the sidewalk's outer edge
+            // — StreetCorridorInset + BoundaryOffset from the road centerline
+            // — NOT BoundaryOffset from the raw quadrant edge (which put the
+            // fence line inside the road). The strip of grass between the
+            // sidewalk's outer edge and the fence line equals one SidewalkWidth.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var facing = HousePlacement.FrontFacing(lot);
+                var runs = LotFence.GeometryFor(lot);
+
+                // The road bordering a TRACED side edge runs parallel to the
+                // facing axis (the faced road, perpendicular to the facing,
+                // borders the open front). Its centerline sits at the
+                // perpendicular coordinate 0 on the FourWay.
+                var sideRoad = NeighborhoodLayout.Roads.Single(r => RunsParallelTo(r, facing));
+                var fenceDistance = runs
+                    .SelectMany(run => new[] { run.A, run.B })
+                    .Min(p => PerpDistanceToCenterline(p, sideRoad));
+
+                Assert.That(fenceDistance,
+                    Is.EqualTo(LotBounds.StreetCorridorInset + LotFence.BoundaryOffset).Within(Epsilon),
+                    $"lot {lot.HouseId}: the road-bordering fence run must sit "
+                    + "StreetCorridorInset + BoundaryOffset from the road centerline");
+
+                var grassStrip = fenceDistance - LotBounds.StreetCorridorInset;
+                Assert.That(grassStrip, Is.EqualTo(WorldDimensions.SidewalkWidth).Within(Epsilon),
+                    $"lot {lot.HouseId}: one sidewalk-width strip of grass must sit between the "
+                    + "sidewalk's outer edge and the fence line");
+            }
+        }
+
+        [Test]
+        public void Fence_SitsOneBoundaryOffsetInsideEveryQuadrantBoundsEdge_NoRoads_EveryCardinalFacing()
+        {
+            // With NO adjacent roads (the neighbour-yard / map-edge case, and
+            // the lot-free gallery standard quadrant), the offset is a plain
+            // BoundaryOffset uniform on every edge, in EVERY orientation. The
+            // two Z-facing cardinals are exercised through the pure builder
+            // with a synthetic square quadrant and a real model.
             var model = HouseModelCatalog.ForHouse(1);
             var quadrant = new LotRect(0f, 30f, 0f, 30f);
 
@@ -118,54 +159,139 @@ namespace Doggiehood.Core.Tests.World
                     facing.X * alongHouse + perp.X * crossCentre,
                     facing.Z * alongHouse + perp.Z * crossCentre);
 
-                var runs = LotFence.BackyardRuns(quadrant, model, house, facing, HousePlacement.KitScale);
-                AssertOffsetBoundary(runs, quadrant, facing, $"facing ({facing.X},{facing.Z})");
+                var runs = LotFence.BackyardRuns(
+                    quadrant, model, house, facing, HousePlacement.KitScale, Array.Empty<Road>());
+                AssertOffsetBoundary(runs, quadrant, facing, Array.Empty<Road>(),
+                    $"facing ({facing.X},{facing.Z})");
             }
         }
 
         private static void AssertOffsetBoundary(
-            IReadOnlyList<FenceRun> runs, LotRect quadrant, GridPoint facing, string who)
+            IReadOnlyList<FenceRun> runs, LotRect quadrant, GridPoint facing,
+            IReadOnlyList<Road> roads, string who)
         {
-            var offset = WorldDimensions.SidewalkWidth;
+            // The fence traces the road-aware inset rectangle: road-bordering
+            // edges pulled off the sidewalk's outer edge, map edges pulled off
+            // the quadrant boundary.
+            var expected = ExpectedInsetRect(quadrant, roads);
             var perp = new GridPoint(-facing.Z, facing.X);
 
-            // Every fence point stays within the offset (inset) rectangle —
-            // no point sits closer than one SidewalkWidth to any quadrant edge.
+            // Every fence point stays within the road-aware inset rectangle.
             foreach (var run in runs)
             {
                 foreach (var point in new[] { run.A, run.B })
                 {
-                    Assert.That(point.X, Is.GreaterThanOrEqualTo(quadrant.MinX + offset - Epsilon),
-                        $"{who}: fence point {point} is under one SidewalkWidth from the MinX edge");
-                    Assert.That(point.X, Is.LessThanOrEqualTo(quadrant.MaxX - offset + Epsilon),
-                        $"{who}: fence point {point} is under one SidewalkWidth from the MaxX edge");
-                    Assert.That(point.Z, Is.GreaterThanOrEqualTo(quadrant.MinZ + offset - Epsilon),
-                        $"{who}: fence point {point} is under one SidewalkWidth from the MinZ edge");
-                    Assert.That(point.Z, Is.LessThanOrEqualTo(quadrant.MaxZ - offset + Epsilon),
-                        $"{who}: fence point {point} is under one SidewalkWidth from the MaxZ edge");
+                    Assert.That(point.X, Is.GreaterThanOrEqualTo(expected.MinX - Epsilon),
+                        $"{who}: fence point {point} is outside the road-aware inset (MinX)");
+                    Assert.That(point.X, Is.LessThanOrEqualTo(expected.MaxX + Epsilon),
+                        $"{who}: fence point {point} is outside the road-aware inset (MaxX)");
+                    Assert.That(point.Z, Is.GreaterThanOrEqualTo(expected.MinZ - Epsilon),
+                        $"{who}: fence point {point} is outside the road-aware inset (MinZ)");
+                    Assert.That(point.Z, Is.LessThanOrEqualTo(expected.MaxZ + Epsilon),
+                        $"{who}: fence point {point} is outside the road-aware inset (MaxZ)");
                 }
             }
 
-            // The rear run sits exactly one SidewalkWidth inside the rear
-            // quadrant edge (the edge opposite the facing).
+            // The rear run sits exactly on the rear edge of the road-aware
+            // inset rectangle (the edge opposite the facing).
             var rear = RearRunOf(runs);
             var rearAlong = AlongOf(rear.A, facing);
             Assert.That(AlongOf(rear.B, facing), Is.EqualTo(rearAlong).Within(Epsilon),
                 $"{who}: the rear run is a single boundary-parallel line");
-            Assert.That(rearAlong, Is.EqualTo(RearEdgeAlong(quadrant, facing) + offset).Within(Epsilon),
-                $"{who}: rear run must sit one SidewalkWidth inside the rear quadrant edge");
+            Assert.That(rearAlong, Is.EqualTo(RearEdgeAlong(expected, facing)).Within(Epsilon),
+                $"{who}: rear run must sit on the road-aware inset rear edge");
 
-            // The two side runs sit exactly one SidewalkWidth inside the two
-            // side quadrant edges (the cross-axis extremes).
+            // The two side runs sit on the two side edges of the road-aware
+            // inset rectangle (the cross-axis extremes).
             var sideCrosses = SideRunsOf(runs).Select(r => CrossOf(r.A, perp)).OrderBy(c => c).ToList();
-            var cornerCrossA = CrossOf(new GridPoint(quadrant.MinX, quadrant.MinZ), perp);
-            var cornerCrossB = CrossOf(new GridPoint(quadrant.MaxX, quadrant.MaxZ), perp);
-            var quadrantCrossLo = Math.Min(cornerCrossA, cornerCrossB);
-            var quadrantCrossHi = Math.Max(cornerCrossA, cornerCrossB);
-            Assert.That(sideCrosses[0], Is.EqualTo(quadrantCrossLo + offset).Within(Epsilon),
-                $"{who}: the low-side run must sit one SidewalkWidth inside its quadrant edge");
-            Assert.That(sideCrosses[1], Is.EqualTo(quadrantCrossHi - offset).Within(Epsilon),
-                $"{who}: the high-side run must sit one SidewalkWidth inside its quadrant edge");
+            var cornerCrossA = CrossOf(new GridPoint(expected.MinX, expected.MinZ), perp);
+            var cornerCrossB = CrossOf(new GridPoint(expected.MaxX, expected.MaxZ), perp);
+            var insetCrossLo = Math.Min(cornerCrossA, cornerCrossB);
+            var insetCrossHi = Math.Max(cornerCrossA, cornerCrossB);
+            Assert.That(sideCrosses[0], Is.EqualTo(insetCrossLo).Within(Epsilon),
+                $"{who}: the low-side run must sit on the road-aware inset side edge");
+            Assert.That(sideCrosses[1], Is.EqualTo(insetCrossHi).Within(Epsilon),
+                $"{who}: the high-side run must sit on the road-aware inset side edge");
+        }
+
+        /// <summary>The road-aware inset rectangle a correct fence traces:
+        /// every quadrant edge that lies on a road centerline (and overlaps
+        /// that road's finite extent) is pulled in by
+        /// <see cref="LotBounds.StreetCorridorInset"/>, then EVERY edge by one
+        /// <see cref="LotFence.BoundaryOffset"/>. Written independently of the
+        /// SUT so it is a real check.</summary>
+        private static LotRect ExpectedInsetRect(LotRect quadrant, IReadOnlyList<Road> roads)
+        {
+            var minX = quadrant.MinX;
+            var maxX = quadrant.MaxX;
+            var minZ = quadrant.MinZ;
+            var maxZ = quadrant.MaxZ;
+
+            foreach (var road in roads)
+            {
+                if (road.Orientation == StreetOrientation.NorthSouth)
+                {
+                    var extentMin = road.Center.Z - road.HalfLength;
+                    var extentMax = road.Center.Z + road.HalfLength;
+                    if (!(minZ < extentMax && maxZ > extentMin))
+                    {
+                        continue;
+                    }
+
+                    if (Math.Abs(minX - road.Center.X) <= Epsilon)
+                    {
+                        minX += LotBounds.StreetCorridorInset;
+                    }
+
+                    if (Math.Abs(maxX - road.Center.X) <= Epsilon)
+                    {
+                        maxX -= LotBounds.StreetCorridorInset;
+                    }
+                }
+                else
+                {
+                    var extentMin = road.Center.X - road.HalfLength;
+                    var extentMax = road.Center.X + road.HalfLength;
+                    if (!(minX < extentMax && maxX > extentMin))
+                    {
+                        continue;
+                    }
+
+                    if (Math.Abs(minZ - road.Center.Z) <= Epsilon)
+                    {
+                        minZ += LotBounds.StreetCorridorInset;
+                    }
+
+                    if (Math.Abs(maxZ - road.Center.Z) <= Epsilon)
+                    {
+                        maxZ -= LotBounds.StreetCorridorInset;
+                    }
+                }
+            }
+
+            return new LotRect(
+                minX + LotFence.BoundaryOffset, maxX - LotFence.BoundaryOffset,
+                minZ + LotFence.BoundaryOffset, maxZ - LotFence.BoundaryOffset);
+        }
+
+        /// <summary>Whether <paramref name="road"/> runs parallel to
+        /// <paramref name="facing"/> (a north-south road runs along Z, so it
+        /// is parallel to a Z-facing).</summary>
+        private static bool RunsParallelTo(Road road, GridPoint facing)
+        {
+            return road.Orientation == StreetOrientation.NorthSouth
+                ? Math.Abs(facing.Z) > Math.Abs(facing.X)
+                : Math.Abs(facing.X) > Math.Abs(facing.Z);
+        }
+
+        /// <summary>Perpendicular distance from <paramref name="point"/> to a
+        /// road's centerline (constant-X for north-south, constant-Z for
+        /// east-west).</summary>
+        private static float PerpDistanceToCenterline(GridPoint point, Road road)
+        {
+            return road.Orientation == StreetOrientation.NorthSouth
+                ? Math.Abs(point.X - road.Center.X)
+                : Math.Abs(point.Z - road.Center.Z);
         }
 
         [Test]
@@ -284,16 +410,21 @@ namespace Doggiehood.Core.Tests.World
                 var model = HouseModelCatalog.ForHouse(lot.HouseId);
                 var scaledFootprintX = HousePlacement.KitScale * model.FootprintX;
 
-                // The rear run spans the offset boundary width: the quadrant
-                // width (30m) minus one SidewalkWidth per side (2 * 2m).
-                var expectedEnclosed = LotBounds.QuadrantBounds(lot).Width
-                    - 2f * WorldDimensions.SidewalkWidth;
+                // The rear run spans the cross extent of the road-aware inset
+                // rectangle: for a corner lot one side is a road edge (pulled
+                // off the sidewalk's outer edge) and one a map edge (pulled off
+                // the quadrant boundary), so the span is the quadrant width
+                // (30m) minus one StreetCorridorInset + BoundaryOffset (road
+                // side) and one BoundaryOffset (map side) — 20.25m.
+                var facing = HousePlacement.FrontFacing(lot);
+                var expected = ExpectedInsetRect(LotBounds.QuadrantBounds(lot), NeighborhoodLayout.Roads);
+                var expectedEnclosed = PerpExtent(expected, facing);
                 var rear = RearRunOf(runs);
                 Assert.That(rear.Length, Is.EqualTo(expectedEnclosed).Within(Epsilon),
-                    $"lot {lot.HouseId}: rear run must span the offset boundary width");
+                    $"lot {lot.HouseId}: rear run must span the road-aware inset width");
 
                 // Meaningfully wider than the house footprint (at least twice
-                // as wide — for building-type-k, 26m vs 6.45m).
+                // as wide — for building-type-k, 20.25m vs 6.45m).
                 Assert.That(rear.Length, Is.GreaterThan(2f * scaledFootprintX),
                     $"lot {lot.HouseId}: the enclosed width ({rear.Length:F2}m) must be much wider than "
                     + $"the house footprint ({scaledFootprintX:F2}m)");
@@ -305,7 +436,7 @@ namespace Doggiehood.Core.Tests.World
                 * HouseModelCatalog.ForHouse(narrowLot.HouseId).FootprintX;
             Assert.That(narrowFootprintX, Is.EqualTo(6.447f).Within(0.01f),
                 "building-type-k footprint width at ×7");
-            Assert.That(narrowRear.Length, Is.GreaterThan(narrowFootprintX + 15f),
+            Assert.That(narrowRear.Length, Is.GreaterThan(narrowFootprintX + 10f),
                 "building-type-k's enclosed back yard must be far wider than its own footprint");
         }
 
@@ -365,6 +496,14 @@ namespace Doggiehood.Core.Tests.World
         private static float CrossOf(GridPoint p, GridPoint perp)
         {
             return p.X * perp.X + p.Z * perp.Z;
+        }
+
+        /// <summary>The extent of <paramref name="rect"/> perpendicular to
+        /// <paramref name="facing"/> — its Depth for an X-facing, its Width for
+        /// a Z-facing.</summary>
+        private static float PerpExtent(LotRect rect, GridPoint facing)
+        {
+            return Math.Abs(facing.X) > Math.Abs(facing.Z) ? rect.Depth : rect.Width;
         }
 
         /// <summary>The along-axis coordinate of the quadrant's rear edge —
