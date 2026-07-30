@@ -287,6 +287,24 @@
   
 
       
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../tools/" class="md-tabs__link">
+          
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -739,6 +757,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#property-lots-per-tile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Property lots per tile
+    </span>
+  </a>
   
 </li>
       
@@ -1518,6 +1545,72 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Map Builder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
               
                 
   
@@ -1611,6 +1704,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#property-lots-per-tile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Property lots per tile
+    </span>
+  </a>
   
 </li>
       
@@ -1815,6 +1917,16 @@
 <h3 id="tile-codes-connectivity-as-a-single-source">Tile codes — connectivity as a single source<a class="headerlink" href="#tile-codes-connectivity-as-a-single-source" title="Permanent link">&para;</a></h3>
 <p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag — <code>.</code> for an ordinary single junction or dead-end, and <code>\</code> / <code>/</code> for the two <code>OpposingTurns</code> tiles, where the slash marks the wall between the tile's two disconnected arcs: <code>\</code> separates {N,E} from {S,W} (so the arcs are NE + SW = <code>OpposingTurnsNS</code>), <code>/</code> separates {N,W} from {S,E} (NW + SE = <code>OpposingTurnsEW</code>).</p>
 <p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
+<p>Maps are drawn and validated with the <a href="../../../tools/">Map Builder</a> tool, which reads these codes.</p>
+<h2 id="property-lots-per-tile">Property lots per tile<a class="headerlink" href="#property-lots-per-tile" title="Permanent link">&para;</a></h2>
+<p><em>Design decisions 2026-07-30 (Derek &amp; Lucas), captured from the <a href="../../../tools/">Map Builder</a>; Core lot/geometry implementation tracked with the map-definition work (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a>).</em></p>
+<p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see <a href="../../expansion/">Neighborhood Expansion</a>):</p>
+<ul>
+<li><strong>Twin bends (<code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code>): no lots.</strong> Their two arcs leave no clean buildable quadrant.</li>
+<li><strong>Bends (<code>Turn*</code>): three lots — drop the small corner the curve cups</strong> (the bend's own corner: <code>TurnNE</code> drops NE, <code>TurnSW</code> drops SW, etc.). A bend renders as a <strong>curved corner</strong>, not two straight bands meeting at a right angle.</li>
+<li><strong>All other types</strong> (<code>FourWay</code>, <code>Straight*</code>, <code>Tee*</code>, <code>CulDeSac*</code>): all four quadrant lots.</li>
+</ul>
+<p><strong>Open question — house facing (undecided):</strong> on bends and cul-de-sacs the road curves, so corner houses no longer face it square-on. Either <strong>rotate</strong> each house to face its nearest road (keeping every lot; cul-de-sac houses fan around the bulb) or <strong>remove</strong> the lots that can't face a road (turning them into green space). Not yet decided — the Map Builder currently draws these houses axis-aligned as a placeholder.</p>
 <h2 id="resolved-opposing-turn-arches-do-not-join-into-a-loop">Resolved: opposing-turn arches do not join into a loop<a class="headerlink" href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" title="Permanent link">&para;</a></h2>
 <p><em>Resolved 2026-07-18 by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, overriding the earlier #105 "loop/island" framing below</em></p>
 <blockquote>
