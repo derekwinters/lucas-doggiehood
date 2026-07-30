@@ -36,6 +36,7 @@ sys.path.insert(0, _HERE)
 sys.path.insert(0, os.path.join(_HERE, os.pardir, "pipeline-reconcile"))
 import apply_actions  # noqa: E402
 import check_revisits  # noqa: E402
+import fire_routine  # noqa: E402
 import parse_commands  # noqa: E402
 import reconcile  # noqa: E402
 from _github_api import request  # noqa: E402
@@ -100,10 +101,15 @@ def _replace_labels(repo, token, number, remove=(), add=()):
                  {"labels": new_labels})
 
 
-def _apply_revisit(repo, token, revisit):
+def _apply_revisit(repo, token, revisit, current_labels):
     number = revisit["issue"]
     _replace_labels(repo, token, number,
                      remove=revisit["remove_labels"], add=revisit["add_labels"])
+    # Reactive triage (#378): a blocker-cleared revisit re-adds `ai-triage`,
+    # so fire the analysis Routine for this issue immediately (best-effort).
+    new_labels = apply_actions.merge_labels(current_labels, revisit)
+    if apply_actions.fires_triage(current_labels, new_labels):
+        fire_routine.fire(number, repo)
     blockers = ", ".join("#%d" % b for b in revisit["blockers_resolved"])
     text = ("Blocker(s) %s cleared — revisiting.\n\nYour move: %s"
             % (blockers, parse_commands.MENUS[revisit["menu"]]))
@@ -118,6 +124,10 @@ def _apply_comment_action(repo, token, action):
     if set(new_labels) != set(current_labels):
         request("PUT", "/repos/%s/issues/%d/labels"
                  % (repo, action["issue"]), token, {"labels": new_labels})
+        # Reactive triage (#378): a missed /admit etc. replayed by the cron
+        # safety net still fires the Routine when it newly adds `ai-triage`.
+        if apply_actions.fires_triage(current_labels, new_labels):
+            fire_routine.fire(action["issue"], repo)
     ack = apply_actions.render_ack(action)
     if ack:
         request("POST", "/repos/%s/issues/%d/comments"
@@ -140,8 +150,10 @@ def main(argv):
     # 1. Blocker auto-revisit (#241) — board-wide, both modes.
     revisit_input = [{"number": i["number"], "labels": i["labels"],
                        "body": i["body"]} for i in open_issues]
+    labels_by_issue = {i["number"]: i["labels"] for i in open_issues}
     for revisit in check_revisits.check_blocker_revisits(revisit_input):
-        _apply_revisit(repo, token, revisit)
+        _apply_revisit(repo, token, revisit,
+                       labels_by_issue.get(revisit["issue"], []))
         sys.stderr.write("#%d revisit (blockers %s)\n"
                           % (revisit["issue"], revisit["blockers_resolved"]))
 

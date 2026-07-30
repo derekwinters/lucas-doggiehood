@@ -49,6 +49,11 @@ jobs:
       - name: Run the sweep
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Reactive triage (#378): a blocker-cleared revisit (or a replayed
+          # missed command) newly adding `ai-triage` fires the analysis Routine
+          # via this per-routine endpoint + bearer token. Absent → no-op.
+          AI_TRIAGE_URL: ${{ secrets.AI_TRIAGE_URL }}
+          AI_TRIAGE_SECRET: ${{ secrets.AI_TRIAGE_SECRET }}
         run: |
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             python3 .claude/skills/pipeline-gatekeeper/run_sweep.py --cron

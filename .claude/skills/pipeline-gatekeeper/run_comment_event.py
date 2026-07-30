@@ -22,6 +22,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import apply_actions  # noqa: E402
 import fetch_comment_event  # noqa: E402
+import fire_routine  # noqa: E402
 import parse_commands  # noqa: E402
 from _github_api import request  # noqa: E402
 
@@ -51,6 +52,12 @@ def _apply_action(repo, token, action, current_labels):
     if set(new_labels) != set(current_labels):
         request("PUT", "/repos/%s/issues/%d/labels" % (repo, number), token,
                  {"labels": new_labels})
+        # Reactive triage (#378): the instant `ai-triage` is newly added
+        # (/admit, /revise, /redo, /propose), fire the analysis Routine for
+        # this issue so triage runs immediately. Best-effort — a missing
+        # secret or a fire error never fails the label move.
+        if apply_actions.fires_triage(current_labels, new_labels):
+            fire_routine.fire(number, repo)
 
     milestone_title = apply_actions.milestone_write_for(action)
     if milestone_title:

@@ -219,16 +219,29 @@ without a model in the loop:
   label list to PATCH — GitHub's labels endpoint replaces the whole set, so
   add/remove must be merged against a freshly read current list),
   `render_ack` / `render_skip_ack` (the acknowledgment text, from `MENUS`),
-  `reactions_for` (👍 + 👀), and `milestone_write_for` (only ever non-null for
-  an actual `/milestone` command — never for `/approve`, per Part A).
+  `reactions_for` (👍 + 👀), `milestone_write_for` (only ever non-null for
+  an actual `/milestone` command — never for `/approve`, per Part A), and
+  `fires_triage` (the reactive-triage transition detector, #378 — true only
+  when a label change *newly* adds `ai-triage`).
+- **`fire_routine.py`** — the reactive-triage hook (#378): when `fires_triage`
+  is true, `fire(issue, repo)` makes a best-effort outbound POST to a Claude
+  Code Routine `/fire` endpoint (`AI_TRIAGE_URL` / `AI_TRIAGE_SECRET` repo
+  secrets) so the analysis routine runs for that one issue immediately instead
+  of waiting for the 7:00 AM backstop. `build_fire_request` is the pure,
+  unit-tested half; a missing secret or a network error is a clean no-op — the
+  label move already happened. See `docs/engineering/issue-pipeline.md`.
 - **`run_comment_event.py`** — the `gatekeeper-comment.yml` entry point: reads
   `GITHUB_EVENT_PATH`, re-checks the owner-gate in-script (defense-in-depth),
   fetches live open milestones, then wires `fetch_comment_event` →
-  `parse_commands.process` → `apply_actions` → the GitHub REST API.
+  `parse_commands.process` → `apply_actions` → the GitHub REST API, and fires
+  reactive triage (`fire_routine.fire`) whenever a command newly adds
+  `ai-triage`.
 - **`run_sweep.py`** — the `gatekeeper-sweep.yml` entry point: runs
   `check_revisits` + `reconcile` board-wide (in `events_only` mode unless
   invoked with `--cron`), and on `--cron` additionally re-processes any
   `issue_comment` command a dropped webhook made the primary workflow miss.
+  Fires reactive triage for a blocker-cleared revisit (or a replayed missed
+  command) that newly adds `ai-triage`.
 - **`_github_api.py`** — the tiny shared `urllib` request helper both of the
   above import.
 

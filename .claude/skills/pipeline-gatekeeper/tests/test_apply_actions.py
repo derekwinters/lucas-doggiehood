@@ -81,6 +81,35 @@ class TestNoMilestoneSetOnApprove(unittest.TestCase):
                           "07 - Polish & Onboarding")
 
 
+class TestFiresTriage(unittest.TestCase):
+    """The reactive-triage hook (#378): a label transition newly adding
+    `ai-triage` fires the analysis Routine for that issue; a no-op re-add of a
+    label the issue already carries does not."""
+
+    def test_newly_added_ai_triage_fires(self):
+        self.assertTrue(apply_actions.fires_triage(
+            current_labels=["type:bug"],
+            new_labels=["type:bug", "ai-triage"]))
+
+    def test_already_present_ai_triage_does_not_fire(self):
+        # Idempotent re-run: the label was already there, so no transition —
+        # e.g. the cron missed-command net re-processing an admitted issue.
+        self.assertFalse(apply_actions.fires_triage(
+            current_labels=["ai-triage", "type:bug"],
+            new_labels=["ai-triage", "type:bug"]))
+
+    def test_no_ai_triage_on_either_side_does_not_fire(self):
+        self.assertFalse(apply_actions.fires_triage(
+            current_labels=["pending-approval"],
+            new_labels=["ready-for-work"]))
+
+    def test_removing_ai_triage_does_not_fire(self):
+        # e.g. /approve drops ai-triage — that is not a triage trigger.
+        self.assertFalse(apply_actions.fires_triage(
+            current_labels=["ai-triage"],
+            new_labels=["ready-for-work"]))
+
+
 class TestRenderSkipAck(unittest.TestCase):
     def test_approve_no_milestone_skip_gets_a_hand_back(self):
         skip = {"issue": 181, "comment_id": 8,
