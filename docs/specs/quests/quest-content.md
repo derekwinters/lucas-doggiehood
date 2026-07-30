@@ -19,6 +19,8 @@ The hidden item's position is generated in Core and kept clear of every house fo
 
 Tapping is forgiving on two levels, mirroring how the dog speech bubble already handles imprecise touch input: the game-logic tolerance (`QuestManager.LostItemTapRadius`) accepts any tap within 1.5m of the hidden item, and the item also offers a padded screen-space tap zone so that tolerance genuinely applies to real taps — a mouse cursor is pixel-precise, a finger touch is not, and the item's small on-screen footprint under the fixed camera pitch would otherwise leave a raw hit-test with no forgiveness at all. ([#311](https://github.com/derekwinters/lucas-doggiehood/issues/311))
 
+**How the item renders.** A lost **puppy** reuses the shared Kenney Cube Pets dog model — the same asset every roster dog renders (see [Art & UI Style](../world/art-style.md)) — rather than a bespoke model or the graybox sphere: it is tinted a puppy coat, scaled slightly smaller than a puppy dog (`LostItemView.PuppyModelScale`, below the 0.55 puppy-dog scale), given a fitted tap collider (the imported FBX ships none), and left in place with a slow in-place look-around yaw so it reads as a real puppy at its small on-screen size. Every other subject (e.g. toy, ball — no reusable model yet) still renders the graybox sphere placeholder. ([#335](https://github.com/derekwinters/lucas-doggiehood/issues/335))
+
 ### 2. Buy something
 
 *[#13](https://github.com/derekwinters/lucas-doggiehood/issues/13)*

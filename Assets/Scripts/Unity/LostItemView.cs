@@ -10,6 +10,12 @@ namespace Doggiehood.Unity
     /// the quest's hidden world position. Tapping it forwards to Core,
     /// which decides whether the quest completes. No hints, no radar.
     ///
+    /// #335: a lost "puppy" reuses the shared Cube Pets dog model (the same
+    /// asset every roster dog renders, see <see cref="DogView"/>), tinted and
+    /// scaled slightly smaller than a puppy dog, staying in place with a slow
+    /// look-around yaw. Every other subject (toy #332, ball #333 — no reusable
+    /// model) still renders the graybox sphere fallback.
+    ///
     /// #311: also offers a screen-space padded tap fallback
     /// (<see cref="TryHandleLostItemTap"/>), checked by TapRouter ahead of
     /// its physics raycast — mirroring the dog speech bubble precedent
@@ -29,22 +35,142 @@ namespace Doggiehood.Unity
         /// <see cref="TryHandleLostItemTap"/> (#311).</summary>
         private const int BoundsCornerCount = 8;
 
+        /// <summary>The one Lost-eligible subject with a reusable model (#335):
+        /// a lost "puppy" renders the shared Cube Pets dog model rather than
+        /// the graybox sphere. toy (#332) / ball (#333) have no reusable model
+        /// and keep the sphere fallback.</summary>
+        private const string PuppyItemName = "puppy";
+
+        /// <summary>Resources-relative path to the shared Kenney Cube Pets dog
+        /// model — the same asset <see cref="DogView"/> loads for every roster
+        /// dog (see DogView.CubePetsModelResourcePath). Resources.Load paths
+        /// are relative to the Resources folder, so the file name is the whole
+        /// path.</summary>
+        private const string CubePetsModelResourcePath = "animal-dog";
+
+        /// <summary>#335: the lost puppy reuses the shared dog model but reads
+        /// as "slightly smaller" than a puppy DOG (DogView scales puppies to
+        /// 0.55) per Derek's direction. Named per rule #161.</summary>
+        public const float PuppyModelScale = 0.4f;
+
+        /// <summary>Warm light-brown tint for the lost puppy — there is no
+        /// owning Dog to source a breed coat from, so the model gets its own
+        /// puppy-ish coat. Multiplies over the model's white base colormap
+        /// the same way <see cref="DogView"/>'s PaintModel does.</summary>
+        private static readonly Color PuppyCoat = CoreColors.FromHex("#D9A066");
+
+        /// <summary>#335 (optional "consider"): a slow in-place yaw so the
+        /// puppy appears to look around while staying put. Rotation only —
+        /// never any translation.</summary>
+        private const float LookAroundDegreesPerSecond = 30f;
+
+        /// <summary>Graybox sphere fallback geometry for every non-puppy
+        /// subject. Named per rule #161.</summary>
+        private const float SphereScale = 0.6f;
+        private const float SphereGroundHeight = 0.3f;
+
         private GameState state;
         private Quest quest;
+        private bool looksAround;
 
         public static LostItemView Spawn(GameState state, Quest quest, Transform parent)
+        {
+            return quest.ItemName == PuppyItemName
+                ? SpawnPuppy(state, quest, parent)
+                : SpawnSphere(state, quest, parent);
+        }
+
+        private static LostItemView SpawnSphere(GameState state, Quest quest, Transform parent)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "LostItem - " + quest.ItemName;
             go.transform.SetParent(parent);
-            go.transform.localScale = Vector3.one * 0.6f;
+            go.transform.localScale = Vector3.one * SphereScale;
             go.transform.position = new Vector3(
-                quest.HiddenItemPosition.Value.X, 0.3f, quest.HiddenItemPosition.Value.Z);
+                quest.HiddenItemPosition.Value.X, SphereGroundHeight, quest.HiddenItemPosition.Value.Z);
 
+            return Attach(go, state, quest, looksAround: false);
+        }
+
+        /// <summary>#335: a lost "puppy" reuses the shared Cube Pets dog model
+        /// (mirroring <see cref="DogView"/>'s importable path): an empty
+        /// interactable root with the tinted, slightly-smaller model as a
+        /// "Body" child, a fitted tap collider on the root so TapRouter's
+        /// raycast can hit it, and a slow in-place look-around. If the model
+        /// can't be loaded (a test seam / missing asset) it degrades to the
+        /// sphere fallback so the item is still findable.</summary>
+        private static LostItemView SpawnPuppy(GameState state, Quest quest, Transform parent)
+        {
+            var model = Resources.Load<GameObject>(CubePetsModelResourcePath);
+            if (model == null)
+            {
+                return SpawnSphere(state, quest, parent);
+            }
+
+            var go = new GameObject("LostItem - " + quest.ItemName);
+            go.transform.SetParent(parent);
+            // Ground-level pivot, like DogView's imported-model path — the
+            // puppy stands on the ground rather than floating like the sphere.
+            go.transform.position = new Vector3(
+                quest.HiddenItemPosition.Value.X, 0f, quest.HiddenItemPosition.Value.Z);
+
+            var body = Object.Instantiate(model, go.transform).transform;
+            body.name = "Body";
+            body.localPosition = Vector3.zero;
+            body.localScale = Vector3.one * PuppyModelScale;
+            PaintModel(body.gameObject, PuppyCoat);
+
+            // The imported FBX has no collider, so add a fitted box while the
+            // root still has identity rotation and unit scale (#148 pattern).
+            TapColliders.AddFitted(go, body.gameObject);
+
+            return Attach(go, state, quest, looksAround: true);
+        }
+
+        private static LostItemView Attach(GameObject go, GameState state, Quest quest, bool looksAround)
+        {
             var view = go.AddComponent<LostItemView>();
             view.state = state;
             view.quest = quest;
+            view.looksAround = looksAround;
             return view;
+        }
+
+        /// <summary>Tints every renderer on the imported model by cloning its
+        /// material and overwriting .color, preserving the model's colormap
+        /// texture so it multiplies cleanly with the coat tint — the same
+        /// approach as <see cref="DogView"/>.PaintModel.</summary>
+        private static void PaintModel(GameObject root, Color color)
+        {
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.color = color;
+                renderer.sharedMaterial = material;
+            }
+        }
+
+        private void Update()
+        {
+            TickLookAround(Time.deltaTime);
+        }
+
+        /// <summary>#335 (optional): advances the puppy's slow in-place yaw by
+        /// one frame so it appears to look around while staying rooted to the
+        /// hidden spot. Rotation only — never translation. Public and
+        /// deterministic so EditMode tests can drive it without the Play-mode
+        /// Update loop (mirroring <see cref="DogView.TickAnimation"/>). A
+        /// silent no-op for the sphere fallback.</summary>
+        public void TickLookAround(float deltaTime)
+        {
+            if (!looksAround)
+            {
+                return;
+            }
+
+            transform.Rotate(Vector3.up, LookAroundDegreesPerSecond * deltaTime, Space.World);
         }
 
         public void OnTapped()
