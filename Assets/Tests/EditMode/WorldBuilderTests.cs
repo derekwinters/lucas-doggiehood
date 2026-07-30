@@ -242,6 +242,88 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void EmptyLotMarker_IsARaisedFoundationSlab_SittingOnTheGround()
+        {
+            // #300 (B): the empty-lot marker is restyled from the old flat
+            // 0.2m tap-pad into a low raised graybox "foundation" slab that
+            // reads as "a house goes here" — still a single primitive box
+            // painted the marker color, its base flush on the ground plane.
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var container = new GameObject("EmptyLotSlabTestContainer");
+
+            var marker = WorldBuilder.BuildEmptyLot(container.transform, lot);
+
+            // A raised slab, thicker than the old flat 0.2m pad.
+            Assert.That(marker.transform.localScale.y,
+                Is.EqualTo(WorldBuilder.EmptyLotFoundationSlabHeight).Within(0.001f));
+            Assert.That(WorldBuilder.EmptyLotFoundationSlabHeight, Is.GreaterThan(0.2f),
+                "a foundation slab reads as raised, thicker than the old flat pad");
+
+            // #300 amendment (Derek's option 3): the slab keeps the fixed
+            // marker footprint — it is NOT sized to HousePlacement.HouseFootprint
+            // (which throws for zone lots, id >= 5, with no assigned style).
+            Assert.That(marker.transform.localScale.x,
+                Is.EqualTo(WorldBuilder.EmptyLotMarkerFootprint).Within(0.001f));
+            Assert.That(marker.transform.localScale.z,
+                Is.EqualTo(WorldBuilder.EmptyLotMarkerFootprint).Within(0.001f));
+
+            // Base sits on the ground plane (bottom at y = 0).
+            var bottom = marker.transform.position.y - marker.transform.localScale.y / 2f;
+            Assert.That(bottom, Is.EqualTo(0f).Within(0.001f),
+                "the slab's base must sit on the ground plane");
+
+            // Single primitive graybox box painted the marker color — no
+            // new kit asset.
+            Assert.That(marker.GetComponent<MeshFilter>().sharedMesh.name, Does.Contain("Cube"));
+            Assert.That(marker.GetComponent<Renderer>().sharedMaterial.color,
+                Is.EqualTo(CoreColors.FromHex(Palette.EmptyLotMarkerHex)));
+
+            UnityEngine.Object.DestroyImmediate(container);
+        }
+
+        [Test]
+        public void EmptyLotMarker_KeepsItsEmptyLotViewTapTarget_AfterTheReshape()
+        {
+            // #300 (B): the tap wiring must survive the reshape — the raised
+            // slab still carries an EmptyLotView initialized with the lot's
+            // HouseId, so ExpansionDirector's tap -> GameState.TryBuildHouse
+            // routing (pinned end-to-end by ExpansionDirectorTests) is
+            // unchanged.
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var container = new GameObject("EmptyLotTapTestContainer");
+
+            var marker = WorldBuilder.BuildEmptyLot(container.transform, lot);
+            var view = marker.GetComponent<EmptyLotView>();
+
+            Assert.That(view, Is.Not.Null, "the reshaped slab still carries an EmptyLotView tap target");
+            Assert.That(view.HouseId, Is.EqualTo(lot.HouseId));
+
+            UnityEngine.Object.DestroyImmediate(container);
+        }
+
+        [Test]
+        public void BuildGround_StaysAFlatGrassPlane_WithNoTextureOrTiledMesh()
+        {
+            // #300 (A): guard test locking Derek's decision to KEEP the base
+            // ground a flat Palette.GrassHex plane — a single flat primitive
+            // Plane, no grass texture, no tiled grid of grass mesh children.
+            var ground = root.transform.Find("Ground");
+            Assert.That(ground, Is.Not.Null, "the world must build a Ground plane");
+
+            var mesh = ground.GetComponent<MeshFilter>().sharedMesh;
+            Assert.That(mesh.name, Does.Contain("Plane"),
+                "the ground stays Unity's single flat primitive Plane (no tiled grass mesh)");
+            Assert.That(ground.childCount, Is.EqualTo(0),
+                "a flat plane, not a tiled grid of grass mesh children");
+
+            var renderer = ground.GetComponent<Renderer>();
+            Assert.That(renderer.sharedMaterial.color, Is.EqualTo(CoreColors.FromHex(Palette.GrassHex)),
+                "flat GrassHex fill");
+            Assert.That(renderer.sharedMaterial.mainTexture, Is.Null,
+                "no grass texture applied (decision A keeps the flat colored plane)");
+        }
+
+        [Test]
         public void BuildHouse_OnAZoneLotWithNoAuthoredStyle_FallsBackToTheGrayboxRender_WithoutThrowing()
         {
             // #57: houses built beyond the starting 4 have no

@@ -36,14 +36,23 @@ namespace Doggiehood.Unity
         public const float GroundExtent = 30f;
 
         /// <summary>Graybox marker footprint (local X/Z) for an empty,
-        /// buildable lot (#57) — a flat pad distinct from a house's
-        /// fallback wall block, sized just to read as a tap target within
-        /// the lot's own space.</summary>
-        private const float EmptyLotMarkerFootprint = 3f;
+        /// buildable lot (#57) — sized just to read as a "house goes here"
+        /// slab within the lot's own space. Public since #300 so the
+        /// EditMode slab test can pin that the raised slab keeps THIS fixed
+        /// footprint rather than being sized to
+        /// <c>HousePlacement.HouseFootprint</c> — that per-house footprint
+        /// throws for zone lots (id >= 5, no assigned style), which is
+        /// exactly the only kind of lot BuildEmptyLot ever runs on (Derek's
+        /// #300 option-3 decision).</summary>
+        public const float EmptyLotMarkerFootprint = 3f;
 
-        /// <summary>Graybox marker height/thickness — thin, so it reads as
-        /// a ground-level pad rather than a solid block.</summary>
-        private const float EmptyLotMarkerHeight = 0.2f;
+        /// <summary>Thickness of the empty-lot "foundation" slab (#300 (B),
+        /// Derek): the marker is a low RAISED graybox slab that reads as "a
+        /// house goes here", not the old thin flat tap-pad (0.2m). Low
+        /// enough to still read as a foundation footing rather than a solid
+        /// block. Public so the EditMode slab test can assert the reshaped
+        /// height against a named constant.</summary>
+        public const float EmptyLotFoundationSlabHeight = 0.6f;
 
         /// <summary>Resources key for the #183 lock icon, staged at
         /// Assets/Art/UI/ExpansionIndicator/Resources/locked.png (bare
@@ -738,18 +747,22 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// Builds one graybox marker for an empty, buildable lot: a flat
-        /// pad at the lot's Core position with an EmptyLotView tap target.
-        /// Public so ExpansionDirector's EditMode tests can build a single
-        /// marker directly, same pattern as BuildHouse.
+        /// Builds one graybox marker for an empty, buildable lot: a low
+        /// raised "foundation" slab (#300 (B)) at the lot's Core position
+        /// with an EmptyLotView tap target, its base flush on the ground
+        /// plane. Public so ExpansionDirector's EditMode tests can build a
+        /// single marker directly, same pattern as BuildHouse. The slab
+        /// keeps the fixed <see cref="EmptyLotMarkerFootprint"/> — it is NOT
+        /// sized to HousePlacement.HouseFootprint, which throws for the zone
+        /// lots this only ever runs on (Derek's #300 option-3 decision).
         /// </summary>
         public static GameObject BuildEmptyLot(Transform parent, HouseLot lot)
         {
             var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             marker.name = EmptyLotNamePrefix + lot.HouseId;
             marker.transform.SetParent(parent);
-            marker.transform.localScale = new Vector3(EmptyLotMarkerFootprint, EmptyLotMarkerHeight, EmptyLotMarkerFootprint);
-            marker.transform.position = new Vector3(lot.Position.X, EmptyLotMarkerHeight / 2f, lot.Position.Z);
+            marker.transform.localScale = new Vector3(EmptyLotMarkerFootprint, EmptyLotFoundationSlabHeight, EmptyLotMarkerFootprint);
+            marker.transform.position = new Vector3(lot.Position.X, EmptyLotFoundationSlabHeight / 2f, lot.Position.Z);
             Paint(marker, Palette.EmptyLotMarkerHex);
 
             var view = marker.AddComponent<EmptyLotView>();
