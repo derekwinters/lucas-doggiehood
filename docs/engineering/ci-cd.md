@@ -22,7 +22,16 @@ Both PR debug builds and RC builds use debug signing, apply the same `.debug` ap
 
 ## Release builds
 
-When a release ships (release-please publishes the `vX.Y.Z` GitHub release), `release-build.yml` builds the APK for that tag and **attaches it to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in the current release scope.
+When a release ships (release-please publishes the `vX.Y.Z` GitHub release), the APK for that tag is built and **attached to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in the current release scope.
+
+The build-and-attach step lives **inside `release-please.yml`**, as a `build-and-attach` job gated on the release-please job's `release_created` output (`if: needs.release-please.outputs.release_created == 'true'`) and checking out the new `tag_name` output. It runs in the *same* workflow run that publishes the release.
+
+!!! note "Why it's not a separate `release: published` workflow (resolved — [#357](https://github.com/derekwinters/lucas-doggiehood/issues/357))"
+    release-please publishes the GitHub release with the default `GITHUB_TOKEN`, and GitHub deliberately does **not** fire workflows from events initiated by `GITHUB_TOKEN` (to prevent recursive runs). A workflow triggered `on: release: [published]` therefore silently never ran for automated releases — only the manual backfill did. Wiring the build into the release-please run itself, gated on `release_created`, sidesteps the token restriction entirely.
+
+`release-build.yml` is retained as the **`workflow_dispatch` backfill**: a manual run that takes an existing release `tag` input and builds + attaches its APK — for a release whose publish predates this mechanism, or to re-attach a build on demand. Its old `release: published` trigger has been removed.
+
+Both paths preserve the **graceful-skip contract**: a "Check for Unity license secret" step gates every build step with `if: steps.license.outputs.present == 'true'`, so a missing `UNITY_LICENSE` secret emits a warning and skips rather than failing the run.
 
 ## Commit linting
 
