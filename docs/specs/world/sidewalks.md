@@ -22,7 +22,7 @@ A sidewalk's centerline sits `RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 
 
 At the starting intersection, the two crossing roads produce four box corners (one per compass direction the roads' sidewalks meet). Each of the 4 road arms — N, S, E, W — gets one crosswalk, `CrosswalkWidth` (3m) wide, connecting the two box corners on either side of that arm and letting a pedestrian cross straight over that road instead of going the long way around through both corners.
 
-This is placeholder geometry: crosswalks render as a flat, distinctly colored rectangular patch (no zebra-stripe markings) — see [Art & UI Style](art-style.md) for the palette and [Build checklist](#build-checklist) below for what's actually implemented.
+In the shipping kit-art path, literal zebra-stripe crosswalks render via the Kenney City Kit Roads `road-crossroad-path` variant — painted stripes across all four arms at ~3–5m from center (tile scale 10), landing right on the walk network's crosswalk edges. Only `WorldBuilder`'s primitive graybox fallback (when the kit tiles can't load) still renders each crosswalk as a flat, distinctly colored rectangular patch with no markings — see [Art & UI Style](art-style.md) for the fallback palette and [Build checklist](#build-checklist) below for what's actually implemented.
 
 Visually, each crosswalk only covers the road and verge band — `RoadWidth + 2 × GrassVergeWidth` (7.5m at the 0.75m verge) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's `Crosswalk` edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in `WorldBuilder`, not a change to the graph.
 
@@ -80,7 +80,8 @@ A front walkway renders as tiled Kenney City Kit Suburban `path-short` pieces �
 
 - **Approach-to-rest movement** ([#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) — `RestBehavior` stays a pure probabilistic state flip with no movement of its own; it doesn't touch the walk network.
 - **Multi-tile grid / adjacency system** ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), implemented — see [Tile Catalog](tile-catalog.md)) — `WalkNetwork` doesn't consume it yet; `WalkNetwork` is generic enough to extend to it later, but wiring it up is not part of this page.
-- **Literal crosswalk striping** — deferred visual polish; today's crosswalk is one flat-colored patch.
+
+(Literal crosswalk striping is no longer deferred — it ships in the kit-art path via the `road-crossroad-path` variant, see [The crosswalk box](#the-crosswalk-box) above.)
 
 ## Build checklist
 
