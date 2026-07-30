@@ -31,7 +31,7 @@ namespace Doggiehood.Unity.EditModeTests
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(parent);
+            UnityEngine.Object.DestroyImmediate(parent);
         }
 
         private static Quest LostItemQuest(string itemName)
@@ -177,8 +177,8 @@ namespace Doggiehood.Unity.EditModeTests
             finally
             {
                 cam.targetTexture = null;
-                Object.DestroyImmediate(texture);
-                Object.DestroyImmediate(camGo);
+                UnityEngine.Object.DestroyImmediate(texture);
+                UnityEngine.Object.DestroyImmediate(camGo);
             }
         }
 
