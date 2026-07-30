@@ -35,6 +35,7 @@ token semantics may change under a future dated beta header.
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 ROUTINE_BETA = "experimental-cc-routine-2026-04-01"
@@ -67,13 +68,43 @@ def build_fire_request(url, secret, issue_number, repo):
     }
 
 
+def interpret_fire_response(status, body):
+    """Classify a fire response into ``(ok, detail)``.
+
+    A truthful success signal (#380): ``ok`` is True **only** when the endpoint
+    returned a real ``routine_fire`` body carrying a ``claude_code_session_url``
+    — proof a session was actually created. `urlopen` raises only on 4xx/5xx,
+    so a bare "2xx ⇒ success" check would report a false "fired" when
+    ``AI_TRIAGE_URL`` points somewhere other than the ``/fire`` endpoint (e.g.
+    a page that returns a 200 HTML body). For any non-success, ``detail`` names
+    the HTTP status and a body snippet so the cause is visible in the workflow
+    log (a 401's error message, an unexpected 200's body, etc.).
+    """
+    if isinstance(body, (bytes, bytearray)):
+        text = body.decode("utf-8", "replace")
+    else:
+        text = body or ""
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError):
+        parsed = None
+    if (200 <= status < 300 and isinstance(parsed, dict)
+            and parsed.get("claude_code_session_url")):
+        return True, parsed["claude_code_session_url"]
+    snippet = " ".join(text.split())[:300]
+    return False, "HTTP %s: %s" % (status, snippet or "(empty body)")
+
+
 def fire(issue_number, repo):
-    """Best-effort POST to the Routine fire endpoint. Returns True if sent.
+    """Best-effort POST to the Routine fire endpoint. Returns True if a session
+    was actually created.
 
     Reads ``AI_TRIAGE_URL`` / ``AI_TRIAGE_SECRET`` from the environment. A
     missing secret (Routine not wired up) or any network error is logged and
     swallowed — the label move has already happened, so a failed fire must
-    never fail the gatekeeper.
+    never fail the gatekeeper. The response is classified by
+    ``interpret_fire_response`` so the log reflects what actually happened: the
+    new session URL on success, or the status + body on failure.
     """
     req = build_fire_request(
         os.environ.get("AI_TRIAGE_URL"),
@@ -90,11 +121,33 @@ def fire(issue_number, repo):
         request.add_header(name, value)
     try:
         with urllib.request.urlopen(request) as resp:
-            resp.read()
-        sys.stderr.write("reactive-triage: fired Routine for #%d\n"
-                         % issue_number)
-        return True
-    except Exception as exc:  # noqa: BLE001 — best-effort, never fatal
+            status, raw = resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        # 4xx/5xx — read the error body (the API's error JSON), which the bare
+        # exception string drops, so the log names why (e.g. a 401 bad token).
+        body = b""
+        try:
+            body = exc.read()
+        except Exception:  # noqa: BLE001
+            pass
+        _, detail = interpret_fire_response(exc.code, body)
+        sys.stderr.write("reactive-triage: fire for #%d failed: %s\n"
+                         % (issue_number, detail))
+        return False
+    except Exception as exc:  # noqa: BLE001 — network error, never fatal
         sys.stderr.write("reactive-triage: fire for #%d failed: %s\n"
                          % (issue_number, exc))
         return False
+
+    ok, detail = interpret_fire_response(status, raw)
+    if ok:
+        sys.stderr.write("reactive-triage: fired Routine for #%d -> %s\n"
+                         % (issue_number, detail))
+    else:
+        # A 2xx that isn't a routine_fire — e.g. AI_TRIAGE_URL is not the /fire
+        # endpoint. Do NOT report a false success.
+        sys.stderr.write(
+            "reactive-triage: fire for #%d returned no session (check "
+            "AI_TRIAGE_URL points at the /fire endpoint): %s\n"
+            % (issue_number, detail))
+    return ok
