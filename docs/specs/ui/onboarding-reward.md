@@ -1,6 +1,6 @@
 # Onboarding reward panel
 
-*Wireframe issue: [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374). Implements/covers: `OnboardingRewardPanel`. Status: **Proposed — awaiting approval** (#374).*
+*Wireframe issue: [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374). Implements/covers: `OnboardingRewardPanel`. Approved: Derek, 2026-07-30 ([`/approve` on #374](https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403)) — authoritative layout contract.*
 *Mockup: [mockups/onboarding-reward.html](mockups/onboarding-reward.html).*
 
 ## Purpose
@@ -44,14 +44,14 @@ The panel **chrome** (outline `OutlineThicknessPx` = 6 / corner radius `PanelRad
 
 - **One instance, reused for every onboarding step.** The caller passes the **message** (what was done) and the **amount** (`+100` today — `OnboardingRewardChainNumbers.RewardPerStep`), which renders as the button label (**"+100 coins"**); the heading and chrome are constant. This is the standard onboarding reward surface — no per-step panel ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)).
 - **Dynamic message, fixed heading.** Only the one message line is dynamic; the card **grows vertically** with its wrapped height, exactly like the [confirmation card](confirmation-dialog.md). Keep each message to one short sentence — no scrolling.
-- **Proposed per-step copy** (message line; refine at review):
+- **Per-step copy** (message line — accepted defaults, `/approve` #374):
     1. **First quest** — "You finished your first quest!"
     2. **Upgrade a house** — "You made a house even nicer!"
     3. **Expand the map** — "You opened up a brand-new street!"
     4. **Build a house** — "You built a brand-new house!"
 - **Always dismissible.** The single **+100 coins** button dismisses; tapping the scrim also dismisses. There is no path that leaves it stuck open — the same anti-soft-lock posture as [#329](https://github.com/derekwinters/lucas-doggiehood/issues/329) and the [confirmation dialog](confirmation-dialog.md). One button only — a reward is an acknowledgement, not a choice, so there is no decline; the single button names the payout rather than reading a neutral "Yay!".
-- **A brief celebration beat, not tutorial guidance.** Unlike the non-blocking [onboarding coach prompt](onboarding-overlay.md), this panel *is* a momentary modal (scrim + one button) the player taps through after finishing a step. **Open decision for review:** confirm a short modal celebration is acceptable here, given onboarding's otherwise "no blocking modal" principle ([onboarding.md](../onboarding.md)) — the intent is a one-tap reward beat, not a tutorial screen.
+- **A brief celebration beat, not tutorial guidance.** Unlike the non-blocking [onboarding coach prompt](onboarding-overlay.md), this panel *is* a momentary modal (scrim + one button) the player taps through after finishing a step. **Accepted (Derek, `/approve` #374):** a brief one-tap modal celebration is the standard here — a deliberate, bounded exception to onboarding's otherwise "no blocking modal" principle ([onboarding.md](../onboarding.md)). It is a reward beat, not a tutorial screen; the panel is always dismissed by the single button (or the scrim).
 - **Reward payout stays in Core.** The panel is pure presentation over the existing reward-chain deposit (`OnboardingRewardChain` / `Wallet.Deposit`); it shows the amount Core already granted and never moves coins itself. The currency chip updates on its own (it reads `Wallet.Coins` live).
-- **Scope decision (open):** onboarding-only for now. Reusing this same panel as the reward feedback for **every** completed quest is a natural follow-up but is out of scope until Derek/Lucas decide — see [#372](https://github.com/derekwinters/lucas-doggiehood/issues/372).
+- **Scope (accepted, Derek `/approve` #374):** onboarding-only for now. Reusing this same panel as the reward feedback for **every** completed quest is a natural follow-up but stays out of scope until Derek/Lucas decide it separately — see [#372](https://github.com/derekwinters/lucas-doggiehood/issues/372).
 - **Reference resolution.** Constants are authored at the 1920×1200 (16:10) reference per [Overview](index.md); a Unity `CanvasScaler` scales from this so each px constant has a fixed meaning across tablet sizes.
 - Style itself (outlines, flat shadows, pill shapes, rounded type, palette) lives in [Art & UI Style](../world/art-style.md); this page is layout only.

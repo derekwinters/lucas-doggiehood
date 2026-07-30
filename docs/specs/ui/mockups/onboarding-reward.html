@@ -130,12 +130,12 @@
       <p class="note"><b>Scrim</b> (dim; tapping dismisses) · <b>Medal</b> (single gold star, overlaps top) · <b>Heading</b> (fixed “You did it!”) · <b>Message</b> (dynamic, one line) · <b>+100 coins button</b> (single leaf pill with a gold coin token — the reward is the button).</p>
       <p class="note"><b>One panel, reused for every step:</b> the caller passes the message + amount; heading and chrome are constant. Card grows vertically with the message. Always dismissible (button or scrim) — no soft-lock (#329). One button only: a reward is an acknowledgement, not a choice — and the button itself names the payout.</p>
       <p class="note"><b>Payout stays in Core:</b> the panel shows the coins the reward-chain (#316) already deposited; it never moves coins. The currency chip updates on its own.</p>
-      <p class="note"><b>Open for review:</b> a brief modal celebration vs. onboarding’s otherwise non-blocking principle; and whether this same panel later becomes the reward feedback for <i>every</i> completed quest (#372).</p>
+      <p class="note"><b>Accepted (Derek, /approve #374):</b> the brief one-tap modal celebration is the standard here (a bounded exception to onboarding’s otherwise non-blocking principle); reuse stays onboarding-only for now — whether this same panel later becomes the reward feedback for <i>every</i> completed quest is deferred to #372.</p>
     </div>
   </div>
 
   <div class="steps">
-    <h2>Per-step message copy (proposed — amount +100 each, from <code>OnboardingRewardChainNumbers.RewardPerStep</code>)</h2>
+    <h2>Per-step message copy (accepted defaults — amount +100 each, from <code>OnboardingRewardChainNumbers.RewardPerStep</code>)</h2>
     <div class="sgrid">
       <div class="srow"><span class="n">1</span><span class="t"><b>First quest</b> — “You finished your first quest!”</span></div>
       <div class="srow"><span class="n">2</span><span class="t"><b>Upgrade a house</b> — “You made a house even nicer!”</span></div>
@@ -146,7 +146,7 @@
 
   <footer>
     Bespoke celebration panel on the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill button · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built panel against them.
-    <br><span class="status">Proposed — awaiting approval (#374)</span>
+    <br><span class="status">Approved — Derek, 2026-07-30 (/approve #374)</span>
   </footer>
 </div>
 </body>

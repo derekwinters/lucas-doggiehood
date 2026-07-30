@@ -30,16 +30,24 @@ The whole overlay is a single **coach bar** — a slim pill floated over the nei
 
 The bar's **style** — thick outline, hard drop shadow, pill (999 px) radius — is the shared Candy Cottage baseline from [Shared UI Components](shared-components.md) / [Art & UI Style](../world/art-style.md) and is not re-specified here; this page places the bar and sizes it and its message text.
 
-## Standard onboarding coverage (#374 — proposed)
+## Standard onboarding coverage (#374)
 
-*Proposed extension, awaiting approval on [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374). This coach bar is the **one standard guidance surface** for **all** onboarding steps — not just the first four — so no new prompt design is invented per flow.*
+*Approved extension: Derek, 2026-07-30 ([`/approve` on #374](https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403)) — authoritative. This coach bar is the **one standard guidance surface** for **all** onboarding steps — not just the first four — so no new prompt design is invented per flow.*
 
-- **Coverage across the whole guided journey.** The same coach bar now guides the [onboarding reward-chain](../onboarding.md#onboarding-reward-chain-316) steps ([#316](https://github.com/derekwinters/lucas-doggiehood/issues/316)) as well as the original four: after the first quest it re-appears for **upgrade a house → expand the map → build a house**, advancing on each real action, then dismisses for good when the chain completes (implementation [#371](https://github.com/derekwinters/lucas-doggiehood/issues/371)). **Proposed added step copy** (refine at review):
+- **Coverage across the whole guided journey.** The same coach bar now guides the [onboarding reward-chain](../onboarding.md#onboarding-reward-chain-316) steps ([#316](https://github.com/derekwinters/lucas-doggiehood/issues/316)) as well as the original four: after the first quest it re-appears for **upgrade a house → expand the map → build a house**, advancing on each real action, then dismisses for good when the chain completes (implementation [#371](https://github.com/derekwinters/lucas-doggiehood/issues/371)). **Added step copy** (accepted defaults, `/approve` #374):
     5. **Upgrade a house** — "Tap a house, then Upgrade to make it even nicer!"
     6. **Expand the map** — "Tap the glowing lock to open up a new street!"
     7. **Build a house** — "Tap the empty lot to build a new house!"
-- **Grow-to-fit width (folds in [#369](https://github.com/derekwinters/lucas-doggiehood/issues/369)).** `CoachWidthPx` (900) becomes a **minimum**, not a fixed width: the bar sizes its width to the measured message (plus the paw badge, step-dots, and paddings), clamped to a `CoachMaxWidthPx` beyond which the text **wraps** to a second line and the bar grows in height instead — so no step string ever overflows the pill or runs off-screen. Bottom-center anchor and the panel-open behavior are unchanged. New constants: `CoachMaxWidthPx` (proposed `1500`) and, when wrapping, the bar height grows by one `MsgFontPx` line + existing vertical padding.
-- **Step-dots (open sub-decision).** With seven guided steps, either extend `StepDotCount` to the full guided count, or keep the dots only for the first-launch four and drop them for the post-first-quest reward-chain steps. Flagged for Derek at review; the mockup still shows the original four-dot bar.
+- **Grow-to-fit width (folds in [#369](https://github.com/derekwinters/lucas-doggiehood/issues/369)).** `CoachWidthPx` (900) becomes a **minimum**, not a fixed width: the bar sizes its width to the measured message (plus the paw badge, step-dots, and paddings), clamped to a `CoachMaxWidthPx` beyond which the text **wraps** to a second line and the bar grows in height instead — so no step string ever overflows the pill or runs off-screen. Bottom-center anchor and the panel-open behavior are unchanged. When wrapping, the bar height grows by one `MsgFontPx` line + existing vertical padding.
+
+    **Locked #374 constants** (these are the values [#371](https://github.com/derekwinters/lucas-doggiehood/issues/371) declares and EditMode-tests against, per [#161](https://github.com/derekwinters/lucas-doggiehood/issues/161)'s no-inline-literals rule):
+
+    | Constant | Value | Applies to |
+    |---|---|---|
+    | `CoachWidthPx` | `900` | Now a **minimum** width (was a fixed width); the bar grows to fit the measured message |
+    | `CoachMaxWidthPx` | `1500` | Max width before the message **wraps** and the bar grows in height instead |
+    | `StepDotCount` | `4` | Unchanged; dots track the first-launch four steps only (see step-dots note below) |
+- **Step-dots (resolved — accepted default).** `StepDotCount` stays `4`: the progress dots track only the first-launch four steps and are **dropped** for the post-first-quest reward-chain steps (upgrade → expand → build), matching the approved mockup's original four-dot bar. (This was flagged as an open sub-decision in the proposal; the bare `/approve` accepts the mockup's default — flagged for Derek to confirm in the distilling PR.)
 - **Completion hands off to the reward panel.** Each step's completion raises the bespoke [onboarding reward panel](onboarding-reward.md) ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) celebrating the step + its coin reward; the coach bar then shows the next step's prompt (or dismisses after the last).
 
 ## Notes
