@@ -2199,6 +2199,13 @@ applies.</p>
   <code>gatekeeper-sweep.yml</code>. If either is absent the call is a <strong>clean no-op</strong>, and
   any network error is swallowed: the label move has already succeeded, so a
   failed fire never fails the gatekeeper.</li>
+<li>The response is classified by <code>interpret_fire_response</code>
+  (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/380">#380</a>) so the
+  log is <strong>truthful</strong>, not "2xx ⇒ fired": success requires a real
+  <code>routine_fire</code> body carrying a <code>claude_code_session_url</code> (logged so the run
+  is one click away), and every other outcome logs the HTTP status + body
+  snippet — a <code>401</code>'s error message, or a 2xx that isn't a <code>routine_fire</code>
+  (the tell that <code>AI_TRIAGE_URL</code> isn't actually the <code>/fire</code> endpoint).</li>
 <li>The POST body's freeform <code>text</code> names the repo and issue number. The Routine
   receives it wrapped in an untrusted <code>&lt;routine-fire-payload&gt;</code> block, so the
   Routine's prompt must <strong>parse only the integer issue number</strong> out of it and
