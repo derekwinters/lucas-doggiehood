@@ -12,8 +12,92 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
+
+  # When release-please publishes a GitHub release (tag vX.Y.Z), build the
+  # final APK for that tag and attach it to the release as
+  # doggiehood-vX.Y.Z.apk — so every release page carries its installable
+  # build. This runs inside the same workflow run that created the release,
+  # because a release published by release-please's GITHUB_TOKEN never fires
+  # a separate `release: published` workflow (see #357). Debug signing, same
+  # as all MVP builds.
+  build-and-attach:
+    name: Build and attach APK to release
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    # contents: write (declared at workflow level above) covers the release upload.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          lfs: true
+          fetch-depth: 0
+
+      - name: Check for Unity license secret
+        id: license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Release APK skipped::UNITY_LICENSE secret is not configured, so no APK was attached to the release."
+          fi
+
+      - name: Compute version
+        if: steps.license.outputs.present == 'true'
+        id: version
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "code=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Building release ${TAG} (versionName ${TAG#v}, versionCode $(git rev-list --count HEAD))"
+
+      - name: Cache Unity Library
+        if: steps.license.outputs.present == 'true'
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-android-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-android-
+
+      - name: Build Android release APK
+        if: steps.license.outputs.present == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildName: Doggiehood
+          versioning: Custom
+          version: ${{ steps.version.outputs.name }}
+          androidVersionCode: ${{ steps.version.outputs.code }}
+          androidExportType: androidPackage
+
+      - name: Attach APK to the release
+        if: steps.license.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          APK="$(find build/Android -name '*.apk' | head -n 1)"
+          if [ -z "$APK" ]; then
+            echo "::error::Build completed but no APK found under build/Android"
+            exit 1
+          fi
+          sudo mv "$APK" "doggiehood-${TAG}.apk"
+          gh release upload "$TAG" "doggiehood-${TAG}.apk" --clobber

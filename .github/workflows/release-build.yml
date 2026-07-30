@@ -1,16 +1,18 @@
 name: release-build
 
-# When release-please publishes a GitHub release (tag vX.Y.Z), build the
-# final APK for that tag and attach it to the release as
-# doggiehood-vX.Y.Z.apk — so every release page carries its installable
-# build. Debug signing, same as all MVP builds.
+# Backfill path: build the final APK for an already-published release tag and
+# attach it to that release as doggiehood-vX.Y.Z.apk. Debug signing, same as
+# all MVP builds.
+#
+# Automated releases no longer trigger this workflow. A release published by
+# release-please's GITHUB_TOKEN never fires a `release: published` event
+# (GitHub suppresses workflow triggers from GITHUB_TOKEN-initiated events),
+# so the APK is now built and attached by the build-and-attach job inside
+# release-please.yml, in the same run that creates the release (#357). This
+# workflow is retained purely as the manual backfill for a tag whose release
+# predates that mechanism, or to re-attach a build on demand.
 
 on:
-  release:
-    types:
-      - published
-  # Backfill path: attach the APK to an already-published release whose
-  # publish predates this workflow (e.g. v0.2.0).
   workflow_dispatch:
     inputs:
       tag:
@@ -22,7 +24,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-build-${{ github.event.release.tag_name || inputs.tag }}
+  group: release-build-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -32,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ inputs.tag }}
           lfs: true
           fetch-depth: 0
 
@@ -52,7 +54,7 @@ jobs:
         if: steps.license.outputs.present == 'true'
         id: version
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ inputs.tag }}
         run: |
           echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
           echo "code=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
@@ -86,7 +88,7 @@ jobs:
         if: steps.license.outputs.present == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAG: ${{ inputs.tag }}
         run: |
           APK="$(find build/Android -name '*.apk' | head -n 1)"
           if [ -z "$APK" ]; then
