@@ -33,11 +33,17 @@ namespace Doggiehood.Core.World
     /// <summary>
     /// Per-lot backyard fence geometry (#342, adopting #147's settled
     /// rules; supersedes #146's house-footprint-width fence). The fence
-    /// line traces the LOT BOUNDARY rather than the house: it is inset from
-    /// EVERY edge of the lot's <see cref="LotBounds.QuadrantBounds"/> by one
-    /// <see cref="BoundaryOffset"/> — uniform whether that edge borders a
-    /// sidewalk, a neighbouring yard, or the map edge (so #146's corner-lot
-    /// house-anchoring dissolves).
+    /// line traces the LOT BOUNDARY rather than the house, leaving one
+    /// <see cref="BoundaryOffset"/> (a sidewalk-width) strip of grass beyond
+    /// the pavement on every edge (#147 offset fix). A quadrant edge that
+    /// lies ON a road centerline (a road-bordering edge) is offset from the
+    /// sidewalk's OUTER edge (<see cref="LotBounds.StreetCorridorInset"/>)
+    /// by one <see cref="BoundaryOffset"/>; a neighbour-yard / map edge is
+    /// offset from the <see cref="LotBounds.QuadrantBounds"/> boundary by
+    /// that same <see cref="BoundaryOffset"/> (so #146's corner-lot
+    /// house-anchoring dissolves). Which edges border a road is derived
+    /// generically from the road network, mirroring
+    /// <see cref="LotBounds.ClearRoadCorridors"/>.
     ///
     /// The shape is FIVE runs, front open: two side runs plus one rear run
     /// trace the offset boundary rectangle around the back yard, and two
@@ -58,13 +64,15 @@ namespace Doggiehood.Core.World
     public static class LotFence
     {
         /// <summary>
-        /// How far the fence line is inset from every lot-quadrant boundary,
-        /// in meters. Decision (#147 "Settled", adopted by #342): one raised
-        /// <see cref="WorldDimensions.SidewalkWidth"/> (2m), uniform on every
-        /// edge — a sidewalk-width strip of ground sits between each
-        /// quadrant boundary and the fence line, whether that boundary is a
-        /// sidewalk, a neighbouring yard, or the map edge. Named rather than
-        /// a bare literal (#161).
+        /// The sidewalk-width strip of grass left between the pavement and the
+        /// fence line, in meters. Decision (#147 "Settled", adopted by #342):
+        /// one raised <see cref="WorldDimensions.SidewalkWidth"/> (2m). It is
+        /// measured off the sidewalk's OUTER edge
+        /// (<see cref="LotBounds.StreetCorridorInset"/>) on a road-bordering
+        /// edge and off the <see cref="LotBounds.QuadrantBounds"/> boundary on
+        /// a neighbour-yard / map edge (#147 offset fix), so the same grass
+        /// strip sits between the sidewalk and the fence everywhere. Named
+        /// rather than a bare literal (#161).
         /// </summary>
         public const float BoundaryOffset = WorldDimensions.SidewalkWidth;
 
@@ -100,8 +108,9 @@ namespace Doggiehood.Core.World
         /// The lot's backyard fence geometry regardless of the
         /// <see cref="HouseLot.HasFence"/> flag — queryable for a disabled
         /// lot (the #147 purchase flow needs to describe what it sells).
-        /// Traces the lot's actual <see cref="LotBounds.QuadrantBounds"/>,
-        /// inset by <see cref="BoundaryOffset"/>. Reads
+        /// Traces the lot's actual <see cref="LotBounds.QuadrantBounds"/> with
+        /// the road-aware offset, passing <see cref="NeighborhoodLayout.Roads"/>
+        /// so road-bordering edges sit off the sidewalk's outer edge. Reads
         /// <see cref="NeighborhoodLayout.WalkNetwork"/> via HousePlacement,
         /// like #129's version did; it is only ever called after the network
         /// is built.
@@ -112,7 +121,8 @@ namespace Doggiehood.Core.World
             var facing = HousePlacement.FrontFacing(lot);
             var position = HousePlacement.Position(lot, HousePlacement.KitScale);
             var quadrant = LotBounds.QuadrantBounds(lot);
-            return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale);
+            return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale,
+                NeighborhoodLayout.Roads);
         }
 
         /// <summary>
@@ -135,27 +145,39 @@ namespace Doggiehood.Core.World
             }
 
             var quadrant = StandardQuadrantAround(model, housePosition, facing, uniformScale);
-            return BackyardRuns(quadrant, model, housePosition, facing, uniformScale);
+            // The standard gallery quadrant has no adjacent road network, so
+            // the offset is a plain BoundaryOffset on every edge.
+            return BackyardRuns(quadrant, model, housePosition, facing, uniformScale,
+                Array.Empty<Road>());
         }
 
         /// <summary>
-        /// Pure builder: the five backyard fence runs tracing
-        /// <paramref name="quadrantBounds"/> inset by
-        /// <see cref="BoundaryOffset"/>, for a house of
+        /// Pure builder: the five backyard fence runs tracing the road-aware
+        /// inset of <paramref name="quadrantBounds"/> (edges on a road
+        /// centerline in <paramref name="roads"/> pulled off the sidewalk's
+        /// outer edge via <see cref="LotBounds.ClearRoadCorridors"/>, then
+        /// every edge inset by <see cref="BoundaryOffset"/>), for a house of
         /// <paramref name="model"/> at <paramref name="housePosition"/>
         /// facing the unit cardinal <paramref name="facing"/> at
-        /// <paramref name="uniformScale"/>. Runs chain
+        /// <paramref name="uniformScale"/>. Pass an empty
+        /// <paramref name="roads"/> list for a lot with no adjacent road (the
+        /// gallery standard quadrant) to get a plain uniform offset. Runs chain
         /// sideWallMidpoint → (connector) → side-run front end →
         /// (side run) → rear corner → (rear run) → rear corner →
         /// (side run) → side-run front end → (connector) → sideWallMidpoint,
         /// continuous with the front left open.
         /// </summary>
         public static IReadOnlyList<FenceRun> BackyardRuns(LotRect quadrantBounds, HouseModel model,
-            GridPoint housePosition, GridPoint facing, float uniformScale)
+            GridPoint housePosition, GridPoint facing, float uniformScale, IReadOnlyList<Road> roads)
         {
             if (uniformScale <= 0f)
             {
                 throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
+            }
+
+            if (roads == null)
+            {
+                throw new ArgumentNullException(nameof(roads));
             }
 
             var halfWidth = uniformScale * model.FootprintX / 2f;
@@ -164,10 +186,22 @@ namespace Doggiehood.Core.World
             var f = facing;
             var p = new GridPoint(-f.Z, f.X);
 
-            // Offset (inset) boundary rectangle.
+            // Road-aware offset boundary rectangle (#147 offset fix). A
+            // quadrant edge that lies ON a road centerline sits inside the
+            // paved street corridor, not on a yard boundary, so insetting it by
+            // a plain BoundaryOffset would put the fence line in the road. Pull
+            // every such edge off the sidewalk's OUTER edge first — mirroring
+            // the tree-placement precedent in
+            // LotBounds.ClearRoadCorridors (road edges derived generically
+            // from the network, not hard-coded) — then inset EVERY edge by one
+            // BoundaryOffset. The result: a sidewalk-width strip of grass
+            // between the sidewalk and the fence on road-bordering edges, and
+            // the same strip off the quadrant boundary on neighbour-yard / map
+            // edges.
+            var corridorCleared = LotBounds.ClearRoadCorridors(quadrantBounds, roads);
             var inset = new LotRect(
-                quadrantBounds.MinX + BoundaryOffset, quadrantBounds.MaxX - BoundaryOffset,
-                quadrantBounds.MinZ + BoundaryOffset, quadrantBounds.MaxZ - BoundaryOffset);
+                corridorCleared.MinX + BoundaryOffset, corridorCleared.MaxX - BoundaryOffset,
+                corridorCleared.MinZ + BoundaryOffset, corridorCleared.MaxZ - BoundaryOffset);
 
             // Project the inset corners onto the facing basis: the rear edge
             // is the least-along boundary; the two side edges are the cross
