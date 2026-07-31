@@ -1840,6 +1840,11 @@
 <td></td>
 <td></td>
 </tr>
+<tr>
+<td>- <strong>Coverage status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/371">#371</a>): implemented.</strong> The coach bar re-shows for the three reward-chain steps with the accepted copy above, advancing on each <strong>real action</strong> — upgrade a house / unlock a zone / build a house — observed on <code>GameState.RewardChain</code>, and dismisses for good once the chain completes at the build step (releasing normal quest rotation, the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>→<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a> handoff). The engine-free decision — the per-step prompt lookup and the "keep showing until the chain completes" dismissal gate — lives in Core <code>OnboardingCoach</code>; the thin <code>OnboardingOverlay</code> renders it. The grow-to-fit width (<code>CoachWidthPx</code> minimum, <code>CoachMaxWidthPx</code> wrap) and the frozen four-step dots (they stay filled at 4/4 through the reward chain, not advancing) are wired against the Locked #374 constants above. (The reward panel itself is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/372">#372</a>'s job, not wired here.)</td>
+<td></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 </li>
