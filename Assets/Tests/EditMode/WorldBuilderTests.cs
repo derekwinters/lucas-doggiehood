@@ -677,12 +677,13 @@ namespace Doggiehood.Unity.EditModeTests
 
         private static HouseLot ZoneLot(bool hasFence = false)
         {
-            // A zone lot (id >= 5) placed like the NE starting lot; its model
-            // resolves through HouseVariantAssignment (#414), not HouseStyleTable.
-            return new HouseLot(
-                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
-                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, NeighborhoodLayout.LotDistanceFromCenter),
-                hasFence);
+            // The REAL first unlocked-zone lot (id >= 5), which sits on its own
+            // tile at world Z ~= 60 — not a hand-placed lot on the starting
+            // tile. This exercises the actual zone geometry whose lot-quadrant
+            // bounds regressed in #405 (a starting-tile lot would not reproduce
+            // it). Its model resolves through HouseVariantAssignment (#414).
+            var lot = ZoneCatalog.FirstZone.Lots.First();
+            return hasFence ? new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, true) : lot;
         }
 
         [Test]

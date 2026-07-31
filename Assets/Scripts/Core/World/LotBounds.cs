@@ -139,14 +139,37 @@ namespace Doggiehood.Core.World
 
         /// <summary>The lot's rectangular bounds: one tile-quadrant
         /// (<see cref="WorldDimensions.TileSize"/> / 2 per side), positioned
-        /// on the lot's own <see cref="HouseLot.Quadrant"/>.</summary>
+        /// on the lot's own <see cref="HouseLot.Quadrant"/> within the tile the
+        /// lot sits on. The quadrant is centred on THAT tile (not always the
+        /// origin): a starting lot rounds to the origin tile and is unchanged,
+        /// but a zone lot (#405) sits on its own tile (e.g. the first zone's
+        /// cul-de-sac at world Z ~= 60), so its bounds surround its house
+        /// position there — otherwise <see cref="YardSplit"/> would slice around
+        /// a house that lies outside origin-centred bounds and produce an
+        /// inverted rect. The hand-picked lot distance within a tile still does
+        /// not affect the bounds (two lots in the same tile-quadrant share
+        /// them); only which tile the lot is on shifts them.</summary>
         public static LotRect QuadrantBounds(HouseLot lot)
         {
             var half = WorldDimensions.TileSize / 4f;
             var (signX, signZ) = SignsFor(lot.Quadrant);
-            var centerX = signX * half;
-            var centerZ = signZ * half;
+            var tileCenter = NearestTileCenter(lot.Position);
+            var centerX = tileCenter.X + signX * half;
+            var centerZ = tileCenter.Z + signZ * half;
             return new LotRect(centerX - half, centerX + half, centerZ - half, centerZ + half);
+        }
+
+        /// <summary>The centre of the <see cref="WorldDimensions.TileSize"/>
+        /// grid tile that <paramref name="position"/> falls in — the same
+        /// col*size / row*size convention <see cref="TileGeometry.CenterOf"/>
+        /// and <see cref="Zone"/> use to place lots, inverted by rounding to
+        /// the nearest tile.</summary>
+        private static GridPoint NearestTileCenter(GridPoint position)
+        {
+            var size = WorldDimensions.TileSize;
+            var col = (float)Math.Round(position.X / size, MidpointRounding.AwayFromZero);
+            var row = (float)Math.Round(position.Z / size, MidpointRounding.AwayFromZero);
+            return new GridPoint(col * size, row * size);
         }
 
         /// <summary>The portion of <see cref="QuadrantBounds"/> on the
