@@ -67,6 +67,17 @@ namespace Doggiehood.Unity
             gameObject.AddComponent<ExpansionUnlockDirector>()
                 .Init(state, root.transform, confirmationDialog, expansionDirector);
 
+            // Onboarding reward celebration (#372): the standard reusable panel
+            // (docs/specs/ui/onboarding-reward.md) pops "You did it! +100 coins"
+            // each time a reward-chain step (#316) pays out, calling out the
+            // payout that today lands silently. The director subscribes to the
+            // Core reward event and shows the panel with the approved per-step
+            // copy; Core still owns the deposit (the panel moves no coins). It
+            // stays silent for a returning player, whose chain is already
+            // complete, so it is safe to wire unconditionally.
+            var rewardPanel = BuildOnboardingRewardPanel(canvas);
+            gameObject.AddComponent<OnboardingRewardDirector>().Init(state, rewardPanel);
+
             // Persistent HUD (#159): the currency chip now wears the full Candy
             // Cottage chrome (#65/#296) — cream pill, Ink outline, hard shadow,
             // gold coin token. The top-right gear opens Settings (#219).
@@ -138,6 +149,21 @@ namespace Doggiehood.Unity
             var dialog = dialogObject.AddComponent<ConfirmationDialog>();
             dialog.Init();
             return dialog;
+        }
+
+        /// <summary>
+        /// Builds the reusable onboarding reward celebration panel (#372) under
+        /// the shared canvas, starting closed. The reward director raises it on
+        /// each reward-chain step payout with the step's approved copy + the
+        /// deposited amount; the panel is pure presentation and moves no coins.
+        /// </summary>
+        private OnboardingRewardPanel BuildOnboardingRewardPanel(GameObject canvas)
+        {
+            var panelObject = new GameObject("OnboardingRewardPanel");
+            panelObject.transform.SetParent(canvas.transform, false);
+            var panel = panelObject.AddComponent<OnboardingRewardPanel>();
+            panel.Init();
+            return panel;
         }
 
         /// <summary>

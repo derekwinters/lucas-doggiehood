@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
@@ -209,6 +210,96 @@ namespace Doggiehood.Core.Tests.Onboarding
             var reloaded = SaveCodec.Load("version=1\ncoins=0\nonboarded=0\n");
 
             Assert.That(reloaded.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.FirstQuest));
+        }
+
+        // --- #372: reward event surfaced for the celebration panel. The panel
+        // (thin Unity layer) reacts to this Core event to show "You did it! +100
+        // coins"; Core still owns the payout and never re-pays. Copy stays out of
+        // Core — the event carries only the just-completed step + the amount. ---
+
+        [Test]
+        public void CompletingTheCurrentStep_RaisesASingleRewardEvent_WithTheStepAndAmount()
+        {
+            var chain = new OnboardingRewardChain();
+            var wallet = new Wallet();
+            var events = new List<(OnboardingRewardStep step, int amount)>();
+            chain.RewardGranted += (step, amount) => events.Add((step, amount));
+
+            chain.TryAdvance(OnboardingRewardStep.FirstQuest, wallet);
+
+            Assert.That(events.Count, Is.EqualTo(1), "exactly one reward event per paid step");
+            Assert.That(events[0].step, Is.EqualTo(OnboardingRewardStep.FirstQuest),
+                "the event carries the step that was just completed");
+            Assert.That(events[0].amount, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep),
+                "the event carries the flat reward amount (named constant, not a literal)");
+        }
+
+        [Test]
+        public void EachOfTheFourSteps_RaisesItsOwnRewardEvent_InOrder()
+        {
+            var chain = new OnboardingRewardChain();
+            var wallet = new Wallet();
+            var steps = new List<OnboardingRewardStep>();
+            chain.RewardGranted += (step, amount) => steps.Add(step);
+
+            chain.TryAdvance(OnboardingRewardStep.FirstQuest, wallet);
+            chain.TryAdvance(OnboardingRewardStep.UpgradeHouse, wallet);
+            chain.TryAdvance(OnboardingRewardStep.ExpandMap, wallet);
+            chain.TryAdvance(OnboardingRewardStep.BuildHouse, wallet);
+
+            Assert.That(steps, Is.EqualTo(new[]
+            {
+                OnboardingRewardStep.FirstQuest,
+                OnboardingRewardStep.UpgradeHouse,
+                OnboardingRewardStep.ExpandMap,
+                OnboardingRewardStep.BuildHouse,
+            }), "each of the four steps celebrates exactly once, in fixed order");
+        }
+
+        [Test]
+        public void AnOutOfOrderAction_RaisesNoRewardEvent_AndPaysNothing()
+        {
+            var chain = new OnboardingRewardChain();
+            var wallet = new Wallet();
+            var events = 0;
+            chain.RewardGranted += (step, amount) => events++;
+
+            // Build attempted while the chain is still waiting on the first quest.
+            chain.TryAdvance(OnboardingRewardStep.BuildHouse, wallet);
+
+            Assert.That(events, Is.EqualTo(0), "an out-of-turn action never celebrates");
+            Assert.That(wallet.Coins, Is.EqualTo(0), "and never pays");
+        }
+
+        [Test]
+        public void ActionAfterTheChainIsDone_RaisesNoRewardEvent()
+        {
+            var chain = new OnboardingRewardChain();
+            var wallet = new Wallet();
+            chain.TryAdvance(OnboardingRewardStep.FirstQuest, wallet);
+            chain.TryAdvance(OnboardingRewardStep.UpgradeHouse, wallet);
+            chain.TryAdvance(OnboardingRewardStep.ExpandMap, wallet);
+            chain.TryAdvance(OnboardingRewardStep.BuildHouse, wallet);
+            Assert.That(chain.IsComplete, Is.True);
+
+            var events = 0;
+            chain.RewardGranted += (step, amount) => events++;
+            chain.TryAdvance(OnboardingRewardStep.BuildHouse, wallet);
+
+            Assert.That(events, Is.EqualTo(0), "a completed one-time chain never celebrates again");
+        }
+
+        [Test]
+        public void RestoreStep_RaisesNoRewardEvent_SoAReloadNeverReCelebrates()
+        {
+            var chain = new OnboardingRewardChain();
+            var events = 0;
+            chain.RewardGranted += (step, amount) => events++;
+
+            chain.RestoreStep(OnboardingRewardStep.ExpandMap);
+
+            Assert.That(events, Is.EqualTo(0),
+                "restoring persisted progress never re-pays nor re-celebrates (#316/#372)");
         }
     }
 }
