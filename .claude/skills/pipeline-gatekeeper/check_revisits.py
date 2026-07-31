@@ -42,6 +42,17 @@ carries ``ready-for-work`` / ``in-progress``. An issue is revisited only when it
 is ``needs-clarification``, not ``parked``, has at least one hard blocker (from a
 structured ``Blocked by: #N`` line or a native GitHub relationship), and
 **every** such blocker is resolved.
+
+**Wireframe-blocker carve-out (#396).** A blocker carrying the
+``type:wireframe`` label is the one exception to the ``ready-for-work`` /
+``in-progress`` shortcut: it resolves **only when closed** (absent from the open
+snapshot). A wireframe issue at ``ready-for-work`` is merely approved to go
+*draft* the wireframe; its downstream is hard-gated on the wireframe being
+distilled into ``docs/specs/ui/`` and closed (CLAUDE.md rule #8 /
+``docs/engineering/ui-design-process.md``). Without the carve-out the blocker's
+label never changes, so every sweep re-fires the same revisit and single-issue
+triage keeps concluding "still blocked" — the infinite churn #396 fixes. All
+other blockers keep the ``ready-for-work`` / ``in-progress`` semantics from #241.
 """
 
 import json
@@ -51,6 +62,15 @@ import sys
 # A blocker counts as resolved once it reaches one of these states (or closes,
 # which drops it from the open snapshot entirely).
 RESOLVED_LABELS = {"ready-for-work", "in-progress"}
+
+# Wireframe-producing blockers are the exception (#396): a `type:wireframe`
+# blocker at `ready-for-work` only means "approved to go *draft* the wireframe,"
+# not "the wireframe is an approved, distilled contract." Its downstream is
+# hard-gated on the wireframe being CLOSED (its layout distilled into
+# `docs/specs/ui/`, per CLAUDE.md rule #8 / docs/engineering/ui-design-process.md),
+# so a wireframe blocker resolves ONLY when it is absent from the open snapshot
+# (closed/merged) — the `RESOLVED_LABELS` shortcut does not apply to it.
+WIREFRAME_LABEL = "type:wireframe"
 
 # The label swap a revisit applies — back into the analysis queue, mirroring
 # /revise and /redo. Kept here so the transition is declared, not inlined.
@@ -92,7 +112,14 @@ def check_blocker_revisits(issues):
     def resolved(blocker):
         if blocker not in open_nums:
             return True  # closed / merged -> gone from the open snapshot
-        return bool(labels_by[blocker] & RESOLVED_LABELS)
+        blocker_labels = labels_by[blocker]
+        if WIREFRAME_LABEL in blocker_labels:
+            # A wireframe blocker resolves ONLY when closed (absent above), never
+            # merely at ready-for-work/in-progress (#396) — otherwise the
+            # downstream churns in an infinite revisit loop while the wireframe
+            # is still just approved-to-draft.
+            return False
+        return bool(blocker_labels & RESOLVED_LABELS)
 
     revisits = []
     for i in issues:

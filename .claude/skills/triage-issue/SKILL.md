@@ -100,6 +100,18 @@ from Derek), and the `/docs` pages it relates to. Then route:
    `ai-triage`), so the blocker-revisit sweep re-admits it — `add ai-triage,
    remove needs-clarification` — once its blocker resolves.
 
+   **Don't re-post an unchanged "still blocked" conclusion (#396).** When you
+   re-triage an issue that is *already* `needs-clarification` and you reach the
+   **same** "still blocked" conclusion on the **same** blocker set as your last
+   posted analysis comment (the blocker(s) haven't actually cleared — e.g. a
+   wireframe blocker still sits at `ready-for-work`, only approved-to-draft, not
+   yet distilled and closed), **do not post a near-duplicate comment.** Leave the
+   existing analysis and the `needs-clarification` label in place and hand the
+   issue back as a no-op. A revisit that fires while nothing material changed is
+   noise; re-posting the identical "still blocked on #N" comment each sweep is
+   the visible churn #396 targets. Only post a fresh `needs-clarification`
+   analysis when the blocker set or the conclusion has actually changed.
+
 4. **`/propose` present on the issue** (an owner comment containing `/propose`)
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your

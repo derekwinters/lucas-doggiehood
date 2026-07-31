@@ -174,6 +174,81 @@ class TestCheckBlockerRevisits(unittest.TestCase):
         ])
         self.assertEqual(revisits_for(2, out), [])
 
+    def test_wireframe_blocker_at_ready_for_work_does_not_revisit(self):
+        # #396: a wireframe-producing blocker (`type:wireframe`) at
+        # `ready-for-work` only means "approved to go draft the wireframe," not
+        # "the wireframe is a distilled, closed contract" (CLAUDE.md rule #8 /
+        # ui-design-process.md). The downstream issue is hard-gated on the
+        # wireframe being CLOSED, so `ready-for-work` must NOT resolve it.
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["type:wireframe", "ready-for-work"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1"),
+        ])
+        self.assertEqual(revisits_for(2, out), [])
+
+    def test_wireframe_blocker_at_in_progress_does_not_revisit(self):
+        # Same carve-out at `in-progress` — the wireframe still isn't distilled.
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["type:wireframe", "in-progress"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1"),
+        ])
+        self.assertEqual(revisits_for(2, out), [])
+
+    def test_wireframe_blocker_closed_revisits(self):
+        # Once the wireframe blocker is closed (absent from the open snapshot),
+        # its distillation contract has landed and the downstream revisits.
+        out = check_revisits.check_blocker_revisits([
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1"),
+        ])
+        self.assertEqual(len(revisits_for(2, out)), 1)
+
+    def test_wireframe_revisit_stable_across_repeat_sweeps(self):
+        # #396 churn guard: re-running the sweep on the SAME unchanged snapshot
+        # (wireframe blocker still at `ready-for-work`) must produce ZERO
+        # revisits every time — no infinite re-fire loop.
+        snapshot = [
+            issue(1, labels=["type:wireframe", "ready-for-work"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1"),
+        ]
+        first = check_revisits.check_blocker_revisits(snapshot)
+        second = check_revisits.check_blocker_revisits(snapshot)
+        self.assertEqual(revisits_for(2, first), [])
+        self.assertEqual(revisits_for(2, second), [])
+
+    def test_non_wireframe_blocker_still_revisits_at_ready_for_work(self):
+        # Regression guard for #241: an ordinary (non-wireframe) blocker at
+        # `ready-for-work` still resolves and revisits — the carve-out is scoped
+        # strictly to `type:wireframe` blockers.
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["ready-for-work"]),
+            issue(2, labels=["needs-clarification"], body="Blocked by: #1"),
+        ])
+        self.assertEqual(len(revisits_for(2, out)), 1)
+
+    def test_mixed_wireframe_and_ordinary_blockers_revisit_when_both_resolved(self):
+        # #396: two blockers — one `type:wireframe` (closed, absent) and one
+        # ordinary at `ready-for-work`. The revisit fires once BOTH are resolved
+        # under their respective rules, and both are reported.
+        out = check_revisits.check_blocker_revisits([
+            issue(3, labels=["ready-for-work"]),
+            issue(2, labels=["needs-clarification"],
+                  body="Blocked by: #1\nBlocked by: #3"),
+        ])
+        r = revisits_for(2, out)
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["blockers_resolved"], [1, 3])
+
+    def test_mixed_wireframe_open_blocks_revisit(self):
+        # The wireframe blocker (#1) is still open at `ready-for-work` while the
+        # ordinary blocker (#3) has resolved -> the wireframe holds the revisit.
+        out = check_revisits.check_blocker_revisits([
+            issue(1, labels=["type:wireframe", "ready-for-work"]),
+            issue(3, labels=["ready-for-work"]),
+            issue(2, labels=["needs-clarification"],
+                  body="Blocked by: #1\nBlocked by: #3"),
+        ])
+        self.assertEqual(revisits_for(2, out), [])
+
     def test_process_stdin_stdout(self):
         # The script wrapper reads a snapshot on stdin and writes revisits JSON.
         payload = {"issues": [

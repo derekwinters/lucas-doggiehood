@@ -184,8 +184,13 @@ silently ignored everywhere else.
    post a short auto-comment naming the cleared blocker(s) and ending in the
    `back-to-analysis` menu — e.g. *"Blocker #N reached `ready-for-work` —
    revisiting."* A blocker counts as resolved when it is closed/merged (absent
-   from the open snapshot) or carries `ready-for-work`/`in-progress`; an issue
-   with **multiple** blockers only revisits once **all** are resolved. Hard
+   from the open snapshot) or carries `ready-for-work`/`in-progress` — **except**
+   a blocker carrying `type:wireframe`, which resolves **only when closed** (#396):
+   a wireframe issue at `ready-for-work` is only approved to go *draft* the
+   wireframe, and its downstream is hard-gated on the wireframe being distilled
+   into `docs/specs/ui/` and closed (CLAUDE.md rule #8), so resolving it early
+   caused an infinite revisit churn. An issue with **multiple** blockers only
+   revisits once **all** are resolved (each under its own rule). Hard
    blockers are the union of structured `Blocked by: #N` lines and native
    relationships (`native_blocked_by`), so a natively-recorded blocker gates and
    clears a revisit too (#321); a prose mention never fires it, and soft
@@ -263,7 +268,10 @@ rejects non-numeric/non-positive input with `cap-invalid`, ignored on every
 other issue).
 `tests/test_check_revisits.py` covers
 the blocker auto-revisit (#241): single/multiple blockers, closed vs.
-`ready-for-work`/`in-progress` blockers, the all-must-resolve rule, native-only
+`ready-for-work`/`in-progress` blockers, the all-must-resolve rule, the
+`type:wireframe` carve-out (#396: a wireframe blocker resolves only when closed,
+non-wireframe blockers still resolve at `ready-for-work`, mixed blocker sets, and
+stability across repeat sweeps), native-only
 blockers and the native∪text union (#321), and the regression guards (no
 `Blocked by:` line and no native blocker, still-open blocker, prose-only
 mention, non-`needs-clarification` and `parked` issues never fire).
