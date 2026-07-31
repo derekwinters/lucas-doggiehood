@@ -60,7 +60,7 @@ namespace Doggiehood.Unity.EditModeTests
             dialog.Init();
 
             buildDirector = new GameObject("build-director").AddComponent<ExpansionDirector>();
-            buildDirector.Init(state, worldRoot.transform);
+            buildDirector.Init(state, worldRoot.transform, dialog);
 
             unlockDirector = new GameObject("unlock-director").AddComponent<ExpansionUnlockDirector>();
             unlockDirector.Init(state, worldRoot.transform, dialog, buildDirector);
@@ -125,10 +125,14 @@ namespace Doggiehood.Unity.EditModeTests
             var lot = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
             var houseId = lot.HouseId;
 
-            lot.OnTapped(); // 50 coins remain — the build should succeed
+            // #406: tapping an empty lot now raises the shared confirmation
+            // dialog rather than building on the bare tap; the build lands only
+            // on Yes. 50 coins remain, so the confirmed build succeeds.
+            lot.OnTapped();
+            dialog.YesButton.onClick.Invoke();
 
             Assert.That(state.Houses.Any(h => h.Id == houseId), Is.True,
-                "tapping a freshly-appeared lot builds a house — the new lots are wired");
+                "tapping a freshly-appeared lot then confirming builds a house — the new lots are wired");
         }
 
         [Test]
