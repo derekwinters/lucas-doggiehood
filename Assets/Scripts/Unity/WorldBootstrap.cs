@@ -155,7 +155,7 @@ namespace Doggiehood.Unity
             panelObject.transform.SetParent(canvas.transform, false);
             var settings = panelObject.AddComponent<SettingsPanel>();
             settings.Init(state, Application.version);
-            settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot);
+            settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot, state);
             return settings;
         }
 

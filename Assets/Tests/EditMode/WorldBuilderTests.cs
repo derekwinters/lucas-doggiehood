@@ -12,12 +12,14 @@ namespace Doggiehood.Unity.EditModeTests
     public class WorldBuilderTests
     {
         private GameObject root;
+        private GameState state;
 
         [SetUp]
         public void BuildWorld()
         {
             WorldBuilder.ForcePrimitiveFallback = false;
-            root = WorldBuilder.Build(GameState.CreateNew());
+            state = GameState.CreateNew();
+            root = WorldBuilder.Build(state);
         }
 
         [TearDown]
@@ -41,7 +43,8 @@ namespace Doggiehood.Unity.EditModeTests
         {
             Object.DestroyImmediate(root);
             WorldBuilder.ForcePrimitiveFallback = true;
-            root = WorldBuilder.Build(GameState.CreateNew());
+            state = GameState.CreateNew();
+            root = WorldBuilder.Build(state);
         }
 
         private IEnumerable<Transform> Children()
@@ -65,15 +68,15 @@ namespace Doggiehood.Unity.EditModeTests
             try
             {
                 WorldBuilder.ForceFencesVisible = false;
-                WorldBuilder.RebuildFences(root.transform);
+                WorldBuilder.RebuildFences(root.transform, state);
                 Assert.That(FenceContainerCount(), Is.EqualTo(0), "default lots are unfenced");
 
                 WorldBuilder.ForceFencesVisible = true;
-                WorldBuilder.RebuildFences(root.transform);
+                WorldBuilder.RebuildFences(root.transform, state);
                 Assert.That(FenceContainerCount(), Is.GreaterThan(0), "fences appear on a live rebuild");
 
                 WorldBuilder.ForceFencesVisible = false;
-                WorldBuilder.RebuildFences(root.transform);
+                WorldBuilder.RebuildFences(root.transform, state);
                 Assert.That(FenceContainerCount(), Is.EqualTo(0), "fences disappear on a live rebuild");
             }
             finally
@@ -738,6 +741,107 @@ namespace Doggiehood.Unity.EditModeTests
             finally
             {
                 Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void BuildFences_FenceEveryBuiltHouse_IncludingZoneHouses_NotJustTheStartingFour()
+        {
+            // #424: the fence loop iterated NeighborhoodLayout.HouseLots (the
+            // starting four only), so a house built on an unlocked zone never
+            // got a "Fence - N" container even with fences forced on. It must
+            // now iterate every built house via GameState.GetHouseLot — the
+            // same resolution the build/upgrade paths use — so the zone house
+            // is fenced alongside the four starters.
+            var withZoneHouse = GameState.CreateNew();
+            withZoneHouse.Wallet.Deposit(150);
+            Assert.That(withZoneHouse.TryUnlockNextZone(), Is.True, "the test needs the first zone unlocked");
+            var zoneLot = withZoneHouse.UnlockedZones[0].Lots[0];
+            Assert.That(withZoneHouse.TryBuildHouse(zoneLot.HouseId), Is.True, "the test needs a zone house built");
+            Assert.That(zoneLot.HouseId, Is.GreaterThanOrEqualTo(HouseVariantAssignment.FirstZoneHouseId),
+                "the built lot is a real zone lot (id >= 5)");
+
+            var original = WorldBuilder.ForceFencesVisible;
+            Object.DestroyImmediate(root);
+            try
+            {
+                WorldBuilder.ForceFencesVisible = true;
+                root = WorldBuilder.Build(withZoneHouse);
+
+                // Every built house — the four starters AND the zone house —
+                // gets its own fence container.
+                foreach (var house in withZoneHouse.Houses)
+                {
+                    Assert.That(
+                        root.transform.Find(WorldBuilder.FenceNamePrefix + house.Id), Is.Not.Null,
+                        $"house {house.Id} must get a fence container");
+                }
+
+                Assert.That(
+                    root.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId), Is.Not.Null,
+                    "the zone house must be fenced alongside the starting four");
+                Assert.That(FenceContainerCount(), Is.EqualTo(withZoneHouse.Houses.Count),
+                    "one fence container per built house");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
+        [Test]
+        public void RebuildFences_FencesTheZoneHouse_OnTheLiveDebugTogglePath_ViaGameState()
+        {
+            // #424: the Settings ▸ Debug fence toggle drives RebuildFences,
+            // which now takes GameState and iterates every built house. On a
+            // live world with a zone house, toggling fences on must fence the
+            // zone house too — not only the starting four.
+            var withZoneHouse = GameState.CreateNew();
+            withZoneHouse.Wallet.Deposit(150);
+            withZoneHouse.TryUnlockNextZone();
+            var zoneLot = withZoneHouse.UnlockedZones[0].Lots[0];
+            withZoneHouse.TryBuildHouse(zoneLot.HouseId);
+
+            var original = WorldBuilder.ForceFencesVisible;
+            Object.DestroyImmediate(root);
+            try
+            {
+                WorldBuilder.ForceFencesVisible = false;
+                root = WorldBuilder.Build(withZoneHouse);
+                Assert.That(FenceContainerCount(), Is.EqualTo(0), "fences hidden by default");
+
+                WorldBuilder.ForceFencesVisible = true;
+                WorldBuilder.RebuildFences(root.transform, withZoneHouse);
+                Assert.That(
+                    root.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId), Is.Not.Null,
+                    "the live rebuild fences the zone house");
+                Assert.That(FenceContainerCount(), Is.EqualTo(withZoneHouse.Houses.Count),
+                    "the rebuild fences every built house");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
+        [Test]
+        public void RebuildFences_WithAStartingOnlyState_StillFencesExactlyTheFourStarters()
+        {
+            // #424 regression guard: threading GameState through RebuildFences
+            // (and its one WorldBootstrap.BuildSettingsPanel call site) must not
+            // change behavior for a world with no zone houses — the starting
+            // four are still fenced, no more, no fewer.
+            var original = WorldBuilder.ForceFencesVisible;
+            try
+            {
+                WorldBuilder.ForceFencesVisible = true;
+                WorldBuilder.RebuildFences(root.transform, state);
+                Assert.That(FenceContainerCount(), Is.EqualTo(NeighborhoodLayout.HouseLots.Count),
+                    "a starting-only world fences exactly the four starters");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
             }
         }
 
