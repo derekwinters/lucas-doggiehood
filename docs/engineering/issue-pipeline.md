@@ -19,8 +19,8 @@ comments (`derekwinters`) are honored — the bad-actor gate. Everyone else's
 | - | - | - |
 | *(none)* | anyone | Raw idea. Ignored by the AI; shows in the dashboard intake. |
 | `ai-triage` | gatekeeper (on `/admit`) | Admitted; queued for analysis. |
-| `pending-approval` | analysis | Bug diagnosis / spec-covered plan posted; awaiting `/approve`. Analysis also **sets the issue's milestone field** here ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)) — the gatekeeper no longer resolves or proposes one. |
-| `needs-clarification` | analysis | A clearly-stated question is on the issue; awaiting an answer. |
+| `pending-approval` | analysis | Bug diagnosis / spec-covered plan posted; awaiting `/approve`. Analysis also **sets the issue's milestone field** here ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)) — the gatekeeper no longer resolves or proposes one. Analysis **removes `ai-triage`** in the same write ([#394](https://github.com/derekwinters/lucas-doggiehood/issues/394)) — a hand-back rests in exactly one state. |
+| `needs-clarification` | analysis | A clearly-stated question is on the issue; awaiting an answer. Analysis **removes `ai-triage`** in the same write ([#394](https://github.com/derekwinters/lucas-doggiehood/issues/394)); a blocked-pending-a-decision issue rests here (not bare `ai-triage`) so the revisit sweep can re-admit it. |
 | `ready-for-work` | gatekeeper (on `/approve`) | Approved; in the dev queue. **Invariant: `ready-for-work` ⇒ the issue has a milestone** ([#247](https://github.com/derekwinters/lucas-doggiehood/issues/247)) — the gatekeeper refuses any `/approve` on a milestone-less issue, so the nightly builder (which only sees the focus milestone) never silently skips an approved issue. |
 | `in-progress` | dev | A nightly dev run picked it up / opened its PR. |
 | `parked` | gatekeeper (on `/park`) | Hidden from every routine and the dashboard, any stage, indefinitely. |
