@@ -51,34 +51,38 @@ class TestRender(unittest.TestCase):
         self.assertIn("Nightly build cap: **5**", section)
 
     def test_pie_values(self):
-        # #265: 7-slice breakdown — one slice per real pipeline-state label
-        # plus Done, so every focus-milestone issue maps to exactly one slice.
+        # #402: 4-slice breakdown — Unplanned / In Planning / Ready / Done,
+        # collapsing the 7 pipeline-state slices while still mapping every
+        # focus-milestone issue to exactly one slice (#265 invariant kept).
+        self.assertIn('"Unplanned" : 1', self.body)
+        self.assertIn('"In Planning" : 0', self.body)
+        self.assertIn('"Ready" : 4', self.body)
         self.assertIn('"Done" : 18', self.body)
-        self.assertIn('"Ready for work" : 3', self.body)
-        self.assertIn('"In progress" : 1', self.body)
-        self.assertIn('"Needs triage" : 0', self.body)
-        self.assertIn('"Pending approval" : 0', self.body)
-        self.assertIn('"Needs clarification" : 0', self.body)
-        self.assertIn('"Parked" : 1', self.body)
+        # Retired 7-slice labels are gone.
+        self.assertNotIn('"Ready for work"', self.body)
+        self.assertNotIn('"In progress"', self.body)
+        self.assertNotIn('"Needs triage"', self.body)
+        self.assertNotIn('"Pending approval"', self.body)
+        self.assertNotIn('"Needs clarification"', self.body)
+        self.assertNotIn('"Parked" :', self.body)
 
     def test_pie_colors(self):
-        # done=green, ready=yellow, in-progress=blue, needs-triage=orange,
-        # pending-approval=purple, needs-clarification=tan, parked=gray (#265)
-        self.assertIn('"pie1": "#3fae5a"', self.body)
-        self.assertIn('"pie2": "#e6c200"', self.body)
-        self.assertIn('"pie3": "#3f8fae"', self.body)
-        self.assertIn('"pie4": "#e6862e"', self.body)
-        self.assertIn('"pie5": "#8a5fd6"', self.body)
-        self.assertIn('"pie6": "#d68a45"', self.body)
-        self.assertIn('"pie7": "#8a8a8a"', self.body)
+        # #402: 4 theme colors, reusing existing palette entries —
+        # Unplanned=gray, In Planning=orange, Ready=yellow, Done=green.
+        self.assertIn('"pie1": "#8a8a8a"', self.body)
+        self.assertIn('"pie2": "#e6862e"', self.body)
+        self.assertIn('"pie3": "#e6c200"', self.body)
+        self.assertIn('"pie4": "#3fae5a"', self.body)
+        # No fifth-through-seventh theme var anymore.
+        self.assertNotIn('"pie5"', self.body)
+        self.assertNotIn('"pie6"', self.body)
+        self.assertNotIn('"pie7"', self.body)
 
-    def test_pie_total_matches_all_seven_buckets(self):
-        # #265: guards against a future unclassified label silently vanishing
-        # from the pie total the way `parked` used to.
+    def test_pie_total_matches_all_four_buckets(self):
+        # #402/#265: guards against a future unclassified state silently
+        # vanishing from the pie total — the 4 slices must sum to the total.
         f = self.state["focus"]
-        total = (f["done"] + f["ready"] + f["in_progress"] + f["needs_triage"]
-                  + f["pending_approval"] + f["needs_clarification"]
-                  + f["parked"])
+        total = (f["done"] + f["ready"] + f["in_planning"] + f["unplanned"])
         self.assertIn("%d / %d complete" % (f["done"], total), self.body)
 
     def test_complete_headline(self):
@@ -148,8 +152,9 @@ class TestRender(unittest.TestCase):
         # The parked issue must not leak into any active queue/count. It should
         # appear in the rendered body exactly once — inside the Parked section.
         self.assertEqual(self.body.count("/issues/172)"), 1)
-        # Active queues/counts are unchanged from the current golden.
-        self.assertIn('"Ready for work" : 3', self.body)
+        # Active queues/counts are unchanged from the current golden. The
+        # parked issue folds into the pie's Unplanned slice (#402).
+        self.assertIn('"Unplanned" : 1', self.body)
         self.assertIn("| 🆕 New ideas to `/admit` | **2** |", self.body)
         self.assertIn("| ✅ Analyses to `/approve` | **3** |", self.body)
         self.assertIn("| ❓ Questions to answer | **1** |", self.body)
@@ -284,6 +289,51 @@ class TestRender(unittest.TestCase):
         with open(GOLDEN) as fh:
             expected = fh.read()
         self.assertEqual(self.body, expected)
+
+
+class TestFocusBucket(unittest.TestCase):
+    """`_focus_bucket(lbl)` (#402): the per-issue classifier collapses the
+    seven pipeline states into four coarse pie slices. Closed issues are
+    tallied as ``done`` outside this function; it classifies open issues only:
+
+      * ``ready``       — ``ready-for-work`` + ``in-progress`` (active build lane)
+      * ``in_planning`` — ``ai-triage`` + ``pending-approval`` + ``needs-clarification``
+      * ``unplanned``   — ``parked`` + no pipeline-state label at all
+    """
+
+    def test_ready_for_work_is_ready(self):
+        self.assertEqual(render_dashboard._focus_bucket({"ready-for-work"}),
+                         "ready")
+
+    def test_in_progress_folds_into_ready(self):
+        # Derek's /admit decision: "put in-progress with ready".
+        self.assertEqual(render_dashboard._focus_bucket({"in-progress"}),
+                         "ready")
+
+    def test_ai_triage_is_in_planning(self):
+        self.assertEqual(render_dashboard._focus_bucket({"ai-triage"}),
+                         "in_planning")
+
+    def test_pending_approval_is_in_planning(self):
+        self.assertEqual(render_dashboard._focus_bucket({"pending-approval"}),
+                         "in_planning")
+
+    def test_needs_clarification_is_in_planning(self):
+        self.assertEqual(
+            render_dashboard._focus_bucket({"needs-clarification"}),
+            "in_planning")
+
+    def test_parked_is_unplanned(self):
+        self.assertEqual(render_dashboard._focus_bucket({"parked"}),
+                         "unplanned")
+
+    def test_no_pipeline_label_is_unplanned(self):
+        # A pre-`/admit` raw idea (no pipeline-state label) is Unplanned, not
+        # counted as triage the way the retired needs_triage fall-through did.
+        self.assertEqual(render_dashboard._focus_bucket(set()), "unplanned")
+        self.assertEqual(
+            render_dashboard._focus_bucket({"type:bug", "area:build"}),
+            "unplanned")
 
 
 class TestMergedBlockedBy(unittest.TestCase):

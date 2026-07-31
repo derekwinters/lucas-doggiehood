@@ -46,10 +46,12 @@ Matches the approved format in #193: the hidden `<!-- pipeline-focus: ... -->`
 marker (first line — the shared focus source of truth) and the hidden
 `<!-- pipeline-cap: N -->` marker (second line — the shared nightly-build-cap
 source of truth, issue #240, displayed as "Nightly build cap: **N**" in the
-ready-for-work section), a **7-slice** focus-milestone pie — Done, Ready for
-work, In progress, Needs triage, Pending approval, Needs clarification, Parked
-— one slice per real pipeline-state label plus Done, so every focus-milestone
-issue maps to exactly one slice and none can silently vanish from the total
+ready-for-work section), a **4-slice** focus-milestone pie — Unplanned, In
+Planning, Ready, Done (#402) — collapsing the seven pipeline states into four
+coarse stages (Unplanned = `parked` or no pipeline-state label; In Planning =
+`ai-triage`/`pending-approval`/`needs-clarification`; Ready =
+`ready-for-work`/`in-progress`; Done = closed), so every focus-milestone issue
+maps to exactly one slice and none can silently vanish from the total
 (#265), the focus ready-for-work
 queue (blockers flagged `⛔`, **unblockers starred** `⭐ unblocks #…` and sorted
 first — #250), the "Your move" counts, PRs, intake, pending-approval,
