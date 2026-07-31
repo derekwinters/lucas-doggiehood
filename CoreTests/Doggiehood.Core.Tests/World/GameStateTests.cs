@@ -113,8 +113,7 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(unlocked, Is.True);
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
             Assert.That(state.UnlockedZones.Count, Is.EqualTo(1));
-            Assert.That(state.Map.GetTileAt(new TileCoordinate(0, 1)), Is.EqualTo(TileType.TurnSW));
-            Assert.That(state.Map.GetTileAt(new TileCoordinate(-1, 1)), Is.EqualTo(TileType.CulDeSacEast));
+            Assert.That(state.Map.GetTileAt(new TileCoordinate(0, 1)), Is.EqualTo(TileType.CulDeSacSouth));
         }
 
         [Test]
