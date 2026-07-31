@@ -60,7 +60,7 @@ namespace Doggiehood.Unity.EditModeTests
             dialog.Init();
 
             buildDirector = new GameObject("build-director").AddComponent<ExpansionDirector>();
-            buildDirector.Init(state, worldRoot.transform);
+            buildDirector.Init(state, worldRoot.transform, dialog);
 
             unlockDirector = new GameObject("unlock-director").AddComponent<ExpansionUnlockDirector>();
             unlockDirector.Init(state, worldRoot.transform, dialog, buildDirector);

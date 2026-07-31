@@ -15,11 +15,6 @@ namespace Doggiehood.Unity
             var director = gameObject.AddComponent<QuestDirector>();
             director.Init(state, root.transform);
 
-            // #57: wires tapping an empty lot in an unlocked zone to
-            // GameState.TryBuildHouse.
-            var expansionDirector = gameObject.AddComponent<ExpansionDirector>();
-            expansionDirector.Init(state, root.transform);
-
             var presenter = FindFirstObjectByType<ConversationPresenter>();
             if (presenter == null)
             {
@@ -59,11 +54,22 @@ namespace Doggiehood.Unity
             // coins directly via GameState.TryUpgradeHouse — no confirmation.
             BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
 
-            // Map-expansion unlock trigger (#343, Option A): tapping the
-            // affordable lock indicator raises the reusable confirmation dialog,
-            // and Yes calls GameState.TryUnlockNextZone (spend + zone appears +
-            // save). The dialog is a device-safe UGUI overlay (#298/#291).
+            // Reusable confirmation dialog (#343/#344), shared by both expansion
+            // spends below. A device-safe UGUI overlay (#298/#291) built under the
+            // canvas, so it must exist before the directors that raise it.
             var confirmationDialog = BuildConfirmationDialog(canvas);
+
+            // #57/#406: tapping an empty lot in an unlocked zone raises the
+            // confirmation dialog ("Build a house here?" + the flat cost on Yes),
+            // and only Yes calls GameState.TryBuildHouse — a stray tap no longer
+            // spends coins.
+            var expansionDirector = gameObject.AddComponent<ExpansionDirector>();
+            expansionDirector.Init(state, root.transform, confirmationDialog);
+
+            // Map-expansion unlock trigger (#343, Option A): tapping the
+            // affordable lock indicator raises the same reusable confirmation
+            // dialog, and Yes calls GameState.TryUnlockNextZone (spend + zone
+            // appears + save).
             gameObject.AddComponent<ExpansionUnlockDirector>()
                 .Init(state, root.transform, confirmationDialog, expansionDirector);
 
@@ -139,8 +145,9 @@ namespace Doggiehood.Unity
         /// <summary>
         /// Builds the reusable confirmation dialog (#343/#344) under the shared
         /// canvas, starting closed. Any spend-confirming affordance raises it by
-        /// supplying its own title/body/cost + confirm callback; the first
-        /// consumer is the zone-unlock trigger wired above.
+        /// supplying its own title/body/cost + confirm callback; its consumers
+        /// are the house-build (#57/#406) and zone-unlock (#343) triggers wired
+        /// above.
         /// </summary>
         private ConfirmationDialog BuildConfirmationDialog(GameObject canvas)
         {
