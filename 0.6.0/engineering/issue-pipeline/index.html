@@ -1965,12 +1965,12 @@ comments (<code>derekwinters</code>) are honored — the bad-actor gate. Everyon
 <tr>
 <td><code>pending-approval</code></td>
 <td>analysis</td>
-<td>Bug diagnosis / spec-covered plan posted; awaiting <code>/approve</code>. Analysis also <strong>sets the issue's milestone field</strong> here (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — the gatekeeper no longer resolves or proposes one.</td>
+<td>Bug diagnosis / spec-covered plan posted; awaiting <code>/approve</code>. Analysis also <strong>sets the issue's milestone field</strong> here (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — the gatekeeper no longer resolves or proposes one. Analysis <strong>removes <code>ai-triage</code></strong> in the same write (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/394">#394</a>) — a hand-back rests in exactly one state.</td>
 </tr>
 <tr>
 <td><code>needs-clarification</code></td>
 <td>analysis</td>
-<td>A clearly-stated question is on the issue; awaiting an answer.</td>
+<td>A clearly-stated question is on the issue; awaiting an answer. Analysis <strong>removes <code>ai-triage</code></strong> in the same write (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/394">#394</a>); a blocked-pending-a-decision issue rests here (not bare <code>ai-triage</code>) so the revisit sweep can re-admit it.</td>
 </tr>
 <tr>
 <td><code>ready-for-work</code></td>
