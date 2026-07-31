@@ -707,6 +707,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#road-arm-extent" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road arm extent
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-crosswalk-box" class="md-nav__link">
     <span class="md-ellipsis">
       The crosswalk box
@@ -1696,6 +1705,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#road-arm-extent" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road arm extent
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-crosswalk-box" class="md-nav__link">
     <span class="md-ellipsis">
       The crosswalk box
@@ -1821,6 +1839,11 @@
 <p><strong>Decision (2026-07-13, Derek, in conversation — follow-up to the above, same day):</strong> <code>GrassVergeWidth</code> is now <code>0.75m</code>. After seeing the kit world in the Editor, Derek found the dogs at 4m "a little too close to the road" and asked for the midpoint between the previous distance (5.5m at the 1.5m verge) and the current one (4m at the 0m verge) — putting the dogs' walk line at <code>4.75m</code>. This is a <strong>logical setback for dog placement</strong>, not a return of the visual grass strip: the kit tiles pave 3–5m from the centerline, so in the kit-art path nothing visually changes and the earlier "no grass verge" decision (a visual call) stands — 4.75m sits within the paved band, near its outer edge. Only <code>WorldBuilder</code>'s primitive graybox fallback renders the 0.75m verge as an actual grass strip.</p>
 </blockquote>
 <p>A sidewalk's centerline sits <code>RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 2</code> from the road's own centerline — <code>4.75m</code> for the starting intersection's two roads. <code>Road</code> and <code>Sidewalk</code> (Core, <code>Assets/Scripts/Core/World/</code>) express this purely as that formula over <code>WorldDimensions</code>; a guard test (<code>WorldDimensionsGuardTests</code>) fails the build if any of the locked values is ever re-declared as a literal outside <code>WorldDimensions.cs</code>.</p>
+<h2 id="road-arm-extent">Road arm extent<a class="headerlink" href="#road-arm-extent" title="Permanent link">&para;</a></h2>
+<p>Each of the starting intersection's two roads (and, keying off the same extent, each road's two sidewalks) runs a fixed distance either way from the origin — <code>NeighborhoodLayout.StreetHalfLength</code>. That extent is <strong>half a tile</strong> (<code>WorldDimensions.TileSize / 2</code> = 30m), so every arm reaches the <strong>tile edge</strong>. The <code>WalkNetwork</code> sidewalk arms and everything else derive from <code>NeighborhoodLayout.Roads</code>, so lengthening the arms extends the walkable sidewalks with them.</p>
+<blockquote>
+<p><strong>Decision (2026-07-31, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>):</strong> the road arms <strong>extend the full distance to the tile edge</strong>. Previously <code>StreetHalfLength</code> was a hand-picked <code>26m</code> — 4m short of the tile edge — so once the <code>#147</code> backyard fences traced the lot quadrants nearly to the tile edge, a green band showed between each road arm's end and the edge, and on expansion two adjacent tiles' arms would leave an ~8m green gap instead of a continuous street. <code>StreetHalfLength</code> is now <strong>derived</strong> from <code>WorldDimensions.TileSize / 2</code> (30m) — the same tile-edge convention the generic multi-tile system already uses (<code>TileGeometry.EdgeMidpoint</code>, <code>LotBounds.QuadrantBounds</code>) — so adjacent tiles' roads meet edge-to-edge and read as one connected street network. In the kit-art path, the visual road corridor tiles each arm with a whole number of City Kit road pieces <strong>compressed evenly to span exactly from the intersection tile's edge (5m) to the tile edge (30m)</strong> — the same compress-to-fit technique as the front-walkway pavers (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>, <code>WalkwayTiling.PiecesAlong</code>), scaling only the along-road axis so the road-band width and texture don't distort and no untiled sliver is left at the edge.</p>
+</blockquote>
 <h2 id="the-crosswalk-box">The crosswalk box<a class="headerlink" href="#the-crosswalk-box" title="Permanent link">&para;</a></h2>
 <p>At the starting intersection, the two crossing roads produce four box corners (one per compass direction the roads' sidewalks meet). Each of the 4 road arms — N, S, E, W — gets one crosswalk, <code>CrosswalkWidth</code> (3m) wide, connecting the two box corners on either side of that arm and letting a pedestrian cross straight over that road instead of going the long way around through both corners.</p>
 <p>In the shipping kit-art path, literal zebra-stripe crosswalks render via the Kenney City Kit Roads <code>road-crossroad-path</code> variant — painted stripes across all four arms at ~3–5m from center (tile scale 10), landing right on the walk network's crosswalk edges. Only <code>WorldBuilder</code>'s primitive graybox fallback (when the kit tiles can't load) still renders each crosswalk as a flat, distinctly colored rectangular patch with no markings — see <a href="../art-style/">Art &amp; UI Style</a> for the fallback palette and <a href="#build-checklist">Build checklist</a> below for what's actually implemented.</p>
