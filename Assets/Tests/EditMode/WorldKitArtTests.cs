@@ -142,29 +142,62 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void StraightTiles_CoverBothArmsOfEachStreet_OnItsCenterline()
+        public void StraightTiles_CoverBothArmsOfEachStreet_ToTheTileEdge_OnItsCenterline()
         {
-            // Uniform tile scale 10 -> each tile is 10x10 with a 6m road
-            // band matching WorldDimensions.RoadWidth. Arms are tiled every
-            // 10m outward from the intersection tile.
+            // #392: each arm's kit road tiles must span exactly from the
+            // intersection tile's edge (RoadTileScale/2 = 5m from centre)
+            // out to the tile edge (StreetHalfLength = 30m), with no green
+            // gap and no overshoot — so adjacent tiles' roads connect on
+            // expansion. A whole number of tiles is compressed evenly to
+            // fit the span (à la WalkwayTiling.PiecesAlong), scaling only
+            // the along-road axis (local X); the perpendicular road-band
+            // width and height keep the uniform RoadTileScale so the road
+            // texture doesn't distort. Width band stays 6m == RoadWidth.
+            var nearEdge = WorldBuilder.RoadTileScale / 2f; // 5m: crossroad tile edge
+
             foreach (var road in NeighborhoodLayout.Roads)
             {
+                var farEdge = road.HalfLength; // 30m: tile edge
+                var span = farEdge - nearEdge;
+                var count = Mathf.Max(1, Mathf.CeilToInt(span / WorldBuilder.RoadTileScale - 0.0001f));
+                var pieceLength = span / count;
+
                 var parent = root.transform.Find(WorldBuilder.RoadNamePrefix + road.Orientation);
                 var tiles = parent.Cast<Transform>()
                     .Where(t => t.name.StartsWith(WorldBuilder.RoadTileNamePrefix))
                     .ToList();
 
-                // HalfLength 26 with the crossroad tile covering ±5 leaves
-                // room for 2 whole tiles per arm (centers ±10 and ±20).
-                Assert.That(tiles.Count, Is.EqualTo(4), $"{parent.name} tile count");
+                // count tiles per arm, both arms.
+                Assert.That(tiles.Count, Is.EqualTo(count * 2), $"{parent.name} tile count");
 
                 var isNorthSouth = road.Orientation == StreetOrientation.NorthSouth;
-                var expectedAlong = new[] { -20f, -10f, 10f, 20f };
+
+                // Expected signed centres: from ±(nearEdge + halfPiece) out
+                // to the far edge, evenly spaced by pieceLength.
+                var expectedAlong = new List<float>();
+                for (var i = 0; i < count; i++)
+                {
+                    var magnitude = nearEdge + (i + 0.5f) * pieceLength;
+                    expectedAlong.Add(-magnitude);
+                    expectedAlong.Add(magnitude);
+                }
+                expectedAlong.Sort();
+
                 var actualAlong = tiles
                     .Select(t => isNorthSouth ? t.position.z : t.position.x)
                     .OrderBy(v => v)
                     .ToArray();
-                Assert.That(actualAlong, Is.EqualTo(expectedAlong).Within(0.001f));
+                Assert.That(actualAlong, Is.EqualTo(expectedAlong.ToArray()).Within(0.001f));
+
+                // No gap at the intersection tile, no overshoot past the
+                // tile edge: the inner face of the innermost tile sits at
+                // ±nearEdge and the outer face of the outermost at ±farEdge.
+                var innermostMagnitude = nearEdge + 0.5f * pieceLength;
+                var outermostMagnitude = nearEdge + (count - 0.5f) * pieceLength;
+                Assert.That(innermostMagnitude - pieceLength / 2f, Is.EqualTo(nearEdge).Within(0.001f),
+                    $"{parent.name} inner arm tile must abut the intersection tile edge");
+                Assert.That(outermostMagnitude + pieceLength / 2f, Is.EqualTo(farEdge).Within(0.001f),
+                    $"{parent.name} outer arm tile must reach the tile edge");
 
                 foreach (var tile in tiles)
                 {
@@ -173,8 +206,12 @@ namespace Doggiehood.Unity.EditModeTests
                         $"{tile.name} must sit on the road centerline");
                     Assert.That(tile.position.y, Is.EqualTo(0f).Within(0.001f),
                         $"{tile.name} has a ground-level pivot and must sit at y=0");
-                    Assert.That(tile.localScale.x, Is.EqualTo(10f).Within(0.001f),
-                        $"{tile.name} must use the uniform x10 tile scale");
+                    Assert.That(tile.localScale.x, Is.EqualTo(pieceLength).Within(0.001f),
+                        $"{tile.name} along-road axis must be compressed to the piece length");
+                    Assert.That(tile.localScale.z, Is.EqualTo(WorldBuilder.RoadTileScale).Within(0.001f),
+                        $"{tile.name} road-band width must keep the uniform tile scale");
+                    Assert.That(tile.localScale.y, Is.EqualTo(WorldBuilder.RoadTileScale).Within(0.001f),
+                        $"{tile.name} height must keep the uniform tile scale");
                 }
             }
         }
