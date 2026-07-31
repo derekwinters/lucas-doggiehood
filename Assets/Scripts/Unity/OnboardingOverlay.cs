@@ -6,23 +6,33 @@ using UnityEngine;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// First-launch tutorial prompts (#44), layered over live gameplay as a
-    /// slim bottom-center coach bar — never a modal scene. Watches the real
-    /// camera controller for pan/zoom, the presenter for the bubble tap, and
-    /// the live quest for completion, then auto-dismisses. All sequencing
-    /// lives in Core; layout follows the approved wireframe
-    /// (docs/specs/ui/onboarding-overlay.md, #176).
+    /// First-launch guidance (#44), layered over live gameplay as a slim
+    /// bottom-center coach bar — never a modal scene. It is the ONE standard
+    /// guidance surface for the whole onboarding journey (#374): it watches the
+    /// real camera controller for pan/zoom, the presenter for the bubble tap,
+    /// and the live quest for the first completion, then — instead of
+    /// dismissing — re-shows for the follow-on reward chain
+    /// (upgrade -> expand -> build, #316/#371), advancing as each real action
+    /// completes on <see cref="GameState.RewardChain"/> and dismissing for good
+    /// only when the chain finishes. All decision logic lives in Core
+    /// (<see cref="OnboardingSequence"/> / <see cref="OnboardingCoach"/>); layout
+    /// follows the approved wireframe (docs/specs/ui/onboarding-overlay.md,
+    /// #176/#374).
     /// </summary>
     public sealed class OnboardingOverlay : MonoBehaviour
     {
-        // Layout constants from the #176 wireframe, authored at the 1920x1200
-        // reference (docs/specs/ui/onboarding-overlay.md). No inline geometry
-        // literals (#161).
+        // Layout constants from the #176/#374 wireframe, authored at the
+        // 1920x1200 reference (docs/specs/ui/onboarding-overlay.md). No inline
+        // geometry literals (#161).
         private const float ReferenceHeightPx = 1200f;
-        private const float CoachWidthPx = 900f;
+        // Locked #374 constants: CoachWidthPx is now a MINIMUM (the bar grows to
+        // fit the measured message), CoachMaxWidthPx is the cap beyond which the
+        // message wraps and the bar grows in height instead.
+        public const float CoachWidthPx = 900f;
+        public const float CoachMaxWidthPx = 1500f;
         private const float CoachHeightPx = 88f;
         private const float CoachBottomMarginPx = 56f;
-        private const int StepDotCount = 4;
+        public const int StepDotCount = 4;
         private const int MsgFontPx = 30;
 
         // --- Shared Candy Cottage baseline (shared-components.md #65/#173) ---
@@ -78,11 +88,19 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>Whether the coach bar should render this frame — false
-        /// before Init and once the sequence reaches Done (#207: the banner
-        /// must auto-dismiss after the first quest completes).</summary>
+        /// before Init, and (per #371) only once BOTH the first-quest sequence
+        /// is Done AND the reward chain has completed. Dismissal is gated on the
+        /// reward chain finishing at the build step, not on the first quest
+        /// alone (#207 auto-dismiss, extended to the whole guided journey by
+        /// #374). The decision itself is engine-free Core
+        /// (<see cref="OnboardingCoach.ShouldShow"/>).</summary>
         public bool ShouldDraw
         {
-            get { return sequence != null && sequence.CurrentStep != OnboardingStep.Done; }
+            get
+            {
+                return sequence != null
+                    && OnboardingCoach.ShouldShow(sequence.CurrentStep, state.RewardChain.CurrentStep);
+            }
         }
 
         public void Init(GameState state, CameraRig rig, ConversationPresenter presenter)
@@ -186,27 +204,86 @@ namespace Doggiehood.Unity
             // which also covers the self-heal cascade path to Done.
         }
 
-        /// <summary>Computes the coach bar rect for the given screen size:
-        /// bottom-center, scaled from the 1920x1200 wireframe reference so
-        /// each px constant keeps a fixed meaning across tablet sizes.</summary>
+        /// <summary>Computes the coach bar rect for the given screen size at
+        /// the minimum (<see cref="CoachWidthPx"/>) width: bottom-center, scaled
+        /// from the 1920x1200 wireframe reference so each px constant keeps a
+        /// fixed meaning across tablet sizes.</summary>
         public static Rect ComputeCoachRect(float screenWidth, float screenHeight)
         {
+            return ComputeCoachRect(screenWidth, screenHeight, CoachWidthPx);
+        }
+
+        /// <summary>Grow-to-fit overload (#369/#374): sizes the bar to
+        /// <paramref name="desiredContentWidthPx"/> (the measured message plus
+        /// badge, dots, and paddings, in reference px), clamped to
+        /// [<see cref="CoachWidthPx"/>, <see cref="CoachMaxWidthPx"/>]. Past the
+        /// cap the message wraps and the bar grows in height instead, so no step
+        /// string overflows the pill.</summary>
+        public static Rect ComputeCoachRect(float screenWidth, float screenHeight, float desiredContentWidthPx)
+        {
             var scale = screenHeight / ReferenceHeightPx;
-            var width = CoachWidthPx * scale;
-            var height = CoachHeightPx * scale;
+            var width = ComputeCoachWidthPx(desiredContentWidthPx) * scale;
+            var height = ComputeCoachHeightPx(NeedsWrap(desiredContentWidthPx)) * scale;
             var x = (screenWidth - width) / 2f;
             var y = screenHeight - height - CoachBottomMarginPx * scale;
             return new Rect(x, y, width, height);
         }
 
-        /// <summary>The coach bar's current message: the live
-        /// <see cref="OnboardingSequence"/> step text, with the target dog's
-        /// name substituted on the tap-bubble step. Empty once onboarding is
-        /// done (nothing to show). Public so wiring tests can assert the text
-        /// without rendering.</summary>
+        /// <summary>The bar's reference-px width for a message whose full
+        /// single-line content spans <paramref name="desiredContentWidthPx"/>:
+        /// the minimum <see cref="CoachWidthPx"/>, grown to fit, clamped to
+        /// <see cref="CoachMaxWidthPx"/> (#369/#374).</summary>
+        public static float ComputeCoachWidthPx(float desiredContentWidthPx)
+        {
+            return Mathf.Clamp(desiredContentWidthPx, CoachWidthPx, CoachMaxWidthPx);
+        }
+
+        /// <summary>Whether the message must wrap to a second line — true once
+        /// the desired single-line content would exceed <see cref="CoachMaxWidthPx"/>.</summary>
+        public static bool NeedsWrap(float desiredContentWidthPx)
+        {
+            return desiredContentWidthPx > CoachMaxWidthPx;
+        }
+
+        /// <summary>The bar's reference-px height: the base
+        /// <see cref="CoachHeightPx"/>, plus one <see cref="MsgFontPx"/> line
+        /// when the message wraps (#369/#374).</summary>
+        public static float ComputeCoachHeightPx(bool wrapped)
+        {
+            return wrapped ? CoachHeightPx + MsgFontPx : CoachHeightPx;
+        }
+
+        /// <summary>The bar's full single-line content width in reference px for
+        /// a message measured at <paramref name="messageWidthPx"/> reference px:
+        /// left/right padding + paw badge + gap + message + gap + the frozen
+        /// four-dot row. Drives the grow-to-fit width in <see cref="OnGUI"/>.</summary>
+        private static float DesiredContentWidthPx(float messageWidthPx)
+        {
+            var dotsRow = StepDotCount * DotDiameterPx + (StepDotCount - 1) * DotGapPx;
+            return 2f * CoachPadXPx + PawDiameterPx + CoachGapPx
+                + messageWidthPx + CoachGapPx + dotsRow;
+        }
+
+        /// <summary>The coach bar's current message. While the first-quest
+        /// sequence runs it is the live <see cref="OnboardingSequence"/> step
+        /// text (target dog's name substituted on the tap-bubble step); once the
+        /// sequence is Done it becomes the current reward-chain step's prompt
+        /// (#371, <see cref="OnboardingCoach.PromptForRewardStep"/>) — upgrade,
+        /// then expand, then build — and empty only once the chain completes.
+        /// Public so wiring tests can assert the text without rendering.</summary>
         public string MessageText
         {
-            get { return sequence == null ? string.Empty : PromptFor(sequence.CurrentStep); }
+            get
+            {
+                if (sequence == null)
+                {
+                    return string.Empty;
+                }
+
+                return sequence.CurrentStep == OnboardingStep.Done
+                    ? OnboardingCoach.PromptForRewardStep(state.RewardChain.CurrentStep)
+                    : PromptFor(sequence.CurrentStep);
+            }
         }
 
         /// <summary>How many of the <c>StepDotCount</c> trailing dots are filled
@@ -225,7 +302,16 @@ namespace Doggiehood.Unity
             }
 
             var scale = Screen.height / ReferenceHeightPx;
-            DrawCoachBar(ComputeCoachRect(Screen.width, Screen.height), scale);
+
+            // Grow-to-fit (#369/#374): measure the message, size the bar to fit
+            // it (clamped to [CoachWidthPx, CoachMaxWidthPx]); past the cap the
+            // message wraps and the bar grows in height instead of overflowing.
+            var style = MessageStyle(scale);
+            var messageWidthRefPx = style.CalcSize(new GUIContent(MessageText)).x / scale;
+            var desiredContentPx = DesiredContentWidthPx(messageWidthRefPx);
+            style.wordWrap = NeedsWrap(desiredContentPx);
+
+            DrawCoachBar(ComputeCoachRect(Screen.width, Screen.height, desiredContentPx), scale);
         }
 
         /// <summary>Draws the Candy Cottage coach bar (#297), back to front:

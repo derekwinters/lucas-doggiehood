@@ -82,8 +82,11 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void OnGUI_StopsDrawing_OnceTheSequenceReachesDone()
+        public void OnGUI_KeepsDrawing_AfterTheFirstQuest_ForTheRewardChain()
         {
+            // #371 supersedes the old #207 "auto-dismiss at Done" behavior: the
+            // single coach bar (onboarding-overlay.md, #374) does NOT dismiss when
+            // the first quest completes — it hands off to the reward-chain steps.
             overlay.Init(state, rig, presenter);
             Assert.That(overlay.ShouldDraw, Is.True, "the coach prompt draws while onboarding runs");
 
@@ -96,18 +99,19 @@ namespace Doggiehood.Unity.EditModeTests
             overlay.Poll();
 
             Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done));
-            Assert.That(overlay.ShouldDraw, Is.False,
-                "the coach prompt must auto-dismiss once the first quest completes");
+            Assert.That(overlay.ShouldDraw, Is.True,
+                "the coach stays up for the reward chain rather than dismissing at the first quest");
+            Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
         }
 
         [Test]
-        public void Update_WithNullCameraRig_StillAdvancesAndDismisses()
+        public void Update_WithNullCameraRig_StillAdvancesToDone()
         {
             // #207: WorldBootstrap's FindFirstObjectByType<CameraRig>() can
             // return null; it used to silently skip wiring the overlay. With
             // no camera to pan/zoom, those steps can't be performed, so the
             // sequence must not deadlock on them — it still advances through
-            // the conversation + quest-completion steps and dismisses.
+            // the conversation + quest-completion steps to Done.
             overlay.Init(state, null, presenter);
 
             Assert.DoesNotThrow(() => overlay.Poll());
@@ -121,7 +125,10 @@ namespace Doggiehood.Unity.EditModeTests
             overlay.Poll();
 
             Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done));
-            Assert.That(overlay.ShouldDraw, Is.False);
+            // #371: reaching Done now hands off to the reward chain rather than
+            // dismissing, so the coach stays up for the upgrade step.
+            Assert.That(overlay.ShouldDraw, Is.True);
+            Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.UpgradeHousePrompt));
         }
 
         [Test]
@@ -289,6 +296,105 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.TapBubble), Is.EqualTo(3));
             Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.CompleteQuest), Is.EqualTo(4));
             Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Done), Is.EqualTo(4));
+        }
+
+        [Test]
+        public void CoachBar_ReShowsForTheRewardChainSteps_ThenDismissesWhenTheChainCompletes()
+        {
+            // #371: the one standard coach bar (onboarding-overlay.md, #374) does
+            // not dismiss when the first quest finishes — it re-shows the
+            // reward-chain prompts (upgrade -> expand -> build), advancing as each
+            // real action completes, and dismisses for good only at chain end.
+            overlay.Init(state, rig, presenter);
+
+            DriveFirstQuestSequenceToDone();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+
+            // Completing the first quest granted reward-chain step 1, so the chain
+            // now waits on UpgradeHouse and the coach re-shows that prompt.
+            Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
+            Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the upgrade step");
+            Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.UpgradeHousePrompt));
+
+            Assert.That(state.TryUpgradeHouse(state.Houses[0].Id), Is.True);
+            Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the expand step");
+            Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.ExpandMapPrompt));
+
+            Assert.That(state.TryUnlockNextZone(), Is.True);
+            Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the build step");
+            Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.BuildHousePrompt));
+
+            var lot = state.UnlockedZones[0].Lots[0];
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
+            Assert.That(state.RewardChain.IsComplete, Is.True);
+            Assert.That(overlay.ShouldDraw, Is.False,
+                "the coach dismisses for good once the chain completes at build");
+        }
+
+        [Test]
+        public void StepDots_StayFrozenAtFourOfFour_DuringTheRewardChainSteps()
+        {
+            // #371 / onboarding-overlay.md: StepDotCount stays 4 and the dots
+            // track only the first-launch four steps — during the reward chain
+            // they stay filled at 4/4 (not advancing).
+            Assert.That(OnboardingOverlay.StepDotCount, Is.EqualTo(4));
+
+            overlay.Init(state, rig, presenter);
+            DriveFirstQuestSequenceToDone();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+
+            Assert.That(OnboardingOverlay.FilledDotCount(overlay.CurrentStep), Is.EqualTo(4),
+                "dots are full at the first reward-chain step");
+            state.TryUpgradeHouse(state.Houses[0].Id);
+            Assert.That(OnboardingOverlay.FilledDotCount(overlay.CurrentStep), Is.EqualTo(4),
+                "dots do not advance further through the reward chain");
+        }
+
+        [Test]
+        public void CoachBar_GrowToFit_UsesCoachWidthAsMinimum_AndWrapsAtTheMaxWidth()
+        {
+            // #369/#374 fold-in (Locked #374 constants): CoachWidthPx (900) is now
+            // a MINIMUM; the bar grows to fit a wider message up to CoachMaxWidthPx
+            // (1500), beyond which the message wraps. No inline literals (#161).
+            Assert.That(OnboardingOverlay.CoachWidthPx, Is.EqualTo(900f), "minimum width");
+            Assert.That(OnboardingOverlay.CoachMaxWidthPx, Is.EqualTo(1500f), "max width before wrap");
+
+            Assert.That(OnboardingOverlay.ComputeCoachWidthPx(400f), Is.EqualTo(900f),
+                "narrow content clamps up to the minimum");
+            Assert.That(OnboardingOverlay.ComputeCoachWidthPx(1100f), Is.EqualTo(1100f),
+                "mid content grows to fit");
+            Assert.That(OnboardingOverlay.ComputeCoachWidthPx(2000f), Is.EqualTo(1500f),
+                "over-max content clamps to the max");
+
+            Assert.That(OnboardingOverlay.NeedsWrap(1100f), Is.False);
+            Assert.That(OnboardingOverlay.NeedsWrap(2000f), Is.True);
+        }
+
+        [Test]
+        public void CoachBar_GrowsInHeight_WhenTheMessageWraps()
+        {
+            var single = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 1100f);
+            Assert.That(single.width, Is.EqualTo(1100f).Within(0.01f), "grown to fit the content");
+            Assert.That(single.height, Is.EqualTo(88f).Within(0.01f), "one line: base height");
+
+            var wrapped = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 2000f);
+            Assert.That(wrapped.width, Is.EqualTo(1500f).Within(0.01f), "clamped to the max width");
+            Assert.That(wrapped.height, Is.GreaterThan(88f),
+                "wrapping to a second line grows the bar in height instead of overflowing");
+        }
+
+        /// <summary>Drives the first-quest sequence (pan -> zoom -> tap bubble ->
+        /// complete) all the way to Done, which grants reward-chain step 1 and
+        /// leaves the chain waiting on UpgradeHouse.</summary>
+        private void DriveFirstQuestSequenceToDone()
+        {
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            rig.HandlePinch(60f, 1000f);
+            overlay.Poll();
+            presenter.TryOpen(targetDog);
+            targetDog.ClearQuest();
+            overlay.Poll();
         }
 
         private static void AssertHex(Color color, byte r, byte g, byte b, string what)

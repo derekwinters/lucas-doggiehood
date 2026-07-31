@@ -31,6 +31,8 @@ Immediately after the first-quest tutorial, a **one-time, first-run scripted rew
 
 **Rotation handoff (#312 → #310).** The normal quest rotation stays suppressed while the chain is in progress and is released **exactly when step 4 (build) completes**, at which point the recurring #310 pacing takes over — no rotation is seeded mid-chain. The single Core decision `QuestManager.EnsureQuestsForLaunch` applies this at every launch (pre-chain seed → mid-chain suppression → post-chain refresh), so the thin Unity bootstrap carries no pacing logic.
 
+**Guided by the same coach bar (#371).** The one standard onboarding [coach bar](ui/onboarding-overlay.md#standard-onboarding-coverage-374) ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) guides each reward-chain step, not just the first quest: after the first quest it re-shows for **upgrade a house → expand the map → build a house**, advancing as each real action completes on `RewardChain`, then dismisses for good when the chain completes. The per-step prompt copy and the "keep showing until the chain completes" dismissal gate are engine-free Core (`OnboardingCoach`); the coach-bar layout is the approved wireframe.
+
 ## Step-gated speech bubble & self-heal ([#329](https://github.com/derekwinters/lucas-doggiehood/issues/329))
 
 The four steps run in order — `Pan → Zoom → TapBubble → CompleteQuest → Done` — and the "tap the speech bubble" action is gated to its own step so each step is the obvious next thing to do:
