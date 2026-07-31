@@ -1087,6 +1087,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#modal-overlays-block-world-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modal overlays block world input
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1773,6 +1782,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#modal-overlays-block-world-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modal overlays block world input
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2045,6 +2063,10 @@
 </tbody>
 </table>
 <p>The overall panel <strong>width and placement</strong> are settled per screen (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/175">#175</a>), not here; the mockup shows a representative wide tablet panel.</p>
+<h2 id="modal-overlays-block-world-input">Modal overlays block world input<a class="headerlink" href="#modal-overlays-block-world-input" title="Permanent link">&para;</a></h2>
+<p>Every dialog/menu overlay is <strong>modal</strong>: a tap that lands on it — on a button, on the panel's empty area, or on its dimmed backdrop — is consumed by the UI and <strong>never</strong> reaches a world interactable (a dog, a house, a lost item) behind it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/422">#422</a>). Tapping <strong>Accept</strong> only accepts; tapping <strong>Close</strong> only closes; neither also fires whatever sat behind the button.</p>
+<p>This is why every overlay (confirmation dialog, house profile, dog profile, the conversation panel) carries a <strong>full-screen raycast-blocking scrim/backdrop</strong> under its card: it makes <code>EventSystem.IsPointerOverGameObject</code> read true anywhere over the modal, so the world tap-router (see <a href="../../world/camera-controls/#navigation">Camera &amp; controls → Navigation</a>) skips its raycast for that tap. A new modal surface must include such a backdrop, or taps on its empty regions would fall through to the world.</p>
+<p>The one still-IMGUI affordance, the HUD Settings gear, sits outside the EventSystem and so is covered by an interim screen-space rect guard instead; it folds into this same rule once it migrates to UGUI (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/370">#370</a>).</p>
 
 
 
