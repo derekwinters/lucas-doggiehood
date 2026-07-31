@@ -675,6 +675,117 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(marker.GetComponent<ExpansionIndicatorView>(), Is.Not.Null);
         }
 
+        private static HouseLot ZoneLot(bool hasFence = false)
+        {
+            // The REAL first unlocked-zone lot (id >= 5), which sits on its own
+            // tile at world Z ~= 60 — not a hand-placed lot on the starting
+            // tile. This exercises the actual zone geometry whose lot-quadrant
+            // bounds regressed in #405 (a starting-tile lot would not reproduce
+            // it). Its model resolves through HouseVariantAssignment (#414).
+            var lot = ZoneCatalog.FirstZone.Lots.First();
+            return hasFence ? new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, true) : lot;
+        }
+
+        [Test]
+        public void BuildYardLandscaping_ForAZoneLot_RendersYardTrees_WithoutThrowing()
+        {
+            // #405: the single-lot yard helper lets a mid-game zone build get
+            // its trees. YardLandscaping rejection-samples against
+            // HousePlacement.HouseFootprint, which resolves the zone model via
+            // the now-zone-safe HouseModelCatalog.ForHouse (#414) — so a zone
+            // lot renders its yard instead of throwing.
+            var zoneLot = ZoneLot();
+            var expected = YardLandscaping.FrontTreesFor(zoneLot)
+                .Concat(YardLandscaping.BackTreesFor(zoneLot)).ToList();
+            Assert.That(expected, Is.Not.Empty, "a zone lot selects yard trees");
+
+            var host = new GameObject("zone-yard-host");
+            try
+            {
+                Assert.That(() => WorldBuilder.BuildYardLandscaping(host.transform, zoneLot), Throws.Nothing);
+
+                var container = host.transform.Find(WorldBuilder.YardLandscapingNamePrefix + zoneLot.HouseId);
+                Assert.That(container, Is.Not.Null, "the zone lot gets a yard container");
+                Assert.That(container.childCount, Is.EqualTo(expected.Count),
+                    "one rendered object per Core-selected pick");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void BuildFence_ForAZoneLotWithHasFence_ResolvesRuns_WithoutThrowing()
+        {
+            // #405: the confirmed LotFence gap — its run geometry resolves the
+            // lot model through HouseModelCatalog.ForHouse, which used to throw
+            // for a zone id. The single-lot fence helper renders a fenced zone
+            // lot's runs without throwing now that ForHouse is zone-safe (#414).
+            var zoneLot = ZoneLot(hasFence: true);
+            var expected = LotFence.RunsFor(zoneLot);
+            Assert.That(expected, Is.Not.Empty, "a fenced zone lot resolves fence runs");
+
+            var host = new GameObject("zone-fence-host");
+            try
+            {
+                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot), Throws.Nothing);
+
+                var container = host.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId);
+                Assert.That(container, Is.Not.Null, "the fenced zone lot gets a fence container");
+                Assert.That(container.childCount, Is.GreaterThan(0), "the fence renders segments/rails");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void BuildWalkway_RendersTheSameGeometryForOneLot_AsTheFullBuild()
+        {
+            // #405: the single-lot walkway helper must render exactly what the
+            // full-build loop renders for that lot. Pin it on the primitive path
+            // so the geometry is deterministic regardless of kit-asset
+            // availability.
+            RebuildWithPrimitiveFallback();
+            var lot = NeighborhoodLayout.HouseLots.First();
+
+            var fromFullBuild = root.transform.Find(WorldBuilder.WalkwayNamePrefix + lot.HouseId);
+            Assert.That(fromFullBuild, Is.Not.Null, "the full build renders the lot's walkway");
+
+            var host = new GameObject("single-lot-walkway-host");
+            try
+            {
+                WorldBuilder.BuildWalkway(host.transform, lot);
+
+                var single = host.transform.Find(WorldBuilder.WalkwayNamePrefix + lot.HouseId);
+                Assert.That(single, Is.Not.Null, "the single-lot helper renders the same container");
+
+                var fullChildren = fromFullBuild.Cast<Transform>().ToList();
+                var singleChildren = single.Cast<Transform>().ToList();
+                Assert.That(singleChildren.Count, Is.EqualTo(fullChildren.Count), "same piece count");
+
+                for (var i = 0; i < fullChildren.Count; i++)
+                {
+                    Assert.That(singleChildren[i].position.x, Is.EqualTo(fullChildren[i].position.x).Within(0.001f),
+                        $"piece {i} X");
+                    Assert.That(singleChildren[i].position.z, Is.EqualTo(fullChildren[i].position.z).Within(0.001f),
+                        $"piece {i} Z");
+                    Assert.That(Quaternion.Angle(singleChildren[i].rotation, fullChildren[i].rotation),
+                        Is.LessThan(0.01f), $"piece {i} rotation");
+                    Assert.That(singleChildren[i].localScale.x, Is.EqualTo(fullChildren[i].localScale.x).Within(0.001f),
+                        $"piece {i} scale X");
+                    Assert.That(singleChildren[i].localScale.z, Is.EqualTo(fullChildren[i].localScale.z).Within(0.001f),
+                        $"piece {i} scale Z");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
         [Test]
         public void WorldContainsNoPlayerObjects()
         {

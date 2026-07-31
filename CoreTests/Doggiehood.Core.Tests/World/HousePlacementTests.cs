@@ -243,6 +243,45 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void FrontFacing_WithAZoneSpanningNetwork_UsesTheWalkwayFacing_NotTheZSignFallback()
+        {
+            // #405: FrontFacing keys the house's orientation off the lot's
+            // front walkway, but for a zone lot (id >= 5) the starting-tile
+            // NeighborhoodLayout.WalkNetwork has no such edge, so the single-arg
+            // overload falls back to the crude Z-sign guess. Given a network
+            // that DOES span the zone (the #398 map-derived graph shape,
+            // hand-built here so the test needs no live GameState), the
+            // network-aware overload must return the real street-ward facing
+            // the walkway attaches to.
+            //
+            // The lot sits far out along +X but well within the north-south
+            // road's span, so its nearest sidewalk is that NS road's east
+            // sidewalk: the walkway-derived facing is along X (-1, 0), which
+            // can never coincide with the Z-sign fallback (0, -1) — making the
+            // "walkway facing, not the fallback" distinction unambiguous.
+            var zoneLot = new HouseLot(
+                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, 20f));
+
+            var network = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, new[] { zoneLot });
+            Assert.That(network.TryGetFrontWalkway(zoneLot.HouseId, out var walkway), Is.True,
+                "the zone-spanning network must attach a front walkway to the zone lot");
+
+            var walkwayFacing = HousePlacement.FacingToward(walkway.A, walkway.B);
+            var zSignFallback = new GridPoint(0f, -Math.Sign(zoneLot.Position.Z));
+            Assert.That(walkwayFacing, Is.Not.EqualTo(zSignFallback),
+                "this lot is chosen so the walkway facing differs from the fallback");
+
+            Assert.That(HousePlacement.FrontFacing(zoneLot, network), Is.EqualTo(walkwayFacing),
+                "the network-aware FrontFacing must use the walkway-derived facing");
+
+            // And the single-arg overload (starting-tile network only) still
+            // gives the fallback for a zone lot — the overload is what changes.
+            Assert.That(HousePlacement.FrontFacing(zoneLot), Is.EqualTo(zSignFallback),
+                "without a zone-spanning network the zone lot falls back to the Z-sign guess");
+        }
+
+        [Test]
         public void FrontSetback_SitsInDereksAgreedTuningRange()
         {
             // #127 left the exact number to be tuned visually; the agreed

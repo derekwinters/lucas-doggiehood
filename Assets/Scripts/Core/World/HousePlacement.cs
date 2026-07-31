@@ -81,7 +81,21 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static GridPoint FrontFacing(HouseLot lot)
         {
-            if (NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            return FrontFacing(lot, NeighborhoodLayout.WalkNetwork);
+        }
+
+        /// <summary>
+        /// <see cref="FrontFacing(HouseLot)"/> against an explicit walk
+        /// network rather than the starting-tile
+        /// <see cref="NeighborhoodLayout.WalkNetwork"/> singleton. A zone lot
+        /// (#405, id >= 5) has no front-walkway edge in the starting network,
+        /// so the single-arg overload falls back to the crude Z-sign guess;
+        /// given the #398 map-spanning network (which grows walkway edges onto
+        /// unlocked tiles), this returns the real street-ward facing instead.
+        /// </summary>
+        public static GridPoint FrontFacing(HouseLot lot, WalkNetwork network)
+        {
+            if (network != null && network.TryGetFrontWalkway(lot.HouseId, out var walkway))
             {
                 // Door → sidewalk attach is exactly the street-ward
                 // direction of the walkway.

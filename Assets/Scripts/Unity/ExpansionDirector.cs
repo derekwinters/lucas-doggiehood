@@ -101,6 +101,14 @@ namespace Doggiehood.Unity
             var lot = State.GetHouseLot(houseId);
             WorldBuilder.BuildHouse(worldRoot, house, lot);
 
+            // #405: a starting house gets its front walkway, yard trees, and
+            // fence at world-build time; a mid-game zone-lot build only rendered
+            // the mesh. Render the same three treatments for the newly built lot
+            // so it matches a starting-neighborhood house.
+            WorldBuilder.BuildWalkway(worldRoot, lot);
+            WorldBuilder.BuildYardLandscaping(worldRoot, lot);
+            WorldBuilder.BuildFence(worldRoot, lot);
+
             SaveStore.Save(State);
         }
 

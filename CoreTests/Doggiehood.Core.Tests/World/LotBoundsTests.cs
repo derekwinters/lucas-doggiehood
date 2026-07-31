@@ -203,6 +203,39 @@ namespace Doggiehood.Core.Tests.World
             AssertRectsEqual(boundsB, boundsA, "different-distance lot in the same quadrant");
         }
 
+        [Test]
+        public void QuadrantBounds_ForALotOnANonStartingTile_ContainsTheLotsPosition()
+        {
+            // #405: a zone lot sits on its OWN tile (e.g. the first zone's
+            // cul-de-sac at tile row 1, world Z ~= 60), not the starting
+            // intersection at the origin. QuadrantBounds must surround that
+            // tile's quadrant so the lot's house position falls inside it —
+            // otherwise YardSplit slices around a house that is outside the
+            // bounds and produces an inverted (maxZ < minZ) rect.
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                var bounds = LotBounds.QuadrantBounds(lot);
+                Assert.That(bounds.Contains(lot.Position), Is.True,
+                    $"zone lot {lot.HouseId} at {lot.Position} must fall inside its own quadrant bounds");
+            }
+        }
+
+        [Test]
+        public void FrontYardAndBackYard_ForARealUnlockedZoneLot_AreWellFormed_NotInverted()
+        {
+            // #405 regression (CI): building a house on a real unlocked zone
+            // lot threw `maxZ must be >= minZ` from YardSplit, because the lot's
+            // house position sat outside its origin-centered quadrant bounds.
+            // Every real first-zone lot must now split into well-formed yards.
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                Assert.That(() => LotBounds.FrontYard(lot), Throws.Nothing,
+                    $"zone lot {lot.HouseId} front yard must not throw");
+                Assert.That(() => LotBounds.BackYard(lot), Throws.Nothing,
+                    $"zone lot {lot.HouseId} back yard must not throw");
+            }
+        }
+
         private static void AssertRectsEqual(LotRect actual, LotRect expected, string label)
         {
             Assert.That(actual.MinX, Is.EqualTo(expected.MinX).Within(Epsilon), label + " MinX");
