@@ -2106,7 +2106,15 @@ lines <strong>unioned</strong> with the issue's native GitHub issue-dependency r
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/321">#321</a>), so an
 issue whose only blocker was recorded natively still revisits. A blocker is
 resolved when it is closed/merged (absent from the open snapshot) or carries
-<code>ready-for-work</code>/<code>in-progress</code>. An issue with multiple blockers revisits only
+<code>ready-for-work</code>/<code>in-progress</code> — with <strong>one carve-out</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/396">#396</a>):
+a blocker carrying <code>type:wireframe</code> resolves <strong>only when closed</strong>, never merely
+at <code>ready-for-work</code>/<code>in-progress</code>. A wireframe issue at <code>ready-for-work</code> is only
+approved to go <em>draft</em> the wireframe; its downstream is hard-gated on the
+wireframe being distilled into <code>docs/specs/ui/</code> and closed (CLAUDE.md rule #8 /
+<a href="../ui-design-process/">UI Design Process</a>). Without the carve-out the blocker's
+label never changes, so the sweep re-fired the same revisit every run and
+single-issue triage kept concluding "still blocked" — an infinite churn. An
+issue with multiple blockers revisits only
 once every one is resolved; an issue with no hard blocker at all (no
 <code>Blocked by:</code> line and no native relationship), a still-open unresolved blocker,
 a prose-only mention, or a <code>parked</code> label is never touched (no false triggers). It runs board-wide in <strong><code>gatekeeper-sweep.yml</code></strong>

@@ -1426,6 +1426,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#how-a-wireframe-issue-is-recognized-the-typewireframe-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      How a wireframe issue is recognized: the type:wireframe label
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1675,6 +1684,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#how-a-wireframe-issue-is-recognized-the-typewireframe-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      How a wireframe issue is recognized: the type:wireframe label
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1729,6 +1747,9 @@
 <h2 id="the-gate">The gate<a class="headerlink" href="#the-gate" title="Permanent link">&para;</a></h2>
 <p>If an issue would touch a screen's <strong>structure</strong> (adding, removing, or repositioning regions of a panel/overlay/screen) and <strong>no approved wireframe exists</strong> for it, <strong>stop and flag it</strong> — do not implement, not even graybox. This has the same posture as the <a href="../agent-workflow/#how-an-issue-gets-worked">docs-conflict rule</a>: it's a design gap to resolve back in GitHub (file/finish the wireframe first), not something to invent mid-implementation.</p>
 <p>Purely visual restyling that doesn't move structure (e.g. applying an already-approved shared-component style) is not gated by this rule — but if you're unsure whether a change is structural, treat it as structural and flag it.</p>
+<h2 id="how-a-wireframe-issue-is-recognized-the-typewireframe-label">How a wireframe issue is recognized: the <code>type:wireframe</code> label<a class="headerlink" href="#how-a-wireframe-issue-is-recognized-the-typewireframe-label" title="Permanent link">&para;</a></h2>
+<p>A GitHub issue whose deliverable is the wireframe itself (the dual artifact of step 1) carries the <strong><code>type:wireframe</code></strong> label, alongside a <strong><code>Wireframe:</code> title prefix</strong> (existing practice, e.g. <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>). The label is the authoritative marker; the title prefix is a human-readable convention.</p>
+<p>This matters to the pipeline's <a href="../issue-pipeline/#auto-revisit-when-a-blocker-clears">blocker auto-revisit sweep</a>. A downstream issue <code>Blocked by:</code> a wireframe issue is hard-gated on the wireframe reaching <strong>approve → distill → closed</strong>, not merely on it entering the dev queue — so the sweep treats a <code>type:wireframe</code> blocker as resolved <strong>only once it is closed</strong>, never at <code>ready-for-work</code>/<code>in-progress</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/396">#396</a>). An ordinary blocker still resolves as soon as it is queued. Apply <code>type:wireframe</code> when filing a wireframe issue so the sweep gates its dependents correctly.</p>
 
 
 
