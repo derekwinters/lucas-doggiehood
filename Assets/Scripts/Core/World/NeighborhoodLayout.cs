@@ -29,12 +29,20 @@ namespace Doggiehood.Core.World
         public const float LotDistanceFromCenter = 14f;
 
         /// <summary>
-        /// How far each street extends from the intersection (#106). Like
-        /// <see cref="LotDistanceFromCenter"/>, this is a placement choice
-        /// specific to this starting map instance, not one of the locked
-        /// #105 standard dimensions.
+        /// How far each street extends from the intersection (#106, #392).
+        /// This starting map places its FourWay so each arm reaches the
+        /// tile edge — half a tile (<see cref="WorldDimensions.TileSize"/> /
+        /// 2 = 30m) from the intersection at the origin — so adjacent tiles'
+        /// road arms meet edge-to-edge and the street network reads as
+        /// continuous once expansion places neighbouring tiles. This is the
+        /// same tile-edge convention the generic multi-tile system already
+        /// uses (<see cref="TileGeometry.EdgeMidpoint"/>,
+        /// <c>LotBounds.QuadrantBounds</c>); it is a placement choice for
+        /// this starting map instance, not one of the locked #105 standard
+        /// dimensions, so it is derived from the tile size rather than being
+        /// a hand-picked literal (previously 26m, which stopped ~4m short).
         /// </summary>
-        public const float StreetHalfLength = 26f;
+        public const float StreetHalfLength = WorldDimensions.TileSize / 2f;
 
         public static readonly GridPoint Intersection = new GridPoint(0f, 0f);
 

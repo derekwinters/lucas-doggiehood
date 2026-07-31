@@ -66,6 +66,22 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void StreetHalfLength_ReachesTheTileEdge_SoAdjacentTilesRoadsConnectOnExpansion()
+        {
+            // #392: each starting street arm must reach the tile edge
+            // (half a tile from the intersection at (0,0)) rather than the
+            // old hand-picked 26m that stopped ~4m short — so when
+            // expansion places neighbouring tiles, their road arms meet
+            // edge-to-edge with no green gap between them. The tile edge is
+            // WorldDimensions.TileSize / 2 (30m), the same convention the
+            // generic multi-tile system already uses
+            // (TileGeometry.EdgeMidpoint, LotBounds.QuadrantBounds).
+            Assert.That(NeighborhoodLayout.StreetHalfLength,
+                Is.EqualTo(WorldDimensions.TileSize / 2f).Within(0.0001f));
+            Assert.That(NeighborhoodLayout.StreetHalfLength, Is.EqualTo(30f).Within(0.0001f));
+        }
+
+        [Test]
         public void Roads_ContainsOneRoadPerStreet_CenteredOnTheIntersection()
         {
             // #106: NeighborhoodLayout exposes real Road geometry built

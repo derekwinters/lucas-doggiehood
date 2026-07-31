@@ -283,9 +283,11 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// The visual road corridor as City Kit Roads tiles (#121): one
-        /// crossroad tile on the intersection, then straight tiles every
-        /// RoadTileScale meters along each street arm — except where the
+        /// The visual road corridor as City Kit Roads tiles (#121, #392):
+        /// one crossroad tile on the intersection, then a whole number of
+        /// straight tiles compressed evenly to span each street arm exactly
+        /// from the intersection tile's edge to the tile edge (so adjacent
+        /// tiles' roads connect on expansion, #392) — except where the
         /// WalkNetwork defines a Crosswalk edge inside a tile's span, which
         /// gets the road-crossing tile instead (replacing the primitive
         /// crosswalk quads). Tiles have ground-level pivots (y = 0) and
@@ -316,27 +318,34 @@ namespace Doggiehood.Unity
                 // runs along world Z.
                 var rotation = isNorthSouth ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
                 var crosswalkAlongs = CrosswalkAlongPositions(road);
-                var halfTile = RoadTileScale / 2f;
+                var nearEdge = RoadTileScale / 2f; // the crossroad tile's own edge
 
-                // Whole tiles per arm outward from the intersection tile's
-                // edge (StreetHalfLength 26 - 5 -> 2 tiles, centers 10, 20).
-                // The last (26 - 25 = 1 m) sliver of each arm stays untiled
-                // rather than overshooting the street end and ground plane.
-                var armTileCount = (int)((road.HalfLength - halfTile) / RoadTileScale);
+                // #392: compress a whole number of tiles to span exactly
+                // from the intersection tile's edge (nearEdge = 5m) out to
+                // the tile edge (road.HalfLength = half a tile = 30m), so
+                // adjacent tiles' roads connect edge-to-edge on expansion
+                // with no green gap and no overshoot. Same compress-to-fit
+                // technique as WalkwayTiling.PiecesAlong: only the along-road
+                // axis (local X) is scaled to the piece length; the
+                // perpendicular road-band width and the height keep the
+                // uniform RoadTileScale so the road texture doesn't distort.
+                var armSpan = road.HalfLength - nearEdge;
+                var armTileCount = Mathf.Max(1, Mathf.CeilToInt(armSpan / RoadTileScale - 0.0001f));
+                var pieceLength = armSpan / armTileCount;
 
                 foreach (var sign in new[] { 1f, -1f })
                 {
-                    for (var i = 1; i <= armTileCount; i++)
+                    for (var i = 0; i < armTileCount; i++)
                     {
-                        var along = sign * i * RoadTileScale;
-                        var isCrossing = crosswalkAlongs.Any(a => Mathf.Abs(a - along) <= halfTile);
+                        var along = sign * (nearEdge + (i + 0.5f) * pieceLength);
+                        var isCrossing = crosswalkAlongs.Any(a => Mathf.Abs(a - along) <= pieceLength / 2f);
                         var tile = Object.Instantiate(isCrossing ? crossing : straight, roadParent.transform);
                         tile.name = RoadTileNamePrefix + road.Orientation
-                            + (isCrossing ? " Crossing " : " Straight ") + (sign * i);
+                            + (isCrossing ? " Crossing " : " Straight ") + (sign * (i + 1));
                         var point = road.PointAt(along, 0f);
                         tile.transform.position = new Vector3(point.X, 0f, point.Z);
                         tile.transform.rotation = rotation;
-                        tile.transform.localScale = Vector3.one * RoadTileScale;
+                        tile.transform.localScale = new Vector3(pieceLength, RoadTileScale, RoadTileScale);
                     }
                 }
             }
