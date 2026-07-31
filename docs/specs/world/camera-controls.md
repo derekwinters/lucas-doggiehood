@@ -10,6 +10,8 @@ There is no visible player-controlled character in the world. The player is an u
 
 Drag/swipe to pan the camera across the neighborhood; pinch to zoom in and out — the same interaction model as panning around a map. Tapping a dog or house triggers its interaction directly. ([#20](https://github.com/derekwinters/lucas-doggiehood/issues/20))
 
+**A tap over UI never reaches the world behind it.** World tap-routing is modal-aware: when an open dialog/menu sits under the pointer, the tap is absorbed by that UI and the world raycast is skipped — so tapping **Accept** on a quest never also opens a house behind the button, and tapping **Close** never re-triggers the thing it sits over ([#422](https://github.com/derekwinters/lucas-doggiehood/issues/422)). The router bails before any world hit-test when the tap is over a UGUI graphic (`EventSystem.IsPointerOverGameObject`, mouse and touch-`fingerId` overloads — every modal overlay carries a full-screen raycast-blocking scrim, so this reads true anywhere over it) or over the still-IMGUI HUD Settings gear (a screen-space rect check against `HudOverlay.ComputeGearRect`, interim until the gear migrates to UGUI in [#370](https://github.com/derekwinters/lucas-doggiehood/issues/370)).
+
 **The pan bounds grow with the map.** Panning is clamped to the neighborhood's extent, but that extent is not fixed: it is derived from the live tile map (`Doggiehood.Core.World.MapExtent.Covering` — a named margin beyond the outermost tiles) and **recomputes when a zone is unlocked** (`CameraController.RecomputeBoundsFromMap`), so the player can always pan over to reach a newly unlocked zone rather than being clamped out of it ([#373](https://github.com/derekwinters/lucas-doggiehood/issues/373)). The starting bounds derive from the same map-based path (the seeded origin tile), so there is one derivation for both the initial world and every expansion.
 
 ## Camera angle
@@ -33,5 +35,6 @@ This is one facet of the project's platform target, stated authoritatively once 
 - [ ] Pan via drag/swipe within the bounds of the current neighborhood scene (the bounds grow with the map, recomputed from the live tile extent on zone unlock — [#373](https://github.com/derekwinters/lucas-doggiehood/issues/373))
 - [ ] Pinch-to-zoom with sane min/max zoom limits
 - [ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels
+- [ ] A tap over an open dialog/menu (or its scrim, or the HUD gear) is absorbed by that UI and never reaches a world interactable behind it ([#422](https://github.com/derekwinters/lucas-doggiehood/issues/422))
 - [ ] App is locked to landscape orientation
 - [ ] No player avatar/character exists anywhere in the scene
