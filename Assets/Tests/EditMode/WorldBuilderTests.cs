@@ -363,8 +363,12 @@ namespace Doggiehood.Unity.EditModeTests
             // #373 (Gap 1): the unlocked cul-de-sac tile gets a road surface
             // derived from GameState.Map (TileRoadGeometry) — its south arm,
             // sitting in the tile's south half so it meets the origin tile's
-            // road — not just floating lot markers.
+            // road — not just floating lot markers. Pinned on the graybox
+            // primitive path (one slab per road edge) so the per-edge count is
+            // deterministic; the kit path tiles the same arm with several kit
+            // tiles instead (its contract lives in WorldKitArtTests).
             Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
             var state = WithFirstZoneUnlocked();
             root = WorldBuilder.Build(state);
 
