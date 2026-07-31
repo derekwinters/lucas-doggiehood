@@ -251,7 +251,7 @@ namespace Doggiehood.Unity
             }
 
             BuildWalkways(root.transform);
-            BuildFences(root.transform);
+            BuildFences(root.transform, state);
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
             BuildUnlockedZoneRoads(root.transform, state);
@@ -638,7 +638,7 @@ namespace Doggiehood.Unity
         /// without a full scene reload, leaving houses, dogs, and quests
         /// untouched. All geometry still comes from Core (LotFence/FenceTiling).
         /// </summary>
-        public static void RebuildFences(Transform root)
+        public static void RebuildFences(Transform root, GameState state)
         {
             var existing = root.Cast<Transform>()
                 .Where(child => child.name.StartsWith(FenceNamePrefix))
@@ -648,14 +648,24 @@ namespace Doggiehood.Unity
                 Object.DestroyImmediate(container.gameObject);
             }
 
-            BuildFences(root);
+            BuildFences(root, state);
         }
 
-        private static void BuildFences(Transform parent)
+        /// <summary>
+        /// Builds a backyard fence for EVERY built house (#424), not just the
+        /// starting four: iterates <see cref="GameState.Houses"/> and resolves
+        /// each lot via <see cref="GameState.GetHouseLot"/> — the same
+        /// resolution the build/upgrade paths use — so a house on an unlocked
+        /// zone gets its fence too. Each lot is still unfenced by default
+        /// (<see cref="LotFence.RunsFor"/> empty until <see cref="HouseLot.HasFence"/>
+        /// or <see cref="ForceFencesVisible"/>), so this changes only WHICH
+        /// houses are covered, not the hidden-by-default state.
+        /// </summary>
+        private static void BuildFences(Transform parent, GameState state)
         {
-            foreach (var lot in NeighborhoodLayout.HouseLots)
+            foreach (var house in state.Houses)
             {
-                BuildFence(parent, lot);
+                BuildFence(parent, state.GetHouseLot(house.Id));
             }
         }
 

@@ -502,6 +502,77 @@ namespace Doggiehood.Core.Tests.World
                 "an enabled zone lot's fence runs must resolve too");
         }
 
+        [Test]
+        public void GeometryFor_ForEveryRealUnlockedZoneLot_DoesNotThrow()
+        {
+            // #424: fence geometry must be DEFINED for every house, including
+            // houses built on an unlocked zone's OWN tile — not just the
+            // starting four. A hand-placed lot on the starting tile does NOT
+            // reproduce the zone-tile offset (that gap caused #429's CI-only
+            // `maxZ must be >= minZ` crash), so exercise the REAL ZoneCatalog
+            // lots, whose positions sit on their own zone tile. Resolves the
+            // rolled model (#414/#299), the tile-centered QuadrantBounds
+            // (#429/#405), and the fallback facing.
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                Assert.That(() => LotFence.GeometryFor(lot), Throws.Nothing,
+                    $"zone lot {lot.HouseId} at {lot.Position}: fence geometry must not throw");
+                Assert.That(() => LotFence.RunsFor(FencedCloneOf(lot)), Throws.Nothing,
+                    $"zone lot {lot.HouseId}: an enabled fence's runs must resolve too");
+            }
+        }
+
+        [Test]
+        public void Fence_ForEveryRealUnlockedZoneLot_IsTheSameFiveRunFrontOpenShape_OrientedToItsFacing()
+        {
+            // #424: a zone house's fence is the SAME five-run, front-open
+            // backyard shape a starting house gets, oriented to the lot's
+            // facing (the Z-sign fallback for zone lots today; perfect
+            // live-network street facing is deferred to #430). The two open
+            // ends reach the house side-wall midpoints and nothing crosses the
+            // open front.
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                var runs = LotFence.RunsFor(FencedCloneOf(lot));
+                Assert.That(runs.Count, Is.EqualTo(5),
+                    $"zone lot {lot.HouseId}: two side runs + one rear run + two connectors");
+
+                var facing = HousePlacement.FrontFacing(lot);
+                var house = HousePlacement.Position(lot, HousePlacement.KitScale);
+                var model = HouseModelCatalog.ForHouse(lot.HouseId);
+                var halfWidth = HousePlacement.KitScale * model.FootprintX / 2f;
+
+                // The two open ends are the house side-wall midpoints.
+                var perp = new GridPoint(-facing.Z, facing.X);
+                var expectedAnchors = new[]
+                {
+                    new GridPoint(house.X + perp.X * halfWidth, house.Z + perp.Z * halfWidth),
+                    new GridPoint(house.X - perp.X * halfWidth, house.Z - perp.Z * halfWidth),
+                };
+
+                var openEnds = OpenEndsOf(runs);
+                Assert.That(openEnds.Count, Is.EqualTo(2),
+                    $"zone lot {lot.HouseId}: one open polyline with two ends");
+                foreach (var anchor in expectedAnchors)
+                {
+                    Assert.That(openEnds.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
+                        $"zone lot {lot.HouseId}: a connector must reach the side wall midpoint {anchor}");
+                }
+
+                // Front stays open: every run endpoint sits at or behind the
+                // house center along the facing axis.
+                foreach (var run in runs)
+                {
+                    foreach (var point in new[] { run.A, run.B })
+                    {
+                        var alongFacing = (point.X - house.X) * facing.X + (point.Z - house.Z) * facing.Z;
+                        Assert.That(alongFacing, Is.LessThanOrEqualTo(Epsilon),
+                            $"zone lot {lot.HouseId}: fence point {point} intrudes into the front yard");
+                    }
+                }
+            }
+        }
+
         private static HouseLot FencedCloneOf(HouseLot lot)
         {
             return new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, hasFence: true);
