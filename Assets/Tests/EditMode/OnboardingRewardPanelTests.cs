@@ -49,7 +49,7 @@ namespace Doggiehood.Unity.EditModeTests
         [TearDown]
         public void Cleanup()
         {
-            Object.DestroyImmediate(canvasHost);
+            UnityEngine.Object.DestroyImmediate(canvasHost);
         }
 
         // --- Layout constants come verbatim from the approved wireframe ---
