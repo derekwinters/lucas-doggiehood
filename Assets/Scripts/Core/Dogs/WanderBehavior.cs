@@ -23,22 +23,34 @@ namespace Doggiehood.Core.Dogs
     {
         private readonly Random random;
         private readonly MovementProfile profile;
-        private readonly WalkNetwork network;
+        private readonly Func<WalkNetwork> networkProvider;
 
         // The node the dog was at before its most recent hop — null until
         // the first call, since there's no arrival direction yet.
         private GridPoint? previousNode;
 
         public WanderBehavior(int seed, MovementProfile profile)
-            : this(seed, profile, NeighborhoodLayout.WalkNetwork)
+            : this(seed, profile, () => NeighborhoodLayout.WalkNetwork)
         {
         }
 
         public WanderBehavior(int seed, MovementProfile profile, WalkNetwork network)
+            : this(seed, profile, () => network)
+        {
+        }
+
+        /// <summary>
+        /// Binds wander to a LIVE network the caller resolves on each hop
+        /// (#398): DogView passes <c>() =&gt; state.WalkNetwork</c>, so an
+        /// already-spawned dog automatically wanders onto newly unlocked
+        /// tiles the moment the map-derived network grows — no re-spawn, no
+        /// rebinding.
+        /// </summary>
+        public WanderBehavior(int seed, MovementProfile profile, Func<WalkNetwork> networkProvider)
         {
             random = new Random(seed);
             this.profile = profile;
-            this.network = network;
+            this.networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
         }
 
         /// <summary>Next node, weighting continue-straight-vs-deviate/turn
@@ -56,6 +68,7 @@ namespace Doggiehood.Core.Dogs
         /// </summary>
         public GridPoint NextTarget(GridPoint current, float continueWeight, float deviateWeight)
         {
+            var network = networkProvider();
             var node = network.NearestWalkableNode(current);
             var candidates = network.EdgesFrom(node)
                 .Where(e => e.Kind != WalkEdgeKind.FrontWalkway)

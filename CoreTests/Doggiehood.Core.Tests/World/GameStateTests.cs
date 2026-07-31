@@ -343,5 +343,68 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(house.Level, Is.EqualTo(House.InitialLevel));
             Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore));
         }
+
+        [Test]
+        public void WalkNetwork_ForANewGame_IsConfinedToTheStartingIntersection()
+        {
+            // #398: before any zone is unlocked the live network is just the
+            // starting FourWay — every sidewalk node sits within it (the
+            // shared north edge is at TileSize/2 = 30).
+            var state = GameState.CreateNew();
+
+            Assert.That(state.WalkNetwork.Nodes, Has.All.Property("Z").LessThanOrEqualTo(WorldDimensions.TileSize / 2f + 0.001f));
+        }
+
+        [Test]
+        public void WalkNetwork_SpansTheNewlyUnlockedZone_AfterTryUnlockNextZoneSucceeds()
+        {
+            // #398: the whole point of the fix — once the cul-de-sac north of
+            // the start is unlocked, the live network must extend onto it so
+            // dogs can wander there.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+
+            Assert.That(state.WalkNetwork.Nodes.Any(n => n.Z > WorldDimensions.TileSize / 2f + 0.001f), Is.False,
+                "network already spanned the zone before unlocking");
+
+            Assert.That(state.TryUnlockNextZone(), Is.True);
+
+            Assert.That(state.WalkNetwork.Nodes.Any(n => n.Z > WorldDimensions.TileSize / 2f + 0.001f), Is.True,
+                "network did not grow onto the unlocked cul-de-sac tile");
+            Assert.That(state.WalkNetwork.IsFullyConnected(), Is.True);
+        }
+
+        [Test]
+        public void WalkNetwork_IsUnchanged_WhenTryUnlockNextZoneFails()
+        {
+            // A failed unlock (can't afford it) changes nothing — the cached
+            // live network is the very same instance afterwards.
+            var state = GameState.CreateNew();
+            var before = state.WalkNetwork;
+
+            Assert.That(state.TryUnlockNextZone(), Is.False);
+
+            Assert.That(state.WalkNetwork, Is.SameAs(before));
+        }
+
+        [Test]
+        public void WalkNetwork_Rebuilds_AfterTryBuildHouseSucceeds()
+        {
+            // #398: a successful build invalidates the cached live network so
+            // the next read reflects the new house. (Expansion-built houses
+            // have no authored style yet, so no front walkway is added today,
+            // but the rebuild contract must still hold — and it must never
+            // throw on the freshly built lot.)
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1000);
+            state.TryUnlockNextZone();
+            var lot = state.UnlockedZones[0].Lots[0];
+            var before = state.WalkNetwork;
+
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
+
+            Assert.That(state.WalkNetwork, Is.Not.SameAs(before), "the network was not rebuilt after a successful build");
+            Assert.That(state.WalkNetwork.IsFullyConnected(), Is.True);
+        }
     }
 }

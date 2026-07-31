@@ -53,6 +53,49 @@ namespace Doggiehood.Core.World
         /// the starting FourWay intersection until zones are unlocked (#56).</summary>
         public TileMap Map { get; }
 
+        // #398: the live sidewalk+crosswalk+front-walkway network, derived
+        // from the whole unlocked Map (not the starting-tile-only
+        // NeighborhoodLayout cache). Lazily built and cached; invalidated
+        // whenever the map or the built houses change so it grows onto newly
+        // unlocked tiles and picks up freshly built houses' walkways.
+        private WalkNetwork walkNetwork;
+
+        /// <summary>
+        /// The walkable graph (#106) spanning every unlocked tile (#398):
+        /// sidewalks and crosswalks for all of <see cref="Map"/>'s
+        /// road-bearing tiles, plus a front walkway for every built house.
+        /// Rebuilds after a successful <see cref="TryUnlockNextZone"/> or
+        /// <see cref="TryBuildHouse"/> (and on save-restore); a failed action
+        /// leaves the cached instance untouched. Dogs wander this graph, so
+        /// unlocking a zone lets them explore its sidewalks.
+        /// </summary>
+        public WalkNetwork WalkNetwork
+        {
+            get { return walkNetwork ?? (walkNetwork = BuildWalkNetwork()); }
+        }
+
+        private WalkNetwork BuildWalkNetwork()
+        {
+            // Only houses with an authored style (#64) can grow a front
+            // walkway — the walkway ends at the house's catalog front door,
+            // and an unstyled expansion-built house (#57) has no model/door
+            // yet (the render layer already grayboxes it). Its lot is left
+            // off the walk graph; the tile's sidewalks/crosswalks still span
+            // it, since those derive from the Map's roads, not its houses.
+            var builtLots = houses
+                .Where(house => Art.HouseStyleTable.HasStyle(house.Id))
+                .Select(house => GetHouseLot(house.Id))
+                .ToList();
+            return MapWalkNetwork.BuildFrom(Map, builtLots);
+        }
+
+        // Drops the cached network so the next read rebuilds it from the
+        // current Map + houses. Called only after a change actually lands.
+        private void InvalidateWalkNetwork()
+        {
+            walkNetwork = null;
+        }
+
         /// <summary>Zones unlocked so far, in unlock order (#56). Empty for
         /// a new game — the starting intersection isn't itself a zone.</summary>
         public IReadOnlyList<Zone> UnlockedZones
@@ -194,6 +237,7 @@ namespace Doggiehood.Core.World
             var zone = ZoneCatalog.Zones[zoneNumber - 1];
             zone.PlaceOnto(Map);
             unlockedZones.Add(zone);
+            InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
             return true;
         }
@@ -239,6 +283,7 @@ namespace Doggiehood.Core.World
             // (SaveCodec) so it survives relaunch and its L1->L4 upgrades.
             houses.Add(new House(houseId, lot.Quadrant,
                 variant: HouseVariantAssignment.ForHouse(houseId)));
+            InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.BuildHouse);
             return true;
         }
@@ -331,6 +376,8 @@ namespace Doggiehood.Core.World
                 zone.PlaceOnto(Map);
                 unlockedZones.Add(zone);
             }
+
+            InvalidateWalkNetwork();
         }
 
         /// <summary>
@@ -358,6 +405,7 @@ namespace Doggiehood.Core.World
             }
 
             houses.Add(new House(houseId, lot.Quadrant, isVacant, level, variant));
+            InvalidateWalkNetwork();
         }
 
         /// <summary>
