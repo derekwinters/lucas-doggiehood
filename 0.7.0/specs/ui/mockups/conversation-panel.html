@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversation Panel — Wireframe #175 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --bubble:#FFFFFF; --disabled:#D8D2C6;
+    --outline:6px; --shadow:8px;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:66ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+
+  .viewer{overflow:auto;max-height:74vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:56%;height:90px;background:#9C9AA0;}
+  .road::before{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:13px;background:repeating-linear-gradient(90deg,var(--gold) 0 56px,transparent 56px 124px);}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:180px;top:20%;} .h2{left:1400px;top:18%;background:#7FB2E6;}
+
+  /* the dog you're talking to (Cube Pet) + its speech bubble */
+  .dog{position:absolute;left:520px;top:600px;width:120px;height:110px;background:#C98A4B;border:8px solid var(--ink);border-radius:22px;box-shadow:0 12px 0 rgba(46,42,38,.25);}
+  .dog::before{content:"";position:absolute;left:22px;top:34px;width:16px;height:16px;border-radius:999px;background:var(--ink);box-shadow:44px 0 0 var(--ink);} /* eyes */
+  .dog::after{content:"";position:absolute;left:36px;top:70px;width:48px;height:14px;border-radius:0 0 14px 14px;background:var(--ink);} /* mouth */
+  .sbubble{position:absolute;left:600px;top:470px;width:104px;height:104px;border-radius:999px;background:var(--bubble);border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:11px;}
+  .sbubble::after{content:"";position:absolute;bottom:-19px;left:24px;width:28px;height:28px;background:var(--bubble);border-right:6px solid var(--ink);border-bottom:6px solid var(--ink);transform:rotate(45deg);}
+  .sbubble i{width:13px;height:13px;border-radius:999px;background:var(--ink);display:block;}
+
+  /* conversation panel — bottom-center (DialogueBox shell #173) */
+  .panel{position:absolute;left:440px;bottom:64px;width:1040px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 12px 0 var(--ink);padding:40px;}
+  .panel .nametag{position:absolute;top:-28px;left:36px;background:var(--gold);border:5px solid var(--ink);box-shadow:0 6px 0 var(--ink);border-radius:999px;padding:8px 30px;font-size:26px;color:var(--ink);}
+  .panel .body{font-size:34px;color:var(--ink);margin:14px 0 30px;line-height:1.4;}
+  .panel .actions{display:flex;flex-wrap:wrap;gap:20px;justify-content:flex-end;}
+  .cc-btn{display:inline-flex;align-items:center;justify-content:center;gap:16px;height:96px;padding:0 48px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);}
+  .cc-btn--positive{background:var(--leaf);} .cc-btn--neutral{background:var(--cream);} .cc-btn--primary{background:var(--coral);}
+  .cc-btn--disabled{background:var(--disabled);color:#8f887b;border-color:#8f887b;box-shadow:0 8px 0 #8f887b;}
+
+  /* bottom-margin guide */
+  .mguide{position:absolute;left:960px;bottom:0;width:2px;height:64px;background:var(--guide);}
+  .mguide::after{content:"PanelBottomMarginPx 64";position:absolute;left:8px;bottom:16px;font-size:22px;color:var(--guide);white-space:nowrap;}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:110px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+
+  /* action-row variants strip */
+  .variants{margin-top:30px;}
+  .variants h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;}
+  .vgrid{display:grid;grid-template-columns:1fr;gap:14px;}
+  .vrow{background:var(--stage);border:1px solid var(--hair);border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .vrow .lbl{font-size:13px;color:var(--muted);max-width:34ch;}
+  .vrow .lbl b{color:var(--text);}
+  .mini{display:inline-flex;gap:12px;flex-wrap:wrap;}
+  .mini .cc-btn{height:52px;font-size:19px;padding:0 24px;border-width:3px;box-shadow:0 4px 0 var(--ink);gap:8px;}
+  .mini .cc-btn--disabled{box-shadow:0 4px 0 #8f887b;}
+
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+  .decision{display:inline-block;margin-top:8px;margin-left:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--leaf) 22%,transparent);border:1px solid var(--leaf);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #175 · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Conversation panel</h1>
+  <p class="lede">Opens when you tap a dog's speech bubble. The dog states its request; you Accept or decline. It reuses
+    the shared <b>DialogueBox</b> shell and <b>PillButton</b>s (#173), sits <b>bottom-center</b> so the dog and
+    neighborhood stay visible above it, and adds the <b>decline</b> action that #185 needs.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Scroll inside the frame to pan.</p>
+
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet screen: a dog with a speech bubble, and a conversation panel anchored bottom-center with Not now and Accept buttons">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="dog"></div>
+      <div class="sbubble"><i></i><i></i><i></i></div>
+      <div class="mguide"></div>
+      <div class="panel">
+        <div class="nametag rounded">Biscuit</div>
+        <div class="body">I lost my favorite ball somewhere in the yard… could you help me find it?</div>
+        <div class="actions">
+          <button class="cc-btn cc-btn--neutral rounded">Not now</button>
+          <button class="cc-btn cc-btn--positive rounded">Help</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Placement &amp; layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>PanelAnchor</td><td class="val">BottomCenter</td><td>panel position</td></tr>
+        <tr><td>PanelWidthPx</td><td class="val">1040</td><td>panel width (centered)</td></tr>
+        <tr><td>PanelBottomMarginPx</td><td class="val">64</td><td>gap below panel</td></tr>
+        <tr><td>BodyFontPx</td><td class="val">34</td><td>request text</td></tr>
+        <tr><td>&nbsp;↳ DialogueBox</td><td class="val">#173</td><td>shell chrome (pad 40 / radius 40 / shadow 12 / nametag 28)</td></tr>
+        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>action buttons (96px)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Name tag</b> (dog name, overlapping tab) · <b>Body</b> (request text) · <b>Action row</b> (right-aligned PillButtons).</p>
+      <p class="note"><b>Decline behavior (the decision):</b> "Not now" dismisses the panel without accepting — non-punishing (no timers/fail states, per <code>economy.md</code>), and the dog keeps its speech bubble so you can reopen it. Tapping outside the panel = the same as "Not now".</p>
+    </div>
+  </div>
+
+  <div class="variants">
+    <h2>Action-row variants — the region flexes by quest type</h2>
+    <div class="vgrid">
+      <div class="vrow">
+        <div class="lbl"><b>Standard quest</b> — accept, or "Complete" when returning to hand it in.</div>
+        <div class="mini"><button class="cc-btn cc-btn--neutral rounded">Not now</button><button class="cc-btn cc-btn--positive rounded">Accept</button></div>
+      </div>
+      <div class="vrow">
+        <div class="lbl"><b>Decoration / choice quest</b> — pick which item (existing option buttons), plus decline.</div>
+        <div class="mini"><button class="cc-btn cc-btn--neutral rounded">Not now</button><button class="cc-btn cc-btn--primary rounded">Cushion</button><button class="cc-btn cc-btn--primary rounded">Blanket</button></div>
+      </div>
+      <div class="vrow">
+        <div class="lbl"><b>Buy-something quest</b> (#186) — the accept shows the cost and greys out when unaffordable.</div>
+        <div class="mini"><button class="cc-btn cc-btn--neutral rounded">Not now</button><button class="cc-btn cc-btn--primary rounded">Buy · 40</button></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200 · resolves #156's open point &amp; the #185 decline gap; the accept flow is the existing <code>ConversationPresenter</code>. Adding decline updates <code>docs/specs/quests/conversation-system.md</code> (today "single accept action, no branching").
+    <br><span class="status">Approved (Derek, 2026-07-24) (#175)</span><span class="decision">Decided (Derek, 2026-07-24): decline button = YES</span>
+  </footer>
+</div>
+</body>
+</html>
