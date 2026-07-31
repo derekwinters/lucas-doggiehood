@@ -159,6 +159,56 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(opened, Is.EqualTo(1));
         }
 
+        [Test]
+        public void Gear_HasNoFontGlyph_SoItNeverFallsBackToTheGrayBox()
+        {
+            // #370: the ⚙ glyph (U+2699) has no coverage in the bundled
+            // DejaVuSans font, so on device the gear rendered as an empty
+            // default-skin gray box. The gear is now drawn procedurally — the
+            // GearGlyph field must be gone entirely, no font glyph in its path.
+            var glyphField = typeof(HudOverlay).GetField(
+                "GearGlyph",
+                System.Reflection.BindingFlags.NonPublic
+                    | System.Reflection.BindingFlags.Public
+                    | System.Reflection.BindingFlags.Static
+                    | System.Reflection.BindingFlags.Instance);
+
+            Assert.That(glyphField, Is.Null,
+                "the ⚙ font glyph must be removed; the gear is drawn procedurally");
+        }
+
+        [Test]
+        public void GearIcon_GeometryConstants_MatchTheProceduralGearSpec()
+        {
+            // #370 / #161: the procedural toothed-disc gear icon geometry is
+            // expressed as named constants (no inline literals), asserted here
+            // the way the coach bar asserts its procedural paw-badge constants.
+            Assert.That(HudOverlay.GearToothCount, Is.EqualTo(8), "gear tooth count");
+            Assert.That(HudOverlay.GearBodyDiameterPx, Is.EqualTo(46f), "gear body disc diameter");
+            Assert.That(HudOverlay.GearToothDiameterPx, Is.EqualTo(14f), "each tooth disc diameter");
+            Assert.That(HudOverlay.GearToothOrbitRadiusPx, Is.EqualTo(26f), "tooth center orbit radius");
+            Assert.That(HudOverlay.GearHubDiameterPx, Is.EqualTo(18f), "cream hub-hole diameter");
+        }
+
+        [Test]
+        public void GearIcon_FitsInsideTheCreamFill_AndTeethPokePastTheBody()
+        {
+            // The toothed disc must read as a gear: teeth poke out past the body
+            // disc, and the whole icon stays inside the cream fill (button minus
+            // the ink outline on both sides). All from named constants (#161).
+            var gear = HudOverlay.ComputeGearRect(1920f, 1200f);
+            var creamDiameter = gear.width - 2f * HudOverlay.OutlineThicknessPx;
+            var toothTipDiameter = 2f * HudOverlay.GearToothOrbitRadiusPx + HudOverlay.GearToothDiameterPx;
+
+            Assert.That(toothTipDiameter, Is.LessThanOrEqualTo(creamDiameter),
+                "the tooth tips stay within the cream fill");
+            Assert.That(HudOverlay.GearToothOrbitRadiusPx + HudOverlay.GearToothDiameterPx / 2f,
+                Is.GreaterThan(HudOverlay.GearBodyDiameterPx / 2f),
+                "the teeth poke out past the gear body so it reads as toothed");
+            Assert.That(HudOverlay.GearHubDiameterPx, Is.LessThan(HudOverlay.GearBodyDiameterPx),
+                "the hub hole is smaller than the gear body");
+        }
+
         private static void AssertHex(Color color, byte r, byte g, byte b, string what)
         {
             var c32 = (Color32)color;
