@@ -689,6 +689,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-space-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open-space environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#lighting-time" class="md-nav__link">
     <span class="md-ellipsis">
       Lighting &amp; time
@@ -1741,6 +1750,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-space-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open-space environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#lighting-time" class="md-nav__link">
     <span class="md-ellipsis">
       Lighting &amp; time
@@ -1828,6 +1846,17 @@
 <p><strong>Decision (2026-07-23, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/243">#243</a>):</strong> the earlier <code>planter</code> kind is <strong>removed entirely</strong> — playtesting showed planters placed in odd, random yard spots, so the whole code path is gone and a planter can never be selected or rendered. Only the two tree meshes remain; the collision spacing (previously keyed off the planter, the widest piece) is re-derived from the larger tree canopy half-extent.</p>
 </blockquote>
 <p>Visually, each pick instantiates its selected <code>tree-large</code>/<code>tree-small</code> Kenney City Kit Suburban model at uniform scale ×5 (matching <code>FenceTiling.Scale</code>, since the trees stand alongside the same backyard fences — Derek tunes both further in the Editor check). <code>WorldBuilder</code> builds one "Yard - N" container per lot holding its front-then-back picks, falling back to one simple primitive marker per pick (same pattern as the walkways/fences) when a kit piece can't be loaded.</p>
+<h2 id="open-space-environment">Open-space environment<a class="headerlink" href="#open-space-environment" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Decision (2026-07-31, Derek &amp; Lucas, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/384">#384</a>):</strong> the parts of the world that aren't road or lot tiles must read as filled environment, not empty void. For now that fill is <strong>grass only</strong> — a single flat grass plane covering the map's occupied footprint. <strong>Water is out of scope</strong> for this issue (deferred to its own future issue), and <strong>parks are out of scope</strong> too (deferred — "eventually," per the issue; a park's contents are undesigned).</p>
+</blockquote>
+<p>The fill is <strong>not new code</strong> — it is exactly the ground the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/373">#373</a> expansion-rendering fix already ships (see <a href="../../expansion/#expansion-indicator-discoverability">Neighborhood Expansion → Expansion indicator</a>, the #373 implementation note). The base grass plane is sized from the live <code>GameState.Map</code> via <code>Doggiehood.Core.World.MapExtent.Covering(map)</code> — the axis-aligned rectangle running a half-tile beyond the outermost tile centres, i.e. out to each frontier tile's outer edge — rather than the old fixed <code>GroundExtent</code> pad, and it is re-centred and grown whenever a zone is unlocked (<code>WorldBuilder.ResizeGroundToMap</code>). So every placed tile, and the open cells around and between the road tiles, sit on <code>Palette.GrassHex</code> grass instead of blank space, out to the authored map's frontier. There is no per-cell surface authoring and no water surface: the whole open-space area is the one grass plane.</p>
+<p><strong>Scope guardrails for this issue (so a reviewer doesn't look for more):</strong></p>
+<ul>
+<li><strong>No water surface.</strong> There is no <code>water</code> cell type, no per-cell surface field in <code>docs/tools/map-data.json</code>, and no water rendering. Whether water is authored per cell or placed by a positional rule (e.g. a map border ring) is a decision left to a future issue.</li>
+<li><strong>No parks.</strong> No open cell is designated a park, and a park's contents (paths, pond, play equipment) are undesigned. Parks phase in under a separate future issue.</li>
+<li><strong>Extent = the authored map's frontier.</strong> The grass covers exactly the occupied <code>TileMap</code> footprint (the starting intersection plus any unlocked zones — and, once the authored map loads in-game via <a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>, the full neighborhood), not an infinite plane and not a fixed oversized pad.</li>
+</ul>
 <h2 id="lighting-time">Lighting &amp; time<a class="headerlink" href="#lighting-time" title="Permanent link">&para;</a></h2>
 <p>Static, pleasant daytime lighting — always sunny/mid-day. <strong>No day/night cycle and no weather system for v1.0.</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/39">#39</a>)</p>
 <p>This is a deliberate simplification: it avoids needing lighting variants for every asset, and a future weather/day-night system is tracked separately as an explicit future idea — see <a href="../../future-ideas/">Future Ideas</a>.</p>
@@ -1841,6 +1870,7 @@
 <li>[x] Backyard fence defined per lot (traces the lot boundary with a road-aware offset — one sidewalk-width strip of grass beyond the sidewalk on road-bordering edges and beyond the lot boundary on neighbour/map edges — with two connectors to the house side-wall midpoints, front yard open), hidden by default until purchased (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/146">#146</a>, widened to the lot boundary in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/342">#342</a>, road offset corrected in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/147">#147</a>; purchase quest: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/147">#147</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/318">#318</a>)</li>
 <li>[x] Property bounds defined as one tile-quadrant per lot, split into front-yard/back-yard regions excluding the house footprint (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/222">#222</a>)</li>
 <li>[x] Yard landscaping (trees) placed procedurally per lot, seeded/deterministic, collision-aware against the house/walkway/fence and each other (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/170">#170</a>; planter kind removed in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/243">#243</a>)</li>
+<li>[x] Open-space environment: empty map cells around/between road tiles render as grass fill sized to the live <code>TileMap</code>'s occupied footprint (mechanism ships under <a href="https://github.com/derekwinters/lucas-doggiehood/issues/373">#373</a>); no water surface and no parks yet — both deferred to future issues (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/384">#384</a>)</li>
 <li>[ ] Static daytime lighting setup, no day/night or weather systems present</li>
 <li>[ ] Scene readable and navigable at the isometric camera angle (see <a href="../camera-controls/">Camera, Navigation &amp; Controls</a>)</li>
 </ul>
