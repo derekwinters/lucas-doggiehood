@@ -23,8 +23,8 @@ namespace Doggiehood.Core.Tests.Expansion
 
             var position = ExpansionIndicatorPlacement.Resolve(map, ZoneCatalog.FirstZone);
 
-            // The zone's entry tile (TurnSW at (0,1)) borders the starting
-            // FourWay across the FourWay's North edge — the boundary is
+            // The zone's entry tile (CulDeSacSouth at (0,1)) borders the
+            // starting FourWay across the FourWay's North edge — the boundary is
             // that edge's midpoint, pushed further north (past the road's
             // end, into the not-yet-placed locked zone) by HoverOffset.
             var boundary = TileGeometry.EdgeMidpoint(new TileCoordinate(0, 0), TileEdge.North);

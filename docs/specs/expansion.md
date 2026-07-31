@@ -17,7 +17,7 @@
 
 > **Decision (2026-07-14, Derek, on [#86](https://github.com/derekwinters/lucas-doggiehood/issues/86)):** the map is **hand-picked expansion with no fixed end** — zones are authored and added over time, and procedural generation stays out of scope ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109)). A **zone is a hand-authored group of tiles** from the [tile catalog](world/tile-catalog.md) (60m grid), pre-authored by Derek and Lucas; the player unlocks zones in sequence but never places tiles. Initial zones use only **cul-de-sac, straight, tee, and turn** tiles — more variety (including the OpposingTurns/park-island tiles, whose arch-loop question stays deferred on #109) comes later.
 
-**First zone:** a cul-de-sac street to the northwest of the starting intersection. The confirmed layout (2026-07-14, Derek, on [#56](https://github.com/derekwinters/lucas-doggiehood/issues/56)): from the starting `FourWay` at grid (0,0), `TurnSW` at (0,1), `CulDeSacEast` at (−1,1) — the road runs north from the intersection, turns west, and ends in the bulb.
+**First zone:** a single cul-de-sac directly north of the starting intersection. The confirmed layout (2026-07-29, Derek, on [#360](https://github.com/derekwinters/lucas-doggiehood/issues/360)): from the starting `FourWay` at grid (0,0), a single `CulDeSacSouth` tile at (0,1) — its road enters from the south edge (meeting the origin `FourWay`'s north road) and ends in a bulb pointing north, so the whole zone sits due north with no dangling roads. This **supersedes** the earlier two-tile northwest layout (2026-07-14, Derek, on [#56](https://github.com/derekwinters/lucas-doggiehood/issues/56): `TurnSW` at (0,1) + `CulDeSacEast` at (−1,1), which ran north then turned west into the bulb) — the single north tile also lines up straight under the expansion lock indicator, which already hovers due north of the origin.
 
 The tile-grid placement/adjacency system this all sits on is [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), the milestone's geometric prerequisite.
 
@@ -88,7 +88,7 @@ Vacancy is Core state (`House.IsVacant`); the greyscale is purely its visual, wi
 ## Build checklist (for when `v0.4` starts)
 
 - [x] Tile grid placement + adjacency validation exists ([#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) — build first)
-- [x] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the northwest cul-de-sac street
+- [x] Currency-gated zone unlock (100 + 100 per zone) reveals an authored, empty zone; first zone is the single cul-de-sac tile due north of the intersection ([#360](https://github.com/derekwinters/lucas-doggiehood/issues/360), superseding the #56 northwest layout)
 - [x] Currency-gated house building (50 flat) places a level-1, vacant house on an empty lot in an unlocked zone
 - [x] Zone-built houses render a real kit model — a deterministic rolled ladder (one of five) plus a generated-palette color-multiply tint (one of 20), assigned once at build and persisted (ladder id + tint index) across upgrades ([#299](https://github.com/derekwinters/lucas-doggiehood/issues/299)) — instead of the graybox box
 - [x] Newly built houses render greyscaled and return to their normal tinted color on move-in ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58) — Core state, wiring, and rendering already built, now reachable through house building (#57))
