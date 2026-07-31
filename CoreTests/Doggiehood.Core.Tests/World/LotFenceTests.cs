@@ -483,6 +483,25 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void ZoneLot_FenceGeometryResolution_DoesNotThrow()
+        {
+            // #414: LotFence.GeometryFor resolves the house model via
+            // HouseModelCatalog.ForHouse(lot.HouseId). For a zone lot (id >= 5)
+            // that used to throw through HouseStyleTable (no starter style);
+            // the chokepoint fix routes it through the #299 rolled ladder, so
+            // both the raw geometry and the HasFence-gated RunsFor resolve.
+            var zoneLot = new HouseLot(
+                Doggiehood.Core.Art.HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter,
+                    NeighborhoodLayout.LotDistanceFromCenter));
+
+            Assert.That(() => LotFence.GeometryFor(zoneLot), Throws.Nothing,
+                "zone lot backyard fence geometry must not throw through ForHouse");
+            Assert.That(() => LotFence.RunsFor(FencedCloneOf(zoneLot)), Throws.Nothing,
+                "an enabled zone lot's fence runs must resolve too");
+        }
+
         private static HouseLot FencedCloneOf(HouseLot lot)
         {
             return new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, hasFence: true);
