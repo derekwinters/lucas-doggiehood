@@ -25,9 +25,16 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void ForHouse_UnknownIdThrows()
+        public void ForHouse_UnresolvableIdThrows()
         {
-            Assert.That(() => HouseModelCatalog.ForHouse(999), Throws.ArgumentException);
+            // Since #299/#414 every id >= HouseVariantAssignment.FirstZoneHouseId
+            // is a valid zone house that deterministically rolls a ladder, so a
+            // large id like 999 now RESOLVES rather than throwing. ForHouse only
+            // throws for an id with no assignment at all: a non-zone id outside
+            // the four starters (no HouseStyleTable style, not a zone house).
+            Assert.That(HouseVariantAssignment.IsZoneHouse(0), Is.False);
+            Assert.That(() => HouseModelCatalog.ForHouse(0), Throws.ArgumentException);
+            Assert.That(() => HouseModelCatalog.ForHouse(-1), Throws.ArgumentException);
         }
 
         [Test]
@@ -257,6 +264,72 @@ namespace Doggiehood.Core.Tests.World
             {
                 Assert.That(HouseModelCatalog.ForHouse(style.StyleId).ModelName,
                     Is.EqualTo(style.ModelName));
+            }
+        }
+
+        [Test]
+        public void ForHouse_ZoneLotResolvesViaHouseVariantAssignment_InsteadOfThrowing()
+        {
+            // #414: a zone lot (id >= 5) has no HouseStyleTable style, so the
+            // old ForHouse -> HouseStyleTable.ForHouse path threw
+            // ArgumentException for it. The chokepoint fix branches zone ids
+            // through the #299 rolled ladder instead
+            // (HouseVariantAssignment -> HouseLevelModelTable level 1 ->
+            // ForModel), so ForHouse resolves a real catalog entry.
+            const int zoneId = HouseVariantAssignment.FirstZoneHouseId; // 5
+            Assert.That(HouseVariantAssignment.IsZoneHouse(zoneId), Is.True);
+
+            HouseModel resolved = null;
+            Assert.That(() => resolved = HouseModelCatalog.ForHouse(zoneId), Throws.Nothing,
+                "zone house model resolution must not throw through HouseStyleTable");
+
+            var variant = HouseVariantAssignment.ForHouse(zoneId);
+            var expected = HouseModelCatalog.ForModel(
+                HouseLevelModelTable.ForHouseLevel(variant.LadderId, HouseLevelModelTable.MinLevel));
+            Assert.That(resolved, Is.SameAs(expected),
+                "zone house model must come from its rolled ladder's level-1 catalog entry");
+        }
+
+        [Test]
+        public void ForHouse_ZoneHousePlacementFootprint_IsLevelInvariant()
+        {
+            // #414: the placement/footprint call sites (HousePlacement.
+            // HouseFootprint, LotFence) have only a HouseLot — no house.Level —
+            // and leveling a zone house never resizes or moves its lot (every
+            // ladder mesh fits the shared lot envelope). So ForHouse resolves
+            // the rolled ladder's LEVEL-1 mesh: the footprint it hands every
+            // placement call site is fixed for the house's whole lifetime,
+            // identical no matter which level (1..4) the house is at in-game.
+            foreach (var zoneId in new[] { 5, 6, 7, 13, 42 })
+            {
+                var variant = HouseVariantAssignment.ForHouse(zoneId);
+                var levelOne = HouseModelCatalog.ForModel(
+                    HouseLevelModelTable.ForHouseLevel(variant.LadderId, HouseLevelModelTable.MinLevel));
+
+                var resolved = HouseModelCatalog.ForHouse(zoneId);
+
+                Assert.That(resolved.ModelName, Is.EqualTo(levelOne.ModelName),
+                    $"zone house {zoneId} placement must resolve its ladder's level-1 mesh");
+                Assert.That(resolved.FootprintX, Is.EqualTo(levelOne.FootprintX),
+                    $"zone house {zoneId} placement footprint X must be the level-1 envelope");
+                Assert.That(resolved.FootprintZ, Is.EqualTo(levelOne.FootprintZ),
+                    $"zone house {zoneId} placement footprint Z must be the level-1 envelope");
+            }
+        }
+
+        [Test]
+        public void ForHouse_StarterIdsStillResolveViaHouseStyleTable_Unchanged()
+        {
+            // #414 regression guard: making ForHouse zone-aware must not change
+            // how the four starter houses (ids 1-4) resolve — they keep going
+            // through HouseStyleTable exactly as before the chokepoint branch.
+            for (var houseId = 1; houseId <= 4; houseId++)
+            {
+                Assert.That(HouseVariantAssignment.IsZoneHouse(houseId), Is.False,
+                    $"house {houseId} must be a starter, not a zone house");
+                var expected = HouseModelCatalog.ForModel(HouseStyleTable.ForHouse(houseId).ModelName);
+                Assert.That(HouseModelCatalog.ForHouse(houseId), Is.SameAs(expected),
+                    $"starter house {houseId} must still resolve via HouseStyleTable");
             }
         }
 

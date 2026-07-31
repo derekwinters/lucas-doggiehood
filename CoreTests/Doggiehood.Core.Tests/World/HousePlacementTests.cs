@@ -1,4 +1,5 @@
 using System;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -204,6 +205,41 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(walkway.A.Z, Is.EqualTo(door.Z).Within(0.001f),
                     $"house {lot.HouseId}'s walkway lot-side node must be its front door (Z)");
             }
+        }
+
+        [Test]
+        public void ZoneLot_FootprintAndWalkwayPlacement_DoNotThrow()
+        {
+            // #414: once WalkNetwork spans zone tiles (#398 rebuilds it from
+            // GameState.Map), a zone lot (id >= 5) gets a front-walkway edge
+            // and the placement/footprint call sites reach
+            // HouseModelCatalog.ForHouse(zoneId) — which used to throw through
+            // HouseStyleTable. Simulate that future state with a hand-built
+            // WalkNetwork containing a zone lot (does NOT require #398 merged):
+            // WalkNetwork.BuildFrom itself resolves each lot's model via
+            // ForHouse while attaching its front walkway, so building the
+            // network over a zone lot is the chokepoint under test.
+            var zoneLot = new HouseLot(
+                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter,
+                    NeighborhoodLayout.LotDistanceFromCenter));
+
+            WalkNetwork network = null;
+            Assert.That(
+                () => network = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, new[] { zoneLot }),
+                Throws.Nothing,
+                "building a walk network over a zone lot must not throw through ForHouse");
+            Assert.That(network.TryGetFrontWalkway(zoneLot.HouseId, out var walkway), Is.True,
+                "the hand-built network must attach a front walkway to the zone lot");
+
+            // The walkway-dependent placement call site (PositionFor, reached
+            // only when a front-walkway attach point exists) must resolve the
+            // zone house model instead of throwing.
+            Assert.That(() => HousePlacement.PositionFor(zoneLot, KitScale, walkway.B), Throws.Nothing);
+
+            // The footprint call site (shared by yard trees #170 and quest
+            // hidden-item placement #290) must resolve it too.
+            Assert.That(() => HousePlacement.HouseFootprint(zoneLot), Throws.Nothing);
         }
 
         [Test]

@@ -143,17 +143,38 @@ namespace Doggiehood.Core.World
             return false;
         }
 
+        /// <summary>The fixed level at which a zone house's rolled ladder is
+        /// resolved for placement/footprint purposes (#414). The placement and
+        /// footprint call sites carry only a <c>HouseLot</c> (no
+        /// <c>house.Level</c>), and leveling a zone house never resizes or
+        /// moves its lot — every ladder mesh fits the shared lot envelope — so
+        /// the level-1 mesh is a valid, level-invariant footprint input.
+        /// (Rendering the correct visual level is unaffected:
+        /// WorldBuilder.BuildHouse resolves the mesh via <c>house.Level</c>.)</summary>
+        private const int ZoneHousePlacementLevel = HouseLevelModelTable.MinLevel;
+
         /// <summary>
-        /// House id -> model, via Doggiehood.Core.Art.HouseStyleTable
-        /// (#64): the houseId -> model assignment that used to live here
-        /// as a separate hardcoded list moved to HouseStyleTable so
-        /// model + tint selection has one source of truth instead of two
-        /// disconnected tables. HouseStyleTable.ForHouse throws the same
-        /// ArgumentException shape for an unknown id, so this delegation
-        /// changes no caller-visible behavior.
+        /// House id -> model. Starter ids (1-4) resolve via
+        /// Doggiehood.Core.Art.HouseStyleTable (#64) — the single source of
+        /// truth for their model + tint. Zone-built ids (>= 5) have no
+        /// HouseStyleTable style, so they resolve through the #299 rolled
+        /// ladder instead (#414): HouseVariantAssignment picks the ladder,
+        /// HouseLevelModelTable names its level-1 mesh, and ForModel returns
+        /// the catalog entry. This one chokepoint keeps every placement,
+        /// footprint, and fence call site zone-safe without each branching on
+        /// the id itself — a zone lot with a front walkway (once WalkNetwork
+        /// spans zone tiles, #398) no longer throws through
+        /// HouseStyleTable.ForHouse.
         /// </summary>
         public static HouseModel ForHouse(int houseId)
         {
+            if (HouseVariantAssignment.IsZoneHouse(houseId))
+            {
+                var ladderId = HouseVariantAssignment.ForHouse(houseId).LadderId;
+                var meshName = HouseLevelModelTable.ForHouseLevel(ladderId, ZoneHousePlacementLevel);
+                return ForModel(meshName);
+            }
+
             return ForModel(HouseStyleTable.ForHouse(houseId).ModelName);
         }
     }
