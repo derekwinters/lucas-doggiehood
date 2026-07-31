@@ -57,11 +57,26 @@ namespace Doggiehood.Unity
         /// renders invisible in the player. Same asset the UGUI overlays use.</summary>
         public const string LabelFontResource = "DejaVuSans";
 
-        // Settings gear entry point, from the #218 wireframe constants (unchanged
-        // graybox — its restyle is #219's job, not this chip pass).
+        // Settings gear entry point, from the #218 wireframe constants
+        // (settings.md: GearButtonSizePx 88, GearMarginPx 32).
         private const float GearButtonSizePx = 88f;
         private const float GearMarginPx = 32f;
-        private const string GearGlyph = "⚙"; // gear
+
+        // --- Procedural gear icon (#370) ---
+        // The gear was the last HUD affordance still drawn as a default IMGUI
+        // button with a font glyph (⚙, U+2699); the bundled DejaVuSans font has
+        // no coverage for it, so on device it fell back to an empty gray box
+        // (the #291 font/shader-stripping risk). It now wears the shared Candy
+        // Cottage chrome and a procedural ink toothed-disc icon — no font glyph,
+        // no raster art — mirroring the coach-bar paw badge (#297). Toothed disc:
+        // GearToothCount ink tooth-discs orbiting the hub at GearToothOrbitRadiusPx
+        // (poking past the ink body disc), with a cream hub hole. No inline
+        // geometry literals (#161).
+        public const int GearToothCount = 8;
+        public const float GearBodyDiameterPx = 46f;       // central ink cog disc
+        public const float GearToothDiameterPx = 14f;      // each radial tooth disc
+        public const float GearToothOrbitRadiusPx = 26f;   // tooth center distance from the hub
+        public const float GearHubDiameterPx = 18f;        // cream hub hole
 
         // Procedural chrome is drawn by the shared CandyChrome helper (#297) —
         // the same white-AA-circle routine established here in #296, extracted
@@ -142,10 +157,65 @@ namespace Doggiehood.Unity
             var chip = ComputeChipRect(Screen.width, Screen.height, Screen.safeArea, width);
             DrawChip(chip, label);
 
-            if (GUI.Button(ComputeGearRect(Screen.width, Screen.height), GearGlyph))
+            var gear = ComputeGearRect(Screen.width, Screen.height);
+            DrawGear(gear);
+            // Device-safe tap region: a transparent hit target over the drawn
+            // gear (GUIStyle.none carries no default skin, no font glyph).
+            if (GUI.Button(gear, GUIContent.none, GUIStyle.none))
             {
                 TapGear();
             }
+        }
+
+        /// <summary>Draws the Candy Cottage gear button, back to front: hard
+        /// straight-down shadow, Ink outline disc, cream fill disc, then the
+        /// procedural ink toothed-disc gear icon. All chrome is procedural
+        /// (CandyChrome) — no font glyph, no external raster art.</summary>
+        private void DrawGear(Rect gear)
+        {
+            var shadow = new Rect(gear.x, gear.y + ShadowOffsetPx, gear.width, gear.height);
+            CandyChrome.DrawCircle(shadow, InkColor);
+            CandyChrome.DrawCircle(gear, InkColor);
+
+            var fill = new Rect(
+                gear.x + OutlineThicknessPx,
+                gear.y + OutlineThicknessPx,
+                gear.width - 2f * OutlineThicknessPx,
+                gear.height - 2f * OutlineThicknessPx);
+            CandyChrome.DrawCircle(fill, CreamColor);
+
+            DrawGearIcon(gear.center);
+        }
+
+        /// <summary>The procedural ink gear icon: <c>GearToothCount</c> ink
+        /// tooth-discs orbiting the hub (poking past the body), a solid ink body
+        /// disc fusing them into one cog, then a cream hub hole. No emoji glyph
+        /// or raster art, so it renders identically on device.</summary>
+        private static void DrawGearIcon(Vector2 center)
+        {
+            for (var i = 0; i < GearToothCount; i++)
+            {
+                var angle = (Mathf.PI * 2f) * i / GearToothCount;
+                var tx = center.x + Mathf.Cos(angle) * GearToothOrbitRadiusPx;
+                var ty = center.y + Mathf.Sin(angle) * GearToothOrbitRadiusPx;
+                DrawInkDisc(tx, ty, GearToothDiameterPx);
+            }
+
+            DrawInkDisc(center.x, center.y, GearBodyDiameterPx);
+
+            var hub = new Rect(
+                center.x - GearHubDiameterPx / 2f,
+                center.y - GearHubDiameterPx / 2f,
+                GearHubDiameterPx,
+                GearHubDiameterPx);
+            CandyChrome.DrawCircle(hub, CreamColor);
+        }
+
+        private static void DrawInkDisc(float centerX, float centerY, float diameter)
+        {
+            CandyChrome.DrawCircle(
+                new Rect(centerX - diameter / 2f, centerY - diameter / 2f, diameter, diameter),
+                InkColor);
         }
 
         /// <summary>Draws the Candy Cottage chip chrome, back to front: hard
