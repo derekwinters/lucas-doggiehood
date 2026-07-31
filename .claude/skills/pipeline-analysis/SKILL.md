@@ -77,3 +77,10 @@ invocation goes through.
 
 Do **not** move issues to `ready-for-work` yourself, and do not do so via
 `triage-issue` either — only the gatekeeper does that on Derek's `/approve`.
+
+**Invariant: each analyzed issue rests in exactly one pipeline state.** Each
+`triage-issue` run must have removed `ai-triage` when it set the hand-back
+state (`pending-approval` / `needs-clarification`) — see
+`triage-issue/SKILL.md` → "Routing". After a round, no analyzed issue should
+still carry `ai-triage` alongside a hand-back label, nor be left in bare
+`ai-triage` (#394).

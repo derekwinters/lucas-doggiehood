@@ -57,19 +57,31 @@ carrying an explicit `/propose` from Derek (see below).
 
 ## Routing — hybrid by kind
 
+**Invariant: an issue rests in exactly one pipeline state.** The pipeline-state
+labels are a mutually-exclusive state machine (`docs/engineering/issue-pipeline.md`
+→ "States (labels)"), so **every route below that hands the issue back to Derek
+must remove `ai-triage` in the same `issue_write` call that sets the new state
+label** (`pending-approval` or `needs-clarification`). There is no deterministic
+apply-step behind analysis — you are the only thing that can drop the old label,
+so leaving `ai-triage` on re-selects the issue for triage every morning
+(`select_triage.py`'s eligibility is just open + `ai-triage`) and leaves the
+dashboard's one-slice-per-issue mapping ambiguous (#265, #394).
+
 Read the issue, its comments (including any `/revise` notes or `/propose`
 from Derek), and the `/docs` pages it relates to. Then route:
 
 1. **Bug** → root-cause **diagnosis** + a recommended fix approach, ending with
    a **`## Build checklist`** (acceptance criteria — see below). Add
    `type:bug`. Post the analysis, **set the milestone field** (see milestone
-   matching below), set `pending-approval`.
+   matching below), and set `pending-approval` **while removing `ai-triage` in
+   the same `issue_write` call**.
 
 2. **Feature fully covered by the specs** → a concrete **implementation plan**
    grounded in the relevant `docs/specs/` pages, a matched milestone **set on
    the issue's milestone field** (see milestone matching), and a closing
-   **`## Build checklist`** (acceptance criteria — see below). Post it, set
-   `pending-approval`.
+   **`## Build checklist`** (acceptance criteria — see below). Post it, and set
+   `pending-approval` **while removing `ai-triage` in the same `issue_write`
+   call**.
 
 3. **Feature needing a new design decision or a UI wireframe (rule #8)** →
    **stop and ask.** Post a clearly-labeled block:
@@ -79,17 +91,23 @@ from Derek), and the `/docs` pages it relates to. Then route:
    stating the options and what each would mean>
    ```
 
-   Set `needs-clarification`. The question must stand on its own — someone
-   reading only that block should understand the decision. Never proceed to a
-   plan **or a Build checklist** for this kind — it stops at the question.
+   Set `needs-clarification` **while removing `ai-triage` in the same
+   `issue_write` call**. The question must stand on its own — someone reading
+   only that block should understand the decision. Never proceed to a plan **or
+   a Build checklist** for this kind — it stops at the question. This includes
+   an issue that **can't be planned because it's blocked** by an unresolved
+   decision in another issue: it rests in `needs-clarification` (**not** bare
+   `ai-triage`), so the blocker-revisit sweep re-admits it — `add ai-triage,
+   remove needs-clarification` — once its blocker resolves.
 
 4. **`/propose` present on the issue** (an owner comment containing `/propose`)
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your
    approval):`), ending with a **`## Build checklist`** (acceptance criteria —
    see below). Set the milestone field (see milestone matching), then set
-   `pending-approval`. This is the single opt-in that lets triage suggest
-   design; without it, case 3 applies.
+   `pending-approval` **while removing `ai-triage` in the same `issue_write`
+   call**. This is the single opt-in that lets triage suggest design; without
+   it, case 3 applies.
 
 When re-triaging after a `/revise`, read Derek's revise notes and address them
 directly in the new analysis.
@@ -176,5 +194,10 @@ Close each comment with the context-appropriate "Your move" line:
 ## After triage
 
 Do **not** move the issue to `ready-for-work` yourself — only the gatekeeper
-does that on Derek's `/approve`. Report a one-line summary (number → routed-to
-state + proposed milestone), and flag anything you had to stop on.
+does that on Derek's `/approve`. **Confirm the issue now carries exactly one
+pipeline-state label**: the hand-back state you set (`pending-approval` or
+`needs-clarification`) and **not** `ai-triage` — you must have removed
+`ai-triage` in the same `issue_write` that set the new state. An issue left
+carrying both, or left in bare `ai-triage` with no hand-back state, is drift.
+Report a one-line summary (number → routed-to state + proposed milestone), and
+flag anything you had to stop on.
