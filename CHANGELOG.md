@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.7.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.6.0...v0.7.0) (2026-07-31)
+
+
+### Features
+
+* **dashboard:** collapse focus pie to 4 slices (Unplanned/In Planning/Ready/Done) ([#421](https://github.com/derekwinters/lucas-doggiehood/issues/421)) ([7e2c11b](https://github.com/derekwinters/lucas-doggiehood/commit/7e2c11b255737cfdb8f24267fffa9242d35205f0)), closes [#402](https://github.com/derekwinters/lucas-doggiehood/issues/402)
+* **onboarding:** celebrate each reward-chain step with the standard reward panel ([#415](https://github.com/derekwinters/lucas-doggiehood/issues/415)) ([f7feb6f](https://github.com/derekwinters/lucas-doggiehood/commit/f7feb6f245b892edb41069a38392ba2a41c0822b)), closes [#372](https://github.com/derekwinters/lucas-doggiehood/issues/372)
+* **onboarding:** guide the reward-chain steps with the standard coach bar ([#403](https://github.com/derekwinters/lucas-doggiehood/issues/403)) ([9553cbf](https://github.com/derekwinters/lucas-doggiehood/commit/9553cbfb801fd8718f6b7b476183d7404e195e1f)), closes [#371](https://github.com/derekwinters/lucas-doggiehood/issues/371)
+* **ui:** restyle conversation panel to Candy Cottage UGUI ([#426](https://github.com/derekwinters/lucas-doggiehood/issues/426)) ([ea16cc4](https://github.com/derekwinters/lucas-doggiehood/commit/ea16cc41bf118ffea664ddfdd7ecdc50f260d0e5)), closes [#408](https://github.com/derekwinters/lucas-doggiehood/issues/408)
+
+
+### Bug Fixes
+
+* **expansion:** confirm house build before spending on tap ([#423](https://github.com/derekwinters/lucas-doggiehood/issues/423)) ([10d6f6c](https://github.com/derekwinters/lucas-doggiehood/commit/10d6f6cd9e8bc26b9b90fa75ae579b6357092fb0)), closes [#406](https://github.com/derekwinters/lucas-doggiehood/issues/406)
+* **expansion:** make zone 1 a single north cul-de-sac tile ([#399](https://github.com/derekwinters/lucas-doggiehood/issues/399)) ([1694c3e](https://github.com/derekwinters/lucas-doggiehood/commit/1694c3eceb8d29729136d505fa0e6334e8113af0)), closes [#360](https://github.com/derekwinters/lucas-doggiehood/issues/360)
+* **expansion:** render ground and roads for unlocked zones and grow camera bounds ([#404](https://github.com/derekwinters/lucas-doggiehood/issues/404)) ([0227d29](https://github.com/derekwinters/lucas-doggiehood/commit/0227d29bf9f558b5f09a4c56a44af8fdc630f826)), closes [#373](https://github.com/derekwinters/lucas-doggiehood/issues/373)
+* **expansion:** swap the world house model on upgrade, not just the panel ([#425](https://github.com/derekwinters/lucas-doggiehood/issues/425)) ([47d7b27](https://github.com/derekwinters/lucas-doggiehood/commit/47d7b27e5959106d9670be5b2564362cd7c2fd70)), closes [#407](https://github.com/derekwinters/lucas-doggiehood/issues/407)
+* **hud:** draw the settings gear as a procedural Candy Cottage icon ([#401](https://github.com/derekwinters/lucas-doggiehood/issues/401)) ([602ecd3](https://github.com/derekwinters/lucas-doggiehood/commit/602ecd315dc047b8f205f28f5742cd0768df2a4f)), closes [#370](https://github.com/derekwinters/lucas-doggiehood/issues/370)
+* **input:** make dialogs modal so taps don't pass through to the world ([#431](https://github.com/derekwinters/lucas-doggiehood/issues/431)) ([60703ef](https://github.com/derekwinters/lucas-doggiehood/commit/60703efe6451ba918e294ca8560b3eb3878ae6dd)), closes [#422](https://github.com/derekwinters/lucas-doggiehood/issues/422)
+* **pipeline:** make triage-issue drop ai-triage on hand-back to a single state ([#418](https://github.com/derekwinters/lucas-doggiehood/issues/418)) ([539e6aa](https://github.com/derekwinters/lucas-doggiehood/commit/539e6aa5d2b7cb74b2e6bea12d4a81bd5d44b93d)), closes [#394](https://github.com/derekwinters/lucas-doggiehood/issues/394)
+* **pipeline:** resolve wireframe blockers only when closed, ending revisit churn ([#419](https://github.com/derekwinters/lucas-doggiehood/issues/419)) ([27aef5d](https://github.com/derekwinters/lucas-doggiehood/commit/27aef5ddc94b6128db96417557a1f84800efc90c)), closes [#396](https://github.com/derekwinters/lucas-doggiehood/issues/396)
+* resolve zone house models through rolled ladder in HouseModelCatalog.ForHouse ([#428](https://github.com/derekwinters/lucas-doggiehood/issues/428)) ([19bead2](https://github.com/derekwinters/lucas-doggiehood/commit/19bead260c624eadca8d73fabd549235e5145033)), closes [#414](https://github.com/derekwinters/lucas-doggiehood/issues/414)
+* **world:** derive the wander walk network from the live multi-tile map ([#420](https://github.com/derekwinters/lucas-doggiehood/issues/420)) ([f12205b](https://github.com/derekwinters/lucas-doggiehood/commit/f12205b2308b9370a59e4e649ea9b46e32abf1ef)), closes [#398](https://github.com/derekwinters/lucas-doggiehood/issues/398)
+* **world:** extend starting road arms to the tile edge so tiles connect on expansion ([#417](https://github.com/derekwinters/lucas-doggiehood/issues/417)) ([5ff6e0d](https://github.com/derekwinters/lucas-doggiehood/commit/5ff6e0d49d799b1871b5d9553ad2bde20de7bdb0)), closes [#392](https://github.com/derekwinters/lucas-doggiehood/issues/392)
+* **world:** fence every built house, including zone lots ([#433](https://github.com/derekwinters/lucas-doggiehood/issues/433)) ([946b6dd](https://github.com/derekwinters/lucas-doggiehood/commit/946b6ddd403c8a3cb392a154d1022919236a34dd)), closes [#424](https://github.com/derekwinters/lucas-doggiehood/issues/424)
+* **world:** render walkway/yard/fence for mid-game zone-lot builds ([#429](https://github.com/derekwinters/lucas-doggiehood/issues/429)) ([ab04583](https://github.com/derekwinters/lucas-doggiehood/commit/ab04583030acae8ecf207389c0bc15665f783689)), closes [#405](https://github.com/derekwinters/lucas-doggiehood/issues/405)
+
 ## [0.6.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.5.0...v0.6.0) (2026-07-30)
 
 
