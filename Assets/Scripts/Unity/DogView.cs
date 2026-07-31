@@ -56,6 +56,12 @@ namespace Doggiehood.Unity
 
         private WanderBehavior wander;
         private MovementProfile profile;
+        // #398: resolves the LIVE walk network each wander step. DogSpawner
+        // binds this to () => state.WalkNetwork so an already-spawned dog
+        // wanders onto newly unlocked tiles the moment the map grows; a null
+        // binding (e.g. a bare EditMode Init) falls back to the starting
+        // intersection's static network.
+        private System.Func<WalkNetwork> networkProvider;
         private GameObject bubble;
         private CameraRig cameraRig;
         private OnboardingOverlay onboardingOverlay;
@@ -93,11 +99,12 @@ namespace Doggiehood.Unity
         /// looping in EditMode tests. 0 when no animation is wired.</summary>
         public double CurrentAnimationTime => clipPlayable.IsValid() ? clipPlayable.GetTime() : 0.0;
 
-        public void Init(Dog dog, Transform windowAnchor)
+        public void Init(Dog dog, Transform windowAnchor, System.Func<WalkNetwork> networkProvider = null)
         {
             Dog = dog;
+            this.networkProvider = networkProvider ?? (() => NeighborhoodLayout.WalkNetwork);
             profile = MovementProfile.ForPersonality(dog.Personality);
-            wander = new WanderBehavior(StableSeed(dog.Name), profile);
+            wander = new WanderBehavior(StableSeed(dog.Name), profile, this.networkProvider);
 
             var scale = dog.IsPuppy ? 0.55f : 1f;
             var coat = BreedCoats.ForDog(dog);
@@ -369,15 +376,7 @@ namespace Doggiehood.Unity
             {
                 if (!hasTarget)
                 {
-                    var current = new GridPoint(transform.position.x, transform.position.z);
-                    var currentNode = NeighborhoodLayout.WalkNetwork.NearestWalkableNode(current);
-                    var next = wander.NextTarget(current);
-                    // #151: snap the dog's feet to whichever surface this
-                    // hop actually crosses (sidewalk vs. road/crosswalk) —
-                    // the Kenney kit models the sidewalk band raised above
-                    // the road, so a fixed Y clips the legs into it.
-                    var groundY = NeighborhoodLayout.WalkNetwork.GroundHeight(currentNode, next);
-                    currentTarget = new Vector3(next.X, groundY, next.Z);
+                    currentTarget = SelectWanderTarget(transform.position);
                     hasTarget = true;
                 }
 
@@ -397,6 +396,28 @@ namespace Doggiehood.Unity
 
             TickAnimation(Time.deltaTime, moving);
             FaceBubbleToCamera();
+        }
+
+        /// <summary>
+        /// Picks the next wander destination from the LIVE walk network
+        /// (#398): snaps <paramref name="fromPosition"/> to the nearest
+        /// walkable node, asks Core's <see cref="WanderBehavior"/> for the
+        /// next node, and resolves the ground height for the hop (#151 — the
+        /// Kenney kit models the sidewalk band raised above the road, so a
+        /// fixed Y clips the legs into it). Because the network is resolved
+        /// through the live provider on every call, an already-spawned dog
+        /// automatically wanders onto tiles unlocked after it spawned. Public
+        /// so EditMode tests can drive the wander step without the Play-mode
+        /// Update loop, exactly like <see cref="TickAnimation"/>.
+        /// </summary>
+        public Vector3 SelectWanderTarget(Vector3 fromPosition)
+        {
+            var network = networkProvider();
+            var current = new GridPoint(fromPosition.x, fromPosition.z);
+            var currentNode = network.NearestWalkableNode(current);
+            var next = wander.NextTarget(current);
+            var groundY = network.GroundHeight(currentNode, next);
+            return new Vector3(next.X, groundY, next.Z);
         }
 
         /// <summary>True while the dog is walking over to a comfort decoration

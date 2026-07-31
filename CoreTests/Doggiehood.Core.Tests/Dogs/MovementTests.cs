@@ -218,6 +218,77 @@ namespace Doggiehood.Core.Tests.Dogs
                 $"expected roughly a {expected:P0} continue split (1 - Base.TurnProbability), got {continueCount}/{trials}");
         }
 
+        private const float StartingTileNorthEdgeZ = WorldDimensions.TileSize / 2f;
+
+        private static WalkNetwork BuildMultiTileNetwork()
+        {
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            ZoneCatalog.FirstZone.PlaceOnto(map);
+            return MapWalkNetwork.BuildFrom(map, NeighborhoodLayout.HouseLots);
+        }
+
+        [Test]
+        public void Wander_OverTheMultiTileNetwork_ReachesTheNewlyUnlockedZonesTiles_StayingOnNetwork()
+        {
+            // #398: wander is no longer confined to the starting intersection
+            // — driven over the start+cul-de-sac network, it reaches sidewalk
+            // nodes north of the shared edge (z > 30), and every position is
+            // a real network node (never off-network, never a front walkway).
+            var network = BuildMultiTileNetwork();
+            var wander = new WanderBehavior(seed: 3, MovementProfile.Base, network);
+            var nodes = new HashSet<GridPoint>(network.Nodes);
+            var position = NeighborhoodLayout.Intersection;
+            var reachedZone = false;
+
+            for (var step = 0; step < 600; step++)
+            {
+                position = wander.NextTarget(position);
+                Assert.That(nodes.Contains(position), Is.True, $"step {step}: {position} is off-network");
+                if (position.Z > StartingTileNorthEdgeZ + 0.001f)
+                {
+                    reachedZone = true;
+                }
+            }
+
+            Assert.That(reachedZone, Is.True, "wander never crossed onto the unlocked cul-de-sac tile");
+        }
+
+        [Test]
+        public void Wander_WithALiveNetworkProvider_PicksUpNewTiles_WhenTheProvidersNetworkGrows()
+        {
+            // #398: an already-spawned dog holds a WanderBehavior bound to a
+            // live network provider (DogView passes () => state.WalkNetwork).
+            // Before an unlock it is penned to the start; once the provider's
+            // network grows, the SAME instance wanders onto the new tiles.
+            var startingMap = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            var startingNetwork = MapWalkNetwork.BuildFrom(startingMap, NeighborhoodLayout.HouseLots);
+            var expandedNetwork = BuildMultiTileNetwork();
+
+            var live = startingNetwork;
+            var wander = new WanderBehavior(seed: 3, MovementProfile.Base, () => live);
+            var position = NeighborhoodLayout.Intersection;
+
+            for (var step = 0; step < 200; step++)
+            {
+                position = wander.NextTarget(position);
+                Assert.That(position.Z, Is.LessThanOrEqualTo(StartingTileNorthEdgeZ + 0.001f),
+                    "wander left the starting tile before the network grew");
+            }
+
+            live = expandedNetwork;
+            var reachedZone = false;
+            for (var step = 0; step < 600 && !reachedZone; step++)
+            {
+                position = wander.NextTarget(position);
+                if (position.Z > StartingTileNorthEdgeZ + 0.001f)
+                {
+                    reachedZone = true;
+                }
+            }
+
+            Assert.That(reachedZone, Is.True, "wander did not pick up the new tiles after the network grew");
+        }
+
         [Test]
         public void TapResolution_HitsAWanderingDogAtItsCurrentPosition()
         {

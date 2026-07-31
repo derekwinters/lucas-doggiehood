@@ -4,7 +4,7 @@
 
 ## Movement
 
-Dogs wander/patrol the streets and are visibly roaming the neighborhood; the player can approach and interact with them. ([#8](https://github.com/derekwinters/lucas-doggiehood/issues/8))
+Dogs wander/patrol the streets and are visibly roaming the neighborhood; the player can approach and interact with them. ([#8](https://github.com/derekwinters/lucas-doggiehood/issues/8)) Wander spans the **whole unlocked map**, not just the starting intersection: it is a node-to-node random walk over the sidewalk/crosswalk [walk network](../world/sidewalks.md), which derives its roads from the live multi-tile `Map`, so once a zone is unlocked dogs explore its sidewalks too — already-spawned dogs pick up the new tiles without re-spawning ([#398](https://github.com/derekwinters/lucas-doggiehood/issues/398)).
 
 Some dogs are placed inside houses rather than out on the street, visible looking out through a window, rather than roaming. ([#9](https://github.com/derekwinters/lucas-doggiehood/issues/9))
 

@@ -32,7 +32,12 @@ namespace Doggiehood.Unity
                 go.transform.position = SidewalkSpawnPoint(dog.HouseId, index);
 
                 houses.TryGetValue(dog.HouseId, out var house);
-                go.AddComponent<DogView>().Init(dog, house != null ? house.WindowAnchor : null);
+                // #398: bind the dog to the LIVE map-derived walk network so
+                // it wanders the whole unlocked map — and picks up tiles
+                // unlocked after it spawned — rather than the starting
+                // intersection's static singleton.
+                go.AddComponent<DogView>().Init(
+                    dog, house != null ? house.WindowAnchor : null, () => state.WalkNetwork);
             }
         }
 

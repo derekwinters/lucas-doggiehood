@@ -177,6 +177,48 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SpawnedDog_WandersOntoTilesUnlockedAfterItSpawned()
+        {
+            // #398: a spawned dog is bound to the LIVE map-derived walk
+            // network (() => state.WalkNetwork), not the starting
+            // intersection's static singleton. Before any unlock its wander
+            // is penned to the starting tile; once a zone is unlocked the
+            // same dog wanders onto the new tiles — no re-spawn.
+            var dog = new Dog("Rover", Breed.Beagle, Personality.Brave, 1, false);
+            dog.PlaceOnStreet();
+            var go = new GameObject("wander-dog");
+            go.transform.SetParent(worldRoot.transform);
+            var view = go.AddComponent<DogView>();
+            view.Init(dog, null, () => state.WalkNetwork);
+
+            var northEdge = WorldDimensions.TileSize / 2f;
+            var position = new Vector3(NeighborhoodLayout.Intersection.X, 0f, NeighborhoodLayout.Intersection.Z);
+
+            for (var step = 0; step < 200; step++)
+            {
+                position = view.SelectWanderTarget(position);
+                Assert.That(position.z, Is.LessThanOrEqualTo(northEdge + 0.001f),
+                    "dog left the starting tile before the zone was unlocked");
+            }
+
+            state.Wallet.Deposit(100);
+            Assert.That(state.TryUnlockNextZone(), Is.True);
+
+            var reachedZone = false;
+            for (var step = 0; step < 1000 && !reachedZone; step++)
+            {
+                position = view.SelectWanderTarget(position);
+                if (position.z > northEdge + 0.001f)
+                {
+                    reachedZone = true;
+                }
+            }
+
+            Assert.That(reachedZone, Is.True,
+                "dog never wandered onto the unlocked cul-de-sac after the live network grew");
+        }
+
+        [Test]
         public void EachPoseState_ProducesADistinctPose()
         {
             // #66: the four states map to distinguishable poses on the rig.
