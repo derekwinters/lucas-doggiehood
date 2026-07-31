@@ -541,29 +541,44 @@ namespace Doggiehood.Unity
         /// </summary>
         private static void BuildWalkways(Transform parent)
         {
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                BuildWalkway(parent, lot);
+            }
+        }
+
+        /// <summary>
+        /// Renders just one lot's front walkway (#405): the single-lot form of
+        /// <see cref="BuildWalkways"/>, so a house built mid-game on a zone lot
+        /// (<see cref="ExpansionDirector"/>) gets the same "Walkway - N"
+        /// container a starting house gets at world-build time, instead of only
+        /// its bare mesh. Renders identical geometry to the full-build loop for
+        /// any given lot. A lot with no front-walkway edge in
+        /// <see cref="NeighborhoodLayout.WalkNetwork"/> renders nothing — same
+        /// skip the loop makes.
+        /// </summary>
+        public static void BuildWalkway(Transform parent, HouseLot lot)
+        {
+            if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            {
+                return;
+            }
+
             var piece = ForcePrimitiveFallback
                 ? null
                 : Resources.Load<GameObject>(WalkwayPieceResource);
 
-            foreach (var lot in NeighborhoodLayout.HouseLots)
+            var container = new GameObject(WalkwayNamePrefix + lot.HouseId);
+            container.transform.SetParent(parent);
+            container.transform.position = Vector3.zero;
+
+            if (piece != null)
             {
-                if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
-                {
-                    continue;
-                }
-
-                var container = new GameObject(WalkwayNamePrefix + lot.HouseId);
-                container.transform.SetParent(parent);
-                container.transform.position = Vector3.zero;
-
-                if (piece != null)
-                {
-                    BuildKitWalkway(container.transform, walkway, piece);
-                }
-                else
-                {
-                    BuildPrimitiveWalkway(container.transform, walkway);
-                }
+                BuildKitWalkway(container.transform, walkway, piece);
+            }
+            else
+            {
+                BuildPrimitiveWalkway(container.transform, walkway);
             }
         }
 
@@ -638,30 +653,45 @@ namespace Doggiehood.Unity
 
         private static void BuildFences(Transform parent)
         {
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                BuildFence(parent, lot);
+            }
+        }
+
+        /// <summary>
+        /// Renders just one lot's backyard fence (#405): the single-lot form of
+        /// <see cref="BuildFences"/>, so a mid-game zone-lot build
+        /// (<see cref="ExpansionDirector"/>) gets the same "Fence - N"
+        /// treatment. Fixes the confirmed <see cref="LotFence"/> gap — its run
+        /// geometry resolves the lot's model via
+        /// <see cref="Doggiehood.Core.World.HouseModelCatalog.ForHouse"/>, which
+        /// is now zone-safe (#414). Unfenced lots (the default) render nothing,
+        /// same as the loop; <see cref="ForceFencesVisible"/> forces them on.
+        /// </summary>
+        public static void BuildFence(Transform parent, HouseLot lot)
+        {
+            var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot);
+            if (runs.Count == 0)
+            {
+                return;
+            }
+
             var piece = ForcePrimitiveFallback
                 ? null
                 : Resources.Load<GameObject>(FencePieceResource);
 
-            foreach (var lot in NeighborhoodLayout.HouseLots)
+            var container = new GameObject(FenceNamePrefix + lot.HouseId);
+            container.transform.SetParent(parent);
+            container.transform.position = Vector3.zero;
+
+            if (piece != null)
             {
-                var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot);
-                if (runs.Count == 0)
-                {
-                    continue;
-                }
-
-                var container = new GameObject(FenceNamePrefix + lot.HouseId);
-                container.transform.SetParent(parent);
-                container.transform.position = Vector3.zero;
-
-                if (piece != null)
-                {
-                    BuildKitFence(container.transform, runs, piece);
-                }
-                else
-                {
-                    BuildPrimitiveFence(container.transform, runs);
-                }
+                BuildKitFence(container.transform, runs, piece);
+            }
+            else
+            {
+                BuildPrimitiveFence(container.transform, runs);
             }
         }
 
@@ -723,20 +753,35 @@ namespace Doggiehood.Unity
         {
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
-                var picks = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
-                if (picks.Count == 0)
-                {
-                    continue;
-                }
+                BuildYardLandscaping(parent, lot);
+            }
+        }
 
-                var container = new GameObject(YardLandscapingNamePrefix + lot.HouseId);
-                container.transform.SetParent(parent);
-                container.transform.position = Vector3.zero;
+        /// <summary>
+        /// Renders just one lot's front/back yard trees (#405): the single-lot
+        /// form of <see cref="BuildYardLandscaping(Transform)"/>, so a mid-game
+        /// zone-lot build (<see cref="ExpansionDirector"/>) gets its "Yard - N"
+        /// trees like a starting house. The tree positions come from Core's
+        /// <see cref="YardLandscaping"/>, which rejection-samples against
+        /// <see cref="Doggiehood.Core.World.HousePlacement.HouseFootprint"/> —
+        /// now zone-safe (#414) — so a zone lot no longer throws here. A lot
+        /// whose yard selects no trees renders nothing, same as the loop.
+        /// </summary>
+        public static void BuildYardLandscaping(Transform parent, HouseLot lot)
+        {
+            var picks = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+            if (picks.Count == 0)
+            {
+                return;
+            }
 
-                for (var i = 0; i < picks.Count; i++)
-                {
-                    BuildYardTree(container.transform, picks[i], i);
-                }
+            var container = new GameObject(YardLandscapingNamePrefix + lot.HouseId);
+            container.transform.SetParent(parent);
+            container.transform.position = Vector3.zero;
+
+            for (var i = 0; i < picks.Count; i++)
+            {
+                BuildYardTree(container.transform, picks[i], i);
             }
         }
 
