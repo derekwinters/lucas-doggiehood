@@ -112,3 +112,11 @@ The shared panel **shell** for conversation ([#175](https://github.com/derekwint
 | `ActionGapPx` | 20 | between buttons |
 
 The overall panel **width and placement** are settled per screen ([#175](https://github.com/derekwinters/lucas-doggiehood/issues/175)), not here; the mockup shows a representative wide tablet panel.
+
+## Modal overlays block world input
+
+Every dialog/menu overlay is **modal**: a tap that lands on it — on a button, on the panel's empty area, or on its dimmed backdrop — is consumed by the UI and **never** reaches a world interactable (a dog, a house, a lost item) behind it ([#422](https://github.com/derekwinters/lucas-doggiehood/issues/422)). Tapping **Accept** only accepts; tapping **Close** only closes; neither also fires whatever sat behind the button.
+
+This is why every overlay (confirmation dialog, house profile, dog profile, the conversation panel) carries a **full-screen raycast-blocking scrim/backdrop** under its card: it makes `EventSystem.IsPointerOverGameObject` read true anywhere over the modal, so the world tap-router (see [Camera & controls → Navigation](../world/camera-controls.md#navigation)) skips its raycast for that tap. A new modal surface must include such a backdrop, or taps on its empty regions would fall through to the world.
+
+The one still-IMGUI affordance, the HUD Settings gear, sits outside the EventSystem and so is covered by an interim screen-space rect guard instead; it folds into this same rule once it migrates to UGUI ([#370](https://github.com/derekwinters/lucas-doggiehood/issues/370)).

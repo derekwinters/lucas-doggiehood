@@ -11,7 +11,7 @@ A small, **reusable** centered card over a dimmed scene that asks the player to 
 
 | Region | Contains | Shared component |
 |---|---|---|
-| Scrim | Full-screen dim behind the card; tapping it **cancels** (equivalent to **No**) so the dialog is never a trap | — |
+| Scrim | Full-screen dim behind the card; tapping it **cancels** (equivalent to **No**) so the dialog is never a trap. Being a full-screen raycast target, it also makes the dialog **modal** — a tap anywhere over it is absorbed and never reaches a world interactable behind the card ([#422](https://github.com/derekwinters/lucas-doggiehood/issues/422)) | — |
 | Title | The dynamic heading — the question (e.g. *"Unlock this area?"*) | [Shared panel chrome](shared-components.md) |
 | Body | The dynamic message — one short sentence of detail (e.g. the cost) | [Shared panel chrome](shared-components.md) |
 | Action row | Two equal-width pill buttons: **No** (neutral/cream, left) and **Yes** (positive/leaf, right). When the action costs coins, **Yes** carries a coin token + amount | [PillButton](shared-components.md#pill-button-pillbutton) ×2 |

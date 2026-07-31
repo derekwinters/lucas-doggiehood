@@ -58,9 +58,14 @@ namespace Doggiehood.Unity
             ApplyControllerState();
         }
 
-        public void HandleTap(Vector2 screenPosition)
+        /// <summary>Routes a tap to the world (#20), unless UI absorbs it
+        /// first (#422). <paramref name="pointerId"/> is the touch fingerId on
+        /// the touch path, or null for the mouse — threaded through so the
+        /// pointer-over-UI check uses the correct
+        /// <c>IsPointerOverGameObject</c> overload.</summary>
+        public void HandleTap(Vector2 screenPosition, int? pointerId = null)
         {
-            TapRouter.RouteTap(cachedCamera, screenPosition);
+            TapRouter.RouteTap(cachedCamera, screenPosition, pointerId);
         }
 
         /// <summary>Input-independent core of two-finger polling (#203). Given
@@ -140,7 +145,9 @@ namespace Doggiehood.Unity
                 case TouchPhase.Ended:
                     if (accumulatedDragPixels <= TapMaxDragPixels)
                     {
-                        HandleTap(touch.position);
+                        // #422: thread the fingerId so the pointer-over-UI guard
+                        // uses IsPointerOverGameObject(fingerId) for this touch.
+                        HandleTap(touch.position, touch.fingerId);
                     }
                     break;
             }
