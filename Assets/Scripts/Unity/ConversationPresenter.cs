@@ -387,9 +387,9 @@ namespace Doggiehood.Unity
             var bodyTop = PaddingPx + BodyTopGapPx;
             // Width first (anchorMin==anchorMax makes rect.width == sizeDelta.x
             // synchronously), so preferredHeight wraps at the inner width.
-            PlaceTopLeft(bodyRect, PaddingPx, bodyTop, InnerWidth(), BodyFontPx);
+            PlaceTopLeft(bodyText.rectTransform, PaddingPx, bodyTop, InnerWidth(), BodyFontPx);
             var bodyHeight = Mathf.Max(BodyFontPx, bodyText.preferredHeight);
-            bodyRect.sizeDelta = new Vector2(InnerWidth(), bodyHeight);
+            bodyText.rectTransform.sizeDelta = new Vector2(InnerWidth(), bodyHeight);
 
             var cursor = bodyTop + bodyHeight;
             if (hasStatus)
