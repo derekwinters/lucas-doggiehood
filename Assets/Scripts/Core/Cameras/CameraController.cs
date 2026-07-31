@@ -18,9 +18,13 @@ namespace Doggiehood.Core.Cameras
         /// now the initial value of free, mutable rotation.</summary>
         public const float DefaultYaw = 45f;
 
+        /// <summary>Breathing room (meters) added around the map's tile
+        /// coverage when deriving the pan bounds (#20, #373), so the player
+        /// can pan a little past the outermost tiles rather than being pinned
+        /// exactly to their edges.</summary>
         private const float BoundsMargin = 12f;
 
-        public WorldBounds Bounds { get; }
+        public WorldBounds Bounds { get; private set; }
         public GridPoint Position { get; private set; }
         public float Zoom { get; private set; }
 
@@ -38,9 +42,33 @@ namespace Doggiehood.Core.Cameras
 
         public static CameraController ForStartingNeighborhood()
         {
-            var extent = NeighborhoodLayout.LotDistanceFromCenter + BoundsMargin;
-            var bounds = new WorldBounds(-extent, extent, -extent, extent);
-            return new CameraController(bounds, NeighborhoodLayout.Intersection, DefaultZoom);
+            // The initial pan bounds derive from the same live-map path an
+            // unlock later grows them by (#373): the starting map is just the
+            // seeded FourWay intersection at the origin.
+            var startingMap = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            return new CameraController(BoundsForMap(startingMap), NeighborhoodLayout.Intersection, DefaultZoom);
+        }
+
+        /// <summary>
+        /// Recomputes the pan <see cref="Bounds"/> from the live tile
+        /// <paramref name="map"/> (#373): after a zone unlock extends the map
+        /// (e.g. the #360 north cul-de-sac), the bounds grow to cover the new
+        /// tiles so <see cref="Pan"/>/<see cref="FocusOn"/> can reach them.
+        /// The current <see cref="Position"/> is re-clamped into the new
+        /// bounds so it never sits outside them.
+        /// </summary>
+        public void RecomputeBoundsFromMap(TileMap map)
+        {
+            Bounds = BoundsForMap(map);
+            Position = new GridPoint(Bounds.ClampX(Position.X), Bounds.ClampZ(Position.Z));
+        }
+
+        private static WorldBounds BoundsForMap(TileMap map)
+        {
+            var extent = MapExtent.Covering(map);
+            return new WorldBounds(
+                extent.MinX - BoundsMargin, extent.MaxX + BoundsMargin,
+                extent.MinZ - BoundsMargin, extent.MaxZ + BoundsMargin);
         }
 
         public void Pan(float deltaX, float deltaZ)

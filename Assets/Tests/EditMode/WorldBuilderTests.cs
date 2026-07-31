@@ -323,6 +323,65 @@ namespace Doggiehood.Unity.EditModeTests
                 "no grass texture applied (decision A keeps the flat colored plane)");
         }
 
+        private static GameState WithFirstZoneUnlocked()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1000);
+            Assert.That(state.TryUnlockNextZone(), Is.True, "the test needs the first zone unlocked");
+            return state;
+        }
+
+        [Test]
+        public void BuildGround_GrowsToCoverAnUnlockedZone_StayingASingleFlatPlane()
+        {
+            // #373 (Gap 1): the base grass plane must cover the whole extended
+            // map (the north cul-de-sac zone), not the fixed starting pad, so
+            // the new zone has grass under it — while staying the single flat
+            // plane #300 (A) locked in.
+            Object.DestroyImmediate(root);
+            var state = WithFirstZoneUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var ground = root.transform.Find(WorldBuilder.GroundName);
+            Assert.That(ground, Is.Not.Null);
+            Assert.That(ground.childCount, Is.EqualTo(0), "still a flat plane, not a tiled grid");
+            Assert.That(ground.GetComponent<MeshFilter>().sharedMesh.name, Does.Contain("Plane"));
+
+            var extent = MapExtent.Covering(state.Map);
+            var halfDepth = ground.localScale.z * 10f / 2f; // a Unity Plane is 10m at scale 1
+            var northReach = ground.position.z + halfDepth;
+            var northLotZ = ZoneCatalog.FirstZone.Lots.Max(lot => lot.Position.Z);
+            Assert.That(northReach, Is.GreaterThanOrEqualTo(northLotZ),
+                "grass now reaches under the northern zone's lots");
+            Assert.That(northReach, Is.EqualTo(extent.MaxZ).Within(0.001f),
+                "the plane covers exactly the grown map extent");
+        }
+
+        [Test]
+        public void Build_RendersRoadSurfacesForAnUnlockedZonesTiles()
+        {
+            // #373 (Gap 1): the unlocked cul-de-sac tile gets a road surface
+            // derived from GameState.Map (TileRoadGeometry) — its south arm,
+            // sitting in the tile's south half so it meets the origin tile's
+            // road — not just floating lot markers.
+            Object.DestroyImmediate(root);
+            var state = WithFirstZoneUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var zoneRoad = root.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name == WorldBuilder.ZoneRoadNamePrefix + "0,1");
+            Assert.That(zoneRoad, Is.Not.Null, "the north tile (0,1) gets a ZoneRoad container");
+
+            var arms = zoneRoad.Cast<Transform>().ToList();
+            Assert.That(arms.Count, Is.EqualTo(1), "a cul-de-sac carries a road on exactly one edge");
+
+            // The single arm lies in the tile's south half (world z between the
+            // tile centre at 60 and its south edge at 30), meeting the origin.
+            var arm = arms[0];
+            Assert.That(arm.position.z, Is.InRange(30f, 60f));
+            Assert.That(arm.position.x, Is.EqualTo(0f).Within(0.001f));
+        }
+
         [Test]
         public void BuildHouse_OnAZoneLotWithNoAuthoredStyle_FallsBackToTheGrayboxRender_WithoutThrowing()
         {

@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -78,6 +79,71 @@ namespace Doggiehood.Core.Tests.Cameras
                 Assert.That(lot.Position.X, Is.InRange(camera.Bounds.MinX, camera.Bounds.MaxX));
                 Assert.That(lot.Position.Z, Is.InRange(camera.Bounds.MinZ, camera.Bounds.MaxZ));
             }
+        }
+
+        [Test]
+        public void RecomputeBoundsFromMap_GrowsBoundsToReachAnUnlockedNorthernZone()
+        {
+            // #373 (Gap 2): unlocking a zone that extends the map north (the
+            // single CulDeSacSouth at (0,1), #360) must grow the pan bounds so
+            // the player can pan/focus onto the new zone's lots.
+            var camera = NewController();
+
+            // The northernmost lot of the first (north cul-de-sac) zone —
+            // outside the starting bounds until the map grows.
+            var northLot = ZoneCatalog.FirstZone.Lots
+                .OrderByDescending(lot => lot.Position.Z)
+                .First()
+                .Position;
+            Assert.That(northLot.Z, Is.GreaterThan(camera.Bounds.MaxZ),
+                "the starting bounds exclude the northern zone");
+
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            ZoneCatalog.FirstZone.PlaceOnto(map);
+            camera.RecomputeBoundsFromMap(map);
+
+            Assert.That(northLot.Z, Is.InRange(camera.Bounds.MinZ, camera.Bounds.MaxZ),
+                "the grown bounds now include the northern lot");
+        }
+
+        [Test]
+        public void AfterBoundsGrow_PanAndFocusOn_CanReachTheNewZone()
+        {
+            var camera = NewController();
+            var northLot = ZoneCatalog.FirstZone.Lots
+                .OrderByDescending(lot => lot.Position.Z)
+                .First()
+                .Position;
+
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            ZoneCatalog.FirstZone.PlaceOnto(map);
+            camera.RecomputeBoundsFromMap(map);
+
+            camera.FocusOn(northLot);
+            Assert.That(camera.Position.Z, Is.EqualTo(northLot.Z),
+                "FocusOn reaches the new zone's lot rather than clamping short of it");
+
+            camera.FocusOn(NeighborhoodLayout.Intersection);
+            camera.Pan(0f, 10000f);
+            Assert.That(camera.Position.Z, Is.GreaterThanOrEqualTo(northLot.Z),
+                "panning north now travels past the new zone's lot");
+        }
+
+        [Test]
+        public void RecomputeBoundsFromMap_ReclampsThePositionIntoTheNewBounds()
+        {
+            // Growing the map only ever widens the bounds here, but the
+            // controller must re-settle its position against whatever the new
+            // bounds are so it never sits outside them.
+            var camera = NewController();
+            camera.Pan(10000f, 10000f); // pinned to the old max corner
+
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            ZoneCatalog.FirstZone.PlaceOnto(map);
+            camera.RecomputeBoundsFromMap(map);
+
+            Assert.That(camera.Position.X, Is.InRange(camera.Bounds.MinX, camera.Bounds.MaxX));
+            Assert.That(camera.Position.Z, Is.InRange(camera.Bounds.MinZ, camera.Bounds.MaxZ));
         }
 
         [Test]
