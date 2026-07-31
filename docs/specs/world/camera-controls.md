@@ -10,6 +10,8 @@ There is no visible player-controlled character in the world. The player is an u
 
 Drag/swipe to pan the camera across the neighborhood; pinch to zoom in and out — the same interaction model as panning around a map. Tapping a dog or house triggers its interaction directly. ([#20](https://github.com/derekwinters/lucas-doggiehood/issues/20))
 
+**The pan bounds grow with the map.** Panning is clamped to the neighborhood's extent, but that extent is not fixed: it is derived from the live tile map (`Doggiehood.Core.World.MapExtent.Covering` — a named margin beyond the outermost tiles) and **recomputes when a zone is unlocked** (`CameraController.RecomputeBoundsFromMap`), so the player can always pan over to reach a newly unlocked zone rather than being clamped out of it ([#373](https://github.com/derekwinters/lucas-doggiehood/issues/373)). The starting bounds derive from the same map-based path (the seeded origin tile), so there is one derivation for both the initial world and every expansion.
+
 ## Camera angle
 
 Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a full free-orbit 3D camera. This shows house facades and roofs and keeps dogs easy to spot and tap. ([#21](https://github.com/derekwinters/lucas-doggiehood/issues/21))
@@ -28,7 +30,7 @@ This is one facet of the project's platform target, stated authoritatively once 
 
 - [ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping)
 - [ ] Camera-facing world markers (speech bubbles, map-expansion lock icon) track the live camera yaw and read head-on at every rotation (#266); broader fixed-angle scene-art readability remains a follow-on
-- [ ] Pan via drag/swipe within the bounds of the current neighborhood scene
+- [ ] Pan via drag/swipe within the bounds of the current neighborhood scene (the bounds grow with the map, recomputed from the live tile extent on zone unlock — [#373](https://github.com/derekwinters/lucas-doggiehood/issues/373))
 - [ ] Pinch-to-zoom with sane min/max zoom limits
 - [ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels
 - [ ] App is locked to landscape orientation

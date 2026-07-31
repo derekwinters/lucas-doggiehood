@@ -33,7 +33,32 @@ namespace Doggiehood.Unity
         public const string EmptyLotNamePrefix = "EmptyLot - ";
         public const string ExpansionIndicatorName = "ExpansionIndicator";
         public const string SunName = "Sun";
+
+        /// <summary>Container name prefix for the road surfaces of an unlocked
+        /// zone tile (#373): one per placed zone tile, holding the graybox/kit
+        /// road segments derived from the tile catalog geometry
+        /// (<see cref="TileRoadGeometry"/>). Suffixed with the tile's grid
+        /// coordinate so each tile's roads stay a distinct scene object.</summary>
+        public const string ZoneRoadNamePrefix = "ZoneRoad - ";
+
+        public const string GroundName = "Ground";
+
+        /// <summary>Half-extent (meters) of the fixed starting grass pad this
+        /// once was — kept because <see cref="DeliveryTruckView"/> still enters
+        /// the scene from this distance. The ground plane itself is no longer
+        /// this fixed size: since #373 it grows to cover the live map extent
+        /// (<see cref="MapExtent"/>) so an unlocked zone has grass under it.</summary>
         public const float GroundExtent = 30f;
+
+        /// <summary>Edge length (meters) of Unity's primitive Plane mesh at
+        /// scale 1 — the divisor that turns a target ground span into the
+        /// plane's local scale (#373).</summary>
+        private const float GroundPlaneMeshSize = 10f;
+
+        /// <summary>Vertical thickness (meters) of a graybox zone road surface
+        /// slab (#373), matching the primitive starting-road fallback so an
+        /// unlocked tile's road reads at the same height.</summary>
+        private const float ZoneRoadThickness = 0.1f;
 
         /// <summary>Graybox marker footprint (local X/Z) for an empty,
         /// buildable lot (#57) — sized just to read as a "house goes here"
@@ -204,7 +229,7 @@ namespace Doggiehood.Unity
         {
             var root = new GameObject(RootName);
 
-            BuildGround(root.transform);
+            BuildGround(root.transform, state.Map);
 
             if (TryLoadRoadTiles(out var straight, out var crossroad, out var crossing))
             {
@@ -229,6 +254,7 @@ namespace Doggiehood.Unity
             BuildFences(root.transform);
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
+            BuildUnlockedZoneRoads(root.transform, state);
             BuildExpansionIndicator(root.transform, state);
 
             BuildSun(root.transform);
@@ -332,15 +358,45 @@ namespace Doggiehood.Unity
                 .ToList();
         }
 
-        private static void BuildGround(Transform parent)
+        /// <summary>The base grass plane (#373): a single flat
+        /// <see cref="Palette.GrassHex"/> primitive Plane (decision #300 (A))
+        /// sized and centred to cover the whole live map extent
+        /// (<see cref="MapExtent"/>) rather than a fixed pad — so every placed
+        /// tile, including an unlocked zone's, has grass under it.</summary>
+        private static void BuildGround(Transform parent, TileMap map)
         {
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Ground";
+            ground.name = GroundName;
             ground.transform.SetParent(parent);
-            // A default plane is 10x10m at scale 1.
-            ground.transform.localScale = new Vector3(GroundExtent / 5f, 1f, GroundExtent / 5f);
-            ground.transform.position = Vector3.zero;
+            ApplyGroundExtent(ground.transform, map);
             Paint(ground, Palette.GrassHex);
+        }
+
+        /// <summary>
+        /// Regrows the already-built base grass plane to cover the current map
+        /// extent (#373) — called after a zone unlock adds tiles, so the new
+        /// zone sits on grass rather than floating over void. A defensive no-op
+        /// if no <see cref="GroundName"/> plane is present.
+        /// </summary>
+        public static void ResizeGroundToMap(Transform root, TileMap map)
+        {
+            var ground = root.Find(GroundName);
+            if (ground == null)
+            {
+                return;
+            }
+
+            ApplyGroundExtent(ground, map);
+        }
+
+        private static void ApplyGroundExtent(Transform ground, TileMap map)
+        {
+            var extent = MapExtent.Covering(map);
+            // A default Unity Plane is GroundPlaneMeshSize x GroundPlaneMeshSize
+            // meters at scale 1, so the span-to-scale divisor is that mesh size.
+            ground.localScale = new Vector3(
+                extent.Width / GroundPlaneMeshSize, 1f, extent.Depth / GroundPlaneMeshSize);
+            ground.position = new Vector3(extent.CenterX, WorldDimensions.RoadSurfaceHeight, extent.CenterZ);
         }
 
         /// <summary>Road surface plus a sidewalk on both sides (#106), all
@@ -768,6 +824,140 @@ namespace Doggiehood.Unity
             var view = marker.AddComponent<EmptyLotView>();
             view.Init(lot.HouseId);
             return marker;
+        }
+
+        /// <summary>
+        /// Renders road surfaces for every currently unlocked zone's tiles
+        /// (#373), derived from <see cref="TileRoadGeometry"/> — the tile
+        /// catalog geometry, not the hardcoded <see cref="NeighborhoodLayout"/>.
+        /// Runs at initial build so a loaded game whose save already unlocked a
+        /// zone (<see cref="GameState.RestoreUnlockedZoneCount"/>) renders that
+        /// zone's roads, not just its empty-lot markers.
+        /// </summary>
+        private static void BuildUnlockedZoneRoads(Transform parent, GameState state)
+        {
+            var straightKit = LoadStraightRoadKit();
+            foreach (var zone in state.UnlockedZones)
+            {
+                foreach (var placement in zone.TilePlacements)
+                {
+                    BuildTileRoads(parent, placement.Coordinate, placement.Type, straightKit);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Renders a freshly unlocked zone into the live world (#373): regrows
+        /// the base grass plane to cover the newly extended map extent, renders
+        /// each of the zone's tiles' road surfaces from the tile catalog
+        /// geometry, and drops the zone's buildable empty-lot markers. The
+        /// single entry point <see cref="ExpansionUnlockDirector"/> calls on a
+        /// confirmed unlock, so the new zone appears as real neighborhood —
+        /// grass under it and roads along its tiles — instead of markers
+        /// floating over void.
+        /// </summary>
+        public static void RenderUnlockedZone(Transform root, GameState state, Zone zone)
+        {
+            ResizeGroundToMap(root, state.Map);
+
+            var straightKit = LoadStraightRoadKit();
+            foreach (var placement in zone.TilePlacements)
+            {
+                BuildTileRoads(root, placement.Coordinate, placement.Type, straightKit);
+            }
+
+            foreach (var lot in zone.Lots)
+            {
+                if (state.IsLotBuildable(lot.HouseId))
+                {
+                    BuildEmptyLot(root, lot);
+                }
+            }
+        }
+
+        /// <summary>The City Kit straight road tile, or null to take the
+        /// graybox primitive road path (the kit assets aren't staged, or the
+        /// #171 fallback is forced) — the same all-or-nothing seam the starting
+        /// corridor uses.</summary>
+        private static GameObject LoadStraightRoadKit()
+        {
+            return ForcePrimitiveFallback ? null : Resources.Load<GameObject>(RoadStraightResource);
+        }
+
+        /// <summary>
+        /// Road surfaces for one placed tile (#373): a "ZoneRoad - col,row"
+        /// container holding one straight road run per road-carrying edge, from
+        /// the tile centre out to that edge — the arms
+        /// <see cref="TileRoadGeometry.SegmentsFor"/> derives from the catalog.
+        /// A cul-de-sac renders a single south arm meeting the origin tile's
+        /// road; a straight/turn/tee tile renders its own arms the same way.
+        /// Kit straight tiles when loadable, else graybox road slabs — the same
+        /// two-path split the starting intersection uses.
+        /// </summary>
+        private static void BuildTileRoads(Transform parent, TileCoordinate coordinate, TileType type,
+            GameObject straightKit)
+        {
+            var container = new GameObject(ZoneRoadNamePrefix + coordinate.Col + "," + coordinate.Row);
+            container.transform.SetParent(parent);
+            container.transform.position = Vector3.zero;
+
+            var segments = TileRoadGeometry.SegmentsFor(coordinate, type);
+            for (var i = 0; i < segments.Count; i++)
+            {
+                if (straightKit != null)
+                {
+                    BuildKitTileRoadArm(container.transform, segments[i], straightKit, i);
+                }
+                else
+                {
+                    BuildPrimitiveTileRoadArm(container.transform, segments[i], i);
+                }
+            }
+        }
+
+        /// <summary>One road arm as tiled City Kit straight tiles (#373): the
+        /// tile's road runs along local X, so a north-south arm rotates 90°;
+        /// tiles are laid every <see cref="RoadTileScale"/> meters along the
+        /// arm to cover its full <see cref="TileRoadSegment.Length"/>.</summary>
+        private static void BuildKitTileRoadArm(Transform container, TileRoadSegment segment, GameObject straightKit,
+            int armIndex)
+        {
+            var isNorthSouth = segment.Orientation == StreetOrientation.NorthSouth;
+            var rotation = isNorthSouth ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
+            var tileCount = Mathf.Max(1, Mathf.RoundToInt(segment.Length / RoadTileScale));
+            var step = segment.Length / tileCount;
+
+            for (var i = 0; i < tileCount; i++)
+            {
+                // Centres of the tileCount tiles evenly spanning the arm length,
+                // centred on the segment's own centre.
+                var along = -segment.Length / 2f + (i + 0.5f) * step;
+                var position = isNorthSouth
+                    ? new Vector3(segment.Center.X, WorldDimensions.RoadSurfaceHeight, segment.Center.Z + along)
+                    : new Vector3(segment.Center.X + along, WorldDimensions.RoadSurfaceHeight, segment.Center.Z);
+
+                var tile = Object.Instantiate(straightKit, container);
+                tile.name = RoadTileNamePrefix + armIndex + " " + i;
+                tile.transform.position = position;
+                tile.transform.rotation = rotation;
+                tile.transform.localScale = Vector3.one * RoadTileScale;
+            }
+        }
+
+        /// <summary>One road arm as a graybox slab (#373), the primitive
+        /// fallback matching <see cref="BuildRoad"/>'s surface.</summary>
+        private static void BuildPrimitiveTileRoadArm(Transform container, TileRoadSegment segment, int armIndex)
+        {
+            var isNorthSouth = segment.Orientation == StreetOrientation.NorthSouth;
+            var arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arm.name = RoadNamePrefix + armIndex;
+            arm.transform.SetParent(container);
+            arm.transform.localScale = isNorthSouth
+                ? new Vector3(segment.Width, ZoneRoadThickness, segment.Length)
+                : new Vector3(segment.Length, ZoneRoadThickness, segment.Width);
+            arm.transform.position = new Vector3(
+                segment.Center.X, WorldDimensions.RoadSurfaceHeight + ZoneRoadThickness / 2f, segment.Center.Z);
+            Paint(arm, Palette.StreetHex);
         }
 
         /// <summary>

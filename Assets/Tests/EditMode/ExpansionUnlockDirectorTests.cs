@@ -132,6 +132,34 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ConfirmingYes_RendersTheZonesRoads_AndGrowsTheCameraPanBounds()
+        {
+            // #373: the two gaps together — a confirmed unlock renders the new
+            // zone's road surfaces (derived from GameState.Map, not just lot
+            // markers) and grows the live camera rig's pan bounds north so the
+            // player can pan over to the just-revealed zone.
+            var cameraObject = new GameObject("camera", typeof(Camera));
+            var rig = cameraObject.AddComponent<CameraRig>();
+            rig.ApplyConfiguration();
+            var maxZBefore = rig.Controller.Bounds.MaxZ;
+
+            indicator.OnTapped();
+            dialog.YesButton.onClick.Invoke();
+
+            var zoneRoad = worldRoot.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name.StartsWith(WorldBuilder.ZoneRoadNamePrefix));
+            Assert.That(zoneRoad, Is.Not.Null, "the unlocked zone's roads render, not only lot markers");
+
+            var northLotZ = ZoneCatalog.FirstZone.Lots.Max(lot => lot.Position.Z);
+            Assert.That(rig.Controller.Bounds.MaxZ, Is.GreaterThan(maxZBefore),
+                "the pan bounds grow north on unlock");
+            Assert.That(rig.Controller.Bounds.MaxZ, Is.GreaterThanOrEqualTo(northLotZ),
+                "the grown bounds reach the new zone's northernmost lot");
+
+            Object.DestroyImmediate(cameraObject);
+        }
+
+        [Test]
         public void TappingAGreyUnaffordableLock_DoesNotOpenTheDialog()
         {
             state.Wallet.TrySpend(state.Wallet.Coins); // drain below the cost
