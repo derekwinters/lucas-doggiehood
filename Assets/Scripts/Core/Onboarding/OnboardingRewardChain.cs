@@ -1,3 +1,4 @@
+using System;
 using Doggiehood.Core.Economy;
 
 namespace Doggiehood.Core.Onboarding
@@ -30,6 +31,19 @@ namespace Doggiehood.Core.Onboarding
     /// </summary>
     public sealed class OnboardingRewardChain
     {
+        /// <summary>#372: raised exactly once each time a step actually pays out
+        /// — carrying the just-completed <see cref="OnboardingRewardStep"/> and
+        /// the flat amount deposited (<see cref="OnboardingRewardChainNumbers.RewardPerStep"/>).
+        /// The thin Unity layer subscribes to raise the celebration panel ("You
+        /// did it! +100 coins"); Core still owns the payout and never re-pays.
+        /// Deliberately silent on out-of-order actions, on calls after the chain
+        /// is <see cref="OnboardingRewardStep.Done"/>, and on
+        /// <see cref="RestoreStep"/> — a reload restores progress without paying
+        /// or re-celebrating. No copy is carried here (engine-free Core): the
+        /// event names only the step + amount, and the Unity layer owns the
+        /// step-to-message table.</summary>
+        public event Action<OnboardingRewardStep, int> RewardGranted;
+
         public OnboardingRewardStep CurrentStep { get; private set; } = OnboardingRewardStep.FirstQuest;
 
         /// <summary>Whether every step has paid out and the guided sequence is
@@ -53,8 +67,10 @@ namespace Doggiehood.Core.Onboarding
                 return false;
             }
 
+            var completedStep = CurrentStep;
             wallet.Deposit(OnboardingRewardChainNumbers.RewardPerStep);
             CurrentStep = CurrentStep + 1;
+            RewardGranted?.Invoke(completedStep, OnboardingRewardChainNumbers.RewardPerStep);
             return true;
         }
 
