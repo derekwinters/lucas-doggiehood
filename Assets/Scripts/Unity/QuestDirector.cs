@@ -33,19 +33,38 @@ namespace Doggiehood.Unity
         private readonly Dictionary<int, List<Vector3>> homeRoutes = new Dictionary<int, List<Vector3>>();
         private readonly Dictionary<int, int> homeRouteProgress = new Dictionary<int, int>();
 
+        // HouseViews whose Tapped is already wired to the spray path — so a
+        // re-wire after #407 rebuilds one on upgrade never double-subscribes an
+        // existing view (the same idempotency ExpansionDirector.WireLots uses).
+        private readonly HashSet<HouseView> wiredHouses = new HashSet<HouseView>();
+
         public void Init(GameState state, Transform worldRoot)
         {
             State = state;
             this.worldRoot = worldRoot;
 
+            WireHouses();
+            RefreshDecorations();
+            RefreshBugSwarms();
+        }
+
+        /// <summary>Subscribes every <see cref="HouseView"/> in the scene to the
+        /// spray path, skipping any already wired — idempotent, so it can be
+        /// called again after #407 rebuilds a HouseView on upgrade (a fresh
+        /// object this loop hasn't seen) without double-firing existing ones.
+        /// Mirrors <see cref="ExpansionDirector.WireLots"/> for EmptyLotView.</summary>
+        public void WireHouses()
+        {
             foreach (var house in Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None))
             {
+                if (!wiredHouses.Add(house))
+                {
+                    continue;
+                }
+
                 var houseId = house.HouseId;
                 house.Tapped += () => OnHouseTapped(houseId);
             }
-
-            RefreshDecorations();
-            RefreshBugSwarms();
         }
 
         /// <summary>#53: a house tap is a spray attempt. When it clears a bug

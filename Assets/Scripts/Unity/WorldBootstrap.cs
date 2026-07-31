@@ -51,8 +51,11 @@ namespace Doggiehood.Unity
             // House profile overlay (#208): tapping a house opens it. A
             // resident row opens that dog's profile (the reciprocal of the dog
             // profile's Home button); the Upgrade button (#294, Option A) spends
-            // coins directly via GameState.TryUpgradeHouse — no confirmation.
-            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile);
+            // coins directly via GameState.TryUpgradeHouse — no confirmation —
+            // and (#407) re-renders the world house so its mesh visibly grows.
+            // The quest director is passed so the #407 re-render can re-wire the
+            // rebuilt HouseView's spray tap alongside the profile tap.
+            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile, director);
 
             // Reusable confirmation dialog (#343/#344), shared by both expansion
             // spends below. A device-safe UGUI overlay (#298/#291) built under the
@@ -205,17 +208,44 @@ namespace Doggiehood.Unity
         /// wiring.
         /// </summary>
         private HouseProfileOverlay BuildHouseProfileOverlay(
-            GameObject canvas, GameState state, Transform worldRoot, DogProfileOverlay dogProfile)
+            GameObject canvas, GameState state, Transform worldRoot, DogProfileOverlay dogProfile,
+            QuestDirector questDirector)
         {
             var overlayObject = new GameObject("HouseProfileOverlay");
             overlayObject.transform.SetParent(canvas.transform, false);
             var overlay = overlayObject.AddComponent<HouseProfileOverlay>();
             overlay.Init();
 
+            // #407: the upgrade re-renders the world house so its mesh swaps up
+            // the ladder (the profile panel already advanced, the world didn't).
+            // On rebuild the fresh HouseView is re-wired to both tap subscribers
+            // — the profile-open handler here and QuestDirector's spray handler —
+            // since a rebuilt object neither one-time bootstrap loop has seen.
+            var upgradeDirector = gameObject.AddComponent<HouseUpgradeDirector>();
+            upgradeDirector.Init(state, worldRoot, rebuilt =>
+            {
+                var houseId = rebuilt.HouseId;
+                rebuilt.Tapped += () => OpenHouseProfile(overlay, state, houseId);
+                questDirector.WireHouses();
+            });
+
             // #294: live wallet read for affordability + the direct-spend upgrade
             // call. The overlay re-reads the balance every render (never cached),
-            // the same contract the currency HUD uses.
-            overlay.ConfigureUpgrade(() => state.Wallet.Coins, houseId => state.TryUpgradeHouse(houseId));
+            // the same contract the currency HUD uses. #407: on a successful Core
+            // upgrade, re-render the world house before reporting success so the
+            // overlay's panel refresh and the world mesh swap land together.
+            overlay.ConfigureUpgrade(
+                () => state.Wallet.Coins,
+                houseId =>
+                {
+                    if (!state.TryUpgradeHouse(houseId))
+                    {
+                        return false;
+                    }
+
+                    upgradeDirector.RefreshHouse(houseId);
+                    return true;
+                });
 
             overlay.ResidentSelected += dog => dogProfile.Open(dog);
 
