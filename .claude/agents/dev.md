@@ -97,8 +97,10 @@ Do these in this exact order. Skipping or reordering is a process violation.
 
 ### 6. Reconcile the docs you touched
 - If the change adds, removes, or alters behavior, layout, or a documented
-  decision, update the relevant spec/docs page(s) **in the same change**. If no
-  doc change is needed, say so explicitly in the PR (with the reason).
+  decision, update the relevant spec/docs page(s) **in the same change**. Record
+  the outcome on its own dedicated `**Docs:**` PR-body line — **not** inside
+  `Deviations and Decisions` — e.g. `**Docs:** reconciled in this PR` or
+  `**Docs:** none needed — <reason>`.
 
 ### 7. Open the PR — body begins with `## Deviations and Decisions`
 - Every PR body **starts** with a `## Deviations and Decisions` section, present
@@ -114,11 +116,21 @@ Do these in this exact order. Skipping or reordering is a process violation.
   - **<ambiguity>**: <the call made mid-run>. Prevention: <what would prevent the gap next time>.
   ```
 
-  - **Deviations** — anything not fully compliant with the prompt, the issue
-    checklist, or the docs/specs. Sanctioned, documented workflow quirks (e.g.
-    tests that only run in CI, per the repo's testing docs) are NOT deviations.
-  - **Decisions** — judgment calls forced by unclear docs/specs/prompt, each
-    with how to prevent the gap next time. Most runs need none.
+  - Keep it high-signal, not an exhaustive change-log. Apply the test to every
+    candidate: *"If the reviewer knew this, would they plausibly do something
+    differently — object, adjust, or follow up?"* If no, omit it. A 0–2-item
+    list is the norm and **`None.` is a good, common outcome**.
+  - **Deviations** — a change that genuinely diverges from the prompt, the issue
+    checklist, or the docs/specs **and** that the reviewer might not expect or
+    might reject. Exclude: choices the specs/conventions already endorse,
+    self-evident implementation details, restating what the diff plainly shows,
+    "matches the existing pattern," routine test-structure notes, and formatting.
+    Sanctioned, documented workflow quirks (e.g. tests that only run in CI, per
+    the repo's testing docs) are NOT deviations.
+  - **Decisions** — a judgment call forced by unclear docs/specs/prompt where
+    there were real, consequential alternatives (behavior, scope, an interface,
+    a design choice), each with how to prevent the gap next time. Exclude trivial
+    calls with no meaningful alternative. Most runs need none.
 - After the section, a normal `## Summary` of the change.
 
 ## Commits and PR hygiene
