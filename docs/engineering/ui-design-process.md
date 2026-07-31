@@ -42,3 +42,9 @@ propose ──▶ review ──▶ approve ──▶ distill ──▶ implement
 If an issue would touch a screen's **structure** (adding, removing, or repositioning regions of a panel/overlay/screen) and **no approved wireframe exists** for it, **stop and flag it** — do not implement, not even graybox. This has the same posture as the [docs-conflict rule](agent-workflow.md#how-an-issue-gets-worked): it's a design gap to resolve back in GitHub (file/finish the wireframe first), not something to invent mid-implementation.
 
 Purely visual restyling that doesn't move structure (e.g. applying an already-approved shared-component style) is not gated by this rule — but if you're unsure whether a change is structural, treat it as structural and flag it.
+
+## How a wireframe issue is recognized: the `type:wireframe` label
+
+A GitHub issue whose deliverable is the wireframe itself (the dual artifact of step 1) carries the **`type:wireframe`** label, alongside a **`Wireframe:` title prefix** (existing practice, e.g. [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)). The label is the authoritative marker; the title prefix is a human-readable convention.
+
+This matters to the pipeline's [blocker auto-revisit sweep](issue-pipeline.md#auto-revisit-when-a-blocker-clears). A downstream issue `Blocked by:` a wireframe issue is hard-gated on the wireframe reaching **approve → distill → closed**, not merely on it entering the dev queue — so the sweep treats a `type:wireframe` blocker as resolved **only once it is closed**, never at `ready-for-work`/`in-progress` ([#396](https://github.com/derekwinters/lucas-doggiehood/issues/396)). An ordinary blocker still resolves as soon as it is queued. Apply `type:wireframe` when filing a wireframe issue so the sweep gates its dependents correctly.
