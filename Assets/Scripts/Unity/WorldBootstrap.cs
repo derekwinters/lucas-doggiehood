@@ -15,15 +15,6 @@ namespace Doggiehood.Unity
             var director = gameObject.AddComponent<QuestDirector>();
             director.Init(state, root.transform);
 
-            var presenter = FindFirstObjectByType<ConversationPresenter>();
-            if (presenter == null)
-            {
-                presenter = gameObject.AddComponent<ConversationPresenter>();
-            }
-
-            presenter.State = state;
-            presenter.Director = director;
-
             // Quest pacing (#310 / #312 / #316). The whole phase decision lives
             // in Core (QuestManager.EnsureQuestsForLaunch): pre-chain it seeds
             // the one tutorial quest, mid-chain (the guided upgrade/expand/build
@@ -38,6 +29,11 @@ namespace Doggiehood.Unity
             // overlay both live under it so each px constant keeps a fixed
             // on-screen meaning across tablet sizes.
             var canvas = BuildUiCanvas();
+
+            // Conversation/quest panel (#11/#408): the Candy Cottage DialogueBox
+            // (#175) now lives under the shared canvas so its px constants keep a
+            // fixed on-screen meaning; DogView finds it by type on a bubble tap.
+            var presenter = BuildConversationPresenter(canvas, state, director);
 
             // Settings panel (#219): opened from the HUD gear. Version comes
             // from the build (release-please owns it); the Debug fence toggle
@@ -125,6 +121,24 @@ namespace Doggiehood.Unity
             canvasObject.GetComponent<UiCanvas>().Configure();
             UiEventSystem.Ensure();
             return canvasObject;
+        }
+
+        /// <summary>
+        /// Builds the conversation/quest panel (#11/#408) under the shared canvas
+        /// and starts it closed. The Candy Cottage DialogueBox (#175) is device-
+        /// safe UGUI (#298/#291); its game logic stays in Core (accept flows
+        /// through <paramref name="state"/>, quest completion through the
+        /// <paramref name="director"/>).
+        /// </summary>
+        private ConversationPresenter BuildConversationPresenter(GameObject canvas, GameState state, QuestDirector director)
+        {
+            var presenterObject = new GameObject("ConversationPresenter");
+            presenterObject.transform.SetParent(canvas.transform, false);
+            var presenter = presenterObject.AddComponent<ConversationPresenter>();
+            presenter.State = state;
+            presenter.Director = director;
+            presenter.Init();
+            return presenter;
         }
 
         /// <summary>

@@ -1,15 +1,28 @@
+using System.Collections.Generic;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Quests;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// Holds the currently open conversation (#11). Graybox IMGUI rendering
-    /// until the Candy Cottage dialogue UI (#65) is built; game logic never
-    /// lives here — the Conversation itself comes from Core. Cost/
-    /// affordability display defers entirely to QuestPurchasePresentation
-    /// (#186); this class only wires that Core query to GUILayout.
+    /// Holds the currently open conversation (#11) and renders it in the shared
+    /// Candy Cottage UGUI chrome (#65/#408): a bottom-center <c>DialogueBox</c>
+    /// shell (name-tag tab + linear request body + right-aligned
+    /// <c>PillButton</c> action row) built under the #256 <see cref="UiCanvas"/>,
+    /// matching the approved wireframe (docs/specs/ui/conversation-panel.md,
+    /// #175). Game logic never lives here — the Conversation itself comes from
+    /// Core, and cost/affordability display defers entirely to
+    /// <see cref="QuestPurchasePresentation"/> (#186); this class only wires
+    /// those Core queries onto the panel.
+    ///
+    /// Chrome comes from the device-safe <see cref="CandyChromeUgui"/> (#298):
+    /// rounded panel + pill buttons through the always-included <c>UI/Default</c>
+    /// material (no custom shader to strip) and text uses the bundled font loaded
+    /// via Resources (never an editor-only builtin) — both the #291 safety
+    /// patterns the merged overlays use. Mirrors the retained-UGUI structure of
+    /// <see cref="ConfirmationDialog"/> rather than IMGUI-in-OnGUI.
     /// </summary>
     public sealed class ConversationPresenter : MonoBehaviour
     {
@@ -18,50 +31,62 @@ namespace Doggiehood.Unity
         // (#186) rather than closing with no player-visible feedback.
         private const string InsufficientFundsMessage = "Not enough coins for that yet.";
 
-        // #273 interim graybox readability bump. Default IMGUI sizes are too
-        // small to read on-device, so the dialogue text and action buttons are
-        // roughly doubled — WITHOUT touching the panel box (its size/position
-        // stay fixed, see the panel-box constants below). This is NOT the
-        // permanent Candy-Cottage styling; the wireframe pixel values
-        // (BodyFontPx 34, 96px pills) live in docs/specs/ui/conversation-panel.md
-        // (#175) and are unchanged by this interim tuning.
-        //
-        // Baselines approximate the default IMGUI skin's effective sizes so the
-        // doubled constants read as an explicit ~2x bump (#161: named, not inline).
-        public const int BaselineFontPx = 12;
-        public const int BaselineButtonHeightPx = 24;
+        private const string NotNowLabel = "Not now";
 
-        /// <summary>Dialogue/status/label font size — ~2x the default IMGUI size (#273).</summary>
-        public const int DialogueFontPx = BaselineFontPx * 2;
+        // --- Wireframe layout constants (docs/specs/ui/conversation-panel.md,
+        // #175 / #161: named, never inline) ---
 
-        /// <summary>Action-button minimum height — ~2x the default IMGUI button height (#273).</summary>
-        public const int ButtonMinHeightPx = BaselineButtonHeightPx * 2;
+        /// <summary>Panel width, centered (PanelWidthPx).</summary>
+        public const float PanelWidthPx = 1040f;
 
-        /// <summary>Padding inside the enlarged accept/option/decline pills (#273).</summary>
-        public const int ButtonPaddingPx = 12;
+        /// <summary>Gap below the bottom-center panel (PanelBottomMarginPx).</summary>
+        public const float PanelBottomMarginPx = 64f;
 
-        // Panel-box geometry (#161: named, not inline). Unchanged by #273 — the
-        // box keeps the same size and position while its content grows.
-        private const float PanelMaxWidthPx = 600f;
-        private const float PanelHorizontalMarginPx = 40f;
-        private const float PanelTopFraction = 0.6f;
-        private const float PanelHeightFraction = 0.35f;
+        /// <summary>Request text size (BodyFontPx).</summary>
+        public const int BodyFontPx = 34;
 
-        private Vector2 scrollPosition;
+        // --- Shared DialogueBox shell constants (#173, shared-components.md) ---
+        public const float PaddingPx = 40f;
+        public const float PanelRadiusPx = CandyChromeUgui.PanelRadiusPx;
+        public const float PanelShadowPx = 12f;
+        public const float NameTagOffsetPx = 28f;
+        public const float ActionGapPx = 20f;
 
-        /// <summary>The fixed graybox panel rect: centered, width clamped to
-        /// min(600, screenWidth - 40), sitting at 60% down the screen and
-        /// filling 35% of its height. Extracted so an EditMode test can pin
-        /// that #273 did not move or resize the box.</summary>
-        public static Rect ComputePanelRect(float screenWidth, float screenHeight)
-        {
-            var width = Mathf.Min(PanelMaxWidthPx, screenWidth - PanelHorizontalMarginPx);
-            return new Rect(
-                (screenWidth - width) / 2f,
-                screenHeight * PanelTopFraction,
-                width,
-                screenHeight * PanelHeightFraction);
-        }
+        // Shared PillButton (#173): 96px pills, label inset by ButtonPaddingXPx.
+        public const float ButtonHeightPx = 96f;
+        private const int ButtonFontPx = 36;
+        private const float ButtonPaddingXPx = 48f;
+
+        // Name tag (gold overlapping tab) sizing.
+        private const int NameTagFontPx = 26;
+        private const float NameTagHeightPx = 56f;
+        private const float NameTagPaddingXPx = 30f;
+        private const float NameTagLeftPx = 36f;
+
+        // Vertical rhythm inside the panel.
+        private const float BodyTopGapPx = 14f;
+        private const float StatusGapPx = 12f;
+        private const float BodyActionGapPx = 30f;
+
+        /// <summary>#291: the bundled UI font, loaded from Resources so it ships
+        /// in the Android build (runtime UGUI cannot use the editor-only builtin
+        /// font). Same asset the sibling overlays use.</summary>
+        private const string LabelFontResource = "DejaVuSans";
+        private static Font labelFont;
+
+        // --- UGUI view (built by Init, null in logic-only tests) ---
+        private GameObject content;
+        private RectTransform cardRect;
+        private RectTransform nameTagRect;
+        private Text nameTagText;
+        private Text bodyText;
+        private Text statusText;
+
+        private readonly List<ActionPill> allPills = new List<ActionPill>();
+        private readonly List<ActionPill> acceptPills = new List<ActionPill>();
+        private ActionPill declinePill;
+
+        private string currentDogName;
 
         public Conversation Current { get; private set; }
 
@@ -86,6 +111,33 @@ namespace Doggiehood.Unity
         /// <summary>#186: non-null after a failed purchase attempt — the
         /// panel stays open and shows this instead of closing silently.</summary>
         public string StatusMessage { get; private set; }
+
+        // --- Test/wiring surface ---
+        public RectTransform PanelRect => cardRect;
+        public Text NameTagLabel => nameTagText;
+        public Text BodyLabel => bodyText;
+        public Text StatusLabel => statusText;
+        public ActionPill DeclinePill => declinePill;
+        public IReadOnlyList<ActionPill> AcceptPills => acceptPills;
+
+        /// <summary>One action-row pill: the tap <see cref="Button"/>, its Candy
+        /// Cottage <see cref="Image"/> chrome (greyed to
+        /// <see cref="CandyChromeUgui.Disabled"/> when unaffordable), and the
+        /// label. Exposed so EditMode tests can assert the row without a Play-mode
+        /// frame.</summary>
+        public sealed class ActionPill
+        {
+            public ActionPill(Button button, Image image, Text label)
+            {
+                Button = button;
+                Image = image;
+                Label = label;
+            }
+
+            public Button Button { get; }
+            public Image Image { get; }
+            public Text Label { get; }
+        }
 
         /// <summary>The accept pill's label: shows the cost for a buy-type
         /// quest (e.g. "Buy · 40"), otherwise the existing Accept/Complete
@@ -120,11 +172,21 @@ namespace Doggiehood.Unity
             return QuestPurchasePresentation.IsOptionAffordable(option, State != null ? State.Wallet : null);
         }
 
+        /// <summary>Builds the DialogueBox hierarchy (expected under a
+        /// <see cref="UiCanvas"/>) and starts closed. Logic-only tests that
+        /// never call this exercise the Core wiring with no view attached.</summary>
+        public void Init()
+        {
+            Build();
+            content.SetActive(false);
+        }
+
         /// <summary>Opens the dog's conversation; a no-op for dogs without
         /// an active quest (Core returns null for those).</summary>
         public bool TryOpen(Dog dog)
         {
             StatusMessage = null;
+            currentDogName = dog.Name;
 
             if (State != null)
             {
@@ -135,6 +197,7 @@ namespace Doggiehood.Unity
                 if (currentQuest != null)
                 {
                     Current = new Conversation(currentQuest.DialogueLines, ConversationEnding.Accept);
+                    ShowView();
                     Opened?.Invoke(dog);
                     return true;
                 }
@@ -147,6 +210,7 @@ namespace Doggiehood.Unity
             }
 
             Current = conversation;
+            ShowView();
             Opened?.Invoke(dog);
             return true;
         }
@@ -170,6 +234,7 @@ namespace Doggiehood.Unity
             }
 
             StatusMessage = InsufficientFundsMessage;
+            SyncView();
         }
 
         /// <summary>#50: accept a generic decoration request with the chosen
@@ -190,6 +255,7 @@ namespace Doggiehood.Unity
             }
 
             StatusMessage = InsufficientFundsMessage;
+            SyncView();
         }
 
         private void FinishAccept(Doggiehood.Core.Quests.Quest accepted)
@@ -219,82 +285,273 @@ namespace Doggiehood.Unity
             Current = null;
             currentQuest = null;
             StatusMessage = null;
+            if (content != null)
+            {
+                content.SetActive(false);
+            }
         }
 
-        private void OnGUI()
+        // ---------------------------------------------------------------
+        // View (thin, geometry-only — every number is a named constant)
+        // ---------------------------------------------------------------
+
+        private void ShowView()
         {
-            if (!IsOpen)
+            if (content == null)
             {
                 return;
             }
 
-            // #273: enlarged dialogue/label and button styles (~2x default IMGUI).
-            var labelStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = DialogueFontPx,
-                wordWrap = true,
-            };
-            var buttonStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = DialogueFontPx,
-                padding = new RectOffset(ButtonPaddingPx, ButtonPaddingPx, ButtonPaddingPx, ButtonPaddingPx),
-            };
-            var buttonMinHeight = GUILayout.MinHeight(ButtonMinHeightPx);
+            SyncView();
+            content.SetActive(true);
+        }
 
-            GUILayout.BeginArea(ComputePanelRect(Screen.width, Screen.height), GUI.skin.box);
-
-            // #273: the box stays a fixed 0.35x height while the doubled text and
-            // buttons grow, so the body scrolls rather than clipping when it
-            // overflows (e.g. a multi-line request with all its action pills).
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-
-            foreach (var line in Current.Lines)
+        /// <summary>Repopulates the name tag, body, status, and action row from
+        /// the current Core state and re-lays out the panel. Null-guarded so the
+        /// Core wiring works with no view attached (logic-only tests).</summary>
+        private void SyncView()
+        {
+            if (content == null)
             {
-                GUILayout.Label(line, labelStyle);
+                return;
             }
+
+            nameTagText.text = currentDogName ?? string.Empty;
+            bodyText.text = Current != null ? string.Join("\n", Current.Lines) : string.Empty;
+
+            var hasStatus = !string.IsNullOrEmpty(StatusMessage);
+            statusText.text = StatusMessage ?? string.Empty;
+            statusText.gameObject.SetActive(hasStatus);
+
+            RebuildActionRow();
+            LayoutPanel(hasStatus);
+        }
+
+        /// <summary>Rebuilds the right-aligned action row for the open quest:
+        /// "Not now" (leftmost, always present, #185) then either one option pill
+        /// per decoration choice (#50) or a single Accept/Complete/Buy pill —
+        /// each greyed + non-interactive when unaffordable (#186).</summary>
+        private void RebuildActionRow()
+        {
+            foreach (var pill in allPills)
+            {
+                DestroyView(pill.Button.gameObject);
+            }
+
+            allPills.Clear();
+            acceptPills.Clear();
+
+            declinePill = CreatePill("NotNowPill", NotNowLabel, CandyChromeUgui.Cream, interactable: true);
+            declinePill.Button.onClick.AddListener(DeclineCurrent);
+            allPills.Add(declinePill);
 
             if (currentQuest != null && currentQuest.Options.Count > 0)
             {
-                // Generic decoration request (#50): one pill per option,
-                // its cost shown and greyed out when unaffordable (#186).
                 foreach (var option in currentQuest.Options)
                 {
-                    GUI.enabled = OptionIsAffordable(option);
-                    if (GUILayout.Button(OptionLabel(option), buttonStyle, buttonMinHeight))
-                    {
-                        AcceptChoice(option);
-                        GUI.enabled = true;
-                        break;
-                    }
+                    var chosen = option;
+                    var affordable = OptionIsAffordable(chosen);
+                    var pill = CreatePill(
+                        "OptionPill",
+                        OptionLabel(chosen),
+                        affordable ? CandyChromeUgui.Coral : CandyChromeUgui.Disabled,
+                        affordable);
+                    pill.Button.onClick.AddListener(() => AcceptChoice(chosen));
+                    acceptPills.Add(pill);
+                    allPills.Add(pill);
                 }
-
-                GUI.enabled = true;
             }
             else
             {
-                GUI.enabled = AcceptIsAffordable;
-                if (GUILayout.Button(AcceptLabel, buttonStyle, buttonMinHeight))
-                {
-                    AcceptCurrent();
-                }
-
-                GUI.enabled = true;
+                var affordable = AcceptIsAffordable;
+                var isBuy = currentQuest != null && currentQuest.Cost.HasValue;
+                var tint = affordable
+                    ? (isBuy ? CandyChromeUgui.Coral : CandyChromeUgui.Leaf)
+                    : CandyChromeUgui.Disabled;
+                var pill = CreatePill("AcceptPill", AcceptLabel, tint, affordable);
+                pill.Button.onClick.AddListener(AcceptCurrent);
+                acceptPills.Add(pill);
+                allPills.Add(pill);
             }
+        }
 
-            if (!string.IsNullOrEmpty(StatusMessage))
+        /// <summary>Stacks the name tab, body (at its wrapped height), the status
+        /// line (when present), and the action row down the panel, then sizes and
+        /// anchors the panel bottom-center — so it grows upward with the request
+        /// length (conversation-panel.md).</summary>
+        private void LayoutPanel(bool hasStatus)
+        {
+            var nameWidth = nameTagText.preferredWidth + NameTagPaddingXPx * 2f;
+            PlaceTopLeft(nameTagRect, NameTagLeftPx, -NameTagOffsetPx, nameWidth, NameTagHeightPx);
+
+            var bodyTop = PaddingPx + BodyTopGapPx;
+            // Width first (anchorMin==anchorMax makes rect.width == sizeDelta.x
+            // synchronously), so preferredHeight wraps at the inner width.
+            PlaceTopLeft(bodyText.rectTransform, PaddingPx, bodyTop, InnerWidth(), BodyFontPx);
+            var bodyHeight = Mathf.Max(BodyFontPx, bodyText.preferredHeight);
+            bodyText.rectTransform.sizeDelta = new Vector2(InnerWidth(), bodyHeight);
+
+            var cursor = bodyTop + bodyHeight;
+            if (hasStatus)
             {
-                GUILayout.Label(StatusMessage, labelStyle);
+                var statusTop = cursor + StatusGapPx;
+                PlaceTopLeft(statusText.rectTransform, PaddingPx, statusTop, InnerWidth(), BodyFontPx);
+                var statusHeight = Mathf.Max(BodyFontPx, statusText.preferredHeight);
+                statusText.rectTransform.sizeDelta = new Vector2(InnerWidth(), statusHeight);
+                cursor = statusTop + statusHeight;
             }
 
-            // #185: "Not now" is always present, regardless of accept-row
-            // variant (standard/choice/buy-something) — a silent decline.
-            if (GUILayout.Button("Not now", buttonStyle, buttonMinHeight))
+            var actionTop = cursor + BodyActionGapPx;
+            LayoutActionRow(actionTop);
+
+            var panelHeight = actionTop + ButtonHeightPx + PaddingPx;
+            AnchorBottomCenter(panelHeight);
+        }
+
+        /// <summary>Right-aligns the pills within the inner content width, left to
+        /// right in build order ("Not now" then the accept/option pills), each
+        /// sized to its label (conversation-panel.md action row).</summary>
+        private void LayoutActionRow(float actionTop)
+        {
+            var widths = new float[allPills.Count];
+            var total = 0f;
+            for (var i = 0; i < allPills.Count; i++)
             {
-                DeclineCurrent();
+                widths[i] = allPills[i].Label.preferredWidth + ButtonPaddingXPx * 2f;
+                total += widths[i];
             }
 
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            total += ActionGapPx * Mathf.Max(0, allPills.Count - 1);
+
+            var runningX = InnerWidth() - total;
+            for (var i = 0; i < allPills.Count; i++)
+            {
+                var rect = (RectTransform)allPills[i].Button.transform;
+                PlaceTopLeft(rect, PaddingPx + runningX, actionTop, widths[i], ButtonHeightPx);
+                runningX += widths[i] + ActionGapPx;
+            }
+        }
+
+        private void Build()
+        {
+            var cardImage = CreateImage("ConversationPanel", transform, CandyChromeUgui.Panel);
+            content = cardImage.gameObject;
+            cardRect = cardImage.rectTransform;
+            CandyChromeUgui.ApplyRounded(cardImage, CandyChromeUgui.Panel, PanelRadiusPx, withShadow: true);
+            // DialogueBox's drop-shadow is PanelShadowPx (distinct from the shared
+            // baseline offset); override the offset ApplyRounded set.
+            CandyChromeUgui.AddShadow(cardImage.gameObject).effectDistance = new Vector2(0f, -PanelShadowPx);
+            AnchorBottomCenter(NameTagHeightPx + PaddingPx * 2f + ButtonHeightPx);
+
+            var nameTagImage = CreateImage("NameTag", cardRect, CandyChromeUgui.Gold);
+            nameTagRect = nameTagImage.rectTransform;
+            CandyChromeUgui.ApplyPill(nameTagImage, CandyChromeUgui.Gold, NameTagHeightPx, withShadow: true);
+            nameTagText = CreateLabel("NameTagLabel", nameTagRect, string.Empty, NameTagFontPx, TextAnchor.MiddleCenter);
+            InsetX(nameTagText.rectTransform, NameTagPaddingXPx);
+
+            bodyText = CreateLabel("Body", cardRect, string.Empty, BodyFontPx, TextAnchor.UpperLeft);
+            bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
+
+            statusText = CreateLabel("Status", cardRect, string.Empty, BodyFontPx, TextAnchor.UpperLeft);
+            statusText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            statusText.gameObject.SetActive(false);
+        }
+
+        private void AnchorBottomCenter(float panelHeight)
+        {
+            cardRect.anchorMin = new Vector2(0.5f, 0f);
+            cardRect.anchorMax = new Vector2(0.5f, 0f);
+            cardRect.pivot = new Vector2(0.5f, 0f);
+            cardRect.sizeDelta = new Vector2(PanelWidthPx, panelHeight);
+            cardRect.anchoredPosition = new Vector2(0f, PanelBottomMarginPx);
+        }
+
+        private ActionPill CreatePill(string name, string label, Color fill, bool interactable)
+        {
+            var image = CreateImage(name, cardRect, fill);
+            CandyChromeUgui.ApplyPill(image, fill, ButtonHeightPx, withShadow: true);
+            var text = CreateLabel(name + "Label", image.rectTransform, label, ButtonFontPx, TextAnchor.MiddleCenter);
+            InsetX(text.rectTransform, ButtonPaddingXPx);
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            return new ActionPill(button, image, text);
+        }
+
+        private void DestroyView(GameObject go)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(go);
+            }
+            else
+            {
+                DestroyImmediate(go);
+            }
+        }
+
+        private static float InnerWidth()
+        {
+            return PanelWidthPx - PaddingPx * 2f;
+        }
+
+        // --- small UGUI helpers (mirror ConfirmationDialog) ---
+
+        private static RectTransform PlaceTopLeft(RectTransform rect, float x, float yFromTop, float width, float height)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(x, -yFromTop);
+            return rect;
+        }
+
+        private static void InsetX(RectTransform rect, float inset)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = new Vector2(inset, 0f);
+            rect.offsetMax = new Vector2(-inset, 0f);
+        }
+
+        private static RectTransform CreateRect(string name, Transform parent)
+        {
+            var go = new GameObject(name);
+            var rect = go.AddComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            return rect;
+        }
+
+        private static Image CreateImage(string name, Transform parent, Color color)
+        {
+            var image = CreateRect(name, parent).gameObject.AddComponent<Image>();
+            image.color = color;
+            return image;
+        }
+
+        private static Text CreateLabel(string name, Transform parent, string value, int fontSize, TextAnchor anchor)
+        {
+            var text = CreateRect(name, parent).gameObject.AddComponent<Text>();
+            text.text = value;
+            text.fontSize = fontSize;
+            text.alignment = anchor;
+            text.color = CandyChromeUgui.Ink;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.font = LabelFont();
+            return text;
+        }
+
+        private static Font LabelFont()
+        {
+            if (labelFont == null)
+            {
+                labelFont = Resources.Load<Font>(LabelFontResource);
+            }
+
+            return labelFont;
         }
     }
 }
