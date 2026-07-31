@@ -46,8 +46,20 @@
   .coach .dots{display:flex;gap:12px;flex:0 0 auto;}
   .coach .dots span{width:16px;height:16px;border-radius:999px;background:transparent;border:4px solid var(--ink);}
   .coach .dots span.on{background:var(--ink);}
+  /* proposed (#435): phase-title tab replaces the trailing step-dots. The first /revise fix
+     hardcoded a fixed height (112px) assuming a single-line message; a wrapped 2-line message
+     (see the tutorial step-1 copy below) is taller than that content band and rides back up
+     into the tab (second /revise). Fix: size the bar to its content instead of guessing a
+     fixed height — height:auto + min-height keeps the badge row's existing proportions for a
+     single-line message, and grows automatically to fit a wrapped 2-line message without ever
+     re-entering the tab's clearance zone. PhaseTitleContentTopPaddingPx/BottomPaddingPx are
+     unaffected by line count. */
+  .coach.hasTitle{height:auto;min-height:88px;padding-top:48px;padding-bottom:16px;}
+  .coach .phaseTitle{position:absolute;top:-28px;left:34px;background:var(--gold);border:5px solid var(--ink);box-shadow:0 6px 0 var(--ink);border-radius:999px;padding:8px 30px;font-size:26px;color:var(--ink);}
   .mguide{position:absolute;left:960px;bottom:0;width:2px;height:56px;background:var(--guide);}
   .mguide::after{content:"CoachBottomMarginPx 56";position:absolute;left:8px;bottom:12px;font-size:22px;color:var(--guide);white-space:nowrap;}
+  .proposed-badge{display:inline-block;margin:0 0 10px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--accent) 20%,transparent);border:1px solid var(--accent);color:var(--text);font-size:12.5px;font-weight:600;}
+  .frame-title{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:26px 0 10px;}
 
   .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
   @media (max-width:640px){ .info{grid-template-columns:1fr;} }
@@ -81,6 +93,7 @@
     four steps as you actually pan, zoom, tap the bubble, and finish the quest, then dismisses for good.</p>
   <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Scroll inside the frame to pan.</p>
 
+  <p class="frame-title">Approved (current) — #176/#374, step-dots</p>
   <div class="viewer">
     <div class="screen" role="img" aria-label="Landscape tablet: neighborhood with a dog and speech bubble, and a slim onboarding coach prompt at the bottom center showing step 1 of 4">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
@@ -91,6 +104,22 @@
         <div class="paw rounded">🐾</div>
         <div class="msg rounded">Welcome to Doggiehood! Drag to look around the neighborhood.</div>
         <div class="dots" aria-label="step 1 of 4"><span class="on"></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="frame-title">Proposed — #435, phase-title tab (step-dots removed)</p>
+  <span class="proposed-badge">PROPOSAL — awaiting approval (revised: bar sizes to content, not a fixed height)</span>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet: same scene, coach bar now shows an overlapping gold phase-title tab reading Learn the ropes instead of step-dots, with the bar sized to clear the tab even though the step-1 message wraps to two lines">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="dog"></div><div class="sbubble"><i></i><i></i><i></i></div>
+      <div class="mguide"></div>
+      <div class="coach hasTitle">
+        <div class="phaseTitle rounded">Learn the ropes</div>
+        <div class="paw rounded">🐾</div>
+        <div class="msg rounded">Welcome to Doggiehood! Drag to look around the neighborhood.</div>
       </div>
     </div>
   </div>
@@ -125,9 +154,32 @@
     </div>
   </div>
 
+  <div class="steps">
+    <h2>Proposed (#435): per-phase titles, replacing the step-dots</h2>
+    <table>
+      <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+      <tr><td>PhaseTitleAnchor</td><td class="val">TopLeft</td><td>tab position (overlaps bar top edge)</td></tr>
+      <tr><td>PhaseTitleLeftInsetPx</td><td class="val">34</td><td>tab inset from bar's left edge</td></tr>
+      <tr><td>PhaseTitleOffsetPx</td><td class="val">28</td><td>vertical overlap (matches NameTagOffsetPx)</td></tr>
+      <tr><td>PhaseTitlePaddingXPx</td><td class="val">30</td><td>tab label horizontal inset</td></tr>
+      <tr><td>PhaseTitlePaddingYPx</td><td class="val">8</td><td>tab label vertical inset</td></tr>
+      <tr><td>PhaseTitleFontPx</td><td class="val">26</td><td>tab label size</td></tr>
+      <tr><td>PhaseTitleContentTopPaddingPx</td><td class="val">48</td><td>content top padding, clears the tab regardless of message line count (revised on 2nd /revise)</td></tr>
+      <tr><td>PhaseTitleContentBottomPaddingPx</td><td class="val">16</td><td>content bottom padding, symmetric breathing room under a wrapped message (new, 2nd /revise)</td></tr>
+    </table>
+    <div class="sgrid" style="margin-top:14px;">
+      <div class="srow"><span class="n">1</span><span class="t"><b>Tutorial</b> (pan → zoom → tap bubble → complete quest) — “Learn the ropes”</span></div>
+      <div class="srow"><span class="n">2</span><span class="t"><b>Upgrade</b> — “Fix up a home”</span></div>
+      <div class="srow"><span class="n">3</span><span class="t"><b>Expand</b> — “Grow the neighborhood”</span></div>
+      <div class="srow"><span class="n">4</span><span class="t"><b>Build</b> — “Build a house”</span></div>
+    </div>
+    <p class="note">Tab label swaps once per <b>phase</b>, not per step — all four tutorial steps show the same title. <code>StepDotCount</code> and the step-dots region are dropped entirely. <b>Revised again (2026-07-31):</b> the first fix hardcoded a fixed 112px bar height assuming a single-line message, but the tutorial step-1 message wraps to two lines at this width — its taller content pushed the vertically-centered text back up into the tab. Fix: when the phase-title tab is shown, the bar's height is no longer fixed — it sizes to its content (<code>min-height</code> 88px, same as today) plus <code>PhaseTitleContentTopPaddingPx</code> (48px, was 24px) above and the new <code>PhaseTitleContentBottomPaddingPx</code> (16px) below, so a wrapped 2-line message simply grows the bar taller instead of colliding with the tab. The bottom anchor (<code>CoachBottomMarginPx</code>) is unchanged; the bar still only grows upward.</p>
+  </div>
+
   <footer>
     Reuses the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill shape · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built bar's anchor/size against them.
     <br><span class="status">Approved (Derek, 2026-07-24) (#176)</span>
+    <br><span class="status" style="background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:var(--accent);">Phase-title region: PROPOSED, awaiting approval — revised twice for content clearance (#435)</span>
   </footer>
 </div>
 </body>
