@@ -97,12 +97,10 @@ namespace Doggiehood.Unity
         private static readonly Color ScrimColor = new Color(46f / 255f, 42f / 255f, 38f / 255f, 0.46f);
         private static readonly Color PanelColor = new Color(1f, 0.99f, 0.97f, 1f);
         private static readonly Color CloseColor = new Color(1f, 0.953f, 0.851f, 1f);
-        private static readonly Color ThumbnailColor = new Color(0.749f, 0.890f, 0.949f, 1f);
         private static readonly Color LevelBadgeColor = new Color(1f, 0.761f, 0.235f, 1f);
         private static readonly Color PipFilledColor = new Color(1f, 0.761f, 0.235f, 1f);
         private static readonly Color PipEmptyColor = new Color(1f, 0.99f, 0.97f, 1f);
         private static readonly Color ResidentRowColor = new Color(0.906f, 0.875f, 0.808f, 1f);
-        private static readonly Color AvatarColor = new Color(0.749f, 0.890f, 0.949f, 1f);
         private static readonly Color BreedChipColor = new Color(0.431f, 0.776f, 0.878f, 1f);
         private static readonly Color UpgradeButtonColor = new Color(1f, 0.478f, 0.361f, 1f);
         private static readonly Color UpgradeDisabledColor = new Color(0.847f, 0.824f, 0.776f, 1f);
@@ -118,6 +116,10 @@ namespace Doggiehood.Unity
             public Button Button { get; internal set; }
             public Text NameLabel { get; internal set; }
             public Text BreedChipLabel { get; internal set; }
+
+            /// <summary>#464: the 96px avatar box, now a render-to-texture
+            /// snapshot of this resident's breed-tinted model.</summary>
+            public RawImage Avatar { get; internal set; }
             public Dog Dog { get; internal set; }
         }
 
@@ -126,6 +128,7 @@ namespace Doggiehood.Unity
         private RectTransform scrimRect;
         private RectTransform closeButtonRect;
         private RectTransform thumbnailRect;
+        private RawImage thumbnailImage;
         private RectTransform residentsContainer;
         private RectTransform upgradeButtonRect;
         private Text levelLabel;
@@ -136,6 +139,12 @@ namespace Doggiehood.Unity
 
         private readonly List<Image> levelPips = new List<Image>();
         private readonly List<ResidentRowView> residents = new List<ResidentRowView>();
+
+        // #464: the off-screen rig that snapshots the house / resident models,
+        // lazily created and owned by this overlay, plus the live snapshot
+        // textures released and re-captured each render.
+        private PortraitCamera portraitCamera;
+        private readonly List<RenderTexture> snapshots = new List<RenderTexture>();
 
         private House currentHouse;
         private IReadOnlyList<Dog> currentResidents = System.Array.Empty<Dog>();
@@ -154,6 +163,16 @@ namespace Doggiehood.Unity
         public RectTransform ScrimRect => scrimRect;
         public RectTransform CloseButtonRect => closeButtonRect;
         public RectTransform ThumbnailRect => thumbnailRect;
+
+        /// <summary>#464: the thumbnail box, now a <see cref="RawImage"/> that
+        /// shows a render-to-texture snapshot of the house's actual current
+        /// model, captured on <see cref="Open"/>.</summary>
+        public RawImage ThumbnailImage => thumbnailImage;
+
+        /// <summary>#464: the off-screen portrait rig this overlay owns (created
+        /// lazily on first render). Exposed so tests can confirm captures are
+        /// one-shot per <see cref="Open"/>.</summary>
+        public PortraitCamera Portrait => portraitCamera;
         public RectTransform UpgradeButtonRect => upgradeButtonRect;
         public Text LevelLabel => levelLabel;
         public Text EmptyStateLabel => emptyStateLabel;
@@ -213,6 +232,12 @@ namespace Doggiehood.Unity
         private void Render()
         {
             var profile = HouseProfile.For(currentHouse);
+
+            // #464: release the previous snapshots, then capture a fresh render
+            // of the house's CURRENT model (variant + level + vacancy tint) into
+            // the thumbnail. Residents are re-snapshotted in RebuildResidents.
+            ReleaseSnapshots();
+            thumbnailImage.texture = Snapshot(PortraitSubjects.ForHouse(currentHouse));
 
             levelLabel.text = profile.LevelText;
             FilledPipCount = profile.FilledPipCount;
@@ -324,7 +349,8 @@ namespace Doggiehood.Unity
             var header = PlaceTopLeft(CreateRect("Header", parent),
                 ProfilePaddingPx, ProfilePaddingPx, InnerWidth(), ThumbnailSizePx);
 
-            thumbnailRect = CreateImage("Thumbnail", header, ThumbnailColor).rectTransform;
+            thumbnailImage = CreateRawImage("Thumbnail", header);
+            thumbnailRect = thumbnailImage.rectTransform;
             thumbnailRect.anchorMin = new Vector2(0f, 0.5f);
             thumbnailRect.anchorMax = new Vector2(0f, 0.5f);
             thumbnailRect.pivot = new Vector2(0f, 0.5f);
@@ -432,12 +458,15 @@ namespace Doggiehood.Unity
             PlaceTopLeft(rowRect, 0f, index * (ResidentRowHeightPx + ResidentRowGapPx),
                 InnerWidth(), ResidentRowHeightPx);
 
-            var avatar = CreateImage("Avatar", rowRect, AvatarColor).rectTransform;
+            var avatarImage = CreateRawImage("Avatar", rowRect);
+            var avatar = avatarImage.rectTransform;
             avatar.anchorMin = new Vector2(0f, 0.5f);
             avatar.anchorMax = new Vector2(0f, 0.5f);
             avatar.pivot = new Vector2(0f, 0.5f);
             avatar.sizeDelta = new Vector2(ResidentAvatarSizePx, ResidentAvatarSizePx);
             avatar.anchoredPosition = new Vector2(ResidentRowPaddingXPx, 0f);
+            // #464: fill the avatar with a snapshot of this dog's breed-tinted model.
+            avatarImage.texture = Snapshot(PortraitSubjects.ForDog(dog));
 
             var nameX = ResidentRowPaddingXPx + ResidentAvatarSizePx + ResidentAvatarGapPx;
             var nameLabel = CreateLabel("Name", rowRect, profile.Name, ResidentNameFontPx, TextAnchor.MiddleLeft);
@@ -462,6 +491,7 @@ namespace Doggiehood.Unity
                 Rect = rowRect,
                 NameLabel = nameLabel,
                 BreedChipLabel = chipLabel,
+                Avatar = avatarImage,
                 Dog = dog,
             };
 
@@ -549,6 +579,80 @@ namespace Doggiehood.Unity
             var image = CreateRect(name, parent).gameObject.AddComponent<Image>();
             image.color = color;
             return image;
+        }
+
+        /// <summary>#464: a box that displays a render-to-texture snapshot
+        /// (thumbnail / resident avatar) instead of a flat placeholder color.</summary>
+        private static RawImage CreateRawImage(string name, RectTransform parent)
+        {
+            return CreateRect(name, parent).gameObject.AddComponent<RawImage>();
+        }
+
+        // ---------------------------------------------------------------
+        // #464: render-to-texture snapshots (one-shot per Open/Render)
+        // ---------------------------------------------------------------
+
+        private RenderTexture Snapshot(GameObject subject)
+        {
+            var texture = ResolvePortraitCamera().Capture(subject);
+            snapshots.Add(texture);
+            return texture;
+        }
+
+        private PortraitCamera ResolvePortraitCamera()
+        {
+            if (portraitCamera == null)
+            {
+                var rigObject = new GameObject("HouseProfilePortraitCamera", typeof(Camera));
+                portraitCamera = rigObject.AddComponent<PortraitCamera>();
+                portraitCamera.Init();
+            }
+
+            return portraitCamera;
+        }
+
+        private void ReleaseSnapshots()
+        {
+            foreach (var texture in snapshots)
+            {
+                DestroyTexture(texture);
+            }
+
+            snapshots.Clear();
+        }
+
+        private static void DestroyTexture(RenderTexture texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            texture.Release();
+            if (Application.isPlaying)
+            {
+                Destroy(texture);
+            }
+            else
+            {
+                DestroyImmediate(texture);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseSnapshots();
+            if (portraitCamera != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(portraitCamera.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(portraitCamera.gameObject);
+                }
+            }
         }
 
         private static Text CreateLabel(string name, RectTransform parent, string value, int fontSize, TextAnchor anchor)
