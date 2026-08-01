@@ -269,6 +269,145 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(path.Any(otherDoors.Contains), Is.False);
         }
 
+        /// <summary>The lot's front-door position at a given level, via the
+        /// same level-aware placement/catalog chain WorldBuilder uses (#454).</summary>
+        private static GridPoint DoorAt(HouseLot lot, int level)
+        {
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+            return model.FrontDoorWorldPosition(
+                HousePlacement.Position(lot, HousePlacement.KitScale, level),
+                HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot)),
+                HousePlacement.KitScale);
+        }
+
+        [Test]
+        public void RefreshFrontWalkway_AfterALevelChange_MovesTheDoorNode_AndReProjectsTheAttach()
+        {
+            // #454: the front-walkway edge is baked once at build time from the
+            // level-1 door and never recomputed, so an upgraded house's walkway
+            // still ran to the stale level-1 door. RefreshFrontWalkway recomputes
+            // the door-side node from the level-aware door position and
+            // re-projects the sidewalk attach point.
+            var network = BuildStartingNetwork();
+            var lot = NeighborhoodLayout.GetHouseLot(1); // r -> c: door moves L1->L2
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var before), Is.True);
+
+            const int newLevel = 2;
+            var l1Door = DoorAt(lot, 1);
+            var l2Door = DoorAt(lot, newLevel);
+            Assert.That(l2Door, Is.Not.EqualTo(l1Door),
+                "sanity: house 1's level-2 door differs from level 1");
+
+            Assert.That(network.RefreshFrontWalkway(lot, newLevel), Is.True);
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var after), Is.True);
+
+            // The door-side node A moved to the level-2 door.
+            Assert.That(after.A.X, Is.EqualTo(l2Door.X).Within(0.001f),
+                "walkway door node must move to the level-2 door (X)");
+            Assert.That(after.A.Z, Is.EqualTo(l2Door.Z).Within(0.001f),
+                "walkway door node must move to the level-2 door (Z)");
+            Assert.That(after.A, Is.Not.EqualTo(before.A),
+                "the door node must actually move on a level change");
+
+            // The attach point re-projects onto the sidewalk, perpendicular to
+            // the street (this map is axis-aligned).
+            var facing = HousePlacement.FrontFacing(lot);
+            if (facing.X != 0f)
+            {
+                Assert.That(after.B.Z, Is.EqualTo(after.A.Z).Within(0.001f),
+                    "walkway must stay perpendicular to its street after refresh");
+            }
+            else
+            {
+                Assert.That(after.B.X, Is.EqualTo(after.A.X).Within(0.001f),
+                    "walkway must stay perpendicular to its street after refresh");
+            }
+
+            // Exactly one front walkway remains for the house, and the graph is
+            // still fully connected (the re-attach re-splits the sidewalk).
+            Assert.That(
+                network.Edges.Count(e => e.Kind == WalkEdgeKind.FrontWalkway
+                    && e.A.Equals(after.A) && e.B.Equals(after.B)),
+                Is.EqualTo(1), "exactly one refreshed front walkway for the house");
+            Assert.That(network.Edges.Count(e => e.Kind == WalkEdgeKind.FrontWalkway),
+                Is.EqualTo(NeighborhoodLayout.HouseLots.Count),
+                "no extra or dropped front walkways after refresh");
+            Assert.That(network.IsFullyConnected(), Is.True,
+                "the network stays fully connected after a walkway refresh");
+        }
+
+        [Test]
+        public void RefreshFrontWalkway_WhenTheDoorShiftsLaterally_SlidesTheAttach_AndStaysConnected()
+        {
+            // #454: house 1's level-4 mesh (building-type-b) has an off-centre
+            // door, so the perpendicular attach slides ALONG the sidewalk from
+            // the level-1 attach. The refresh must move that sidewalk split node
+            // (not orphan the door) and keep the graph fully connected.
+            var network = BuildStartingNetwork();
+            var lot = NeighborhoodLayout.GetHouseLot(1);
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var before), Is.True);
+
+            const int topLevel = 4;
+            var l4Door = DoorAt(lot, topLevel);
+            var facing = HousePlacement.FrontFacing(lot);
+            // The off-centre door genuinely shifts the attach laterally.
+            var attachMovesAlong = facing.X != 0f
+                ? Math.Abs(l4Door.Z - before.B.Z) > 0.01f
+                : Math.Abs(l4Door.X - before.B.X) > 0.01f;
+            Assert.That(attachMovesAlong, Is.True,
+                "sanity: house 1's level-4 door sits off-centre, sliding the attach");
+
+            Assert.That(network.RefreshFrontWalkway(lot, topLevel), Is.True);
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var after), Is.True);
+
+            Assert.That(after.A.X, Is.EqualTo(l4Door.X).Within(0.001f));
+            Assert.That(after.A.Z, Is.EqualTo(l4Door.Z).Within(0.001f));
+            if (facing.X != 0f)
+            {
+                Assert.That(after.B.Z, Is.EqualTo(after.A.Z).Within(0.001f),
+                    "attach re-projects perpendicular after sliding along the sidewalk");
+                Assert.That(after.B.Z, Is.Not.EqualTo(before.B.Z).Within(0.001f),
+                    "the attach actually slid along the sidewalk");
+            }
+            else
+            {
+                Assert.That(after.B.X, Is.EqualTo(after.A.X).Within(0.001f),
+                    "attach re-projects perpendicular after sliding along the sidewalk");
+                Assert.That(after.B.X, Is.Not.EqualTo(before.B.X).Within(0.001f),
+                    "the attach actually slid along the sidewalk");
+            }
+
+            Assert.That(network.IsFullyConnected(), Is.True,
+                "moving the sidewalk split node keeps the network fully connected");
+
+            // A dog can still path from across the network to the upgraded door.
+            var start = new GridPoint(-SidewalkOffsetMagnitude(), 20f);
+            var path = network.FindPath(start, after.A);
+            Assert.That(path.Count, Is.GreaterThan(1));
+            Assert.That(path[path.Count - 1], Is.EqualTo(after.A),
+                "the refreshed door is still reachable over the network");
+        }
+
+        [Test]
+        public void RefreshFrontWalkway_AtTheSameLevel_LeavesTheWalkwayInPlace()
+        {
+            // #454 guard: refreshing at level 1 (the as-built level) must
+            // reproduce the same walkway edge — the refresh path is a superset,
+            // not a behavior change for a never-upgraded house.
+            var network = BuildStartingNetwork();
+            var lot = NeighborhoodLayout.GetHouseLot(2);
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var before), Is.True);
+
+            Assert.That(network.RefreshFrontWalkway(lot, 1), Is.True);
+            Assert.That(network.TryGetFrontWalkway(lot.HouseId, out var after), Is.True);
+
+            Assert.That(after.A.X, Is.EqualTo(before.A.X).Within(0.0001f));
+            Assert.That(after.A.Z, Is.EqualTo(before.A.Z).Within(0.0001f));
+            Assert.That(after.B.X, Is.EqualTo(before.B.X).Within(0.0001f));
+            Assert.That(after.B.Z, Is.EqualTo(before.B.Z).Within(0.0001f));
+            Assert.That(network.IsFullyConnected(), Is.True);
+        }
+
         [Test]
         public void GroundHeight_OnASidewalkEdge_IsTheSidewalkSurfaceHeight()
         {

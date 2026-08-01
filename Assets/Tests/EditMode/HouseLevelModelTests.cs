@@ -14,8 +14,12 @@ namespace Doggiehood.Unity.EditModeTests
     /// every rung of every starter ladder has a HouseModelCatalog entry, so
     /// all four levels render their chosen kit mesh (visibly growing) — the
     /// graybox fallback is reached only for a genuinely-unknown mesh (e.g. an
-    /// expansion-built house with no ladder). Leveling never resizes or moves
-    /// the lot.
+    /// expansion-built house with no ladder). Since #454 leveling also
+    /// RE-ALIGNS the house visual: a deeper upgrade mesh's front-setback pivot
+    /// tracks the current level so its facade stays FrontSetback from the
+    /// sidewalk, so the house root moves between levels. What stays
+    /// level-invariant is the LOT (property) itself — its quadrant bounds
+    /// never resize or move.
     /// </summary>
     public class HouseLevelModelTests
     {
@@ -98,23 +102,46 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void LevelingAHouse_NeverMovesOrResizesItsLot()
+        public void UpgradingAHouse_RePositionsItToTheLevelAwareSetback_ButNeverResizesTheLot()
         {
-            // The house root sits at the same front-setback position at every
-            // level — leveling swaps the mesh only, it never resizes the lot.
+            // #454: leveling re-aligns the HOUSE VISUAL — each level's house root
+            // sits at its own level-aware front-setback position, so a deeper
+            // upgrade mesh keeps its facade FrontSetback from the sidewalk instead
+            // of drifting off the stale level-1 pivot. What stays level-invariant
+            // is the LOT (property) itself: its quadrant bounds never move/resize.
             var lot = NeighborhoodLayout.HouseLots.First();
-            var expected = HousePlacement.Position(lot, WorldBuilder.HouseKitScale);
+            var levelOneBounds = LotBounds.QuadrantBounds(lot);
 
             foreach (var level in new[] { HouseLevelModelTable.MinLevel, 2 })
             {
                 var house = new House(lot.HouseId, lot.Quadrant, isVacant: false, level: level);
                 var houseRoot = WorldBuilder.BuildHouse(container.transform, house);
 
-                Assert.That(houseRoot.transform.position.x, Is.EqualTo(expected.X).Within(0.001f), $"level {level} X");
-                Assert.That(houseRoot.transform.position.z, Is.EqualTo(expected.Z).Within(0.001f), $"level {level} Z");
+                // The house root sits at THIS level's front-setback pivot.
+                var expected = HousePlacement.Position(lot, WorldBuilder.HouseKitScale, level);
+                Assert.That(houseRoot.transform.position.x, Is.EqualTo(expected.X).Within(0.001f),
+                    $"level {level} house sits at its level-aware front-setback X");
+                Assert.That(houseRoot.transform.position.z, Is.EqualTo(expected.Z).Within(0.001f),
+                    $"level {level} house sits at its level-aware front-setback Z");
+
+                // The lot/property bounds are unchanged by leveling.
+                var bounds = LotBounds.QuadrantBounds(lot);
+                Assert.That(bounds.MinX, Is.EqualTo(levelOneBounds.MinX).Within(0.0001f), $"level {level} lot MinX");
+                Assert.That(bounds.MaxX, Is.EqualTo(levelOneBounds.MaxX).Within(0.0001f), $"level {level} lot MaxX");
+                Assert.That(bounds.MinZ, Is.EqualTo(levelOneBounds.MinZ).Within(0.0001f), $"level {level} lot MinZ");
+                Assert.That(bounds.MaxZ, Is.EqualTo(levelOneBounds.MaxZ).Within(0.0001f), $"level {level} lot MaxZ");
 
                 Object.DestroyImmediate(houseRoot);
             }
+
+            // The point of #454: this house's level-2 pivot actually differs from
+            // its level-1 pivot (its footprint depth grows), so the re-alignment
+            // is real — not the old level-invariant behavior.
+            var levelOne = HousePlacement.Position(lot, WorldBuilder.HouseKitScale, HouseLevelModelTable.MinLevel);
+            var levelTwo = HousePlacement.Position(lot, WorldBuilder.HouseKitScale, 2);
+            Assert.That(new Vector2(levelTwo.X - levelOne.X, levelTwo.Z - levelOne.Z).magnitude,
+                Is.GreaterThan(0.001f),
+                "the upgraded house re-aligns off its level-1 pivot (the #454 behavior)");
         }
     }
 }

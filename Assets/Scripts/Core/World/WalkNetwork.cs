@@ -329,6 +329,105 @@ namespace Doggiehood.Core.World
             return new WalkNetwork(edges, frontWalkways);
         }
 
+        /// <summary>
+        /// Re-aligns one lot's front-walkway edge to the house's current
+        /// <paramref name="level"/> (#454). <see cref="BuildFrom"/> bakes each
+        /// walkway once from the level-1 door and never recomputes it, so an
+        /// upgraded house's walkway kept running to its stale level-1 door. This
+        /// removes the lot's existing FrontWalkway edge and re-attaches it from
+        /// the level-aware door position (<see cref="HouseModelCatalog.ForHouse(int, int)"/>
+        /// + <see cref="HousePlacement.PositionFor(HouseLot, float, GridPoint, int)"/>),
+        /// re-projecting the sidewalk attach point and re-splitting the sidewalk
+        /// as needed, then rebuilds the adjacency index. Returns whether a
+        /// walkway now exists for the lot (false only if no sidewalk was found).
+        /// Called by <c>HouseUpgradeDirector.RefreshHouse</c> alongside the mesh
+        /// rebuild so mesh, visible door, and walkway all agree at the new level.
+        /// </summary>
+        public bool RefreshFrontWalkway(HouseLot lot, int level)
+        {
+            if (!frontWalkways.TryGetValue(lot.HouseId, out var old))
+            {
+                // No baked walkway for this lot (e.g. a lot with no reachable
+                // sidewalk) — nothing to re-align.
+                return false;
+            }
+
+            // Reuse the baked walkway's known sidewalk placement rather than
+            // re-running the nearest-sidewalk search over the now-fragmented
+            // edge set: the facing and the sidewalk line the lot attaches to are
+            // fixed by leveling (leveling never moves the lot center), so only
+            // the door and its perpendicular attach point move.
+            var facing = HousePlacement.FacingToward(lot.Position, old.B);
+            var housePosition = HousePlacement.PositionFor(lot, HousePlacement.KitScale, old.B, level);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+            var door = model.FrontDoorWorldPosition(
+                housePosition, HousePlacement.ModelYawDegrees(facing), HousePlacement.KitScale);
+
+            // Re-project the new door perpendicular onto the sidewalk centerline
+            // line the old walkway attached to. This map is axis-aligned, so the
+            // sidewalk runs along the lateral axis at the fixed offset old.B
+            // already carries; only the door's lateral coordinate can shift it.
+            var attach = facing.X != 0f
+                ? new GridPoint(old.B.X, door.Z)
+                : new GridPoint(door.X, old.B.Z);
+
+            edges.Remove(old);
+            if (!PointsNearlyEqual(attach, old.B))
+            {
+                // The door shifted laterally (a level whose door sits off-centre),
+                // so the attach slides along the sidewalk: move the split node the
+                // old walkway created from old.B to the new attach, keeping the
+                // two collinear sidewalk halves connected.
+                MoveSidewalkNode(old.B, attach);
+            }
+
+            var walkway = new WalkEdge(door, attach, WalkEdgeKind.FrontWalkway, WorldDimensions.SidewalkWidth);
+            edges.Add(walkway);
+            frontWalkways[lot.HouseId] = walkway;
+
+            RebuildAdjacency();
+            return true;
+        }
+
+        /// <summary>Slides a sidewalk split node from <paramref name="from"/> to
+        /// <paramref name="to"/> (#454): rewrites every Sidewalk edge endpoint at
+        /// <paramref name="from"/> to <paramref name="to"/>. Used when a refreshed
+        /// front walkway's attach point moves along the same sidewalk line, so the
+        /// two collinear sidewalk halves that met at the old split stay joined at
+        /// the new one.</summary>
+        private void MoveSidewalkNode(GridPoint from, GridPoint to)
+        {
+            for (var i = 0; i < edges.Count; i++)
+            {
+                var edge = edges[i];
+                if (edge.Kind != WalkEdgeKind.Sidewalk)
+                {
+                    continue;
+                }
+
+                var a = PointsNearlyEqual(edge.A, from) ? to : edge.A;
+                var b = PointsNearlyEqual(edge.B, from) ? to : edge.B;
+                if (!a.Equals(edge.A) || !b.Equals(edge.B))
+                {
+                    edges[i] = new WalkEdge(a, b, edge.Kind, edge.Width);
+                }
+            }
+        }
+
+        /// <summary>Rebuilds the node/adjacency index from the current
+        /// <see cref="edges"/> list — used after
+        /// <see cref="RefreshFrontWalkway"/> mutates the edge set (#454).</summary>
+        private void RebuildAdjacency()
+        {
+            adjacency.Clear();
+            nodeOrder.Clear();
+            foreach (var edge in edges)
+            {
+                AddAdjacency(edge.A, edge);
+                AddAdjacency(edge.B, edge);
+            }
+        }
+
         private readonly struct Crossing
         {
             public readonly float Along;
@@ -436,7 +535,10 @@ namespace Doggiehood.Core.World
         /// its catalog door from it, then run the walkway from the DOOR
         /// perpendicular onto that sidewalk — splitting the sidewalk edge
         /// at the attach point if needed. The door becomes the lot-side
-        /// node: dogs path to actual front doors now.
+        /// node: dogs path to actual front doors now. Baked once at
+        /// world-build time from the house's as-built (level-1) mesh;
+        /// <see cref="RefreshFrontWalkway"/> re-aligns a single lot's edge to
+        /// an upgraded level afterward (#454).
         /// </summary>
         private static WalkEdge? AttachFrontWalkway(HouseLot lot, List<WalkEdge> edges)
         {

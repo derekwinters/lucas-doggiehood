@@ -1193,7 +1193,10 @@ namespace Doggiehood.Unity
             // the sidewalk's outer edge. The lot center itself is not
             // moved (it still anchors the deferred expansion geometry);
             // since #128 the walk network connects at the front DOOR.
-            var position = HousePlacement.Position(lot, HouseKitScale, network);
+            // #454: resolve the pivot for the house's CURRENT level, so an
+            // upgraded (deeper) mesh keeps its facade at the setback instead of
+            // sitting at the stale level-1 pivot (level 1 is byte-identical).
+            var position = HousePlacement.Position(lot, HouseKitScale, network, house.Level);
 
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);

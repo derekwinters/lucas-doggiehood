@@ -333,6 +333,49 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void ForHouseAtLevel_ResolvesTheLadderMeshForThatLevel_ForStarterAndZoneLadders()
+        {
+            // #454: house placement/footprint must resolve the house's CURRENT
+            // level's mesh, not always level 1. The level-aware overload routes
+            // through HouseLevelModelTable.ForHouseLevel for BOTH a starter
+            // ladder (id 1-4) and a zone-rolled ladder (id >= 5), mirroring the
+            // branch the level-blind ForHouse already does — instead of the
+            // hardcoded level-1 lookup that made an upgraded facade drift off
+            // the sidewalk.
+            const int zoneId = HouseVariantAssignment.FirstZoneHouseId;
+            var ladderId = HouseVariantAssignment.ForHouse(zoneId).LadderId;
+
+            for (var level = HouseLevelModelTable.MinLevel;
+                 level <= Doggiehood.Core.Expansion.HouseUpgradeNumbers.MaxLevel;
+                 level++)
+            {
+                // Starter house 1: its fixed per-house ladder.
+                Assert.That(HouseModelCatalog.ForHouse(1, level),
+                    Is.SameAs(HouseModelCatalog.ForModel(HouseLevelModelTable.ForHouseLevel(1, level))),
+                    $"starter house 1 level {level} must resolve its ladder's level mesh");
+
+                // Zone house: its rolled ladder.
+                Assert.That(HouseModelCatalog.ForHouse(zoneId, level),
+                    Is.SameAs(HouseModelCatalog.ForModel(HouseLevelModelTable.ForHouseLevel(ladderId, level))),
+                    $"zone house {zoneId} level {level} must resolve its rolled ladder's level mesh");
+            }
+        }
+
+        [Test]
+        public void ForHouseAtLevel_AtLevelOne_MatchesTheLevelBlindOverload()
+        {
+            // #454 regression guard: the level-aware path is a strict superset —
+            // at level 1 it must resolve the exact same catalog entry the
+            // level-blind ForHouse returns today, for starter and zone ids alike.
+            foreach (var id in new[] { 1, 2, 3, 4, HouseVariantAssignment.FirstZoneHouseId, 42 })
+            {
+                Assert.That(HouseModelCatalog.ForHouse(id, HouseLevelModelTable.MinLevel),
+                    Is.SameAs(HouseModelCatalog.ForHouse(id)),
+                    $"house {id} at level 1 must resolve the same entry as the level-blind ForHouse");
+            }
+        }
+
         private static void AssertEntry(string modelName, float footprintX, float footprintZ)
         {
             var model = HouseModelCatalog.ForModel(modelName);
