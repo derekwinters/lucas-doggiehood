@@ -159,6 +159,49 @@ namespace Doggiehood.Core.World
             return frontWalkways.TryGetValue(houseId, out walkway);
         }
 
+        /// <summary>
+        /// #461: the point on the lot's nearest sidewalk its front walkway WILL
+        /// attach to once a house is built — resolved even before that walkway
+        /// edge exists, by the SAME nearest-sidewalk projection
+        /// <see cref="AttachFrontWalkway"/> uses at build time. A zone lot's
+        /// trees are pre-baked at unlock (before any house/walkway), so
+        /// <see cref="HousePlacement.PredeterminedFrontFacing"/> /
+        /// <see cref="HousePlacement.PredeterminedPosition"/> call this to orient
+        /// them to the house's real street-ward facing — which then equals the
+        /// walkway-derived facing once the house is actually built (the map is
+        /// axis-aligned, so projecting the door lands on the same sidewalk line).
+        /// Returns false when the network carries no sidewalk edge at all (the
+        /// caller then falls back to the crude Z-sign guess).
+        /// </summary>
+        public bool TryProjectFrontSidewalk(HouseLot lot, out GridPoint attach)
+        {
+            var bestDistance = float.MaxValue;
+            var found = false;
+            attach = lot.Position;
+
+            foreach (var edge in edges)
+            {
+                if (edge.Kind != WalkEdgeKind.Sidewalk)
+                {
+                    continue;
+                }
+
+                var projected = ProjectOntoSegment(lot.Position, edge.A, edge.B);
+                var dx = projected.X - lot.Position.X;
+                var dz = projected.Z - lot.Position.Z;
+                var distance = dx * dx + dz * dz;
+
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    attach = projected;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
         /// <summary>The graph node nearest an arbitrary point — used to
         /// snap loosely-known positions (e.g. a dog's current transform)
         /// onto the network.</summary>

@@ -282,6 +282,75 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void HouseFootprint_NetworkOverload_ResolvesFacingAndPositionFromTheNetwork_NotTheSingleton()
+        {
+            // #461: fence/tree geometry needs the house's REAL orientation for a
+            // zone lot, so HouseFootprint gains a network-aware overload. For a
+            // zone lot placed within the NS road's span, the walkway-derived
+            // facing is along X and the setback position sits off the lot centre —
+            // both taken from the passed network — whereas the single-arg overload
+            // falls back to the Z-sign facing and the un-set-back lot centre.
+            var zoneLot = new HouseLot(
+                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, 20f));
+
+            var network = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, new[] { zoneLot });
+            var networkFacing = HousePlacement.FrontFacing(zoneLot, network);
+            Assert.That(networkFacing.X, Is.Not.EqualTo(0f),
+                "sanity: this zone lot's real facing is along X, differing from the Z-sign guess");
+
+            var networkFootprint = HousePlacement.HouseFootprint(zoneLot, network);
+            var networkPosition = HousePlacement.Position(zoneLot, KitScale, network);
+            Assert.That(networkFootprint.Center.X, Is.EqualTo(networkPosition.X).Within(0.001f),
+                "the network footprint is centred on the network-resolved setback position (X)");
+            Assert.That(networkFootprint.Center.Z, Is.EqualTo(networkPosition.Z).Within(0.001f),
+                "the network footprint is centred on the network-resolved setback position (Z)");
+            Assert.That(networkFootprint.Center.X, Is.Not.EqualTo(zoneLot.Position.X).Within(0.001f),
+                "the network footprint is NOT centred on the lot centre — it resolves position from the network");
+
+            // The single-arg overload keeps the old singleton behaviour: the
+            // Z-sign facing and the un-set-back lot centre.
+            var singletonFootprint = HousePlacement.HouseFootprint(zoneLot);
+            Assert.That(singletonFootprint.Center.X, Is.EqualTo(zoneLot.Position.X).Within(0.001f),
+                "the single-arg footprint stays centred on the lot centre for a zone lot");
+        }
+
+        [Test]
+        public void PredeterminedFrontFacing_AtUnlock_MatchesTheActualBuiltFacing_AndDiffersFromTheZSignGuess()
+        {
+            // #461: a zone lot's trees are pre-baked at UNLOCK time, before its
+            // house (and so its front-walkway edge) exists. The predetermined
+            // facing — resolved by projecting the lot centre onto its nearest
+            // sidewalk in the map-spanning network — must equal the facing the
+            // house actually gets once built (FrontFacing(lot, network) with the
+            // walkway present), or #434's "never regenerate trees on build"
+            // assumption breaks. It must also differ from the crude Z-sign guess,
+            // proving the fix is meaningful for this lot.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1_000_000);
+            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var zSignGuess = new GridPoint(0f, -Math.Sign(lot.Position.Z));
+
+            // At unlock the lot has no built house / walkway edge yet.
+            Assert.That(state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out _), Is.False,
+                "precondition: no front walkway exists for the unbuilt zone lot");
+            var predetermined = HousePlacement.PredeterminedFrontFacing(lot, state.WalkNetwork);
+            Assert.That(predetermined, Is.Not.EqualTo(zSignGuess),
+                "the predetermined facing must be the real street-ward facing, not the Z-sign guess");
+
+            // Build the house; the walkway now exists and FrontFacing resolves it.
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds");
+            Assert.That(state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out _), Is.True,
+                "the built house grows its front walkway");
+            var actual = HousePlacement.FrontFacing(lot, state.WalkNetwork);
+
+            Assert.That(predetermined, Is.EqualTo(actual),
+                "predetermined-at-unlock facing must equal the actual built walkway facing");
+        }
+
+        [Test]
         public void Position_AtLevelTwo_KeepsTheCurrentLevelsFacade_ExactlyFrontSetbackFromTheSidewalk()
         {
             // #454: the front-setback pivot must be calibrated to the house's

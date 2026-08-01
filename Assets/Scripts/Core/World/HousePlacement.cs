@@ -106,6 +106,32 @@ namespace Doggiehood.Core.World
             return new GridPoint(0f, -Math.Sign(lot.Position.Z));
         }
 
+        /// <summary>
+        /// #461: the facing the lot's house WILL have once built, resolvable from
+        /// a map-spanning <paramref name="network"/> even before the walkway edge
+        /// exists. It matches <see cref="FrontFacing(HouseLot, WalkNetwork)"/>
+        /// once the walkway is present, but for an as-yet-unbuilt zone lot — whose
+        /// trees are pre-baked at unlock (#434/#450) — it projects the lot centre
+        /// onto its nearest sidewalk (<see cref="WalkNetwork.TryProjectFrontSidewalk"/>,
+        /// the same edge the eventual walkway attaches to) and faces that, instead
+        /// of falling to the crude Z-sign guess. Only when the network has no
+        /// sidewalk at all does the Z-sign fallback remain.
+        /// </summary>
+        public static GridPoint PredeterminedFrontFacing(HouseLot lot, WalkNetwork network)
+        {
+            if (network != null && network.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            {
+                return FacingToward(walkway.A, walkway.B);
+            }
+
+            if (network != null && network.TryProjectFrontSidewalk(lot, out var attach))
+            {
+                return FacingToward(lot.Position, attach);
+            }
+
+            return new GridPoint(0f, -Math.Sign(lot.Position.Z));
+        }
+
         /// <summary>The unit cardinal direction from <paramref name="from"/>
         /// toward <paramref name="toward"/>, snapped to the dominant axis.
         /// Pure — safe for WalkNetwork.BuildFrom to call mid-build.</summary>
@@ -203,6 +229,41 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// #461: the front-setback position the lot's house WILL stand at,
+        /// resolvable from a map-spanning <paramref name="network"/> before the
+        /// walkway edge exists — the position companion of
+        /// <see cref="PredeterminedFrontFacing"/>. With the walkway present it is
+        /// <see cref="Position(HouseLot, float, WalkNetwork, int)"/>; for an
+        /// unbuilt zone lot it pulls back from the nearest sidewalk
+        /// (<see cref="WalkNetwork.TryProjectFrontSidewalk"/>) so pre-baked yard
+        /// geometry (#434) sits where the built house will. The projected attach
+        /// and the eventual walkway attach share the same sidewalk line, and
+        /// <see cref="PositionFor(HouseLot, float, GridPoint, int)"/> takes the
+        /// lateral coordinate from the lot centre, so the two resolve to the same
+        /// point. Falls back to the lot centre only when no sidewalk exists.
+        /// </summary>
+        public static GridPoint PredeterminedPosition(
+            HouseLot lot, float uniformScale, WalkNetwork network, int level)
+        {
+            if (uniformScale <= 0f)
+            {
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
+            }
+
+            if (network != null && network.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            {
+                return PositionFor(lot, uniformScale, walkway.B, level);
+            }
+
+            if (network != null && network.TryProjectFrontSidewalk(lot, out var attach))
+            {
+                return PositionFor(lot, uniformScale, attach, level);
+            }
+
+            return lot.Position;
+        }
+
+        /// <summary>
         /// The house's axis-aligned ground footprint at <see cref="KitScale"/>:
         /// the scaled model footprint (<see cref="HouseModelCatalog"/>)
         /// centered on <see cref="Position"/>, with width/depth swapped when
@@ -240,6 +301,38 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// #461: <see cref="HouseFootprint(HouseLot)"/> resolving the facing and
+        /// setback position from an explicit map-spanning <paramref name="network"/>
+        /// (via <see cref="PredeterminedFrontFacing"/>/<see cref="PredeterminedPosition"/>)
+        /// instead of the starting-tile singleton, so a zone lot's footprint is
+        /// oriented to its REAL street-ward facing — even before its house is
+        /// built (its trees are pre-baked at unlock, #434/#450). At
+        /// <see cref="HouseLevelModelTable.MinLevel"/>.
+        /// </summary>
+        public static LotRect HouseFootprint(HouseLot lot, WalkNetwork network)
+        {
+            return HouseFootprint(lot, network, HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// #461: <see cref="HouseFootprint(HouseLot, int)"/> against an explicit
+        /// <paramref name="network"/> — the level-aware companion of
+        /// <see cref="HouseFootprint(HouseLot, WalkNetwork)"/>.
+        /// </summary>
+        public static LotRect HouseFootprint(HouseLot lot, WalkNetwork network, int level)
+        {
+            var facing = PredeterminedFrontFacing(lot, network);
+            var house = PredeterminedPosition(lot, KitScale, network, level);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+            var halfWidth = KitScale * model.FootprintX / 2f;
+            var halfDepth = KitScale * model.FootprintZ / 2f;
+
+            return facing.X != 0f
+                ? new LotRect(house.X - halfDepth, house.X + halfDepth, house.Z - halfWidth, house.Z + halfWidth)
+                : new LotRect(house.X - halfWidth, house.X + halfWidth, house.Z - halfDepth, house.Z + halfDepth);
+        }
+
+        /// <summary>
         /// The house's axis-aligned ground footprint sized to the LARGEST mesh
         /// it can reach across its whole upgrade ladder (#459) — built exactly
         /// like <see cref="HouseFootprint(HouseLot)"/> (same center
@@ -258,6 +351,28 @@ namespace Doggiehood.Core.World
         {
             var facing = FrontFacing(lot);
             var house = Position(lot, KitScale);
+            var (footprintX, footprintZ) = HouseModelCatalog.MaxFootprint(lot.HouseId);
+            var halfWidth = KitScale * footprintX / 2f;
+            var halfDepth = KitScale * footprintZ / 2f;
+
+            return facing.X != 0f
+                ? new LotRect(house.X - halfDepth, house.X + halfDepth, house.Z - halfWidth, house.Z + halfWidth)
+                : new LotRect(house.X - halfWidth, house.X + halfWidth, house.Z - halfDepth, house.Z + halfDepth);
+        }
+
+        /// <summary>
+        /// #461: <see cref="MaxHouseFootprint(HouseLot)"/> resolving facing and
+        /// setback position from an explicit map-spanning <paramref name="network"/>
+        /// (via <see cref="PredeterminedFrontFacing"/>/<see cref="PredeterminedPosition"/>)
+        /// rather than the singleton, so a zone lot's max-across-ladder reservation
+        /// — which yard landscaping (#459/#170) rejection-samples trees against —
+        /// is oriented to the house's REAL street-ward facing even before it is
+        /// built.
+        /// </summary>
+        public static LotRect MaxHouseFootprint(HouseLot lot, WalkNetwork network)
+        {
+            var facing = PredeterminedFrontFacing(lot, network);
+            var house = PredeterminedPosition(lot, KitScale, network, HouseLevelModelTable.MinLevel);
             var (footprintX, footprintZ) = HouseModelCatalog.MaxFootprint(lot.HouseId);
             var halfWidth = KitScale * footprintX / 2f;
             var halfDepth = KitScale * footprintZ / 2f;
