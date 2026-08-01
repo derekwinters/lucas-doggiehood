@@ -183,5 +183,123 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(font.name, Does.Not.Contain("Arial"));
             Assert.That(font.name, Does.Not.Contain("LegacyRuntime"));
         }
+
+        // --- #465: Candy Cottage chrome restyle (CandyChromeUgui, shared-components.md) ---
+
+        [Test]
+        public void Card_HasCandyCottageChrome_FillOutlineRadiusAndHardShadow()
+        {
+            var image = overlay.CardRect.GetComponent<Image>();
+
+            AssertHex(image.color, 0xFF, 0xFD, 0xF7, "panel fill (#FFFDF7)");
+            Assert.That(image.type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(image.sprite, Is.Not.Null);
+            Assert.That(image.sprite.border,
+                Is.EqualTo(new Vector4(CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx,
+                    CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx)),
+                "the card corner radius is the shared PanelRadiusPx = 40");
+
+            AssertInkOutline(overlay.CardRect.gameObject);
+            AssertHardShadow(overlay.CardRect.gameObject);
+        }
+
+        [Test]
+        public void CloseButton_IsACreamPill_WithOutlineAndHardShadow()
+        {
+            AssertInkOutline(overlay.CloseButtonRect.gameObject);
+            AssertHardShadow(overlay.CloseButtonRect.gameObject);
+            AssertHex(overlay.CloseButtonRect.GetComponent<Image>().color, 0xFF, 0xF3, 0xD9,
+                "the close affordance is a cream pill");
+        }
+
+        [Test]
+        public void HomeButton_IsALeafPill_WithOutlineAndHardShadow_AtTheSharedPillHeight()
+        {
+            AssertHex(overlay.HomeButtonRect.GetComponent<Image>().color, 0x58, 0xC0, 0x6A,
+                "the Home button takes the Leaf positive role tint");
+            Assert.That(overlay.HomeButtonRect.sizeDelta.y, Is.EqualTo(DogProfileOverlay.HomeButtonHeightPx));
+            AssertInkOutline(overlay.HomeButtonRect.gameObject);
+            AssertHardShadow(overlay.HomeButtonRect.gameObject);
+        }
+
+        [Test]
+        public void InlineElements_CarryAnInkOutline_WithNoDropShadow()
+        {
+            overlay.Open(SampleDog());
+
+            AssertInkOutlineNoShadow(overlay.BreedChip.gameObject);
+            AssertInkOutlineNoShadow(overlay.AgeTile.gameObject);
+            AssertInkOutlineNoShadow(overlay.PersonalityTile.gameObject);
+        }
+
+        [Test]
+        public void Portrait_CarriesAnInkOutlineFrame_PreservingTheRenderTextureSnapshot()
+        {
+            // #464 must not be disturbed: the portrait stays a RawImage showing the
+            // render-to-texture snapshot; the chrome only adds an outline frame.
+            overlay.Open(SampleDog());
+
+            Assert.That(overlay.PortraitImage.texture, Is.Not.Null,
+                "the #464 render-texture snapshot survives the chrome pass");
+            AssertInkOutlineNoShadow(overlay.PortraitImage.gameObject);
+        }
+
+        [Test]
+        public void NonPaletteAccentFills_AreLeftUnchanged()
+        {
+            overlay.Open(SampleDog());
+
+            AssertHex(overlay.BreedChip.GetComponent<Image>().color, 0x6E, 0xC6, 0xE0,
+                "the breed chip keeps its non-palette sky accent fill");
+            AssertHex(overlay.AgeTile.GetComponent<Image>().color, 0xE7, 0xDF, 0xCE,
+                "the stat tile keeps its non-palette stage-tan accent fill");
+        }
+
+        private static void AssertInkOutline(GameObject go)
+        {
+            var outline = go.GetComponent<Outline>();
+            Assert.That(outline, Is.Not.Null, go.name + " has no Candy Cottage outline");
+            AssertHex(outline.effectColor, 0x2E, 0x2A, 0x26, go.name + " outline");
+            Assert.That(outline.effectDistance,
+                Is.EqualTo(new Vector2(CandyChromeUgui.OutlineThicknessPx, CandyChromeUgui.OutlineThicknessPx)),
+                go.name + " outline thickness is not the shared OutlineThicknessPx = 6");
+        }
+
+        private static void AssertHardShadow(GameObject go)
+        {
+            var shadow = PureShadowOf(go);
+            Assert.That(shadow, Is.Not.Null, go.name + " has no hard drop-shadow");
+            AssertHex(shadow.effectColor, 0x2E, 0x2A, 0x26, go.name + " shadow");
+            Assert.That(shadow.effectDistance, Is.EqualTo(new Vector2(0f, -CandyChromeUgui.ShadowOffsetPx)),
+                go.name + " shadow is not a single hard offset at the shared ShadowOffsetPx = 8 (no blur)");
+        }
+
+        private static void AssertInkOutlineNoShadow(GameObject go)
+        {
+            AssertInkOutline(go);
+            Assert.That(PureShadowOf(go), Is.Null,
+                go.name + " is an inline element and must carry no drop-shadow (Settings toggle/knob precedent)");
+        }
+
+        private static void AssertHex(Color color, byte r, byte g, byte b, string what)
+        {
+            var c32 = (Color32)color;
+            Assert.That(c32.r, Is.EqualTo(r), what + " red channel");
+            Assert.That(c32.g, Is.EqualTo(g), what + " green channel");
+            Assert.That(c32.b, Is.EqualTo(b), what + " blue channel");
+        }
+
+        private static Shadow PureShadowOf(GameObject go)
+        {
+            foreach (var shadow in go.GetComponents<Shadow>())
+            {
+                if (shadow.GetType() == typeof(Shadow))
+                {
+                    return shadow;
+                }
+            }
+
+            return null;
+        }
     }
 }

@@ -28,6 +28,8 @@ Tapping a dog opens its profile ([#165](https://github.com/derekwinters/lucas-do
 
 The panel **chrome** (outline 6 / corner radius 40 / drop-shadow 12–14) and the **Home** button (96 px [PillButton](shared-components.md#pill-button-pillbutton)) are owned by the shared components ([#173](https://github.com/derekwinters/lucas-doggiehood/issues/173)) — neither is re-specified here; this page only places those components and sizes the card, portrait, and close button.
 
+*Status: the Candy Cottage chrome is **implemented** ([#465](https://github.com/derekwinters/lucas-doggiehood/issues/465)) — `Assets/Scripts/Unity/DogProfileOverlay.cs` draws the card (Panel fill, Ink outline, hard drop-shadow, `PanelRadiusPx` corners), the Cream close pill, and the Leaf Home `PillButton` via the shared UGUI `CandyChromeUgui` helper. The breed chip, the Age / Personality stat tiles, and the render-to-texture portrait frame ([#464](https://github.com/derekwinters/lucas-doggiehood/issues/464)) carry the Ink outline as inline elements (no drop-shadow); non-palette accent fills (sky, stage tan) are kept, remapping only the palette-role fills onto the named `CandyChromeUgui` constants ([#161](../../engineering/tech-stack.md#geometry-layout-and-tuning-values-are-named-variables)). Layout is unchanged.*
+
 ## Notes
 
 - **Home button behavior.** The **Home** button closes the profile and pans/zooms the camera to that dog's house, with a brief highlight on arrival. There is **no address text** — the world has no street names, so "home" is a place the camera flies to, not an address.
