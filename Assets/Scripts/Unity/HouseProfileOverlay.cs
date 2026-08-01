@@ -172,6 +172,13 @@ namespace Doggiehood.Unity
         private Func<int> coinBalanceProvider;
         private Func<int, bool> upgradeAction;
 
+        // #469: queries Core (GameState.IsHouseUpgradeEligible) for whether this
+        // house may be upgraded right now — false for a non-target house during
+        // the onboarding "upgrade a house" step. Folds into the existing
+        // disabled-button state. Null in display-only tests / bootstraps that
+        // don't wire it, which reads as "always eligible" (no restriction).
+        private Func<int, bool> upgradeEligibility;
+
         /// <summary>Raised when a resident row is tapped, carrying that dog —
         /// the bootstrap wires this to open the dog profile (#165).</summary>
         public event Action<Dog> ResidentSelected;
@@ -223,10 +230,14 @@ namespace Doggiehood.Unity
         /// read (for the affordability state) and the upgrade entry point
         /// (<see cref="World.GameState.TryUpgradeHouse"/>) tapping calls directly.
         /// The bootstrap injects these; display-only tests may leave them unset.</summary>
-        public void ConfigureUpgrade(Func<int> coinBalanceProvider, Func<int, bool> upgradeAction)
+        public void ConfigureUpgrade(
+            Func<int> coinBalanceProvider,
+            Func<int, bool> upgradeAction,
+            Func<int, bool> upgradeEligibility = null)
         {
             this.coinBalanceProvider = coinBalanceProvider;
             this.upgradeAction = upgradeAction;
+            this.upgradeEligibility = upgradeEligibility;
         }
 
         /// <summary>Opens the profile for the given house, filling the level
@@ -277,9 +288,14 @@ namespace Doggiehood.Unity
             if (profile.ShowsUpgradeAction)
             {
                 upgradeButtonLabel.text = profile.UpgradeButtonText;
-                var affordable = profile.CanAffordUpgrade(CurrentCoinBalance());
-                upgradeButton.interactable = affordable;
-                upgradeButtonImage.color = affordable ? UpgradeButtonColor : UpgradeDisabledColor;
+                // #469: the button is enabled only when the step is BOTH
+                // affordable AND the house is currently eligible (the first-quest
+                // dog's house during the onboarding upgrade step). "Not the
+                // eligible house right now" folds into the same disabled-role
+                // greying as an unaffordable step — no new affordance.
+                var enabled = profile.CanAffordUpgrade(CurrentCoinBalance()) && CurrentHouseUpgradeEligible();
+                upgradeButton.interactable = enabled;
+                upgradeButtonImage.color = enabled ? UpgradeButtonColor : UpgradeDisabledColor;
             }
         }
 
@@ -289,6 +305,15 @@ namespace Doggiehood.Unity
         private int CurrentCoinBalance()
         {
             return coinBalanceProvider != null ? coinBalanceProvider() : 0;
+        }
+
+        /// <summary>#469: whether the open house may be upgraded right now, from
+        /// the wired Core eligibility check (<see cref="World.GameState.IsHouseUpgradeEligible"/>).
+        /// True when none is wired (display-only tests / no restriction), so the
+        /// button behaves exactly as before outside onboarding's upgrade step.</summary>
+        private bool CurrentHouseUpgradeEligible()
+        {
+            return upgradeEligibility == null || currentHouse == null || upgradeEligibility(currentHouse.Id);
         }
 
         /// <summary>Hides the profile.</summary>

@@ -103,6 +103,18 @@ namespace Doggiehood.Core.World
             // reload. Stored by name so it survives any future enum reordering.
             builder.Append("rewardChain=").Append(state.RewardChain.CurrentStep.ToString()).Append('\n');
 
+            // #469: the house id the onboarding "upgrade a house" step is scoped
+            // to (the first-quest dog's house). Emitted only once recorded, so a
+            // pre-#469 or pre-handoff save omits it and loads with no restriction
+            // (IsHouseUpgradeEligible defaults to allowing every house). Kept
+            // alongside rewardChain= so the gate resumes correctly mid-chain.
+            if (state.OnboardingUpgradeTargetHouseId.HasValue)
+            {
+                builder.Append("upgradeTarget=")
+                    .Append(state.OnboardingUpgradeTargetHouseId.Value.ToString(CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             // #437: the shared move-in state — the pity counter
             // (quests-since-last-move-in) and the not-yet-consumed easter-egg
             // and reserved-breed reserves — as
@@ -190,6 +202,14 @@ namespace Doggiehood.Core.World
                     {
                         state.RestoreRewardChainStep(step);
                     }
+                }
+                else if (key == "upgradeTarget")
+                {
+                    // #469: the onboarding upgrade-target house id — restore it
+                    // so the "upgrade a house" step stays scoped to the
+                    // first-quest dog's house across a reload. Absent for a
+                    // legacy/pre-handoff save, which then imposes no restriction.
+                    state.RestoreOnboardingUpgradeTargetHouseId(int.Parse(value, CultureInfo.InvariantCulture));
                 }
                 else if (key == "moveIn")
                 {

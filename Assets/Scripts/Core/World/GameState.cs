@@ -78,6 +78,27 @@ namespace Doggiehood.Core.World
         /// it is never restarted on reload.</summary>
         public OnboardingRewardChain RewardChain { get; } = new OnboardingRewardChain();
 
+        /// <summary>#469: the house id the onboarding "upgrade a house" reward
+        /// step is scoped to — the first-quest dog's house
+        /// (<see cref="Onboarding.OnboardingSequence.TargetDog"/>'s
+        /// <see cref="Dog.HouseId"/>), recorded by
+        /// <see cref="GrantOnboardingCompletionReward"/> when the guided quest
+        /// completes and persisted through <see cref="SaveCodec"/>. Null until
+        /// that handoff (and for a legacy save mid-chain), in which case no
+        /// upgrade is restricted. It must live here — not be re-resolved from
+        /// <c>TargetDog</c> — because that dog stops reporting an active quest
+        /// the instant the quest resolves and across a reload.</summary>
+        private int? onboardingUpgradeTargetHouseId;
+
+        /// <summary>#469: the house id the onboarding
+        /// <see cref="OnboardingRewardStep.UpgradeHouse"/> step is scoped to, or
+        /// null when there is no such restriction. See
+        /// <see cref="IsHouseUpgradeEligible"/>.</summary>
+        public int? OnboardingUpgradeTargetHouseId
+        {
+            get { return onboardingUpgradeTargetHouseId; }
+        }
+
         /// <summary>The grid-coordinate tile map (#109), seeded with just
         /// the starting FourWay intersection until zones are unlocked (#56).</summary>
         public TileMap Map { get; }
@@ -528,6 +549,18 @@ namespace Doggiehood.Core.World
         /// </summary>
         public bool TryUpgradeHouse(int houseId)
         {
+            // #469: while the onboarding chain is on its "upgrade a house" step,
+            // only the first-quest dog's house may be upgraded — any other house
+            // is a no-op (no charge, no level change), the same contract as an
+            // unknown/max/unaffordable house. This keeps the self-funding ladder
+            // from being soft-locked by spending the sole 100 coins on a house
+            // that doesn't advance the chain. The restriction lifts the moment
+            // the chain moves past UpgradeHouse.
+            if (!IsHouseUpgradeEligible(houseId))
+            {
+                return false;
+            }
+
             var house = houses.FirstOrDefault(candidate => candidate.Id == houseId);
             if (house == null)
             {
@@ -556,9 +589,39 @@ namespace Doggiehood.Core.World
         /// event, scoped to the genuine onboarding run so it pays exactly once
         /// and never perturbs ordinary quest completions). Reuses the quest
         /// reward-payout path (a wallet deposit), not the random rotation.</summary>
-        public void GrantOnboardingCompletionReward()
+        public void GrantOnboardingCompletionReward(int houseId)
         {
+            // #469: remember the first-quest dog's house so the following
+            // "upgrade a house" step is scoped to it. Recorded here — where the
+            // house is still known — because TargetDog goes stale the instant
+            // its quest resolves and across a reload.
+            onboardingUpgradeTargetHouseId = houseId;
             AdvanceRewardChain(OnboardingRewardStep.FirstQuest);
+        }
+
+        /// <summary>#469: whether <paramref name="houseId"/> may be upgraded
+        /// right now. Everything is eligible except a house other than the
+        /// stored onboarding target while the reward chain is waiting on its
+        /// <see cref="OnboardingRewardStep.UpgradeHouse"/> step. With no stored
+        /// target (before the handoff, or a legacy save) nothing is restricted.
+        /// The thin Unity layer consults this to fold "not the eligible house
+        /// right now" into the existing disabled-Upgrade-button state, so the
+        /// gate is queried in exactly one place.</summary>
+        public bool IsHouseUpgradeEligible(int houseId)
+        {
+            return RewardChain.CurrentStep != OnboardingRewardStep.UpgradeHouse
+                || !onboardingUpgradeTargetHouseId.HasValue
+                || houseId == onboardingUpgradeTargetHouseId.Value;
+        }
+
+        /// <summary>#469: restores the persisted onboarding upgrade-target house
+        /// id on load (see <see cref="SaveCodec"/>), so the target-house
+        /// restriction survives a save/reload mid-chain — the parallel of
+        /// <see cref="RestoreRewardChainStep"/>. A legacy save with no such line
+        /// simply leaves the target null (no restriction).</summary>
+        public void RestoreOnboardingUpgradeTargetHouseId(int houseId)
+        {
+            onboardingUpgradeTargetHouseId = houseId;
         }
 
         /// <summary>#316: notifies the reward chain that a tracked action just

@@ -175,7 +175,11 @@ namespace Doggiehood.Core.Onboarding
         {
             CurrentStep = OnboardingStep.Done;
             state.MarkOnboardingComplete();
-            state.GrantOnboardingCompletionReward();
+            // #469: hand the first-quest dog's house to the reward chain so the
+            // following "upgrade a house" step is scoped to it. TargetDog is
+            // non-null here — the flow only reaches Done through CompleteQuest,
+            // which required a real TargetDog.
+            state.GrantOnboardingCompletionReward(TargetDog.HouseId);
         }
     }
 }

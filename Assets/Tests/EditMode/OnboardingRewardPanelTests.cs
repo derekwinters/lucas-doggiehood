@@ -240,7 +240,7 @@ namespace Doggiehood.Unity.EditModeTests
 
             // First quest completes -> the reward chain pays step 1 and fires the
             // Core reward event the director listens for.
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
 
             Assert.That(panel.IsOpen, Is.True, "the celebration pops on a step payout");
             Assert.That(panel.MessageLabel.text, Is.EqualTo("You finished your first quest!"),
@@ -256,7 +256,7 @@ namespace Doggiehood.Unity.EditModeTests
             var director = overlayHost.AddComponent<OnboardingRewardDirector>();
             director.Init(state, panel);
 
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
 
             Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep),
                 "the panel shows the amount Core granted and never deposits on its own");

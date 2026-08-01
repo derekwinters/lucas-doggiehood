@@ -286,7 +286,11 @@ namespace Doggiehood.Unity
 
                     upgradeDirector.RefreshHouse(houseId);
                     return true;
-                });
+                },
+                // #469: fold "not the eligible house right now" into the button's
+                // existing disabled state — a non-target house during onboarding's
+                // "upgrade a house" step greys out like an unaffordable one.
+                houseId => state.IsHouseUpgradeEligible(houseId));
 
             overlay.ResidentSelected += dog => dogProfile.Open(dog);
 
