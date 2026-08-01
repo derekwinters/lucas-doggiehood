@@ -26,9 +26,11 @@ Each of the starting intersection's two roads (and, keying off the same extent, 
 
 ## The crosswalk box
 
-At the starting intersection, the two crossing roads produce four box corners (one per compass direction the roads' sidewalks meet). Each of the 4 road arms — N, S, E, W — gets one crosswalk, `CrosswalkWidth` (3m) wide, connecting the two box corners on either side of that arm and letting a pedestrian cross straight over that road instead of going the long way around through both corners.
+At the starting intersection, the two crossing roads produce four box corners (one per compass direction the roads' sidewalks meet). Each of the 4 road arms — N, S, E, W — gets one crosswalk, `CrosswalkWidth` (3m) wide, connecting the two box corners on either side of that arm and letting a pedestrian cross straight over that road instead of going the long way around through both corners. A **three-way (Tee) intersection** gets **one crosswalk per real arm — three, not four** — with no crosswalk over its closed (roadless) edge.
 
-In the shipping kit-art path, literal zebra-stripe crosswalks render via the Kenney City Kit Roads `road-crossroad-path` variant — painted stripes across all four arms at ~3–5m from center (tile scale 10), landing right on the walk network's crosswalk edges. Only `WorldBuilder`'s primitive graybox fallback (when the kit tiles can't load) still renders each crosswalk as a flat, distinctly colored rectangular patch with no markings — see [Art & UI Style](art-style.md) for the fallback palette and [Build checklist](#build-checklist) below for what's actually implemented.
+Crosswalk rendering is derived **per tile from the tile catalog geometry** (`TileCrosswalkGeometry.RectanglesFor`, [#508](https://github.com/derekwinters/lucas-doggiehood/issues/508)) — one patch per road-bearing edge of every intersection tile — so **every unlocked intersection paints correct crosswalks, not just the hardcoded origin**. (Before #508, both the kit crossing-tile placement and the primitive fallback read only the static origin `NeighborhoodLayout.WalkNetwork`, so an unlocked Tee rendered no crosswalks at all.) Only true crossings carry crosswalks: the 4-way and the four Tees. A straight, turn, or cul-de-sac tile has no crossing to paint.
+
+In the shipping kit-art path, literal zebra-stripe crosswalks are **baked into the Kenney City Kit Roads intersection mesh** placed at the tile centre — `road-crossroad-path` for a 4-way, `road-intersection-path` for a Tee (its stripes on the three roaded arms only). `WorldBuilder` places the single mesh matching the tile's `TileType`, yawed per `RoadTileArt` (see [Tile Catalog](tile-catalog.md)), so no separate crossing tiles are needed. Only `WorldBuilder`'s primitive graybox fallback (when the kit tiles can't load) renders each crosswalk as a flat, distinctly colored rectangular patch with no markings, one per arm derived from the same per-tile geometry — see [Art & UI Style](art-style.md) for the fallback palette and [Build checklist](#build-checklist) below for what's actually implemented.
 
 Visually, each crosswalk only covers the road and verge band — `RoadWidth + 2 × GrassVergeWidth` (7.5m at the 0.75m verge) — never the sidewalks themselves, which keep their own sidewalk-colored surface right up to the crosswalk's edge. The walk network's `Crosswalk` edge is still a straight line from one sidewalk's center to the other's (that's the real distance a dog covers crossing the road, and it's what keeps the graph connected to the sidewalk arm nodes) — this is purely a rendering clip in `WorldBuilder`, not a change to the graph.
 
@@ -85,12 +87,15 @@ A front walkway renders as tiled Kenney City Kit Suburban `path-short` pieces �
 ## Explicitly out of scope here
 
 - **Approach-to-rest movement** ([#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) — `RestBehavior` stays a pure probabilistic state flip with no movement of its own; it doesn't touch the walk network.
-(Literal crosswalk striping is no longer deferred — it ships in the kit-art path via the `road-crossroad-path` variant, see [The crosswalk box](#the-crosswalk-box) above.)
+(Literal crosswalk striping is no longer deferred — it ships in the kit-art path via the baked-crosswalk intersection meshes: `road-crossroad-path` for a 4-way and `road-intersection-path` for a Tee, see [The crosswalk box](#the-crosswalk-box) above.)
 
 ## Build checklist
 
 - [x] Every road declares a sidewalk on both sides, set back 0.75m from the road edge (2026-07-13 midpoint decision — a logical setback for dog placement, no visual grass strip in the kit-art path), sized from `WorldDimensions` only
 - [x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm
+- [x] Crosswalks derive **per tile** from the tile catalog geometry (`TileCrosswalkGeometry`), so **every unlocked intersection** paints them — a 4-way's four arms and a three-way (Tee)'s three, with none over a Tee's closed edge; non-intersection tiles get none (#508)
+- [x] Kit-art path renders the baked-crosswalk intersection mesh at each intersection tile's centre (`road-crossroad-path` 4-way / `road-intersection-path` Tee), yawed per `RoadTileArt`, instead of composing straights + separate crossing tiles (#508)
+- [ ] **Known limitation (#508 follow-up):** `OpposingTurnsNS`/`OpposingTurnsEW` have no dedicated centre mesh yet — they render as plain tiled straight arms (two independent bends, and their two arcs' crosswalks, are deferred). The authored map places an `OpposingTurnsNS`, so this is a live gap, not a can't-happen case.
 - [x] The walk network graph (sidewalks + crosswalks + front walkways) is generated from the roads and house lots, and is fully connected
 - [x] The walk network derives its roads from the live multi-tile `Map` (`MapWalkNetwork`), so it spans every unlocked tile; `GameState.WalkNetwork` rebuilds on zone unlock / house build, and dogs (bound to a live provider) wander onto newly unlocked tiles without re-spawning (#398)
 - [x] Each front walkway runs from the house's catalog door position to its street-facing sidewalk, perpendicular to the street (#128)

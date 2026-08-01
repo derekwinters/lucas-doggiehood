@@ -86,6 +86,35 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void BuildFrom_TeeTile_ProducesTheSameFourEdgeCrosswalkBox_AsAFourWay()
+        {
+            // #508 regression guard: the reported bug is crosswalk RENDERING, not
+            // the walk graph — MapWalkNetwork already emits a Tee's through-road
+            // plus its single-arm stub, and WalkNetwork detects their crossing by
+            // orientation (not matching length), so a Tee tile gets the same
+            // 4-edge crosswalk box centred on its own centre that a FourWay does.
+            // This locks that in (MapWalkNetworkTests previously covered only the
+            // origin and a cul-de-sac).
+            var noLots = new HouseLot[0];
+            var teeBox = CrosswalkEdgeCenters(
+                MapWalkNetwork.BuildFrom(new TileMap(new TileCoordinate(0, 0), TileType.TeeNorth), noLots));
+            var fourWayBox = CrosswalkEdgeCenters(
+                MapWalkNetwork.BuildFrom(new TileMap(new TileCoordinate(0, 0), TileType.FourWay), noLots));
+
+            Assert.That(teeBox.Count, Is.EqualTo(4), "a Tee crossing yields a full 4-edge crosswalk box");
+            Assert.That(teeBox, Is.EquivalentTo(fourWayBox),
+                "the Tee's crosswalk box matches the FourWay's, centred on the tile centre");
+        }
+
+        private static List<GridPoint> CrosswalkEdgeCenters(WalkNetwork network)
+        {
+            return network.Edges
+                .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
+                .Select(e => new GridPoint((e.A.X + e.B.X) / 2f, (e.A.Z + e.B.Z) / 2f))
+                .ToList();
+        }
+
+        [Test]
         public void BuildFrom_OnlyLotsWithABuiltHouse_DoesNotThrow_WhenAnUnlockedZoneHasNoHousesYet()
         {
             // #398 crash guard: a freshly unlocked zone's lots have no House

@@ -278,6 +278,82 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void EveryJunctionRoadKitPiece_IsStagedAndLoadable_AtTheTileScale()
+        {
+            // #508 serialization/wiring guard (rule #6): every road-bearing tile
+            // type that resolves to a dedicated centre mesh (RoadTileArt) must
+            // resolve a Resources key that actually loads — the newly staged
+            // road-intersection-path / road-bend / road-end-round beside the
+            // existing road-crossroad-path. A missing asset would silently drop
+            // an unlocked Tee/turn/cul-de-sac back to plain straight arms.
+            var seen = new HashSet<string>();
+            foreach (TileType type in System.Enum.GetValues(typeof(TileType)))
+            {
+                if (!RoadTileArt.TryGetCenterPiece(type, out var piece))
+                {
+                    continue;
+                }
+
+                Assert.That(Resources.Load<GameObject>(piece.ResourceKey), Is.Not.Null,
+                    $"road kit piece '{piece.ResourceKey}' for {type} must be loadable from Resources");
+                seen.Add(piece.ResourceKey);
+            }
+
+            Assert.That(seen, Is.EquivalentTo(new[]
+            {
+                RoadTileArt.CrossroadPathKey, RoadTileArt.IntersectionPathKey,
+                RoadTileArt.BendKey, RoadTileArt.EndRoundKey,
+            }), "all four junction/terminus meshes are wired");
+        }
+
+        [Test]
+        public void UnlockedTee_RendersTheIntersectionMeshAtItsCentre_WithTheCatalogYaw_AndNoSeparateCrosswalkQuads()
+        {
+            // #508: the visible fix. A three-way tile renders the baked-crosswalk
+            // road-intersection-path mesh at its centre, yawed per RoadTileArt so
+            // its arms line up with the tile's edges — not a composition of
+            // straights with missing crosswalks. Crosswalks are baked into the
+            // mesh, so the kit path builds no separate crosswalk quads.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = false;
+            var teeCoordinate = new TileCoordinate(0, 1);
+            root = WorldBuilder.Build(WithTeeTileUnlocked(teeCoordinate));
+
+            var container = Children().First(t =>
+                t.name == WorldBuilder.ZoneRoadNamePrefix + teeCoordinate.Col + "," + teeCoordinate.Row);
+            var centre = container.Cast<Transform>().Single(t => t.name.EndsWith("Center"));
+
+            var tileCentre = TileGeometry.CenterOf(teeCoordinate);
+            Assert.That(centre.position.x, Is.EqualTo(tileCentre.X).Within(0.001f));
+            Assert.That(centre.position.z, Is.EqualTo(tileCentre.Z).Within(0.001f));
+            Assert.That(centre.localScale.x, Is.EqualTo(WorldBuilder.RoadTileScale).Within(0.001f));
+            Assert.That(centre.localScale.z, Is.EqualTo(WorldBuilder.RoadTileScale).Within(0.001f));
+
+            Assert.That(RoadTileArt.TryGetCenterPiece(TileType.TeeSouth, out var piece), Is.True);
+            Assert.That(piece.ResourceKey, Is.EqualTo(RoadTileArt.IntersectionPathKey));
+            Assert.That(Quaternion.Angle(centre.rotation, Quaternion.Euler(0f, piece.YawDegrees, 0f)),
+                Is.LessThan(0.1f), "the Tee mesh is yawed to its catalog orientation");
+
+            Assert.That(Children().Any(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix)), Is.False,
+                "the kit path bakes crosswalks into the mesh — no separate crosswalk quads");
+        }
+
+        /// <summary>A game with a <c>TeeSouth</c> tile unlocked at the scripted
+        /// onboarding coordinate (#508): its south road connects to the origin
+        /// FourWay's north edge, so #109 adjacency passes.</summary>
+        private static GameState WithTeeTileUnlocked(TileCoordinate coordinate)
+        {
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            target.Place(coordinate, TileType.TeeSouth);
+
+            var state = GameState.CreateNew();
+            state.SetTargetMap(target);
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.TileUnlock.Cost(state.Map.Tiles.Count));
+            Assert.That(state.TryUnlockTile(coordinate), Is.True, "the test needs the Tee tile unlocked");
+            return state;
+        }
+
+        [Test]
         public void Houses_UseTheirMappedSuburbanModel_InsteadOfPrimitives()
         {
             // #122: each house id renders its mapped City Kit Suburban
