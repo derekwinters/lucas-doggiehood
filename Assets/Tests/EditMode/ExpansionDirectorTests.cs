@@ -143,6 +143,31 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ConfirmingYes_DoesNotDuplicateTheAlreadyPlacedYardTrees()
+        {
+            // #434: an empty lot's yard trees are placed when the zone unlocks
+            // (WorldBuilder.Build -> BuildEmptyLots), so building the house must
+            // swap ONLY the foundation slab for the house mesh — the trees are
+            // already there and must not be re-instantiated. Pick a lot whose
+            // yard actually selects trees, then assert exactly one Yard - N
+            // container survives the build.
+            var treedLotView = worldRoot.GetComponentsInChildren<EmptyLotView>()
+                .First(v => YardLandscaping.FrontTreesFor(state.GetHouseLot(v.HouseId))
+                    .Concat(YardLandscaping.BackTreesFor(state.GetHouseLot(v.HouseId))).Any());
+            var houseId = treedLotView.HouseId;
+
+            var containerName = WorldBuilder.YardLandscapingNamePrefix + houseId;
+            var before = worldRoot.transform.Cast<Transform>().Count(t => t.name == containerName);
+            Assert.That(before, Is.EqualTo(1), "the empty lot already carries its trees from unlock");
+
+            treedLotView.OnTapped();
+            dialog.YesButton.onClick.Invoke();
+
+            var after = worldRoot.transform.Cast<Transform>().Count(t => t.name == containerName);
+            Assert.That(after, Is.EqualTo(1), "building the house must not duplicate the yard trees");
+        }
+
+        [Test]
         public void TappingNo_DismissesWithoutBuilding()
         {
             var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();

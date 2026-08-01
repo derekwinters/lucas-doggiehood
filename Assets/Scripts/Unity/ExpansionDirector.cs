@@ -107,12 +107,16 @@ namespace Doggiehood.Unity
             // walkway instead of the Z-sign fallback / no-op.
             WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork);
 
-            // #405: a starting house gets its front walkway, yard trees, and
-            // fence at world-build time; a mid-game zone-lot build only rendered
-            // the mesh. Render the same three treatments for the newly built lot
-            // so it matches a starting-neighborhood house.
+            // #405: a starting house gets its front walkway and fence at
+            // world-build time; a mid-game zone-lot build only rendered the mesh.
+            // Render those treatments for the newly built lot so it matches a
+            // starting-neighborhood house.
+            // #434: the lot's yard trees were ALREADY placed when its zone
+            // unlocked (WorldBuilder.BuildEmptyLots / RenderUnlockedZone), so we
+            // deliberately do NOT re-render them here — only the foundation slab
+            // (destroyed above) is swapped for the house mesh. Re-rendering would
+            // duplicate the "Yard - N" container.
             WorldBuilder.BuildWalkway(worldRoot, lot, State.WalkNetwork);
-            WorldBuilder.BuildYardLandscaping(worldRoot, lot);
             WorldBuilder.BuildFence(worldRoot, lot, State);
 
             SaveStore.Save(State);

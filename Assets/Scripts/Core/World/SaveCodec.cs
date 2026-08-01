@@ -54,6 +54,28 @@ namespace Doggiehood.Core.World
                     .Append('\n');
             }
 
+            // #434: a zone lot's pre-assigned art variant (ladder + tint),
+            // rolled and locked in when its zone unlocked. Only lots that are
+            // assigned but NOT yet built need this line — a BUILT lot carries
+            // its variant on the house= line below, so emitting it here too
+            // would duplicate it. Emitted AFTER zones= (so the lots exist when
+            // the load replays them) and BEFORE house=. A legacy save with no
+            // such line still resolves the same variant via the deterministic
+            // fallback in GameState.TryBuildHouse.
+            foreach (var pair in state.AssignedLotVariants)
+            {
+                if (!state.IsLotBuildable(pair.Key))
+                {
+                    continue;
+                }
+
+                builder.Append("lotvariant=")
+                    .Append(pair.Key.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(pair.Value.LadderId.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(pair.Value.TintIndex.ToString(CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             // #299: zone-built houses (id >= 5). The 4 starters are recreated
             // by GameState.CreateNew every load, so only zone houses need
             // persisting — each as id|level|isVacant|ladderId|tintIndex so its
@@ -177,6 +199,19 @@ namespace Doggiehood.Core.World
                                 int.Parse(parts[1], CultureInfo.InvariantCulture)),
                             tileType);
                     }
+                }
+                else if (key == "lotvariant")
+                {
+                    // #434: houseId|ladderId|tintIndex — restore a zone lot's
+                    // pre-assigned (but not yet built) art variant. Emitted
+                    // before house= lines, so the assignment is in place if a
+                    // later build reads it; a built lot never has this line.
+                    var parts = value.Split('|');
+                    state.RestoreAssignedLotVariant(
+                        int.Parse(parts[0], CultureInfo.InvariantCulture),
+                        new HouseVariant(
+                            int.Parse(parts[1], CultureInfo.InvariantCulture),
+                            int.Parse(parts[2], CultureInfo.InvariantCulture)));
                 }
                 else if (key == "house")
                 {
