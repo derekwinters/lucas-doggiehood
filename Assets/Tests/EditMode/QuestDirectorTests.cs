@@ -2,6 +2,7 @@ using System.Linq;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Decorations;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -91,6 +92,49 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(view.transform.position.x, Is.EqualTo(home.x).Within(0.01f));
             Assert.That(view.transform.position.z, Is.EqualTo(home.z).Within(0.01f));
+        }
+
+        [Test]
+        public void AcceptingAFenceQuest_ShowsTheFence_WithNoDeliveryTruckAndNoWalkHome()
+        {
+            // #318: the fence purchase has no delivery flow. Accepting it
+            // completes the quest immediately (Core records the placed fence),
+            // no DeliveryTruckView spawns, the dog never walks home (its
+            // DeliveryPhase stays None, so Tick ignores it), and the fence
+            // appears on the accept-time refresh with no animation.
+            state.Wallet.Deposit(1000);
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var view = worldRoot.GetComponentsInChildren<DogView>().Single(v => v.Dog.Name == dog.Name);
+            var positionBefore = view.transform.position;
+
+            // A fence BuyGift quest, built directly so the subject is
+            // deterministic (the population-gated pool is covered in Core).
+            var quest = new Quest(9001, QuestType.BuyGift, dog.Name, ItemCatalog.FenceItemName,
+                new[] { "Could you fence my yard?" }, null, ItemCatalog.FenceCost, null);
+
+            Assert.That(state.Quests.Accept(quest), Is.True);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed),
+                "the fence completes immediately on accept");
+            Assert.That(quest.DeliveryPhase, Is.EqualTo(DeliveryPhase.None),
+                "the fence never enters a delivery phase");
+
+            director.OnQuestAccepted(quest);
+
+            // No delivery truck anywhere in the scene.
+            Assert.That(Object.FindObjectsByType<DeliveryTruckView>(FindObjectsSortMode.None),
+                Is.Empty, "the fence purchase must not spawn a delivery truck");
+
+            // The dog stays put — advancing the director walks nothing home.
+            director.Tick(1f);
+            Assert.That(view.transform.position, Is.EqualTo(positionBefore),
+                "the dog must not walk home for a fence purchase");
+
+            // The fence container for that house now exists in the world.
+            var fenceContainerName = WorldBuilder.FenceNamePrefix + dog.HouseId;
+            var fenceContainer = worldRoot.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name == fenceContainerName);
+            Assert.That(fenceContainer, Is.Not.Null,
+                "the purchased fence must render on the accept-time refresh");
         }
 
         [Test]

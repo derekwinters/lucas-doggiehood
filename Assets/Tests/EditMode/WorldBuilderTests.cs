@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -78,6 +79,36 @@ namespace Doggiehood.Unity.EditModeTests
                 WorldBuilder.ForceFencesVisible = false;
                 WorldBuilder.RebuildFences(root.transform, state);
                 Assert.That(FenceContainerCount(), Is.EqualTo(0), "fences disappear on a live rebuild");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
+        [Test]
+        public void PurchasedFence_RendersFromPlacedItems_OnRebuild()
+        {
+            // #318: a completed fence-purchase quest records a
+            // PlacedItem(houseId, "fence"); WorldBuilder derives fence
+            // visibility from that persisted state (LotFence.IsFenced), so a
+            // rebuild shows exactly that house's fence with no static flag and
+            // without ForceFencesVisible.
+            var original = WorldBuilder.ForceFencesVisible;
+            try
+            {
+                WorldBuilder.ForceFencesVisible = false;
+                WorldBuilder.RebuildFences(root.transform, state);
+                Assert.That(FenceContainerCount(), Is.EqualTo(0), "no fences bought yet");
+
+                var houseId = state.Houses.First().Id;
+                state.AddPlacedItem(houseId, ItemCatalog.FenceItemName);
+                WorldBuilder.RebuildFences(root.transform, state);
+
+                Assert.That(FenceContainerCount(), Is.EqualTo(1),
+                    "exactly the house with a purchased fence renders one");
+                Assert.That(Children().Any(t => t.name == WorldBuilder.FenceNamePrefix + houseId),
+                    Is.True, "the purchased fence is that house's container");
             }
             finally
             {
@@ -732,7 +763,7 @@ namespace Doggiehood.Unity.EditModeTests
             var host = new GameObject("zone-fence-host");
             try
             {
-                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot), Throws.Nothing);
+                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot, GameState.CreateNew()), Throws.Nothing);
 
                 var container = host.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId);
                 Assert.That(container, Is.Not.Null, "the fenced zone lot gets a fence container");

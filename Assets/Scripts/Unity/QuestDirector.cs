@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -146,6 +147,16 @@ namespace Doggiehood.Unity
             else if (quest.Type == QuestType.PestControl)
             {
                 RefreshBugSwarms();
+            }
+            else if (quest.Type == QuestType.BuyGift
+                && quest.ItemName == ItemCatalog.FenceItemName)
+            {
+                // #318: the fence purchase has no delivery truck — Core already
+                // completed it and recorded the placed fence on accept, so
+                // rebuild the fences here to show it immediately, no animation
+                // and no walk-home (Tick never runs for it — its DeliveryPhase
+                // stays None, not HeadingHome).
+                WorldBuilder.RebuildFences(worldRoot, State);
             }
 
             SaveStore.Save(State);

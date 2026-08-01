@@ -665,7 +665,7 @@ namespace Doggiehood.Unity
         {
             foreach (var house in state.Houses)
             {
-                BuildFence(parent, state.GetHouseLot(house.Id));
+                BuildFence(parent, state.GetHouseLot(house.Id), state);
             }
         }
 
@@ -679,9 +679,13 @@ namespace Doggiehood.Unity
         /// is now zone-safe (#414). Unfenced lots (the default) render nothing,
         /// same as the loop; <see cref="ForceFencesVisible"/> forces them on.
         /// </summary>
-        public static void BuildFence(Transform parent, HouseLot lot)
+        public static void BuildFence(Transform parent, HouseLot lot, GameState state)
         {
-            var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot);
+            // #318: a lot also counts as fenced when a purchased "fence"
+            // PlacedItem sits in state for its house (LotFence.IsFenced), so a
+            // completed fence-purchase quest shows on the next world/decoration
+            // refresh with no delivery animation.
+            var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot, state);
             if (runs.Count == 0)
             {
                 return;

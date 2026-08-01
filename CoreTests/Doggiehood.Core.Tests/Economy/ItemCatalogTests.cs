@@ -1,5 +1,6 @@
 using System.Linq;
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Quests;
 using NUnit.Framework;
 
 namespace Doggiehood.Core.Tests.Economy
@@ -12,9 +13,12 @@ namespace Doggiehood.Core.Tests.Economy
     public class ItemCatalogTests
     {
         [Test]
-        public void GiftOrDecorationEligibleItems_AllCostThirtyToFifty()
+        public void PurchasableGiftOrDecorationItems_EachFallInADefinedCostTierBand()
         {
-            // #62 economy rule applies only to purchasable items.
+            // #62 + #317: purchasable entries are priced within a defined cost
+            // tier band — Starter (30-50), Mid (60-90), or Premium (100+).
+            // #318's fence is the first Premium entry; earlier gifts and
+            // decorations still sit in the Starter band.
             var purchasable = ItemCatalog.Items.Where(i =>
                 i.IsEligibleFor(ItemEligibility.Gift) || i.IsEligibleFor(ItemEligibility.Decoration));
 
@@ -22,8 +26,29 @@ namespace Doggiehood.Core.Tests.Economy
             foreach (var item in purchasable)
             {
                 Assert.That(item.Cost, Is.Not.Null, item.Name);
-                Assert.That(item.Cost.Value, Is.InRange(30, 50), item.Name);
+                var cost = item.Cost.Value;
+                var inStarter = cost >= QuestCostTiers.StarterMinCost
+                    && cost <= QuestCostTiers.StarterMaxCost;
+                var inMid = cost >= QuestCostTiers.MidMinCost && cost <= QuestCostTiers.MidMaxCost;
+                var inPremium = cost >= QuestCostTiers.PremiumMinCost;
+                Assert.That(inStarter || inMid || inPremium, Is.True,
+                    $"{item.Name} costs {cost}, which falls in no defined tier band");
             }
+        }
+
+        [Test]
+        public void Fence_IsAGiftTaggedPremiumEntry_CostingOneHundred()
+        {
+            // #318: the fence is a purchasable Gift-tagged catalog entry priced
+            // in the Premium tier (100 coins), reusing the existing Gift
+            // eligibility tag rather than inventing a new one.
+            var fence = ItemCatalog.Get(ItemCatalog.FenceItemName);
+
+            Assert.That(fence.Name, Is.EqualTo("fence"));
+            Assert.That(fence.IsEligibleFor(ItemEligibility.Gift), Is.True);
+            Assert.That(fence.IsEligibleFor(ItemEligibility.Decoration), Is.False);
+            Assert.That(fence.IsEligibleFor(ItemEligibility.Lost), Is.False);
+            Assert.That(fence.Cost, Is.EqualTo(QuestCostTiers.PremiumMinCost));
         }
 
         [Test]
@@ -44,7 +69,7 @@ namespace Doggiehood.Core.Tests.Economy
             Assert.That(ItemCatalog.NamesEligibleFor(ItemEligibility.Lost),
                 Is.EquivalentTo(new[] { "toy", "ball", "puppy" }));
             Assert.That(ItemCatalog.NamesEligibleFor(ItemEligibility.Gift),
-                Is.EquivalentTo(new[] { "toy", "ball", "chew bone", "pool" }));
+                Is.EquivalentTo(new[] { "toy", "ball", "chew bone", "pool", "fence" }));
             Assert.That(ItemCatalog.NamesEligibleFor(ItemEligibility.Decoration),
                 Is.EquivalentTo(new[] { "bed", "cushion", "blanket" }));
         }

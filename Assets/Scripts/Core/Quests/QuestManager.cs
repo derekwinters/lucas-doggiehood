@@ -302,7 +302,22 @@ namespace Doggiehood.Core.Quests
             quest.Status = QuestStatus.Accepted;
             if (quest.Type == QuestType.BuyGift)
             {
-                quest.DeliveryPhase = DeliveryPhase.HeadingHome;
+                if (quest.ItemName == ItemCatalog.FenceItemName)
+                {
+                    // #318: the fence has no delivery-truck flow — the cost is
+                    // already deducted above, so record the permanent placed
+                    // fence and complete immediately, skipping the HeadingHome /
+                    // WaitingForDelivery legs entirely ("no delivery, no
+                    // animation"). Fence visibility then derives from this
+                    // PlacedItem (LotFence.IsFenced).
+                    var dog = FindDog(quest);
+                    state.AddPlacedItem(dog.HouseId, quest.ItemName);
+                    Complete(quest);
+                }
+                else
+                {
+                    quest.DeliveryPhase = DeliveryPhase.HeadingHome;
+                }
             }
 
             return true;

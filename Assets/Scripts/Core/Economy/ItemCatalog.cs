@@ -49,6 +49,19 @@ namespace Doggiehood.Core.Economy
     /// </summary>
     public static class ItemCatalog
     {
+        /// <summary>#318: the catalog name of the fence — a Premium-tier
+        /// (100-coin) Gift-tagged purchase. Shared so the quest engine
+        /// (skip-delivery on accept) and fence-visibility source
+        /// (<see cref="Doggiehood.Core.World.LotFence"/>) key off the same
+        /// string as this catalog entry rather than duplicating the literal
+        /// (#161).</summary>
+        public const string FenceItemName = "fence";
+
+        /// <summary>#318: fence cost — a Premium-tier purchase (100 coins),
+        /// above the starter 30-50 gift band. Named rather than a bare literal
+        /// (#161).</summary>
+        public const int FenceCost = 100;
+
         public static IReadOnlyList<CatalogItem> Items { get; } = new[]
         {
             new CatalogItem("toy", ItemEligibility.Lost | ItemEligibility.Gift, 30),
@@ -59,6 +72,10 @@ namespace Doggiehood.Core.Economy
             new CatalogItem("cushion", ItemEligibility.Decoration, 30),
             new CatalogItem("blanket", ItemEligibility.Decoration, 30),
             new CatalogItem("puppy", ItemEligibility.Lost),
+            // #318: the fence-purchase quest subject. Reuses the existing Gift
+            // eligibility tag (no new 4th tag); its Premium price gates it into
+            // the rotation only once the neighborhood reaches ~10 dogs.
+            new CatalogItem(FenceItemName, ItemEligibility.Gift, FenceCost),
         };
 
         public static CatalogItem Get(string name)

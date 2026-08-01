@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -245,9 +246,12 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void GiftPool_ExactlyMatchesTheCatalogsGiftEligibleItems()
         {
-            // #190.
+            // #190 + #317/#318: GiveQuestTo draws BuyGift subjects from the
+            // population-gated pool, which at the starting population excludes
+            // the Premium-tier fence — so the observed draws must equal that
+            // gated pool, not the full Gift-eligible catalog slice.
             var state = NewState();
-            var expected = ItemCatalog.NamesEligibleFor(ItemEligibility.Gift);
+            var expected = new QuestPacingPolicy().EligibleSubjectPool(ItemEligibility.Gift, state);
             var observed = new HashSet<string>();
 
             for (var seed = 0; seed < 200; seed++)
@@ -403,6 +407,76 @@ namespace Doggiehood.Core.Tests.Quests
                 Assert.That(first.HiddenItemPosition.Value,
                     Is.EqualTo(second.HiddenItemPosition.Value), $"seed {seed}");
             }
+        }
+
+        /// <summary>#318: obtains a real fence BuyGift quest through the
+        /// production path — a state at the premium population gate (so the
+        /// fence enters the Gift subject pool) with a funded wallet, drawing
+        /// BuyGift quests until the RNG yields the fence subject. Returns the
+        /// state, the fence quest, and its (roster) dog.</summary>
+        private static (GameState State, Quest Quest, Dog Dog) ReadyFenceQuest()
+        {
+            for (var seed = 0; seed < 500; seed++)
+            {
+                var state = NewState();
+                for (var i = state.Dogs.Count; i < QuestCostTiers.PremiumPopulationGate; i++)
+                {
+                    state.AddDog(new Dog($"extra-{i}", Breed.GermanShepherd, Personality.Brave, 1, false));
+                }
+
+                state.Wallet.Deposit(1000);
+                var dog = state.Dogs[0];
+                var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(seed));
+                if (quest.ItemName == ItemCatalog.FenceItemName)
+                {
+                    return (state, quest, dog);
+                }
+            }
+
+            throw new InvalidOperationException("No fence BuyGift quest produced across seeds.");
+        }
+
+        [Test]
+        public void AcceptingFenceQuest_DeductsCost_CompletesImmediately_WithNoDeliveryLeg()
+        {
+            // #318: the fence has no delivery-truck flow — accepting deducts the
+            // 100-coin cost and completes the quest right away, never entering
+            // the HeadingHome/WaitingForDelivery delivery phases, while still
+            // paying the flat quest payout.
+            var (state, quest, dog) = ReadyFenceQuest();
+            var coinsBefore = state.Wallet.Coins;
+            var fenceCost = ItemCatalog.Get(ItemCatalog.FenceItemName).Cost.Value;
+
+            var accepted = state.Quests.Accept(quest);
+
+            Assert.That(accepted, Is.True);
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed));
+            Assert.That(quest.DeliveryPhase, Is.EqualTo(DeliveryPhase.None),
+                "the fence skips the delivery legs entirely");
+            Assert.That(dog.HasActiveQuest, Is.False);
+            Assert.That(state.Wallet.Coins,
+                Is.EqualTo(coinsBefore - fenceCost + EconomyNumbers.QuestPayout));
+        }
+
+        [Test]
+        public void CompletingFenceQuest_RecordsPersistentPlacedItem_SurvivingSaveLoad()
+        {
+            // #318: completion records a PlacedItem(houseId, "fence") — permanent
+            // world state that round-trips through SaveCodec, reusing the same
+            // persistence mechanism as any delivered BuyGift item.
+            var (state, quest, dog) = ReadyFenceQuest();
+            var houseId = dog.HouseId;
+
+            state.Quests.Accept(quest);
+
+            Assert.That(state.PlacedItems.Any(p => p.HouseId == houseId
+                && p.ItemName == ItemCatalog.FenceItemName), Is.True,
+                "the fence is recorded as a placed item on completion");
+
+            var reloaded = SaveCodec.Load(SaveCodec.Save(state));
+            Assert.That(reloaded.PlacedItems.Any(p => p.HouseId == houseId
+                && p.ItemName == ItemCatalog.FenceItemName), Is.True,
+                "the placed fence survives a save/load round-trip");
         }
 
         [Test]

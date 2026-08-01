@@ -1,4 +1,5 @@
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Quests;
 using NUnit.Framework;
 
 namespace Doggiehood.Core.Tests.Economy
@@ -73,10 +74,12 @@ namespace Doggiehood.Core.Tests.Economy
         }
 
         [Test]
-        public void EveryPurchasableCatalogItemCost_IsInTheThirtyToFiftyRange()
+        public void EveryPurchasableCatalogItemCost_FallsInADefinedTierBand()
         {
-            // #62/#190: gifts/decorations cost 3-5 quests' worth of saving.
-            // Find-only items (no Gift/Decoration eligibility) carry no cost.
+            // #62/#190 + #317: purchasable gifts/decorations are priced within a
+            // defined cost tier band — Starter (30-50), Mid (60-90), or Premium
+            // (100+, #318's fence). Find-only items (no Gift/Decoration
+            // eligibility) carry no cost.
             Assert.That(ItemCatalog.Items, Is.Not.Empty);
 
             foreach (var item in ItemCatalog.Items)
@@ -87,7 +90,13 @@ namespace Doggiehood.Core.Tests.Economy
                 if (purchasable)
                 {
                     Assert.That(item.Cost, Is.Not.Null, item.Name);
-                    Assert.That(item.Cost.Value, Is.InRange(30, 50), item.Name);
+                    var cost = item.Cost.Value;
+                    var inStarter = cost >= QuestCostTiers.StarterMinCost
+                        && cost <= QuestCostTiers.StarterMaxCost;
+                    var inMid = cost >= QuestCostTiers.MidMinCost && cost <= QuestCostTiers.MidMaxCost;
+                    var inPremium = cost >= QuestCostTiers.PremiumMinCost;
+                    Assert.That(inStarter || inMid || inPremium, Is.True,
+                        $"{item.Name} costs {cost}, which falls in no defined tier band");
                 }
                 else
                 {
