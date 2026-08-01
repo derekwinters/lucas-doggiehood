@@ -191,7 +191,15 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(freshTarget, Is.Not.EqualTo(staleTarget),
                 "the resumed wander must pick a fresh target, not the stale pre-quest one");
 
-            var network = NeighborhoodLayout.WalkNetwork;
+            // On-network check against the network the dog actually wanders:
+            // DogSpawner binds every DogView (and its WanderBehavior) to the
+            // LIVE map-derived network via () => state.WalkNetwork (#398), NOT
+            // the starting-intersection-only NeighborhoodLayout singleton —
+            // whose coarser node set sits several units off the live nodes, so
+            // measuring against it would falsely read an on-network node as an
+            // off-network beeline. The fresh target is a genuine node of the
+            // dog's own network, so distance-to-nearest-node is ~0.
+            var network = state.WalkNetwork;
             var nearest = network.NearestWalkableNode(new GridPoint(freshTarget.x, freshTarget.z));
             Assert.That(Vector2.Distance(new Vector2(freshTarget.x, freshTarget.z), new Vector2(nearest.X, nearest.Z)),
                 Is.LessThan(0.01f),
