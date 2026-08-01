@@ -49,6 +49,57 @@
   .mguide{position:absolute;left:960px;bottom:0;width:2px;height:56px;background:var(--guide);}
   .mguide::after{content:"CoachBottomMarginPx 56";position:absolute;left:8px;bottom:12px;font-size:22px;color:var(--guide);white-space:nowrap;}
 
+  /* gesture-arrow coach (#330) — animated directional arrows over Pan/Zoom.
+     Group anchored at screen-center-x, GestureCenterYPx (480) down. Gold fill,
+     ink outline, ArrowFillOpacity .92. Beats: BeatDurationSec 1.1s sweep +
+     BeatPauseSec 0.5s hold = 1.6s per beat. */
+  .gesture{position:absolute;left:960px;top:480px;width:0;height:0;pointer-events:none;}
+  .garrow{position:absolute;left:-103px;top:-31px;opacity:.92;transform-origin:50% 50%;}
+  .garrow path{fill:var(--gold);stroke:var(--ink);stroke-width:6;stroke-linejoin:round;}
+  .gesture.pan .garrow{animation:panbeats 6.4s linear infinite;}   /* 4 beats × 1.6s */
+  .garrow.zl{animation:zoomleft 3.2s linear infinite;}             /* 2 beats × 1.6s */
+  .garrow.zr{animation:zoomright 3.2s linear infinite;}
+  .ganchor{position:absolute;left:960px;top:480px;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:999px;background:var(--guide);opacity:.6;}
+  .ganchor::after{content:"GestureCenterYPx 480";position:absolute;left:18px;top:-6px;font-size:22px;color:var(--guide);white-space:nowrap;}
+
+  /* Pan: L→R, R→L, up→down, down→up. rotate() spins the arrow to the beat's
+     heading; translate() sweeps its center ±PanTravelPx/2 (±130) along the axis.
+     Heading flips happen inside the hold, so no visible spin between beats. */
+  @keyframes panbeats{
+    0%     {transform:translate(-130px,0) rotate(0deg);}
+    17.19% {transform:translate(130px,0) rotate(0deg);}
+    25%    {transform:translate(130px,0) rotate(0deg);}
+    25.01% {transform:translate(130px,0) rotate(180deg);}
+    42.19% {transform:translate(-130px,0) rotate(180deg);}
+    50%    {transform:translate(-130px,0) rotate(180deg);}
+    50.01% {transform:translate(0,-130px) rotate(90deg);}
+    67.19% {transform:translate(0,130px) rotate(90deg);}
+    75%    {transform:translate(0,130px) rotate(90deg);}
+    75.01% {transform:translate(0,130px) rotate(270deg);}
+    92.19% {transform:translate(0,-130px) rotate(270deg);}
+    100%   {transform:translate(0,-130px) rotate(270deg);}
+  }
+  /* Zoom: a symmetric pair. Zoom-in — arrows point outward and spread from
+     ZoomNearOffsetPx (70) to ZoomFarOffsetPx (220). Zoom-out — arrows flip
+     inward and close back to 70. */
+  @keyframes zoomleft{
+    0%     {transform:translate(-70px,0) rotate(180deg);}
+    34.375%{transform:translate(-220px,0) rotate(180deg);}
+    50%    {transform:translate(-220px,0) rotate(180deg);}
+    50.01% {transform:translate(-220px,0) rotate(0deg);}
+    84.375%{transform:translate(-70px,0) rotate(0deg);}
+    100%   {transform:translate(-70px,0) rotate(0deg);}
+  }
+  @keyframes zoomright{
+    0%     {transform:translate(70px,0) rotate(0deg);}
+    34.375%{transform:translate(220px,0) rotate(0deg);}
+    50%    {transform:translate(220px,0) rotate(0deg);}
+    50.01% {transform:translate(220px,0) rotate(180deg);}
+    84.375%{transform:translate(70px,0) rotate(180deg);}
+    100%   {transform:translate(70px,0) rotate(180deg);}
+  }
+  @media (prefers-reduced-motion:reduce){ .garrow{animation:none !important;} }
+
   .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
   @media (max-width:640px){ .info{grid-template-columns:1fr;} }
   .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
@@ -85,12 +136,41 @@
     <div class="screen" role="img" aria-label="Landscape tablet: neighborhood with a dog and speech bubble, and a slim onboarding coach prompt at the bottom center showing step 1 of 4">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
-      <div class="dog"></div><div class="sbubble"><i></i><i></i><i></i></div>
+      <div class="dog"></div>
       <div class="mguide"></div>
+      <div class="ganchor"></div>
+      <div class="gesture pan">
+        <svg class="garrow" width="206" height="62" viewBox="-3 -3 206 62" aria-hidden="true">
+          <path d="M0 17 L144 17 L144 0 L200 28 L144 56 L144 39 L0 39 Z"/>
+        </svg>
+      </div>
       <div class="coach">
         <div class="paw rounded">🐾</div>
         <div class="msg rounded">Welcome to Doggiehood! Drag to look around the neighborhood.</div>
         <div class="dots" aria-label="step 1 of 4"><span class="on"></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="scalenote" style="margin-top:22px;">Zoom step (#330) — the same coach, now demonstrating pinch. A symmetric arrow pair spreads apart to zoom in, then closes together to zoom out.</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet, zoom step: two gold arrows either side of center spread apart to show zoom-in, then close together to show zoom-out, with the coach prompt at the bottom center showing step 2 of 4">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="dog"></div>
+      <div class="ganchor"></div>
+      <div class="gesture">
+        <svg class="garrow zl" width="206" height="62" viewBox="-3 -3 206 62" aria-hidden="true">
+          <path d="M0 17 L144 17 L144 0 L200 28 L144 56 L144 39 L0 39 Z"/>
+        </svg>
+        <svg class="garrow zr" width="206" height="62" viewBox="-3 -3 206 62" aria-hidden="true">
+          <path d="M0 17 L144 17 L144 0 L200 28 L144 56 L144 39 L0 39 Z"/>
+        </svg>
+      </div>
+      <div class="coach">
+        <div class="paw rounded">🐾</div>
+        <div class="msg rounded">Nice! Pinch (or scroll) to zoom in and out.</div>
+        <div class="dots" aria-label="step 2 of 4"><span class="on"></span><span class="on"></span><span></span><span></span></div>
       </div>
     </div>
   </div>
@@ -115,6 +195,31 @@
     </div>
   </div>
 
+  <div class="info">
+    <div>
+      <h2>Gesture-arrow coach constants (#330, @ 1200px ref)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>GestureCenterYPx</td><td class="val">480</td><td>vertical anchor (x = center)</td></tr>
+        <tr><td>ArrowLengthPx</td><td class="val">200</td><td>shaft + head</td></tr>
+        <tr><td>ArrowThicknessPx</td><td class="val">22</td><td>shaft width</td></tr>
+        <tr><td>ArrowHeadSizePx</td><td class="val">56</td><td>arrowhead span</td></tr>
+        <tr><td>ArrowOutlineThicknessPx</td><td class="val">6</td><td>ink outline</td></tr>
+        <tr><td>PanTravelPx</td><td class="val">260</td><td>pan sweep per beat</td></tr>
+        <tr><td>ZoomNearOffsetPx</td><td class="val">70</td><td>zoom arrows, closest</td></tr>
+        <tr><td>ZoomFarOffsetPx</td><td class="val">220</td><td>zoom arrows, farthest</td></tr>
+        <tr><td>BeatDurationSec</td><td class="val">1.1</td><td>one sweep</td></tr>
+        <tr><td>BeatPauseSec</td><td class="val">0.5</td><td>hold between beats</td></tr>
+        <tr><td>ArrowFillOpacity</td><td class="val">0.92</td><td>map stays faintly readable</td></tr>
+      </table>
+    </div>
+    <div>
+      <p class="note"><b>Pan (4-beat loop):</b> a single arrow cycles left→right, right→left, up→down, down→up — sweeping <code>PanTravelPx</code> over <code>BeatDurationSec</code>, holding <code>BeatPauseSec</code>, then repeating.</p>
+      <p class="note"><b>Zoom (2-beat loop):</b> a symmetric pair either side of the anchor — <b>zoom in</b> (start near, spread outward to <code>ZoomFarOffsetPx</code>) then <b>zoom out</b> (start far, close inward to <code>ZoomNearOffsetPx</code>).</p>
+      <p class="note"><b>Gold fill</b> (not the coach bar's cream/leaf) so it reads as "do this". <b>Hides</b> the instant the real pan/zoom is registered by <code>AdvanceCameraSteps</code>. Beat logic is engine-free Core (<code>GestureCoach</code>); the arrowhead here is drawn solid for the mockup, procedurally as a chevron in-engine.</p>
+    </div>
+  </div>
+
   <div class="steps">
     <h2>The four guided steps (text from <code>OnboardingSequence</code>)</h2>
     <div class="sgrid">
@@ -128,6 +233,7 @@
   <footer>
     Reuses the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill shape · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built bar's anchor/size against them.
     <br><span class="status">Approved (Derek, 2026-07-24) (#176)</span>
+    <span class="status">Gesture-arrow coach approved (Derek, 2026-07-31) (#330) — distilled</span>
   </footer>
 </div>
 </body>
