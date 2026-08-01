@@ -61,7 +61,7 @@ Maps are drawn and validated with the [Map Builder](../../tools/index.md) tool, 
 
 ## Property lots per tile
 
-*Design decisions 2026-07-30 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md); Core lot/geometry implementation tracked with the map-definition work ([#359](https://github.com/derekwinters/lucas-doggiehood/issues/359)).*
+*Design decisions 2026-07-30 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md). The Core lot rules below are implemented in `TileLotCatalog.LotsFor` and each bend's curved/cupped corner is exposed via `TileLotCatalog.TryGetCuppedCorner` ([#383](https://github.com/derekwinters/lucas-doggiehood/issues/383)).*
 
 Each tile offers up to four **property lots**, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see [Neighborhood Expansion](../expansion.md)):
 
