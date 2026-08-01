@@ -1,5 +1,6 @@
 using System;
 using Doggiehood.Core.Art;
+using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -483,6 +484,35 @@ namespace Doggiehood.Core.Tests.World
                     $"house {lot.HouseId} max-footprint rect is never narrower than the level-1 footprint");
                 Assert.That(rect.Depth, Is.GreaterThanOrEqualTo(footprint.Depth),
                     $"house {lot.HouseId} max-footprint rect is never shallower than the level-1 footprint");
+            }
+        }
+
+        [Test]
+        public void HouseFootprint_EveryStarterHouseLadderLevel_StaysInsideItsLotQuadrantBounds()
+        {
+            // #462 acceptance bar: "centered within property" / "leveling never
+            // resizes or moves the lot" (docs/specs/expansion.md#house-leveling)
+            // expressed concretely — for every starter house's full L1..L4
+            // ladder, the level-aware footprint (#454) must stay fully inside the
+            // lot's own QuadrantBounds. Because #454 pins each level's facade to
+            // the front setback and lets the deeper mesh grow into the BACKYARD
+            // (away from the street), the rear edge advances toward the far
+            // quadrant line as the house upgrades; this guard proves it never
+            // crosses it (nor does the lateral span spill sideways) at any rung.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var bounds = LotBounds.QuadrantBounds(lot);
+                for (var level = HouseLevelModelTable.MinLevel;
+                    level <= HouseUpgradeNumbers.MaxLevel;
+                    level++)
+                {
+                    var footprint = HousePlacement.HouseFootprint(lot, level);
+                    Assert.That(bounds.Contains(footprint), Is.True,
+                        $"house {lot.HouseId} level {level} footprint " +
+                        $"[{footprint.MinX}..{footprint.MaxX}]x[{footprint.MinZ}..{footprint.MaxZ}] " +
+                        $"must stay inside its lot quadrant bounds " +
+                        $"[{bounds.MinX}..{bounds.MaxX}]x[{bounds.MinZ}..{bounds.MaxZ}]");
+                }
             }
         }
 
