@@ -12,8 +12,19 @@ namespace Doggiehood.Unity
             var root = WorldBuilder.Build(state);
             DogSpawner.SpawnDogs(state, root.transform);
 
+            // #407/#436: the upgrade re-renderer is created up front so it can be
+            // handed to the QuestDirector below, which reuses its
+            // destroy-and-rebuild to drop a house's vacancy tint on a live
+            // move-in (#436) — the same path #407 uses on upgrade. Its own
+            // rebuild callback (tap re-wiring) is configured later, in
+            // BuildHouseProfileOverlay, but that runs before any quest can
+            // complete, so the reference is fully wired by the time a move-in
+            // fires. (Construction order moved earlier than #407's original
+            // profile-overlay closure so QuestDirector can depend on it.)
+            var upgradeDirector = gameObject.AddComponent<HouseUpgradeDirector>();
+
             var director = gameObject.AddComponent<QuestDirector>();
-            director.Init(state, root.transform);
+            director.Init(state, root.transform, upgradeDirector);
 
             // Quest pacing (#310 / #312 / #316). The whole phase decision lives
             // in Core (QuestManager.EnsureQuestsForLaunch): pre-chain it seeds
@@ -51,7 +62,7 @@ namespace Doggiehood.Unity
             // and (#407) re-renders the world house so its mesh visibly grows.
             // The quest director is passed so the #407 re-render can re-wire the
             // rebuilt HouseView's spray tap alongside the profile tap.
-            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile, director);
+            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile, director, upgradeDirector);
 
             // Reusable confirmation dialog (#343/#344), shared by both expansion
             // spends below. A device-safe UGUI overlay (#298/#291) built under the
@@ -223,7 +234,7 @@ namespace Doggiehood.Unity
         /// </summary>
         private HouseProfileOverlay BuildHouseProfileOverlay(
             GameObject canvas, GameState state, Transform worldRoot, DogProfileOverlay dogProfile,
-            QuestDirector questDirector)
+            QuestDirector questDirector, HouseUpgradeDirector upgradeDirector)
         {
             var overlayObject = new GameObject("HouseProfileOverlay");
             overlayObject.transform.SetParent(canvas.transform, false);
@@ -235,7 +246,11 @@ namespace Doggiehood.Unity
             // On rebuild the fresh HouseView is re-wired to both tap subscribers
             // — the profile-open handler here and QuestDirector's spray handler —
             // since a rebuilt object neither one-time bootstrap loop has seen.
-            var upgradeDirector = gameObject.AddComponent<HouseUpgradeDirector>();
+            // #436: the same rebuild + re-wire runs when a move-in drops a
+            // house's vacancy tint (QuestDirector calls RefreshHouse), so the
+            // rebuilt house's taps keep reaching the profile and spray paths.
+            // The director is created earlier in Awake so QuestDirector can hold
+            // a reference; its rebuild callback is configured here.
             upgradeDirector.Init(state, worldRoot, rebuilt =>
             {
                 var houseId = rebuilt.HouseId;

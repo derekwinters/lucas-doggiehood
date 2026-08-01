@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using UnityEngine;
 
@@ -18,27 +19,37 @@ namespace Doggiehood.Unity
 
         public static void SpawnDogs(GameState state, Transform parent)
         {
-            var houses = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
-                .ToDictionary(h => h.HouseId);
-
             var perHouseIndex = state.Houses.ToDictionary(h => h.Id, h => 0);
 
             foreach (var dog in state.Dogs)
             {
-                var go = new GameObject(DogNamePrefix + dog.Name);
-                go.transform.SetParent(parent);
-
                 var index = perHouseIndex[dog.HouseId]++;
-                go.transform.position = SidewalkSpawnPoint(dog.HouseId, index);
-
-                houses.TryGetValue(dog.HouseId, out var house);
-                // #398: bind the dog to the LIVE map-derived walk network so
-                // it wanders the whole unlocked map — and picks up tiles
-                // unlocked after it spawned — rather than the starting
-                // intersection's static singleton.
-                go.AddComponent<DogView>().Init(
-                    dog, house != null ? house.WindowAnchor : null, () => state.WalkNetwork);
+                SpawnDog(state, parent, dog, index);
             }
+        }
+
+        /// <summary>#436: spawns a single dog's <see cref="DogView"/> with the
+        /// exact house-lookup/stagger/network wiring the bulk build-time
+        /// <see cref="SpawnDogs"/> loop uses per dog — extracted so a live
+        /// move-in (QuestDirector, on <see cref="Doggiehood.Core.Quests.QuestManager.MoveInOccurred"/>)
+        /// spawns the new resident identically to a build-time dog rather than
+        /// duplicating the wiring. <paramref name="indexAtHouse"/> staggers the
+        /// dog along its house's sidewalk arm so housemates don't overlap.</summary>
+        public static void SpawnDog(GameState state, Transform parent, Dog dog, int indexAtHouse)
+        {
+            var go = new GameObject(DogNamePrefix + dog.Name);
+            go.transform.SetParent(parent);
+
+            go.transform.position = SidewalkSpawnPoint(dog.HouseId, indexAtHouse);
+
+            var house = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
+                .FirstOrDefault(h => h.HouseId == dog.HouseId);
+            // #398: bind the dog to the LIVE map-derived walk network so
+            // it wanders the whole unlocked map — and picks up tiles
+            // unlocked after it spawned — rather than the starting
+            // intersection's static singleton.
+            go.AddComponent<DogView>().Init(
+                dog, house != null ? house.WindowAnchor : null, () => state.WalkNetwork);
         }
 
         /// <summary>The house's walkway attach point on the walk network
