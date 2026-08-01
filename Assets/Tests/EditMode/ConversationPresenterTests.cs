@@ -81,6 +81,81 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void TryOpen_OnAnAcceptedQuest_ShowsTheContextualReminder_NotThePlaceholder()
+        {
+            // #472: once a quest is Accepted (the "active" quest), re-tapping the
+            // dog must surface a contextual reminder line — not the stale pre-#69
+            // ConversationStarter placeholder it used to fall through to.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            Assert.That(state.Quests.Accept(quest), Is.True, "sanity: the LostItem quest accepts");
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted));
+
+            Assert.That(presenter.TryOpen(dog), Is.True);
+
+            Assert.That(presenter.Current.Lines.Count, Is.EqualTo(1), "a reminder is a single contextual line");
+            Assert.That(ReminderPool(dog, quest), Does.Contain(presenter.Current.Lines[0]),
+                "the reminder is drawn from the quest type's pooled reminder set");
+            Assert.That(presenter.Current.Lines[0],
+                Does.Not.Contain("future update").And.Not.Contain("template system"),
+                "the stale placeholder must not be shown for a real Core quest");
+        }
+
+        [Test]
+        public void DismissingTheReminder_ClosesPanel_LeavesQuestAccepted_AndDoesNotRaiseQuestAccepted()
+        {
+            // #472: "Still looking" reuses the non-punishing "Not now" close —
+            // the quest stays Accepted and no QuestAccepted fires.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            state.Quests.Accept(quest);
+            presenter.TryOpen(dog);
+
+            var accepted = false;
+            presenter.QuestAccepted += _ => accepted = true;
+
+            presenter.DeclineCurrent();
+
+            Assert.That(presenter.IsOpen, Is.False, "dismissing the reminder closes the panel");
+            Assert.That(quest.Status, Is.EqualTo(QuestStatus.Accepted), "dismissing must not change quest status");
+            Assert.That(accepted, Is.False, "dismissing a reminder must not raise QuestAccepted");
+        }
+
+        [Test]
+        public void TheReminder_IsFullyReopenableAfterDismissal()
+        {
+            // #472: no cooldown, no anti-repeat, no persisted state — re-tapping
+            // shows the reminder again.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            state.Quests.Accept(quest);
+            presenter.TryOpen(dog);
+            presenter.DeclineCurrent();
+
+            Assert.That(presenter.TryOpen(dog), Is.True, "the reminder must be re-openable after dismissal");
+            Assert.That(presenter.Current.Lines.Count, Is.EqualTo(1));
+            Assert.That(ReminderPool(dog, quest), Does.Contain(presenter.Current.Lines[0]),
+                "re-opening shows the same kind of reminder again");
+        }
+
+        [Test]
+        public void WithNoGameState_ADogWithAnActiveQuest_StillFallsBackToTheStarterPlaceholder()
+        {
+            // #472: the ConversationStarter fallback is kept as a defensive
+            // no-GameState path — it is only reachable when there is no Core
+            // quest source, never for a dog with a real Core quest.
+            presenter.State = null;
+            var dog = new Doggiehood.Core.Dogs.Dog(
+                "Rex", Doggiehood.Core.Dogs.Breed.GermanShepherd,
+                Doggiehood.Core.Dogs.Personality.Brave, 4, false);
+            dog.GiveQuest();
+
+            Assert.That(presenter.TryOpen(dog), Is.True);
+            Assert.That(string.Join("\n", presenter.Current.Lines), Does.Contain("template system"),
+                "with no GameState the defensive starter placeholder is still the fallback");
+        }
+
+        [Test]
         public void AcceptLabel_ShowsTheCost_ForABuyQuest()
         {
             var dog = state.Dogs[1];
@@ -216,6 +291,20 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(quest.Status, Is.EqualTo(QuestStatus.Available), "declining must not accept any option");
             Assert.That(accepted, Is.False, "declining must not raise QuestAccepted");
             Assert.That(presenter.TryOpen(dog), Is.True, "the same request is fully re-openable after declining");
+        }
+
+        private static System.Collections.Generic.HashSet<string> ReminderPool(
+            Doggiehood.Core.Dogs.Dog dog, Quest quest)
+        {
+            var template = QuestTemplates.For(quest.Type);
+            var raw = new System.Collections.Generic.List<string>(template.DefaultReminders);
+            if (template.FlavoredReminders.TryGetValue(dog.Personality, out var flavored))
+            {
+                raw.AddRange(flavored);
+            }
+
+            return new System.Collections.Generic.HashSet<string>(
+                raw.Select(t => t.Replace("{dog}", dog.Name).Replace("{item}", quest.ItemName)));
         }
 
         [Test]

@@ -37,7 +37,22 @@ namespace Doggiehood.Core.Quests
                 "\"Keep your eyes peeled while you look around — it's out there somewhere!\"",
                 "\"It's gotta be around here somewhere. Thanks for looking!\"",
             },
-            new Dictionary<Personality, IReadOnlyList<string>>());
+            new Dictionary<Personality, IReadOnlyList<string>>(),
+            new[]
+            {
+                "{dog} looks up expectantly. \"Any sign of my {item} yet?\"",
+                "{dog} sniffs the air. \"Still haven't found my {item}? It's out there somewhere.\"",
+                "{dog} tilts its head. \"Have you tracked down my {item}?\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} grumbles. \"Well? Is my {item} found or not?\"" } },
+                { Personality.Excited, new[] { "{dog} bounces! \"Ooh, did you find my {item}?! Did you?!\"" } },
+                { Personality.Shy, new[] { "{dog} peeks out from behind a bush. \"Um... any luck with my {item}?\"" } },
+                { Personality.Brave, new[] { "{dog} stands tall. \"Report: has my {item} been recovered?\"" } },
+                { Personality.AdventurousExploring, new[] { "{dog} trots over. \"Found my {item} on your travels yet?\"" } },
+                { Personality.Athletic, new[] { "{dog} jogs in place. \"Still chasing down my {item}? Keep at it!\"" } },
+            });
 
         private static readonly QuestTemplate BuyGift = new QuestTemplate(
             new[]
@@ -60,7 +75,22 @@ namespace Doggiehood.Core.Quests
                 "\"The delivery truck will bring it right to my door — I'll head home and wait!\"",
                 "\"I'll head home and keep an eye out for the delivery truck!\"",
             },
-            new Dictionary<Personality, IReadOnlyList<string>>());
+            new Dictionary<Personality, IReadOnlyList<string>>(),
+            new[]
+            {
+                "{dog} looks up hopefully. \"Any luck getting me that {item}?\"",
+                "{dog} wags gently. \"Still thinking about my {item}?\"",
+                "{dog} nudges your hand. \"Did you manage to get that {item} yet?\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} huffs. \"That {item} isn't going to buy itself, you know.\"" } },
+                { Personality.Excited, new[] { "{dog} spins in a circle! \"Is it {item} time yet?! Is it?!\"" } },
+                { Personality.Shy, new[] { "{dog} paws the ground. \"No rush on the {item}... but, um, any news?\"" } },
+                { Personality.Brave, new[] { "{dog} nods firmly. \"Status on the {item}? The household is counting on it.\"" } },
+                { Personality.AdventurousExploring, new[] { "{dog} grins. \"That {item} for my next adventure — on its way?\"" } },
+                { Personality.Athletic, new[] { "{dog} stretches. \"Still need that {item} for training. Close?\"" } },
+            });
 
         private static readonly QuestTemplate PestControl = new QuestTemplate(
             new[]
@@ -83,7 +113,22 @@ namespace Doggiehood.Core.Quests
                 "\"Just give the house a good spray and they'll clear right out!\"",
                 "\"A quick spray should do the trick. Thanks for handling it!\"",
             },
-            new Dictionary<Personality, IReadOnlyList<string>>());
+            new Dictionary<Personality, IReadOnlyList<string>>(),
+            new[]
+            {
+                "{dog} scratches nervously. \"Are those bugs still crawling around my house?\"",
+                "{dog} shudders. \"Any chance you've cleared the bugs out yet?\"",
+                "{dog} eyes the house. \"Still waiting on that bug spray, if you don't mind.\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} glares at the house. \"Bugs. Still there. Still my problem. And yours.\"" } },
+                { Personality.Excited, new[] { "{dog} spins around! \"The bugs! Are they gone yet?! Please say yes!\"" } },
+                { Personality.Shy, new[] { "{dog} hides behind you. \"I... still can't go inside. Are the bugs gone?\"" } },
+                { Personality.Brave, new[] { "{dog} stands guard. \"The invasion holds. Have you cleared my house?\"" } },
+                { Personality.AdventurousExploring, new[] { "{dog} reports back. \"Re-scouted — bugs still present. Any progress?\"" } },
+                { Personality.Athletic, new[] { "{dog} paces. \"Can't do my laps yet — bugs still in the house?\"" } },
+            });
 
         private static readonly QuestTemplate DecorationRequest = new QuestTemplate(
             new[]
@@ -106,7 +151,22 @@ namespace Doggiehood.Core.Quests
                 "\"Anything comfy works — you pick!\"",
                 "\"Whatever you find comfy is fine by me!\"",
             },
-            new Dictionary<Personality, IReadOnlyList<string>>());
+            new Dictionary<Personality, IReadOnlyList<string>>(),
+            new[]
+            {
+                "{dog} glances at the yard. \"Still thinking about that {item} for out here?\"",
+                "{dog} flops in the grass. \"Any word on my {item} for the yard?\"",
+                "{dog} looks around the yard. \"That {item} would still be lovely — any luck?\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} sighs. \"This yard is still uncomfortable. Where's my {item}?\"" } },
+                { Personality.Excited, new[] { "{dog} zooms across the yard! \"Is the {item} coming?! I can't wait to try it out!\"" } },
+                { Personality.Shy, new[] { "{dog} looks at the ground. \"The yard's still a bit bare... any news on the {item}?\"" } },
+                { Personality.Brave, new[] { "{dog} surveys the yard. \"The {item} for the post — arranged yet?\"" } },
+                { Personality.AdventurousExploring, new[] { "{dog} flops down. \"Still craving that {item} to rest on after a trek.\"" } },
+                { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery {item} for the yard — close, coach?\"" } },
+            });
 
         public static QuestTemplate For(QuestType type)
         {

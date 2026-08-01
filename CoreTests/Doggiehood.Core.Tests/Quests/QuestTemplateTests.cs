@@ -34,6 +34,64 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void RenderReminder_FillsDogNameAndItemSlots()
+        {
+            // #472: re-tapping an active quest renders a contextual reminder
+            // line — same {dog}/{item} substitution as the opener/closer.
+            var dog = new Dog("Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false);
+
+            var line = QuestTemplates.For(QuestType.LostItem).RenderReminder(dog, "ball", new Random(1));
+
+            Assert.That(line, Is.Not.Null.And.Not.Empty);
+            Assert.That(line, Does.Contain("Pepper"));
+            Assert.That(line, Does.Contain("ball"));
+            Assert.That(line, Does.Not.Contain("{dog}"));
+            Assert.That(line, Does.Not.Contain("{item}"));
+        }
+
+        [TestCaseSource(nameof(AllQuestTypes))]
+        public void EveryTemplate_HasNonEmptyDefaultReminderPool(QuestType type)
+        {
+            // #472: every quest type can be re-tapped while active, so every
+            // template must carry a reminder pool with the same Model 2 shape.
+            var template = QuestTemplates.For(type);
+
+            Assert.That(template.DefaultReminders, Is.Not.Empty, $"{type} default reminders");
+        }
+
+        [TestCaseSource(nameof(AllQuestTypes))]
+        public void RenderReminder_AlwaysComesFromTheDefaultUnionPersonalityPools(QuestType type)
+        {
+            var template = QuestTemplates.For(type);
+            var rng = new Random(2024);
+
+            foreach (var dog in DogRoster.CreateStartingDogs())
+            {
+                var candidates = FilledCandidatePool(template.DefaultReminders, template.FlavoredReminders, dog, "toy");
+
+                for (var i = 0; i < 50; i++)
+                {
+                    var line = template.RenderReminder(dog, "toy", rng);
+
+                    Assert.That(candidates, Does.Contain(line),
+                        $"{type}/{dog.Personality} reminder not from candidate pool");
+                }
+            }
+        }
+
+        [Test]
+        public void RenderReminder_IsDeterministicForASeed()
+        {
+            var dog = new Dog("Nala", Breed.GermanShepherd, Personality.Excited, 1, true);
+            var template = QuestTemplates.For(QuestType.LostItem);
+
+            var first = template.RenderReminder(dog, "toy", new Random(7));
+            var second = template.RenderReminder(dog, "toy", new Random(7));
+
+            Assert.That(second, Is.EqualTo(first));
+        }
+
+        [Test]
         public void Rendering_NeverThrowsOrProducesEmptyText_ForTheWholeRoster()
         {
             // #69: every (dog, personality, item) combo in the roster renders.
@@ -112,6 +170,8 @@ namespace Doggiehood.Core.Tests.Quests
                 defaultOpeners,
                 flavoredOpeners,
                 new List<string> { "Closer {dog}" },
+                new Dictionary<Personality, IReadOnlyList<string>>(),
+                new List<string> { "Reminder {dog}" },
                 new Dictionary<Personality, IReadOnlyList<string>>());
 
             var dog = new Dog("Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false);
