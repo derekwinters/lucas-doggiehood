@@ -40,7 +40,7 @@ namespace Doggiehood.Unity
             var go = new GameObject(DogNamePrefix + dog.Name);
             go.transform.SetParent(parent);
 
-            go.transform.position = SidewalkSpawnPoint(dog.HouseId, indexAtHouse);
+            go.transform.position = SidewalkSpawnPoint(state, dog.HouseId, indexAtHouse);
 
             var house = Object.FindObjectsByType<HouseView>(FindObjectsSortMode.None)
                 .FirstOrDefault(h => h.HouseId == dog.HouseId);
@@ -55,11 +55,19 @@ namespace Doggiehood.Unity
         /// <summary>The house's walkway attach point on the walk network
         /// (#128 — the sidewalk end of its front walkway), staggered along
         /// whichever sidewalk arm it sits on so multiple housemates don't
-        /// spawn on top of each other.</summary>
-        private static Vector3 SidewalkSpawnPoint(int houseId, int indexAtHouse)
+        /// spawn on top of each other. #436: the lot and walk network are
+        /// resolved from the LIVE <paramref name="state"/> (not the
+        /// starting-only <see cref="NeighborhoodLayout"/>), so a dog living in a
+        /// built ZONE house (id >= 5 — a move-in resident, or a persisted
+        /// occupied zone house on load) resolves its lot and front walkway
+        /// instead of throwing. Behavior is unchanged for the four starting
+        /// houses: <see cref="GameState.GetHouseLot"/> resolves their layout
+        /// lots and <see cref="GameState.WalkNetwork"/> spans the starting
+        /// intersection in a not-yet-expanded game.</summary>
+        private static Vector3 SidewalkSpawnPoint(GameState state, int houseId, int indexAtHouse)
         {
-            var lot = NeighborhoodLayout.GetHouseLot(houseId);
-            var network = NeighborhoodLayout.WalkNetwork;
+            var lot = state.GetHouseLot(houseId);
+            var network = state.WalkNetwork;
 
             if (!network.TryGetFrontWalkway(houseId, out var walkway))
             {
