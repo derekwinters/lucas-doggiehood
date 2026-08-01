@@ -110,10 +110,17 @@ namespace Doggiehood.Unity
         private const float ArrowAngleUpDeg = 270f;
 
         /// <summary>Elapsed seconds the current gesture animation has been
-        /// playing; accumulated in <see cref="Update"/> while the arrows show and
-        /// reset otherwise, then mapped to a beat by the Core
+        /// playing; accumulated in <see cref="StepGestureClock"/> while the arrows
+        /// show and reset otherwise, then mapped to a beat by the Core
         /// <see cref="GestureCoach"/>.</summary>
         private float gestureElapsed;
+
+        /// <summary>#468: the <see cref="CurrentStep"/> observed on the previous
+        /// gesture-clock tick, so the clock can restart from the first beat on ANY
+        /// step change — not only when <see cref="ShouldDrawGesture"/> flips false.
+        /// <see cref="OnboardingStep.Pan"/> is the enum's zero value, matching the
+        /// live first step after <see cref="Init"/>.</summary>
+        private OnboardingStep lastGestureStep;
 
         /// <summary>#291: the bundled UI font, loaded from Resources so it ships
         /// in the Android build — never an editor-only built-in font, which
@@ -225,18 +232,35 @@ namespace Doggiehood.Unity
         private void Update()
         {
             Poll();
+            StepGestureClock(Time.deltaTime);
+        }
 
-            // #330: advance the gesture animation clock while the arrows show,
-            // and reset it when they don't so each movement step restarts from
-            // the first beat.
+        /// <summary>#330/#468: advances the gesture-animation clock by
+        /// <paramref name="deltaSeconds"/> and returns the resulting elapsed
+        /// seconds. Resets to 0 on ANY <see cref="CurrentStep"/> change — so each
+        /// movement step restarts from its first beat, including across the
+        /// <see cref="OnboardingStep.Pan"/> -> <see cref="OnboardingStep.Zoom"/>
+        /// handoff where <see cref="ShouldDrawGesture"/> stays true — and whenever
+        /// the arrows aren't showing. Public so EditMode tests can drive the reset
+        /// without a running player loop, mirroring <see cref="Poll"/>.</summary>
+        public float StepGestureClock(float deltaSeconds)
+        {
+            if (CurrentStep != lastGestureStep)
+            {
+                gestureElapsed = 0f;
+                lastGestureStep = CurrentStep;
+            }
+
             if (ShouldDrawGesture)
             {
-                gestureElapsed += Time.deltaTime;
+                gestureElapsed += deltaSeconds;
             }
             else
             {
                 gestureElapsed = 0f;
             }
+
+            return gestureElapsed;
         }
 
         private void AdvanceCameraSteps()
@@ -553,6 +577,46 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>#468: the screen position of an arrow's tip — the point half
+        /// a shaft-length (<see cref="ArrowLengthPx"/>) from <paramref name="center"/>
+        /// along the arrow's axis after the per-direction rotation. Public static
+        /// so EditMode tests can assert the chevron head's anchor without a running
+        /// player loop, mirroring <see cref="ComputePanArrowCenter"/>.</summary>
+        public static Vector2 ComputeArrowTip(Vector2 center, float directionDeg, float scale)
+        {
+            var halfLength = ArrowLengthPx * scale / 2f;
+            return center + Rotate(new Vector2(halfLength, 0f), directionDeg);
+        }
+
+        /// <summary>#468: the screen position of a chevron arm's far (back)
+        /// endpoint. Each arm is one head-length (<see cref="ArrowHeadSizePx"/>)
+        /// bar running back from the tip, rotated by a SINGLE consistent rotation
+        /// of <c>directionDeg + <paramref name="armHalfAngleDeg"/></c> — never a
+        /// second <see cref="GUIUtility.RotateAroundPivot"/> nested on the already
+        /// per-direction-rotated shaft matrix (whose differing pivot mispositioned
+        /// the head for every non-zero direction). <paramref name="armHalfAngleDeg"/>
+        /// is the signed half-angle off the shaft axis (<c>+/-</c>
+        /// <see cref="ChevronHalfAngleDeg"/>). Public static so the head geometry is
+        /// EditMode-testable, mirroring <see cref="ComputePanArrowCenter"/>.</summary>
+        public static Vector2 ComputeChevronArmEnd(Vector2 center, float directionDeg, float armHalfAngleDeg, float scale)
+        {
+            var tip = ComputeArrowTip(center, directionDeg, scale);
+            var head = ArrowHeadSizePx * scale;
+            return tip + Rotate(new Vector2(-head, 0f), directionDeg + armHalfAngleDeg);
+        }
+
+        /// <summary>Rotates <paramref name="v"/> by <paramref name="degrees"/>
+        /// using the same clockwise (GUI y-down) convention as
+        /// <see cref="GUIUtility.RotateAroundPivot"/>, so the computed geometry and
+        /// the rendered strokes stay in lockstep.</summary>
+        private static Vector2 Rotate(Vector2 v, float degrees)
+        {
+            var rad = degrees * Mathf.Deg2Rad;
+            var cos = Mathf.Cos(rad);
+            var sin = Mathf.Sin(rad);
+            return new Vector2(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
+        }
+
         /// <summary>Draws one Candy Cottage arrow (Gold fill, ink outline)
         /// centered at <paramref name="center"/> and rotated to
         /// <paramref name="directionDeg"/> — a stadium shaft plus a two-armed
@@ -560,35 +624,37 @@ namespace Doggiehood.Unity
         /// there is no external raster art.</summary>
         private static void DrawArrow(Vector2 center, float directionDeg, float scale)
         {
-            var previous = GUI.matrix;
-            GUIUtility.RotateAroundPivot(directionDeg, center);
-
             var length = ArrowLengthPx * scale;
             var thickness = ArrowThicknessPx * scale;
             var head = ArrowHeadSizePx * scale;
             var outline = ArrowOutlineThicknessPx * scale;
 
+            // Shaft: one rotation about the arrow center is correct on its own.
+            var previous = GUI.matrix;
+            GUIUtility.RotateAroundPivot(directionDeg, center);
             var left = center.x - length / 2f;
-            var tipX = center.x + length / 2f;
-            var shaftRight = tipX - head;
-
+            var shaftRight = center.x + length / 2f - head;
             var shaft = new Rect(left, center.y - thickness / 2f, Mathf.Max(0f, shaftRight - left), thickness);
             DrawArrowStroke(shaft, outline);
-
-            // Chevron head: two arms running back from the tip at +/- the half-angle.
-            var arm = new Rect(tipX - head, center.y - thickness / 2f, head, thickness);
-            var tip = new Vector2(tipX, center.y);
-            DrawRotatedArrowStroke(arm, ChevronHalfAngleDeg, tip, outline);
-            DrawRotatedArrowStroke(arm, -ChevronHalfAngleDeg, tip, outline);
-
             GUI.matrix = previous;
+
+            // Chevron head (#468): each arm is drawn under ONE rotation about the
+            // final tip — directionDeg combined with the arm's +/- half-angle — so
+            // the head stays attached to the shaft for every direction. Previously
+            // a second RotateAroundPivot(ChevronHalfAngleDeg, tip) was nested on the
+            // already-rotated shaft matrix; the differing pivots don't commute, so
+            // the head was only correct at directionDeg == 0.
+            var tip = ComputeArrowTip(center, directionDeg, scale);
+            DrawChevronArm(tip, directionDeg + ChevronHalfAngleDeg, head, thickness, outline);
+            DrawChevronArm(tip, directionDeg - ChevronHalfAngleDeg, head, thickness, outline);
         }
 
-        private static void DrawRotatedArrowStroke(Rect rect, float angleDeg, Vector2 pivot, float outline)
+        private static void DrawChevronArm(Vector2 tip, float armDeg, float head, float thickness, float outline)
         {
             var saved = GUI.matrix;
-            GUIUtility.RotateAroundPivot(angleDeg, pivot);
-            DrawArrowStroke(rect, outline);
+            GUIUtility.RotateAroundPivot(armDeg, tip);
+            var arm = new Rect(tip.x - head, tip.y - thickness / 2f, head, thickness);
+            DrawArrowStroke(arm, outline);
             GUI.matrix = saved;
         }
 
