@@ -19,16 +19,38 @@ namespace Doggiehood.Core.World
     }
 
     /// <summary>One SELECTED yard landscaping pick (#170): a candidate
-    /// position plus the kit model it renders as.</summary>
+    /// position, the kit model it renders as, and a per-tree size multiplier
+    /// (#458).</summary>
     public readonly struct YardTreePlacement
     {
+        /// <summary>The unscaled baseline size multiplier — today's fixed tree
+        /// size (#458). "Never smaller" than this: yard-tree scales are drawn
+        /// upward from here toward <see cref="YardLandscaping.MaxTreeScaleVariance"/>,
+        /// and pieces with no lot/seed context (cul-de-sac open-space trees)
+        /// stay at exactly this baseline.</summary>
+        public const float BaselineScale = 1f;
+
         public GridPoint Position { get; }
         public YardTreeKind Kind { get; }
 
+        /// <summary>Per-tree size multiplier applied on top of
+        /// <see cref="YardLandscaping.UniformScale"/> (#458): always in
+        /// [<see cref="BaselineScale"/>, <see cref="YardLandscaping.MaxTreeScaleVariance"/>],
+        /// so trees only ever get bigger, never smaller. Defaults to
+        /// <see cref="BaselineScale"/> for pieces constructed with no per-lot
+        /// seed to draw from.</summary>
+        public float Scale { get; }
+
         public YardTreePlacement(GridPoint position, YardTreeKind kind)
+            : this(position, kind, BaselineScale)
+        {
+        }
+
+        public YardTreePlacement(GridPoint position, YardTreeKind kind, float scale)
         {
             Position = position;
             Kind = kind;
+            Scale = scale;
         }
     }
 
@@ -105,17 +127,32 @@ namespace Doggiehood.Core.World
         public const float UniformScale = FenceTiling.Scale;
 
         /// <summary>
+        /// Maximum per-tree size multiplier (#458): a yard tree may render up to
+        /// 25% larger than <see cref="UniformScale"/>, never smaller than it
+        /// (Derek, v0.8 playtesting — "allow the tree models to scale up to 25%
+        /// larger… never smaller"). Each yard pick draws its
+        /// <see cref="YardTreePlacement.Scale"/> from
+        /// [<see cref="YardTreePlacement.BaselineScale"/>, this], and
+        /// <see cref="TreeFootprintRadius"/> derives from this worst case so the
+        /// widened trees still can't overlap.
+        /// </summary>
+        public const float MaxTreeScaleVariance = 1.25f;
+
+        /// <summary>
         /// The single collision radius used for every candidate and pick,
         /// regardless of which of the two tree models ends up there: the
         /// largest model-local half-extent among tree-large.fbx/
         /// tree-small.fbx (their shared canopy's Z half-extent,
-        /// <see cref="TreeHalfExtentZ"/>) at <see cref="UniformScale"/>.
-        /// Conservative by construction — a spacing derived from the widest
-        /// piece can never let a narrower one overlap either. (#243 removed
-        /// the planter kind, which used to be the widest piece; the spacing
-        /// is now re-derived from the trees that actually remain.)
+        /// <see cref="TreeHalfExtentZ"/>) at <see cref="UniformScale"/>, widened
+        /// to the WORST-CASE per-tree size (× <see cref="MaxTreeScaleVariance"/>,
+        /// #458) so that even two trees both drawn at the +25% cap can never
+        /// visually overlap. Conservative by construction — a spacing derived
+        /// from the widest piece at its largest possible scale can never let a
+        /// narrower or smaller one overlap either. (#243 removed the planter
+        /// kind, which used to be the widest piece; the spacing is now
+        /// re-derived from the trees that actually remain.)
         /// </summary>
-        public const float TreeFootprintRadius = TreeHalfExtentZ * UniformScale;
+        public const float TreeFootprintRadius = TreeHalfExtentZ * UniformScale * MaxTreeScaleVariance;
 
         /// <summary>Minimum center-to-center distance between two placed
         /// yard props: two footprint radii.</summary>
@@ -385,7 +422,8 @@ namespace Doggiehood.Core.World
             for (var i = 0; i < count && pool.Count > 0; i++)
             {
                 var index = rng.Next(pool.Count);
-                picks.Add(new YardTreePlacement(pool[index].Position, Kinds[rng.Next(Kinds.Length)]));
+                var kind = Kinds[rng.Next(Kinds.Length)];
+                picks.Add(new YardTreePlacement(pool[index].Position, kind, NextTreeScale(rng)));
                 pool.RemoveAt(index);
             }
 
@@ -398,6 +436,17 @@ namespace Doggiehood.Core.World
         private static LotRect HouseFootprintOf(HouseLot lot)
         {
             return HousePlacement.HouseFootprint(lot);
+        }
+
+        /// <summary>Draws one per-tree size multiplier (#458) from the SAME
+        /// already-seeded per-lot <paramref name="rng"/> the picks are drawn
+        /// from, so it stays deterministic per lot: uniformly in
+        /// [<see cref="YardTreePlacement.BaselineScale"/> (never smaller),
+        /// <see cref="MaxTreeScaleVariance"/> (+25% cap)].</summary>
+        private static float NextTreeScale(Random rng)
+        {
+            return YardTreePlacement.BaselineScale
+                + (float)rng.NextDouble() * (MaxTreeScaleVariance - YardTreePlacement.BaselineScale);
         }
 
         private static int SeedFor(HouseLot lot, int salt)

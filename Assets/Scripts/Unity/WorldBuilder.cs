@@ -882,7 +882,7 @@ namespace Doggiehood.Unity
                 tree.name = placement.Kind + " " + index;
                 tree.transform.position = new Vector3(placement.Position.X, 0f, placement.Position.Z);
                 tree.transform.rotation = Quaternion.identity;
-                tree.transform.localScale = Vector3.one * YardLandscaping.UniformScale;
+                tree.transform.localScale = Vector3.one * YardLandscaping.UniformScale * placement.Scale;
             }
             else
             {
