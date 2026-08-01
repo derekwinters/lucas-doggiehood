@@ -59,6 +59,17 @@ namespace Doggiehood.Core.Quests
             QuestType.PestControl,
         };
 
+        /// <summary>#436: raised from the single <see cref="Complete"/> funnel
+        /// whenever a completed quest's move-in roll actually fills a vacant
+        /// house — carrying the newly moved-in household (never empty). The
+        /// Unity layer subscribes to reflect the move-in on screen the moment it
+        /// happens (spawn the new dog(s), drop the filled house's vacancy tint);
+        /// Core has already added the household to the roster and flipped the
+        /// house occupied by the time this fires. All three completion paths
+        /// (delivery, lost-item find, spray) route through <see cref="Complete"/>,
+        /// so every one is covered.</summary>
+        public event Action<IReadOnlyList<Dog>> MoveInOccurred;
+
         private readonly GameState state;
         private readonly Random moveInRng;
         private readonly QuestPacingPolicy pacing = new QuestPacingPolicy();
@@ -448,7 +459,11 @@ namespace Doggiehood.Core.Quests
             quest.Status = QuestStatus.Completed;
             FindDog(quest).ClearQuest();
             state.Wallet.Deposit(EconomyNumbers.QuestPayout);
-            state.HandleQuestCompleted(moveInRng);
+            var household = state.HandleQuestCompleted(moveInRng);
+            if (household.Count > 0)
+            {
+                MoveInOccurred?.Invoke(household);
+            }
         }
 
         private Dog FindDog(Quest quest)

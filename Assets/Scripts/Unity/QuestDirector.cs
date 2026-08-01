@@ -26,6 +26,7 @@ namespace Doggiehood.Unity
         public GameState State { get; private set; }
 
         private Transform worldRoot;
+        private HouseUpgradeDirector houseRefresher;
         private readonly System.Random restRng = new System.Random();
         private float restTickTimer;
 
@@ -39,14 +40,68 @@ namespace Doggiehood.Unity
         // existing view (the same idempotency ExpansionDirector.WireLots uses).
         private readonly HashSet<HouseView> wiredHouses = new HashSet<HouseView>();
 
-        public void Init(GameState state, Transform worldRoot)
+        /// <summary>#436: <paramref name="houseRefresher"/> re-renders the filled
+        /// house on a move-in so its vacancy greyscale (#58) drops the moment a
+        /// household moves in — the same destroy-and-rebuild
+        /// <see cref="HouseUpgradeDirector.RefreshHouse"/> already does for the
+        /// #407 upgrade path, preserving the house's rolled variant/tint. Left
+        /// null (e.g. a bare EditMode Init that isn't exercising move-in) simply
+        /// skips the re-render; the dogs still spawn.</summary>
+        public void Init(GameState state, Transform worldRoot, HouseUpgradeDirector houseRefresher = null)
         {
             State = state;
             this.worldRoot = worldRoot;
+            this.houseRefresher = houseRefresher;
 
             WireHouses();
             RefreshDecorations();
             RefreshBugSwarms();
+
+            // #436: reflect a move-in the instant Core reports one — spawn the
+            // new resident(s) and drop the filled house's vacancy tint.
+            State.Quests.MoveInOccurred += OnMoveInOccurred;
+        }
+
+        private void OnDestroy()
+        {
+            if (State != null)
+            {
+                State.Quests.MoveInOccurred -= OnMoveInOccurred;
+            }
+        }
+
+        /// <summary>#436: a household just moved into a previously vacant house.
+        /// Spawns a <see cref="DogView"/> for each new member — bound to their
+        /// houseId, tappable and wandering, via the shared
+        /// <see cref="DogSpawner.SpawnDog"/> — without touching any existing
+        /// DogView, then re-renders the filled house so its vacancy greyscale
+        /// drops while its variant/tint is preserved. Core has already added the
+        /// household to the roster and flipped the house occupied.</summary>
+        private void OnMoveInOccurred(IReadOnlyList<Doggiehood.Core.Dogs.Dog> household)
+        {
+            if (household == null || household.Count == 0)
+            {
+                return;
+            }
+
+            var houseId = household[0].HouseId;
+
+            // Stagger the new residents after any dogs already shown at this
+            // house (a vacant house has none, but stay robust if it doesn't).
+            var index = Object.FindObjectsByType<DogView>(FindObjectsSortMode.None)
+                .Count(v => v.Dog != null && v.Dog.HouseId == houseId);
+
+            foreach (var dog in household)
+            {
+                DogSpawner.SpawnDog(State, worldRoot, dog, index);
+                index++;
+            }
+
+            // Drop the vacancy tint by rebuilding the now-occupied house (#58),
+            // reusing the #407 destroy-and-rebuild that preserves variant/tint.
+            houseRefresher?.RefreshHouse(houseId);
+
+            SaveStore.Save(State);
         }
 
         /// <summary>Subscribes every <see cref="HouseView"/> in the scene to the

@@ -5,6 +5,7 @@ using System.Reflection;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
+using Doggiehood.Core.Tests.Expansion;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -180,6 +181,76 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(state.Dogs.Count, Is.EqualTo(dogCountBefore));
             Assert.That(state.Houses, Has.All.Property("IsVacant").False);
+        }
+
+        /// <summary>#436: a game state carrying exactly one vacant house — a
+        /// freshly built (never-occupied) zone lot (#58) — so a completed
+        /// quest's move-in roll has somewhere to land, unlike the four
+        /// always-occupied starting houses (#63).</summary>
+        private static GameState StateWithOneVacantZoneHouse()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(10_000);
+            Assert.That(state.TryUnlockNextZone(), Is.True);
+            var lot = state.UnlockedZones[0].Lots[0];
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
+            Assert.That(state.Houses.Single(h => h.Id == lot.HouseId).IsVacant, Is.True,
+                "a freshly built zone house starts vacant");
+            return state;
+        }
+
+        [Test]
+        public void CompletingAQuest_WithAVacantHouse_AndASuccessfulRoll_RaisesMoveInOccurred_WithTheHousehold()
+        {
+            // #436: the move-in was invisible because QuestManager.Complete
+            // discarded HandleQuestCompleted's household return. It now raises
+            // MoveInOccurred with exactly the newly moved-in household, from the
+            // single completion funnel so all three quest types are covered.
+            // Deterministic via the injected move-in RNG (a NextDouble of 0.0
+            // clears the 5% base chance) over the single vacant house.
+            var state = StateWithOneVacantZoneHouse();
+            var manager = new QuestManager(state, new SequenceRandom(0.0));
+            var dog = state.Dogs.First();
+            var pest = manager.GiveQuestTo(dog, QuestType.PestControl, new System.Random(5));
+            Assert.That(manager.Accept(pest), Is.True);
+
+            IReadOnlyList<Dog> raised = null;
+            var raisedCount = 0;
+            manager.MoveInOccurred += household =>
+            {
+                raised = household;
+                raisedCount++;
+            };
+
+            var dogsBefore = state.Dogs.Count;
+            Assert.That(manager.SprayHouse(pest.TargetHouseId.Value), Is.True);
+
+            Assert.That(raisedCount, Is.EqualTo(1), "the move-in event fires exactly once per move-in");
+            Assert.That(raised, Is.Not.Empty, "the event carries the newly moved-in household");
+            Assert.That(state.Dogs.Count, Is.GreaterThan(dogsBefore), "the household joined the live roster");
+            Assert.That(raised, Is.EqualTo(state.Dogs.Skip(dogsBefore).ToList()),
+                "the event carries exactly the dogs that just moved in");
+        }
+
+        [Test]
+        public void CompletingAQuest_WhenTheMoveInRollFails_RaisesNoMoveInEvent()
+        {
+            // #436: a completion that produces no move-in (the pity roll fails)
+            // must raise nothing — the event fires only on an actual move-in.
+            var state = StateWithOneVacantZoneHouse();
+            var manager = new QuestManager(state, new SequenceRandom(0.99));
+            var dog = state.Dogs.First();
+            var pest = manager.GiveQuestTo(dog, QuestType.PestControl, new System.Random(5));
+            Assert.That(manager.Accept(pest), Is.True);
+
+            var raisedCount = 0;
+            manager.MoveInOccurred += _ => raisedCount++;
+
+            var dogsBefore = state.Dogs.Count;
+            Assert.That(manager.SprayHouse(pest.TargetHouseId.Value), Is.True);
+
+            Assert.That(raisedCount, Is.EqualTo(0), "no move-in means no event");
+            Assert.That(state.Dogs.Count, Is.EqualTo(dogsBefore), "the roster is unchanged when nothing moves in");
         }
 
         [Test]
