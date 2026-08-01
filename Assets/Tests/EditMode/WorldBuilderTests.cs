@@ -520,6 +520,83 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void BuildYardTree_ScalesEachYardTree_ByItsPlacementScale_NotTheFlatUniformScale()
+        {
+            // #458: yard trees vary in size — each rendered tree's localScale is
+            // YardLandscaping.UniformScale * placement.Scale (Scale drawn per
+            // tree in [1.0, 1.25]), not a single flat UniformScale for every
+            // tree. Kit path (SetUp staged the real City Kit tree models).
+            var host = new GameObject("yard-scale-host");
+            var sawVariation = false;
+            try
+            {
+                foreach (var lot in NeighborhoodLayout.HouseLots)
+                {
+                    var picks = YardLandscaping.FrontTreesFor(lot)
+                        .Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+                    Assert.That(picks, Is.Not.Empty, $"lot {lot.HouseId}: sanity — selects yard trees");
+
+                    WorldBuilder.BuildYardLandscaping(host.transform, lot);
+                    var container = host.transform.Find(WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
+                    Assert.That(container, Is.Not.Null, $"lot {lot.HouseId}: gets a yard container");
+
+                    var trees = container.Cast<Transform>().ToList();
+                    Assert.That(trees.Count, Is.EqualTo(picks.Count), $"lot {lot.HouseId}: one tree per pick");
+
+                    for (var i = 0; i < trees.Count; i++)
+                    {
+                        var expected = YardLandscaping.UniformScale * picks[i].Scale;
+                        Assert.That(trees[i].localScale.x, Is.EqualTo(expected).Within(0.001f),
+                            $"lot {lot.HouseId} tree {i}: X = UniformScale * placement.Scale");
+                        Assert.That(trees[i].localScale.y, Is.EqualTo(expected).Within(0.001f),
+                            $"lot {lot.HouseId} tree {i}: Y = UniformScale * placement.Scale");
+                        Assert.That(trees[i].localScale.z, Is.EqualTo(expected).Within(0.001f),
+                            $"lot {lot.HouseId} tree {i}: Z = UniformScale * placement.Scale");
+
+                        if (Mathf.Abs(trees[i].localScale.x - YardLandscaping.UniformScale) > 0.001f)
+                        {
+                            sawVariation = true;
+                        }
+                    }
+                }
+
+                Assert.That(sawVariation, Is.True,
+                    "at least one yard tree renders larger than the flat uniform scale — sizes really vary");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void BuildTileOpenSpaceTrees_StayAtTheFixedBaseScale_VariabilityScopedToYardTrees()
+        {
+            // #458 regression guard: cul-de-sac open-space trees construct a
+            // YardTreePlacement with no lot/seed context, so Scale defaults to
+            // YardTreePlacement.BaselineScale (1.0) and they render at the flat
+            // UniformScale — the size variability is scoped to yard trees only.
+            Object.DestroyImmediate(root);
+            var state = WithFirstZoneUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var container = root.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name == WorldBuilder.OpenSpaceTreeNamePrefix + "0,1");
+            Assert.That(container, Is.Not.Null, "the cul-de-sac tile (0,1) gets an open-space-trees container");
+            Assert.That(container.childCount, Is.GreaterThan(0), "it renders open-space trees");
+
+            foreach (Transform tree in container)
+            {
+                Assert.That(tree.localScale.x, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
+                    "open-space tree X stays at the fixed base UniformScale");
+                Assert.That(tree.localScale.y, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
+                    "open-space tree Y stays at the fixed base UniformScale");
+                Assert.That(tree.localScale.z, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
+                    "open-space tree Z stays at the fixed base UniformScale");
+            }
+        }
+
+        [Test]
         public void BuildHouse_OnAZoneLotWithNoAuthoredStyle_FallsBackToTheGrayboxRender_WithoutThrowing()
         {
             // #57: houses built beyond the starting 4 have no

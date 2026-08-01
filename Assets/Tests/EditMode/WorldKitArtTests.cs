@@ -607,7 +607,11 @@ namespace Doggiehood.Unity.EditModeTests
                     Assert.That(piece.position.y, Is.EqualTo(0f).Within(0.001f),
                         $"lot {lot.HouseId} yard piece {i} must sit on the ground");
 
-                    Assert.That(piece.localScale.x, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
+                    // #458: each yard tree renders at UniformScale * its
+                    // Core-selected per-tree size multiplier (placement.Scale in
+                    // [1.0, MaxTreeScaleVariance]), not a single flat UniformScale.
+                    Assert.That(piece.localScale.x,
+                        Is.EqualTo(YardLandscaping.UniformScale * expected[i].Scale).Within(0.001f),
                         $"lot {lot.HouseId} yard piece {i} scale");
 
                     var pieceMeshes = piece.GetComponentsInChildren<MeshFilter>()

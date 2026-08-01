@@ -263,21 +263,91 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void TreeFootprintRadius_IsDerivedFromTheLargerTreeCanopyHalfExtent()
+        public void TreeFootprintRadius_IsDerivedFromTheLargerTreeCanopyHalfExtent_AtMaxPossibleScale()
         {
-            // #243: with the planter kind removed, the collision spacing must
-            // be re-derived from the largest REMAINING (tree) mesh — the
-            // larger of the two shared tree canopy half-extents (Z, 0.1215 >
-            // X, 0.1052) at the module's uniform scale — not off a piece that
-            // can never be placed anymore.
+            // #243: with the planter kind removed, the collision spacing is
+            // re-derived from the largest REMAINING (tree) mesh — the larger of
+            // the two shared tree canopy half-extents (Z, 0.1215 > X, 0.1052).
+            // #458: per-tree size now varies up to MaxTreeScaleVariance (×1.25)
+            // above the uniform scale, so the spacing must be widened to that
+            // WORST-CASE size — UniformScale × MaxTreeScaleVariance — so two
+            // trees can never visually overlap even when both land at max size.
             var largerTreeHalfExtent = Math.Max(YardLandscaping.TreeHalfExtentX, YardLandscaping.TreeHalfExtentZ);
 
             Assert.That(YardLandscaping.TreeFootprintRadius,
-                Is.EqualTo(largerTreeHalfExtent * YardLandscaping.UniformScale).Within(1e-6f),
-                "footprint radius must come from the larger tree half-extent, not the removed planter");
+                Is.EqualTo(largerTreeHalfExtent * YardLandscaping.UniformScale * YardLandscaping.MaxTreeScaleVariance)
+                    .Within(1e-6f),
+                "footprint radius must come from the larger tree half-extent at the max possible scale");
             Assert.That(YardLandscaping.MinSpacing,
                 Is.EqualTo(YardLandscaping.TreeFootprintRadius * 2f).Within(1e-6f),
                 "min spacing is two footprint radii");
+        }
+
+        [Test]
+        public void SelectedTreeScales_ForRealLots_AlwaysSitBetweenBaselineAndMaxVariance_NeverSmaller()
+        {
+            // #458: each pick carries a per-tree size multiplier drawn from
+            // [BaselineScale, MaxTreeScaleVariance] — never below the current
+            // baseline ("never smaller" in the ask), never above +25%.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var picks = YardLandscaping.FrontTreesFor(lot)
+                    .Concat(YardLandscaping.BackTreesFor(lot))
+                    .ToList();
+                Assert.That(picks, Is.Not.Empty, $"lot {lot.HouseId}: sanity — has yard picks");
+
+                foreach (var pick in picks)
+                {
+                    Assert.That(pick.Scale,
+                        Is.InRange(YardTreePlacement.BaselineScale, YardLandscaping.MaxTreeScaleVariance),
+                        $"lot {lot.HouseId}: pick {pick.Position} scale must be baseline..+25%, never smaller");
+                }
+            }
+        }
+
+        [Test]
+        public void SelectedTreeScales_SpanTheFullRange_AcrossManySeeds()
+        {
+            // #458: the draw actually varies — across many seeds some trees are
+            // near baseline and some near the +25% cap, not a single fixed value.
+            var pool = FarApartCandidates(YardLandscaping.BackCandidateCount);
+            var minSeen = float.MaxValue;
+            var maxSeen = float.MinValue;
+
+            for (var seed = 0; seed < 300; seed++)
+            {
+                foreach (var pick in YardLandscaping.SelectBack(pool, seed))
+                {
+                    Assert.That(pick.Scale,
+                        Is.InRange(YardTreePlacement.BaselineScale, YardLandscaping.MaxTreeScaleVariance),
+                        $"seed {seed}: scale must stay within [baseline, +25%]");
+                    minSeen = Math.Min(minSeen, pick.Scale);
+                    maxSeen = Math.Max(maxSeen, pick.Scale);
+                }
+            }
+
+            Assert.That(minSeen, Is.LessThan(1.05f), "some trees land near the baseline");
+            Assert.That(maxSeen, Is.GreaterThan(1.20f), "some trees land near the +25% cap");
+        }
+
+        [Test]
+        public void SelectedTreeScales_AreDeterministic_ForTheSameLotAcrossRepeatedCalls()
+        {
+            // #458: the scale draw uses the SAME already-seeded per-lot Random,
+            // so repeated calls for the same lot yield byte-identical scales —
+            // the #170 per-lot determinism guarantee extended to size.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var frontA = YardLandscaping.FrontTreesFor(lot).Select(p => p.Scale).ToList();
+                var frontB = YardLandscaping.FrontTreesFor(lot).Select(p => p.Scale).ToList();
+                var backA = YardLandscaping.BackTreesFor(lot).Select(p => p.Scale).ToList();
+                var backB = YardLandscaping.BackTreesFor(lot).Select(p => p.Scale).ToList();
+
+                Assert.That(frontA, Is.EqualTo(frontB),
+                    $"lot {lot.HouseId}: front scales stable across repeated calls");
+                Assert.That(backA, Is.EqualTo(backB),
+                    $"lot {lot.HouseId}: back scales stable across repeated calls");
+            }
         }
 
         [Test]
@@ -437,9 +507,9 @@ namespace Doggiehood.Core.Tests.World
             return list;
         }
 
-        private static List<(GridPoint Position, YardTreeKind Kind)> Placements(IReadOnlyList<YardTreePlacement> placements)
+        private static List<(GridPoint Position, YardTreeKind Kind, float Scale)> Placements(IReadOnlyList<YardTreePlacement> placements)
         {
-            return placements.Select(p => (p.Position, p.Kind)).ToList();
+            return placements.Select(p => (p.Position, p.Kind, p.Scale)).ToList();
         }
 
         private static void AssertMutuallySpaced(IReadOnlyList<GridPoint> points, int houseId, string label)
