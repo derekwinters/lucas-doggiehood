@@ -1972,7 +1972,7 @@
 <p>Role tints: Positive = leaf, Primary/spend = coral, Neutral/decline = cream, Disabled = grey (outline + text dim together).</p>
 <h3 id="currency-chip-currencychip">Currency chip (<code>CurrencyChip</code>)<a class="headerlink" href="#currency-chip-currencychip" title="Permanent link">&para;</a></h3>
 <p>The HUD coin indicator — a coin token plus the live balance. Sits in a screen corner (its anchor is fixed in the HUD wireframe, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/174">#174</a>).</p>
-<p><em>Status: </em><em>implemented</em><em> in the HUD (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>) — <code>Assets/Scripts/Unity/HudOverlay.cs</code> draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning).</em></p>
+<p><em>Status: </em><em>implemented</em><em> in the HUD (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>) — <code>Assets/Scripts/Unity/HudOverlay.cs</code> draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning). Sized to match the Settings gear beside it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/440">#440</a>): the chip height equals <code>GearButtonSizePx</code> (88) and the interior is scaled ×1.375 to fill the taller pill.</em></p>
 <p><strong>Regions:</strong> coin token (left) · balance number (right, tabular figures), inside a cream pill.</p>
 <table>
 <thead>
@@ -1985,27 +1985,27 @@
 <tbody>
 <tr>
 <td><code>HeightPx</code></td>
-<td>64</td>
-<td>chip</td>
+<td>88</td>
+<td>chip (matches the Settings gear)</td>
 </tr>
 <tr>
 <td><code>CoinDiameterPx</code></td>
-<td>44</td>
+<td>60</td>
 <td>coin token</td>
 </tr>
 <tr>
 <td><code>PaddingLeftPx</code></td>
-<td>10</td>
+<td>14</td>
 <td>coin inset</td>
 </tr>
 <tr>
 <td><code>PaddingRightPx</code></td>
-<td>26</td>
+<td>36</td>
 <td>number inset</td>
 </tr>
 <tr>
 <td><code>FontSizePx</code></td>
-<td>34</td>
+<td>46</td>
 <td>balance (tabular)</td>
 </tr>
 </tbody>
