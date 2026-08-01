@@ -162,6 +162,16 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot)
         {
+            // #223: a manual per-lot override replaces the model-derived
+            // geometry verbatim. The override was validated as a continuous
+            // open polyline at HouseLot construction, so returning it here
+            // preserves the same continuous-runs invariant. With no override
+            // (the shipping default) the auto-derivation below runs unchanged.
+            if (lot.HasFenceOverride)
+            {
+                return lot.FenceOverride;
+            }
+
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
             var facing = HousePlacement.FrontFacing(lot);
             var position = HousePlacement.Position(lot, HousePlacement.KitScale);
@@ -334,6 +344,57 @@ namespace Doggiehood.Core.World
                 housePosition.Z + facing.Z * centreAlongOffset);
 
             return new LotRect(centre.X - half, centre.X + half, centre.Z - half, centre.Z + half);
+        }
+
+        /// <summary>
+        /// #223: guards a manual per-lot fence override
+        /// (<see cref="HouseLot.FenceOverride"/>) before it replaces the
+        /// auto-derived geometry. Mirroring <see cref="BackyardRuns(LotRect, HouseModel, GridPoint, GridPoint, float, IReadOnlyList{Road})"/>'s
+        /// argument guards, the override must be a continuous open polyline —
+        /// a non-empty chain of runs where each run connects to the next with
+        /// no gap — so an override preserves the same continuous-runs
+        /// invariant the auto-derived geometry guarantees (the shape is
+        /// count-agnostic: it may carry the current five-run backyard geometry
+        /// or any other continuous run of side/rear anchors). Throws
+        /// <see cref="ArgumentException"/> on a null/empty override or a gap
+        /// between consecutive runs.
+        /// </summary>
+        public static void ValidateFenceOverride(IReadOnlyList<FenceRun> runs)
+        {
+            if (runs == null)
+            {
+                throw new ArgumentNullException(nameof(runs));
+            }
+
+            if (runs.Count == 0)
+            {
+                throw new ArgumentException(
+                    "A fence override must contain at least one run.", nameof(runs));
+            }
+
+            for (var i = 0; i < runs.Count - 1; i++)
+            {
+                if (!SharesEndpoint(runs[i], runs[i + 1]))
+                {
+                    throw new ArgumentException(
+                        "A fence override must be a continuous chain of runs with no gap "
+                        + $"(run {i} does not connect to run {i + 1}).", nameof(runs));
+                }
+            }
+        }
+
+        /// <summary>Whether two runs meet at a shared endpoint (within
+        /// <see cref="Epsilon"/>) — the no-gap continuity test #223's override
+        /// validation applies to consecutive runs.</summary>
+        private static bool SharesEndpoint(FenceRun a, FenceRun b)
+        {
+            return NearlyEqual(a.B, b.A) || NearlyEqual(a.B, b.B)
+                || NearlyEqual(a.A, b.A) || NearlyEqual(a.A, b.B);
+        }
+
+        private static bool NearlyEqual(GridPoint a, GridPoint b)
+        {
+            return Math.Abs(a.X - b.X) < Epsilon && Math.Abs(a.Z - b.Z) < Epsilon;
         }
 
         private static float Dot(GridPoint a, GridPoint unit)

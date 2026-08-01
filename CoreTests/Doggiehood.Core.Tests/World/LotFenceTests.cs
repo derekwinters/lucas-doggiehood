@@ -605,6 +605,145 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void HouseLot_HasNoFenceOverride_ByDefault()
+        {
+            // #223: the manual per-lot override is opt-in. A lot built without
+            // one reports no override, and every starting lot is override-free
+            // so the shipping behavior is the auto-derived geometry.
+            var lot = new HouseLot(1, Quadrant.NorthEast, new GridPoint(14f, 14f));
+            Assert.That(lot.HasFenceOverride, Is.False, "no override by default");
+            Assert.That(lot.FenceOverride, Is.Null, "the override is absent by default");
+
+            foreach (var starting in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(starting.HasFenceOverride, Is.False,
+                    $"lot {starting.HouseId} must ship with no fence override");
+            }
+        }
+
+        [Test]
+        public void GeometryFor_WithNoOverride_ReturnsTodaysAutoDerivedGeometry()
+        {
+            // #223 regression guard: the no-override path must stay
+            // byte-for-byte today's model-derived geometry.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var withoutOverride = LotFence.GeometryFor(lot);
+                Assert.That(withoutOverride, Is.Not.Empty,
+                    $"lot {lot.HouseId}: auto-derived geometry stays queryable");
+
+                // Building an identical lot (still no override) yields the same
+                // runs — the auto-derivation is unchanged by #223.
+                var twin = new HouseLot(lot.HouseId, lot.Quadrant, lot.Position);
+                var again = LotFence.GeometryFor(twin);
+                Assert.That(again.Count, Is.EqualTo(withoutOverride.Count),
+                    $"lot {lot.HouseId}: auto-derived run count unchanged");
+                for (var i = 0; i < withoutOverride.Count; i++)
+                {
+                    AssertPointsEqual(again[i].A, withoutOverride[i].A, $"lot {lot.HouseId} run {i} A");
+                    AssertPointsEqual(again[i].B, withoutOverride[i].B, $"lot {lot.HouseId} run {i} B");
+                }
+            }
+        }
+
+        [Test]
+        public void GeometryFor_WithOverride_ReturnsTheOverriddenRunsVerbatim()
+        {
+            // #223: when a lot carries a manual override, GeometryFor returns
+            // exactly those anchors/runs, NOT the model-derived geometry.
+            var baseLot = NeighborhoodLayout.HouseLots[0];
+            var autoDerived = LotFence.GeometryFor(baseLot);
+
+            // A deliberately different, still-continuous three-run chain.
+            var overrideRuns = new[]
+            {
+                new FenceRun(new GridPoint(2f, 2f), new GridPoint(2f, 10f)),
+                new FenceRun(new GridPoint(2f, 10f), new GridPoint(12f, 10f)),
+                new FenceRun(new GridPoint(12f, 10f), new GridPoint(12f, 2f)),
+            };
+
+            var lot = new HouseLot(
+                baseLot.HouseId, baseLot.Quadrant, baseLot.Position, fenceOverride: overrideRuns);
+
+            var runs = LotFence.GeometryFor(lot);
+            Assert.That(runs.Count, Is.EqualTo(overrideRuns.Length),
+                "the override's run count is used verbatim");
+            for (var i = 0; i < overrideRuns.Length; i++)
+            {
+                AssertPointsEqual(runs[i].A, overrideRuns[i].A, $"override run {i} A");
+                AssertPointsEqual(runs[i].B, overrideRuns[i].B, $"override run {i} B");
+            }
+
+            // ...and it is NOT the auto-derived geometry it replaced (the
+            // shipping shape is five runs; this override is a three-run chain).
+            Assert.That(runs.Count, Is.Not.EqualTo(autoDerived.Count),
+                "sanity: the override replaces, not augments, the auto-derived geometry");
+        }
+
+        [Test]
+        public void RunsFor_StillHonoursHasFence_WhenAnOverrideIsSet()
+        {
+            // #223: an override changes fence SHAPE, never visibility. With the
+            // flag off the lot contributes nothing; with it on it contributes
+            // exactly the overridden runs.
+            var baseLot = NeighborhoodLayout.HouseLots[0];
+            var overrideRuns = new[]
+            {
+                new FenceRun(new GridPoint(2f, 2f), new GridPoint(2f, 10f)),
+                new FenceRun(new GridPoint(2f, 10f), new GridPoint(12f, 10f)),
+                new FenceRun(new GridPoint(12f, 10f), new GridPoint(12f, 2f)),
+            };
+
+            var hidden = new HouseLot(
+                baseLot.HouseId, baseLot.Quadrant, baseLot.Position,
+                hasFence: false, fenceOverride: overrideRuns);
+            Assert.That(LotFence.RunsFor(hidden), Is.Empty,
+                "override + HasFence off must contribute no runs");
+
+            var shown = new HouseLot(
+                baseLot.HouseId, baseLot.Quadrant, baseLot.Position,
+                hasFence: true, fenceOverride: overrideRuns);
+            var runs = LotFence.RunsFor(shown);
+            Assert.That(runs.Count, Is.EqualTo(overrideRuns.Length),
+                "override + HasFence on must contribute the overridden runs");
+            for (var i = 0; i < overrideRuns.Length; i++)
+            {
+                AssertPointsEqual(runs[i].A, overrideRuns[i].A, $"shown override run {i} A");
+                AssertPointsEqual(runs[i].B, overrideRuns[i].B, $"shown override run {i} B");
+            }
+        }
+
+        [Test]
+        public void FenceOverride_WithAGap_IsRejected()
+        {
+            // #223: a malformed override — a chain with a gap between
+            // consecutive runs — is rejected at construction, mirroring
+            // BackyardRuns' argument guards. The override must be a continuous
+            // open polyline, preserving the continuous-runs invariant the
+            // auto-derived geometry guarantees.
+            var baseLot = NeighborhoodLayout.HouseLots[0];
+            var gapped = new[]
+            {
+                new FenceRun(new GridPoint(2f, 2f), new GridPoint(2f, 10f)),
+                // Does NOT connect to the previous run — a gap.
+                new FenceRun(new GridPoint(50f, 50f), new GridPoint(60f, 50f)),
+                new FenceRun(new GridPoint(60f, 50f), new GridPoint(60f, 40f)),
+            };
+
+            Assert.That(
+                () => new HouseLot(baseLot.HouseId, baseLot.Quadrant, baseLot.Position,
+                    fenceOverride: gapped),
+                Throws.ArgumentException,
+                "an override with a gap between runs must be rejected");
+
+            Assert.That(
+                () => new HouseLot(baseLot.HouseId, baseLot.Quadrant, baseLot.Position,
+                    fenceOverride: Array.Empty<FenceRun>()),
+                Throws.ArgumentException,
+                "an empty override is malformed too");
+        }
+
         private static HouseLot FencedCloneOf(HouseLot lot)
         {
             return new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, hasFence: true);
