@@ -84,6 +84,48 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [Test]
+        public void DeliveringDog_DoesNotWander_UntilPlacedBackOnStreet()
+        {
+            // #470: while a buy-gift delivery is in flight (DeliveryPhase
+            // HeadingHome/WaitingForDelivery) the QuestDirector owns the dog's
+            // transform as it walks home. WantsToWander must be gated OFF for
+            // that whole leg so the wander branch and WalkDogHome can never
+            // both drive the same transform in one frame (the moonwalk race).
+            var dog = StreetDog();
+            Assert.That(dog.WantsToWander, Is.True, "a plain street dog wanders");
+
+            dog.BeginDelivery();
+            Assert.That(dog.WantsToWander, Is.False,
+                "a dog mid-delivery must not wander — the quest walk owns it");
+
+            // The Sit-at-home leg (WaitingForDelivery) is also mid-delivery.
+            dog.TrySit(buyQuestAccepted: true, isAtHome: true);
+            Assert.That(dog.WantsToWander, Is.False);
+
+            // Delivery finishes and the dog is handed back to the street.
+            dog.PlaceOnStreet();
+            Assert.That(dog.WantsToWander, Is.True,
+                "once delivery hands control back the dog wanders again");
+        }
+
+        [Test]
+        public void PlaceOnStreet_AfterDelivery_SignalsAFreshWanderTarget()
+        {
+            // #470: the Unity layer caches a wander target; when the scripted
+            // walk hands control back it must pick a FRESH one, not beeline to
+            // the stale pre-quest target. Dog exposes a monotonic token the
+            // view watches — every hand-back to the street bumps it.
+            var dog = StreetDog();
+            var before = dog.WanderResetToken;
+
+            dog.BeginDelivery();
+            dog.PlaceOnStreet();
+
+            Assert.That(dog.WanderResetToken, Is.GreaterThan(before),
+                "handing the dog back to the street must signal a fresh wander target");
+        }
+
+        [Test]
         public void WindowDog_IsStillFullyInteractable()
         {
             // #9: window dogs talk exactly like street dogs.

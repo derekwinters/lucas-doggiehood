@@ -130,6 +130,34 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void BuyGiftDelivery_GatesWanderOff_ThenSignalsAFreshTargetOnHandBack()
+        {
+            // #470: accepting a (non-fence) buy-gift quest puts the dog into
+            // DeliveryPhase.HeadingHome — the QuestDirector walks it home. The
+            // dog must not wander during HeadingHome or WaitingForDelivery, and
+            // once the package is delivered (PlaceOnStreet) it must both wander
+            // again and signal a fresh wander target (bumped reset token).
+            var state = NewState();
+            state.Wallet.Deposit(100);
+            var dog = state.Dogs[1];
+            var tokenBefore = dog.WanderResetToken;
+
+            var buy = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(2));
+            Assert.That(state.Quests.Accept(buy), Is.True);
+            Assert.That(buy.DeliveryPhase, Is.EqualTo(DeliveryPhase.HeadingHome));
+            Assert.That(dog.WantsToWander, Is.False, "no wander while heading home");
+
+            state.Quests.NotifyDogArrivedHome(buy);
+            Assert.That(buy.DeliveryPhase, Is.EqualTo(DeliveryPhase.WaitingForDelivery));
+            Assert.That(dog.WantsToWander, Is.False, "no wander while waiting for the truck");
+
+            state.Quests.DeliverPackage(buy);
+            Assert.That(dog.WantsToWander, Is.True, "wander resumes once delivery hands control back");
+            Assert.That(dog.WanderResetToken, Is.GreaterThan(tokenBefore),
+                "delivery hand-back must signal a fresh wander target");
+        }
+
+        [Test]
         public void CompletingAnyQuestType_PaysTheFlatPayout()
         {
             // #23/#24/#62 + integration: full loop for each quest type.
