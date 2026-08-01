@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Doggiehood.Core.Art;
+using Doggiehood.Core.Expansion;
 
 namespace Doggiehood.Core.World
 {
@@ -205,6 +206,35 @@ namespace Doggiehood.Core.World
             }
 
             return ForModel(HouseLevelModelTable.ForHouseLevel(houseId, level));
+        }
+
+        /// <summary>
+        /// The componentwise max model-local footprint a house can reach across
+        /// its WHOLE upgrade ladder (#459): the largest <see cref="HouseModel.FootprintX"/>
+        /// and the largest <see cref="HouseModel.FootprintZ"/> over every rung,
+        /// levels <see cref="HouseLevelModelTable.MinLevel"/>..<see cref="HouseUpgradeNumbers.MaxLevel"/>.
+        /// It resolves each rung through <see cref="ForHouse(int, int)"/>, which
+        /// already mirrors the zone-vs-starter branch — so a starter id (1-4)
+        /// walks its fixed ladder and a zone id (>= 5) walks its rolled ladder,
+        /// exactly like the level-aware <see cref="ForHouse(int, int)"/>. Yard
+        /// landscaping (#170) reserves tree space against this conservative
+        /// envelope so a tree placed while a house is small (level 1) can't end
+        /// up inside the house's larger mesh after it upgrades. The per-axis max
+        /// is taken independently, so the result is guaranteed to contain every
+        /// individual level's footprint.
+        /// </summary>
+        public static (float FootprintX, float FootprintZ) MaxFootprint(int houseId)
+        {
+            var maxFootprintX = 0f;
+            var maxFootprintZ = 0f;
+            for (var level = HouseLevelModelTable.MinLevel; level <= HouseUpgradeNumbers.MaxLevel; level++)
+            {
+                var model = ForHouse(houseId, level);
+                maxFootprintX = Math.Max(maxFootprintX, model.FootprintX);
+                maxFootprintZ = Math.Max(maxFootprintZ, model.FootprintZ);
+            }
+
+            return (maxFootprintX, maxFootprintZ);
         }
     }
 }
