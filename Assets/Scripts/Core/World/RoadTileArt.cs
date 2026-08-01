@@ -55,24 +55,32 @@ namespace Doggiehood.Core.World
         public const string BendKey = "road-bend";
         public const string EndRoundKey = "road-end-round";
 
+        // Clockwise yaw (degrees, about +Y) rotating a piece's authored
+        // orientation onto each rotation of its family — one quarter-turn per
+        // compass step. Named per #161 (no inline geometry literals).
+        private const float YawNone = 0f;
+        private const float YawQuarterCW = 90f;
+        private const float YawHalf = 180f;
+        private const float YawThreeQuarterCW = 270f;
+
         private static readonly Dictionary<TileType, RoadTilePiece> Pieces = new Dictionary<TileType, RoadTilePiece>
         {
-            { TileType.FourWay, new RoadTilePiece(CrossroadPathKey, 0f, true) },
+            { TileType.FourWay, new RoadTilePiece(CrossroadPathKey, YawNone, true) },
 
-            { TileType.TeeNorth, new RoadTilePiece(IntersectionPathKey, 0f, true) },
-            { TileType.TeeEast, new RoadTilePiece(IntersectionPathKey, 90f, true) },
-            { TileType.TeeSouth, new RoadTilePiece(IntersectionPathKey, 180f, true) },
-            { TileType.TeeWest, new RoadTilePiece(IntersectionPathKey, 270f, true) },
+            { TileType.TeeNorth, new RoadTilePiece(IntersectionPathKey, YawNone, true) },
+            { TileType.TeeEast, new RoadTilePiece(IntersectionPathKey, YawQuarterCW, true) },
+            { TileType.TeeSouth, new RoadTilePiece(IntersectionPathKey, YawHalf, true) },
+            { TileType.TeeWest, new RoadTilePiece(IntersectionPathKey, YawThreeQuarterCW, true) },
 
-            { TileType.TurnNW, new RoadTilePiece(BendKey, 0f, false) },
-            { TileType.TurnNE, new RoadTilePiece(BendKey, 90f, false) },
-            { TileType.TurnSE, new RoadTilePiece(BendKey, 180f, false) },
-            { TileType.TurnSW, new RoadTilePiece(BendKey, 270f, false) },
+            { TileType.TurnNW, new RoadTilePiece(BendKey, YawNone, false) },
+            { TileType.TurnNE, new RoadTilePiece(BendKey, YawQuarterCW, false) },
+            { TileType.TurnSE, new RoadTilePiece(BendKey, YawHalf, false) },
+            { TileType.TurnSW, new RoadTilePiece(BendKey, YawThreeQuarterCW, false) },
 
-            { TileType.CulDeSacEast, new RoadTilePiece(EndRoundKey, 0f, false) },
-            { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, 90f, false) },
-            { TileType.CulDeSacWest, new RoadTilePiece(EndRoundKey, 180f, false) },
-            { TileType.CulDeSacNorth, new RoadTilePiece(EndRoundKey, 270f, false) },
+            { TileType.CulDeSacEast, new RoadTilePiece(EndRoundKey, YawNone, false) },
+            { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, YawQuarterCW, false) },
+            { TileType.CulDeSacWest, new RoadTilePiece(EndRoundKey, YawHalf, false) },
+            { TileType.CulDeSacNorth, new RoadTilePiece(EndRoundKey, YawThreeQuarterCW, false) },
 
             // TODO(#508 follow-up): OpposingTurns compose two independent bends
             // (a NE + SW arc, or NW + SE) — no single centre mesh, and no
