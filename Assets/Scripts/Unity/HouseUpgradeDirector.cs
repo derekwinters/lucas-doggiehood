@@ -56,10 +56,37 @@ namespace Doggiehood.Unity
 
             var house = State.Houses.Single(h => h.Id == houseId);
             var lot = State.GetHouseLot(houseId);
-            var rebuilt = WorldBuilder.BuildHouse(worldRoot, house, lot).GetComponent<HouseView>();
+
+            // #454: re-align the lot's front walkway to the upgraded level's door
+            // BEFORE rebuilding the mesh, so the mesh pivot, the visible door, and
+            // the walkway all agree at the new level. The walk network is cached
+            // across upgrades (TryUpgradeHouse does not invalidate it), so this
+            // patches the live graph in place; then re-render the walkway visual.
+            State.WalkNetwork.RefreshFrontWalkway(lot, house.Level);
+            RefreshWalkwayView(lot);
+
+            // Rebuild the mesh against the live (map-spanning) network so the
+            // level-aware front-setback pivot resolves the same walkway.
+            var rebuilt = WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork)
+                .GetComponent<HouseView>();
 
             onHouseRebuilt?.Invoke(rebuilt);
             return rebuilt;
+        }
+
+        /// <summary>Re-renders the lot's "Walkway - N" container from the
+        /// refreshed walk network (#454): destroys the stale walkway visual and
+        /// rebuilds it so the pavers run to the upgraded level's door. A lot with
+        /// no front-walkway edge renders nothing, same as the world-build loop.</summary>
+        private void RefreshWalkwayView(HouseLot lot)
+        {
+            var existing = worldRoot.Find(WorldBuilder.WalkwayNamePrefix + lot.HouseId);
+            if (existing != null)
+            {
+                DestroyView(existing.gameObject);
+            }
+
+            WorldBuilder.BuildWalkway(worldRoot, lot, State.WalkNetwork);
         }
 
         private static HouseView FindHouseView(int houseId)

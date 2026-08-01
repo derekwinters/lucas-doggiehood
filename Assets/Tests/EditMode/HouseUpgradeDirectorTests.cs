@@ -132,6 +132,58 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void AfterUpgrade_TheRebuiltHousePosition_AndItsWalkway_MatchTheUpgradedLevel_NotStaleLevelOne()
+        {
+            // #454: the bug was that an upgraded mesh sat at the stale
+            // level-1-calibrated pivot and its walkway ran to the stale level-1
+            // door. After RefreshHouse, the rebuilt HouseView's world position and
+            // its lot's front walkway must both match the just-upgraded level's
+            // model geometry, not level 1.
+            BuildWorldAndDirector();
+            var house = state.Houses.Single(h => h.Id == 1); // r -> c: footprint depth grows
+            var lot = state.GetHouseLot(house.Id);
+
+            var levelOnePivot = HousePlacement.Position(
+                lot, WorldBuilder.HouseKitScale, state.WalkNetwork, 1);
+
+            state.Wallet.Deposit(HouseUpgradeNumbers.CostToReach(2));
+            Assert.That(state.TryUpgradeHouse(house.Id), Is.True);
+            Assert.That(house.Level, Is.EqualTo(2));
+
+            var rebuilt = director.RefreshHouse(house.Id);
+
+            var expectedPivot = HousePlacement.Position(
+                lot, WorldBuilder.HouseKitScale, state.WalkNetwork, house.Level);
+            Assert.That(expectedPivot, Is.Not.EqualTo(levelOnePivot),
+                "sanity: house 1's level-2 pivot differs from the stale level-1 pivot");
+            Assert.That(rebuilt.transform.position.x, Is.EqualTo(expectedPivot.X).Within(0.001f),
+                "the rebuilt house sits at the level-2 front-setback pivot (X)");
+            Assert.That(rebuilt.transform.position.z, Is.EqualTo(expectedPivot.Z).Within(0.001f),
+                "the rebuilt house sits at the level-2 front-setback pivot (Z)");
+
+            // The lot's front walkway now runs to the level-2 door.
+            Assert.That(state.WalkNetwork.TryGetFrontWalkway(house.Id, out var walkway), Is.True);
+            var expectedDoor = HouseModelCatalog.ForHouse(house.Id, house.Level).FrontDoorWorldPosition(
+                expectedPivot,
+                HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot, state.WalkNetwork)),
+                WorldBuilder.HouseKitScale);
+            var levelOneDoor = HouseModelCatalog.ForHouse(house.Id, 1).FrontDoorWorldPosition(
+                levelOnePivot,
+                HousePlacement.ModelYawDegrees(HousePlacement.FrontFacing(lot, state.WalkNetwork)),
+                WorldBuilder.HouseKitScale);
+            Assert.That(expectedDoor, Is.Not.EqualTo(levelOneDoor),
+                "sanity: house 1's level-2 door differs from level 1");
+            Assert.That(walkway.A.X, Is.EqualTo(expectedDoor.X).Within(0.001f),
+                "the walkway door node re-aligns to the level-2 door (X)");
+            Assert.That(walkway.A.Z, Is.EqualTo(expectedDoor.Z).Within(0.001f),
+                "the walkway door node re-aligns to the level-2 door (Z)");
+
+            // The rebuilt walkway visual container exists for the house.
+            Assert.That(worldRoot.transform.Find(WorldBuilder.WalkwayNamePrefix + house.Id), Is.Not.Null,
+                "the walkway visual is re-rendered for the upgraded house");
+        }
+
+        [Test]
         public void UpgradedZoneHouse_RebuildsWithItsRolledLaddersNextMesh_AndKeepsItsPaletteTint()
         {
             // An OCCUPIED zone-built house (RestoreBuiltHouse lets a test create

@@ -282,6 +282,96 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Position_AtLevelTwo_KeepsTheCurrentLevelsFacade_ExactlyFrontSetbackFromTheSidewalk()
+        {
+            // #454: the front-setback pivot must be calibrated to the house's
+            // CURRENT level's mesh, not always level 1. At level 2 the current
+            // level's facade (its own -FootprintZ/2 plane) must still sit exactly
+            // FrontSetback beyond the sidewalk outer edge — the bug was that the
+            // level-2 mesh sat at the level-1-calibrated pivot, so it drifted.
+            const int level = 2;
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+                var facadeHalfDepth = KitScale * model.FootprintZ / 2f;
+
+                var facing = HousePlacement.FrontFacing(lot);
+                var position = HousePlacement.Position(lot, KitScale, level);
+
+                var facadeCoordinate = facing.X != 0f
+                    ? position.X + facing.X * facadeHalfDepth
+                    : position.Z + facing.Z * facadeHalfDepth;
+
+                Assert.That(Math.Abs(facadeCoordinate),
+                    Is.EqualTo(SidewalkOuterEdgeOffset() + HousePlacement.FrontSetback).Within(0.0001f),
+                    $"house {lot.HouseId} level-2 facade must sit FrontSetback beyond the sidewalk outer edge");
+
+                // Where the level-2 footprint depth differs from level 1, the
+                // pivot must actually move (it no longer sits at the L1 pivot).
+                var levelOneModel = HouseModelCatalog.ForHouse(lot.HouseId, HouseLevelModelTable.MinLevel);
+                if (Math.Abs(model.FootprintZ - levelOneModel.FootprintZ) > 0.0001f)
+                {
+                    var levelOne = HousePlacement.Position(lot, KitScale, HouseLevelModelTable.MinLevel);
+                    Assert.That(position, Is.Not.EqualTo(levelOne),
+                        $"house {lot.HouseId} level-2 pivot must move when the footprint depth changes");
+                }
+            }
+        }
+
+        [Test]
+        public void HouseFootprint_AtLevelTwo_IsSizedToTheCurrentLevelModel_NotLevelOne()
+        {
+            // #454: the shared footprint rect (yard trees #170, quest hidden
+            // items #290, empty-lot marker #434) must be sized to the house's
+            // CURRENT level's mesh, not always level 1.
+            const int level = 2;
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+                var facing = HousePlacement.FrontFacing(lot);
+                var footprint = HousePlacement.HouseFootprint(lot, level);
+
+                var expectedWidth = KitScale * (facing.X != 0f ? model.FootprintZ : model.FootprintX);
+                var expectedDepth = KitScale * (facing.X != 0f ? model.FootprintX : model.FootprintZ);
+
+                Assert.That(footprint.Width, Is.EqualTo(expectedWidth).Within(0.001f),
+                    $"house {lot.HouseId} level-2 footprint width must match the current-level model");
+                Assert.That(footprint.Depth, Is.EqualTo(expectedDepth).Within(0.001f),
+                    $"house {lot.HouseId} level-2 footprint depth must match the current-level model");
+            }
+
+            // House 1's level-2 mesh (building-type-c) has a larger footprint than
+            // its level-1 mesh (building-type-r), so the rect must genuinely grow.
+            var lot1 = NeighborhoodLayout.GetHouseLot(1);
+            var l1 = HousePlacement.HouseFootprint(lot1, HouseLevelModelTable.MinLevel);
+            var l2 = HousePlacement.HouseFootprint(lot1, level);
+            Assert.That(l2.Width, Is.Not.EqualTo(l1.Width).Within(0.0001f),
+                "house 1's footprint must change between level 1 and level 2");
+        }
+
+        [Test]
+        public void LevelOne_PositionAndFootprint_AreByteIdenticalToTheLevelBlindPath()
+        {
+            // #454 critical regression guard: threading the level through
+            // placement is a STRICT SUPERSET — a never-upgraded (level 1) house
+            // must compute the exact same position and footprint the level-blind
+            // API returns today, bit-for-bit.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(HousePlacement.Position(lot, KitScale, HouseLevelModelTable.MinLevel),
+                    Is.EqualTo(HousePlacement.Position(lot, KitScale)),
+                    $"house {lot.HouseId} level-1 position must be byte-identical to today");
+
+                var levelOne = HousePlacement.HouseFootprint(lot, HouseLevelModelTable.MinLevel);
+                var today = HousePlacement.HouseFootprint(lot);
+                Assert.That(levelOne.MinX, Is.EqualTo(today.MinX), $"house {lot.HouseId} footprint MinX");
+                Assert.That(levelOne.MaxX, Is.EqualTo(today.MaxX), $"house {lot.HouseId} footprint MaxX");
+                Assert.That(levelOne.MinZ, Is.EqualTo(today.MinZ), $"house {lot.HouseId} footprint MinZ");
+                Assert.That(levelOne.MaxZ, Is.EqualTo(today.MaxZ), $"house {lot.HouseId} footprint MaxZ");
+            }
+        }
+
+        [Test]
         public void FrontSetback_SitsInDereksAgreedTuningRange()
         {
             // #127 left the exact number to be tuned visually; the agreed

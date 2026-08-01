@@ -1,4 +1,5 @@
 using System;
+using Doggiehood.Core.Art;
 
 namespace Doggiehood.Core.World
 {
@@ -141,12 +142,26 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static GridPoint Position(HouseLot lot, float uniformScale)
         {
+            return Position(lot, uniformScale, HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// <see cref="Position(HouseLot, float)"/> resolved for the house's
+        /// actual current <paramref name="level"/> (#454): the front-setback
+        /// pivot is computed from that level's mesh depth, so an upgraded
+        /// (taller/deeper) facade still lands exactly <see cref="FrontSetback"/>
+        /// from the sidewalk instead of drifting off the level-1 calibration.
+        /// At <see cref="HouseLevelModelTable.MinLevel"/> it is byte-identical
+        /// to the level-blind overload.
+        /// </summary>
+        public static GridPoint Position(HouseLot lot, float uniformScale, int level)
+        {
             if (uniformScale <= 0f)
             {
                 throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
-            return Position(lot, uniformScale, NeighborhoodLayout.WalkNetwork);
+            return Position(lot, uniformScale, NeighborhoodLayout.WalkNetwork, level);
         }
 
         /// <summary>
@@ -162,6 +177,18 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static GridPoint Position(HouseLot lot, float uniformScale, WalkNetwork network)
         {
+            return Position(lot, uniformScale, network, HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// <see cref="Position(HouseLot, float, WalkNetwork)"/> resolved for the
+        /// house's current <paramref name="level"/> (#454) — the level-aware
+        /// pivot used by the mesh-rebuild path (WorldBuilder.BuildHouse) so an
+        /// upgraded mesh sits at the correct front-setback pivot, not the stale
+        /// level-1 one.
+        /// </summary>
+        public static GridPoint Position(HouseLot lot, float uniformScale, WalkNetwork network, int level)
+        {
             if (uniformScale <= 0f)
             {
                 throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
@@ -172,7 +199,7 @@ namespace Doggiehood.Core.World
                 return lot.Position;
             }
 
-            return PositionFor(lot, uniformScale, walkway.B);
+            return PositionFor(lot, uniformScale, walkway.B, level);
         }
 
         /// <summary>
@@ -187,9 +214,23 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static LotRect HouseFootprint(HouseLot lot)
         {
+            return HouseFootprint(lot, HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// <see cref="HouseFootprint(HouseLot)"/> sized to the house's current
+        /// <paramref name="level"/> mesh (#454): the footprint rect grows with
+        /// the upgraded mesh rather than staying pinned to the level-1 model, so
+        /// the callers keyed off it (yard trees #170, quest hidden items #290,
+        /// the empty-lot marker #434) see the real current footprint. At
+        /// <see cref="HouseLevelModelTable.MinLevel"/> it is byte-identical to
+        /// the level-blind overload.
+        /// </summary>
+        public static LotRect HouseFootprint(HouseLot lot, int level)
+        {
             var facing = FrontFacing(lot);
-            var house = Position(lot, KitScale);
-            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var house = Position(lot, KitScale, level);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
             var halfWidth = KitScale * model.FootprintX / 2f;
             var halfDepth = KitScale * model.FootprintZ / 2f;
 
@@ -206,12 +247,26 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static GridPoint PositionFor(HouseLot lot, float uniformScale, GridPoint sidewalkAttach)
         {
+            return PositionFor(lot, uniformScale, sidewalkAttach, HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// <see cref="PositionFor(HouseLot, float, GridPoint)"/> resolved for the
+        /// house's current <paramref name="level"/> (#454): the facade half-depth
+        /// used to pull the pivot back from the sidewalk comes from that level's
+        /// mesh, so an upgraded facade keeps the exact front setback. Pure — no
+        /// network lookup, so WalkNetwork can reuse it while (re)attaching a
+        /// walkway. At <see cref="HouseLevelModelTable.MinLevel"/> it is
+        /// byte-identical to the level-blind overload.
+        /// </summary>
+        public static GridPoint PositionFor(HouseLot lot, float uniformScale, GridPoint sidewalkAttach, int level)
+        {
             if (uniformScale <= 0f)
             {
                 throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
-            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
             var facadeHalfDepth = uniformScale * model.FootprintZ / 2f;
 
             // The attach point sits on the sidewalk CENTERLINE, so the

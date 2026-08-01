@@ -143,13 +143,15 @@ namespace Doggiehood.Core.World
             return false;
         }
 
-        /// <summary>The fixed level at which a zone house's rolled ladder is
-        /// resolved for placement/footprint purposes (#414). The placement and
-        /// footprint call sites carry only a <c>HouseLot</c> (no
-        /// <c>house.Level</c>), and leveling a zone house never resizes or
-        /// moves its lot — every ladder mesh fits the shared lot envelope — so
-        /// the level-1 mesh is a valid, level-invariant footprint input.
-        /// (Rendering the correct visual level is unaffected:
+        /// <summary>The level a zone house's rolled ladder is resolved at by the
+        /// LEVEL-BLIND <see cref="ForHouse(int)"/> overload (#414): level 1. That
+        /// overload is used only where no <c>house.Level</c> is in hand (e.g. the
+        /// yard-region split and backyard-fence geometry). Since #454 the
+        /// placement/footprint/walkway seam that DOES know the level threads it
+        /// through <see cref="ForHouse(int, int)"/> instead, so an upgraded facade
+        /// re-aligns to the sidewalk rather than staying pinned to level 1 —
+        /// leveling still never moves the lot itself.
+        /// (Rendering the correct visual level was always unaffected:
         /// WorldBuilder.BuildHouse resolves the mesh via <c>house.Level</c>.)</summary>
         private const int ZoneHousePlacementLevel = HouseLevelModelTable.MinLevel;
 
@@ -176,6 +178,33 @@ namespace Doggiehood.Core.World
             }
 
             return ForModel(HouseStyleTable.ForHouse(houseId).ModelName);
+        }
+
+        /// <summary>
+        /// House id + level -> model (#454). The level-aware companion of
+        /// <see cref="ForHouse(int)"/>: it resolves the mesh of the house's
+        /// ACTUAL current level instead of always level 1, so a house's
+        /// front-setback pivot, footprint, and walkway track the level's real
+        /// facade as it upgrades (the level-blind overload drifts an upgraded
+        /// facade off the sidewalk). It mirrors <see cref="ForHouse(int)"/>'s
+        /// branch — a starter id (1-4) resolves its fixed
+        /// <see cref="HouseLevelModelTable"/> ladder, a zone id (>= 5) resolves
+        /// its rolled ladder — but routes BOTH through
+        /// <see cref="HouseLevelModelTable.ForHouseLevel"/> at
+        /// <paramref name="level"/>. At <see cref="HouseLevelModelTable.MinLevel"/>
+        /// it resolves the exact same entry as <see cref="ForHouse(int)"/> (the
+        /// ladders are L1-anchored on each house's as-built mesh), so the
+        /// level-aware path is a strict superset of today's behavior.
+        /// </summary>
+        public static HouseModel ForHouse(int houseId, int level)
+        {
+            if (HouseVariantAssignment.IsZoneHouse(houseId))
+            {
+                var ladderId = HouseVariantAssignment.ForHouse(houseId).LadderId;
+                return ForModel(HouseLevelModelTable.ForHouseLevel(ladderId, level));
+            }
+
+            return ForModel(HouseLevelModelTable.ForHouseLevel(houseId, level));
         }
     }
 }
