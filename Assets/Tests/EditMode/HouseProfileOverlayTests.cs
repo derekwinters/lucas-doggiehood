@@ -359,5 +359,145 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(font.name, Does.Contain("DejaVu"));
             Assert.That(font.name, Does.Not.Contain("Arial"));
         }
+
+        // --- #465: Candy Cottage chrome restyle (CandyChromeUgui, shared-components.md) ---
+
+        [Test]
+        public void Card_HasCandyCottageChrome_FillOutlineRadiusAndHardShadow()
+        {
+            var image = overlay.CardRect.GetComponent<Image>();
+
+            AssertHex(image.color, 0xFF, 0xFD, 0xF7, "panel fill (#FFFDF7)");
+            Assert.That(image.type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(image.sprite, Is.Not.Null);
+            Assert.That(image.sprite.border,
+                Is.EqualTo(new Vector4(CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx,
+                    CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.PanelRadiusPx)),
+                "the card corner radius is the shared PanelRadiusPx = 40");
+
+            AssertInkOutline(overlay.CardRect.gameObject);
+            AssertHardShadow(overlay.CardRect.gameObject);
+        }
+
+        [Test]
+        public void CloseButton_IsACreamPill_WithOutlineAndHardShadow()
+        {
+            AssertInkOutline(overlay.CloseButtonRect.gameObject);
+            AssertHardShadow(overlay.CloseButtonRect.gameObject);
+            AssertHex(overlay.CloseButtonRect.GetComponent<Image>().color, 0xFF, 0xF3, 0xD9,
+                "the close affordance is a cream pill");
+        }
+
+        [Test]
+        public void UpgradeButton_IsACoralPill_WithOutlineAndHardShadow_AtTheSharedPillHeight()
+        {
+            overlay.ConfigureUpgrade(() => 1000, _ => false);
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            AssertHex(overlay.UpgradeButtonRect.GetComponent<Image>().color, 0xFF, 0x7A, 0x5C,
+                "the affordable Upgrade button takes the Coral spend role tint");
+            Assert.That(overlay.UpgradeButtonRect.sizeDelta.y, Is.EqualTo(HouseProfileOverlay.UpgradeButtonHeightPx));
+            AssertInkOutline(overlay.UpgradeButtonRect.gameObject);
+            AssertHardShadow(overlay.UpgradeButtonRect.gameObject);
+        }
+
+        [Test]
+        public void UpgradeButton_DisabledState_RemapsOntoTheDisabledRole()
+        {
+            overlay.ConfigureUpgrade(() => 0, _ => false); // cannot afford
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButton.interactable, Is.False);
+            AssertHex(overlay.UpgradeButtonRect.GetComponent<Image>().color, 0xD8, 0xD2, 0xC6,
+                "the unaffordable/Max-level Upgrade button greys onto the Disabled role (#298 palette)");
+        }
+
+        [Test]
+        public void InlineElements_CarryAnInkOutline_WithNoDropShadow()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            AssertInkOutlineNoShadow(overlay.LevelBadge.gameObject);
+            foreach (var pip in overlay.LevelPips)
+            {
+                AssertInkOutlineNoShadow(pip.gameObject);
+            }
+
+            var row = overlay.Residents[0];
+            AssertInkOutlineNoShadow(row.Rect.gameObject);
+            AssertInkOutlineNoShadow(row.BreedChip.gameObject);
+            AssertInkOutlineNoShadow(row.Avatar.gameObject);
+        }
+
+        [Test]
+        public void Thumbnail_CarriesAnInkOutlineFrame_PreservingTheRenderTextureSnapshot()
+        {
+            // #464 must not be disturbed: the thumbnail stays a RawImage showing the
+            // render-to-texture snapshot; the chrome only adds an outline frame.
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.ThumbnailImage.texture, Is.Not.Null,
+                "the #464 render-texture snapshot survives the chrome pass");
+            AssertInkOutlineNoShadow(overlay.ThumbnailImage.gameObject);
+        }
+
+        [Test]
+        public void NonPaletteAccentFills_AreLeftUnchanged()
+        {
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            var row = overlay.Residents[0];
+            AssertHex(row.Rect.GetComponent<Image>().color, 0xE7, 0xDF, 0xCE,
+                "the resident row keeps its non-palette stage-tan accent fill");
+            AssertHex(row.BreedChip.GetComponent<Image>().color, 0x6E, 0xC6, 0xE0,
+                "the breed chip keeps its non-palette sky accent fill");
+        }
+
+        private static void AssertInkOutline(GameObject go)
+        {
+            var outline = go.GetComponent<Outline>();
+            Assert.That(outline, Is.Not.Null, go.name + " has no Candy Cottage outline");
+            AssertHex(outline.effectColor, 0x2E, 0x2A, 0x26, go.name + " outline");
+            Assert.That(outline.effectDistance,
+                Is.EqualTo(new Vector2(CandyChromeUgui.OutlineThicknessPx, CandyChromeUgui.OutlineThicknessPx)),
+                go.name + " outline thickness is not the shared OutlineThicknessPx = 6");
+        }
+
+        private static void AssertHardShadow(GameObject go)
+        {
+            var shadow = PureShadowOf(go);
+            Assert.That(shadow, Is.Not.Null, go.name + " has no hard drop-shadow");
+            AssertHex(shadow.effectColor, 0x2E, 0x2A, 0x26, go.name + " shadow");
+            Assert.That(shadow.effectDistance, Is.EqualTo(new Vector2(0f, -CandyChromeUgui.ShadowOffsetPx)),
+                go.name + " shadow is not a single hard offset at the shared ShadowOffsetPx = 8 (no blur)");
+        }
+
+        private static void AssertInkOutlineNoShadow(GameObject go)
+        {
+            AssertInkOutline(go);
+            Assert.That(PureShadowOf(go), Is.Null,
+                go.name + " is an inline element and must carry no drop-shadow (Settings toggle/knob precedent)");
+        }
+
+        private static void AssertHex(Color color, byte r, byte g, byte b, string what)
+        {
+            var c32 = (Color32)color;
+            Assert.That(c32.r, Is.EqualTo(r), what + " red channel");
+            Assert.That(c32.g, Is.EqualTo(g), what + " green channel");
+            Assert.That(c32.b, Is.EqualTo(b), what + " blue channel");
+        }
+
+        private static Shadow PureShadowOf(GameObject go)
+        {
+            foreach (var shadow in go.GetComponents<Shadow>())
+            {
+                if (shadow.GetType() == typeof(Shadow))
+                {
+                    return shadow;
+                }
+            }
+
+            return null;
+        }
     }
 }

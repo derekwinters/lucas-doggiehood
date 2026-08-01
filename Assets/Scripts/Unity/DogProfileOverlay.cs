@@ -73,14 +73,26 @@ namespace Doggiehood.Unity
         private const string LabelFontResource = "DejaVuSans";
         private static Font labelFont;
 
-        // --- Palette (graybox; restyled by the #173 shared chrome pass) ---
+        // --- Candy Cottage chrome corner radii (#465) ---
+        // Panel/pill radii come from the shared baseline (CandyChromeUgui:
+        // PanelRadiusPx / pills via ApplyPill). The stat tile is a rounded
+        // (non-pill) card whose corner radius is the mockup .stat value
+        // (mockups/dog-profile.html #161 — no invented value).
+        private const float StatTileRadiusPx = 24f;
+
+        // --- Palette (#465: the shared Candy Cottage palette, one source) ---
+        // Every fill that maps to a Candy Cottage role is the named
+        // CandyChromeUgui palette color (shared-components.md) — no hand-picked
+        // hex. The scrim (46% ink dim) and the breed-chip / stat-tile accents are
+        // not palette component fills, so they keep their own values (they still
+        // gain the outline chrome), matching the Settings stage-fill case.
         private static readonly Color ScrimColor = new Color(46f / 255f, 42f / 255f, 38f / 255f, 0.46f);
-        private static readonly Color PanelColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color CloseColor = new Color(1f, 0.953f, 0.851f, 1f);
-        private static readonly Color BreedChipColor = new Color(0.431f, 0.776f, 0.878f, 1f);
-        private static readonly Color StatColor = new Color(0.906f, 0.875f, 0.808f, 1f);
-        private static readonly Color HomeButtonColor = new Color(0.345f, 0.753f, 0.416f, 1f);
-        private static readonly Color InkColor = new Color(0.180f, 0.165f, 0.149f, 1f);
+        private static readonly Color PanelColor = CandyChromeUgui.Panel;
+        private static readonly Color CloseColor = CandyChromeUgui.Cream;
+        private static readonly Color BreedChipColor = new Color32(0x6E, 0xC6, 0xE0, 0xFF); // mockup --sky
+        private static readonly Color StatColor = new Color32(0xE7, 0xDF, 0xCE, 0xFF);       // mockup --stage
+        private static readonly Color HomeButtonColor = CandyChromeUgui.Leaf;
+        private static readonly Color InkColor = CandyChromeUgui.Ink;
 
         private GameObject content;
         private RectTransform cardRect;
@@ -89,6 +101,9 @@ namespace Doggiehood.Unity
         private RectTransform portraitRect;
         private RawImage portraitImage;
         private RectTransform homeButtonRect;
+        private Image breedChipImage;
+        private Image ageTileImage;
+        private Image personalityTileImage;
         private Text nameLabel;
         private Text breedChipLabel;
         private Text ageKeyLabel;
@@ -126,6 +141,13 @@ namespace Doggiehood.Unity
         /// one-shot per <see cref="Open"/>.</summary>
         public PortraitCamera Portrait => portraitCamera;
         public RectTransform HomeButtonRect => homeButtonRect;
+
+        /// <summary>#465: the breed chip / stat-tile <see cref="Image"/>s (Ink
+        /// outline, non-palette accent fill), exposed so chrome tests can assert
+        /// their outline.</summary>
+        public Image BreedChip => breedChipImage;
+        public Image AgeTile => ageTileImage;
+        public Image PersonalityTile => personalityTileImage;
         public Text NameLabel => nameLabel;
         public Text BreedChipLabel => breedChipLabel;
         public Text AgeKeyLabel => ageKeyLabel;
@@ -214,8 +236,12 @@ namespace Doggiehood.Unity
 
         private void BuildCard(RectTransform parent)
         {
-            cardRect = CreateImage("Card", parent, PanelColor).rectTransform;
+            var cardImage = CreateImage("Card", parent, PanelColor);
+            cardRect = cardImage.rectTransform;
             Center(cardRect, ProfileWidthPx, CardHeightPx);
+            // Panel chrome (#465): Panel fill + Ink outline + flat hard drop-shadow
+            // at the shared PanelRadiusPx, mirroring SettingsPanel.BuildPanel.
+            CandyChromeUgui.ApplyRounded(cardImage, PanelColor, CandyChromeUgui.PanelRadiusPx, withShadow: true);
 
             BuildCloseButton(cardRect);
             BuildHeader(cardRect);
@@ -225,12 +251,16 @@ namespace Doggiehood.Unity
 
         private void BuildCloseButton(RectTransform parent)
         {
-            closeButtonRect = CreateImage("Close", parent, CloseColor).rectTransform;
+            var closeImage = CreateImage("Close", parent, CloseColor);
+            closeButtonRect = closeImage.rectTransform;
             closeButtonRect.anchorMin = Vector2.one;
             closeButtonRect.anchorMax = Vector2.one;
             closeButtonRect.pivot = Vector2.one;
             closeButtonRect.sizeDelta = new Vector2(CloseButtonSizePx, CloseButtonSizePx);
             closeButtonRect.anchoredPosition = Vector2.zero;
+            // Close chrome (#465): a Cream pill with Ink outline + hard shadow
+            // (Settings/confirmation-dialog close-button precedent).
+            CandyChromeUgui.ApplyPill(closeImage, CloseColor, CloseButtonSizePx, withShadow: true);
 
             CreateLabel("Glyph", closeButtonRect, CloseGlyphText, CloseGlyphFontPx, TextAnchor.MiddleCenter);
             closeButtonRect.gameObject.AddComponent<Button>().onClick.AddListener(Close);
@@ -248,6 +278,10 @@ namespace Doggiehood.Unity
             portraitRect.pivot = new Vector2(0f, 0.5f);
             portraitRect.sizeDelta = new Vector2(PortraitSizePx, PortraitSizePx);
             portraitRect.anchoredPosition = Vector2.zero;
+            // #465: frame the #464 render-texture portrait with the Ink outline
+            // (no shadow) — a RawImage takes the outline mesh effect directly, so
+            // the snapshot wiring is untouched.
+            CandyChromeUgui.AddOutline(portraitImage.gameObject);
 
             var textX = PortraitSizePx + PortraitNameGapPx;
             var textWidth = InnerWidth() - textX;
@@ -256,8 +290,12 @@ namespace Doggiehood.Unity
             PlaceTopLeft(nameLabel.rectTransform, textX, PortraitSizePx / 2f - NameFontPx - NameChipGapPx,
                 textWidth, NameFontPx);
 
-            var chip = CreateImage("BreedChip", header, BreedChipColor).rectTransform;
+            breedChipImage = CreateImage("BreedChip", header, BreedChipColor);
+            var chip = breedChipImage.rectTransform;
             PlaceTopLeft(chip, textX, PortraitSizePx / 2f + NameChipGapPx, BreedChipContentWidth(), BreedChipHeightPx);
+            // #465: the breed chip is an inline sky-accent pill — Ink outline, no
+            // shadow; its non-palette accent fill is kept.
+            CandyChromeUgui.ApplyPill(breedChipImage, BreedChipColor, BreedChipHeightPx, withShadow: false);
             breedChipLabel = CreateLabel("BreedLabel", chip, string.Empty, BreedChipFontPx, TextAnchor.MiddleLeft);
             InsetX(breedChipLabel.rectTransform, BreedChipPaddingXPx);
         }
@@ -267,13 +305,19 @@ namespace Doggiehood.Unity
             var top = ProfilePaddingPx + PortraitSizePx + StatsTopMarginPx;
             var tileWidth = (InnerWidth() - StatGapPx) / 2f;
 
-            var ageTile = PlaceTopLeft(CreateImage("AgeTile", parent, StatColor).rectTransform,
+            ageTileImage = CreateImage("AgeTile", parent, StatColor);
+            var ageTile = PlaceTopLeft(ageTileImage.rectTransform,
                 ProfilePaddingPx, top, tileWidth, StatTileHeightPx);
+            // #465: each stat tile is a rounded stage-tan card — Ink outline, no
+            // shadow (inline element); its non-palette accent fill is kept.
+            CandyChromeUgui.ApplyRounded(ageTileImage, StatColor, StatTileRadiusPx, withShadow: false);
             ageKeyLabel = BuildStatKey(ageTile, AgeKeyText);
             ageValueLabel = BuildStatValue(ageTile);
 
-            var personalityTile = PlaceTopLeft(CreateImage("PersonalityTile", parent, StatColor).rectTransform,
+            personalityTileImage = CreateImage("PersonalityTile", parent, StatColor);
+            var personalityTile = PlaceTopLeft(personalityTileImage.rectTransform,
                 ProfilePaddingPx + tileWidth + StatGapPx, top, tileWidth, StatTileHeightPx);
+            CandyChromeUgui.ApplyRounded(personalityTileImage, StatColor, StatTileRadiusPx, withShadow: false);
             personalityKeyLabel = BuildStatKey(personalityTile, PersonalityKeyText);
             personalityValueLabel = BuildStatValue(personalityTile);
         }
@@ -296,12 +340,16 @@ namespace Doggiehood.Unity
 
         private void BuildFooter(RectTransform parent)
         {
-            homeButtonRect = CreateImage("HomeButton", parent, HomeButtonColor).rectTransform;
+            var homeImage = CreateImage("HomeButton", parent, HomeButtonColor);
+            homeButtonRect = homeImage.rectTransform;
             homeButtonRect.anchorMin = new Vector2(1f, 0f);
             homeButtonRect.anchorMax = new Vector2(1f, 0f);
             homeButtonRect.pivot = new Vector2(1f, 0f);
             homeButtonRect.sizeDelta = new Vector2(HomeButtonWidthPx, HomeButtonHeightPx);
             homeButtonRect.anchoredPosition = new Vector2(-ProfilePaddingPx, ProfilePaddingPx);
+            // Footer PillButton chrome (#465): a Leaf positive pill with Ink outline
+            // + hard shadow at the shared 96px PillButton height.
+            CandyChromeUgui.ApplyPill(homeImage, HomeButtonColor, HomeButtonHeightPx, withShadow: true);
 
             var label = CreateLabel("Label", homeButtonRect, HomeButtonText, HomeButtonFontPx, TextAnchor.MiddleCenter);
             InsetX(label.rectTransform, HomeButtonPaddingXPx);

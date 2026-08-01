@@ -93,19 +93,31 @@ namespace Doggiehood.Unity
         private const string LabelFontResource = "DejaVuSans";
         private static Font labelFont;
 
-        // --- Palette (graybox; restyled by the #173 shared chrome pass) ---
+        // --- Candy Cottage chrome corner radii (#465) ---
+        // Panel/pill radii come from the shared baseline (CandyChromeUgui:
+        // PanelRadiusPx / pills via ApplyPill). The resident row is a rounded
+        // (non-pill) card whose corner radius is the mockup .resrow value
+        // (mockups/house-profile.html #161 — no invented value).
+        private const float ResidentRowRadiusPx = 24f;
+
+        // --- Palette (#465: the shared Candy Cottage palette, one source) ---
+        // Every fill that maps to a Candy Cottage role is the named
+        // CandyChromeUgui palette color (shared-components.md) — no hand-picked
+        // hex. The scrim (46% ink dim) and the resident-row / breed-chip accents
+        // are not palette component fills, so they keep their own values (they
+        // still gain the outline chrome), matching the Settings stage-fill case.
         private static readonly Color ScrimColor = new Color(46f / 255f, 42f / 255f, 38f / 255f, 0.46f);
-        private static readonly Color PanelColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color CloseColor = new Color(1f, 0.953f, 0.851f, 1f);
-        private static readonly Color LevelBadgeColor = new Color(1f, 0.761f, 0.235f, 1f);
-        private static readonly Color PipFilledColor = new Color(1f, 0.761f, 0.235f, 1f);
-        private static readonly Color PipEmptyColor = new Color(1f, 0.99f, 0.97f, 1f);
-        private static readonly Color ResidentRowColor = new Color(0.906f, 0.875f, 0.808f, 1f);
-        private static readonly Color BreedChipColor = new Color(0.431f, 0.776f, 0.878f, 1f);
-        private static readonly Color UpgradeButtonColor = new Color(1f, 0.478f, 0.361f, 1f);
-        private static readonly Color UpgradeDisabledColor = new Color(0.847f, 0.824f, 0.776f, 1f);
+        private static readonly Color PanelColor = CandyChromeUgui.Panel;
+        private static readonly Color CloseColor = CandyChromeUgui.Cream;
+        private static readonly Color LevelBadgeColor = CandyChromeUgui.Gold;
+        private static readonly Color PipFilledColor = CandyChromeUgui.Gold;
+        private static readonly Color PipEmptyColor = CandyChromeUgui.Panel;
+        private static readonly Color ResidentRowColor = new Color32(0xE7, 0xDF, 0xCE, 0xFF); // mockup --stage
+        private static readonly Color BreedChipColor = new Color32(0x6E, 0xC6, 0xE0, 0xFF);   // mockup --sky
+        private static readonly Color UpgradeButtonColor = CandyChromeUgui.Coral;
+        private static readonly Color UpgradeDisabledColor = CandyChromeUgui.Disabled;
         private static readonly Color EmptyStateColor = new Color(0.522f, 0.486f, 0.431f, 1f);
-        private static readonly Color InkColor = new Color(0.180f, 0.165f, 0.149f, 1f);
+        private static readonly Color InkColor = CandyChromeUgui.Ink;
 
         /// <summary>One resident link row: its rect + tap button, the name and
         /// breed labels sourced from the dog's <see cref="DogProfile"/>, and the
@@ -116,6 +128,10 @@ namespace Doggiehood.Unity
             public Button Button { get; internal set; }
             public Text NameLabel { get; internal set; }
             public Text BreedChipLabel { get; internal set; }
+
+            /// <summary>#465: the breed chip's backing <see cref="Image"/>, which
+            /// carries the Candy Cottage Ink outline.</summary>
+            public Image BreedChip { get; internal set; }
 
             /// <summary>#464: the 96px avatar box, now a render-to-texture
             /// snapshot of this resident's breed-tinted model.</summary>
@@ -132,6 +148,7 @@ namespace Doggiehood.Unity
         private RectTransform residentsContainer;
         private RectTransform upgradeButtonRect;
         private Text levelLabel;
+        private Image levelBadgeImage;
         private Text emptyStateLabel;
         private Text upgradeButtonLabel;
         private Button upgradeButton;
@@ -175,6 +192,10 @@ namespace Doggiehood.Unity
         public PortraitCamera Portrait => portraitCamera;
         public RectTransform UpgradeButtonRect => upgradeButtonRect;
         public Text LevelLabel => levelLabel;
+
+        /// <summary>#465: the `Lv N` badge <see cref="Image"/> (Gold fill + Ink
+        /// outline), exposed so chrome tests can assert its outline.</summary>
+        public Image LevelBadge => levelBadgeImage;
         public Text EmptyStateLabel => emptyStateLabel;
         public Text UpgradeButtonLabel => upgradeButtonLabel;
         public Button UpgradeButton => upgradeButton;
@@ -320,8 +341,12 @@ namespace Doggiehood.Unity
 
         private void BuildCard(RectTransform parent)
         {
-            cardRect = CreateImage("Card", parent, PanelColor).rectTransform;
+            var cardImage = CreateImage("Card", parent, PanelColor);
+            cardRect = cardImage.rectTransform;
             Center(cardRect, ProfileWidthPx, ComputeCardHeight(0));
+            // Panel chrome (#465): Panel fill + Ink outline + flat hard drop-shadow
+            // at the shared PanelRadiusPx, mirroring SettingsPanel.BuildPanel.
+            CandyChromeUgui.ApplyRounded(cardImage, PanelColor, CandyChromeUgui.PanelRadiusPx, withShadow: true);
 
             BuildCloseButton(cardRect);
             BuildHeader(cardRect);
@@ -333,12 +358,16 @@ namespace Doggiehood.Unity
 
         private void BuildCloseButton(RectTransform parent)
         {
-            closeButtonRect = CreateImage("Close", parent, CloseColor).rectTransform;
+            var closeImage = CreateImage("Close", parent, CloseColor);
+            closeButtonRect = closeImage.rectTransform;
             closeButtonRect.anchorMin = Vector2.one;
             closeButtonRect.anchorMax = Vector2.one;
             closeButtonRect.pivot = Vector2.one;
             closeButtonRect.sizeDelta = new Vector2(CloseButtonSizePx, CloseButtonSizePx);
             closeButtonRect.anchoredPosition = Vector2.zero;
+            // Close chrome (#465): a Cream pill with Ink outline + hard shadow
+            // (Settings/confirmation-dialog close-button precedent).
+            CandyChromeUgui.ApplyPill(closeImage, CloseColor, CloseButtonSizePx, withShadow: true);
 
             CreateLabel("Glyph", closeButtonRect, CloseGlyphText, CloseGlyphFontPx, TextAnchor.MiddleCenter);
             closeButtonRect.gameObject.AddComponent<Button>().onClick.AddListener(Close);
@@ -356,6 +385,10 @@ namespace Doggiehood.Unity
             thumbnailRect.pivot = new Vector2(0f, 0.5f);
             thumbnailRect.sizeDelta = new Vector2(ThumbnailSizePx, ThumbnailSizePx);
             thumbnailRect.anchoredPosition = Vector2.zero;
+            // #465: frame the #464 render-texture thumbnail with the Ink outline
+            // (no shadow) — a RawImage takes the outline mesh effect directly, so
+            // the snapshot wiring is untouched.
+            CandyChromeUgui.AddOutline(thumbnailImage.gameObject);
 
             var textX = ThumbnailSizePx + ThumbnailTitleGapPx;
             var textWidth = InnerWidth() - textX;
@@ -369,8 +402,11 @@ namespace Doggiehood.Unity
 
         private void BuildLevelBadge(RectTransform parent, float x, float yFromTop)
         {
-            var badge = CreateImage("LevelBadge", parent, LevelBadgeColor).rectTransform;
+            levelBadgeImage = CreateImage("LevelBadge", parent, LevelBadgeColor);
+            var badge = levelBadgeImage.rectTransform;
             PlaceTopLeft(badge, x, yFromTop, LevelBadgeWidthPx, LevelBadgeHeightPx);
+            // #465: the Gold `Lv N` badge is an inline pill — Ink outline, no shadow.
+            CandyChromeUgui.ApplyPill(levelBadgeImage, LevelBadgeColor, LevelBadgeHeightPx, withShadow: false);
             levelLabel = CreateLabel("LevelLabel", badge, string.Empty, LevelBadgeFontPx, TextAnchor.MiddleLeft);
             InsetX(levelLabel.rectTransform, LevelBadgePaddingXPx);
 
@@ -378,10 +414,13 @@ namespace Doggiehood.Unity
             var pipY = yFromTop + (LevelBadgeHeightPx - LevelPipDiameterPx) / 2f;
             for (var i = 0; i < LevelPipCount; i++)
             {
-                var pip = CreateImage("Pip", parent, PipEmptyColor).rectTransform;
-                PlaceTopLeft(pip, pipsX + i * (LevelPipDiameterPx + LevelPipGapPx), pipY,
+                var pipImage = CreateImage("Pip", parent, PipEmptyColor);
+                PlaceTopLeft(pipImage.rectTransform, pipsX + i * (LevelPipDiameterPx + LevelPipGapPx), pipY,
                     LevelPipDiameterPx, LevelPipDiameterPx);
-                levelPips.Add(pip.GetComponent<Image>());
+                // #465: each pip is an inline round dot — Ink outline, no shadow.
+                // Its fill is re-tinted (filled/empty) per render; the outline stays.
+                CandyChromeUgui.ApplyPill(pipImage, PipEmptyColor, LevelPipDiameterPx, withShadow: false);
+                levelPips.Add(pipImage);
             }
         }
 
@@ -416,6 +455,10 @@ namespace Doggiehood.Unity
             PlaceTopLeft(upgradeButtonRect,
                 ProfileWidthPx - ProfilePaddingPx - UpgradeButtonWidthPx, FooterTop(0),
                 UpgradeButtonWidthPx, UpgradeButtonHeightPx);
+            // Footer PillButton chrome (#465): a Coral spend pill with Ink outline
+            // + hard shadow at the shared 96px PillButton height. The Coral/
+            // Disabled role fill is (re-)applied per render by Render().
+            CandyChromeUgui.ApplyPill(upgradeButtonImage, UpgradeButtonColor, UpgradeButtonHeightPx, withShadow: true);
 
             upgradeButtonLabel = CreateLabel("Label", upgradeButtonRect, string.Empty,
                 UpgradeButtonFontPx, TextAnchor.MiddleCenter);
@@ -457,6 +500,9 @@ namespace Doggiehood.Unity
             var rowRect = rowImage.rectTransform;
             PlaceTopLeft(rowRect, 0f, index * (ResidentRowHeightPx + ResidentRowGapPx),
                 InnerWidth(), ResidentRowHeightPx);
+            // #465: the resident row is a rounded stage-tan card — Ink outline, no
+            // shadow (inline element); its non-palette accent fill is kept.
+            CandyChromeUgui.ApplyRounded(rowImage, ResidentRowColor, ResidentRowRadiusPx, withShadow: false);
 
             var avatarImage = CreateRawImage("Avatar", rowRect);
             var avatar = avatarImage.rectTransform;
@@ -467,6 +513,9 @@ namespace Doggiehood.Unity
             avatar.anchoredPosition = new Vector2(ResidentRowPaddingXPx, 0f);
             // #464: fill the avatar with a snapshot of this dog's breed-tinted model.
             avatarImage.texture = Snapshot(PortraitSubjects.ForDog(dog));
+            // #465: frame the #464 avatar snapshot with the Ink outline (no shadow);
+            // the RawImage.texture wiring is untouched.
+            CandyChromeUgui.AddOutline(avatarImage.gameObject);
 
             var nameX = ResidentRowPaddingXPx + ResidentAvatarSizePx + ResidentAvatarGapPx;
             var nameLabel = CreateLabel("Name", rowRect, profile.Name, ResidentNameFontPx, TextAnchor.MiddleLeft);
@@ -477,12 +526,16 @@ namespace Doggiehood.Unity
                 InnerWidth() - nameX - BreedChipWidthPx - ResidentRowPaddingXPx, ResidentNameFontPx);
             nameLabel.rectTransform.anchoredPosition = new Vector2(nameX, 0f);
 
-            var chip = CreateImage("BreedChip", rowRect, BreedChipColor).rectTransform;
+            var chipImage = CreateImage("BreedChip", rowRect, BreedChipColor);
+            var chip = chipImage.rectTransform;
             chip.anchorMin = new Vector2(1f, 0.5f);
             chip.anchorMax = new Vector2(1f, 0.5f);
             chip.pivot = new Vector2(1f, 0.5f);
             chip.sizeDelta = new Vector2(BreedChipWidthPx, BreedChipHeightPx);
             chip.anchoredPosition = new Vector2(-ResidentRowPaddingXPx, 0f);
+            // #465: the breed chip is an inline sky-accent pill — Ink outline, no
+            // shadow; its non-palette accent fill is kept.
+            CandyChromeUgui.ApplyPill(chipImage, BreedChipColor, BreedChipHeightPx, withShadow: false);
             var chipLabel = CreateLabel("BreedLabel", chip, profile.Breed, BreedChipFontPx, TextAnchor.MiddleCenter);
             InsetX(chipLabel.rectTransform, BreedChipPaddingXPx);
 
@@ -491,6 +544,7 @@ namespace Doggiehood.Unity
                 Rect = rowRect,
                 NameLabel = nameLabel,
                 BreedChipLabel = chipLabel,
+                BreedChip = chipImage,
                 Avatar = avatarImage,
                 Dog = dog,
             };
