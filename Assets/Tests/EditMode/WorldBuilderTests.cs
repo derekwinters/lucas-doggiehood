@@ -980,7 +980,7 @@ namespace Doggiehood.Unity.EditModeTests
             {
                 foreach (var lot in FrontierEditModeWorld.FirstTileLots())
                 {
-                    WorldBuilder.BuildYardLandscaping(host.transform, lot, placement.Type);
+                    WorldBuilder.BuildYardLandscaping(host.transform, lot, FrontierEditModeWorld.FirstTileType);
 
                     var container = host.transform.Find(WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
                     Assert.That(container, Is.Not.Null, $"zone lot {lot.HouseId} gets a yard container");
