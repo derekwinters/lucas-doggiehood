@@ -421,6 +421,50 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Build_RendersOpenSpaceTreesOnACulDeSacsDroppedBulbSideQuadrants()
+        {
+            // #385: the cul-de-sac keeps only the 2 lots adjacent to its roaded
+            // edge; the 2 bulb-side quadrants become open space with trees. The
+            // live first zone (CulDeSacSouth at 0,1) drops its two north
+            // quadrants, so the world renders a tree at each. Pinned on the
+            // graybox primitive path so the per-tree object count is
+            // deterministic regardless of whether the kit art is staged.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithFirstZoneUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var container = root.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name == WorldBuilder.OpenSpaceTreeNamePrefix + "0,1");
+            Assert.That(container, Is.Not.Null, "the cul-de-sac tile (0,1) gets an open-space-trees container");
+
+            var expected = TileGeometry.TreeWorldPositionsFor(TileType.CulDeSacSouth, new TileCoordinate(0, 1));
+            Assert.That(expected.Count, Is.EqualTo(2), "precondition: two bulb-side tree quadrants");
+            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per dropped bulb-side quadrant");
+
+            var treeXZ = container.Cast<Transform>()
+                .Select(t => new Vector2(t.position.x, t.position.z))
+                .ToList();
+            foreach (var position in expected)
+            {
+                Assert.That(treeXZ.Any(p =>
+                        Mathf.Abs(p.x - position.X) < 0.001f && Mathf.Abs(p.y - position.Z) < 0.001f),
+                    Is.True, $"a tree renders at bulb-side quadrant ({position.X}, {position.Z})");
+            }
+
+            // The trees never overlap a buildable lot marker (the kept lots).
+            var emptyLots = root.transform.Cast<Transform>()
+                .Where(t => t.name.StartsWith(WorldBuilder.EmptyLotNamePrefix))
+                .Select(t => new Vector2(t.position.x, t.position.z))
+                .ToList();
+            foreach (var tree in treeXZ)
+            {
+                Assert.That(emptyLots.Any(l => Mathf.Abs(l.x - tree.x) < 0.001f && Mathf.Abs(l.y - tree.y) < 0.001f),
+                    Is.False, "an open-space tree never sits on a buildable lot");
+            }
+        }
+
+        [Test]
         public void BuildHouse_OnAZoneLotWithNoAuthoredStyle_FallsBackToTheGrayboxRender_WithoutThrowing()
         {
             // #57: houses built beyond the starting 4 have no

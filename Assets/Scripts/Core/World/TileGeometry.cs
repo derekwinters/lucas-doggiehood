@@ -49,5 +49,20 @@ namespace Doggiehood.Core.World
                 .Select(offset => new GridPoint(center.X + offset.X, center.Z + offset.Z))
                 .ToList();
         }
+
+        /// <summary>
+        /// The world-space positions of a tile's open-space-with-trees
+        /// quadrants (<see cref="TileLotCatalog.TreeQuadrantsFor"/>) - each
+        /// type's local tree offsets shifted by the tile's own
+        /// <see cref="CenterOf"/>. Only cul-de-sacs have any (their two
+        /// bulb-side quadrants, #385); every other type returns an empty list.
+        /// </summary>
+        public static IReadOnlyList<GridPoint> TreeWorldPositionsFor(TileType type, TileCoordinate coordinate)
+        {
+            var center = CenterOf(coordinate);
+            return TileLotCatalog.TreeQuadrantsFor(type).Values
+                .Select(offset => new GridPoint(center.X + offset.X, center.Z + offset.Z))
+                .ToList();
+        }
     }
 }

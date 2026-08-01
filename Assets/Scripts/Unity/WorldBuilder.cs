@@ -41,6 +41,14 @@ namespace Doggiehood.Unity
         /// coordinate so each tile's roads stay a distinct scene object.</summary>
         public const string ZoneRoadNamePrefix = "ZoneRoad - ";
 
+        /// <summary>Container name prefix for a placed tile's open-space trees
+        /// (#385): the dropped bulb-side quadrants of a cul-de-sac render as
+        /// open space with trees. One container per tile that has any, holding
+        /// one tree per <see cref="TileGeometry.TreeWorldPositionsFor"/>
+        /// position. Suffixed with the tile's grid coordinate so each tile's
+        /// trees stay a distinct scene object, matching the ZoneRoad pattern.</summary>
+        public const string OpenSpaceTreeNamePrefix = "OpenSpaceTree - ";
+
         public const string GroundName = "Ground";
 
         /// <summary>Half-extent (meters) of the fixed starting grass pad this
@@ -255,6 +263,7 @@ namespace Doggiehood.Unity
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
             BuildUnlockedZoneRoads(root.transform, state);
+            BuildOpenSpaceTrees(root.transform, state);
             BuildExpansionIndicator(root.transform, state);
 
             BuildSun(root.transform);
@@ -940,6 +949,57 @@ namespace Doggiehood.Unity
                 {
                     BuildEmptyLot(root, lot);
                 }
+            }
+
+            foreach (var placement in zone.TilePlacements)
+            {
+                BuildTileOpenSpaceTrees(root, placement.Coordinate, placement.Type);
+            }
+        }
+
+        /// <summary>
+        /// Renders each unlocked zone tile's open-space trees (#385): a
+        /// cul-de-sac's two dropped bulb-side quadrants become open space with
+        /// trees, reusing the #170 tree kit art. Runs at initial build so a
+        /// loaded game whose save already unlocked a zone
+        /// (<see cref="GameState.RestoreUnlockedZoneCount"/>) renders those
+        /// trees, mirroring <see cref="BuildUnlockedZoneRoads"/>. Which
+        /// quadrants (and their positions) is Core's decision
+        /// (<see cref="TileGeometry.TreeWorldPositionsFor"/>); nothing here
+        /// decides where a tree goes.
+        /// </summary>
+        private static void BuildOpenSpaceTrees(Transform parent, GameState state)
+        {
+            foreach (var zone in state.UnlockedZones)
+            {
+                foreach (var placement in zone.TilePlacements)
+                {
+                    BuildTileOpenSpaceTrees(parent, placement.Coordinate, placement.Type);
+                }
+            }
+        }
+
+        /// <summary>Renders one placed tile's open-space trees into a single
+        /// "OpenSpaceTree - col,row" container - one tree per Core tree-quadrant
+        /// world position. A tile type with no tree quadrants (everything but
+        /// cul-de-sacs) renders nothing, same as the loop. Reuses the shared
+        /// tree renderer (<see cref="BuildYardTree"/>) so open-space trees and
+        /// yard trees stay one art path.</summary>
+        private static void BuildTileOpenSpaceTrees(Transform parent, TileCoordinate coordinate, TileType type)
+        {
+            var positions = TileGeometry.TreeWorldPositionsFor(type, coordinate);
+            if (positions.Count == 0)
+            {
+                return;
+            }
+
+            var container = new GameObject(OpenSpaceTreeNamePrefix + coordinate.Col + "," + coordinate.Row);
+            container.transform.SetParent(parent);
+            container.transform.position = Vector3.zero;
+
+            for (var i = 0; i < positions.Count; i++)
+            {
+                BuildYardTree(container.transform, new YardTreePlacement(positions[i], YardTreeKind.TreeLarge), i);
             }
         }
 
