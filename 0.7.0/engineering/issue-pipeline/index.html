@@ -2233,6 +2233,20 @@ precedent <code>.github/workflows/dashboard.yml</code> already set:</p>
   command the primary workflow missed (a dropped webhook) — see
   <strong>Reconciliation</strong> below for why <code>requeue</code> is cron-only.</li>
 </ul>
+<p><strong><code>dashboard.yml</code></strong> renders #193 on its <code>schedule</code> + <code>workflow_dispatch</code> and,
+since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/442">#442</a>, also
+<code>on: issues: [labeled, unlabeled]</code> so the board refreshes the instant an issue's
+labels change instead of only at the next scheduled render. That trigger fires
+for <strong>human / UI / PAT-authored</strong> label moves; GitHub's no-recursion guard means
+the automation's own <code>GITHUB_TOKEN</code>-authored moves never fire a new run, so the
+<strong>gatekeeper re-renders #193 inline</strong> for those (see the Dashboard section and
+the two gatekeeper glue scripts). PR label events are out of scope — the state
+machine is issue labels. Bursts collapse via the workflow's existing
+<code>concurrency: {group: dashboard, cancel-in-progress: false}</code>: a constant group
+serializes runs repo-wide, an in-progress render is never cancelled, and a
+newer trigger only supersedes a still-<strong>pending</strong> run — at most one running +
+one pending, so a flurry of label changes ends with one final render on the
+latest state.</p>
 <p>The <strong>AI routines drop their gatekeeper step entirely</strong> — they now start
 directly at analysis / development:</p>
 <table>
@@ -2275,7 +2289,7 @@ directly at analysis / development:</p>
 <td>gatekeeper — board sweep (<code>gatekeeper-sweep.yml</code>)</td>
 </tr>
 <tr>
-<td>13:00, 00:00, 07:00 UTC</td>
+<td>13:00, 00:00, 07:00 UTC + on <code>issues: [labeled, unlabeled]</code></td>
 <td><strong>Actions workflow</strong></td>
 <td>dashboard render (<code>.github/workflows/dashboard.yml</code>)</td>
 </tr>
@@ -2631,6 +2645,28 @@ milestones" roll-up still excludes <code>parked</code> entirely, unchanged. Noth
 mutates anything else. <strong>Closed milestones</strong> (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/214">#214</a>).</p>
+<p><strong>When it renders.</strong> <code>dashboard.yml</code> runs on its <code>schedule</code> (a few times a day,
+offset after the AI routines), on <code>workflow_dispatch</code>, and — since
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/442">#442</a> — on
+<code>issues: [labeled, unlabeled]</code>, so a label change refreshes the board
+immediately. Because GitHub does not fire a new workflow run from a
+<code>GITHUB_TOKEN</code>-authored event (the no-recursion guard), that trigger only covers
+<strong>human / UI / PAT</strong> label moves; the gatekeeper's own automated moves — the
+bulk of the churn — are covered instead by the gatekeeper <strong>re-rendering #193
+inline</strong>. Both glue scripts shell out to <code>render_dashboard.py --write</code> (via the
+shared <code>_github_api.rerender_dashboard</code> helper) with the job's own
+<code>GITHUB_TOKEN</code>, in the same job — no second workflow run, so no recursion-guard
+problem, and no new permissions or secrets (both <code>gatekeeper-*.yml</code> already
+carry <code>issues: write</code> + <code>pull-requests: read</code> + <code>contents: read</code>). This
+generalizes the earlier <code>/focus</code>/<code>/cap</code>-only re-render
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/442">#442</a>): the
+gatekeeper now re-renders after <strong>any</strong> label-changing action it applies —
+<code>run_comment_event.py</code>'s command path (<code>/admit</code>, <code>/approve</code>, <code>/revise</code>, … as
+well as <code>/focus</code>/<code>/cap</code>, which still persist their marker via the
+<code>DASHBOARD_SET_FOCUS</code>/<code>DASHBOARD_SET_CAP</code> overrides), and <code>run_sweep.py</code>'s
+blocker auto-revisit, reconcile <code>strip_labels</code>/<code>requeue</code>, and cron
+missed-command replay. The render happens <strong>once per run</strong>, after all label
+changes are applied, since the renderer recomputes full board state regardless.</p>
 <h2 id="skills">Skills<a class="headerlink" href="#skills" title="Permanent link">&para;</a></h2>
 <p>Each stage is a self-contained skill directory under <code>.claude/skills/</code>:</p>
 <ul>
