@@ -70,6 +70,13 @@ namespace Doggiehood.Unity
             var rebuilt = WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork)
                 .GetComponent<HouseView>();
 
+            // #460: the backyard fence connectors are sized to the house's
+            // current level's footprint (LotFence.GeometryFor(lot, state)), so
+            // rebuild the fence containers now — the corrected termination points
+            // must move immediately with the upgraded mesh, not only at the next
+            // full world build.
+            WorldBuilder.RebuildFences(worldRoot, State);
+
             onHouseRebuilt?.Invoke(rebuilt);
             return rebuilt;
         }

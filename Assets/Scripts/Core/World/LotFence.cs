@@ -115,7 +115,7 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static IReadOnlyList<FenceRun> RunsFor(HouseLot lot, GameState state)
         {
-            return IsFenced(lot, state) ? GeometryFor(lot) : Array.Empty<FenceRun>();
+            return IsFenced(lot, state) ? GeometryFor(lot, state) : Array.Empty<FenceRun>();
         }
 
         /// <summary>
@@ -173,6 +173,44 @@ namespace Doggiehood.Core.World
             }
 
             var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var facing = HousePlacement.FrontFacing(lot);
+            var position = HousePlacement.Position(lot, HousePlacement.KitScale);
+            var quadrant = LotBounds.QuadrantBounds(lot);
+            return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale,
+                NeighborhoodLayout.Roads);
+        }
+
+        /// <summary>
+        /// #460: the lot's backyard fence geometry sized to the house's CURRENT
+        /// upgrade level, so the two connectors reach the actual (upgraded) mesh's
+        /// side-wall midpoints instead of staying pinned to the level-1 half-width
+        /// (which lands inside a wider upgraded house — a collision — or falls
+        /// short — a gap). It mirrors the level-blind <see cref="GeometryFor(HouseLot)"/>
+        /// exactly but resolves the connector footprint through the level-aware
+        /// <see cref="HouseModelCatalog.ForHouse(int, int)"/> (#454) at
+        /// <see cref="GameState.GetHouseLevel"/>. ONLY the connector
+        /// <c>halfWidth</c> changes: <see cref="HousePlacement.Position"/> /
+        /// <see cref="HousePlacement.FrontFacing"/> stay on their existing
+        /// (level-blind) resolution — house placement itself is #454/#462's
+        /// territory — and the lot-based offset boundary rectangle is unaffected.
+        /// A lot with a manual <see cref="HouseLot.FenceOverride"/> (#223) still
+        /// returns the override verbatim. At
+        /// <see cref="Doggiehood.Core.Art.HouseLevelModelTable.MinLevel"/>
+        /// it is byte-identical to <see cref="GeometryFor(HouseLot)"/>.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot, GameState state)
+        {
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (lot.HasFenceOverride)
+            {
+                return lot.FenceOverride;
+            }
+
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, state.GetHouseLevel(lot.HouseId));
             var facing = HousePlacement.FrontFacing(lot);
             var position = HousePlacement.Position(lot, HousePlacement.KitScale);
             var quadrant = LotBounds.QuadrantBounds(lot);
