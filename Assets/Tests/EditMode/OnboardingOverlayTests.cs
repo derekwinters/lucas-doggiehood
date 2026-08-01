@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Reflection;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -209,17 +210,17 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void CoachRect_IsBottomCenter_AtTheWireframeSize()
+        public void CoachRect_IsBottomCenter_AtTheContentSizedWireframeSize()
         {
-            // docs/specs/ui/onboarding-overlay.md (#176): CoachWidthPx 900,
-            // CoachHeightPx 88, CoachBottomMarginPx 56, anchored bottom-center
-            // at the 1920x1200 reference.
+            // docs/specs/ui/onboarding-overlay.md (#176/#451): CoachWidthPx 900,
+            // content-sized height 88 + 48 + 16 = 152, CoachBottomMarginPx 56,
+            // anchored bottom-center at the 1920x1200 reference.
             var rect = OnboardingOverlay.ComputeCoachRect(1920f, 1200f);
 
             Assert.That(rect.width, Is.EqualTo(900f).Within(0.01f));
-            Assert.That(rect.height, Is.EqualTo(88f).Within(0.01f));
+            Assert.That(rect.height, Is.EqualTo(152f).Within(0.01f));
             Assert.That(rect.x, Is.EqualTo((1920f - 900f) / 2f).Within(0.01f), "centered horizontally");
-            Assert.That(rect.y, Is.EqualTo(1200f - 88f - 56f).Within(0.01f), "bottom margin above the screen edge");
+            Assert.That(rect.y, Is.EqualTo(1200f - 152f - 56f).Within(0.01f), "bottom margin above the screen edge");
         }
 
         [Test]
@@ -237,15 +238,26 @@ namespace Doggiehood.Unity.EditModeTests
         public void CoachBar_LayoutConstants_MatchTheMockup()
         {
             // #297 / mockups/onboarding-overlay.html: padding 0 34px, gap 22px,
-            // a 52px leaf paw badge (5px ink ring), and 16px dots (4px ink ring)
-            // spaced 12px apart. No inline geometry literals (#161).
+            // a 52px leaf paw badge (5px ink ring). No inline geometry literals
+            // (#161). The trailing step dots are gone (#451).
             Assert.That(OnboardingOverlay.CoachPadXPx, Is.EqualTo(34f), "coach content x-padding");
             Assert.That(OnboardingOverlay.CoachGapPx, Is.EqualTo(22f), "gap between regions");
             Assert.That(OnboardingOverlay.PawDiameterPx, Is.EqualTo(52f), "leaf paw badge diameter");
             Assert.That(OnboardingOverlay.PawOutlineThicknessPx, Is.EqualTo(5f), "paw badge ink ring");
-            Assert.That(OnboardingOverlay.DotDiameterPx, Is.EqualTo(16f), "step dot diameter");
-            Assert.That(OnboardingOverlay.DotOutlineThicknessPx, Is.EqualTo(4f), "step dot ink ring");
-            Assert.That(OnboardingOverlay.DotGapPx, Is.EqualTo(12f), "gap between step dots");
+        }
+
+        [Test]
+        public void PhaseTitleTab_LayoutConstants_MatchTheSpecTable()
+        {
+            // #451 / onboarding-overlay.md "Phase-title region" table. No inline
+            // geometry literals (#161).
+            Assert.That(OnboardingOverlay.PhaseTitleLeftInsetPx, Is.EqualTo(34f), "tab inset from bar's left edge");
+            Assert.That(OnboardingOverlay.PhaseTitleOffsetPx, Is.EqualTo(28f), "overlap above the bar's top edge");
+            Assert.That(OnboardingOverlay.PhaseTitlePaddingXPx, Is.EqualTo(30f), "tab horizontal label inset");
+            Assert.That(OnboardingOverlay.PhaseTitlePaddingYPx, Is.EqualTo(8f), "tab vertical label inset");
+            Assert.That(OnboardingOverlay.PhaseTitleFontPx, Is.EqualTo(26), "tab label size");
+            Assert.That(OnboardingOverlay.PhaseTitleContentTopPaddingPx, Is.EqualTo(48f), "content-row top padding");
+            Assert.That(OnboardingOverlay.PhaseTitleContentBottomPaddingPx, Is.EqualTo(16f), "content-row bottom padding");
         }
 
         [Test]
@@ -287,18 +299,6 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void FilledDotCount_TracksTheCurrentStep()
-        {
-            // The trailing dots row fills up to and including the current step:
-            // one dot per guided step out of StepDotCount.
-            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Pan), Is.EqualTo(1));
-            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Zoom), Is.EqualTo(2));
-            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.TapBubble), Is.EqualTo(3));
-            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.CompleteQuest), Is.EqualTo(4));
-            Assert.That(OnboardingOverlay.FilledDotCount(OnboardingStep.Done), Is.EqualTo(4));
-        }
-
-        [Test]
         public void CoachBar_ReShowsForTheRewardChainSteps_ThenDismissesWhenTheChainCompletes()
         {
             // #371: the one standard coach bar (onboarding-overlay.md, #374) does
@@ -332,22 +332,100 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void StepDots_StayFrozenAtFourOfFour_DuringTheRewardChainSteps()
+        public void StepDots_AreFullyRemoved_NoDotMembersRemain()
         {
-            // #371 / onboarding-overlay.md: StepDotCount stays 4 and the dots
-            // track only the first-launch four steps — during the reward chain
-            // they stay filled at 4/4 (not advancing).
-            Assert.That(OnboardingOverlay.StepDotCount, Is.EqualTo(4));
+            // #451: the trailing step-dots region is DROPPED, not hidden — the
+            // dot count froze at 4/4 through the reward chain and was misleading.
+            // This regression guard fails if any dot member is reintroduced.
+            var type = typeof(OnboardingOverlay);
+            var flags = BindingFlags.Public | BindingFlags.NonPublic
+                | BindingFlags.Static | BindingFlags.Instance;
+            foreach (var name in new[]
+            {
+                "StepDotCount", "FilledDotCount", "DrawStepDots",
+                "DotDiameterPx", "DotOutlineThicknessPx", "DotGapPx",
+            })
+            {
+                Assert.That(type.GetMember(name, flags), Is.Empty,
+                    name + " must be gone (#451 removed the step dots)");
+            }
+        }
+
+        [Test]
+        public void DesiredContentWidth_ReservesNoDotsColumn()
+        {
+            // #451: the content-width calc is left/right padding + paw badge +
+            // gap + message, with NO trailing dots column reserved.
+            const float messageWidth = 400f;
+            var expected = 2f * OnboardingOverlay.CoachPadXPx + OnboardingOverlay.PawDiameterPx
+                + OnboardingOverlay.CoachGapPx + messageWidth;
+            Assert.That(OnboardingOverlay.DesiredContentWidthPx(messageWidth),
+                Is.EqualTo(expected).Within(0.01f));
+        }
+
+        [Test]
+        public void PhaseTitleTab_IsTopLeft_InsetAndOverlappingAboveTheTopEdge_LabeledFromCore()
+        {
+            // #451: the tab is inset PhaseTitleLeftInsetPx from the bar's left
+            // edge, overlaps PhaseTitleOffsetPx above its top edge, and is sized
+            // to the label plus horizontal/vertical paddings. Its label is the
+            // current phase from the Core OnboardingCoach lookup.
+            var coach = OnboardingOverlay.ComputeCoachRect(1920f, 1200f);
+            const float labelWidth = 120f;
+            var tab = OnboardingOverlay.ComputePhaseTitleRect(coach, labelWidth, 1f);
+
+            Assert.That(tab.x, Is.EqualTo(coach.x + OnboardingOverlay.PhaseTitleLeftInsetPx).Within(0.01f),
+                "inset from the bar's left edge");
+            Assert.That(tab.y, Is.EqualTo(coach.y - OnboardingOverlay.PhaseTitleOffsetPx).Within(0.01f),
+                "offset above the bar's top edge");
+            Assert.That(tab.yMax, Is.GreaterThan(coach.y),
+                "the tab overlaps down onto the bar's top edge");
+            Assert.That(tab.width, Is.EqualTo(labelWidth + 2f * OnboardingOverlay.PhaseTitlePaddingXPx).Within(0.01f));
+            Assert.That(tab.height, Is.EqualTo(OnboardingOverlay.PhaseTitleFontPx + 2f * OnboardingOverlay.PhaseTitlePaddingYPx).Within(0.01f));
 
             overlay.Init(state, rig, presenter);
-            DriveFirstQuestSequenceToDone();
-            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Done));
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.PhaseTitle(
+                overlay.CurrentStep, state.RewardChain.CurrentStep)),
+                "the tab label is the Core phase-title lookup");
+        }
 
-            Assert.That(OnboardingOverlay.FilledDotCount(overlay.CurrentStep), Is.EqualTo(4),
-                "dots are full at the first reward-chain step");
+        [Test]
+        public void PhaseTitleText_SwapsOncePerPhase_NotPerStep()
+        {
+            // #451: "Learn the ropes" through every tutorial step, then one title
+            // per reward-chain phase — the tab names the PHASE, not the step.
+            overlay.Init(state, rig, presenter);
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.LearnTheRopesTitle),
+                "Pan: tutorial phase");
+
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.LearnTheRopesTitle),
+                "Zoom: same tutorial phase title");
+
+            DriveFirstQuestSequenceToDone();
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.FixUpAHomeTitle),
+                "upgrade phase");
+
             state.TryUpgradeHouse(state.Houses[0].Id);
-            Assert.That(OnboardingOverlay.FilledDotCount(overlay.CurrentStep), Is.EqualTo(4),
-                "dots do not advance further through the reward chain");
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.GrowTheNeighborhoodTitle),
+                "expand phase");
+
+            state.TryUnlockNextZone();
+            Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.BuildHouseTitle),
+                "build phase");
+        }
+
+        [Test]
+        public void CoachBar_SingleLineHeight_IsContentSized_AndGrowsUpward()
+        {
+            // #451: single-line height = CoachHeightPx + top + bottom padding
+            // (88 + 48 + 16 = 152), bottom edge fixed at CoachBottomMarginPx so
+            // the bar grows upward.
+            var rect = OnboardingOverlay.ComputeCoachRect(1920f, 1200f);
+            Assert.That(rect.height, Is.EqualTo(152f).Within(0.01f));
+            Assert.That(rect.yMax, Is.EqualTo(1200f - 56f).Within(0.01f),
+                "bottom edge fixed at CoachBottomMarginPx; the bar grows upward");
         }
 
         [Test]
@@ -375,12 +453,35 @@ namespace Doggiehood.Unity.EditModeTests
         {
             var single = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 1100f);
             Assert.That(single.width, Is.EqualTo(1100f).Within(0.01f), "grown to fit the content");
-            Assert.That(single.height, Is.EqualTo(88f).Within(0.01f), "one line: base height");
+            Assert.That(single.height, Is.EqualTo(152f).Within(0.01f),
+                "one line: content-sized base height (88 + 48 + 16)");
 
             var wrapped = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 2000f);
             Assert.That(wrapped.width, Is.EqualTo(1500f).Within(0.01f), "clamped to the max width");
-            Assert.That(wrapped.height, Is.GreaterThan(88f),
+            Assert.That(wrapped.height, Is.GreaterThan(152f),
                 "wrapping to a second line grows the bar in height instead of overflowing");
+        }
+
+        [Test]
+        public void CoachBar_TwoLineWrap_GrowsTallerThan152_AndTheMessageTopClearsTheTab()
+        {
+            // #451 two-line-wrap case (the worst case: the tutorial step-1 message
+            // wraps at CoachWidthPx). The content-sized bar grows taller than the
+            // 152px single-line case, and the content row's top still clears the
+            // phase-title tab's bottom edge — the clearance that drove the 48/16
+            // paddings (#435 revision history).
+            var single = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 900f);
+            var wrapped = OnboardingOverlay.ComputeCoachRect(1920f, 1200f, 2000f);
+
+            Assert.That(single.height, Is.EqualTo(152f).Within(0.01f), "single line: 152px");
+            Assert.That(wrapped.height, Is.GreaterThan(152f), "the wrapped message grows the bar taller");
+            Assert.That(wrapped.yMax, Is.EqualTo(single.yMax).Within(0.01f),
+                "both anchored at the same bottom edge, growing upward");
+
+            var tab = OnboardingOverlay.ComputePhaseTitleRect(wrapped, 120f, 1f);
+            var contentTop = wrapped.y + OnboardingOverlay.PhaseTitleContentTopPaddingPx;
+            Assert.That(contentTop, Is.GreaterThanOrEqualTo(tab.yMax),
+                "the wrapped message's top edge clears the tab's bottom edge");
         }
 
         /// <summary>Drives the first-quest sequence (pan -> zoom -> tap bubble ->
