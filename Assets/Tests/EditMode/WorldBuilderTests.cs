@@ -849,6 +849,59 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void BuildYardLandscaping_TileAware_KeepsAZoneLotsTreesOutOfItsOwnTilesRoad()
+        {
+            // #455: the tile-aware overload clips a zone lot's yard trees against
+            // its OWN cul-de-sac road (a TileRoadSegment, invisible to the
+            // origin-roads-only clip), so no rendered tree sits in the paved
+            // strip. The first zone is a CulDeSacSouth at (0,1).
+            var placement = ZoneCatalog.FirstZone.TilePlacements.First();
+            var roadStrips = TileRoadGeometry.SegmentsFor(placement.Coordinate, placement.Type)
+                .Select(RoadStrip).ToList();
+
+            var host = new GameObject("tile-aware-yard-host");
+            try
+            {
+                foreach (var lot in ZoneCatalog.FirstZone.Lots)
+                {
+                    WorldBuilder.BuildYardLandscaping(host.transform, lot, placement.Type);
+
+                    var container = host.transform.Find(WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
+                    Assert.That(container, Is.Not.Null, $"zone lot {lot.HouseId} gets a yard container");
+
+                    foreach (Transform tree in container)
+                    {
+                        var p = tree.position;
+                        foreach (var strip in roadStrips)
+                        {
+                            var inStrip = p.x > strip.MinX && p.x < strip.MaxX
+                                && p.z > strip.MinZ && p.z < strip.MaxZ;
+                            Assert.That(inStrip, Is.False,
+                                $"zone lot {lot.HouseId}: rendered tree at ({p.x}, {p.z}) must not sit in the road strip");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        private static LotRect RoadStrip(TileRoadSegment segment)
+        {
+            var halfWidth = segment.Width / 2f;
+            var halfLength = segment.Length / 2f;
+            return segment.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    segment.Center.X - halfWidth, segment.Center.X + halfWidth,
+                    segment.Center.Z - halfLength, segment.Center.Z + halfLength)
+                : new LotRect(
+                    segment.Center.X - halfLength, segment.Center.X + halfLength,
+                    segment.Center.Z - halfWidth, segment.Center.Z + halfWidth);
+        }
+
+        [Test]
         public void BuildFence_ForAZoneLotWithHasFence_ResolvesRuns_WithoutThrowing()
         {
             // #405: the confirmed LotFence gap — its run geometry resolves the

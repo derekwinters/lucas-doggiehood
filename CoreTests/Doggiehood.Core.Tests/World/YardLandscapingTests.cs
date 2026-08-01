@@ -361,6 +361,71 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void Candidates_ForACulDeSacKeptQuadrantLot_NeverLandInThatTilesRoadStrip()
+        {
+            // #455: for a lot on a non-origin cul-de-sac tile, the yard road
+            // clip used to see only NeighborhoodLayout.Roads (the origin
+            // FourWay's streets), so candidates freely landed inside the
+            // cul-de-sac's OWN paved road strip. The tile-aware resolvers thread
+            // that tile's road in, so no candidate's footprint reaches it.
+            const TileType type = TileType.CulDeSacSouth;
+            var coordinate = new TileCoordinate(0, 1);
+            var roadStrips = TileRoadGeometry.SegmentsFor(coordinate, type)
+                .Select(RoadStrip).ToList();
+            Assert.That(roadStrips, Is.Not.Empty, "a cul-de-sac tile has a road arm");
+
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                var candidates = YardLandscaping.FrontCandidatesFor(lot, type)
+                    .Concat(YardLandscaping.BackCandidatesFor(lot, type))
+                    .ToList();
+                Assert.That(candidates, Is.Not.Empty, $"zone lot {lot.HouseId}: yard fits some candidates");
+
+                foreach (var candidate in candidates)
+                {
+                    foreach (var strip in roadStrips)
+                    {
+                        Assert.That(DistanceToRect(candidate.Position, strip),
+                            Is.GreaterThanOrEqualTo(YardLandscaping.TreeFootprintRadius),
+                            $"zone lot {lot.HouseId}: candidate {candidate.Position} must clear the "
+                            + "cul-de-sac's paved road strip with its full footprint");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void Trees_ForStartingFourWayLots_AreByteIdenticalThroughTheTileAwareOverload()
+        {
+            // #455 regression: a starting FourWay lot's selection must be
+            // unchanged when routed through the tile-aware overload — same seed,
+            // same yard regions (its tile arms are coincident with the origin
+            // roads), so the exact same picks.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                Assert.That(Placements(YardLandscaping.FrontTreesFor(lot, TileType.FourWay)),
+                    Is.EqualTo(Placements(YardLandscaping.FrontTreesFor(lot))),
+                    $"lot {lot.HouseId}: front selection unchanged through the tile-aware overload");
+                Assert.That(Placements(YardLandscaping.BackTreesFor(lot, TileType.FourWay)),
+                    Is.EqualTo(Placements(YardLandscaping.BackTreesFor(lot))),
+                    $"lot {lot.HouseId}: back selection unchanged through the tile-aware overload");
+            }
+        }
+
+        private static LotRect RoadStrip(TileRoadSegment segment)
+        {
+            var halfWidth = segment.Width / 2f;
+            var halfLength = segment.Length / 2f;
+            return segment.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    segment.Center.X - halfWidth, segment.Center.X + halfWidth,
+                    segment.Center.Z - halfLength, segment.Center.Z + halfLength)
+                : new LotRect(
+                    segment.Center.X - halfLength, segment.Center.X + halfLength,
+                    segment.Center.Z - halfWidth, segment.Center.Z + halfWidth);
+        }
+
         private static List<YardTreeCandidate> FarApartCandidates(int count)
         {
             var list = new List<YardTreeCandidate>();

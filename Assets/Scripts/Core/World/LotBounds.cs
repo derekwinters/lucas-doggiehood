@@ -166,10 +166,22 @@ namespace Doggiehood.Core.World
         /// the nearest tile.</summary>
         private static GridPoint NearestTileCenter(GridPoint position)
         {
+            return TileGeometry.CenterOf(NearestTileCoordinate(position));
+        }
+
+        /// <summary>The integer grid <see cref="TileCoordinate"/> of the
+        /// <see cref="WorldDimensions.TileSize"/> tile that
+        /// <paramref name="position"/> falls in — the inverse of
+        /// <see cref="TileGeometry.CenterOf"/>, rounding to the nearest tile.
+        /// The tile whose road geometry (<see cref="RoadsFor"/>) and, for the
+        /// Unity layer, whose <see cref="TileMap"/> type a lot's yards are
+        /// resolved against (#455).</summary>
+        public static TileCoordinate NearestTileCoordinate(GridPoint position)
+        {
             var size = WorldDimensions.TileSize;
-            var col = (float)Math.Round(position.X / size, MidpointRounding.AwayFromZero);
-            var row = (float)Math.Round(position.Z / size, MidpointRounding.AwayFromZero);
-            return new GridPoint(col * size, row * size);
+            var col = (int)Math.Round(position.X / size, MidpointRounding.AwayFromZero);
+            var row = (int)Math.Round(position.Z / size, MidpointRounding.AwayFromZero);
+            return new TileCoordinate(col, row);
         }
 
         /// <summary>The portion of <see cref="QuadrantBounds"/> on the
@@ -181,7 +193,23 @@ namespace Doggiehood.Core.World
         /// the road and sidewalk it faces (#244).</summary>
         public static LotRect FrontYard(HouseLot lot)
         {
-            return YardSplit(lot).Front;
+            return YardSplit(lot, NeighborhoodLayout.Roads).Front;
+        }
+
+        /// <summary>
+        /// <see cref="FrontYard(HouseLot)"/> clipped against the lot's OWN
+        /// tile's road as well as the origin's fixed streets (#455). A zone
+        /// tile's road is built as a <see cref="TileRoadSegment"/> and never
+        /// turned into a <see cref="Road"/>, so the single-arg overload — which
+        /// only knows <see cref="NeighborhoodLayout.Roads"/> — never trimmed the
+        /// road a cul-de-sac kept-quadrant lot borders, and trees landed in its
+        /// paved strip. This threads that tile's road geometry in via
+        /// <see cref="RoadsFor"/>; the 4 starting FourWay lots are unaffected
+        /// (their tile arms are coincident with the origin streets).
+        /// </summary>
+        public static LotRect FrontYard(HouseLot lot, TileType tileType)
+        {
+            return YardSplit(lot, RoadsFor(lot, tileType)).Front;
         }
 
         /// <summary>The portion of <see cref="QuadrantBounds"/> behind the
@@ -189,7 +217,41 @@ namespace Doggiehood.Core.World
         /// footprint.</summary>
         public static LotRect BackYard(HouseLot lot)
         {
-            return YardSplit(lot).Back;
+            return YardSplit(lot, NeighborhoodLayout.Roads).Back;
+        }
+
+        /// <summary><see cref="BackYard(HouseLot)"/> clipped against the lot's
+        /// own tile's road as well as the origin's fixed streets — see
+        /// <see cref="FrontYard(HouseLot, TileType)"/> (#455).</summary>
+        public static LotRect BackYard(HouseLot lot, TileType tileType)
+        {
+            return YardSplit(lot, RoadsFor(lot, tileType)).Back;
+        }
+
+        /// <summary>
+        /// The roads a lot's yards clip against when its tile <paramref name="tileType"/>
+        /// is known (#455): <see cref="NeighborhoodLayout.Roads"/> (the origin
+        /// FourWay's fixed streets) PLUS the lot's own tile's road geometry,
+        /// converted from <see cref="TileRoadGeometry.SegmentsFor"/> to
+        /// <see cref="Road"/> (a segment's <see cref="TileRoadSegment.Center"/>/
+        /// <see cref="TileRoadSegment.Orientation"/> map directly;
+        /// <see cref="Road.HalfLength"/> is half the segment length). The tile
+        /// coordinate comes from <see cref="NearestTileCoordinate"/> over the
+        /// lot's position. Combining with the origin roads keeps the 4 starting
+        /// FourWay lots byte-identical — their own tile's four arms lie on the
+        /// same centerlines as those fixed streets, and the inset is not applied
+        /// twice to an already-inset edge.
+        /// </summary>
+        public static IReadOnlyList<Road> RoadsFor(HouseLot lot, TileType tileType)
+        {
+            var roads = new List<Road>(NeighborhoodLayout.Roads);
+            var coordinate = NearestTileCoordinate(lot.Position);
+            foreach (var segment in TileRoadGeometry.SegmentsFor(coordinate, tileType))
+            {
+                roads.Add(new Road(segment.Orientation, segment.Center, segment.Length / 2f));
+            }
+
+            return roads;
         }
 
         /// <summary>
@@ -269,13 +331,12 @@ namespace Doggiehood.Core.World
             return new LotRect(minX, maxX, minZ, maxZ);
         }
 
-        private static (LotRect Front, LotRect Back) YardSplit(HouseLot lot)
+        private static (LotRect Front, LotRect Back) YardSplit(HouseLot lot, IReadOnlyList<Road> roads)
         {
             var bounds = QuadrantBounds(lot);
             var facing = HousePlacement.FrontFacing(lot);
             var house = HousePlacement.Position(lot, HousePlacement.KitScale);
             var halfDepth = HalfDepthOf(lot);
-            var roads = NeighborhoodLayout.Roads;
 
             if (facing.X > 0f)
             {

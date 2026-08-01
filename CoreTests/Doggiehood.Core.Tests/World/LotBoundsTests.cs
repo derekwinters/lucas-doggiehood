@@ -236,6 +236,97 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void FrontAndBackYard_ForACulDeSacKeptQuadrantLot_ClearItsOwnTilesRoadCorridor()
+        {
+            // #455: a cul-de-sac's own road is built as a TileRoadSegment and
+            // never converted to a Road, so ClearRoadCorridors clipped a
+            // kept-quadrant lot's yards ONLY against the origin FourWay's fixed
+            // streets (NeighborhoodLayout.Roads) — nowhere near this tile — and
+            // never trimmed the road the lot actually borders. The tile-aware
+            // overload threads the lot's own tile road in, so neither yard
+            // overlaps that cul-de-sac's paved road strip.
+            const TileType type = TileType.CulDeSacSouth; // the real first zone
+            var coordinate = new TileCoordinate(0, 1);
+            var roadStrips = TileRoadGeometry.SegmentsFor(coordinate, type)
+                .Select(RoadStrip).ToList();
+            Assert.That(roadStrips, Is.Not.Empty, "a cul-de-sac tile has a road arm");
+
+            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            {
+                var front = LotBounds.FrontYard(lot, type);
+                var back = LotBounds.BackYard(lot, type);
+
+                foreach (var strip in roadStrips)
+                {
+                    Assert.That(front.Overlaps(strip), Is.False,
+                        $"zone lot {lot.HouseId}: front yard must not overlap its tile's road strip");
+                    Assert.That(back.Overlaps(strip), Is.False,
+                        $"zone lot {lot.HouseId}: back yard must not overlap its tile's road strip");
+                }
+            }
+        }
+
+        [Test]
+        public void FrontAndBackYard_OnACulDeSacKeptQuadrant_AreTrimmedByStreetCorridorInsetAgainstThatTilesRoad()
+        {
+            // #455 (diagnosis example): CulDeSacNorth's NE kept lot. Its single
+            // road arm runs up the quadrant's inner (west, X=0) edge, so both
+            // yards' MinX must be pulled off that centerline by exactly
+            // StreetCorridorInset. The origin-roads-only overload never trims
+            // it (that road is nowhere in NeighborhoodLayout.Roads), so the bug
+            // persists there — pinning that the fix lives in the tile-aware path.
+            const TileType type = TileType.CulDeSacNorth;
+            var coordinate = new TileCoordinate(0, 1);
+            var tileCenter = TileGeometry.CenterOf(coordinate);
+            var neLot = new HouseLot(
+                ZoneCatalog.FirstZone.Lots.First().HouseId,
+                Quadrant.NorthEast,
+                new GridPoint(
+                    tileCenter.X + NeighborhoodLayout.LotDistanceFromCenter,
+                    tileCenter.Z + NeighborhoodLayout.LotDistanceFromCenter));
+
+            var front = LotBounds.FrontYard(neLot, type);
+            var back = LotBounds.BackYard(neLot, type);
+
+            Assert.That(front.MinX, Is.EqualTo(LotBounds.StreetCorridorInset).Within(Epsilon),
+                "tile-aware front yard's road-side edge is inset by StreetCorridorInset");
+            Assert.That(back.MinX, Is.EqualTo(LotBounds.StreetCorridorInset).Within(Epsilon),
+                "tile-aware back yard's road-side edge is inset by StreetCorridorInset");
+
+            Assert.That(LotBounds.FrontYard(neLot).MinX, Is.EqualTo(0f).Within(Epsilon),
+                "the origin-roads-only overload leaves the edge on the tile centerline (unchanged)");
+        }
+
+        [Test]
+        public void FrontAndBackYard_ForStartingFourWayLots_AreByteIdenticalThroughTheTileAwareOverload()
+        {
+            // #455 regression: routing a starting FourWay lot through the
+            // tile-aware overload must not perturb its yards — its own tile's
+            // road arms are coincident with NeighborhoodLayout.Roads, so the
+            // combined clip is identical to today's origin-roads-only clip.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                AssertRectsEqual(LotBounds.FrontYard(lot, TileType.FourWay), LotBounds.FrontYard(lot),
+                    $"lot {lot.HouseId} front yard");
+                AssertRectsEqual(LotBounds.BackYard(lot, TileType.FourWay), LotBounds.BackYard(lot),
+                    $"lot {lot.HouseId} back yard");
+            }
+        }
+
+        private static LotRect RoadStrip(TileRoadSegment segment)
+        {
+            var halfWidth = segment.Width / 2f;
+            var halfLength = segment.Length / 2f;
+            return segment.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    segment.Center.X - halfWidth, segment.Center.X + halfWidth,
+                    segment.Center.Z - halfLength, segment.Center.Z + halfLength)
+                : new LotRect(
+                    segment.Center.X - halfLength, segment.Center.X + halfLength,
+                    segment.Center.Z - halfWidth, segment.Center.Z + halfWidth);
+        }
+
         private static void AssertRectsEqual(LotRect actual, LotRect expected, string label)
         {
             Assert.That(actual.MinX, Is.EqualTo(expected.MinX).Within(Epsilon), label + " MinX");

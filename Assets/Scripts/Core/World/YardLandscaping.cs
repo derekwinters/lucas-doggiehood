@@ -214,7 +214,24 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static IReadOnlyList<YardTreeCandidate> FrontCandidatesFor(HouseLot lot)
         {
-            var frontYard = LotBounds.FrontYard(lot);
+            return FrontCandidatesFor(lot, LotBounds.FrontYard(lot));
+        }
+
+        /// <summary>
+        /// <see cref="FrontCandidatesFor(HouseLot)"/> clipped against the lot's
+        /// own tile's road (#455): resolves the front yard via
+        /// <see cref="LotBounds.FrontYard(HouseLot, TileType)"/> so a cul-de-sac
+        /// kept-quadrant lot's candidates never land in that tile's paved road
+        /// strip. Everything else (footprint, walkway, seed) is resolved
+        /// identically to the single-arg overload.
+        /// </summary>
+        public static IReadOnlyList<YardTreeCandidate> FrontCandidatesFor(HouseLot lot, TileType tileType)
+        {
+            return FrontCandidatesFor(lot, LotBounds.FrontYard(lot, tileType));
+        }
+
+        private static IReadOnlyList<YardTreeCandidate> FrontCandidatesFor(HouseLot lot, LotRect frontYard)
+        {
             var footprint = HouseFootprintOf(lot);
             var walkway = NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var edge)
                 ? edge
@@ -232,7 +249,22 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(HouseLot lot)
         {
-            var backYard = LotBounds.BackYard(lot);
+            return BackCandidatesFor(lot, LotBounds.BackYard(lot));
+        }
+
+        /// <summary>
+        /// <see cref="BackCandidatesFor(HouseLot)"/> clipped against the lot's
+        /// own tile's road (#455) — the back-yard companion of
+        /// <see cref="FrontCandidatesFor(HouseLot, TileType)"/>, resolving the
+        /// region via <see cref="LotBounds.BackYard(HouseLot, TileType)"/>.
+        /// </summary>
+        public static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(HouseLot lot, TileType tileType)
+        {
+            return BackCandidatesFor(lot, LotBounds.BackYard(lot, tileType));
+        }
+
+        private static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(HouseLot lot, LotRect backYard)
+        {
             var footprint = HouseFootprintOf(lot);
             var fenceRuns = LotFence.GeometryFor(lot);
 
@@ -279,11 +311,28 @@ namespace Doggiehood.Core.World
             return SelectFront(FrontCandidatesFor(lot), SeedFor(lot, FrontSelectionSeedSalt));
         }
 
+        /// <summary>The lot's selected front trees, clipped against the lot's
+        /// own tile's road (#455) — the tile-aware companion of
+        /// <see cref="FrontTreesFor(HouseLot)"/>. Same per-lot seed, so a
+        /// starting FourWay lot's picks are byte-identical.</summary>
+        public static IReadOnlyList<YardTreePlacement> FrontTreesFor(HouseLot lot, TileType tileType)
+        {
+            return SelectFront(FrontCandidatesFor(lot, tileType), SeedFor(lot, FrontSelectionSeedSalt));
+        }
+
         /// <summary>The lot's selected back trees: candidates plus
         /// selection, both seeded from the lot's own HouseId.</summary>
         public static IReadOnlyList<YardTreePlacement> BackTreesFor(HouseLot lot)
         {
             return SelectBack(BackCandidatesFor(lot), SeedFor(lot, BackSelectionSeedSalt));
+        }
+
+        /// <summary>The lot's selected back trees, clipped against the lot's own
+        /// tile's road (#455) — the tile-aware companion of
+        /// <see cref="BackTreesFor(HouseLot)"/>.</summary>
+        public static IReadOnlyList<YardTreePlacement> BackTreesFor(HouseLot lot, TileType tileType)
+        {
+            return SelectBack(BackCandidatesFor(lot, tileType), SeedFor(lot, BackSelectionSeedSalt));
         }
 
         private static List<YardTreeCandidate> GenerateCandidates(
