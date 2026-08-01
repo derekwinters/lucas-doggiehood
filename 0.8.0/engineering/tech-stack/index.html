@@ -1404,6 +1404,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Geometry, layout, and tuning values are named variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automated-backstop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automated backstop
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1728,6 +1743,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Geometry, layout, and tuning values are named variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automated-backstop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automated backstop
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1803,6 +1833,9 @@
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a> — applies to every feature, graybox included</em></p>
 <p>Every geometry, layout, and tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — is declared as a named constant, static field, or serialized field at the top of its type (or in a shared Core numbers class where one exists, e.g. <code>EconomyNumbers</code>). Inline numeric literals in method bodies are not acceptable for these values, in either Core or the Unity wiring layer. Graybox code is not exempt: interim UI gets restyled, and named values are what make that a one-line change.</p>
 <p>For <strong>UI layout</strong> values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its <a href="../../specs/ui/">UI wireframe spec</a> first (see the <a href="../ui-design-process/">UI Design Process</a>); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.</p>
+<h4 id="automated-backstop">Automated backstop<a class="headerlink" href="#automated-backstop" title="Permanent link">&para;</a></h4>
+<p>The rule above is the standard, and it's absolute — but a lightweight CI check (<code>.github/scripts/check_geometry_literals.py</code>, wired via <code>geometry-lint.yml</code>) catches the egregious case that motivated it (#159 shipped <code>140f</code>/<code>16f</code>/<code>32f</code> inside <code>OnGUI</code>). It's deliberately conservative and low-false-positive: it flags an f-suffixed float literal only when it sits in a method body (not a type-level <code>const</code>/field declaration) and its magnitude is at least <code>3</code> — so structural values (<code>0</code>/<code>1</code>/<code>2</code> for identity, both-sides, centering) and sub-unit fractions (anchors, colour channels, epsilons) are ignored. It is a backstop for the obvious pixel-size/offset/rotation/speed literal, <strong>not</strong> a replacement for the human standard, which still covers every geometry/tuning value regardless of magnitude.</p>
+<p>Because the game tree predates the rule, the check <strong>ratchets against a committed baseline</strong> (<code>.github/scripts/geometry_literals_baseline.txt</code>): the pre-existing literals are recorded there and don't fail CI, while any newly introduced one does. The baseline is the burn-down list — as literals get named, regenerate it with <code>python3 .github/scripts/check_geometry_literals.py --update-baseline</code>. Its unit tests run in the same job. Adding a genuinely new named-constant-worthy literal, or one below the heuristic's threshold, is still governed by the absolute rule and by review — the check only automates the floor.</p>
 <h2 id="editor-developer-menus">Editor developer menus<a class="headerlink" href="#editor-developer-menus" title="Permanent link">&para;</a></h2>
 <p>Playtesting/authoring helpers live under the top-level <strong><code>Doggiehood</code></strong> editor
 menu, in the Editor-only assembly (<code>Assets/Scripts/Unity/Editor/</code>) so they are

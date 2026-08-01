@@ -1490,6 +1490,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#geometrytuning-literal-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Geometry/tuning literal check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-site-build-publish" class="md-nav__link">
     <span class="md-ellipsis">
       Docs site build &amp; publish
@@ -1715,6 +1724,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#geometrytuning-literal-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Geometry/tuning literal check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-site-build-publish" class="md-nav__link">
     <span class="md-ellipsis">
       Docs site build &amp; publish
@@ -1783,6 +1801,8 @@
 <p>Both paths preserve the <strong>graceful-skip contract</strong>: a "Check for Unity license secret" step gates every build step with <code>if: steps.license.outputs.present == 'true'</code>, so a missing <code>UNITY_LICENSE</code> secret emits a warning and skips rather than failing the run.</p>
 <h2 id="commit-linting">Commit linting<a class="headerlink" href="#commit-linting" title="Permanent link">&para;</a></h2>
 <p>A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>)</p>
+<h2 id="geometrytuning-literal-check">Geometry/tuning literal check<a class="headerlink" href="#geometrytuning-literal-check" title="Permanent link">&para;</a></h2>
+<p><strong><code>geometry-lint.yml</code></strong> enforces the <a href="../tech-stack/#geometry-layout-and-tuning-values-are-named-variables">named-values rule</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>): on any PR touching <code>Assets/**</code> (or the check itself), it runs <code>.github/scripts/check_geometry_literals.py</code>, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against <code>.github/scripts/geometry_literals_baseline.txt</code> so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with <code>--update-baseline</code>.</p>
 <h2 id="docs-site-build-publish">Docs site build &amp; publish<a class="headerlink" href="#docs-site-build-publish" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>docs-test.yml</code></strong>: runs its <code>build</code> job on <strong>every</strong> PR (no path filter) so it can report a status on code-only PRs too, backing the <a href="../agent-workflow/">docs-reconciliation rule</a>:<ul>

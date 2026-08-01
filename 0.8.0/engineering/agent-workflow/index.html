@@ -1762,6 +1762,7 @@
 <ul>
 <li>Enforces strict <a href="../testing/">TDD</a> — red, green, refactor, every time, no exceptions.</li>
 <li>Defaults new logic to the Unity-independent Core assembly (see <a href="../tech-stack/#code-architecture-core-unity-split">Tech Stack</a>).</li>
+<li>Declares every geometry/layout/tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — as a named constant/static/serialized field at the top of its type, never a bare inline literal in a method body, in Core and the Unity layer, graybox included (see <a href="../tech-stack/#geometry-layout-and-tuning-values-are-named-variables">Geometry, layout, and tuning values are named variables</a>; a CI backstop catches the egregious case).</li>
 <li>Follows Conventional Commits for everything it commits, since <a href="../versioning/">release-please</a> depends on them.</li>
 <li>Works from one GitHub issue at a time, using that issue's build checklist as its acceptance criteria.</li>
 </ul>
