@@ -755,6 +755,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#road-tile-art-kit-meshes-per-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road tile art — kit meshes per type
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1723,6 +1732,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#road-tile-art-kit-meshes-per-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road tile art — kit meshes per type
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1939,6 +1957,57 @@
 <p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag — <code>.</code> for an ordinary single junction or dead-end, and <code>\</code> / <code>/</code> for the two <code>OpposingTurns</code> tiles, where the slash marks the wall between the tile's two disconnected arcs: <code>\</code> separates {N,E} from {S,W} (so the arcs are NE + SW = <code>OpposingTurnsNS</code>), <code>/</code> separates {N,W} from {S,E} (NW + SE = <code>OpposingTurnsEW</code>).</p>
 <p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
 <p>Maps are drawn and validated with the <a href="../../../tools/">Map Builder</a> tool, which reads these codes.</p>
+<h3 id="road-tile-art-kit-meshes-per-type">Road tile art — kit meshes per type<a class="headerlink" href="#road-tile-art-kit-meshes-per-type" title="Permanent link">&para;</a></h3>
+<p>Each junction/terminus type renders a <strong>single Kenney City Kit Roads mesh at the tile centre</strong>, plus tiled <code>road-straight</code> arms reaching out to each road edge. <code>RoadTileArt</code> (Core) resolves the <code>TileType</code> → <code>(Resources key, yaw, bakes-crosswalks)</code> mapping; <code>WorldBuilder</code> places the mesh and yaws it so its authored orientation lines up with the tile's declared edges (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/508">#508</a>). The authored (0°-yaw) orientation of each staged 1×1-unit piece (→10×10m at <code>RoadTileScale</code>) was read from the kit OBJ vertices.</p>
+<table>
+<thead>
+<tr>
+<th>Type(s)</th>
+<th>Kit mesh</th>
+<th>Baked crosswalks</th>
+<th>Authored (0°) orientation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FourWay</code></td>
+<td><code>road-crossroad-path</code></td>
+<td>yes (4 arms)</td>
+<td>symmetric</td>
+</tr>
+<tr>
+<td><code>TeeNorth/East/South/West</code></td>
+<td><code>road-intersection-path</code></td>
+<td>yes (3 arms)</td>
+<td>omits the SOUTH arm = <code>TeeNorth</code>; others are 90°/180°/270°</td>
+</tr>
+<tr>
+<td><code>TurnNW/NE/SE/SW</code></td>
+<td><code>road-bend</code></td>
+<td>no</td>
+<td>connects NORTH+WEST = <code>TurnNW</code>; rounded corner (Derek's locked call; <code>road-bend-square</code> is a one-line swap)</td>
+</tr>
+<tr>
+<td><code>CulDeSacEast/South/West/North</code></td>
+<td><code>road-end-round</code></td>
+<td>no</td>
+<td>road exits EAST = <code>CulDeSacEast</code>; rounded bulb</td>
+</tr>
+<tr>
+<td><code>StraightNS</code>, <code>StraightEW</code></td>
+<td><em>(none — tiled <code>road-straight</code> arms)</em></td>
+<td>n/a</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>OpposingTurnsNS/EW</code></td>
+<td><em>(none yet — #508 follow-up)</em></td>
+<td>n/a</td>
+<td>would compose two independent bends</td>
+</tr>
+</tbody>
+</table>
+<p>Crosswalks are baked into the 4-way/Tee meshes, so the kit path needs no separate crossing tiles; the primitive graybox fallback derives one crosswalk patch per intersection arm from <code>TileCrosswalkGeometry</code> instead — see <a href="../sidewalks/#the-crosswalk-box">Sidewalks &amp; Walk Network</a>.</p>
 <h2 id="property-lots-per-tile">Property lots per tile<a class="headerlink" href="#property-lots-per-tile" title="Permanent link">&para;</a></h2>
 <p><em>Design decisions 2026-07-30 / 2026-07-31 (Derek &amp; Lucas), captured from the <a href="../../../tools/">Map Builder</a>. The Core lot rules below are implemented in <code>TileLotCatalog.LotsFor</code>; each bend's curved/cupped corner is exposed via <code>TileLotCatalog.TryGetCuppedCorner</code>, and a cul-de-sac's dropped bulb-side (tree) quadrants via <code>TileLotCatalog.TreeQuadrantsFor</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>, refined by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/385">#385</a>).</em></p>
 <p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see <a href="../../expansion/">Neighborhood Expansion</a>):</p>
