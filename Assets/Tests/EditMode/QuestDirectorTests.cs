@@ -95,6 +95,110 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void WalkingHome_ClearsAnyStaleWanderTarget_WhenTheQuestWalkTakesOver()
+        {
+            // #470: DogView.Update's wander branch and QuestDirector.WalkDogHome
+            // both wrote transform.position. When the scripted walk takes over
+            // it must drop any cached wander target so, once control hands back
+            // after delivery, the dog can't beeline to that stale point.
+            state.Wallet.Deposit(1000);
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var view = worldRoot.GetComponentsInChildren<DogView>().Single(v => v.Dog.Name == dog.Name);
+
+            // Establish a wander target while the dog is still wandering.
+            view.TickWander(0.01f);
+            Assert.That(view.HasWanderTarget, Is.True, "precondition: the dog has cached a wander target");
+
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+            Assert.That(quest.DeliveryPhase, Is.EqualTo(DeliveryPhase.HeadingHome));
+
+            // First director tick: the quest walk takes over movement.
+            director.Tick(0.05f);
+
+            Assert.That(view.HasWanderTarget, Is.False,
+                "the scripted walk home must clear the stale wander target on takeover");
+        }
+
+        [Test]
+        public void WalkingHome_FacesTheDirectionOfTravel_TurnBeforeMove()
+        {
+            // #470 (moonwalk): WalkDogHome never wrote transform.rotation, so
+            // facing was left to the stale wander branch — the dog walked home
+            // backwards. Now the scripted walk turns toward each waypoint it
+            // moves toward.
+            state.Wallet.Deposit(1000);
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            var view = worldRoot.GetComponentsInChildren<DogView>().Single(v => v.Dog.Name == dog.Name);
+            var half = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth / 2f;
+            view.transform.position = new Vector3(-half, 0f, NeighborhoodLayout.StreetHalfLength); // far NW
+
+            // Take a few steps so the dog is mid-route (not snapping onto the
+            // final waypoint), then measure facing against actual travel.
+            director.Tick(0.05f);
+            var before = view.transform.position;
+            director.Tick(0.05f);
+            var after = view.transform.position;
+
+            var travel = new Vector3(after.x - before.x, 0f, after.z - before.z);
+            Assert.That(travel.sqrMagnitude, Is.GreaterThan(0.0001f), "the dog must actually move this frame");
+
+            var forward = new Vector3(view.transform.forward.x, 0f, view.transform.forward.z);
+            Assert.That(Vector3.Angle(forward, travel), Is.LessThan(5f),
+                "the dog must face the way it is walking (no backwards moonwalk home)");
+        }
+
+        [Test]
+        public void AfterDelivery_ResumesWanderWithAFreshOnNetworkTarget_NotTheStalePreQuestOne()
+        {
+            // #470 (beeline): once delivered, DogView.PlaceOnStreet re-armed
+            // wander with the leftover cached target and MoveTowards beelined
+            // off-network to it. Now delivery hands back with a fresh target
+            // picked from the dog's real (home) position, on the walk network.
+            state.Wallet.Deposit(1000);
+            var dog = state.Dogs.First(d => d.HouseId == 3);
+            var view = worldRoot.GetComponentsInChildren<DogView>().Single(v => v.Dog.Name == dog.Name);
+
+            // Cache a stale wander target far from home while wandering.
+            var half = WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth / 2f;
+            view.transform.position = new Vector3(-half, 0f, NeighborhoodLayout.StreetHalfLength);
+            view.TickWander(0.01f);
+            Assert.That(view.HasWanderTarget, Is.True);
+            var staleTarget = view.WanderTarget;
+
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(3));
+            Assert.That(state.Quests.Accept(quest), Is.True);
+
+            // Walk the dog home over the network until it's waiting for the truck.
+            for (var step = 0; step < 5000 && quest.DeliveryPhase != DeliveryPhase.WaitingForDelivery; step++)
+            {
+                director.Tick(0.05f);
+            }
+            Assert.That(quest.DeliveryPhase, Is.EqualTo(DeliveryPhase.WaitingForDelivery), "dog never made it home");
+
+            // The truck's arrival is device/PlayMode; drive the Core hand-back.
+            state.Quests.DeliverPackage(quest);
+            Assert.That(dog.WantsToWander, Is.True);
+
+            // Resume the wander in the view — it must recompute, not resume stale.
+            view.TickWander(0.0001f);
+            Assert.That(view.HasWanderTarget, Is.True);
+            var freshTarget = view.WanderTarget;
+
+            Assert.That(freshTarget, Is.Not.EqualTo(staleTarget),
+                "the resumed wander must pick a fresh target, not the stale pre-quest one");
+
+            var network = NeighborhoodLayout.WalkNetwork;
+            var nearest = network.NearestWalkableNode(new GridPoint(freshTarget.x, freshTarget.z));
+            Assert.That(Vector2.Distance(new Vector2(freshTarget.x, freshTarget.z), new Vector2(nearest.X, nearest.Z)),
+                Is.LessThan(0.01f),
+                "the fresh wander target must be an on-network node, not an off-network beeline point");
+        }
+
+        [Test]
         public void AcceptingAFenceQuest_ShowsTheFence_WithNoDeliveryTruckAndNoWalkHome()
         {
             // #318: the fence purchase has no delivery flow. Accepting it

@@ -354,6 +354,9 @@ namespace Doggiehood.Core.Quests
                 else
                 {
                     quest.DeliveryPhase = DeliveryPhase.HeadingHome;
+                    // #470: the dog now walks home under the QuestDirector's
+                    // control — stop it wandering for the whole delivery leg.
+                    FindDog(quest).BeginDelivery();
                 }
             }
 
@@ -382,6 +385,9 @@ namespace Doggiehood.Core.Quests
             quest.Cost = cost;
             quest.Status = QuestStatus.Accepted;
             quest.DeliveryPhase = DeliveryPhase.HeadingHome;
+            // #470: same delivery leg as a named buy-gift — gate wander off
+            // while the dog walks home.
+            FindDog(quest).BeginDelivery();
             return true;
         }
 

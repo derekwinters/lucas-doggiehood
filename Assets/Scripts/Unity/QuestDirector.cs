@@ -284,7 +284,11 @@ namespace Doggiehood.Unity
             var index = homeRouteProgress[quest.Id];
             var target = route[index];
 
-            view.transform.position = Vector3.MoveTowards(view.transform.position, target, WalkHomeSpeed * deltaTime);
+            // #470: the scripted walk owns the transform — turn to face the
+            // next waypoint before stepping toward it (no moonwalk), and the
+            // stale wander target was already dropped by BeginQuestWalk when
+            // this route was first computed.
+            view.WalkTowardWaypoint(target, WalkHomeSpeed * deltaTime);
 
             if (Vector3.Distance(view.transform.position, target) > WaypointArriveDistance)
             {
@@ -344,6 +348,12 @@ namespace Doggiehood.Unity
 
             homeRoutes[quest.Id] = route;
             homeRouteProgress[quest.Id] = 0;
+
+            // #470: the moment quest movement takes over, drop any wander
+            // target the DogView had cached so the wander branch never drives
+            // this transform alongside the scripted walk, and so the resume
+            // after delivery picks a fresh target.
+            view.BeginQuestWalk();
             return route;
         }
     }

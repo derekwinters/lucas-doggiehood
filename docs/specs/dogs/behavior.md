@@ -21,7 +21,9 @@ Other personalities (Brave, Shy, Adventurous/Exploring, Athletic) can get their 
 
 ### Quest-related movement
 
-When a dog's "buy me X" request is accepted, the dog walks home at a medium speed — heading straight back if it isn't already there — then sits and waits (see [animation](#animations)) until the delivery truck arrives. See [Quest Content](../quests/quest-content.md).
+When a dog's "buy me X" request is accepted, the dog walks home at a medium speed — routing over the [walk network](../world/sidewalks.md) if it isn't already there ([#106](https://github.com/derekwinters/lucas-doggiehood/issues/106)) — then sits and waits (see [animation](#animations)) until the delivery truck arrives. See [Quest Content](../quests/quest-content.md).
+
+During this scripted walk home the dog **turns to face the direction it is walking before each step** — the same turn-then-move feel as ordinary wander — rather than sliding home backwards. While the delivery is in flight (walking home *and* sitting waiting for the truck) the dog does **not** free-roam wander: the scripted walk owns its movement, so wander and the walk-home leg never fight over the dog's position ([#470](https://github.com/derekwinters/lucas-doggiehood/issues/470)).
 
 ## Population
 

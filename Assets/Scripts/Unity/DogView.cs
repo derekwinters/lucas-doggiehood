@@ -43,6 +43,12 @@ namespace Doggiehood.Unity
         /// TryHandleBubbleTap (#169).</summary>
         private const int BoundsCornerCount = 8;
 
+        /// <summary>Minimum squared travel (world units) before the dog turns
+        /// to face its direction of movement — below this the step is
+        /// numerically zero and re-facing would jitter. Shared by the wander
+        /// step and the #470 quest walk-home turn.</summary>
+        private const float FacingThresholdSqr = 0.001f;
+
         /// <summary>Resources-relative path to the Kenney Cube Pets model
         /// (#119) — the single standard shared model used for every roster dog
         /// (decision 2026-07-16, #166/#35: Cube Pets is the standard mesh;
@@ -70,6 +76,13 @@ namespace Doggiehood.Unity
         private DogState appliedState;
         private bool hasTarget;
         private bool usingImportedModel;
+
+        // #470: the last wander-reset token observed from Core. When the dog's
+        // Dog.WanderResetToken advances (it bumps on every hand-back to the
+        // street, e.g. after a quest delivery), the cached wander target is
+        // dropped so the next step recomputes a fresh one from the dog's real
+        // position instead of beelining to the stale pre-quest target.
+        private int lastWanderToken;
 
         // #112: the in-progress walk-over to a comfort decoration, when the
         // dog has decided to rest. Core owns the route and the per-step
@@ -102,6 +115,7 @@ namespace Doggiehood.Unity
         public void Init(Dog dog, Transform windowAnchor, System.Func<WalkNetwork> networkProvider = null)
         {
             Dog = dog;
+            lastWanderToken = dog.WanderResetToken;
             this.networkProvider = networkProvider ?? (() => NeighborhoodLayout.WalkNetwork);
             profile = MovementProfile.ForPersonality(dog.Personality);
             // #430: thread the dog's own house through so its wander may step
@@ -374,30 +388,103 @@ namespace Doggiehood.Unity
             {
                 moving = TickRestApproach(Time.deltaTime);
             }
-            else if (Dog.WantsToWander)
+            else
             {
-                if (!hasTarget)
-                {
-                    currentTarget = SelectWanderTarget(transform.position);
-                    hasTarget = true;
-                }
-
-                var step = profile.Speed * Time.deltaTime;
-                transform.position = Vector3.MoveTowards(transform.position, currentTarget, step);
-                var toward = currentTarget - transform.position;
-                if (toward.sqrMagnitude > 0.001f)
-                {
-                    transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
-                    moving = true;
-                }
-                else
-                {
-                    hasTarget = false;
-                }
+                moving = TickWander(Time.deltaTime);
             }
 
             TickAnimation(Time.deltaTime, moving);
             FaceBubbleToCamera();
+        }
+
+        /// <summary>#470: true when the dog is holding a cached wander target.
+        /// Exposed for EditMode tests, which can't run the Play-mode Update
+        /// loop.</summary>
+        public bool HasWanderTarget => hasTarget;
+
+        /// <summary>#470: the dog's current cached wander destination (only
+        /// meaningful while <see cref="HasWanderTarget"/>). Exposed for
+        /// EditMode tests.</summary>
+        public Vector3 WanderTarget => currentTarget;
+
+        /// <summary>Advances the free-roam wander one frame: picks a fresh
+        /// target when needed (including right after a #470 delivery hand-back,
+        /// signalled by Core's <see cref="Dog.WanderResetToken"/>), steps
+        /// toward it, and turns to face the direction of travel. A no-op
+        /// returning false when the dog isn't currently a wanderer (window
+        /// dog, or mid-delivery — the QuestDirector owns the transform then).
+        /// Returns whether the dog visibly moved this frame (drives the walk
+        /// take). Public so EditMode tests can drive a wander step without the
+        /// Play-mode Update loop, like <see cref="TickRestApproach"/>.</summary>
+        public bool TickWander(float deltaTime)
+        {
+            if (!Dog.WantsToWander)
+            {
+                return false;
+            }
+
+            ConsumeWanderReset();
+
+            if (!hasTarget)
+            {
+                currentTarget = SelectWanderTarget(transform.position);
+                hasTarget = true;
+            }
+
+            var step = profile.Speed * deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, currentTarget, step);
+            var toward = currentTarget - transform.position;
+            if (toward.sqrMagnitude > FacingThresholdSqr)
+            {
+                transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
+                return true;
+            }
+
+            hasTarget = false;
+            return false;
+        }
+
+        /// <summary>#470: drops the cached wander target if Core has advanced
+        /// the dog's reset token since we last looked — so a delivery
+        /// hand-back forces a fresh target computed from the dog's real (home)
+        /// position rather than resuming the stale pre-quest one.</summary>
+        private void ConsumeWanderReset()
+        {
+            if (Dog.WanderResetToken != lastWanderToken)
+            {
+                hasTarget = false;
+                lastWanderToken = Dog.WanderResetToken;
+            }
+        }
+
+        /// <summary>#470: the QuestDirector's scripted walk home is taking over
+        /// this dog's transform — drop any cached wander target so the wander
+        /// branch can't beeline to it, and so the resume after delivery starts
+        /// fresh. Public so the director and EditMode tests can invoke the
+        /// takeover directly.</summary>
+        public void BeginQuestWalk()
+        {
+            hasTarget = false;
+            currentTarget = Vector3.zero;
+        }
+
+        /// <summary>#470: one scripted-walk step toward a route waypoint —
+        /// turns to face the direction of travel BEFORE moving (fixing the
+        /// moonwalk where WalkDogHome never wrote rotation), then advances by
+        /// <paramref name="maxDistance"/>. Facing is flattened to the ground
+        /// plane so the dog turns (yaw) rather than tipping toward the y=0
+        /// route point. Public so the QuestDirector drives it and EditMode
+        /// tests can assert facing.</summary>
+        public void WalkTowardWaypoint(Vector3 target, float maxDistance)
+        {
+            var before = transform.position;
+            var toward = new Vector3(target.x - before.x, 0f, target.z - before.z);
+            if (toward.sqrMagnitude > FacingThresholdSqr)
+            {
+                transform.rotation = Quaternion.LookRotation(toward.normalized, Vector3.up);
+            }
+
+            transform.position = Vector3.MoveTowards(before, target, maxDistance);
         }
 
         /// <summary>
