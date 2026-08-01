@@ -77,30 +77,43 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void CurrencyChip_InsetsFromTheSafeAreaTopByHudEdgeMargin()
+        public void CurrencyChip_SharesTheGearsVerticalCentreline()
         {
-            // hud.md (#174): the chip's top inset is measured from the SAFE-AREA
-            // edge, not the raw screen edge. With a 54px top safe inset the chip
-            // top lands at 54 + HudEdgeMarginPx(36) = 90 (the mockup's value).
-            // Screen.safeArea is bottom-left origin: a 54/48 top/bottom inset on
-            // a 1200-tall screen gives y=48, height=1098 (yMax=1146).
+            // #440 (supersedes the old safe-area top-inset rule): now that the
+            // chip and gear are the same height, they centre on the same
+            // horizontal line so they read as one clean row — regardless of the
+            // two elements' different edge references (the chip's y is computed
+            // off the gear's actual on-screen middle and its own height).
             var safe = new Rect(72f, 48f, 1920f - 144f, 1200f - 54f - 48f);
             var width = HudOverlay.ComputeChipWidth("128");
             var chip = HudOverlay.ComputeChipRect(1920f, 1200f, safe, width);
+            var gear = HudOverlay.ComputeGearRect(1920f, 1200f);
 
-            Assert.That(chip.y, Is.EqualTo(90f), "chip top = safe-area top inset (54) + HudEdgeMarginPx (36)");
-            Assert.That(HudOverlay.HudEdgeMarginPx, Is.EqualTo(36f));
+            Assert.That(chip.center.y, Is.EqualTo(gear.center.y),
+                "the chip and gear share a vertical centreline");
+        }
+
+        [Test]
+        public void ChipHeight_EqualsTheGearHeight_SoTheyReadAsOneRow()
+        {
+            // #440: the coins pill was 24px shorter than the Settings gear beside
+            // it. It now matches the gear — tied to the gear's ACTUAL height
+            // (not a second hardcoded 88f) so the two can never silently drift.
+            var gear = HudOverlay.ComputeGearRect(1920f, 1200f);
+
+            Assert.That(HudOverlay.HeightPx, Is.EqualTo(gear.height));
         }
 
         [Test]
         public void ChipConstants_MatchTheSharedComponentSpec()
         {
-            // shared-components.md CurrencyChip constants.
-            Assert.That(HudOverlay.HeightPx, Is.EqualTo(64f));
-            Assert.That(HudOverlay.CoinDiameterPx, Is.EqualTo(44f));
-            Assert.That(HudOverlay.PaddingLeftPx, Is.EqualTo(10f));
-            Assert.That(HudOverlay.PaddingRightPx, Is.EqualTo(26f));
-            Assert.That(HudOverlay.FontSizePx, Is.EqualTo(34));
+            // shared-components.md CurrencyChip constants — the interior scaled
+            // x1.375 (=88/64) to fill the enlarged pill without dead padding (#440).
+            Assert.That(HudOverlay.CoinDiameterPx, Is.EqualTo(60f));
+            Assert.That(HudOverlay.PaddingLeftPx, Is.EqualTo(14f));
+            Assert.That(HudOverlay.PaddingRightPx, Is.EqualTo(36f));
+            Assert.That(HudOverlay.IconGapPx, Is.EqualTo(17f));
+            Assert.That(HudOverlay.FontSizePx, Is.EqualTo(46));
         }
 
         [Test]
@@ -127,14 +140,14 @@ namespace Doggiehood.Unity.EditModeTests
         public void ChipWidth_DerivesFromItsRegions_NotAMagicNumber()
         {
             // width = 2*outline + paddingLeft + coin + iconGap + number + paddingRight.
-            // For "128" (3 tabular glyphs): 12 + 10 + 44 + 12 + 3*22 + 26 = 170.
+            // For "128" (3 tabular glyphs): 12 + 14 + 60 + 17 + 3*22 + 36 = 205 (#440).
             var expected = 2f * HudOverlay.OutlineThicknessPx
                 + HudOverlay.PaddingLeftPx + HudOverlay.CoinDiameterPx
                 + HudOverlay.IconGapPx + 3f * HudOverlay.DigitAdvancePx
                 + HudOverlay.PaddingRightPx;
 
             Assert.That(HudOverlay.ComputeChipWidth("128"), Is.EqualTo(expected));
-            Assert.That(expected, Is.EqualTo(170f));
+            Assert.That(expected, Is.EqualTo(205f));
         }
 
         [Test]
