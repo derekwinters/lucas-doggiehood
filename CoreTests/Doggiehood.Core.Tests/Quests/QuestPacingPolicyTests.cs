@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
@@ -113,16 +114,37 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void EligibleSubjectPool_AtTheStartingPopulation_MatchesTodaysGiftAndDecorationPools()
         {
-            // #317 checklist: early game is unchanged — every current
-            // purchasable entry sits in the starter band (30-50 coins), so the
-            // gated pool at the starting population equals the full tagged pool.
+            // #317 checklist: early game is unchanged — every current STARTER
+            // purchasable entry is offered at the starting population. #318's
+            // 100-coin fence is the one Premium entry, so it is gated OUT here
+            // (starting population is below the premium gate) — otherwise the
+            // gated pool equals the full tagged pool.
             var policy = new QuestPacingPolicy();
             var state = GameState.CreateNew();
 
             Assert.That(policy.EligibleSubjectPool(ItemEligibility.Gift, state),
-                Is.EquivalentTo(ItemCatalog.NamesEligibleFor(ItemEligibility.Gift)));
+                Is.EquivalentTo(ItemCatalog.NamesEligibleFor(ItemEligibility.Gift)
+                    .Where(n => n != ItemCatalog.FenceItemName)));
             Assert.That(policy.EligibleSubjectPool(ItemEligibility.Decoration, state),
                 Is.EquivalentTo(ItemCatalog.NamesEligibleFor(ItemEligibility.Decoration)));
+        }
+
+        [Test]
+        public void EligibleSubjectPool_GatesTheFence_ToThePremiumPopulation()
+        {
+            // #318: the 100-coin fence sits in the Premium tier, so it only
+            // enters the Gift subject pool once the neighborhood reaches the
+            // premium population gate (10 dogs) — its automatic later-game gate,
+            // falling straight out of #317 with no bespoke threshold.
+            var policy = new QuestPacingPolicy();
+
+            var belowGate = StateWithDogs(QuestCostTiers.PremiumPopulationGate - 1);
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Gift, belowGate),
+                Does.Not.Contain(ItemCatalog.FenceItemName));
+
+            var atGate = StateWithDogs(QuestCostTiers.PremiumPopulationGate);
+            Assert.That(policy.EligibleSubjectPool(ItemEligibility.Gift, atGate),
+                Contains.Item(ItemCatalog.FenceItemName));
         }
     }
 }

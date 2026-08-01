@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -48,6 +49,37 @@ namespace Doggiehood.Core.Tests.World
         {
             var lot = new HouseLot(1, Quadrant.NorthEast, new GridPoint(14f, 14f), hasFence: true);
             Assert.That(lot.HasFence, Is.True);
+        }
+
+        [Test]
+        public void RunsFor_TreatsLotAsFenced_WhenPlacedItemsHoldAFenceForThatHouse()
+        {
+            // #318: a completed fence-purchase quest records a
+            // PlacedItem(houseId, "fence"). Fence visibility derives from that
+            // persisted state — a lot with the static HasFence flag off still
+            // renders its fence once its house owns a placed "fence".
+            var state = GameState.CreateNew();
+            var lot = NeighborhoodLayout.HouseLots[0];
+            Assert.That(lot.HasFence, Is.False, "precondition: the lot's static flag is off");
+
+            Assert.That(LotFence.RunsFor(lot, state), Is.Empty,
+                "no placed fence yet — nothing to build");
+
+            state.AddPlacedItem(lot.HouseId, ItemCatalog.FenceItemName);
+
+            Assert.That(LotFence.RunsFor(lot, state), Is.EqualTo(LotFence.GeometryFor(lot)),
+                "a placed fence makes the lot render exactly its queryable geometry");
+        }
+
+        [Test]
+        public void RunsFor_WithState_StillHonoursTheStaticHasFenceFlag()
+        {
+            // #318: the persisted-fence source is ADDITIVE to the existing
+            // static HouseLot.HasFence flag, not a replacement.
+            var state = GameState.CreateNew();
+            var lot = FencedCloneOf(NeighborhoodLayout.HouseLots[0]);
+
+            Assert.That(LotFence.RunsFor(lot, state), Is.EqualTo(LotFence.GeometryFor(lot)));
         }
 
         [Test]

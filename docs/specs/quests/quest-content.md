@@ -27,6 +27,8 @@ Tapping is forgiving on two levels, mirroring how the dog speech bubble already 
 
 A dog asks the player to buy it something — a toy, or a pool for its house. Resolved via the delivery-truck mechanic: accepting the quest deducts currency, a delivery truck animates in and drops the package at the dog's front door, and the dog receives it automatically — no manual placement by the player. The dog itself walks home and sits waiting for the truck (see [Dog Behavior](../dogs/behavior.md)). ([#30](https://github.com/derekwinters/lucas-doggiehood/issues/30))
 
+**Exception — the fence** ([#318](https://github.com/derekwinters/lucas-doggiehood/issues/318)): a fence is a lot property rather than a delivered package, so its "Buy something" quest has **no delivery leg**. Accepting deducts the cost (100 coins) and completes immediately — no delivery truck, no walk-home — and the [backyard fence](../world/world.md#backyard-fences) becomes visible right away with no animation. It is still the same quest type (a `Gift`-tagged catalog purchase), just installed in place instead of delivered; see [Quest & Economy § Item catalog](economy.md#item-catalog).
+
 ### 3. Bug problem
 
 *[#53](https://github.com/derekwinters/lucas-doggiehood/issues/53)*

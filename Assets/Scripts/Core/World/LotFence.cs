@@ -105,6 +105,51 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// #318: the fence lines a lot contributes given persisted world state:
+        /// a lot is fenced when either its static <see cref="HouseLot.HasFence"/>
+        /// flag is on OR a completed fence-purchase quest recorded a
+        /// <see cref="Economy.ItemCatalog.FenceItemName"/> <see cref="PlacedItem"/>
+        /// for that house. This is the flag-respecting API WorldBuilder consumes
+        /// once fences can be bought — empty while a lot has neither source,
+        /// otherwise <see cref="GeometryFor"/>.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> RunsFor(HouseLot lot, GameState state)
+        {
+            return IsFenced(lot, state) ? GeometryFor(lot) : Array.Empty<FenceRun>();
+        }
+
+        /// <summary>
+        /// #318: whether a lot's backyard fence should render given persisted
+        /// state — its static <see cref="HouseLot.HasFence"/> flag OR a
+        /// purchased fence recorded in <see cref="GameState.PlacedItems"/> for
+        /// that house (the fence-purchase quest's completion effect). Additive:
+        /// either source enables the fence.
+        /// </summary>
+        public static bool IsFenced(HouseLot lot, GameState state)
+        {
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (lot.HasFence)
+            {
+                return true;
+            }
+
+            foreach (var item in state.PlacedItems)
+            {
+                if (item.HouseId == lot.HouseId
+                    && item.ItemName == Economy.ItemCatalog.FenceItemName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The lot's backyard fence geometry regardless of the
         /// <see cref="HouseLot.HasFence"/> flag — queryable for a disabled
         /// lot (the #147 purchase flow needs to describe what it sells).

@@ -107,7 +107,7 @@ namespace Doggiehood.Unity
             // so it matches a starting-neighborhood house.
             WorldBuilder.BuildWalkway(worldRoot, lot);
             WorldBuilder.BuildYardLandscaping(worldRoot, lot);
-            WorldBuilder.BuildFence(worldRoot, lot);
+            WorldBuilder.BuildFence(worldRoot, lot, State);
 
             SaveStore.Save(State);
         }
