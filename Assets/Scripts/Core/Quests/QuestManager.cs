@@ -271,7 +271,16 @@ namespace Doggiehood.Core.Quests
             switch (type)
             {
                 case QuestType.LostItem:
+                    // #463: a puppy dog can't lose its own puppy — exclude the
+                    // puppy subject from the Lost pool for a puppy receiver.
+                    // toy/ball remain, so the pool never empties.
                     var lostItems = ItemCatalog.NamesEligibleFor(ItemEligibility.Lost);
+                    if (dog.IsPuppy)
+                    {
+                        lostItems = lostItems
+                            .Where(name => name != ItemCatalog.PuppyItemName)
+                            .ToList();
+                    }
                     item = lostItems[rng.Next(lostItems.Count)];
                     hidden = GenerateHiddenItemPosition(rng);
                     break;

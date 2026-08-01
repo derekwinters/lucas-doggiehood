@@ -403,6 +403,52 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void LostItem_ForAPuppyDog_NeverSelectsThePuppyItem()
+        {
+            // #463: a puppy dog must never be handed a lost-"puppy" quest
+            // (a puppy losing its own puppy). The puppy subject is excluded
+            // from the Lost pool for puppy receivers; toy/ball remain, so the
+            // pool never empties.
+            var state = NewState();
+            var puppyDog = state.Dogs[1];
+            Assert.That(puppyDog.IsPuppy, Is.True, "roster fixture: Dogs[1] is a puppy");
+
+            var observed = new HashSet<string>();
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var quest = state.Quests.GiveQuestTo(puppyDog, QuestType.LostItem, new Random(seed));
+                Assert.That(quest.ItemName, Is.Not.EqualTo(ItemCatalog.PuppyItemName),
+                    $"seed {seed}: puppy dog assigned a lost-puppy quest");
+                observed.Add(quest.ItemName);
+            }
+
+            Assert.That(observed, Is.EquivalentTo(
+                ItemCatalog.NamesEligibleFor(ItemEligibility.Lost)
+                    .Where(n => n != ItemCatalog.PuppyItemName)),
+                "the puppy-excluded pool (toy/ball) is still fully drawable");
+        }
+
+        [Test]
+        public void LostItem_ForANonPuppyDog_CanStillSelectThePuppyItem()
+        {
+            // #463 over-filter guard: the exclusion is scoped to puppy
+            // receivers only — a non-puppy dog can still lose a puppy.
+            var state = NewState();
+            var adultDog = state.Dogs[0];
+            Assert.That(adultDog.IsPuppy, Is.False, "roster fixture: Dogs[0] is not a puppy");
+
+            var observed = new HashSet<string>();
+            for (var seed = 0; seed < 200; seed++)
+            {
+                observed.Add(
+                    state.Quests.GiveQuestTo(adultDog, QuestType.LostItem, new Random(seed)).ItemName);
+            }
+
+            Assert.That(observed, Does.Contain(ItemCatalog.PuppyItemName),
+                "non-puppy receiver must still be able to draw the puppy subject");
+        }
+
+        [Test]
         public void NoParallelItemArrays_RemainOnQuestManager()
         {
             // #190 guard: LostItems/GiftItems/DecorationItems are deleted —
