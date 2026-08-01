@@ -1542,6 +1542,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-milestone-order-gate-a-milestone-must-not-precede-a-blockers" class="md-nav__link">
+    <span class="md-ellipsis">
+      The milestone-order gate — a milestone must not precede a blocker's
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#auto-revisit-when-a-blocker-clears" class="md-nav__link">
     <span class="md-ellipsis">
       Auto-revisit when a blocker clears
@@ -1824,6 +1833,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-milestone-order-gate-a-milestone-must-not-precede-a-blockers" class="md-nav__link">
+    <span class="md-ellipsis">
+      The milestone-order gate — a milestone must not precede a blocker's
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#auto-revisit-when-a-blocker-clears" class="md-nav__link">
     <span class="md-ellipsis">
       Auto-revisit when a blocker clears
@@ -2033,7 +2051,7 @@ commands act):</p>
 </tr>
 <tr>
 <td><code>/approve</code></td>
-<td>Accept the analysis → <code>ready-for-work</code>. A pure presence-check + label flip (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — analysis already set the milestone at <code>pending-approval</code>, so approve does no milestone resolution of its own. <strong>Refused if the issue has no milestone set</strong> (see the <code>/approve</code> milestone gate below).</td>
+<td>Accept the analysis → <code>ready-for-work</code>. A pure presence-check + label flip (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>) — analysis already set the milestone at <code>pending-approval</code>, so approve does no milestone resolution of its own. <strong>Refused if the issue has no milestone set, or if that milestone precedes an open blocker's</strong> (see the milestone presence + order gates below).</td>
 </tr>
 <tr>
 <td><code>/revise &lt;notes&gt;</code></td>
@@ -2053,7 +2071,7 @@ commands act):</p>
 </tr>
 <tr>
 <td><code>/milestone &lt;name&gt;</code></td>
-<td>Override the milestone (<code>04</code>, a title fragment, or the full title).</td>
+<td>Override the milestone (<code>04</code>, a title fragment, or the full title). <strong>Refused if the new milestone precedes an open blocker's</strong> (milestone-order gate, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a>).</td>
 </tr>
 <tr>
 <td><code>/focus &lt;name&gt;</code></td>
@@ -2102,13 +2120,49 @@ updated) is the supported flow for approving a milestone-less issue.</p>
   reply (e.g. <em>"Can't approve #N to <code>ready-for-work</code> — no milestone resolved;
   reply <code>/milestone &lt;name&gt;</code> then <code>/approve</code>"</em>).</li>
 </ul>
-<p>This is the <strong>presence</strong> gate. Its sibling
-<a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a> — an
-<strong>order</strong> gate (the milestone must not precede a blocker's milestone) — is not
-yet built; now that milestone ownership has moved to analysis (#319), #212
-belongs in <strong>analysis or the dashboard</strong>, layered onto the value analysis
-already resolved, never back in the gatekeeper's <code>/approve</code> presence-check.
-This is a forward-looking placement note, not an implementation.</p>
+<p>This is the <strong>presence</strong> gate. Its sibling — the <strong>order</strong> gate — is described
+next.</p>
+<h3 id="the-milestone-order-gate-a-milestone-must-not-precede-a-blockers">The milestone-order gate — a milestone must not precede a blocker's<a class="headerlink" href="#the-milestone-order-gate-a-milestone-must-not-precede-a-blockers" title="Permanent link">&para;</a></h3>
+<p>Nothing stopped an issue from being placed in a milestone <strong>earlier</strong> than the
+milestone of an issue it is <code>Blocked by:</code> / <code>Depends on:</code>. When that happened the
+dependent could never complete in its own milestone: the nightly builder
+correctly skips it (open blocker), but the blocker was not in that milestone to
+be built — so it silently stalled while the milestone read "ready"
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/212">#212</a>). A
+2026-07-18 hand sweep caught several (#112/#165/#186 → <code>07</code>, #170/#209 → <code>06</code>);
+the pipeline now enforces the invariant instead of relying on a human noticing.</p>
+<p><strong>Invariant.</strong> For every open <code>Blocked by:</code> / <code>Depends on:</code> edge <strong>A → B</strong>:
+<code>milestone_order(A) ≥ milestone_order(B)</code>, <strong>and B must be scheduled</strong> (have a
+milestone). <code>milestone_order()</code> parses the <strong>live version scheme</strong> — <code>v0.4 &lt;
+v1.0 &lt; v1.1 &lt; v2.0</code> — from the <code>vMAJOR.MINOR</code> title; a non-version title (e.g.
+<code>Direct Involvement Needed</code>, or a legacy <code>03 - …</code> name) is <strong>unordered</strong> and can
+only ever trip the "blocker unscheduled/unordered" branch, never an inversion.</p>
+<p><strong>Where it runs.</strong> The same deterministic gatekeeper parser
+(<code>parse_commands.py</code>) that resolves <code>/approve</code> and <code>/milestone</code>, as a sibling of
+the presence gate above — the natural, owner-only, no-GitHub-I/O enforcement
+point. On <code>/approve</code> (against the issue's already-set milestone field) or
+<code>/milestone</code> (against its resolved value), the parser checks A's resulting
+milestone against every <strong>open</strong> blocker B in the snapshot's <code>blockers</code> list
+(the native ∪ text-line hard blockers plus soft <code>Depends on:</code> edges, each with
+its own <code>state</code> and <code>milestone</code>):</p>
+<ul>
+<li><strong>B unscheduled / unordered</strong> (no milestone, or a non-version title) →
+  <strong>refuse</strong> with a <code>blocker-unscheduled</code> skip; ack: <em>"Can't schedule #A —
+  blocker #B has no milestone; set one first."</em></li>
+<li><strong><code>order(A) &lt; order(B)</code></strong> (B is in a strictly later version milestone) →
+  <strong>refuse</strong> with a <code>blocker-inversion</code> skip; ack: <em>"Can't put #A in
+  <code>&lt;A-milestone&gt;</code> — it's blocked by #B in the later <code>&lt;B-milestone&gt;</code>; approve into
+  ≥ <code>&lt;B-milestone&gt;</code>, or move #B earlier."</em></li>
+</ul>
+<p><strong>Refuse — never auto-bump.</strong> A refusal leaves A untouched: no label change, no
+milestone change, the issue stays in its prior state, and the skip carries an
+<code>ack</code> (naming #A and #B and stating the fix) that the gatekeeper posts. Derek
+drives this state machine by hand, so the gate states the conflict and lets him
+choose which side to move rather than silently magic-ing A into a later
+milestone. <strong>Soft <code>Depends on:</code> uses the same refuse rule as hard <code>Blocked by:</code></strong>
+— one predictable behavior — and <strong>closed blockers are ignored.</strong> <em>(The optional
+"⚠️ scheduling conflicts" dashboard surface for pre-existing inversions is
+deferred to a follow-up; this gate guards new approvals/milestone sets only.)</em></p>
 <h3 id="auto-revisit-when-a-blocker-clears">Auto-revisit when a blocker clears<a class="headerlink" href="#auto-revisit-when-a-blocker-clears" title="Permanent link">&para;</a></h3>
 <p>An issue can be parked in <code>needs-clarification</code> <strong>only because</strong> it is
 <code>Blocked by: #N</code> — it needed a decision that lives in its blocker (e.g. issue 1
