@@ -483,6 +483,79 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void AllYardCandidatesForRealLots_ClearTheMaxAcrossLadderFootprint_NotJustLevelOne()
+        {
+            // #459: the two candidate generators are wired to the house's
+            // max-across-upgrade-ladder footprint (HousePlacement.MaxHouseFootprint)
+            // rather than its level-1 footprint, so a tree seeded while the house
+            // is small can't end up inside the larger upgraded mesh later. Every
+            // front and back candidate of every real lot must clear that max rect
+            // by a full tree footprint radius. (Before the wiring, candidates only
+            // cleared the level-1 footprint, so some landed inside the max rect.)
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var maxFootprint = HousePlacement.MaxHouseFootprint(lot);
+
+                var candidates = YardLandscaping.FrontCandidatesFor(lot)
+                    .Concat(YardLandscaping.BackCandidatesFor(lot));
+
+                foreach (var candidate in candidates)
+                {
+                    Assert.That(DistanceToRect(candidate.Position, maxFootprint),
+                        Is.GreaterThanOrEqualTo(YardLandscaping.TreeFootprintRadius),
+                        $"lot {lot.HouseId}: candidate {candidate.Position} must clear the "
+                        + "max-across-ladder house footprint, not just the level-1 footprint");
+                }
+            }
+        }
+
+        [Test]
+        public void GenerateCandidates_RejectAPointInsideTheMaxFootprint_ThatWasClearOfTheLevelOneFootprint()
+        {
+            // #459 (mechanism, deterministic): a candidate point that sits clear
+            // of a small (level-1) footprint but inside the larger (max) footprint
+            // is accepted when the generator is handed the level-1 rect and
+            // rejected when handed the max rect. The whole yard region lies in the
+            // gap band between the two rects, so the generator fills it against the
+            // level-1 rect but returns nothing against the max rect.
+            var levelOne = new LotRect(-10f, 0f, -5f, 5f);
+            var max = new LotRect(-10f, 10f, -5f, 5f);
+            var gapBand = new LotRect(1f, 9f, -5f, 5f); // clear of levelOne, inside max
+
+            var againstLevelOne = YardLandscaping.GenerateFrontCandidates(gapBand, levelOne, walkway: null, seed: 7);
+            var againstMax = YardLandscaping.GenerateFrontCandidates(gapBand, max, walkway: null, seed: 7);
+
+            Assert.That(againstLevelOne, Is.Not.Empty,
+                "a point in the gap band is clear of the level-1 footprint, so it is accepted");
+            Assert.That(againstMax, Is.Empty,
+                "the same point is inside the max footprint, so it is rejected once wired to it");
+        }
+
+        [Test]
+        public void Candidates_DegradeToEmpty_WhenTheMaxFootprintSwallowsTheYardRegion_RatherThanThrowing()
+        {
+            // #459: if a house's max-across-ladder footprint is large enough to
+            // cover the whole front/back yard region, generation must degrade to
+            // an empty candidate list (every sample rejected) rather than throw —
+            // the same graceful degradation as the existing "region too small"
+            // path. SelectFront/SelectBack then simply yield nothing.
+            var region = new LotRect(-2f, 2f, -2f, 2f);
+            var swallowingFootprint = new LotRect(-10f, 10f, -10f, 10f);
+
+            IReadOnlyList<YardTreeCandidate> front = null;
+            IReadOnlyList<YardTreeCandidate> back = null;
+            Assert.That(() => front = YardLandscaping.GenerateFrontCandidates(
+                region, swallowingFootprint, walkway: null, seed: 3), Throws.Nothing);
+            Assert.That(() => back = YardLandscaping.GenerateBackCandidates(
+                region, swallowingFootprint, Array.Empty<FenceRun>(), seed: 3), Throws.Nothing);
+
+            Assert.That(front, Is.Empty, "a swallowed front yard yields no candidates");
+            Assert.That(back, Is.Empty, "a swallowed back yard yields no candidates");
+            Assert.That(YardLandscaping.SelectFront(front, seed: 3), Is.Empty);
+            Assert.That(YardLandscaping.SelectBack(back, seed: 3), Is.Empty);
+        }
+
         private static LotRect RoadStrip(TileRoadSegment segment)
         {
             var halfWidth = segment.Width / 2f;

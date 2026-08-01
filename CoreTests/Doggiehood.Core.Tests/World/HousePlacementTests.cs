@@ -372,6 +372,52 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void MaxHouseFootprint_IsCenteredOnTheSamePivotAsHouseFootprint_SizedFromTheMaxFootprint()
+        {
+            // #459: the tree-obstacle rect reserves the house's LARGEST
+            // possible footprint across its upgrade ladder. It is built
+            // exactly like HouseFootprint — same center (Position(lot,
+            // KitScale)), same width/depth axis-swap-on-facing — but sized
+            // from HouseModelCatalog.MaxFootprint instead of the level-1 model,
+            // so it always contains the level-1 footprint.
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var facing = HousePlacement.FrontFacing(lot);
+                var max = HouseModelCatalog.MaxFootprint(lot.HouseId);
+                var expectedWidth = KitScale * (facing.X != 0f ? max.FootprintZ : max.FootprintX);
+                var expectedDepth = KitScale * (facing.X != 0f ? max.FootprintX : max.FootprintZ);
+
+                var rect = HousePlacement.MaxHouseFootprint(lot);
+                var footprint = HousePlacement.HouseFootprint(lot);
+
+                Assert.That(rect.Center.X, Is.EqualTo(footprint.Center.X).Within(0.0001f),
+                    $"house {lot.HouseId} max-footprint rect must share HouseFootprint's center (X)");
+                Assert.That(rect.Center.Z, Is.EqualTo(footprint.Center.Z).Within(0.0001f),
+                    $"house {lot.HouseId} max-footprint rect must share HouseFootprint's center (Z)");
+
+                Assert.That(rect.Width, Is.EqualTo(expectedWidth).Within(0.001f),
+                    $"house {lot.HouseId} max-footprint rect width must come from MaxFootprint");
+                Assert.That(rect.Depth, Is.EqualTo(expectedDepth).Within(0.001f),
+                    $"house {lot.HouseId} max-footprint rect depth must come from MaxFootprint");
+
+                // Sharing the level-1 center and being sized to the
+                // componentwise max (>= every level's dimensions), it must fully
+                // contain the level-1 footprint — the conservative envelope the
+                // approved fix reserves against. (Note: #454 pins the facade to
+                // the setback and shifts the house back as it deepens, so a
+                // per-level footprint is NOT concentric with this rect; this rect
+                // is the level-1-centered max-dimension envelope the issue's
+                // checklist prescribes, not a union of the repositioned levels.)
+                Assert.That(rect.Contains(footprint), Is.True,
+                    $"house {lot.HouseId} max-footprint rect must contain its level-1 footprint");
+                Assert.That(rect.Width, Is.GreaterThanOrEqualTo(footprint.Width),
+                    $"house {lot.HouseId} max-footprint rect is never narrower than the level-1 footprint");
+                Assert.That(rect.Depth, Is.GreaterThanOrEqualTo(footprint.Depth),
+                    $"house {lot.HouseId} max-footprint rect is never shallower than the level-1 footprint");
+            }
+        }
+
+        [Test]
         public void FrontSetback_SitsInDereksAgreedTuningRange()
         {
             // #127 left the exact number to be tuned visually; the agreed

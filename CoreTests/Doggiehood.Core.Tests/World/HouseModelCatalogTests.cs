@@ -376,6 +376,69 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void MaxFootprint_ForAStarterHouse_IsTheComponentwiseMaxAcrossItsWholeLadder()
+        {
+            // #459: yard trees must reserve space for the LARGEST footprint a
+            // house can reach across its whole upgrade ladder, not just its
+            // as-built level-1 mesh. The helper returns the componentwise max
+            // FootprintX/FootprintZ over every rung (levels 1..MaxLevel) of a
+            // starter house's fixed ladder.
+            const int houseId = 1;
+            var expectedX = 0f;
+            var expectedZ = 0f;
+            for (var level = HouseLevelModelTable.MinLevel;
+                 level <= Doggiehood.Core.Expansion.HouseUpgradeNumbers.MaxLevel;
+                 level++)
+            {
+                var model = HouseModelCatalog.ForHouse(houseId, level);
+                expectedX = System.Math.Max(expectedX, model.FootprintX);
+                expectedZ = System.Math.Max(expectedZ, model.FootprintZ);
+            }
+
+            var max = HouseModelCatalog.MaxFootprint(houseId);
+
+            Assert.That(max.FootprintX, Is.EqualTo(expectedX).Within(0.0001f),
+                "starter house max footprint X must be the max across all four rungs");
+            Assert.That(max.FootprintZ, Is.EqualTo(expectedZ).Within(0.0001f),
+                "starter house max footprint Z must be the max across all four rungs");
+
+            // The point of the fix: the max genuinely exceeds the level-1
+            // footprint, so a tree legal at L1 can still be reserved against.
+            var levelOne = HouseModelCatalog.ForHouse(houseId, HouseLevelModelTable.MinLevel);
+            Assert.That(max.FootprintX, Is.GreaterThan(levelOne.FootprintX),
+                "house 1's max footprint X must exceed its level-1 footprint");
+        }
+
+        [Test]
+        public void MaxFootprint_ForAZoneHouse_ResolvesViaItsRolledLadder_LikeForHouse()
+        {
+            // #459: the helper mirrors HouseModelCatalog.ForHouse's zone branch —
+            // a zone id (>= 5) resolves its rolled HouseVariantAssignment ladder,
+            // so the max is taken across that ladder's four rungs, exactly the
+            // meshes ForHouse(zoneId, level) resolves.
+            const int zoneId = HouseVariantAssignment.FirstZoneHouseId;
+            var ladderId = HouseVariantAssignment.ForHouse(zoneId).LadderId;
+
+            var expectedX = 0f;
+            var expectedZ = 0f;
+            for (var level = HouseLevelModelTable.MinLevel;
+                 level <= Doggiehood.Core.Expansion.HouseUpgradeNumbers.MaxLevel;
+                 level++)
+            {
+                var model = HouseModelCatalog.ForModel(HouseLevelModelTable.ForHouseLevel(ladderId, level));
+                expectedX = System.Math.Max(expectedX, model.FootprintX);
+                expectedZ = System.Math.Max(expectedZ, model.FootprintZ);
+            }
+
+            var max = HouseModelCatalog.MaxFootprint(zoneId);
+
+            Assert.That(max.FootprintX, Is.EqualTo(expectedX).Within(0.0001f),
+                "zone house max footprint X must be the max across its rolled ladder");
+            Assert.That(max.FootprintZ, Is.EqualTo(expectedZ).Within(0.0001f),
+                "zone house max footprint Z must be the max across its rolled ladder");
+        }
+
         private static void AssertEntry(string modelName, float footprintX, float footprintZ)
         {
             var model = HouseModelCatalog.ForModel(modelName);

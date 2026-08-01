@@ -430,12 +430,20 @@ namespace Doggiehood.Core.World
             return picks;
         }
 
-        /// <summary>The lot's house footprint rect — delegates to the shared
-        /// <see cref="HousePlacement.HouseFootprint"/> (#290) so yard trees
-        /// and quest hidden items reject against the exact same geometry.</summary>
+        /// <summary>The obstacle rect yard trees reject against: the house's
+        /// MAX-across-upgrade-ladder footprint (#459,
+        /// <see cref="HousePlacement.MaxHouseFootprint"/>), NOT its level-1
+        /// footprint. A tree is seeded once at world-build time while the house
+        /// is level 1, but the rendered mesh grows across the upgrade ladder from
+        /// the same fixed center; rejecting against the level-1 footprint let a
+        /// tree legal when small end up inside the larger upgraded house (Derek,
+        /// v0.8 playtesting). Reserving the largest footprint the house can reach
+        /// keeps trees clear of every level. This is deliberately separate from
+        /// <see cref="HousePlacement.HouseFootprint"/>, which stays level-1 for
+        /// quest hidden-item placement (#290) and the empty-lot slab (#434).</summary>
         private static LotRect HouseFootprintOf(HouseLot lot)
         {
-            return HousePlacement.HouseFootprint(lot);
+            return HousePlacement.MaxHouseFootprint(lot);
         }
 
         /// <summary>Draws one per-tree size multiplier (#458) from the SAME

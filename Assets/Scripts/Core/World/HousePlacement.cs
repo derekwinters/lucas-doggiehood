@@ -240,6 +240,34 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// The house's axis-aligned ground footprint sized to the LARGEST mesh
+        /// it can reach across its whole upgrade ladder (#459) — built exactly
+        /// like <see cref="HouseFootprint(HouseLot)"/> (same center
+        /// <see cref="Position(HouseLot, float)"/>, same width/depth
+        /// axis-swap-on-facing) but from <see cref="HouseModelCatalog.MaxFootprint"/>
+        /// instead of the level-1 model. Because <see cref="HouseFootprint"/>
+        /// is deliberately level-1-invariant while the rendered mesh grows on
+        /// upgrade, a tree placed clear of the level-1 footprint at world-build
+        /// time can end up inside the upgraded mesh; yard landscaping (#170)
+        /// rejection-samples against THIS conservative rect so trees stay clear
+        /// of every level the house can reach. Deliberately separate from
+        /// <see cref="HouseFootprint"/>: quest hidden-item placement (#290) and
+        /// the empty-lot slab (#434) intentionally stay level-1.
+        /// </summary>
+        public static LotRect MaxHouseFootprint(HouseLot lot)
+        {
+            var facing = FrontFacing(lot);
+            var house = Position(lot, KitScale);
+            var (footprintX, footprintZ) = HouseModelCatalog.MaxFootprint(lot.HouseId);
+            var halfWidth = KitScale * footprintX / 2f;
+            var halfDepth = KitScale * footprintZ / 2f;
+
+            return facing.X != 0f
+                ? new LotRect(house.X - halfDepth, house.X + halfDepth, house.Z - halfWidth, house.Z + halfWidth)
+                : new LotRect(house.X - halfWidth, house.X + halfWidth, house.Z - halfDepth, house.Z + halfDepth);
+        }
+
+        /// <summary>
         /// Pure form of <see cref="Position"/> for a known sidewalk attach
         /// point (a point on the sidewalk CENTERLINE the lot connects to)
         /// — no network lookup, so WalkNetwork.BuildFrom can use it
