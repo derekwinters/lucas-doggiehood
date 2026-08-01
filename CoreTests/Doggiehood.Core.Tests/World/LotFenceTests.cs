@@ -744,6 +744,163 @@ namespace Doggiehood.Core.Tests.World
                 "an empty override is malformed too");
         }
 
+        // ---- #460: fence connectors track the house's CURRENT level ----
+
+        [Test]
+        public void GeometryFor_WithState_AtLevelOne_IsByteIdenticalToTheLevelBlindGeometry()
+        {
+            // #460 regression guard (the #147/#342 as-built contract): a fresh
+            // GameState has every starting house at level 1, so the level-aware
+            // state overload must produce byte-for-byte the same runs as the
+            // level-blind geometry — the fix must not disturb today's shape.
+            var state = GameState.CreateNew();
+            foreach (var lot in NeighborhoodLayout.HouseLots)
+            {
+                var blind = LotFence.GeometryFor(lot);
+                var aware = LotFence.GeometryFor(lot, state);
+                Assert.That(aware.Count, Is.EqualTo(blind.Count),
+                    $"lot {lot.HouseId}: same run count at level 1");
+                for (var i = 0; i < blind.Count; i++)
+                {
+                    Assert.That(aware[i].A.X, Is.EqualTo(blind[i].A.X),
+                        $"lot {lot.HouseId} run {i} A.X byte-identical at level 1");
+                    Assert.That(aware[i].A.Z, Is.EqualTo(blind[i].A.Z),
+                        $"lot {lot.HouseId} run {i} A.Z byte-identical at level 1");
+                    Assert.That(aware[i].B.X, Is.EqualTo(blind[i].B.X),
+                        $"lot {lot.HouseId} run {i} B.X byte-identical at level 1");
+                    Assert.That(aware[i].B.Z, Is.EqualTo(blind[i].B.Z),
+                        $"lot {lot.HouseId} run {i} B.Z byte-identical at level 1");
+                }
+            }
+        }
+
+        [Test]
+        public void ConnectorTerminationPoints_DeriveFromTheHousesCurrentLevelFootprint_NotAlwaysLevelOne()
+        {
+            // #460: once a house upgrades its rendered mesh grows, so the two
+            // connectors must reach the CURRENT level's side-wall midpoints, not
+            // stay pinned to the level-1 half-width (which would land inside the
+            // wider upgraded house).
+            var state = GameState.CreateNew();
+            var lot = NeighborhoodLayout.HouseLots.Single(l => l.HouseId == 1);
+
+            UpgradeTo(state, 1, 4); // r -> c -> s -> b, footprint grows every rung
+            Assert.That(state.Houses.Single(h => h.Id == 1).Level, Is.EqualTo(4));
+
+            var runs = LotFence.RunsFor(FencedCloneOf(lot), state);
+            var facing = HousePlacement.FrontFacing(lot);
+            var house = HousePlacement.Position(lot, HousePlacement.KitScale);
+            var perp = new GridPoint(-facing.Z, facing.X);
+
+            var level4HalfWidth = HousePlacement.KitScale
+                * HouseModelCatalog.ForHouse(1, 4).FootprintX / 2f;
+            var level1HalfWidth = HousePlacement.KitScale
+                * HouseModelCatalog.ForHouse(1).FootprintX / 2f;
+            Assert.That(level4HalfWidth, Is.GreaterThan(level1HalfWidth),
+                "sanity: house 1's ladder widens from level 1 to level 4");
+
+            var openEnds = OpenEndsOf(runs);
+            var level4Anchors = new[]
+            {
+                new GridPoint(house.X + perp.X * level4HalfWidth, house.Z + perp.Z * level4HalfWidth),
+                new GridPoint(house.X - perp.X * level4HalfWidth, house.Z - perp.Z * level4HalfWidth),
+            };
+            foreach (var anchor in level4Anchors)
+            {
+                Assert.That(openEnds.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
+                    $"a connector must reach the LEVEL-4 side-wall midpoint {anchor}");
+            }
+
+            var level1Anchors = new[]
+            {
+                new GridPoint(house.X + perp.X * level1HalfWidth, house.Z + perp.Z * level1HalfWidth),
+                new GridPoint(house.X - perp.X * level1HalfWidth, house.Z - perp.Z * level1HalfWidth),
+            };
+            foreach (var stale in level1Anchors)
+            {
+                Assert.That(openEnds.Any(e => PointsNearlyEqual(e, stale)), Is.False,
+                    $"the connector must NOT stay pinned to the stale level-1 midpoint {stale}");
+            }
+        }
+
+        [Test]
+        public void UpgradingAHouse_MovesTheConnectorEndpoints_WheneverTheLaddersFootprintChanges()
+        {
+            // #460 no-op guard: upgrading a starter house through TryUpgradeHouse
+            // and re-querying RunsFor(lot, state) must move the connector open
+            // ends whenever the ladder's footprint changes, so the fix can't
+            // silently no-op.
+            var state = GameState.CreateNew();
+            var fencedLot = FencedCloneOf(NeighborhoodLayout.HouseLots.Single(l => l.HouseId == 1));
+
+            Assert.That(HouseModelCatalog.ForHouse(1, 2).FootprintX,
+                Is.Not.EqualTo(HouseModelCatalog.ForHouse(1, 1).FootprintX),
+                "sanity: house 1's level 1 -> 2 footprint changes (r -> c)");
+
+            var before = OpenEndsOf(LotFence.RunsFor(fencedLot, state));
+            UpgradeTo(state, 1, 2);
+            var after = OpenEndsOf(LotFence.RunsFor(fencedLot, state));
+
+            Assert.That(after.Any(a => !before.Any(b => PointsNearlyEqual(a, b))), Is.True,
+                "the connector open ends must move after an upgrade that changes the footprint");
+        }
+
+        [Test]
+        public void ZoneHouse_ConnectorTerminationPoints_TrackItsRolledLadderLevel()
+        {
+            // #460: the level-aware resolution covers a ZONE house (id >= 5)
+            // upgrading through its rolled ladder, not just a starter house.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100000);
+            Assert.That(state.TryUnlockNextZone(), Is.True);
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds at level 1");
+            var fencedLot = FencedCloneOf(lot);
+
+            Assert.That(HouseModelCatalog.ForHouse(lot.HouseId, 2).FootprintX,
+                Is.Not.EqualTo(HouseModelCatalog.ForHouse(lot.HouseId, 1).FootprintX),
+                "sanity: the zone house's rolled ladder footprint changes level 1 -> 2");
+
+            var before = OpenEndsOf(LotFence.RunsFor(fencedLot, state));
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToReach(2));
+            Assert.That(state.TryUpgradeHouse(lot.HouseId), Is.True, "the zone house upgrades to level 2");
+            var after = OpenEndsOf(LotFence.RunsFor(fencedLot, state));
+
+            Assert.That(after.Any(a => !before.Any(b => PointsNearlyEqual(a, b))), Is.True,
+                "a zone house's connector endpoints must track its rolled ladder's per-level footprint");
+
+            var facing = HousePlacement.FrontFacing(lot);
+            var house = HousePlacement.Position(lot, HousePlacement.KitScale);
+            var perp = new GridPoint(-facing.Z, facing.X);
+            var halfWidth = HousePlacement.KitScale
+                * HouseModelCatalog.ForHouse(lot.HouseId, 2).FootprintX / 2f;
+            var expected = new[]
+            {
+                new GridPoint(house.X + perp.X * halfWidth, house.Z + perp.Z * halfWidth),
+                new GridPoint(house.X - perp.X * halfWidth, house.Z - perp.Z * halfWidth),
+            };
+            foreach (var anchor in expected)
+            {
+                Assert.That(after.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
+                    $"a zone connector must reach its LEVEL-2 side-wall midpoint {anchor}");
+            }
+        }
+
+        /// <summary>Deposits exactly what each rung costs and upgrades
+        /// <paramref name="houseId"/> one level at a time to
+        /// <paramref name="targetLevel"/> through the real
+        /// <see cref="GameState.TryUpgradeHouse"/> path.</summary>
+        private static void UpgradeTo(GameState state, int houseId, int targetLevel)
+        {
+            while (state.Houses.Single(h => h.Id == houseId).Level < targetLevel)
+            {
+                var next = state.Houses.Single(h => h.Id == houseId).Level + 1;
+                state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToReach(next));
+                Assert.That(state.TryUpgradeHouse(houseId), Is.True,
+                    $"house {houseId} upgrades toward level {targetLevel}");
+            }
+        }
+
         private static HouseLot FencedCloneOf(HouseLot lot)
         {
             return new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, hasFence: true);

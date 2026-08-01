@@ -659,6 +659,21 @@ namespace Doggiehood.Core.World
                 $"No house lot with id {houseId} in the starting layout or any unlocked zone.", nameof(houseId));
         }
 
+        /// <summary>
+        /// The current upgrade level of the built house with
+        /// <paramref name="houseId"/> (#460), or <see cref="House.InitialLevel"/>
+        /// (level 1) when no house with that id is built yet. Level-aware fence
+        /// geometry (<see cref="LotFence.GeometryFor(HouseLot, GameState)"/>)
+        /// reads it so a lot's backyard connectors track the house's actual
+        /// mesh as it upgrades; the InitialLevel default keeps a not-yet-built
+        /// lot's queryable geometry byte-identical to the level-blind form.
+        /// </summary>
+        public int GetHouseLevel(int houseId)
+        {
+            var house = houses.FirstOrDefault(candidate => candidate.Id == houseId);
+            return house == null ? House.InitialLevel : house.Level;
+        }
+
         private HouseLot FindLotInUnlockedZones(int houseId)
         {
             foreach (var zone in unlockedZones)

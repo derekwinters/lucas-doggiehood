@@ -702,7 +702,12 @@ namespace Doggiehood.Unity
             // PlacedItem sits in state for its house (LotFence.IsFenced), so a
             // completed fence-purchase quest shows on the next world/decoration
             // refresh with no delivery animation.
-            var runs = ForceFencesVisible ? LotFence.GeometryFor(lot) : LotFence.RunsFor(lot, state);
+            // #460: both paths resolve the connector footprint from the house's
+            // CURRENT level (LotFence.GeometryFor(lot, state) / RunsFor(lot, state)),
+            // so a forced-visible or purchased fence tracks the upgraded mesh too.
+            var runs = ForceFencesVisible
+                ? LotFence.GeometryFor(lot, state)
+                : LotFence.RunsFor(lot, state);
             if (runs.Count == 0)
             {
                 return;

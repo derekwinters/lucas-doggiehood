@@ -257,6 +257,43 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SuccessfulUpgrade_RebuildsTheFenceContainer_SoTerminationPointsRenderImmediately()
+        {
+            // #460: the backyard fence connectors are sized to the house's
+            // CURRENT level's footprint, so after an upgrade the fence must be
+            // rebuilt for the corrected termination points to render immediately
+            // rather than only at the next full world build. Force fences visible
+            // (they are hidden by default) so a container exists to observe, and
+            // upgrade house 1 whose ladder (r -> c) genuinely widens.
+            var original = WorldBuilder.ForceFencesVisible;
+            try
+            {
+                WorldBuilder.ForceFencesVisible = true;
+                BuildWorldAndDirector();
+
+                const int houseId = 1;
+                var staleFence = worldRoot.transform.Find(WorldBuilder.FenceNamePrefix + houseId);
+                Assert.That(staleFence, Is.Not.Null,
+                    "the forced-visible fence container renders at world-build time");
+
+                state.Wallet.Deposit(HouseUpgradeNumbers.CostToReach(2));
+                Assert.That(state.TryUpgradeHouse(houseId), Is.True, "house 1 upgrades one level");
+
+                director.RefreshHouse(houseId);
+
+                Assert.That(staleFence == null, Is.True,
+                    "the stale fence container is destroyed as part of the upgrade rebuild");
+                var rebuiltFence = worldRoot.transform.Find(WorldBuilder.FenceNamePrefix + houseId);
+                Assert.That(rebuiltFence, Is.Not.Null,
+                    "a fresh fence container is rebuilt after the upgrade so termination points move");
+            }
+            finally
+            {
+                WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
+        [Test]
         public void AfterUpgrade_TheRebuiltHouseTap_StillOpensTheProfile_AndStillReachesQuestSpray()
         {
             // The re-wiring guarantee (triage's core wrinkle): HouseView.Tapped
