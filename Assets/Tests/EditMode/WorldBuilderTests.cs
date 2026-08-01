@@ -763,7 +763,7 @@ namespace Doggiehood.Unity.EditModeTests
             var host = new GameObject("zone-fence-host");
             try
             {
-                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot), Throws.Nothing);
+                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot, GameState.CreateNew()), Throws.Nothing);
 
                 var container = host.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId);
                 Assert.That(container, Is.Not.Null, "the fenced zone lot gets a fence container");
