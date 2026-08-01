@@ -30,6 +30,17 @@ Design rules encoded here (see issue #194 and docs/engineering/issue-pipeline.md
   * `/focus <arg>` and `/milestone <arg>` are REJECTED when the argument
     resolves to no live milestone (`focus-no-match` / `milestone-no-match` in
     `skipped`) rather than silently writing a null milestone.
+  * MILESTONE-ORDER gate (issue #212): on `/approve` or `/milestone`, A's
+    resulting milestone must not precede any OPEN blocker B's milestone, and
+    every open blocker must itself be scheduled. Order follows the LIVE version
+    scheme via `milestone_order()` (`v0.4 < v1.0 < v1.1 < v2.0`; a non-version
+    title such as `Direct Involvement Needed` is unordered). A violation is
+    REFUSED — A is left untouched (no label/milestone change), a `skipped`
+    record carries `blocker-unscheduled` (open blocker with no orderable
+    milestone) or `blocker-inversion` (open blocker in a later milestone) plus
+    an `ack` naming #A and #B, and no auto-bump happens. Soft `depends-on`
+    edges use the same refuse rule as hard `blocked-by` edges; closed blockers
+    are ignored.
   * `ready-for-work` implies a milestone (issue #247): `/approve` is a
     presence-check + label flip (issue #319, Part A) — it moves an issue to
     `ready-for-work` only when the issue's milestone FIELD is already set (by
@@ -50,7 +61,11 @@ Input schema (stdin):
     "issues": [
       {"number": 181, "labels": ["pending-approval"],
        "is_epic": false, "is_dashboard": false,
-       "milestone": "04 - Quests & Economy" | null,
+       "milestone": "v1.0" | null,
+       "blockers": [
+         {"number": 109, "kind": "blocked-by" | "depends-on",
+          "state": "open" | "closed", "milestone": "v1.1" | null}
+       ],
        "comments": [
          {"id": 7, "author": "derekwinters", "body": "...", "processed": false}
        ]}
@@ -58,10 +73,18 @@ Input schema (stdin):
   }
 
   `milestone` is the issue's currently-set milestone title (or null) — the
-  ONLY thing the `/approve` milestone gate reads (issue #319, Part A). Analysis
+  ONLY thing the `/approve` PRESENCE gate reads (issue #319, Part A). Analysis
   now sets this field directly when it routes an issue to `pending-approval`
   (rather than only proposing one in prose), so this parser no longer reads or
   resolves any analysis-proposed-milestone comment-scrape at all.
+
+  `blockers` (issue #212) lists the issue's dependency edges — the union of its
+  native GitHub `Blocked by` relationships and any structured `Blocked by:` /
+  `Depends on:` body lines — that the ORDER gate checks. Each entry carries the
+  blocker's `number`, its `kind` (`"blocked-by"` hard / `"depends-on"` soft —
+  treated identically by the gate), its `state` (`"open"` / `"closed"`), and
+  its own `milestone` title (or null). The list defaults to empty when absent,
+  so a snapshot with no `blockers` key is processed exactly as before.
 
 Output schema (stdout):
   {
@@ -79,12 +102,71 @@ Output schema (stdout):
   }
 
 Skip reasons: "not-owner", "no-op", "parked-ignored", "focus-no-match",
-"milestone-no-match", "approve-no-milestone", "cap-invalid".
+"milestone-no-match", "approve-no-milestone", "cap-invalid",
+"blocker-unscheduled", "blocker-inversion".
 """
 
 import json
 import re
 import sys
+
+# A milestone title in the live version scheme, e.g. "v0.4", "v1.0", "v2.0".
+# Only the leading vMAJOR.MINOR is significant for ordering.
+_VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\b", re.IGNORECASE)
+
+
+def milestone_order(title):
+    """Return a sortable ``(major, minor)`` key for a ``vMAJOR.MINOR`` milestone
+    title, or ``None`` for any non-version title (#212).
+
+    Ordering follows the LIVE version scheme (``v0.4 < v1.0 < v1.1 < v2.0``),
+    not the retired ``00``–``08`` numeric prefixes. A non-version title — the
+    unordered ``Direct Involvement Needed``, a legacy ``03 - …`` name, ``None``,
+    or an empty string — is treated as unordered: it can only ever trip the
+    "blocker unscheduled/unordered" branch of the gate, never an inversion.
+    """
+    m = _VERSION_RE.match((title or "").strip())
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)))
+
+
+def _blocker_conflict(a_milestone, blockers):
+    """First OPEN blocker that violates the #212 milestone-order invariant.
+
+    Returns a ``{"reason", "blocker", "b_milestone"}`` dict for the first open
+    blocker B that conflicts, or ``None`` if every open blocker is compatible.
+    Closed blockers are ignored. A blocker with no orderable milestone (unset,
+    or a non-version title) trips ``blocker-unscheduled``; an orderable blocker
+    whose milestone sorts strictly AFTER A's trips ``blocker-inversion``. Soft
+    ``depends-on`` edges use the same rule as hard ``blocked-by`` edges.
+    """
+    a_order = milestone_order(a_milestone)
+    for b in blockers or []:
+        if (b.get("state") or "open") != "open":
+            continue
+        b_order = milestone_order(b.get("milestone"))
+        if b_order is None:
+            return {"reason": "blocker-unscheduled",
+                    "blocker": b.get("number"),
+                    "b_milestone": b.get("milestone")}
+        if a_order is not None and a_order < b_order:
+            return {"reason": "blocker-inversion",
+                    "blocker": b.get("number"),
+                    "b_milestone": b.get("milestone")}
+    return None
+
+
+def _blocker_ack(reason, a_number, a_milestone, b_number, b_milestone):
+    """The hand-back text for a refused #212 order-gate move (names #A and #B)."""
+    if reason == "blocker-unscheduled":
+        return ("Can't schedule #%d — blocker #%d has no milestone; "
+                "set one first." % (a_number, b_number))
+    return ("Can't put #%d in `%s` — it's blocked by #%d in the later `%s`; "
+            "approve into ≥ `%s`, or move #%d earlier."
+            % (a_number, a_milestone, b_number, b_milestone,
+               b_milestone, b_number))
+
 
 # Commands that carry a free-text argument to end of line.
 _ARG_COMMANDS = {"revise", "milestone", "focus", "cap"}
@@ -309,11 +391,11 @@ def _build_action(issue, comment, commands, milestones, is_parked,
     # /milestone command in the same comment is unaffected by this refusal —
     # it is a separate, independent command handled in the loop above.)
     #
-    # NOTE (#212, forward-looking): this is the PRESENCE gate only. A sibling
-    # ORDER gate (the milestone must not precede a blocker's milestone) is not
-    # yet built. Now that milestone ownership lives in analysis (#319), #212
-    # belongs there (or in the dashboard) — layered onto the value analysis
-    # already resolved — never re-added here to /approve's presence-check.
+    # NOTE (#212): this is the PRESENCE gate. Its sibling ORDER gate (the
+    # milestone must not precede a blocker's milestone) is enforced immediately
+    # below, on both /approve and /milestone, from the `blockers` snapshot the
+    # skill gathers — the natural, deterministic, owner-only enforcement point,
+    # matching the approved analysis on #212.
     if "approve" in action["commands"] and not issue.get("milestone"):
         reject("approve-no-milestone", menu="which-milestone")
         action["commands"].remove("approve")
@@ -324,6 +406,48 @@ def _build_action(issue, comment, commands, milestones, is_parked,
                 remove.remove(lbl)
         if action["menu"] == "ready-for-work":
             action["menu"] = None
+
+    # Post-loop: enforce the #212 milestone-ORDER gate (sibling to the presence
+    # gate above). Runs on the two commands that set/confirm a milestone —
+    # /approve (against the already-set field) and /milestone (against its
+    # resolved value). A's resulting milestone must not precede any OPEN
+    # blocker's milestone, and every open blocker must itself be scheduled;
+    # soft `depends-on` uses the same refuse rule as hard `blocked-by`. On
+    # violation, REFUSE (leave A untouched — undo the approve/milestone effects,
+    # apply no label/milestone change) and emit a `skipped` record carrying the
+    # exact conflict + an ack naming #A and #B. No auto-bump — Derek drives this
+    # state machine by hand, so the ack states the fix and lets him choose.
+    if "approve" in action["commands"] or "milestone" in action["commands"]:
+        a_milestone = (action["set_milestone"]
+                       if action["set_milestone"] is not None
+                       else issue.get("milestone"))
+        conflict = _blocker_conflict(a_milestone, issue.get("blockers"))
+        if conflict:
+            b_number = conflict["blocker"]
+            b_milestone = conflict["b_milestone"]
+            rejected.append({
+                "issue": issue["number"],
+                "comment_id": comment["id"],
+                "reason": conflict["reason"],
+                "blocker": b_number,
+                "a_milestone": a_milestone,
+                "b_milestone": b_milestone,
+                "ack": _blocker_ack(conflict["reason"], issue["number"],
+                                    a_milestone, b_number, b_milestone),
+            })
+            if "approve" in action["commands"]:
+                action["commands"].remove("approve")
+                if "ready-for-work" in add:
+                    add.remove("ready-for-work")
+                for lbl in ("pending-approval", "needs-clarification",
+                            "ai-triage"):
+                    if lbl in remove:
+                        remove.remove(lbl)
+            if "milestone" in action["commands"]:
+                action["commands"].remove("milestone")
+                action["set_milestone"] = None
+            if action["menu"] in ("ready-for-work", "milestone"):
+                action["menu"] = None
 
     if not action["commands"]:
         return None, rejected

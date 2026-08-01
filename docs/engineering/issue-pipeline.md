@@ -36,12 +36,12 @@ commands act):
 | Command | Effect |
 | - | - |
 | `/admit` | Pull a raw idea into AI analysis (`ai-triage`). |
-| `/approve` | Accept the analysis → `ready-for-work`. A pure presence-check + label flip ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)) — analysis already set the milestone at `pending-approval`, so approve does no milestone resolution of its own. **Refused if the issue has no milestone set** (see the `/approve` milestone gate below). |
+| `/approve` | Accept the analysis → `ready-for-work`. A pure presence-check + label flip ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)) — analysis already set the milestone at `pending-approval`, so approve does no milestone resolution of its own. **Refused if the issue has no milestone set, or if that milestone precedes an open blocker's** (see the milestone presence + order gates below). |
 | `/revise <notes>` | Send back to analysis with feedback (re-add `ai-triage`). |
 | `/redo` | Discard the analysis and start it over. |
 | `/propose` | Authorize analysis to draft the missing design/wireframe as a marked PROPOSAL. |
 | `/park` / `/unpark` | Hide from the pipeline / bring it back. |
-| `/milestone <name>` | Override the milestone (`04`, a title fragment, or the full title). |
+| `/milestone <name>` | Override the milestone (`04`, a title fragment, or the full title). **Refused if the new milestone precedes an open blocker's** (milestone-order gate, [#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)). |
 | `/focus <name>` | Set the active milestone for nightly development. |
 | `/cap <n>` | Set the nightly dev build cap. **Dashboard issue (#193) only** — rejects non-numeric or non-positive `n`. |
 
@@ -87,13 +87,53 @@ updated) is the supported flow for approving a milestone-less issue.
   reply (e.g. *"Can't approve #N to `ready-for-work` — no milestone resolved;
   reply `/milestone <name>` then `/approve`"*).
 
-This is the **presence** gate. Its sibling
-[#212](https://github.com/derekwinters/lucas-doggiehood/issues/212) — an
-**order** gate (the milestone must not precede a blocker's milestone) — is not
-yet built; now that milestone ownership has moved to analysis (#319), #212
-belongs in **analysis or the dashboard**, layered onto the value analysis
-already resolved, never back in the gatekeeper's `/approve` presence-check.
-This is a forward-looking placement note, not an implementation.
+This is the **presence** gate. Its sibling — the **order** gate — is described
+next.
+
+### The milestone-order gate — a milestone must not precede a blocker's
+
+Nothing stopped an issue from being placed in a milestone **earlier** than the
+milestone of an issue it is `Blocked by:` / `Depends on:`. When that happened the
+dependent could never complete in its own milestone: the nightly builder
+correctly skips it (open blocker), but the blocker was not in that milestone to
+be built — so it silently stalled while the milestone read "ready"
+([#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)). A
+2026-07-18 hand sweep caught several (#112/#165/#186 → `07`, #170/#209 → `06`);
+the pipeline now enforces the invariant instead of relying on a human noticing.
+
+**Invariant.** For every open `Blocked by:` / `Depends on:` edge **A → B**:
+`milestone_order(A) ≥ milestone_order(B)`, **and B must be scheduled** (have a
+milestone). `milestone_order()` parses the **live version scheme** — `v0.4 <
+v1.0 < v1.1 < v2.0` — from the `vMAJOR.MINOR` title; a non-version title (e.g.
+`Direct Involvement Needed`, or a legacy `03 - …` name) is **unordered** and can
+only ever trip the "blocker unscheduled/unordered" branch, never an inversion.
+
+**Where it runs.** The same deterministic gatekeeper parser
+(`parse_commands.py`) that resolves `/approve` and `/milestone`, as a sibling of
+the presence gate above — the natural, owner-only, no-GitHub-I/O enforcement
+point. On `/approve` (against the issue's already-set milestone field) or
+`/milestone` (against its resolved value), the parser checks A's resulting
+milestone against every **open** blocker B in the snapshot's `blockers` list
+(the native ∪ text-line hard blockers plus soft `Depends on:` edges, each with
+its own `state` and `milestone`):
+
+- **B unscheduled / unordered** (no milestone, or a non-version title) →
+  **refuse** with a `blocker-unscheduled` skip; ack: *"Can't schedule #A —
+  blocker #B has no milestone; set one first."*
+- **`order(A) < order(B)`** (B is in a strictly later version milestone) →
+  **refuse** with a `blocker-inversion` skip; ack: *"Can't put #A in
+  `<A-milestone>` — it's blocked by #B in the later `<B-milestone>`; approve into
+  ≥ `<B-milestone>`, or move #B earlier."*
+
+**Refuse — never auto-bump.** A refusal leaves A untouched: no label change, no
+milestone change, the issue stays in its prior state, and the skip carries an
+`ack` (naming #A and #B and stating the fix) that the gatekeeper posts. Derek
+drives this state machine by hand, so the gate states the conflict and lets him
+choose which side to move rather than silently magic-ing A into a later
+milestone. **Soft `Depends on:` uses the same refuse rule as hard `Blocked by:`**
+— one predictable behavior — and **closed blockers are ignored.** *(The optional
+"⚠️ scheduling conflicts" dashboard surface for pre-existing inversions is
+deferred to a follow-up; this gate guards new approvals/milestone sets only.)*
 
 ### Auto-revisit when a blocker clears
 

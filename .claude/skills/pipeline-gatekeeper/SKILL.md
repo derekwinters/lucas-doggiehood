@@ -52,12 +52,12 @@ See `docs/engineering/issue-pipeline.md` for the full model.
 | Command | Effect |
 | - | - |
 | `/admit` | add `ai-triage` (raw idea → analysis queue) |
-| `/approve` | add `ready-for-work`, remove `pending-approval`/`needs-clarification`/`ai-triage` — **refused if the issue has no milestone set** (`ready-for-work` ⇒ has milestone, #247; a pure presence-check, issue #319) |
+| `/approve` | add `ready-for-work`, remove `pending-approval`/`needs-clarification`/`ai-triage` — **refused if the issue has no milestone set** (`ready-for-work` ⇒ has milestone, #247; a pure presence-check, issue #319) **or if that milestone precedes an open blocker's** (milestone-order gate, #212) |
 | `/revise <notes>` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification`; the notes are left for analysis to read |
 | `/redo` | re-add `ai-triage`, remove `pending-approval`/`needs-clarification` (fresh analysis pass) |
 | `/propose` | re-add `ai-triage` and authorize analysis to draft the missing design as a marked PROPOSAL |
 | `/park` / `/unpark` | add / remove `parked` |
-| `/milestone <name>` | set the milestone (accepts `04`, a title fragment, or the full title) |
+| `/milestone <name>` | set the milestone (accepts `04`, a title fragment, or the full title) — **refused if the new milestone precedes an open blocker's** (milestone-order gate, #212) |
 | `/focus <name>` | record the active nightly-dev milestone (stored in the dashboard marker — see below) |
 | `/cap <n>` | set the nightly dev build cap (**dashboard issue only** — see below); rejects non-numeric or non-positive `n` |
 
@@ -95,11 +95,25 @@ silently ignored everywhere else.
    `milestone` title (or null — this is the ONLY thing that feeds the
    `/approve` milestone gate below; analysis now sets this field directly at
    `pending-approval`, issue #319 Part A, so there is no separate
-   proposed-milestone comment to scrape), and its comments. For each comment
-   collect `id`, `author.login`, `body`, and `processed` = whether it already
-   carries the 👀 `eyes` reaction from this bot. To keep this cheap, only fetch
-   comments for issues that actually have any (skip issues with `comments ==
-   0`), and only look back at recent comments.
+   proposed-milestone comment to scrape), its **`blockers`** (see below,
+   issue #212), and its comments. For each comment collect `id`,
+   `author.login`, `body`, and `processed` = whether it already carries the 👀
+   `eyes` reaction from this bot. To keep this cheap, only fetch comments for
+   issues that actually have any (skip issues with `comments == 0`), and only
+   look back at recent comments.
+
+   **`blockers` (issue #212, for the milestone-order gate).** For each issue
+   gather its dependency edges as a list of `{number, kind, state, milestone}`
+   — `kind` is `"blocked-by"` (hard) or `"depends-on"` (soft), `state` is the
+   blocker's `"open"`/`"closed"`, and `milestone` is the blocker's own
+   milestone title (or null). Hard blockers are the **union** of the issue's
+   native GitHub issue-dependency relationships
+   (`GET /repos/{owner}/{repo}/issues/{n}/dependencies/blocked_by`) and any
+   legacy `Blocked by: #N` body lines (the same `merge_blockers` union every
+   other reader uses); soft edges come from `Depends on: #N` body lines. For
+   each referenced blocker, read its open/closed state and milestone. The list
+   defaults to empty when the issue has no edges — an absent `blockers` key is
+   processed exactly as before.
 
 2. **Run the parser.** Pipe the snapshot JSON into the script:
 
@@ -131,6 +145,17 @@ silently ignored everywhere else.
      rather than moving it to `ready-for-work`. (If the same comment also
      contained a `/milestone` command, that command's own action still
      applies — just not as part of this approve.)
+   - **Milestone-order gate (#212):** on `/approve` and `/milestone`, the
+     parser also validates A's resulting milestone against every **open**
+     blocker in the `blockers` snapshot. If an open blocker has no orderable
+     milestone it emits a `blocker-unscheduled` skip; if an open blocker sits
+     in a strictly later milestone (via the live `vMAJOR.MINOR` order) it emits
+     a `blocker-inversion` skip. Either way the move is **refused** — no label
+     or milestone change is applied, A stays in its prior state — and the skip
+     carries a ready-made `ack` naming #A and #B and stating the fix. Post that
+     `ack` (via `render_skip_ack`); do **not** auto-bump A's milestone. Soft
+     `depends-on` edges refuse the same as hard `blocked-by`; closed blockers
+     are ignored.
    - If `set_focus` or `set_cap` is non-null, update the corresponding
      `<!-- pipeline-focus: ... -->` / `<!-- pipeline-cap: N -->` marker on #193
      by **re-rendering** the dashboard with a `DASHBOARD_SET_FOCUS` /
@@ -227,7 +252,9 @@ without a model in the loop:
   action (or skip) into concrete write instructions: `merge_labels` (the full
   label list to PATCH — GitHub's labels endpoint replaces the whole set, so
   add/remove must be merged against a freshly read current list),
-  `render_ack` / `render_skip_ack` (the acknowledgment text, from `MENUS`),
+  `render_ack` / `render_skip_ack` (the acknowledgment text, from `MENUS`, or —
+  for a #212 `blocker-unscheduled`/`blocker-inversion` refusal — the skip's
+  pre-composed `ack` posted verbatim),
   `reactions_for` (👍 + 👀), `milestone_write_for` (only ever non-null for
   an actual `/milestone` command — never for `/approve`, per Part A), and
   `fires_triage` (the reactive-triage transition detector, #378 — true only
@@ -269,7 +296,12 @@ locks in that an inline `/milestone` in the SAME comment no longer feeds this
 gate — it fires only as its own separate action), the parked-issue rule, and
 `/cap` (#240: honored only on the dashboard issue, resolves to `set_cap`,
 rejects non-numeric/non-positive input with `cap-invalid`, ignored on every
-other issue).
+other issue), and the **milestone-order gate** (#212: `milestone_order()`'s
+`vMAJOR.MINOR` parsing with non-version titles unordered; `/approve` and
+`/milestone` refused on an open unscheduled blocker (`blocker-unscheduled`) or
+an open later-milestone blocker (`blocker-inversion`) with an ack naming #A and
+#B; equal/later-milestone allowed, closed blocker ignored, soft `depends-on`
+refused the same, and non-approve/non-milestone commands unaffected).
 `tests/test_check_revisits.py` covers
 the blocker auto-revisit (#241): single/multiple blockers, closed vs.
 `ready-for-work`/`in-progress` blockers, the all-must-resolve rule, the

@@ -94,13 +94,21 @@ def milestone_write_for(action):
 
 
 def render_skip_ack(skip):
-    """Render the which-milestone hand-back for an `approve-no-milestone` skip.
+    """Render the hand-back reply for a refused command, or ``None``.
 
+    Two refusals need Derek told why nothing moved:
+      * `approve-no-milestone` (#247/#319) — the which-milestone hand-back.
+      * `blocker-unscheduled` / `blocker-inversion` (#212) — the milestone-order
+        refusal, whose full text (naming #A and #B and stating the fix) is
+        composed by `parse_commands` and carried on the skip's `ack` field, so
+        the apply layer posts it verbatim.
     Every other skip reason (`not-owner`, `parked-ignored`, `no-op`,
-    `focus-no-match`, `milestone-no-match`, `cap-invalid`) gets no reply
-    comment — only a refused `/approve` needs Derek told why nothing moved.
+    `focus-no-match`, `milestone-no-match`, `cap-invalid`) gets no reply.
     """
-    if skip.get("reason") != "approve-no-milestone":
+    reason = skip.get("reason")
+    if reason in ("blocker-unscheduled", "blocker-inversion"):
+        return skip.get("ack")
+    if reason != "approve-no-milestone":
         return None
     text = "Can't approve #%d to `ready-for-work` — no milestone resolved; reply" % skip["issue"]
     menu = skip.get("menu")

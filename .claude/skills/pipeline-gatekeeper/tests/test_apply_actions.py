@@ -124,6 +124,14 @@ class TestRenderSkipAck(unittest.TestCase):
             skip = {"issue": 181, "comment_id": 8, "reason": reason}
             self.assertIsNone(apply_actions.render_skip_ack(skip), reason)
 
+    def test_blocker_order_gate_skips_use_their_composed_ack(self):
+        # #212: a refused /approve or /milestone carries a ready-made `ack`
+        # naming #A and #B; the apply layer posts it verbatim.
+        for reason in ("blocker-unscheduled", "blocker-inversion"):
+            skip = {"issue": 181, "comment_id": 8, "reason": reason,
+                    "blocker": 600, "ack": "Can't schedule #181 — blocker #600 …"}
+            self.assertEqual(apply_actions.render_skip_ack(skip), skip["ack"])
+
 
 if __name__ == "__main__":
     unittest.main()

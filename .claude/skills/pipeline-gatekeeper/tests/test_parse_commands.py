@@ -13,6 +13,9 @@ import unittest
 
 SCRIPT = os.path.join(os.path.dirname(__file__), os.pardir, "parse_commands.py")
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir))
+import parse_commands  # noqa: E402
+
 
 def run(payload):
     proc = subprocess.run(
@@ -54,6 +57,156 @@ def payload(issues, **kw):
 
 def comment(body, author="derekwinters", cid=1, processed=False):
     return {"id": cid, "author": author, "body": body, "processed": processed}
+
+
+def blocker(number, kind="blocked-by", state="open", milestone=None):
+    return {"number": number, "kind": kind, "state": state,
+            "milestone": milestone}
+
+
+# The live version-scheme milestones the #212 order gate reasons about.
+VERSION_MILESTONES = ["v0.4", "v1.0", "v1.1", "v2.0", "Direct Involvement Needed"]
+
+
+class TestMilestoneOrder(unittest.TestCase):
+    """`milestone_order()` parses vMAJOR.MINOR titles into a sortable key and
+    treats any non-version title as unordered (#212)."""
+
+    def test_version_titles_sort_in_release_order(self):
+        order = parse_commands.milestone_order
+        self.assertLess(order("v0.4"), order("v1.0"))
+        self.assertLess(order("v1.0"), order("v1.1"))
+        self.assertLess(order("v1.1"), order("v2.0"))
+
+    def test_non_version_titles_are_unordered(self):
+        self.assertIsNone(parse_commands.milestone_order("Direct Involvement Needed"))
+        self.assertIsNone(parse_commands.milestone_order("03 - Dogs & Conversations"))
+        self.assertIsNone(parse_commands.milestone_order(None))
+        self.assertIsNone(parse_commands.milestone_order(""))
+
+
+class TestBlockerMilestoneGate(unittest.TestCase):
+    """#212: on /approve or /milestone the resulting milestone for A must not
+    precede any OPEN blocker B's milestone, and every open blocker must itself
+    be scheduled. A violation is REFUSED — A untouched, a `skipped` record with
+    the conflict + an ack naming #A and #B, no auto-bump."""
+
+    def actions_for(self, issue_number, out):
+        return [a for a in out["actions"] if a["issue"] == issue_number]
+
+    def skips_for(self, comment_id, out):
+        return [s for s in out["skipped"] if s.get("comment_id") == comment_id]
+
+    def test_snapshot_defaults_safely_without_blockers_or_milestone(self):
+        # Round-trip: an issue with neither `blockers` nor a set milestone still
+        # parses; a bare /admit is unaffected by the new fields.
+        out = run(payload([
+            base_issue(number=180, comments=[comment("/admit", cid=1)]),
+        ], milestones=VERSION_MILESTONES))
+        a = self.actions_for(180, out)[0]
+        self.assertIn("ai-triage", a["add_labels"])
+
+    def test_approve_with_open_unscheduled_blocker_is_refused(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v1.0",
+                       blockers=[blocker(500, milestone=None)],
+                       comments=[comment("/approve", cid=7)]),
+        ], milestones=VERSION_MILESTONES))
+        self.assertEqual(self.actions_for(181, out), [])
+        skips = self.skips_for(7, out)
+        self.assertTrue(any(s.get("reason") == "blocker-unscheduled"
+                            for s in skips))
+        s = [s for s in skips if s.get("reason") == "blocker-unscheduled"][0]
+        self.assertEqual(s.get("issue"), 181)
+        self.assertEqual(s.get("blocker"), 500)
+        self.assertIn("#181", s.get("ack", ""))
+        self.assertIn("#500", s.get("ack", ""))
+
+    def test_approve_earlier_than_open_blocker_is_refused(self):
+        # A resolves to v0.4 (its milestone field); blocker B is open in v1.0.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v0.4",
+                       blockers=[blocker(600, milestone="v1.0")],
+                       comments=[comment("/approve\n/milestone v0.4", cid=8)]),
+        ], milestones=VERSION_MILESTONES))
+        self.assertEqual(self.actions_for(181, out), [])
+        skips = self.skips_for(8, out)
+        s = [s for s in skips if s.get("reason") == "blocker-inversion"]
+        self.assertEqual(len(s), 1)
+        ack = s[0].get("ack", "")
+        self.assertIn("#181", ack)
+        self.assertIn("#600", ack)
+        self.assertIn("v1.0", ack)
+
+    def test_milestone_earlier_than_open_blocker_is_refused(self):
+        # A bare /milestone placing A before an open blocker is refused too —
+        # no set_milestone applied.
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v1.1",
+                       blockers=[blocker(600, milestone="v1.0")],
+                       comments=[comment("/milestone v0.4", cid=9)]),
+        ], milestones=VERSION_MILESTONES))
+        self.assertEqual(self.actions_for(181, out), [])
+        skips = self.skips_for(9, out)
+        self.assertTrue(any(s.get("reason") == "blocker-inversion"
+                            for s in skips))
+
+    def test_equal_milestone_is_allowed(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v1.0",
+                       blockers=[blocker(600, milestone="v1.0")],
+                       comments=[comment("/approve", cid=10)]),
+        ], milestones=VERSION_MILESTONES))
+        a = self.actions_for(181, out)[0]
+        self.assertIn("ready-for-work", a["add_labels"])
+
+    def test_later_milestone_is_allowed(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v1.1",
+                       blockers=[blocker(600, milestone="v1.0")],
+                       comments=[comment("/approve", cid=11)]),
+        ], milestones=VERSION_MILESTONES))
+        a = self.actions_for(181, out)[0]
+        self.assertIn("ready-for-work", a["add_labels"])
+
+    def test_closed_blocker_is_ignored(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v0.4",
+                       blockers=[blocker(600, state="closed", milestone="v1.0")],
+                       comments=[comment("/approve", cid=12)]),
+        ], milestones=VERSION_MILESTONES))
+        a = self.actions_for(181, out)[0]
+        self.assertIn("ready-for-work", a["add_labels"])
+
+    def test_soft_depends_on_uses_the_same_refuse_rule(self):
+        out = run(payload([
+            base_issue(number=181, labels=["pending-approval"],
+                       milestone="v0.4",
+                       blockers=[blocker(600, kind="depends-on",
+                                         milestone="v1.0")],
+                       comments=[comment("/approve", cid=13)]),
+        ], milestones=VERSION_MILESTONES))
+        self.assertEqual(self.actions_for(181, out), [])
+        self.assertTrue(any(s.get("reason") == "blocker-inversion"
+                            for s in self.skips_for(13, out)))
+
+    def test_non_milestone_command_unaffected_by_blocker_gate(self):
+        # /park still parks even with a would-be-inverting open blocker — the
+        # gate is scoped to /approve and /milestone only.
+        out = run(payload([
+            base_issue(number=182, labels=["pending-approval"],
+                       milestone="v0.4",
+                       blockers=[blocker(600, milestone="v1.0")],
+                       comments=[comment("/park", cid=14)]),
+        ], milestones=VERSION_MILESTONES))
+        a = self.actions_for(182, out)[0]
+        self.assertIn("parked", a["add_labels"])
 
 
 class TestParseCommands(unittest.TestCase):
