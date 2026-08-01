@@ -111,6 +111,31 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(panel.AboutTabRect.sizeDelta.y, Is.EqualTo(SettingsPanel.TabHeightPx));
         }
 
+        // --- #467: the tab-to-tab vertical gap and the tab-label stretch ---
+
+        [Test]
+        public void DebugTab_SitsOneTabAndGapBelowTheAboutTab()
+        {
+            Assert.That(panel.DebugTabRect.anchoredPosition.y,
+                Is.EqualTo(panel.AboutTabRect.anchoredPosition.y
+                    - (SettingsPanel.TabHeightPx + SettingsPanel.TabGapPx)),
+                "the Debug tab pill stacks exactly one tab-height-and-gap below About (#467)");
+        }
+
+        [Test]
+        public void SidebarTabLabels_AreStretchedToTheirTab_NotTheZeroSizeDefault()
+        {
+            foreach (var tab in new[] { panel.AboutTabRect, panel.DebugTabRect })
+            {
+                var label = tab.Find("Label") as RectTransform;
+                Assert.That(label, Is.Not.Null, tab.name + " has no Label child");
+                Assert.That(label.anchorMin, Is.EqualTo(Vector2.zero),
+                    tab.name + " label must stretch to the full tab, not the un-stretched (0,0) default (#467)");
+                Assert.That(label.anchorMax, Is.EqualTo(Vector2.one),
+                    tab.name + " label must stretch to the full tab, not the un-stretched (0,0) default (#467)");
+            }
+        }
+
         [Test]
         public void CloseButton_IsTheWireframeSizeAndAnchoredTopRight()
         {
