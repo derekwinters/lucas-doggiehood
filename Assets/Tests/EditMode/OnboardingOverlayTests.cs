@@ -397,6 +397,112 @@ namespace Doggiehood.Unity.EditModeTests
             overlay.Poll();
         }
 
+        [Test]
+        public void GestureCoach_LayoutConstants_MatchTheApprovedWireframe()
+        {
+            // #330 gesture-arrow coach constants (docs/specs/ui/onboarding-overlay.md).
+            // No inline geometry literals (#161).
+            Assert.That(OnboardingOverlay.GestureCenterYPx, Is.EqualTo(480f), "vertical anchor");
+            Assert.That(OnboardingOverlay.ArrowLengthPx, Is.EqualTo(200f), "arrow shaft + head");
+            Assert.That(OnboardingOverlay.ArrowThicknessPx, Is.EqualTo(22f), "shaft width");
+            Assert.That(OnboardingOverlay.ArrowHeadSizePx, Is.EqualTo(56f), "arrowhead span");
+            Assert.That(OnboardingOverlay.ArrowOutlineThicknessPx, Is.EqualTo(6f), "ink outline");
+            Assert.That(OnboardingOverlay.PanTravelPx, Is.EqualTo(260f), "pan sweep distance");
+            Assert.That(OnboardingOverlay.ZoomNearOffsetPx, Is.EqualTo(70f), "zoom arrows closest");
+            Assert.That(OnboardingOverlay.ZoomFarOffsetPx, Is.EqualTo(220f), "zoom arrows farthest");
+            Assert.That(OnboardingOverlay.ArrowFillOpacity, Is.EqualTo(0.92f).Within(0.0001f), "fill opacity");
+        }
+
+        [Test]
+        public void GestureFill_IsGold_DistinctFromTheCoachBarChrome()
+        {
+            // Decision 1 in the approved proposal: Gold fill, not Cream/Leaf, so
+            // the gesture cue reads as an action prompt rather than decoration.
+            AssertHex(OnboardingOverlay.GestureFillColor, 0xFF, 0xC2, 0x3C, "Gold gesture fill");
+        }
+
+        [Test]
+        public void ComputePanArrowCenter_SweepsAlongEachAxis_FromTheGestureAnchor()
+        {
+            // At the 1920x1200 reference the scale is 1: anchor is screen-center-x
+            // (960) at GestureCenterYPx (480); the arrow center sweeps +/- half of
+            // PanTravelPx (260 -> +/-130) along its axis over the beat's progress.
+            const float w = 1920f, h = 1200f;
+            const float anchorX = w / 2f;      // 960
+            const float anchorY = 480f;        // GestureCenterYPx at scale 1
+            const float half = 260f / 2f;      // 130
+
+            var lr0 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.LeftToRight, 0f);
+            Assert.That(lr0.x, Is.EqualTo(anchorX - half).Within(0.01f));
+            Assert.That(lr0.y, Is.EqualTo(anchorY).Within(0.01f));
+            var lr1 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.LeftToRight, 1f);
+            Assert.That(lr1.x, Is.EqualTo(anchorX + half).Within(0.01f));
+
+            var rl0 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.RightToLeft, 0f);
+            Assert.That(rl0.x, Is.EqualTo(anchorX + half).Within(0.01f), "right-to-left starts on the right");
+            var rl1 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.RightToLeft, 1f);
+            Assert.That(rl1.x, Is.EqualTo(anchorX - half).Within(0.01f));
+
+            var ud0 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.UpToDown, 0f);
+            Assert.That(ud0.x, Is.EqualTo(anchorX).Within(0.01f), "vertical beats keep x on the anchor");
+            Assert.That(ud0.y, Is.EqualTo(anchorY - half).Within(0.01f), "up-to-down starts above");
+            var ud1 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.UpToDown, 1f);
+            Assert.That(ud1.y, Is.EqualTo(anchorY + half).Within(0.01f));
+
+            var du0 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.DownToUp, 0f);
+            Assert.That(du0.y, Is.EqualTo(anchorY + half).Within(0.01f), "down-to-up starts below");
+            var du1 = OnboardingOverlay.ComputePanArrowCenter(w, h, GestureBeat.DownToUp, 1f);
+            Assert.That(du1.y, Is.EqualTo(anchorY - half).Within(0.01f));
+        }
+
+        [Test]
+        public void ComputeZoomArrowOffset_SpreadsOutOnZoomIn_AndClosesOnZoomOut()
+        {
+            const float h = 1200f; // scale 1 at the reference height
+            Assert.That(OnboardingOverlay.ComputeZoomArrowOffsetPx(h, GestureBeat.ZoomIn, 0f),
+                Is.EqualTo(70f).Within(0.01f), "zoom-in starts near the anchor");
+            Assert.That(OnboardingOverlay.ComputeZoomArrowOffsetPx(h, GestureBeat.ZoomIn, 1f),
+                Is.EqualTo(220f).Within(0.01f), "zoom-in spreads far apart");
+            Assert.That(OnboardingOverlay.ComputeZoomArrowOffsetPx(h, GestureBeat.ZoomOut, 0f),
+                Is.EqualTo(220f).Within(0.01f), "zoom-out starts far apart");
+            Assert.That(OnboardingOverlay.ComputeZoomArrowOffsetPx(h, GestureBeat.ZoomOut, 1f),
+                Is.EqualTo(70f).Within(0.01f), "zoom-out closes toward the anchor");
+        }
+
+        [Test]
+        public void ComputeZoomArrowCenters_AreSymmetricAboutTheAnchor()
+        {
+            const float w = 1920f, h = 1200f;
+            const float anchorX = w / 2f;
+            const float anchorY = 480f;
+            var pair = OnboardingOverlay.ComputeZoomArrowCenters(w, h, GestureBeat.ZoomIn, 1f);
+            Assert.That(pair.Left.x, Is.EqualTo(anchorX - 220f).Within(0.01f), "left arrow at -far");
+            Assert.That(pair.Right.x, Is.EqualTo(anchorX + 220f).Within(0.01f), "right arrow at +far");
+            Assert.That(pair.Left.y, Is.EqualTo(anchorY).Within(0.01f));
+            Assert.That(pair.Right.y, Is.EqualTo(anchorY).Within(0.01f));
+        }
+
+        [Test]
+        public void ShouldDrawGesture_OnlyDuringPanAndZoom_AndHidesTheInstantTheRealActionRegisters()
+        {
+            // #330: the arrow coach is scoped to the two movement steps and hides
+            // the instant AdvanceCameraSteps registers the real pan/zoom — the same
+            // real-action gate that advances the coach bar.
+            overlay.Init(state, rig, presenter);
+            Assert.That(overlay.ShouldDrawGesture, Is.True, "Pan: pan arrows show");
+
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Zoom));
+            Assert.That(overlay.ShouldDrawGesture, Is.True, "Zoom: zoom arrows show");
+
+            rig.HandlePinch(60f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.TapBubble));
+            Assert.That(overlay.ShouldDrawGesture, Is.False,
+                "the arrows vanish the instant the real zoom advances past the movement steps");
+        }
+
         private static void AssertHex(Color color, byte r, byte g, byte b, string what)
         {
             var c32 = (Color32)color;
