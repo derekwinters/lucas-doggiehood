@@ -800,7 +800,29 @@ namespace Doggiehood.Unity
         /// </summary>
         public static void BuildYardLandscaping(Transform parent, HouseLot lot)
         {
-            var picks = YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList();
+            RenderYardPicks(parent, lot,
+                YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList());
+        }
+
+        /// <summary>
+        /// Renders one lot's yard trees clipped against its own tile's road
+        /// (#455): the tile-aware form used for zone lots, whose local
+        /// cul-de-sac/straight road is otherwise invisible to the yard road
+        /// clip (it is a <see cref="Doggiehood.Core.World.TileRoadSegment"/>,
+        /// never a <c>Road</c>) so trees landed in the paved strip. The starting
+        /// FourWay lots keep using <see cref="BuildYardLandscaping(Transform, HouseLot)"/>
+        /// — its picks are byte-identical, since a FourWay tile's arms are
+        /// coincident with <c>NeighborhoodLayout.Roads</c>.
+        /// </summary>
+        public static void BuildYardLandscaping(Transform parent, HouseLot lot, TileType tileType)
+        {
+            RenderYardPicks(parent, lot,
+                YardLandscaping.FrontTreesFor(lot, tileType)
+                    .Concat(YardLandscaping.BackTreesFor(lot, tileType)).ToList());
+        }
+
+        private static void RenderYardPicks(Transform parent, HouseLot lot, List<YardTreePlacement> picks)
+        {
             if (picks.Count == 0)
             {
                 return;
@@ -814,6 +836,24 @@ namespace Doggiehood.Unity
             {
                 BuildYardTree(container.transform, picks[i], i);
             }
+        }
+
+        /// <summary>The tile type the lot sits on, resolved from the zone that
+        /// owns it (#455) — the zone's <see cref="ZoneTilePlacement"/> at the
+        /// lot's tile coordinate. Used so a zone lot's yard trees clip against
+        /// its own tile's road.</summary>
+        private static TileType TileTypeForLot(Zone zone, HouseLot lot)
+        {
+            var coordinate = LotBounds.NearestTileCoordinate(lot.Position);
+            foreach (var placement in zone.TilePlacements)
+            {
+                if (placement.Coordinate.Equals(coordinate))
+                {
+                    return placement.Type;
+                }
+            }
+
+            return TileType.FourWay;
         }
 
         /// <summary>Resources load key for a YardTreeKind's kit model.</summary>
@@ -888,7 +928,7 @@ namespace Doggiehood.Unity
                         // (YardLandscaping), so rendering them now and NOT
                         // re-rendering them when the house is built (see
                         // ExpansionDirector.ConfirmBuild) leaves no duplicates.
-                        BuildYardLandscaping(parent, lot);
+                        BuildYardLandscaping(parent, lot, TileTypeForLot(zone, lot));
                     }
                 }
             }
@@ -974,7 +1014,7 @@ namespace Doggiehood.Unity
                     // #434: pre-place the lot's yard trees at unlock too, so a
                     // freshly unlocked zone's empty lots show trees + foundation
                     // — matching the initial-build path (BuildEmptyLots).
-                    BuildYardLandscaping(root, lot);
+                    BuildYardLandscaping(root, lot, TileTypeForLot(zone, lot));
                 }
             }
 
