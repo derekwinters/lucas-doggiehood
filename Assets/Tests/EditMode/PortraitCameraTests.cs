@@ -33,16 +33,22 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void Capture_RendersASuppliedModel_IntoARenderTexture_OnRequest()
+        public void Capture_AllocatesAndAssignsARenderTexture_OnRequest()
         {
+            // Capture always allocates+returns the snapshot texture and counts
+            // one one-shot capture; the actual GPU Camera.Render() is guarded
+            // inside Capture on graphics-device availability, so this holds on
+            // the headless CI agent (graphicsDeviceType == Null) without ever
+            // reaching a Render() that would SIGSEGV there. On a real device the
+            // same call renders the model into that texture.
             var subject = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
             var texture = rig.Capture(subject);
 
-            Assert.That(texture, Is.Not.Null, "Capture returns a rendered RenderTexture");
+            Assert.That(texture, Is.Not.Null, "Capture returns the snapshot RenderTexture");
             Assert.That(texture.width, Is.EqualTo(PortraitCamera.TextureSizePx));
             Assert.That(texture.height, Is.EqualTo(PortraitCamera.TextureSizePx));
-            Assert.That(rig.RenderCount, Is.EqualTo(1), "exactly one render happened, on request");
+            Assert.That(rig.RenderCount, Is.EqualTo(1), "exactly one one-shot capture, on request");
 
             texture.Release();
             Object.DestroyImmediate(texture);

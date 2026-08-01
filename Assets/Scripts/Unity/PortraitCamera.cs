@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Doggiehood.Unity
 {
@@ -94,25 +95,38 @@ namespace Doggiehood.Unity
         /// <summary>Renders <paramref name="subject"/> once into a fresh
         /// <see cref="RenderTexture"/> and returns it. The subject is staged on
         /// the portrait layer, framed, rendered, then destroyed — so the caller
-        /// receives only the pixels. Each call allocates a new texture; the
-        /// caller owns releasing it.</summary>
+        /// receives only the pixels. Each call allocates a new texture and
+        /// counts one one-shot capture; the caller owns releasing the texture.
+        ///
+        /// The GPU render is guarded on graphics-device availability: under a
+        /// headless runner (<see cref="SystemInfo.graphicsDeviceType"/> ==
+        /// <see cref="GraphicsDeviceType.Null"/>, e.g. CI's
+        /// <c>-batchmode -nographics</c>) <see cref="Camera.Render"/> would
+        /// dereference a null device and SIGSEGV, so it is skipped — the texture
+        /// is still allocated and assigned and the subject still staged/destroyed,
+        /// keeping the RawImage wiring and one-shot semantics intact. A real
+        /// device (production, the editor) renders exactly as designed.</summary>
         public RenderTexture Capture(GameObject subject)
         {
-            subject.transform.SetParent(stage, false);
-            subject.transform.localPosition = Vector3.zero;
-            subject.transform.localRotation = Quaternion.identity;
-            SetLayerRecursively(subject, PortraitLayer);
-
-            FrameSubject(ComputeBounds(subject));
-
             var texture = new RenderTexture(TextureSizePx, TextureSizePx, DepthBufferBits);
-            var previousTarget = cam.targetTexture;
-            cam.targetTexture = texture;
-            cam.Render();
-            RenderCount++;
-            cam.targetTexture = previousTarget;
 
-            DestroyObject(subject);
+            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+            {
+                subject.transform.SetParent(stage, false);
+                subject.transform.localPosition = Vector3.zero;
+                subject.transform.localRotation = Quaternion.identity;
+                SetLayerRecursively(subject, PortraitLayer);
+
+                FrameSubject(ComputeBounds(subject));
+
+                var previousTarget = cam.targetTexture;
+                cam.targetTexture = texture;
+                cam.Render();
+                cam.targetTexture = previousTarget;
+            }
+
+            RenderCount++;
+            DestroySafely(subject);
             return texture;
         }
 
@@ -153,7 +167,7 @@ namespace Doggiehood.Unity
             }
         }
 
-        private static void DestroyObject(Object target)
+        private static void DestroySafely(Object target)
         {
             if (Application.isPlaying)
             {
@@ -169,7 +183,7 @@ namespace Doggiehood.Unity
         {
             if (stage != null)
             {
-                DestroyObject(stage.gameObject);
+                DestroySafely(stage.gameObject);
             }
         }
     }
