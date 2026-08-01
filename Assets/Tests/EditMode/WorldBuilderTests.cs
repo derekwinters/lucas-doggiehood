@@ -293,13 +293,20 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(WorldBuilder.EmptyLotFoundationSlabHeight, Is.GreaterThan(0.2f),
                 "a foundation slab reads as raised, thicker than the old flat pad");
 
-            // #300 amendment (Derek's option 3): the slab keeps the fixed
-            // marker footprint — it is NOT sized to HousePlacement.HouseFootprint
-            // (which throws for zone lots, id >= 5, with no assigned style).
+            // #434 (reversing the #300 option-3 fixed-marker decision): the slab
+            // is now sized to the predetermined house's L1 mesh footprint
+            // (HousePlacement.HouseFootprint — zone-safe since #414), so the
+            // empty lot reads as the plot of the house that will stand on it,
+            // not a bare 3m box.
+            var footprint = HousePlacement.HouseFootprint(lot);
             Assert.That(marker.transform.localScale.x,
-                Is.EqualTo(WorldBuilder.EmptyLotMarkerFootprint).Within(0.001f));
+                Is.EqualTo(footprint.Width).Within(0.001f));
             Assert.That(marker.transform.localScale.z,
-                Is.EqualTo(WorldBuilder.EmptyLotMarkerFootprint).Within(0.001f));
+                Is.EqualTo(footprint.Depth).Within(0.001f));
+            Assert.That(marker.transform.position.x,
+                Is.EqualTo(footprint.Center.X).Within(0.001f), "the slab centres on the house footprint");
+            Assert.That(marker.transform.position.z,
+                Is.EqualTo(footprint.Center.Z).Within(0.001f));
 
             // Base sits on the ground plane (bottom at y = 0).
             var bottom = marker.transform.position.y - marker.transform.localScale.y / 2f;
@@ -333,6 +340,54 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(view.HouseId, Is.EqualTo(lot.HouseId));
 
             UnityEngine.Object.DestroyImmediate(container);
+        }
+
+        [Test]
+        public void UnlockedButUnbuiltLot_RendersItsYardTrees_AlongsideTheFoundation()
+        {
+            // #434: an empty lot is no longer a bare slab on grass — it renders
+            // the predetermined house's yard trees at unlock, so the plot reads
+            // as a real home-to-be. The trees come from Core's deterministic
+            // YardLandscaping (keyed on the lot alone), rendered at the empty-lot
+            // render sites via the existing BuildYardLandscaping(lot) helper.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+            state.TryUnlockNextZone();
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            var zone = state.UnlockedZones[0];
+            var treedLot = zone.Lots.First(lot =>
+                YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).Any());
+
+            Assert.That(root.transform.Find(WorldBuilder.YardLandscapingNamePrefix + treedLot.HouseId),
+                Is.Not.Null, "an unlocked-but-unbuilt lot renders its yard trees");
+            // The empty-lot foundation is still there too (marker + trees).
+            Assert.That(root.GetComponentsInChildren<EmptyLotView>().Select(v => v.HouseId),
+                Does.Contain(treedLot.HouseId), "the foundation slab renders alongside the trees");
+        }
+
+        [Test]
+        public void EmptyLotFoundations_AreSizedToTheirHouseFootprint_OnAFullWorldBuild()
+        {
+            // #434: the foundation-slab sizing (HousePlacement.HouseFootprint)
+            // holds through the full BuildEmptyLots loop, not only the single-lot
+            // BuildEmptyLot helper.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(100);
+            state.TryUnlockNextZone();
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            var lot = state.UnlockedZones[0].Lots[0];
+            var footprint = HousePlacement.HouseFootprint(lot);
+            var slab = root.transform.Find(WorldBuilder.EmptyLotNamePrefix + lot.HouseId);
+
+            Assert.That(slab, Is.Not.Null);
+            Assert.That(slab.localScale.x, Is.EqualTo(footprint.Width).Within(0.001f));
+            Assert.That(slab.localScale.z, Is.EqualTo(footprint.Depth).Within(0.001f));
         }
 
         [Test]

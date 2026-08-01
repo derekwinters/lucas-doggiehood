@@ -68,17 +68,6 @@ namespace Doggiehood.Unity
         /// unlocked tile's road reads at the same height.</summary>
         private const float ZoneRoadThickness = 0.1f;
 
-        /// <summary>Graybox marker footprint (local X/Z) for an empty,
-        /// buildable lot (#57) — sized just to read as a "house goes here"
-        /// slab within the lot's own space. Public since #300 so the
-        /// EditMode slab test can pin that the raised slab keeps THIS fixed
-        /// footprint rather than being sized to
-        /// <c>HousePlacement.HouseFootprint</c> — that per-house footprint
-        /// throws for zone lots (id >= 5, no assigned style), which is
-        /// exactly the only kind of lot BuildEmptyLot ever runs on (Derek's
-        /// #300 option-3 decision).</summary>
-        public const float EmptyLotMarkerFootprint = 3f;
-
         /// <summary>Thickness of the empty-lot "foundation" slab (#300 (B),
         /// Derek): the marker is a low RAISED graybox slab that reads as "a
         /// house goes here", not the old thin flat tap-pad (0.2m). Low
@@ -97,7 +86,7 @@ namespace Doggiehood.Unity
         /// marker (#178): the staged icon is 100x100px at
         /// TintedIcon.SpritePixelsPerUnit (100 px/unit), so a default,
         /// unscaled sprite is 1m wide — this scales it up to a size that
-        /// reads clearly next to the EmptyLotMarkerFootprint-sized lot
+        /// reads clearly next to the house-sized empty-lot foundation
         /// markers.</summary>
         private const float ExpansionIndicatorWorldSize = 4f;
 
@@ -893,6 +882,13 @@ namespace Doggiehood.Unity
                     if (state.IsLotBuildable(lot.HouseId))
                     {
                         BuildEmptyLot(parent, lot);
+                        // #434: an unlocked-but-unbuilt lot also renders the
+                        // predetermined house's yard trees, so the plot reads as
+                        // a real home-to-be. The trees are deterministic per lot
+                        // (YardLandscaping), so rendering them now and NOT
+                        // re-rendering them when the house is built (see
+                        // ExpansionDirector.ConfirmBuild) leaves no duplicates.
+                        BuildYardLandscaping(parent, lot);
                     }
                 }
             }
@@ -900,21 +896,29 @@ namespace Doggiehood.Unity
 
         /// <summary>
         /// Builds one graybox marker for an empty, buildable lot: a low
-        /// raised "foundation" slab (#300 (B)) at the lot's Core position
-        /// with an EmptyLotView tap target, its base flush on the ground
-        /// plane. Public so ExpansionDirector's EditMode tests can build a
-        /// single marker directly, same pattern as BuildHouse. The slab
-        /// keeps the fixed <see cref="EmptyLotMarkerFootprint"/> — it is NOT
-        /// sized to HousePlacement.HouseFootprint, which throws for the zone
-        /// lots this only ever runs on (Derek's #300 option-3 decision).
+        /// raised "foundation" slab (#300 (B)) with an EmptyLotView tap target,
+        /// its base flush on the ground plane. Public so ExpansionDirector's
+        /// EditMode tests can build a single marker directly, same pattern as
+        /// BuildHouse.
+        ///
+        /// #434 (reversing the #300 option-3 fixed-marker decision): the slab is
+        /// sized to the PREDETERMINED house's level-1 mesh footprint
+        /// (<see cref="HousePlacement.HouseFootprint"/> — zone-safe since #414,
+        /// which resolves a zone lot's rolled ladder via
+        /// <see cref="HouseModelCatalog.ForHouse"/> instead of throwing) and
+        /// centred on that footprint, so the empty lot reads as the plot of the
+        /// house that will stand on it rather than a fixed 3m box.
         /// </summary>
         public static GameObject BuildEmptyLot(Transform parent, HouseLot lot)
         {
+            var footprint = HousePlacement.HouseFootprint(lot);
+
             var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             marker.name = EmptyLotNamePrefix + lot.HouseId;
             marker.transform.SetParent(parent);
-            marker.transform.localScale = new Vector3(EmptyLotMarkerFootprint, EmptyLotFoundationSlabHeight, EmptyLotMarkerFootprint);
-            marker.transform.position = new Vector3(lot.Position.X, EmptyLotFoundationSlabHeight / 2f, lot.Position.Z);
+            marker.transform.localScale = new Vector3(footprint.Width, EmptyLotFoundationSlabHeight, footprint.Depth);
+            marker.transform.position = new Vector3(
+                footprint.Center.X, EmptyLotFoundationSlabHeight / 2f, footprint.Center.Z);
             Paint(marker, Palette.EmptyLotMarkerHex);
 
             var view = marker.AddComponent<EmptyLotView>();
@@ -967,6 +971,10 @@ namespace Doggiehood.Unity
                 if (state.IsLotBuildable(lot.HouseId))
                 {
                     BuildEmptyLot(root, lot);
+                    // #434: pre-place the lot's yard trees at unlock too, so a
+                    // freshly unlocked zone's empty lots show trees + foundation
+                    // — matching the initial-build path (BuildEmptyLots).
+                    BuildYardLandscaping(root, lot);
                 }
             }
 

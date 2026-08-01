@@ -35,6 +35,17 @@ namespace Doggiehood.Core.World
         private readonly List<Dog> dogs;
         private readonly List<Zone> unlockedZones = new List<Zone>();
 
+        /// <summary>#434: the <see cref="HouseVariant"/> rolled and locked in for
+        /// each zone lot the moment its zone unlocks (its lots first appear),
+        /// keyed by house id — so an empty lot already knows the house that will
+        /// stand on it (its footprint, its trees) before it is built. Populated
+        /// by <see cref="TryUnlockNextZone"/>, persisted through
+        /// <see cref="SaveCodec"/>, and read (with a deterministic fallback) by
+        /// <see cref="TryBuildHouse"/>. A built lot keeps its entry — the built
+        /// <see cref="House"/> is the source of truth from then on, so the save
+        /// emits it as a house= line rather than an unbuilt lotvariant= line.</summary>
+        private readonly Dictionary<int, HouseVariant> assignedLotVariants = new Dictionary<int, HouseVariant>();
+
         /// <summary>#295: the coordinates unlocked one-at-a-time through the
         /// player-choice frontier (<see cref="TryUnlockTile"/>), in unlock
         /// order. Distinct from the legacy <see cref="unlockedZones"/> group
@@ -145,6 +156,17 @@ namespace Doggiehood.Core.World
         public IReadOnlyList<TileCoordinate> UnlockedTiles
         {
             get { return unlockedTiles; }
+        }
+
+        /// <summary>#434: the pre-assigned <see cref="HouseVariant"/> for each
+        /// zone lot, keyed by house id — rolled and locked in at unlock so an
+        /// empty lot reads as the plot of its predetermined house. Persisted
+        /// (SaveCodec) for unbuilt lots; a built lot's variant lives on its
+        /// <see cref="House"/> instead. Empty for a game with no zone
+        /// unlocked.</summary>
+        public IReadOnlyDictionary<int, HouseVariant> AssignedLotVariants
+        {
+            get { return assignedLotVariants; }
         }
 
         /// <summary>Permanent world changes from completed quests (#27).</summary>
@@ -365,9 +387,38 @@ namespace Doggiehood.Core.World
             var zone = ZoneCatalog.Zones[zoneNumber - 1];
             zone.PlaceOnto(Map);
             unlockedZones.Add(zone);
+            AssignZoneLotVariants(zone);
             InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
             return true;
+        }
+
+        /// <summary>#434: rolls and locks in each of a freshly unlocked zone's
+        /// lot variants (ladder + tint) the moment the lots appear, so the empty
+        /// lot already knows the house that will stand on it. The roll is the
+        /// same deterministic <see cref="HouseVariantAssignment.ForHouse"/> the
+        /// build path used to invoke lazily (#299) — moving it here (#434) only
+        /// changes WHEN it happens, not the value. Every zone lot id is a zone
+        /// house id (>= <see cref="HouseVariantAssignment.FirstZoneHouseId"/>),
+        /// so none is rejected.</summary>
+        private void AssignZoneLotVariants(Zone zone)
+        {
+            foreach (var lot in zone.Lots)
+            {
+                assignedLotVariants[lot.HouseId] = HouseVariantAssignment.ForHouse(lot.HouseId);
+            }
+        }
+
+        /// <summary>#434: restores a persisted lot-variant assignment on load —
+        /// records the <paramref name="variant"/> for an unbuilt zone lot so
+        /// <see cref="TryBuildHouse"/> reads the SAVED value rather than
+        /// re-rolling (future-proofing against an RNG or palette retune). The
+        /// parallel of <see cref="RestoreBuiltHouse"/> for a lot that has an
+        /// assignment but no house yet; a legacy save with no such line simply
+        /// falls back to the deterministic roll at build.</summary>
+        public void RestoreAssignedLotVariant(int houseId, HouseVariant variant)
+        {
+            assignedLotVariants[houseId] = variant;
         }
 
         /// <summary>Whether <paramref name="houseId"/> (a <see cref="HouseLot"/>
@@ -406,11 +457,16 @@ namespace Doggiehood.Core.World
                 return false;
             }
 
-            // #299: a zone-built house rolls its art variant (ladder + tint)
-            // once, here — assign-once, deterministic per id, and persisted
-            // (SaveCodec) so it survives relaunch and its L1->L4 upgrades.
-            houses.Add(new House(houseId, lot.Quadrant,
-                variant: HouseVariantAssignment.ForHouse(houseId)));
+            // #434: the art variant (ladder + tint) was already rolled and
+            // persisted when the zone unlocked (AssignedLotVariants), so the
+            // build reads that pre-assignment rather than re-rolling. A legacy
+            // save whose zone predates #434 has no persisted entry; the
+            // deterministic #299 roll is the fallback — bit-identical, since it
+            // is a pure function of the house id.
+            var variant = assignedLotVariants.TryGetValue(houseId, out var assigned)
+                ? assigned
+                : HouseVariantAssignment.ForHouse(houseId);
+            houses.Add(new House(houseId, lot.Quadrant, variant: variant));
             InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.BuildHouse);
             return true;
