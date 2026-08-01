@@ -1103,6 +1103,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#gesture-arrow-coach-330" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gesture-arrow coach (#330)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1687,6 +1696,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#gesture-arrow-coach-330" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gesture-arrow coach (#330)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1849,6 +1867,108 @@
 </table>
 </li>
 </ul>
+<h2 id="gesture-arrow-coach-330">Gesture-arrow coach (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330">#330</a>)<a class="headerlink" href="#gesture-arrow-coach-330" title="Permanent link">&para;</a></h2>
+<p><em>Approved: Derek, 2026-07-31 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330#issuecomment-5148157973"><code>/approve</code> on #330</a>). </em><em>Status: distilled</em><em> (was Proposed) — implemented in the same PR.</em></p>
+<p>Because this is a kids' game, the two <strong>movement</strong> steps <em>show</em> the gesture, not just tell it: a looping directional-arrow coach layers over the map during the <strong>Pan</strong> and <strong>Zoom</strong> steps only (the <code>TapBubble</code>/<code>CompleteQuest</code> steps are unchanged). The arrows are a non-blocking visual coach — Candy Cottage chevron-arrows with a thick Ink outline and <strong>Gold</strong> fill (a color the coach bar's own chrome does not use, so it reads as "look here, do this") — drawn procedurally via the same <code>CandyChrome</code> IMGUI routines as the rest of the overlay. There is <strong>no new rendering path</strong> and no separate soft-lock: the arrows draw only while <code>OnboardingOverlay.ShouldDrawGesture</code> is true (the sequence is on <code>Pan</code>/<code>Zoom</code>) and vanish the instant <code>OnboardingOverlay.AdvanceCameraSteps</code> registers the real pan/zoom, the same real-action gate that advances the coach bar.</p>
+<ul>
+<li><strong>Pan step — 4-beat loop.</strong> A single directional arrow cycles <strong>left→right → right→left → up→down → down→up</strong>, its center sweeping <code>PanTravelPx</code> along the beat's axis over <code>BeatDurationSec</code>, holding <code>BeatPauseSec</code> between beats, then repeating.</li>
+<li><strong>Zoom step — 2-beat loop.</strong> A symmetric pair of arrows either side of the anchor cycles <strong>zoom in</strong> (start near the center at <code>ZoomNearOffsetPx</code> pointing outward, spread to <code>ZoomFarOffsetPx</code>) and <strong>zoom out</strong> (start far at <code>ZoomFarOffsetPx</code> pointing inward, close to <code>ZoomNearOffsetPx</code>), on the same beat timing.</li>
+<li><strong>Placed generously.</strong> The group is anchored at screen-center-x, <code>GestureCenterYPx</code> down from the top — clear of the bottom coach bar and the HUD. During <code>Pan</code>/<code>Zoom</code> the target dog's speech bubble is suppressed (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>), so no interactive element sits under the arrows.</li>
+</ul>
+<p><strong>Regions</strong></p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Contains</th>
+<th>Shared component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pan gesture arrow</td>
+<td>One directional chevron-arrow cycling the four pan beats</td>
+<td>Ink outline / hard shadow baseline, <a href="../shared-components/">Shared UI Components</a></td>
+</tr>
+<tr>
+<td>Zoom gesture arrows</td>
+<td>A symmetric pair of chevron-arrows either side of the anchor, cycling the two zoom beats</td>
+<td>Ink outline / hard shadow baseline, <a href="../shared-components/">Shared UI Components</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Anchors &amp; layout constants</strong> (authored at the 1200px reference; declared as named constants per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>)</p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Applies to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GestureCenterYPx</code></td>
+<td><code>480</code></td>
+<td>vertical anchor of the gesture group (horizontal = screen center)</td>
+</tr>
+<tr>
+<td><code>ArrowLengthPx</code></td>
+<td><code>200</code></td>
+<td>each arrow's shaft + head, along its axis</td>
+</tr>
+<tr>
+<td><code>ArrowThicknessPx</code></td>
+<td><code>22</code></td>
+<td>shaft width</td>
+</tr>
+<tr>
+<td><code>ArrowHeadSizePx</code></td>
+<td><code>56</code></td>
+<td>chevron arrowhead span</td>
+</tr>
+<tr>
+<td><code>ArrowOutlineThicknessPx</code></td>
+<td><code>6</code></td>
+<td>ink outline (matches the shared <code>OutlineThicknessPx</code> baseline)</td>
+</tr>
+<tr>
+<td><code>PanTravelPx</code></td>
+<td><code>260</code></td>
+<td>distance the pan arrow's center sweeps per beat</td>
+</tr>
+<tr>
+<td><code>ZoomNearOffsetPx</code></td>
+<td><code>70</code></td>
+<td>each zoom arrow's distance from the anchor, closest</td>
+</tr>
+<tr>
+<td><code>ZoomFarOffsetPx</code></td>
+<td><code>220</code></td>
+<td>each zoom arrow's distance from the anchor, farthest</td>
+</tr>
+<tr>
+<td><code>BeatDurationSec</code></td>
+<td><code>1.1</code></td>
+<td>one sweep/spread animation (Core <code>GestureCoach</code>)</td>
+</tr>
+<tr>
+<td><code>BeatPauseSec</code></td>
+<td><code>0.5</code></td>
+<td>hold between beats (Core <code>GestureCoach</code>)</td>
+</tr>
+<tr>
+<td><code>ArrowFillOpacity</code></td>
+<td><code>0.92</code></td>
+<td>keeps the map faintly readable under the arrow</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Core/Unity split.</strong> The beat sequencer is engine-free Core (<code>GestureCoach.BeatAt</code>): it maps elapsed time + the current <code>OnboardingStep</code> to the active <code>GestureBeat</code> (<code>LeftToRight</code>/<code>RightToLeft</code>/<code>UpToDown</code>/<code>DownToUp</code> for Pan; <code>ZoomIn</code>/<code>ZoomOut</code> for Zoom; <code>Hidden</code> for every other step) and 0–1 sweep progress within <code>BeatDurationSec</code>/<code>BeatPauseSec</code> (held at 1 through the pause). The thin <code>OnboardingOverlay</code> turns each beat + progress into arrow screen offsets via public static methods (<code>ComputePanArrowCenter</code>, <code>ComputeZoomArrowOffsetPx</code>/<code>ComputeZoomArrowCenters</code>, mirroring <code>ComputeCoachRect</code>) and draws them; <code>BeatDurationSec</code>/<code>BeatPauseSec</code> are the timing constants, the pixel constants above are the on-screen geometry.</p>
+<p><strong>Decisions (from the approved proposal).</strong>
+1. <strong>Gold fill</strong>, not Cream/Leaf — keeps the gesture cue distinct from the coach bar's chrome so it reads as an action prompt.
+2. <strong>4 separate beats for pan</strong> (not one bidirectional double-headed arrow) — matches the issue text literally and keeps each beat unambiguous for a young player.
+3. <strong><code>GestureCenterYPx</code> fixed at 480</strong>, not tied to the target dog's live position — the bubble is suppressed during Pan/Zoom anyway (#329), so a fixed, generous anchor avoids coupling this layout to gameplay state.</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Restyle status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/297">#297</a>): implemented.</strong> The coach bar renders the Candy Cottage chrome — a cream pill with a thick Ink outline, a hard straight-down drop-shadow, a round Leaf paw badge, the message text, and a trailing row of outlined step-dots (the current step filled). It is drawn <strong>procedurally on IMGUI</strong> via the shared <code>CandyChrome</code> helper (the same runtime white-AA-circle routine established by the HUD chip <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>), with the message set in the bundled <code>DejaVuSans</code> Resources font (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). The bar stays on <strong>IMGUI</strong> rather than migrating to UGUI: the procedural-chrome path avoids the #291 UGUI shader/font-stripping build risk and keeps the coach bar consistent with the HUD. The leaf badge draws a <strong>procedural ink paw-print</strong> (one pad + three toes) rather than the mockup's 🐾 emoji glyph, since the bundled font carries no paw-emoji glyph (it would render as tofu on device). Implemented in <code>Assets/Scripts/Unity/OnboardingOverlay.cs</code>; on-device re-playtest is the final visual check.</li>
