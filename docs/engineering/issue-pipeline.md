@@ -238,6 +238,21 @@ precedent `.github/workflows/dashboard.yml` already set:
   command the primary workflow missed (a dropped webhook) — see
   **Reconciliation** below for why `requeue` is cron-only.
 
+**`dashboard.yml`** renders #193 on its `schedule` + `workflow_dispatch` and,
+since [#442](https://github.com/derekwinters/lucas-doggiehood/issues/442), also
+`on: issues: [labeled, unlabeled]` so the board refreshes the instant an issue's
+labels change instead of only at the next scheduled render. That trigger fires
+for **human / UI / PAT-authored** label moves; GitHub's no-recursion guard means
+the automation's own `GITHUB_TOKEN`-authored moves never fire a new run, so the
+**gatekeeper re-renders #193 inline** for those (see the Dashboard section and
+the two gatekeeper glue scripts). PR label events are out of scope — the state
+machine is issue labels. Bursts collapse via the workflow's existing
+`concurrency: {group: dashboard, cancel-in-progress: false}`: a constant group
+serializes runs repo-wide, an in-progress render is never cancelled, and a
+newer trigger only supersedes a still-**pending** run — at most one running +
+one pending, so a flurry of label changes ends with one final render on the
+latest state.
+
 The **AI routines drop their gatekeeper step entirely** — they now start
 directly at analysis / development:
 
@@ -249,7 +264,7 @@ directly at analysis / development:
 | **on `ai-triage` newly added** | **AI Routine (fired)** | **analysis for that one issue — reactive triage (`fire_routine.py`)** |
 | on `issue_comment` | **Actions workflow** | gatekeeper — per-issue commands (`gatekeeper-comment.yml`) |
 | on `issues`/`pull_request` events + every 6h | **Actions workflow** | gatekeeper — board sweep (`gatekeeper-sweep.yml`) |
-| 13:00, 00:00, 07:00 UTC | **Actions workflow** | dashboard render (`.github/workflows/dashboard.yml`) |
+| 13:00, 00:00, 07:00 UTC + on `issues: [labeled, unlabeled]` | **Actions workflow** | dashboard render (`.github/workflows/dashboard.yml`) |
 
 Fixed-UTC cron drifts one hour across US daylight-saving changes — accepted and
 noted here rather than worked around.
@@ -594,6 +609,29 @@ milestones" roll-up still excludes `parked` entirely, unchanged. Nothing here
 mutates anything else. **Closed milestones** (100% done)
 are omitted from the "Other milestones" section and the open-issues chart —
 only live milestones outside the focus are shown ([#214](https://github.com/derekwinters/lucas-doggiehood/issues/214)).
+
+**When it renders.** `dashboard.yml` runs on its `schedule` (a few times a day,
+offset after the AI routines), on `workflow_dispatch`, and — since
+[#442](https://github.com/derekwinters/lucas-doggiehood/issues/442) — on
+`issues: [labeled, unlabeled]`, so a label change refreshes the board
+immediately. Because GitHub does not fire a new workflow run from a
+`GITHUB_TOKEN`-authored event (the no-recursion guard), that trigger only covers
+**human / UI / PAT** label moves; the gatekeeper's own automated moves — the
+bulk of the churn — are covered instead by the gatekeeper **re-rendering #193
+inline**. Both glue scripts shell out to `render_dashboard.py --write` (via the
+shared `_github_api.rerender_dashboard` helper) with the job's own
+`GITHUB_TOKEN`, in the same job — no second workflow run, so no recursion-guard
+problem, and no new permissions or secrets (both `gatekeeper-*.yml` already
+carry `issues: write` + `pull-requests: read` + `contents: read`). This
+generalizes the earlier `/focus`/`/cap`-only re-render
+([#442](https://github.com/derekwinters/lucas-doggiehood/issues/442)): the
+gatekeeper now re-renders after **any** label-changing action it applies —
+`run_comment_event.py`'s command path (`/admit`, `/approve`, `/revise`, … as
+well as `/focus`/`/cap`, which still persist their marker via the
+`DASHBOARD_SET_FOCUS`/`DASHBOARD_SET_CAP` overrides), and `run_sweep.py`'s
+blocker auto-revisit, reconcile `strip_labels`/`requeue`, and cron
+missed-command replay. The render happens **once per run**, after all label
+changes are applied, since the renderer recomputes full board state regardless.
 
 ## Skills
 
