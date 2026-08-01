@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.8.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.7.0...v0.8.0) (2026-08-01)
+
+
+### Features
+
+* add animated gesture-arrow coach to onboarding pan/zoom steps ([#445](https://github.com/derekwinters/lucas-doggiehood/issues/445)) ([13d572b](https://github.com/derekwinters/lucas-doggiehood/commit/13d572bb25c821de1adb0e4c21975c5bc1389983)), closes [#330](https://github.com/derekwinters/lucas-doggiehood/issues/330)
+* add fence-purchase quest (premium-tier Gift, no-delivery install) ([#443](https://github.com/derekwinters/lucas-doggiehood/issues/443)) ([cb180f0](https://github.com/derekwinters/lucas-doggiehood/commit/cb180f00508b61dbaab8945be2ea3146d40a0d8f)), closes [#318](https://github.com/derekwinters/lucas-doggiehood/issues/318)
+* add player-choice frontier tile unlock (flat tunable cost) ([#447](https://github.com/derekwinters/lucas-doggiehood/issues/447)) ([57fe470](https://github.com/derekwinters/lucas-doggiehood/commit/57fe4705e4e920ea9f56fd62168391f0318a5c75)), closes [#295](https://github.com/derekwinters/lucas-doggiehood/issues/295)
+* face zone houses to the street with resident-only front walkways ([#449](https://github.com/derekwinters/lucas-doggiehood/issues/449)) ([d913f4d](https://github.com/derekwinters/lucas-doggiehood/commit/d913f4d25c54f1aac534cac905059940ff96ba90)), closes [#430](https://github.com/derekwinters/lucas-doggiehood/issues/430)
+* load authored neighborhood map into a validated Core TileMap ([#446](https://github.com/derekwinters/lucas-doggiehood/issues/446)) ([c34c92c](https://github.com/derekwinters/lucas-doggiehood/commit/c34c92ce61c073f92bde6a0c8e49d3291ae3f547)), closes [#383](https://github.com/derekwinters/lucas-doggiehood/issues/383)
+* persist the move-in pity counter and easter-egg reserve through SaveCodec ([#474](https://github.com/derekwinters/lucas-doggiehood/issues/474)) ([3170721](https://github.com/derekwinters/lucas-doggiehood/commit/31707216ba8d6c60e586a0ad81cf2f09491ad11e)), closes [#437](https://github.com/derekwinters/lucas-doggiehood/issues/437)
+* refine per-tile property lots (bends and cul-de-sacs keep 2 road-facing lots) ([#448](https://github.com/derekwinters/lucas-doggiehood/issues/448)) ([a83a1df](https://github.com/derekwinters/lucas-doggiehood/commit/a83a1df70cd6600f3f30aaad2592de3e48928f46)), closes [#385](https://github.com/derekwinters/lucas-doggiehood/issues/385)
+* replace onboarding step-dots with a per-phase coach-bar title tab ([#478](https://github.com/derekwinters/lucas-doggiehood/issues/478)) ([d0475f9](https://github.com/derekwinters/lucas-doggiehood/commit/d0475f91fcac29106d6b9d51f27d349fa75ba9cb)), closes [#451](https://github.com/derekwinters/lucas-doggiehood/issues/451)
+* size empty-lot foundations to the predetermined house and pre-place trees ([#450](https://github.com/derekwinters/lucas-doggiehood/issues/450)) ([c96a201](https://github.com/derekwinters/lucas-doggiehood/commit/c96a20193484a7b62cd6dabcdafb662f3fe61c01)), closes [#434](https://github.com/derekwinters/lucas-doggiehood/issues/434)
+
+
+### Bug Fixes
+
+* match the HUD coins pill height to the settings gear (88px) ([#476](https://github.com/derekwinters/lucas-doggiehood/issues/476)) ([9006175](https://github.com/derekwinters/lucas-doggiehood/commit/9006175685d676963a2d2ff49160292c0a8597ec)), closes [#440](https://github.com/derekwinters/lucas-doggiehood/issues/440)
+* reflect move-ins live — spawn the new dog and drop the house greyscale ([#473](https://github.com/derekwinters/lucas-doggiehood/issues/473)) ([c1b07c6](https://github.com/derekwinters/lucas-doggiehood/commit/c1b07c66251a29805321f8371143eeef57db94ab)), closes [#436](https://github.com/derekwinters/lucas-doggiehood/issues/436)
+
 ## [0.7.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.6.0...v0.7.0) (2026-07-31)
 
 
