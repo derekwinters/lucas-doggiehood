@@ -16,3 +16,4 @@ This folder is populated as wireframes are approved (epic #171).
 - [Dog Profile](dog-profile.html) — the centered profile card opened by tapping a dog ([#177](https://github.com/derekwinters/lucas-doggiehood/issues/177)).
 - [Settings menu](settings.html) — sidebar tabs, About (version), and a hidden Debug tab ([#218](https://github.com/derekwinters/lucas-doggiehood/issues/218)).
 - [Onboarding reward panel](onboarding-reward.html) — the bespoke celebration panel raised on completing each onboarding step ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)).
+- [Welcome pop-up](welcome-popup.html) — the modal celebration panel raised when a new dog or household moves into a vacant house ([#439](https://github.com/derekwinters/lucas-doggiehood/issues/439)).
