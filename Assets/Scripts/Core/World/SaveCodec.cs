@@ -38,6 +38,22 @@ namespace Doggiehood.Core.World
                     .Append('\n');
             }
 
+            // #295: player-choice frontier tiles, unlocked one at a time. The
+            // set of unlocked coordinates (with each tile's type so the map can
+            // be rebuilt without the authored target map on hand) round-trips
+            // here, superseding the sequential zones= count for tiles unlocked
+            // through GameState.TryUnlockTile. Emitted in unlock order so each
+            // replayed placement finds its neighbor already down (#109
+            // adjacency). Omitted entirely for a game that has unlocked none.
+            foreach (var coordinate in state.UnlockedTiles)
+            {
+                builder.Append("tile=")
+                    .Append(coordinate.Col.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(coordinate.Row.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(state.Map.GetTileAt(coordinate).ToString())
+                    .Append('\n');
+            }
+
             // #299: zone-built houses (id >= 5). The 4 starters are recreated
             // by GameState.CreateNew every load, so only zone houses need
             // persisting — each as id|level|isVacant|ladderId|tintIndex so its
@@ -145,6 +161,22 @@ namespace Doggiehood.Core.World
                 else if (key == "zones")
                 {
                     state.RestoreUnlockedZoneCount(int.Parse(value, CultureInfo.InvariantCulture));
+                }
+                else if (key == "tile")
+                {
+                    // #295: col|row|type — restore a player-unlocked frontier
+                    // tile. Emitted after zones= and in unlock order, so its
+                    // neighbors (the starting tile, any restored zone, or an
+                    // earlier tile) are already placed.
+                    var parts = value.Split('|');
+                    if (Enum.TryParse(parts[2], out TileType tileType))
+                    {
+                        state.RestoreUnlockedTile(
+                            new TileCoordinate(
+                                int.Parse(parts[0], CultureInfo.InvariantCulture),
+                                int.Parse(parts[1], CultureInfo.InvariantCulture)),
+                            tileType);
+                    }
                 }
                 else if (key == "house")
                 {
