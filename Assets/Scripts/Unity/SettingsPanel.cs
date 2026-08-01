@@ -410,6 +410,12 @@ namespace Doggiehood.Unity
             CandyChromeUgui.ApplyRounded(tabImage, TabColor, TabRadiusPx, withShadow: true);
 
             var text = CreateLabel("Label", rect, label, TabFontSizePx, TextAnchor.MiddleLeft);
+            // #467: stretch the label to the full tab bounds BEFORE the left inset,
+            // mirroring the file's Stretch() helper. Without this the rect keeps
+            // Unity's un-stretched default anchors, so MiddleLeft renders pinned
+            // toward a corner ("top-right justified") and the un-clipped label
+            // overflows past its own pill into the neighbor tab ("touching").
+            Stretch(text.rectTransform);
             text.rectTransform.offsetMin = new Vector2(TabRadiusPx, 0f);
 
             tabImage.gameObject.AddComponent<Button>().onClick.AddListener(onClick);
