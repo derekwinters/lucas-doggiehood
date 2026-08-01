@@ -46,16 +46,17 @@
   .safe-label{position:absolute;top:66px;left:90px;font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:var(--guide);background:color-mix(in srgb,var(--bg) 70%, transparent);padding:2px 12px;border-radius:9px;}
 
   /* CurrencyChip (#173), TRUE reference px — small, in the corner */
+  /* #440: the chip shares the Settings gear's vertical centreline (gear at the
+     raw top edge, GearMarginPx 32, GearButtonSizePx 88 -> centre 76; chip height
+     88 -> top 32). Right edge pinned just inboard-left of the gear. */
   .cc-chip{
-    position:absolute; top:90px; right:108px; z-index:3;
-    display:inline-flex; align-items:center; gap:12px;
-    height:64px; padding:0 26px 0 10px; border-radius:999px;
+    position:absolute; top:32px; right:108px; z-index:3;
+    display:inline-flex; align-items:center; gap:17px;
+    height:88px; padding:0 36px 0 14px; border-radius:999px;
     background:var(--cream); border:5px solid var(--ink); box-shadow:0 8px 0 var(--ink);
-    font-size:34px; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1;
+    font-size:46px; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1;
   }
-  .coin{width:44px;height:44px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
-  .guide-top{position:absolute;right:108px;top:54px;height:36px;width:2px;background:var(--guide);z-index:4;}
-  .guide-right{position:absolute;top:90px;right:72px;width:36px;height:2px;background:var(--guide);z-index:4;}
+  .coin{width:60px;height:60px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
 
   .info{margin-top:30px;display:grid;grid-template-columns:1.25fr 1fr;gap:32px;align-items:start;}
   @media (max-width:640px){ .info{grid-template-columns:1fr;} }
@@ -87,7 +88,6 @@
       <div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div><div class="house h3"></div>
       <div class="safe"></div><div class="safe-label">safe area</div>
-      <div class="guide-top"></div><div class="guide-right"></div>
       <div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div>
     </div>
   </div>
@@ -98,9 +98,9 @@
       <table>
         <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
         <tr><td>HudChipAnchor</td><td class="val">TopRight</td><td>corner the chip pins to</td></tr>
-        <tr><td>HudEdgeMarginPx</td><td class="val">36</td><td>inset from safe-area top &amp; right</td></tr>
-        <tr><td>&nbsp;↳ CurrencyChip.HeightPx</td><td class="val">64</td><td>the chip (a #173 constant)</td></tr>
-        <tr><td>&nbsp;↳ CurrencyChip.CoinDiameterPx</td><td class="val">44</td><td>coin token (#173)</td></tr>
+        <tr><td>HudEdgeMarginPx</td><td class="val">36</td><td>legacy chip inset — superseded by #440 (chip now shares the gear's centreline)</td></tr>
+        <tr><td>&nbsp;↳ CurrencyChip.HeightPx</td><td class="val">88</td><td>the chip, matches the gear (a #173 constant)</td></tr>
+        <tr><td>&nbsp;↳ CurrencyChip.CoinDiameterPx</td><td class="val">60</td><td>coin token (#173)</td></tr>
       </table>
       <div style="margin-top:20px">
         <h2>Regions</h2>
@@ -109,7 +109,7 @@
       </div>
     </div>
     <div>
-      <p class="note"><b>Judge the size here:</b> at 1:1 the chip is ~64px on a 1200px-tall screen. Tell me if it wants to be smaller or larger and I'll re-base the <code>CurrencyChip</code> constant.</p>
+      <p class="note"><b>Judge the size here:</b> at 1:1 the chip is ~88px tall on a 1200px-tall screen — matching the Settings gear beside it and sharing its vertical centreline (#440).</p>
       <p class="note"><b>Reference resolution:</b> 1920×1200 (16:10). A Unity <code>CanvasScaler</code> scales from this, so every px constant has a fixed meaning across tablet sizes.</p>
       <p class="note"><b>Retroactive:</b> keeps the shipped top-right anchor; supersedes the graybox 140×32 box. The old top banner is being removed (#207).</p>
     </div>

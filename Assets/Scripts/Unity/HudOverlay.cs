@@ -25,12 +25,15 @@ namespace Doggiehood.Unity
     public sealed class HudOverlay : MonoBehaviour
     {
         // --- CurrencyChip layout constants (shared-components.md #173) ---
-        public const float HeightPx = 64f;
-        public const float CoinDiameterPx = 44f;
-        public const float PaddingLeftPx = 10f;   // coin inset
-        public const float PaddingRightPx = 26f;  // number inset
-        public const float IconGapPx = 12f;        // coin -> number (mockup gap)
-        public const int FontSizePx = 34;          // balance (tabular)
+        // #440: the chip height matches the Settings gear (GearButtonSizePx 88),
+        // and its interior is scaled by x1.375 (=88/64) so the taller pill stays
+        // balanced rather than gaining dead vertical padding.
+        public const float HeightPx = 88f;
+        public const float CoinDiameterPx = 60f;
+        public const float PaddingLeftPx = 14f;   // coin inset
+        public const float PaddingRightPx = 36f;  // number inset
+        public const float IconGapPx = 17f;        // coin -> number (mockup gap)
+        public const int FontSizePx = 46;          // balance (tabular)
 
         // --- Shared Candy Cottage baseline (shared-components.md #65) ---
         public const float OutlineThicknessPx = 6f;      // Ink outline on all chrome
@@ -123,16 +126,18 @@ namespace Doggiehood.Unity
                 + digits * DigitAdvancePx + PaddingRightPx;
         }
 
-        /// <summary>The currency chip rect. Its top is inset from the
-        /// <b>safe-area</b> top by <c>HudEdgeMarginPx</c> (hud.md #174), and its
-        /// right edge sits inboard-left of the gear so the gear owns the corner
-        /// (decision ①). IMGUI/top-left origin; <paramref name="safeArea"/> is
-        /// Unity's bottom-left-origin <c>Screen.safeArea</c>.</summary>
+        /// <summary>The currency chip rect. Its right edge sits inboard-left of
+        /// the gear so the gear owns the corner (decision ①), and it shares the
+        /// gear's <b>vertical centreline</b> (#440) so the two read as one clean
+        /// row — its <c>y</c> is derived from the gear's on-screen middle and the
+        /// chip's own height rather than a separate safe-area top inset (which is
+        /// superseded now that the chip matches the gear's height). IMGUI/top-left
+        /// origin; <paramref name="safeArea"/> is Unity's bottom-left-origin
+        /// <c>Screen.safeArea</c>.</summary>
         public static Rect ComputeChipRect(float screenWidth, float screenHeight, Rect safeArea, float chipWidth)
         {
             var gear = ComputeGearRect(screenWidth, screenHeight);
-            var topInset = screenHeight - safeArea.yMax;
-            var y = topInset + HudEdgeMarginPx;
+            var y = gear.center.y - HeightPx / 2f;
             var rightEdge = gear.xMin - ChipGearGapPx;
             var x = rightEdge - chipWidth;
             return new Rect(x, y, chipWidth, HeightPx);
