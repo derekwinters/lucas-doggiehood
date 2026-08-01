@@ -37,6 +37,10 @@ Both paths preserve the **graceful-skip contract**: a "Check for Unity license s
 
 A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. ([#82](https://github.com/derekwinters/lucas-doggiehood/issues/82))
 
+## Geometry/tuning literal check
+
+**`geometry-lint.yml`** enforces the [named-values rule](tech-stack.md#geometry-layout-and-tuning-values-are-named-variables) ([#161](https://github.com/derekwinters/lucas-doggiehood/issues/161)): on any PR touching `Assets/**` (or the check itself), it runs `.github/scripts/check_geometry_literals.py`, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against `.github/scripts/geometry_literals_baseline.txt` so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with `--update-baseline`.
+
 ## Docs site build & publish
 
 - **`docs-test.yml`**: runs its `build` job on **every** PR (no path filter) so it can report a status on code-only PRs too, backing the [docs-reconciliation rule](agent-workflow.md):

@@ -1,0 +1,36 @@
+# Geometry/tuning inline-literal baseline (issue #161).
+# Pre-existing literals the ratchet tolerates; NEW ones fail CI.
+# Burn this down by naming the constants; regenerate with:
+#   python3 .github/scripts/check_geometry_literals.py --update-baseline
+# Format: <relpath>\t<literal>\t<normalized-snippet>
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	((rgb >> 16) & 0xFF) / 255f,
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	((rgb >> 8) & 0xFF) / 255f,
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	(rgb & 0xFF) / 255f);
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	var b = (int)Math.Round(B * 255f);
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	var g = (int)Math.Round(G * 255f);
+Assets/Scripts/Core/Art/ColorRgb.cs	255f	var r = (int)Math.Round(R * 255f);
+Assets/Scripts/Core/Art/ColorRgb.cs	360f	hue += 360f;
+Assets/Scripts/Core/Art/ColorRgb.cs	360f	var hue = hueDegrees % 360f;
+Assets/Scripts/Core/Art/ColorRgb.cs	3f	else if (sector < 3f) { r = 0f; g = c; b = x; }
+Assets/Scripts/Core/Art/ColorRgb.cs	4f	else if (sector < 4f) { r = 0f; g = x; b = c; }
+Assets/Scripts/Core/Art/ColorRgb.cs	4f	hue = 60f * (((R - G) / delta) + 4f);
+Assets/Scripts/Core/Art/ColorRgb.cs	5f	else if (sector < 5f) { r = x; g = 0f; b = c; }
+Assets/Scripts/Core/Art/ColorRgb.cs	60f	hue = 60f * (((B - R) / delta) + 2f);
+Assets/Scripts/Core/Art/ColorRgb.cs	60f	hue = 60f * (((G - B) / delta) % 6f);
+Assets/Scripts/Core/Art/ColorRgb.cs	60f	hue = 60f * (((R - G) / delta) + 4f);
+Assets/Scripts/Core/Art/ColorRgb.cs	60f	var sector = hue / 60f;
+Assets/Scripts/Core/Art/ColorRgb.cs	6f	hue = 60f * (((G - B) / delta) % 6f);
+Assets/Scripts/Core/World/LotBounds.cs	4f	var half = WorldDimensions.TileSize / 4f;
+Assets/Scripts/Core/World/LotFence.cs	4f	var half = WorldDimensions.TileSize / 4f;
+Assets/Scripts/Unity/BugSwarmView.cs	360f	var angle = (360f / BugCount) * i * Mathf.Deg2Rad;
+Assets/Scripts/Unity/CameraRig.cs	50f	HandlePinch(scroll * 50f, Screen.height);
+Assets/Scripts/Unity/CandyChrome.cs	255f	var alpha = (byte)Mathf.RoundToInt(coverage * 255f);
+Assets/Scripts/Unity/CandyChromeUgui.cs	255f	var alpha = (byte)Mathf.RoundToInt(coverage * 255f);
+Assets/Scripts/Unity/DogView.cs	30f	? Quaternion.Euler(-30f, 0f, 0f)
+Assets/Scripts/Unity/DogView.cs	45f	: Quaternion.Euler(45f, 0f, 0f);
+Assets/Scripts/Unity/DogView.cs	90f	body.localRotation = Quaternion.Euler(0f, 0f, 90f);
+Assets/Scripts/Unity/DogView.cs	90f	body.localRotation = Quaternion.Euler(90f, 0f, 0f);
+Assets/Scripts/Unity/DogView.cs	90f	var idle = usingImportedModel ? Quaternion.identity : Quaternion.Euler(90f, 0f, 0f);
+Assets/Scripts/Unity/Editor/CatalogGalleryBuilder.cs	10f	ground.transform.localScale = new Vector3(rowLength / 10f + 1f, 1f, 3f);
+Assets/Scripts/Unity/Editor/CatalogGalleryBuilder.cs	3f	ground.transform.localScale = new Vector3(rowLength / 10f + 1f, 1f, 3f);
+Assets/Scripts/Unity/WorldBuilder.cs	90f	var rotation = isNorthSouth ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
