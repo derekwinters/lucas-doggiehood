@@ -6,8 +6,10 @@ namespace Doggiehood.Core.World
     /// A hand-authored group of tiles unlocked as one unit (#56,
     /// docs/specs/expansion.md "Map shape") — the player only unlocks
     /// zones in sequence, never places tiles individually. Each tile
-    /// contributes the 4 quadrant lots <see cref="TileLotCatalog"/> defines
-    /// for its type, converted to world-space positions via
+    /// contributes the quadrant lots <see cref="TileLotCatalog"/> defines
+    /// for its type (four for most types; three for a bend, none for a twin
+    /// bend - "Property lots per tile", #383), converted to world-space
+    /// positions via
     /// <see cref="TileGeometry"/> and given sequential house ids starting
     /// at the authored <c>firstHouseId</c>. A freshly unlocked zone's lots
     /// have no <see cref="House"/> yet — see GameState.IsLotBuildable.
@@ -55,7 +57,14 @@ namespace Doggiehood.Core.World
 
                 foreach (var quadrant in QuadrantOrder)
                 {
-                    var offset = offsetsByQuadrant[quadrant];
+                    // Bends drop their cupped corner and twin bends carry no
+                    // lots (TileLotCatalog, "Property lots per tile", #383),
+                    // so a quadrant may be absent for this tile type.
+                    if (!offsetsByQuadrant.TryGetValue(quadrant, out var offset))
+                    {
+                        continue;
+                    }
+
                     var position = new GridPoint(tileCenter.X + offset.X, tileCenter.Z + offset.Z);
                     lots.Add(new HouseLot(nextHouseId, quadrant, position));
                     nextHouseId++;

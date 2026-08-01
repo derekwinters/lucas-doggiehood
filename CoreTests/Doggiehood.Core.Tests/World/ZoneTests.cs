@@ -37,12 +37,14 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Lots_HasFourPerTile_WithSequentialUniqueHouseIdsFromTheGivenStart()
+        public void Lots_FollowThePerTypeLotRules_WithSequentialUniqueHouseIdsFromTheGivenStart()
         {
             var zone = TwoTileZone(firstHouseId: 5);
 
-            Assert.That(zone.Lots.Count, Is.EqualTo(8));
-            CollectionAssert.AreEqual(Enumerable.Range(5, 8), zone.Lots.Select(lot => lot.HouseId));
+            // TurnSW drops its own cupped corner -> 3 lots; CulDeSacEast keeps
+            // all 4 ("Property lots per tile", #383). Ids stay sequential.
+            Assert.That(zone.Lots.Count, Is.EqualTo(7));
+            CollectionAssert.AreEqual(Enumerable.Range(5, 7), zone.Lots.Select(lot => lot.HouseId));
         }
 
         [Test]
