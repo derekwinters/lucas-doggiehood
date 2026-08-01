@@ -14,6 +14,12 @@ namespace Doggiehood.Unity
         private const float Speed = 8f;
         private const float ArriveDistance = 0.2f;
 
+        // Fixed vertical offsets (unrelated to the #471 door-position bug):
+        // the truck body rides at TruckHeight; the dropped package rests at
+        // PackageHeight so it sits on the ground rather than clipping through.
+        private const float TruckHeight = 0.7f;
+        private const float PackageHeight = 0.3f;
+
         private enum Phase
         {
             Idle,
@@ -38,13 +44,17 @@ namespace Doggiehood.Unity
             return truck.AddComponent<DeliveryTruckView>();
         }
 
-        public void DeliverTo(Vector3 housePosition, Action deliveredCallback)
+        public void DeliverTo(Vector3 doorTarget, Action deliveredCallback)
         {
             // Approach along the nearest street: enter at the world edge,
-            // stop by the house's front corner.
-            var entry = new Vector3(0f, 0.7f, Mathf.Sign(housePosition.z) * WorldBuilder.GroundExtent);
-            doorPosition = new Vector3(housePosition.x * 0.35f, 0.7f, housePosition.z * 0.8f);
-            exitPosition = new Vector3(0f, 0.7f, -entry.z);
+            // stop at the dog's door. #471: doorTarget is already the dog's
+            // actual front-walkway node (WalkDogHome passes the exact point the
+            // dog sits at) — use it directly. The old * 0.35f / * 0.8f scaling
+            // was a leftover from when the caller passed a lot-center, and it
+            // dropped the package away from the sitting dog.
+            var entry = new Vector3(0f, TruckHeight, Mathf.Sign(doorTarget.z) * WorldBuilder.GroundExtent);
+            doorPosition = new Vector3(doorTarget.x, TruckHeight, doorTarget.z);
+            exitPosition = new Vector3(0f, TruckHeight, -entry.z);
             transform.position = entry;
             onDelivered = deliveredCallback;
             phase = Phase.DrivingIn;
@@ -106,7 +116,11 @@ namespace Doggiehood.Unity
             package.name = "Package";
             package.transform.SetParent(transform.parent);
             package.transform.localScale = Vector3.one * 0.6f;
-            package.transform.position = new Vector3(doorPosition.x, 0.3f, doorPosition.z);
+            package.transform.position = new Vector3(doorPosition.x, PackageHeight, doorPosition.z);
+
+            // #471: make the delivered package routable/tappable — it previously
+            // carried no IInteractable, so TapRouter swallowed taps on it.
+            package.AddComponent<PackageView>();
 
             HasDelivered = true;
             Doggiehood.Core.Audio.AudioEventBus.Publish(Doggiehood.Core.Audio.SfxEvent.TruckArrival);
