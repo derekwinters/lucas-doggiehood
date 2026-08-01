@@ -104,7 +104,9 @@ namespace Doggiehood.Unity
             Dog = dog;
             this.networkProvider = networkProvider ?? (() => NeighborhoodLayout.WalkNetwork);
             profile = MovementProfile.ForPersonality(dog.Personality);
-            wander = new WanderBehavior(StableSeed(dog.Name), profile, this.networkProvider);
+            // #430: thread the dog's own house through so its wander may step
+            // onto its OWN front walkway (and no other house's).
+            wander = new WanderBehavior(StableSeed(dog.Name), profile, this.networkProvider, dog.HouseId);
 
             var scale = dog.IsPuppy ? 0.55f : 1f;
             var coat = BreedCoats.ForDog(dog);

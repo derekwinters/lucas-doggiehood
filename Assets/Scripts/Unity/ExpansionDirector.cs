@@ -99,13 +99,19 @@ namespace Doggiehood.Unity
 
             var house = State.Houses.Single(h => h.Id == houseId);
             var lot = State.GetHouseLot(houseId);
-            WorldBuilder.BuildHouse(worldRoot, house, lot);
+
+            // #430: build against the LIVE map-spanning walk network, not the
+            // starting-tile singleton — a zone lot's front-walkway edge (and so
+            // its street-ward facing + front-setback position) lives only there.
+            // With it, the zone house now faces the street and renders a real
+            // walkway instead of the Z-sign fallback / no-op.
+            WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork);
 
             // #405: a starting house gets its front walkway, yard trees, and
             // fence at world-build time; a mid-game zone-lot build only rendered
             // the mesh. Render the same three treatments for the newly built lot
             // so it matches a starting-neighborhood house.
-            WorldBuilder.BuildWalkway(worldRoot, lot);
+            WorldBuilder.BuildWalkway(worldRoot, lot, State.WalkNetwork);
             WorldBuilder.BuildYardLandscaping(worldRoot, lot);
             WorldBuilder.BuildFence(worldRoot, lot, State);
 

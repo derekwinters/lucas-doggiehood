@@ -391,10 +391,10 @@ namespace Doggiehood.Core.Tests.World
         public void WalkNetwork_Rebuilds_AfterTryBuildHouseSucceeds()
         {
             // #398: a successful build invalidates the cached live network so
-            // the next read reflects the new house. (Expansion-built houses
-            // have no authored style yet, so no front walkway is added today,
-            // but the rebuild contract must still hold — and it must never
-            // throw on the freshly built lot.)
+            // the next read reflects the new house. (Since #430 a zone house
+            // DOES gain a front walkway — the dedicated coverage lives in
+            // ZoneHouseWalkwayTests; here the contract is just that the rebuild
+            // happens, stays fully connected, and never throws on the lot.)
             var state = GameState.CreateNew();
             state.Wallet.Deposit(1000);
             state.TryUnlockNextZone();
