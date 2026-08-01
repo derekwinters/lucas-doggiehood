@@ -1,0 +1,425 @@
+{
+  "name": "Where we are today",
+  "tiles": [
+    {
+      "x": -3,
+      "y": -4,
+      "type": "TurnNE"
+    },
+    {
+      "x": -2,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": -1,
+      "y": -4,
+      "type": "CulDeSacWest"
+    },
+    {
+      "x": 2,
+      "y": -4,
+      "type": "TurnNE"
+    },
+    {
+      "x": 3,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 4,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 5,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 6,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 7,
+      "y": -4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 8,
+      "y": -4,
+      "type": "TeeNorth"
+    },
+    {
+      "x": -3,
+      "y": -3,
+      "type": "TeeEast"
+    },
+    {
+      "x": -2,
+      "y": -3,
+      "type": "TeeNorth"
+    },
+    {
+      "x": -1,
+      "y": -3,
+      "type": "StraightEW"
+    },
+    {
+      "x": 0,
+      "y": -3,
+      "type": "TeeNorth"
+    },
+    {
+      "x": 1,
+      "y": -3,
+      "type": "StraightEW"
+    },
+    {
+      "x": 2,
+      "y": -3,
+      "type": "TurnSW"
+    },
+    {
+      "x": 3,
+      "y": -3,
+      "type": "CulDeSacEast"
+    },
+    {
+      "x": 4,
+      "y": -3,
+      "type": "StraightEW"
+    },
+    {
+      "x": 5,
+      "y": -3,
+      "type": "StraightEW"
+    },
+    {
+      "x": 6,
+      "y": -3,
+      "type": "TeeNorth"
+    },
+    {
+      "x": 7,
+      "y": -3,
+      "type": "StraightEW"
+    },
+    {
+      "x": 8,
+      "y": -3,
+      "type": "TeeWest"
+    },
+    {
+      "x": -3,
+      "y": -2,
+      "type": "StraightNS"
+    },
+    {
+      "x": -2,
+      "y": -2,
+      "type": "CulDeSacSouth"
+    },
+    {
+      "x": -1,
+      "y": -2,
+      "type": "CulDeSacNorth"
+    },
+    {
+      "x": 0,
+      "y": -2,
+      "type": "TurnSE"
+    },
+    {
+      "x": 1,
+      "y": -2,
+      "type": "TeeNorth"
+    },
+    {
+      "x": 2,
+      "y": -2,
+      "type": "StraightEW"
+    },
+    {
+      "x": 3,
+      "y": -2,
+      "type": "TurnNW"
+    },
+    {
+      "x": 4,
+      "y": -2,
+      "type": "CulDeSacEast"
+    },
+    {
+      "x": 5,
+      "y": -2,
+      "type": "StraightEW"
+    },
+    {
+      "x": 6,
+      "y": -2,
+      "type": "FourWay"
+    },
+    {
+      "x": 7,
+      "y": -2,
+      "type": "StraightEW"
+    },
+    {
+      "x": 8,
+      "y": -2,
+      "type": "TurnSW"
+    },
+    {
+      "x": -3,
+      "y": -1,
+      "type": "TeeEast"
+    },
+    {
+      "x": -2,
+      "y": -1,
+      "type": "TeeNorth"
+    },
+    {
+      "x": -1,
+      "y": -1,
+      "type": "FourWay"
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "type": "TurnNW"
+    },
+    {
+      "x": 1,
+      "y": -1,
+      "type": "CulDeSacSouth"
+    },
+    {
+      "x": 2,
+      "y": -1,
+      "type": "CulDeSacNorth"
+    },
+    {
+      "x": 3,
+      "y": -1,
+      "type": "CulDeSacSouth"
+    },
+    {
+      "x": 4,
+      "y": -1,
+      "type": "CulDeSacNorth"
+    },
+    {
+      "x": 5,
+      "y": -1,
+      "type": "TurnNE"
+    },
+    {
+      "x": 6,
+      "y": -1,
+      "type": "OpposingTurnsNS"
+    },
+    {
+      "x": 7,
+      "y": -1,
+      "type": "TurnNW"
+    },
+    {
+      "x": -3,
+      "y": 0,
+      "type": "StraightNS"
+    },
+    {
+      "x": -2,
+      "y": 0,
+      "type": "CulDeSacSouth"
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "type": "TeeEast"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "type": "FourWay"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "type": "TeeNorth"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "type": "FourWay"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "type": "TurnNW"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "type": "StraightNS"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "type": "StraightNS"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "type": "StraightNS"
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "type": "StraightNS"
+    },
+    {
+      "x": -3,
+      "y": 1,
+      "type": "StraightNS"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "type": "StraightNS"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "type": "CulDeSacSouth"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "type": "StraightNS"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "type": "TurnSE"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "type": "TeeSouth"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "type": "FourWay"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "type": "TeeWest"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "type": "StraightNS"
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "type": "StraightNS"
+    },
+    {
+      "x": -3,
+      "y": 2,
+      "type": "StraightNS"
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "type": "TurnSE"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "type": "StraightEW"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "type": "TurnSW"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "type": "StraightNS"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "type": "TurnSE"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "type": "TeeSouth"
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "type": "TurnSW"
+    },
+    {
+      "x": -3,
+      "y": 3,
+      "type": "StraightNS"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "type": "StraightNS"
+    },
+    {
+      "x": -3,
+      "y": 4,
+      "type": "TurnSE"
+    },
+    {
+      "x": -2,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "type": "StraightEW"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "type": "TurnSW"
+    }
+  ]
+}

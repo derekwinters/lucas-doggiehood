@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using Doggiehood.Core.Expansion;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -10,13 +11,13 @@ using UnityEngine;
 namespace Doggiehood.Unity.EditModeTests
 {
     /// <summary>
-    /// #343: the player-facing map-expansion trigger (Derek's Option A). Tapping
-    /// the affordable lock indicator raises the reusable ConfirmationDialog with
-    /// the next zone's cost; confirming (Yes) calls GameState.TryUnlockNextZone,
-    /// then makes the zone's empty lots appear (wired to the #57 build path),
-    /// refreshes the indicator, and saves — mirroring how ExpansionDirector
-    /// wires EmptyLotView → TryBuildHouse. A grey/unaffordable lock never opens
-    /// the dialog; No/scrim cancels without spending.
+    /// #453: the multi-lock map-expansion trigger. One lock per unlockable
+    /// frontier coordinate; tapping an affordable lock raises the reusable
+    /// ConfirmationDialog with that coordinate's cost, and confirming (Yes) calls
+    /// GameState.TryUnlockTile for THAT coordinate — not the retired
+    /// TryUnlockNextZone — then makes the tile's empty lots appear (wired to the
+    /// #57 build path), reconciles the lock set, and saves. A grey/unaffordable
+    /// lock never opens the dialog; No cancels without spending.
     /// </summary>
     public class ExpansionUnlockDirectorTests
     {
@@ -28,7 +29,7 @@ namespace Doggiehood.Unity.EditModeTests
         private ConfirmationDialog dialog;
         private ExpansionDirector buildDirector;
         private ExpansionUnlockDirector unlockDirector;
-        private ExpansionIndicatorView indicator;
+        private Sprite sprite;
 
         [SetUp]
         public void BuildScene()
@@ -36,21 +37,13 @@ namespace Doggiehood.Unity.EditModeTests
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
             DeleteSaveIfPresent();
 
-            state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost + HouseBuildNumbers.Cost); // unlock + one build
+            // Past onboarding: the whole frontier is open, so there are several
+            // simultaneous locks to tell apart (the #453 multi-lock case).
+            state = FrontierEditModeWorld.WithTargetMap();
+            state.RestoreRewardChainStep(OnboardingRewardStep.Done);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count) + HouseBuildNumbers.Cost); // one unlock + one build
 
             worldRoot = new GameObject("world-root");
-
-            // The lock indicator, built manually (no dependency on the staged
-            // icon resource) — same host shape WorldBuilder gives it.
-            var indicatorHost = new GameObject("ExpansionIndicator");
-            indicatorHost.transform.SetParent(worldRoot.transform);
-            indicatorHost.AddComponent<SpriteRenderer>();
-            indicator = indicatorHost.AddComponent<ExpansionIndicatorView>();
-            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            tex.Apply();
-            var sprite = Sprite.Create(tex, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
-            indicator.Init(state, sprite, sprite);
 
             canvasHost = new GameObject("ui-canvas", typeof(Canvas));
             canvasHost.AddComponent<UiCanvas>().Configure();
@@ -64,6 +57,13 @@ namespace Doggiehood.Unity.EditModeTests
 
             unlockDirector = new GameObject("unlock-director").AddComponent<ExpansionUnlockDirector>();
             unlockDirector.Init(state, worldRoot.transform, dialog, buildDirector);
+
+            // Inject a test sprite so the lock set exists even if the staged icon
+            // Resource doesn't import in this EditMode run; this forces a Sync.
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            tex.Apply();
+            sprite = Sprite.Create(tex, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
+            unlockDirector.UseSprites(sprite, sprite);
         }
 
         [TearDown]
@@ -87,47 +87,84 @@ namespace Doggiehood.Unity.EditModeTests
             }
         }
 
-        [Test]
-        public void TappingTheAffordableLock_OpensTheDialog_WithTheNextZoneCostOnYes()
+        private ExpansionIndicatorView LockFor(TileCoordinate coordinate)
         {
-            indicator.OnTapped();
-
-            Assert.That(dialog.IsOpen, Is.True, "an affordable lock tap raises the confirmation dialog");
-            Assert.That(dialog.CostGroup.activeSelf, Is.True);
-            Assert.That(dialog.CostAmountLabel.text, Is.EqualTo(ZoneUnlockNumbers.BaseCost.ToString()));
+            return worldRoot.GetComponentsInChildren<ExpansionIndicatorView>()
+                .Single(v => v.Coordinate.Equals(coordinate));
         }
 
         [Test]
-        public void ConfirmingYes_UnlocksTheZone_SpendsTheCoins_MakesLotsAppear_AndSaves()
+        public void BuildsOneLockPerUnlockableFrontierCoordinate()
+        {
+            var lockCoordinates = worldRoot.GetComponentsInChildren<ExpansionIndicatorView>()
+                .Select(v => v.Coordinate);
+
+            Assert.That(lockCoordinates, Is.EquivalentTo(state.UnlockableFrontier()),
+                "one lock per currently-unlockable frontier coordinate");
+            Assert.That(worldRoot.GetComponentsInChildren<ExpansionIndicatorView>().Length,
+                Is.GreaterThanOrEqualTo(2), "post-onboarding several frontier tiles are open at once");
+        }
+
+        [Test]
+        public void TappingAnAffordableLock_OpensTheDialog_WithTheTileCostOnYes()
+        {
+            LockFor(FrontierEditModeWorld.FirstTile).OnTapped();
+
+            Assert.That(dialog.IsOpen, Is.True, "an affordable lock tap raises the confirmation dialog");
+            Assert.That(dialog.CostGroup.activeSelf, Is.True);
+            Assert.That(dialog.CostAmountLabel.text,
+                Is.EqualTo(TileUnlock.Cost(state.Map.Tiles.Count).ToString()));
+        }
+
+        [Test]
+        public void ConfirmingYes_UnlocksThatMarkersCoordinate_ViaTryUnlockTile_MakesLotsAppear_AndSaves()
         {
             var coinsBefore = state.Wallet.Coins;
+            var target = FrontierEditModeWorld.FirstTile;
 
-            indicator.OnTapped();
+            LockFor(target).OnTapped();
             dialog.YesButton.onClick.Invoke();
 
-            Assert.That(state.UnlockedZones.Count, Is.EqualTo(1), "the next zone is unlocked");
-            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore - ZoneUnlockNumbers.BaseCost),
-                "the unlock cost was spent");
+            Assert.That(state.Map.HasTileAt(target), Is.True, "the tapped marker's coordinate is placed");
+            Assert.That(state.UnlockedTiles, Does.Contain(target));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore - TileUnlock.Cost(1)),
+                "the flat tile cost was spent");
             Assert.That(worldRoot.GetComponentsInChildren<EmptyLotView>().Length, Is.GreaterThan(0),
-                "the unlocked zone's empty lots appear in the scene");
+                "the unlocked tile's empty lots appear in the scene");
             Assert.That(dialog.IsOpen, Is.False, "the dialog closes after confirming");
             Assert.That(File.Exists(SavePath), Is.True, "the unlock is persisted");
-            Assert.That(indicator.GetComponent<SpriteRenderer>().enabled, Is.False,
-                "with the only authored zone unlocked, the lock indicator hides itself");
+            Assert.That(worldRoot.GetComponentsInChildren<ExpansionIndicatorView>()
+                .Any(v => v.Coordinate.Equals(target)), Is.False,
+                "the unlocked coordinate's lock is destroyed");
+        }
+
+        [Test]
+        public void TappingASpecificLock_UnlocksThatCoordinate_NotAnother()
+        {
+            // Two distinct frontier coordinates each carry their own lock; tapping
+            // one unlocks exactly it. Only the first unlock is affordable, so pick
+            // the east tile and confirm it's the one that lands.
+            var target = new TileCoordinate(1, 0);
+            var other = new TileCoordinate(-1, 0);
+            Assume.That(state.UnlockableFrontier(), Does.Contain(target));
+            Assume.That(state.UnlockableFrontier(), Does.Contain(other));
+
+            LockFor(target).OnTapped();
+            dialog.YesButton.onClick.Invoke();
+
+            Assert.That(state.Map.HasTileAt(target), Is.True, "the tapped coordinate is placed");
+            Assert.That(state.Map.HasTileAt(other), Is.False, "a different frontier coordinate is untouched");
         }
 
         [Test]
         public void TheNewEmptyLots_AreWiredToTheBuildPath()
         {
-            indicator.OnTapped();
+            LockFor(FrontierEditModeWorld.FirstTile).OnTapped();
             dialog.YesButton.onClick.Invoke();
 
             var lot = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
             var houseId = lot.HouseId;
 
-            // #406: tapping an empty lot now raises the shared confirmation
-            // dialog rather than building on the bare tap; the build lands only
-            // on Yes. 50 coins remain, so the confirmed build succeeds.
             lot.OnTapped();
             dialog.YesButton.onClick.Invoke();
 
@@ -136,29 +173,22 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void ConfirmingYes_RendersTheZonesRoads_AndGrowsTheCameraPanBounds()
+        public void ConfirmingYes_RendersTheTilesRoads_AndGrowsTheCameraPanBounds()
         {
-            // #373: the two gaps together — a confirmed unlock renders the new
-            // zone's road surfaces (derived from GameState.Map, not just lot
-            // markers) and grows the live camera rig's pan bounds north so the
-            // player can pan over to the just-revealed zone.
             var cameraObject = new GameObject("camera", typeof(Camera));
             var rig = cameraObject.AddComponent<CameraRig>();
             rig.ApplyConfiguration();
             var maxZBefore = rig.Controller.Bounds.MaxZ;
 
-            indicator.OnTapped();
+            LockFor(FrontierEditModeWorld.FirstTile).OnTapped();
             dialog.YesButton.onClick.Invoke();
 
-            var zoneRoad = worldRoot.transform.Cast<Transform>()
+            var tileRoad = worldRoot.transform.Cast<Transform>()
                 .FirstOrDefault(t => t.name.StartsWith(WorldBuilder.ZoneRoadNamePrefix));
-            Assert.That(zoneRoad, Is.Not.Null, "the unlocked zone's roads render, not only lot markers");
+            Assert.That(tileRoad, Is.Not.Null, "the unlocked tile's roads render, not only lot markers");
 
-            var northLotZ = ZoneCatalog.FirstZone.Lots.Max(lot => lot.Position.Z);
             Assert.That(rig.Controller.Bounds.MaxZ, Is.GreaterThan(maxZBefore),
-                "the pan bounds grow north on unlock");
-            Assert.That(rig.Controller.Bounds.MaxZ, Is.GreaterThanOrEqualTo(northLotZ),
-                "the grown bounds reach the new zone's northernmost lot");
+                "the pan bounds grow to reach the just-unlocked north tile");
 
             Object.DestroyImmediate(cameraObject);
         }
@@ -168,7 +198,7 @@ namespace Doggiehood.Unity.EditModeTests
         {
             state.Wallet.TrySpend(state.Wallet.Coins); // drain below the cost
 
-            indicator.OnTapped();
+            LockFor(FrontierEditModeWorld.FirstTile).OnTapped();
 
             Assert.That(dialog.IsOpen, Is.False, "a grey lock's tap is a no-op (never opens the dialog)");
         }
@@ -176,23 +206,25 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void TappingNo_DismissesWithoutUnlocking()
         {
-            indicator.OnTapped();
+            var target = FrontierEditModeWorld.FirstTile;
+            LockFor(target).OnTapped();
             dialog.NoButton.onClick.Invoke();
 
-            Assert.That(state.UnlockedZones.Count, Is.EqualTo(0), "No never unlocks");
+            Assert.That(state.Map.HasTileAt(target), Is.False, "No never unlocks");
             Assert.That(dialog.IsOpen, Is.False);
         }
 
         [Test]
         public void ConfirmingAfterTheBalanceDropsBelowCost_IsASafeNoOp()
         {
-            indicator.OnTapped();               // opened while affordable
+            var target = FrontierEditModeWorld.FirstTile;
+            LockFor(target).OnTapped();               // opened while affordable
             state.Wallet.TrySpend(state.Wallet.Coins); // spent elsewhere before Yes
 
             dialog.YesButton.onClick.Invoke();
 
-            Assert.That(state.UnlockedZones.Count, Is.EqualTo(0),
-                "Core TryUnlockNextZone rejects the now-unaffordable unlock; the director makes no scene changes");
+            Assert.That(state.Map.HasTileAt(target), Is.False,
+                "Core TryUnlockTile rejects the now-unaffordable unlock; the director makes no scene changes");
             Assert.That(worldRoot.GetComponentsInChildren<EmptyLotView>().Length, Is.EqualTo(0),
                 "no empty lots appear when the unlock failed");
         }

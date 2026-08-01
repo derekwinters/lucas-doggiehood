@@ -1,3 +1,4 @@
+using Doggiehood.Core.Tests.World;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -9,7 +10,7 @@ namespace Doggiehood.Core.Tests.Expansion
     /// <see cref="GameState"/> — the flat <see cref="HouseBuildNumbers.Cost"/>
     /// and whether the wallet can afford it right now. This is the single Core
     /// source the tap-to-build confirmation dialog reads for the cost it shows
-    /// on Yes; the twin of <see cref="ZoneUnlockOffer"/> for the build spend.
+    /// on Yes; the twin of the frontier tile-unlock offer for the build spend.
     /// Resolves to null when the lot isn't buildable (already has a house),
     /// so a non-buildable tap is a no-op that never opens the dialog.
     /// </summary>
@@ -17,10 +18,9 @@ namespace Doggiehood.Core.Tests.Expansion
     {
         private static GameState WithUnlockedFirstZone()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
-            state.TryUnlockNextZone(); // spends the deposit; wallet is now 0
-            return state;
+            // First frontier tile unlocked; the unlock spends the deposit, so
+            // the wallet is 0 afterwards.
+            return FrontierTestWorld.WithFirstTileUnlocked();
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace Doggiehood.Core.Tests.Expansion
         {
             var state = WithUnlockedFirstZone();
             state.Wallet.Deposit(HouseBuildNumbers.Cost);
-            var lotId = state.UnlockedZones[0].Lots[0].HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
             state.TryBuildHouse(lotId); // the lot now carries a house
 
             Assert.That(state.IsLotBuildable(lotId), Is.False);
@@ -40,7 +40,7 @@ namespace Doggiehood.Core.Tests.Expansion
         public void Resolve_OnABuildableLot_ReportsTheFlatCost_Unaffordable_OnAnEmptyWallet()
         {
             var state = WithUnlockedFirstZone(); // wallet is 0 after the unlock
-            var lotId = state.UnlockedZones[0].Lots[0].HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
 
             var offer = HouseBuildOffer.Resolve(state, lotId);
 
@@ -54,7 +54,7 @@ namespace Doggiehood.Core.Tests.Expansion
         public void Resolve_BecomesAffordable_OnceTheWalletCoversTheFlatCost()
         {
             var state = WithUnlockedFirstZone();
-            var lotId = state.UnlockedZones[0].Lots[0].HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
 
             state.Wallet.Deposit(HouseBuildNumbers.Cost - 1);
             Assert.That(HouseBuildOffer.Resolve(state, lotId).Value.IsAffordable, Is.False);

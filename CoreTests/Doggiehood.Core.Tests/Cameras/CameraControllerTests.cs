@@ -1,3 +1,4 @@
+using Doggiehood.Core.Tests.World;
 using System.Linq;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.World;
@@ -91,7 +92,7 @@ namespace Doggiehood.Core.Tests.Cameras
 
             // The northernmost lot of the first (north cul-de-sac) zone —
             // outside the starting bounds until the map grows.
-            var northLot = ZoneCatalog.FirstZone.Lots
+            var northLot = FrontierTestWorld.FirstTileLots()
                 .OrderByDescending(lot => lot.Position.Z)
                 .First()
                 .Position;
@@ -99,7 +100,7 @@ namespace Doggiehood.Core.Tests.Cameras
                 "the starting bounds exclude the northern zone");
 
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
             camera.RecomputeBoundsFromMap(map);
 
             Assert.That(northLot.Z, Is.InRange(camera.Bounds.MinZ, camera.Bounds.MaxZ),
@@ -110,13 +111,13 @@ namespace Doggiehood.Core.Tests.Cameras
         public void AfterBoundsGrow_PanAndFocusOn_CanReachTheNewZone()
         {
             var camera = NewController();
-            var northLot = ZoneCatalog.FirstZone.Lots
+            var northLot = FrontierTestWorld.FirstTileLots()
                 .OrderByDescending(lot => lot.Position.Z)
                 .First()
                 .Position;
 
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
             camera.RecomputeBoundsFromMap(map);
 
             camera.FocusOn(northLot);
@@ -139,7 +140,7 @@ namespace Doggiehood.Core.Tests.Cameras
             camera.Pan(10000f, 10000f); // pinned to the old max corner
 
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
             camera.RecomputeBoundsFromMap(map);
 
             Assert.That(camera.Position.X, Is.InRange(camera.Bounds.MinX, camera.Bounds.MaxX));

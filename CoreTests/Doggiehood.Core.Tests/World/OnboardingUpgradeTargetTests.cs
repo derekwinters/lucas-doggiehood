@@ -21,6 +21,7 @@ namespace Doggiehood.Core.Tests.World
         public void DuringUpgradeStep_NonTargetHouse_IsANoOp_NoChargeNoLevelChange()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             var target = state.Houses[0].Id;
             var other = state.Houses[1].Id;
 
@@ -43,6 +44,7 @@ namespace Doggiehood.Core.Tests.World
         public void DuringUpgradeStep_TargetHouse_Charges_RaisesLevel_AndAdvancesTheChain()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             var target = state.Houses[0].Id;
 
             state.GrantOnboardingCompletionReward(target);
@@ -62,13 +64,14 @@ namespace Doggiehood.Core.Tests.World
         public void PastUpgradeStep_AnyHouseUpgradesFreely_TargetRestrictionLifted()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             var target = state.Houses[0].Id;
             var other = state.Houses[1].Id;
 
             // Walk the chain past UpgradeHouse (to ExpandMap and beyond).
             state.GrantOnboardingCompletionReward(target);
             state.TryUpgradeHouse(target);            // -> ExpandMap
-            state.TryUnlockNextZone();                // -> BuildHouse
+            state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);                // -> BuildHouse
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.BuildHouse));
 
             // A non-target starting house can now be upgraded normally (fund it).
@@ -85,6 +88,7 @@ namespace Doggiehood.Core.Tests.World
         public void EligibilityQuery_TracksTheTargetHouseGate()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             var target = state.Houses[0].Id;
             var other = state.Houses[1].Id;
 
@@ -109,6 +113,7 @@ namespace Doggiehood.Core.Tests.World
         public void TargetHouseId_RoundTripsThroughSaveCodec_SoTheRestrictionSurvivesReload()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             var target = state.Houses[0].Id;
             var other = state.Houses[1].Id;
 

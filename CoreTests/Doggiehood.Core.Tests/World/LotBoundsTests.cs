@@ -212,7 +212,7 @@ namespace Doggiehood.Core.Tests.World
             // tile's quadrant so the lot's house position falls inside it —
             // otherwise YardSplit slices around a house that is outside the
             // bounds and produces an inverted (maxZ < minZ) rect.
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 var bounds = LotBounds.QuadrantBounds(lot);
                 Assert.That(bounds.Contains(lot.Position), Is.True,
@@ -227,7 +227,7 @@ namespace Doggiehood.Core.Tests.World
             // lot threw `maxZ must be >= minZ` from YardSplit, because the lot's
             // house position sat outside its origin-centered quadrant bounds.
             // Every real first-zone lot must now split into well-formed yards.
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 Assert.That(() => LotBounds.FrontYard(lot), Throws.Nothing,
                     $"zone lot {lot.HouseId} front yard must not throw");
@@ -252,7 +252,7 @@ namespace Doggiehood.Core.Tests.World
                 .Select(RoadStrip).ToList();
             Assert.That(roadStrips, Is.Not.Empty, "a cul-de-sac tile has a road arm");
 
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 var front = LotBounds.FrontYard(lot, type);
                 var back = LotBounds.BackYard(lot, type);
@@ -280,7 +280,7 @@ namespace Doggiehood.Core.Tests.World
             var coordinate = new TileCoordinate(0, 1);
             var tileCenter = TileGeometry.CenterOf(coordinate);
             var neLot = new HouseLot(
-                ZoneCatalog.FirstZone.Lots.First().HouseId,
+                FrontierTestWorld.FirstTileLots().First().HouseId,
                 Quadrant.NorthEast,
                 new GridPoint(
                     tileCenter.X + NeighborhoodLayout.LotDistanceFromCenter,

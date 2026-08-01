@@ -328,10 +328,11 @@ namespace Doggiehood.Core.Tests.World
             // assumption breaks. It must also differ from the crude Z-sign guess,
             // proving the fix is meaningful for this lot.
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(1_000_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+            Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True, "the first zone unlocks");
 
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTileLots()[0];
             var zSignGuess = new GridPoint(0f, -Math.Sign(lot.Position.Z));
 
             // At unlock the lot has no built house / walkway edge yet.

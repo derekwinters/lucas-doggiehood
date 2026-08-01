@@ -18,10 +18,8 @@ namespace Doggiehood.Core.Tests.Dogs
 
         private static (WalkNetwork network, WalkEdge walkway, int houseId) BuiltZoneHouse()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(10_000);
-            state.TryUnlockNextZone();
-            var lot = state.UnlockedZones[0].Lots[0];
+            var state = Doggiehood.Core.Tests.World.FrontierTestWorld.WithFirstTileUnlocked(10_000);
+            var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
             state.TryBuildHouse(lot.HouseId);
             state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway);
             return (state.WalkNetwork, walkway, lot.HouseId);

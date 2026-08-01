@@ -445,7 +445,7 @@ namespace Doggiehood.Core.Tests.World
                 .Select(RoadStrip).ToList();
             Assert.That(roadStrips, Is.Not.Empty, "a cul-de-sac tile has a road arm");
 
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 var candidates = YardLandscaping.FrontCandidatesFor(lot, type)
                     .Concat(YardLandscaping.BackCandidatesFor(lot, type))
@@ -569,7 +569,7 @@ namespace Doggiehood.Core.Tests.World
             const TileType type = TileType.CulDeSacSouth;
             var state = UnlockedFirstZone();
             var network = state.WalkNetwork;
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = FrontierTestWorld.FirstTileLots()[0];
 
             // The network-oriented yard regions differ from the Z-sign ones —
             // the house faces along X here, not toward -Z.
@@ -607,7 +607,7 @@ namespace Doggiehood.Core.Tests.World
             // the built house's orientation.
             const TileType type = TileType.CulDeSacSouth;
             var state = UnlockedFirstZone();
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = FrontierTestWorld.FirstTileLots()[0];
 
             var frontAtUnlock = LotBounds.FrontYard(lot, type, state.WalkNetwork);
             var backAtUnlock = LotBounds.BackYard(lot, type, state.WalkNetwork);
@@ -626,8 +626,9 @@ namespace Doggiehood.Core.Tests.World
         private static GameState UnlockedFirstZone()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(1_000_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+            Assert.That(state.TryUnlockTile(FrontierTestWorld.FirstTile), Is.True, "the first zone unlocks");
             return state;
         }
 

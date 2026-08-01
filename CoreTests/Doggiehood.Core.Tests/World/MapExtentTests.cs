@@ -30,7 +30,7 @@ namespace Doggiehood.Core.Tests.World
         public void Covering_GrowsNorth_WhenTheNorthCulDeSacIsPlaced()
         {
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
 
             var extent = MapExtent.Covering(map);
 
@@ -47,7 +47,7 @@ namespace Doggiehood.Core.Tests.World
         public void Covering_ReportsCenterWidthAndDepth()
         {
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
 
             var extent = MapExtent.Covering(map);
 

@@ -51,8 +51,9 @@ namespace Doggiehood.Unity.EditModeTests
             // somewhere to land, unlike the always-occupied starting houses.
             state = GameState.CreateNew();
             state.Wallet.Deposit(100_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
-            vacantHouseId = state.UnlockedZones[0].Lots[0].HouseId;
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
+            vacantHouseId = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0].HouseId;
             Assert.That(state.TryBuildHouse(vacantHouseId), Is.True);
             Assert.That(state.Houses.Single(h => h.Id == vacantHouseId).IsVacant, Is.True,
                 "the freshly built zone house starts vacant");

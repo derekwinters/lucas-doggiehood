@@ -256,7 +256,8 @@ namespace Doggiehood.Unity.EditModeTests
             // it occupied) so the rolled palette tint — not the vacancy grey —
             // is the thing that must survive the rebuild.
             state.Wallet.Deposit(1000);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
             BuildWorldAndDirector();
 
             var zoneHouseId = worldRoot.GetComponentsInChildren<EmptyLotView>().First().HouseId;
@@ -296,7 +297,8 @@ namespace Doggiehood.Unity.EditModeTests
         public void UpgradedVacantZoneHouse_RebuildKeepsTheVacancyGreyscale()
         {
             state.Wallet.Deposit(1000);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
             BuildWorldAndDirector();
 
             var zoneHouseId = worldRoot.GetComponentsInChildren<EmptyLotView>().First().HouseId;

@@ -9,6 +9,14 @@ namespace Doggiehood.Unity
         private void Awake()
         {
             var state = SaveStore.LoadOrCreate();
+
+            // #453 (Decision A): supply Core the authored target neighborhood
+            // (docs/tools/map-data.json, staged under Resources/) BEFORE anything
+            // reads GameState.UnlockableFrontier — otherwise the frontier is
+            // empty and no expansion locks appear. Rejected authoring coordinates
+            // are logged by the loader, not silently dropped.
+            MapDataLoader.Apply(state);
+
             var root = WorldBuilder.Build(state);
             DogSpawner.SpawnDogs(state, root.transform);
 
@@ -88,9 +96,10 @@ namespace Doggiehood.Unity
                 director.WireHouses();
             });
 
-            // Map-expansion unlock trigger (#343, Option A): tapping the
-            // affordable lock indicator raises the same reusable confirmation
-            // dialog, and Yes calls GameState.TryUnlockNextZone (spend + zone
+            // Map-expansion unlock trigger (#453, Option A): one lock indicator
+            // per unlockable frontier coordinate; tapping an affordable lock
+            // raises the same reusable confirmation dialog, and Yes calls
+            // GameState.TryUnlockTile for THAT coordinate (spend + the tile
             // appears + save).
             gameObject.AddComponent<ExpansionUnlockDirector>()
                 .Init(state, root.transform, confirmationDialog, expansionDirector);

@@ -27,7 +27,7 @@ namespace Doggiehood.Core.Tests.World
         private static TileMap StartingPlusFirstZone()
         {
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
             return map;
         }
 

@@ -30,6 +30,7 @@ namespace Doggiehood.Core.Tests.World
             // the pity counter must not advance and the roster must not
             // change, regardless of the roll.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var dogCountBefore = state.Dogs.Count;
 
             var moved = state.HandleQuestCompleted(new Random());
@@ -44,6 +45,7 @@ namespace Doggiehood.Core.Tests.World
         {
             // #54: a moved-in dog joins the live roster immediately.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var newDog = new Dog("Buddy", Breed.Beagle, Personality.Excited, houseId: 1, isPuppy: false);
 
             state.AddDog(newDog);
@@ -81,70 +83,75 @@ namespace Doggiehood.Core.Tests.World
         public void CreateNew_MapIsSeededWithOnlyTheStartingFourWayIntersection()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
 
             Assert.That(state.Map.HasTileAt(new TileCoordinate(0, 0)), Is.True);
             Assert.That(state.Map.GetTileAt(new TileCoordinate(0, 0)), Is.EqualTo(TileType.FourWay));
-            Assert.That(state.UnlockedZones, Is.Empty);
+            Assert.That(state.UnlockedTiles, Is.Empty);
         }
 
         [Test]
-        public void TryUnlockNextZone_Fails_WhenTheWalletCannotAffordTheCost()
+        public void TryUnlockTile_Fails_WhenTheWalletCannotAffordTheCost()
         {
-            // #56: a fresh GameState starts with 0 coins, well below the
-            // first zone's 100-coin cost.
+            // #295: a fresh GameState starts with 0 coins, well below the
+            // flat per-tile 100-coin cost.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
 
-            var unlocked = state.TryUnlockNextZone();
+            var unlocked = state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
             Assert.That(unlocked, Is.False);
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
-            Assert.That(state.UnlockedZones, Is.Empty);
+            Assert.That(state.UnlockedTiles, Is.Empty);
             Assert.That(state.Map.HasTileAt(new TileCoordinate(0, 1)), Is.False);
         }
 
         [Test]
-        public void TryUnlockNextZone_Succeeds_DeductsCostAndPlacesTheZonesTiles_WhenAffordable()
+        public void TryUnlockTile_Succeeds_DeductsCostAndPlacesTheTile_WhenAffordable()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100);
 
-            var unlocked = state.TryUnlockNextZone();
+            var unlocked = state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
             Assert.That(unlocked, Is.True);
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
-            Assert.That(state.UnlockedZones.Count, Is.EqualTo(1));
+            Assert.That(state.UnlockedTiles.Count, Is.EqualTo(1));
             Assert.That(state.Map.GetTileAt(new TileCoordinate(0, 1)), Is.EqualTo(TileType.CulDeSacSouth));
         }
 
         [Test]
-        public void TryUnlockNextZone_FreshlyUnlockedZone_HasZeroHouses_AllLotsBuildable()
+        public void TryUnlockTile_FreshlyUnlockedTile_HasZeroHouses_AllLotsBuildable()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100);
 
-            state.TryUnlockNextZone();
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
-            var newZone = state.UnlockedZones[0];
-            Assert.That(newZone.Lots, Is.Not.Empty);
+            var lots = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile);
+            Assert.That(lots, Is.Not.Empty);
             Assert.That(state.Houses.Count, Is.EqualTo(4));
-            foreach (var lot in newZone.Lots)
+            foreach (var lot in lots)
             {
                 Assert.That(state.IsLotBuildable(lot.HouseId), Is.True);
             }
         }
 
         [Test]
-        public void TryUnlockNextZone_Fails_WhenNoMoreZonesAreAuthored()
+        public void TryUnlockTile_Fails_WhenTheCoordinateIsAlreadyPlaced()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(1_000_000);
 
-            state.TryUnlockNextZone();
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
             var coinsAfterFirstUnlock = state.Wallet.Coins;
-            var secondAttempt = state.TryUnlockNextZone();
+            var secondAttempt = state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
-            Assert.That(secondAttempt, Is.False);
-            Assert.That(state.UnlockedZones.Count, Is.EqualTo(1));
+            Assert.That(secondAttempt, Is.False, "a placed coordinate is no longer on the frontier");
+            Assert.That(state.UnlockedTiles.Count, Is.EqualTo(1));
             Assert.That(state.Wallet.Coins, Is.EqualTo(coinsAfterFirstUnlock));
         }
 
@@ -154,9 +161,10 @@ namespace Doggiehood.Core.Tests.World
             // #57: 100 to unlock the first zone + 50 (HouseBuildNumbers.Cost)
             // to build on one of its lots.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(150);
-            state.TryUnlockNextZone();
-            var lot = state.UnlockedZones[0].Lots[0];
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
+            var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
             var built = state.TryBuildHouse(lot.HouseId);
 
@@ -174,9 +182,10 @@ namespace Doggiehood.Core.Tests.World
         public void TryBuildHouse_Fails_WhenTheLotIsAlreadyOccupied()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(200);
-            state.TryUnlockNextZone();
-            var lot = state.UnlockedZones[0].Lots[0];
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
+            var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
             state.TryBuildHouse(lot.HouseId);
             var coinsAfterFirstBuild = state.Wallet.Coins;
 
@@ -191,8 +200,9 @@ namespace Doggiehood.Core.Tests.World
         public void TryBuildHouse_Fails_WhenTheZoneIsLocked()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(50); // affordable, but no zone unlocked yet
-            var lockedLot = ZoneCatalog.FirstZone.Lots[0];
+            var lockedLot = FrontierTestWorld.FirstTileLots()[0];
 
             var built = state.TryBuildHouse(lockedLot.HouseId);
 
@@ -205,9 +215,10 @@ namespace Doggiehood.Core.Tests.World
         public void TryBuildHouse_Fails_WhenTheBalanceIsInsufficient()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100);
-            state.TryUnlockNextZone(); // spends all 100; wallet is now 0
-            var lot = state.UnlockedZones[0].Lots[0];
+            state.TryUnlockTile(FrontierTestWorld.FirstTile); // spends all 100; wallet is now 0
+            var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
             var built = state.TryBuildHouse(lot.HouseId);
 
@@ -220,9 +231,10 @@ namespace Doggiehood.Core.Tests.World
         public void GetHouseLot_ResolvesAZoneLot_AfterItsZoneIsUnlocked()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100);
-            state.TryUnlockNextZone();
-            var expectedLot = state.UnlockedZones[0].Lots[0];
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
+            var expectedLot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
             var lot = state.GetHouseLot(expectedLot.HouseId);
 
@@ -235,6 +247,7 @@ namespace Doggiehood.Core.Tests.World
         public void GetHouseLot_ResolvesAStartingLayoutLot()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
 
             var lot = state.GetHouseLot(1);
 
@@ -245,6 +258,7 @@ namespace Doggiehood.Core.Tests.World
         public void GetHouseLot_Throws_ForAnUnknownHouseId()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
 
             Assert.Throws<ArgumentException>(() => state.GetHouseLot(-1));
         }
@@ -257,6 +271,7 @@ namespace Doggiehood.Core.Tests.World
             // level 2 — the same charge-then-mutate pattern as
             // TryBuildHouse. A starting house is level 1.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2);
             var house = state.Houses.First();
             Assert.That(house.Level, Is.EqualTo(House.InitialLevel), "sanity: starts at level 1");
@@ -272,6 +287,7 @@ namespace Doggiehood.Core.Tests.World
         public void TryUpgradeHouse_UnknownHouse_IsRejectedWithNoStateChange()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2);
 
             var upgraded = state.TryUpgradeHouse(9999);
@@ -287,6 +303,7 @@ namespace Doggiehood.Core.Tests.World
             // #59: sequential upgrades charge 200 then 400 (the named
             // doubling constants) as the house climbs to the level-4 cap.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2
                 + Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel3
                 + Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel4);
@@ -308,6 +325,7 @@ namespace Doggiehood.Core.Tests.World
             // unchanged. The wallet is left flush with coins to prove the
             // rejection is the cap, not affordability.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2
                 + Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel3
                 + Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel4);
@@ -333,6 +351,7 @@ namespace Doggiehood.Core.Tests.World
             // balance untouched (Wallet.TrySpend never deducts on a
             // rejected spend).
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToLevel2 - 1);
             var house = state.Houses.First();
             var coinsBefore = state.Wallet.Coins;
@@ -351,23 +370,25 @@ namespace Doggiehood.Core.Tests.World
             // starting FourWay — every sidewalk node sits within it (the
             // shared north edge is at TileSize/2 = 30).
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
 
             Assert.That(state.WalkNetwork.Nodes, Has.All.Property("Z").LessThanOrEqualTo(WorldDimensions.TileSize / 2f + 0.001f));
         }
 
         [Test]
-        public void WalkNetwork_SpansTheNewlyUnlockedZone_AfterTryUnlockNextZoneSucceeds()
+        public void WalkNetwork_SpansTheNewlyUnlockedTile_AfterTryUnlockTileSucceeds()
         {
             // #398: the whole point of the fix — once the cul-de-sac north of
             // the start is unlocked, the live network must extend onto it so
             // dogs can wander there.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100);
 
             Assert.That(state.WalkNetwork.Nodes.Any(n => n.Z > WorldDimensions.TileSize / 2f + 0.001f), Is.False,
                 "network already spanned the zone before unlocking");
 
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            Assert.That(state.TryUnlockTile(FrontierTestWorld.FirstTile), Is.True);
 
             Assert.That(state.WalkNetwork.Nodes.Any(n => n.Z > WorldDimensions.TileSize / 2f + 0.001f), Is.True,
                 "network did not grow onto the unlocked cul-de-sac tile");
@@ -375,14 +396,15 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void WalkNetwork_IsUnchanged_WhenTryUnlockNextZoneFails()
+        public void WalkNetwork_IsUnchanged_WhenTryUnlockTileFails()
         {
             // A failed unlock (can't afford it) changes nothing — the cached
             // live network is the very same instance afterwards.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var before = state.WalkNetwork;
 
-            Assert.That(state.TryUnlockNextZone(), Is.False);
+            Assert.That(state.TryUnlockTile(FrontierTestWorld.FirstTile), Is.False);
 
             Assert.That(state.WalkNetwork, Is.SameAs(before));
         }
@@ -396,9 +418,10 @@ namespace Doggiehood.Core.Tests.World
             // ZoneHouseWalkwayTests; here the contract is just that the rebuild
             // happens, stays fully connected, and never throws on the lot.)
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(1000);
-            state.TryUnlockNextZone();
-            var lot = state.UnlockedZones[0].Lots[0];
+            state.TryUnlockTile(FrontierTestWorld.FirstTile);
+            var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
             var before = state.WalkNetwork;
 
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);

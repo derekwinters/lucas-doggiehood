@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
+using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -251,9 +252,11 @@ namespace Doggiehood.Unity
             BuildFences(root.transform, state);
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
-            BuildUnlockedZoneRoads(root.transform, state);
+            BuildUnlockedTileRoads(root.transform, state);
             BuildOpenSpaceTrees(root.transform, state);
-            BuildExpansionIndicator(root.transform, state);
+            // #453: the expansion lock indicators are built and maintained per
+            // frontier coordinate by ExpansionUnlockDirector (one lock per open
+            // connection point), not a single fixed marker at world-build time.
 
             BuildSun(root.transform);
             ApplyAmbientLighting();
@@ -864,24 +867,6 @@ namespace Doggiehood.Unity
             }
         }
 
-        /// <summary>The tile type the lot sits on, resolved from the zone that
-        /// owns it (#455) — the zone's <see cref="ZoneTilePlacement"/> at the
-        /// lot's tile coordinate. Used so a zone lot's yard trees clip against
-        /// its own tile's road.</summary>
-        private static TileType TileTypeForLot(Zone zone, HouseLot lot)
-        {
-            var coordinate = LotBounds.NearestTileCoordinate(lot.Position);
-            foreach (var placement in zone.TilePlacements)
-            {
-                if (placement.Coordinate.Equals(coordinate))
-                {
-                    return placement.Type;
-                }
-            }
-
-            return TileType.FourWay;
-        }
-
         /// <summary>Resources load key for a YardTreeKind's kit model.</summary>
         public static string YardTreeResourceName(YardTreeKind kind)
         {
@@ -934,16 +919,19 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// One graybox marker (#57) per lot in every unlocked zone that has
-        /// no house on it yet (GameState.IsLotBuildable) — the "empty lot"
-        /// tap targets ExpansionDirector wires up to GameState.TryBuildHouse.
-        /// Locked zones and lots that already have a house get nothing.
+        /// One graybox marker (#57) per lot on every unlocked frontier tile
+        /// (#453) that has no house on it yet (GameState.IsLotBuildable) — the
+        /// "empty lot" tap targets ExpansionDirector wires up to
+        /// GameState.TryBuildHouse. Locked tiles and lots that already have a
+        /// house get nothing. Iterates the unlocked frontier coordinates
+        /// (superseding the retired per-zone loop).
         /// </summary>
         private static void BuildEmptyLots(Transform parent, GameState state)
         {
-            foreach (var zone in state.UnlockedZones)
+            foreach (var coordinate in state.UnlockedTiles)
             {
-                foreach (var lot in zone.Lots)
+                var tileType = state.Map.GetTileAt(coordinate);
+                foreach (var lot in state.LotsForUnlockedTile(coordinate))
                 {
                     if (state.IsLotBuildable(lot.HouseId))
                     {
@@ -958,7 +946,7 @@ namespace Doggiehood.Unity
                         // pre-baked trees orient to the house's real street-ward
                         // facing (the predetermined per-tile facing), matching the
                         // orientation the eventual build resolves.
-                        BuildYardLandscaping(parent, lot, TileTypeForLot(zone, lot), state.WalkNetwork);
+                        BuildYardLandscaping(parent, lot, tileType, state.WalkNetwork);
                     }
                 }
             }
@@ -997,84 +985,73 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// Renders road surfaces for every currently unlocked zone's tiles
-        /// (#373), derived from <see cref="TileRoadGeometry"/> — the tile
+        /// Renders road surfaces for every currently unlocked frontier tile
+        /// (#373/#453), derived from <see cref="TileRoadGeometry"/> — the tile
         /// catalog geometry, not the hardcoded <see cref="NeighborhoodLayout"/>.
         /// Runs at initial build so a loaded game whose save already unlocked a
-        /// zone (<see cref="GameState.RestoreUnlockedZoneCount"/>) renders that
-        /// zone's roads, not just its empty-lot markers.
+        /// tile (its <c>tile=</c> lines) renders that tile's roads, not just its
+        /// empty-lot markers. Iterates the unlocked frontier coordinates.
         /// </summary>
-        private static void BuildUnlockedZoneRoads(Transform parent, GameState state)
+        private static void BuildUnlockedTileRoads(Transform parent, GameState state)
         {
             var straightKit = LoadStraightRoadKit();
-            foreach (var zone in state.UnlockedZones)
+            foreach (var coordinate in state.UnlockedTiles)
             {
-                foreach (var placement in zone.TilePlacements)
-                {
-                    BuildTileRoads(parent, placement.Coordinate, placement.Type, straightKit);
-                }
+                BuildTileRoads(parent, coordinate, state.Map.GetTileAt(coordinate), straightKit);
             }
         }
 
         /// <summary>
-        /// Renders a freshly unlocked zone into the live world (#373): regrows
-        /// the base grass plane to cover the newly extended map extent, renders
-        /// each of the zone's tiles' road surfaces from the tile catalog
-        /// geometry, and drops the zone's buildable empty-lot markers. The
-        /// single entry point <see cref="ExpansionUnlockDirector"/> calls on a
-        /// confirmed unlock, so the new zone appears as real neighborhood —
-        /// grass under it and roads along its tiles — instead of markers
-        /// floating over void.
+        /// Renders a freshly unlocked frontier tile into the live world
+        /// (#373/#453): regrows the base grass plane to cover the newly extended
+        /// map extent, renders the tile's road surfaces from the tile catalog
+        /// geometry, drops its buildable empty-lot markers (with pre-baked yard
+        /// trees), and renders its open-space trees. The single entry point
+        /// <see cref="ExpansionUnlockDirector"/> calls on a confirmed unlock, so
+        /// the new tile appears as real neighborhood — grass under it and roads
+        /// along it — instead of markers floating over void. The coordinate-keyed
+        /// replacement for the retired per-zone <c>RenderUnlockedZone</c>.
         /// </summary>
-        public static void RenderUnlockedZone(Transform root, GameState state, Zone zone)
+        public static void RenderUnlockedTile(Transform root, GameState state, TileCoordinate coordinate)
         {
             ResizeGroundToMap(root, state.Map);
 
+            var tileType = state.Map.GetTileAt(coordinate);
             var straightKit = LoadStraightRoadKit();
-            foreach (var placement in zone.TilePlacements)
-            {
-                BuildTileRoads(root, placement.Coordinate, placement.Type, straightKit);
-            }
+            BuildTileRoads(root, coordinate, tileType, straightKit);
 
-            foreach (var lot in zone.Lots)
+            foreach (var lot in state.LotsForUnlockedTile(coordinate))
             {
                 if (state.IsLotBuildable(lot.HouseId))
                 {
                     BuildEmptyLot(root, lot);
                     // #434: pre-place the lot's yard trees at unlock too, so a
-                    // freshly unlocked zone's empty lots show trees + foundation
+                    // freshly unlocked tile's empty lots show trees + foundation
                     // — matching the initial-build path (BuildEmptyLots).
                     // #461: orient them to the real street-ward facing via the
                     // live network, not the Z-sign fallback.
-                    BuildYardLandscaping(root, lot, TileTypeForLot(zone, lot), state.WalkNetwork);
+                    BuildYardLandscaping(root, lot, tileType, state.WalkNetwork);
                 }
             }
 
-            foreach (var placement in zone.TilePlacements)
-            {
-                BuildTileOpenSpaceTrees(root, placement.Coordinate, placement.Type);
-            }
+            BuildTileOpenSpaceTrees(root, coordinate, tileType);
         }
 
         /// <summary>
-        /// Renders each unlocked zone tile's open-space trees (#385): a
+        /// Renders each unlocked frontier tile's open-space trees (#385/#453): a
         /// cul-de-sac's two dropped bulb-side quadrants become open space with
         /// trees, reusing the #170 tree kit art. Runs at initial build so a
-        /// loaded game whose save already unlocked a zone
-        /// (<see cref="GameState.RestoreUnlockedZoneCount"/>) renders those
-        /// trees, mirroring <see cref="BuildUnlockedZoneRoads"/>. Which
-        /// quadrants (and their positions) is Core's decision
+        /// loaded game whose save already unlocked a tile renders those trees,
+        /// mirroring <see cref="BuildUnlockedTileRoads"/>. Which quadrants (and
+        /// their positions) is Core's decision
         /// (<see cref="TileGeometry.TreeWorldPositionsFor"/>); nothing here
         /// decides where a tree goes.
         /// </summary>
         private static void BuildOpenSpaceTrees(Transform parent, GameState state)
         {
-            foreach (var zone in state.UnlockedZones)
+            foreach (var coordinate in state.UnlockedTiles)
             {
-                foreach (var placement in zone.TilePlacements)
-                {
-                    BuildTileOpenSpaceTrees(parent, placement.Coordinate, placement.Type);
-                }
+                BuildTileOpenSpaceTrees(parent, coordinate, state.Map.GetTileAt(coordinate));
             }
         }
 
@@ -1188,33 +1165,114 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// The map-expansion lock indicator marker (#178): a SpriteRenderer
-        /// showing the #183 lock icon, positioned and tinted by
-        /// ExpansionIndicatorView from Core's live ExpansionIndicator
-        /// state. Skipped entirely if the icon can't load — there's no
-        /// designed graybox stand-in for it (unlike the CityKit models,
-        /// this repo-native icon is always expected to be present, so this
-        /// is a defensive no-op rather than a real fallback path).
+        /// #453: reconciles the live set of map-expansion lock indicators against
+        /// Core's <see cref="ExpansionIndicator.ResolveAll"/> — ONE
+        /// <see cref="ExpansionIndicatorView"/> per currently-unlockable frontier
+        /// coordinate (one lock per open connection point), the multi-lock
+        /// replacement for the retired single fixed marker. Spawns a view for a
+        /// newly-unlockable coordinate (wiring it via <paramref name="onSpawned"/>
+        /// so the director can hook its tap), destroys the view of a coordinate
+        /// that has left the frontier (placed, or gated back out by onboarding),
+        /// and refreshes the rest — the same "read live" cadence the single view
+        /// used. <paramref name="views"/> is the caller-owned map the director
+        /// keeps across frames; the initial build passes an empty one.
         /// </summary>
-        private static void BuildExpansionIndicator(Transform parent, GameState state)
+        public static void SyncExpansionIndicators(
+            Transform parent, GameState state,
+            IDictionary<TileCoordinate, ExpansionIndicatorView> views,
+            Sprite affordableSprite, Sprite lockedSprite,
+            System.Action<ExpansionIndicatorView> onSpawned)
         {
-            var baseTexture = Resources.Load<Texture2D>(LockIconResource);
-            if (baseTexture == null)
+            var wanted = new HashSet<TileCoordinate>();
+            foreach (var entry in ExpansionIndicator.ResolveAll(state))
             {
-                return;
+                wanted.Add(entry.Coordinate);
             }
 
+            // Destroy views whose coordinate is no longer unlockable (placed, or
+            // gated back out) so a stale lock never lingers.
+            var stale = views.Keys.Where(coordinate => !wanted.Contains(coordinate)).ToList();
+            foreach (var coordinate in stale)
+            {
+                DestroyObject(views[coordinate].gameObject);
+                views.Remove(coordinate);
+            }
+
+            // Spawn a view for every newly-unlockable coordinate.
+            foreach (var coordinate in wanted)
+            {
+                if (views.ContainsKey(coordinate))
+                {
+                    continue;
+                }
+
+                var view = BuildExpansionIndicator(parent, state, coordinate, affordableSprite, lockedSprite);
+                views[coordinate] = view;
+                onSpawned?.Invoke(view);
+            }
+
+            foreach (var view in views.Values)
+            {
+                view.Refresh();
+            }
+        }
+
+        /// <summary>
+        /// Builds one map-expansion lock indicator marker (#178/#453) for the
+        /// frontier <paramref name="coordinate"/>: a SpriteRenderer showing the
+        /// #183 lock icon, positioned and tinted for that coordinate by
+        /// <see cref="ExpansionIndicatorView"/> off Core's live state. Public so
+        /// the EditMode tests can build a single marker directly.
+        /// </summary>
+        public static ExpansionIndicatorView BuildExpansionIndicator(
+            Transform parent, GameState state, TileCoordinate coordinate,
+            Sprite affordableSprite, Sprite lockedSprite)
+        {
             var marker = new GameObject(ExpansionIndicatorName);
             marker.transform.SetParent(parent);
             marker.transform.localScale = Vector3.one * ExpansionIndicatorWorldSize;
-
             marker.AddComponent<SpriteRenderer>();
 
-            var affordableSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorAffordableHex));
-            var lockedSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorLockedHex));
-
             var view = marker.AddComponent<ExpansionIndicatorView>();
-            view.Init(state, affordableSprite, lockedSprite);
+            view.Init(state, coordinate, affordableSprite, lockedSprite);
+            return view;
+        }
+
+        /// <summary>
+        /// #178/#453: loads and recolors the two lock-icon sprites once (gold =
+        /// affordable, grey/black = not), for the director to reuse across every
+        /// per-coordinate marker. Returns false if the repo-native icon can't
+        /// load — there's no designed graybox stand-in for it, so a missing icon
+        /// is a defensive no-op (no locks render) rather than a real fallback.
+        /// </summary>
+        public static bool TryLoadExpansionIndicatorSprites(out Sprite affordableSprite, out Sprite lockedSprite)
+        {
+            affordableSprite = null;
+            lockedSprite = null;
+
+            var baseTexture = Resources.Load<Texture2D>(LockIconResource);
+            if (baseTexture == null)
+            {
+                return false;
+            }
+
+            affordableSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorAffordableHex));
+            lockedSprite = TintedIcon.Recolor(baseTexture, CoreColors.FromHex(Palette.ExpansionIndicatorLockedHex));
+            return true;
+        }
+
+        /// <summary>Destroys a scene object, using the play-mode-safe call in
+        /// play mode and the immediate one in edit mode / tests.</summary>
+        private static void DestroyObject(GameObject target)
+        {
+            if (Application.isPlaying)
+            {
+                Object.Destroy(target);
+            }
+            else
+            {
+                Object.DestroyImmediate(target);
+            }
         }
 
         /// <summary>
