@@ -427,6 +427,104 @@ namespace Doggiehood.Unity.EditModeTests
             return state;
         }
 
+        /// <summary>The scripted onboarding expansion coordinate (0,1) — the one
+        /// coordinate a fresh game may unlock before the onboarding gate lifts.
+        /// #508's Tee tests place a Tee here so the unlock succeeds.</summary>
+        private static readonly TileCoordinate TeeTileCoordinate = new TileCoordinate(0, 1);
+
+        /// <summary>A game with a three-way (Tee) tile unlocked at
+        /// <see cref="TeeTileCoordinate"/> (#508). Uses <c>TeeSouth</c> — its
+        /// south road connects to the origin FourWay's north edge, so placement
+        /// passes #109 adjacency; its three arms are N-absent, so it exercises
+        /// the "no phantom crosswalk over the closed edge" fix.</summary>
+        private static GameState WithTeeTileUnlocked()
+        {
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            target.Place(TeeTileCoordinate, TileType.TeeSouth);
+
+            var state = GameState.CreateNew();
+            state.SetTargetMap(target);
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.TileUnlock.Cost(state.Map.Tiles.Count));
+            Assert.That(state.TryUnlockTile(TeeTileCoordinate), Is.True, "the test needs the Tee tile unlocked");
+            return state;
+        }
+
+        private System.Collections.Generic.List<Transform> TeeCrosswalks()
+        {
+            var key = WorldBuilder.CrosswalkNamePrefix + TeeTileCoordinate.Col + "," + TeeTileCoordinate.Row;
+            return Children().Where(t => t.name.StartsWith(key)).ToList();
+        }
+
+        [Test]
+        public void UnlockedTee_PaintsCrosswalks_OnePerRoadArm_InThePrimitiveFallback()
+        {
+            // #508: the reported bug — an unlocked Tee rendered NO crosswalks,
+            // because the fallback derived them from the hardcoded origin walk
+            // network. Now each intersection's crosswalks derive from the tile
+            // catalog geometry (TileCrosswalkGeometry), so TeeSouth's three arms
+            // each get a patch — and its closed north edge gets none.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithTeeTileUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var teeCrosswalks = TeeCrosswalks();
+            Assert.That(teeCrosswalks.Count, Is.EqualTo(3), "TeeSouth has three road arms -> three crosswalk patches");
+
+            var teeCenter = TileGeometry.CenterOf(TeeTileCoordinate);
+            Assert.That(teeCrosswalks.Any(t => t.position.z > teeCenter.Z + 0.001f), Is.False,
+                "no phantom crosswalk over the closed (roadless) north edge");
+
+            // The origin FourWay still paints its own four, keyed to its own
+            // coordinate — the fallback now covers every intersection.
+            var originCrosswalks = Children()
+                .Where(t => t.name.StartsWith(WorldBuilder.CrosswalkNamePrefix + "0,0")).ToList();
+            Assert.That(originCrosswalks.Count, Is.EqualTo(4), "the origin 4-way keeps its four patches");
+        }
+
+        [Test]
+        public void UnlockedTee_Crosswalks_StayClippedToTheRoad_NeverOverSidewalkPavement()
+        {
+            // #508: each patch's across-the-road extent is clipped to
+            // RoadWidth + 2 * GrassVergeWidth (the road+verge span), so it stops
+            // at the sidewalk boundary and never paints over sidewalk pavement —
+            // the same clip the origin crosswalks use.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithTeeTileUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var acrossSpan = WorldDimensions.RoadWidth + 2f * WorldDimensions.GrassVergeWidth;
+            foreach (var crosswalk in TeeCrosswalks())
+            {
+                var across = Mathf.Max(crosswalk.localScale.x, crosswalk.localScale.z);
+                var along = Mathf.Min(crosswalk.localScale.x, crosswalk.localScale.z);
+                Assert.That(across, Is.EqualTo(acrossSpan).Within(0.001f),
+                    "across-road extent clipped to the road+verge span, off the sidewalk");
+                Assert.That(along, Is.EqualTo(WorldDimensions.CrosswalkWidth).Within(0.001f),
+                    "along-road stripe depth is the crosswalk width");
+            }
+        }
+
+        [Test]
+        public void UnlockedTee_Crosswalks_RenderInTheDistinctCrosswalkColor()
+        {
+            // #508: the Tee's patches read as crosswalks (Palette.CrosswalkHex),
+            // distinct from road/verge/sidewalk — same contract the origin has.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithTeeTileUnlocked();
+            root = WorldBuilder.Build(state);
+
+            var teeCrosswalks = TeeCrosswalks();
+            Assert.That(teeCrosswalks, Is.Not.Empty);
+            foreach (var crosswalk in teeCrosswalks)
+            {
+                Assert.That(crosswalk.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.EqualTo(CoreColors.FromHex(Palette.CrosswalkHex)));
+            }
+        }
+
         [Test]
         public void BuildGround_GrowsToCoverAnUnlockedZone_StayingASingleFlatPlane()
         {

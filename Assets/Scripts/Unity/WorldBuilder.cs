@@ -158,6 +158,12 @@ namespace Doggiehood.Unity
         /// staged under Assets/Art/Roads/CityKitRoads/Resources/ — load
         /// keys are relative to the Resources folder, so they are the bare
         /// file names (see 505278e).</summary>
+        /// <summary>Grid coordinate of the starting FourWay intersection (#508):
+        /// the origin's crosswalks derive from the same per-tile catalog geometry
+        /// as every unlocked intersection, keyed off this coordinate. Matches
+        /// GameState's starting intersection at grid (0,0).</summary>
+        private static readonly TileCoordinate OriginTileCoordinate = new TileCoordinate(0, 0);
+
         private const string RoadStraightResource = "road-straight";
         // road-crossroad-path is the crosswalk-striped 4-way variant —
         // Derek's 2026-07-13 Editor review asked for painted crosswalks at
@@ -240,7 +246,10 @@ namespace Doggiehood.Unity
                     BuildRoad(root.transform, road);
                 }
 
-                BuildCrosswalks(root.transform);
+                // #508: the origin 4-way's crosswalks now derive from the same
+                // per-tile catalog geometry as every unlocked intersection, so
+                // the fallback paints them one way for the origin and Tees alike.
+                BuildTileCrosswalks(root.transform, OriginTileCoordinate, TileType.FourWay);
             }
 
             foreach (var house in state.Houses)
@@ -491,43 +500,6 @@ namespace Doggiehood.Unity
                 : new Vector3(armLength, 0.1f, stripWidth);
             arm.transform.position = new Vector3(center.X, height, center.Z);
             Paint(arm, colorHex);
-        }
-
-        /// <summary>
-        /// The standard 4-crosswalk box at the intersection (#106), one
-        /// per road arm — positioned from the walk network's Crosswalk
-        /// edges, but visually clipped to just the road's own span
-        /// (RoadWidth + 2 * GrassVergeWidth = 7.5m at the 0.75m verge)
-        /// rather than the edge's full
-        /// sidewalk-center-to-sidewalk-center length. The WalkNetwork
-        /// edge itself stays sidewalk-center to sidewalk-center — that's
-        /// the real distance a dog covers crossing the road, and moving it
-        /// would break graph connectivity — this is purely a rendering
-        /// clip so the crosswalk never paints over sidewalk pavement.
-        /// </summary>
-        private static void BuildCrosswalks(Transform parent)
-        {
-            var crosswalks = NeighborhoodLayout.WalkNetwork.Edges
-                .Where(e => e.Kind == WalkEdgeKind.Crosswalk)
-                .ToList();
-
-            var crossRoadSpan = WorldDimensions.RoadWidth + 2f * WorldDimensions.GrassVergeWidth;
-
-            for (var i = 0; i < crosswalks.Count; i++)
-            {
-                var edge = crosswalks[i];
-                var alongX = Mathf.Abs(edge.A.Z - edge.B.Z) < 0.01f;
-
-                var crosswalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                crosswalk.name = CrosswalkNamePrefix + i;
-                crosswalk.transform.SetParent(parent);
-                crosswalk.transform.position = new Vector3(
-                    (edge.A.X + edge.B.X) / 2f, 0.08f, (edge.A.Z + edge.B.Z) / 2f);
-                crosswalk.transform.localScale = alongX
-                    ? new Vector3(crossRoadSpan, 0.1f, edge.Width)
-                    : new Vector3(edge.Width, 0.1f, crossRoadSpan);
-                Paint(crosswalk, Palette.CrosswalkHex);
-            }
         }
 
         /// <summary>
@@ -1105,6 +1077,25 @@ namespace Doggiehood.Unity
             container.transform.SetParent(parent);
             container.transform.position = Vector3.zero;
 
+            // #508: a junction/terminus tile (4-way / Tee / turn / cul-de-sac)
+            // renders its dedicated City Kit mesh at the tile centre — with
+            // crosswalk stripes baked in for the 4-way and the Tees — and straight
+            // arms reaching from that centre mesh out to each road edge. A wrong
+            // rotation would misalign a Tee against its neighbours, so the yaw
+            // comes from the Core RoadTileArt table (guarded by tests). A straight
+            // tile (or the deferred OpposingTurns) has no centre mesh and keeps
+            // tiling straight arms across its whole span.
+            RoadTilePiece piece = default;
+            var centerModel = straightKit != null && RoadTileArt.TryGetCenterPiece(type, out piece)
+                ? Resources.Load<GameObject>(piece.ResourceKey)
+                : null;
+
+            if (centerModel != null)
+            {
+                BuildKitJunctionTile(container.transform, coordinate, type, piece, centerModel, straightKit);
+                return;
+            }
+
             var segments = TileRoadGeometry.SegmentsFor(coordinate, type);
             for (var i = 0; i < segments.Count; i++)
             {
@@ -1116,6 +1107,124 @@ namespace Doggiehood.Unity
                 {
                     BuildPrimitiveTileRoadArm(container.transform, segments[i], i);
                 }
+            }
+
+            // #508: the graybox fallback paints crosswalk patches per
+            // intersection, derived from the tile catalog geometry the same way
+            // the arms are — so an unlocked Tee gets crosswalks too, not just the
+            // hardcoded origin. The kit path bakes them into the centre mesh
+            // above, so this only runs when no centre mesh was placed.
+            BuildTileCrosswalks(parent, coordinate, type);
+        }
+
+        /// <summary>Edges in a fixed order for laying a junction tile's straight
+        /// arms deterministically (#508).</summary>
+        private static readonly TileEdge[] JunctionArmEdges =
+        {
+            TileEdge.North, TileEdge.South, TileEdge.East, TileEdge.West,
+        };
+
+        /// <summary>Half-extent (meters) of a junction/terminus centre mesh at
+        /// <see cref="RoadTileScale"/>: the 1x1-unit tile covers 10m, so its own
+        /// edge sits 5m from the tile centre — where the straight arms begin so
+        /// they don't overlap (and z-fight with) the baked crosswalk stripes
+        /// (#508). Same near-edge the origin crossroad corridor uses.</summary>
+        private const float JunctionCenterHalfSpan = RoadTileScale / 2f;
+
+        /// <summary>
+        /// A junction/terminus tile (#508): its dedicated City Kit mesh
+        /// (crossroad-path / intersection-path / bend / end-round) at the tile
+        /// centre, yawed per <see cref="RoadTileArt"/>, plus a tiled
+        /// <c>road-straight</c> arm from the centre mesh's edge out to each road
+        /// edge. Crosswalks are baked into the 4-way / Tee centre mesh, so no
+        /// separate crossing tiles are placed.
+        /// </summary>
+        private static void BuildKitJunctionTile(Transform container, TileCoordinate coordinate, TileType type,
+            RoadTilePiece piece, GameObject centerModel, GameObject straightKit)
+        {
+            var center = TileGeometry.CenterOf(coordinate);
+
+            var junction = Object.Instantiate(centerModel, container);
+            junction.name = RoadTileNamePrefix + type + " Center";
+            junction.transform.position = new Vector3(center.X, WorldDimensions.RoadSurfaceHeight, center.Z);
+            junction.transform.rotation = Quaternion.Euler(0f, piece.YawDegrees, 0f);
+            junction.transform.localScale = Vector3.one * RoadTileScale;
+
+            var definition = TileCatalog.Get(type);
+            var armIndex = 0;
+            foreach (var edge in JunctionArmEdges)
+            {
+                if (definition.HasRoadOn(edge))
+                {
+                    BuildKitJunctionArm(container, center, edge, straightKit, armIndex++);
+                }
+            }
+        }
+
+        /// <summary>One junction arm as compressed City Kit straight tiles from
+        /// the centre mesh's edge (<see cref="JunctionCenterHalfSpan"/>) out to
+        /// the tile edge (<see cref="WorldDimensions.TileSize"/> / 2), #508 —
+        /// mirroring the origin corridor's compress-to-fit arm tiling so adjacent
+        /// tiles connect edge-to-edge. The tile's road runs along local X, so a
+        /// north-south arm rotates 90.</summary>
+        private static void BuildKitJunctionArm(Transform container, GridPoint center, TileEdge edge,
+            GameObject straightKit, int armIndex)
+        {
+            var farEdge = WorldDimensions.TileSize / 2f;
+            var armSpan = farEdge - JunctionCenterHalfSpan;
+            var armTileCount = Mathf.Max(1, Mathf.CeilToInt(armSpan / RoadTileScale - 0.0001f));
+            var pieceLength = armSpan / armTileCount;
+
+            var isNorthSouth = edge == TileEdge.North || edge == TileEdge.South;
+            var rotation = isNorthSouth ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
+            var dirX = edge == TileEdge.East ? 1f : (edge == TileEdge.West ? -1f : 0f);
+            var dirZ = edge == TileEdge.North ? 1f : (edge == TileEdge.South ? -1f : 0f);
+
+            for (var i = 0; i < armTileCount; i++)
+            {
+                var along = JunctionCenterHalfSpan + (i + 0.5f) * pieceLength;
+                var tile = Object.Instantiate(straightKit, container);
+                tile.name = RoadTileNamePrefix + armIndex + " " + i;
+                tile.transform.position = new Vector3(
+                    center.X + dirX * along, WorldDimensions.RoadSurfaceHeight, center.Z + dirZ * along);
+                tile.transform.rotation = rotation;
+                tile.transform.localScale = new Vector3(pieceLength, RoadTileScale, RoadTileScale);
+            }
+        }
+
+        /// <summary>Vertical placement (world Y) of a graybox crosswalk patch
+        /// (#508), above the road surface so it reads over the pavement — the
+        /// value the retired origin-only BuildCrosswalks used.</summary>
+        private const float CrosswalkSurfaceHeight = 0.08f;
+
+        /// <summary>Slab thickness (world Y) of a graybox crosswalk patch cube
+        /// (#508).</summary>
+        private const float CrosswalkSlabThickness = 0.1f;
+
+        /// <summary>
+        /// The graybox-fallback crosswalk patches for one intersection tile
+        /// (#508): one flat quad per road arm, derived from the tile catalog
+        /// geometry (<see cref="TileCrosswalkGeometry"/>) rather than the
+        /// hardcoded origin <see cref="NeighborhoodLayout.WalkNetwork"/> — so
+        /// every unlocked intersection (a Tee's three arms as well as the origin
+        /// 4-way's four) paints correct crosswalks. Non-intersection tiles
+        /// (straights, turns, cul-de-sacs, the deferred OpposingTurns) yield no
+        /// patches. Each patch is clipped across the road so it never covers
+        /// sidewalk pavement. Parented to the world root (not the tile's road
+        /// container) so it lives alongside the origin's crosswalks.
+        /// </summary>
+        private static void BuildTileCrosswalks(Transform parent, TileCoordinate coordinate, TileType type)
+        {
+            var rects = TileCrosswalkGeometry.RectanglesFor(coordinate, type);
+            for (var i = 0; i < rects.Count; i++)
+            {
+                var rect = rects[i];
+                var crosswalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                crosswalk.name = CrosswalkNamePrefix + coordinate.Col + "," + coordinate.Row + " " + i;
+                crosswalk.transform.SetParent(parent);
+                crosswalk.transform.position = new Vector3(rect.Center.X, CrosswalkSurfaceHeight, rect.Center.Z);
+                crosswalk.transform.localScale = new Vector3(rect.SpanX, CrosswalkSlabThickness, rect.SpanZ);
+                Paint(crosswalk, Palette.CrosswalkHex);
             }
         }
 

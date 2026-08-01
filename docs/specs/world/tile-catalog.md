@@ -59,6 +59,21 @@ Because the first four slots *are* the road-edge data, adjacency is a pure slot 
 
 Maps are drawn and validated with the [Map Builder](../../tools/index.md) tool, which reads these codes.
 
+### Road tile art — kit meshes per type
+
+Each junction/terminus type renders a **single Kenney City Kit Roads mesh at the tile centre**, plus tiled `road-straight` arms reaching out to each road edge. `RoadTileArt` (Core) resolves the `TileType` → `(Resources key, yaw, bakes-crosswalks)` mapping; `WorldBuilder` places the mesh and yaws it so its authored orientation lines up with the tile's declared edges ([#508](https://github.com/derekwinters/lucas-doggiehood/issues/508)). The authored (0°-yaw) orientation of each staged 1×1-unit piece (→10×10m at `RoadTileScale`) was read from the kit OBJ vertices.
+
+| Type(s) | Kit mesh | Baked crosswalks | Authored (0°) orientation |
+|---|---|---|---|
+| `FourWay` | `road-crossroad-path` | yes (4 arms) | symmetric |
+| `TeeNorth/East/South/West` | `road-intersection-path` | yes (3 arms) | omits the SOUTH arm = `TeeNorth`; others are 90°/180°/270° |
+| `TurnNW/NE/SE/SW` | `road-bend` | no | connects NORTH+WEST = `TurnNW`; rounded corner (Derek's locked call; `road-bend-square` is a one-line swap) |
+| `CulDeSacEast/South/West/North` | `road-end-round` | no | road exits EAST = `CulDeSacEast`; rounded bulb |
+| `StraightNS`, `StraightEW` | *(none — tiled `road-straight` arms)* | n/a | — |
+| `OpposingTurnsNS/EW` | *(none yet — #508 follow-up)* | n/a | would compose two independent bends |
+
+Crosswalks are baked into the 4-way/Tee meshes, so the kit path needs no separate crossing tiles; the primitive graybox fallback derives one crosswalk patch per intersection arm from `TileCrosswalkGeometry` instead — see [Sidewalks & Walk Network](sidewalks.md#the-crosswalk-box).
+
 ## Property lots per tile
 
 *Design decisions 2026-07-30 / 2026-07-31 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md). The Core lot rules below are implemented in `TileLotCatalog.LotsFor`; each bend's curved/cupped corner is exposed via `TileLotCatalog.TryGetCuppedCorner`, and a cul-de-sac's dropped bulb-side (tree) quadrants via `TileLotCatalog.TreeQuadrantsFor` ([#383](https://github.com/derekwinters/lucas-doggiehood/issues/383), refined by [#385](https://github.com/derekwinters/lucas-doggiehood/issues/385)).*
