@@ -8,10 +8,13 @@ using UnityEngine;
 namespace Doggiehood.Unity.EditModeTests
 {
     /// <summary>
-    /// #178: the lock indicator's rendered position/tint/visibility track
-    /// Core's live ExpansionIndicator.Resolve(state) — no caching, same
-    /// "read live every time" contract HudOverlay uses for the wallet
-    /// label.
+    /// #453: one lock indicator view bound to a single frontier coordinate. Its
+    /// rendered position/tint/visibility track that coordinate's live Core state
+    /// (frontier membership + <see cref="TileUnlock"/> affordability) — no
+    /// caching, same "read live every time" contract HudOverlay uses for the
+    /// wallet label — and tapping an affordable lock raises
+    /// <see cref="ExpansionIndicatorView.UnlockRequested"/> with ITS OWN
+    /// coordinate.
     /// </summary>
     public class ExpansionIndicatorViewTests
     {
@@ -19,6 +22,7 @@ namespace Doggiehood.Unity.EditModeTests
         private ExpansionIndicatorView view;
         private Sprite affordableSprite;
         private Sprite lockedSprite;
+        private GameState state;
 
         [SetUp]
         public void CreateHost()
@@ -31,6 +35,10 @@ namespace Doggiehood.Unity.EditModeTests
             texture.Apply();
             affordableSprite = Sprite.Create(texture, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
             lockedSprite = Sprite.Create(texture, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
+
+            // A live target map so the scripted first tile (0,1) is on the
+            // unlockable frontier (onboarding-gated).
+            state = FrontierEditModeWorld.WithTargetMap();
         }
 
         [TearDown]
@@ -39,29 +47,31 @@ namespace Doggiehood.Unity.EditModeTests
             Object.DestroyImmediate(host);
         }
 
-        [Test]
-        public void Init_OnAFreshGame_PositionsAtTheFirstZonesEntrance_TintedLocked()
+        private void InitOnFirstTile()
         {
-            var state = GameState.CreateNew();
+            view.Init(state, FrontierEditModeWorld.FirstTile, affordableSprite, lockedSprite);
+        }
 
-            view.Init(state, affordableSprite, lockedSprite);
+        [Test]
+        public void Init_OnAFreshGame_PositionsPastItsFrontierEdge_TintedLocked()
+        {
+            InitOnFirstTile();
 
-            var expected = ExpansionIndicator.Resolve(state).Value;
+            var expected = ExpansionIndicatorPlacement.Resolve(state.Map, FrontierEditModeWorld.FirstTile);
             var renderer = host.GetComponent<SpriteRenderer>();
             Assert.That(renderer.enabled, Is.True);
-            Assert.That(host.transform.position.x, Is.EqualTo(expected.Position.X).Within(0.001f));
+            Assert.That(host.transform.position.x, Is.EqualTo(expected.X).Within(0.001f));
             Assert.That(host.transform.position.y, Is.EqualTo(ExpansionIndicatorView.HoverHeight).Within(0.001f));
-            Assert.That(host.transform.position.z, Is.EqualTo(expected.Position.Z).Within(0.001f));
-            Assert.That(renderer.sprite, Is.SameAs(lockedSprite));
+            Assert.That(host.transform.position.z, Is.EqualTo(expected.Z).Within(0.001f));
+            Assert.That(renderer.sprite, Is.SameAs(lockedSprite), "an empty wallet cannot afford the tile");
         }
 
         [Test]
         public void Refresh_SwitchesToTheAffordableSprite_OnceTheWalletCoversTheCost()
         {
-            var state = GameState.CreateNew();
-            view.Init(state, affordableSprite, lockedSprite);
+            InitOnFirstTile();
 
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
             view.Refresh();
 
             Assert.That(host.GetComponent<SpriteRenderer>().sprite, Is.SameAs(affordableSprite));
@@ -70,22 +80,19 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void Refresh_FacesTheLiveCameraYaw_AsTheCameraRotates()
         {
-            // #266: the lock icon never rotated before — it was pinned to the
-            // pre-#203 fixed yaw. It must now billboard to the live
-            // CameraController.Yaw so it reads head-on at every rotation.
-            var state = GameState.CreateNew();
+            // #266: the lock icon billboards to the live CameraController.Yaw so
+            // it reads head-on at every rotation.
             var rigObject = new GameObject("yaw-rig", typeof(Camera), typeof(CameraRig));
             var rig = rigObject.GetComponent<CameraRig>();
             try
             {
                 rig.Controller.Rotate(75f); // 45 default + 75 => 120
 
-                view.Init(state, affordableSprite, lockedSprite);
+                InitOnFirstTile();
                 view.Refresh();
 
                 var live = CameraFacing.Resolve(rig.Controller.Yaw);
-                var expected = Quaternion.Euler(
-                    live.PitchDegrees, live.YawDegrees, live.RollDegrees);
+                var expected = Quaternion.Euler(live.PitchDegrees, live.YawDegrees, live.RollDegrees);
                 Assert.That(Quaternion.Angle(host.transform.rotation, expected), Is.LessThan(0.1f),
                     "lock icon must face the live camera yaw, not the fixed default");
 
@@ -106,54 +113,52 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // #266 regression guard: with no CameraRig the facing falls back
             // to the fixed default yaw, so on-launch appearance is unchanged.
-            var state = GameState.CreateNew();
-
-            view.Init(state, affordableSprite, lockedSprite);
+            InitOnFirstTile();
 
             var facing = CameraFacing.Resolve(CameraController.DefaultYaw);
-            var expected = Quaternion.Euler(
-                facing.PitchDegrees, facing.YawDegrees, facing.RollDegrees);
+            var expected = Quaternion.Euler(facing.PitchDegrees, facing.YawDegrees, facing.RollDegrees);
             Assert.That(Quaternion.Angle(host.transform.rotation, expected), Is.LessThan(0.1f),
                 "lock icon must face the fixed default yaw when no camera rig exists");
         }
 
         [Test]
-        public void Refresh_DisablesTheRenderer_WhenNoLockedZoneRemains()
+        public void Refresh_DisablesTheRenderer_WhenItsCoordinateLeavesTheFrontier()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
-            state.TryUnlockNextZone(); // unlocks the only authored zone so far
+            InitOnFirstTile();
+            Assert.That(host.GetComponent<SpriteRenderer>().enabled, Is.True, "precondition: visible while unlockable");
 
-            view.Init(state, affordableSprite, lockedSprite);
+            // Unlock (0,1): it is now placed, so this view's coordinate leaves
+            // the frontier and the lock must hide itself.
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
+            view.Refresh();
 
             Assert.That(host.GetComponent<SpriteRenderer>().enabled, Is.False);
         }
 
-        // --- #343: the lock itself is the unlock affordance (Option A) ---
+        // --- #453: the lock itself is the unlock affordance (Option A) ---
 
         [Test]
-        public void OnTapped_WhenAffordable_RaisesUnlockRequestedOnce()
+        public void OnTapped_WhenAffordable_RaisesUnlockRequestedWithItsOwnCoordinate_Once()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost); // now affordable (gold)
-            view.Init(state, affordableSprite, lockedSprite);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)); // affordable (gold)
+            InitOnFirstTile();
 
-            var requests = 0;
-            view.UnlockRequested += () => requests++;
+            var requested = new System.Collections.Generic.List<TileCoordinate>();
+            view.UnlockRequested += coordinate => requested.Add(coordinate);
             view.OnTapped();
 
-            Assert.That(requests, Is.EqualTo(1),
-                "tapping the affordable/gold lock requests an unlock (raises the confirm dialog)");
+            Assert.That(requested, Is.EqualTo(new[] { FrontierEditModeWorld.FirstTile }),
+                "tapping the affordable/gold lock requests an unlock for its own coordinate");
         }
 
         [Test]
         public void OnTapped_WhenNotAffordable_IsANoOp()
         {
-            var state = GameState.CreateNew(); // fresh wallet: the lock is grey
-            view.Init(state, affordableSprite, lockedSprite);
+            InitOnFirstTile(); // fresh wallet: the lock is grey
 
             var requests = 0;
-            view.UnlockRequested += () => requests++;
+            view.UnlockRequested += _ => requests++;
             view.OnTapped();
 
             Assert.That(requests, Is.EqualTo(0),
@@ -161,41 +166,37 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void OnTapped_WhenNoLockedZoneRemains_IsANoOp()
+        public void OnTapped_WhenItsCoordinateIsNoLongerUnlockable_IsANoOp()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
-            state.TryUnlockNextZone(); // nothing left to unlock
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost * 10); // plenty of coins, but no zone
-            view.Init(state, affordableSprite, lockedSprite);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count) * 10);
+            InitOnFirstTile();
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True); // now placed
 
             var requests = 0;
-            view.UnlockRequested += () => requests++;
+            view.UnlockRequested += _ => requests++;
             view.OnTapped();
 
             Assert.That(requests, Is.EqualTo(0),
-                "with every zone unlocked there is nothing to request");
+                "a lock whose coordinate is already placed has nothing to request");
         }
 
         [Test]
         public void Init_AddsATapCollider_WhoseEnabledTracksTheRenderer()
         {
-            var lockedState = GameState.CreateNew(); // a locked zone remains
-            view.Init(lockedState, affordableSprite, lockedSprite);
+            InitOnFirstTile();
 
             var collider = host.GetComponent<BoxCollider>();
             Assert.That(collider, Is.Not.Null, "the lock needs a collider so TapRouter can raycast it");
-            Assert.That(collider.enabled, Is.True,
-                "the collider is active while a lock is shown");
+            Assert.That(collider.enabled, Is.True, "the collider is active while a lock is shown");
         }
 
         [Test]
-        public void Refresh_DisablesTheColliderWithTheRenderer_WhenNothingRemains()
+        public void Refresh_DisablesTheColliderWithTheRenderer_WhenTheCoordinateLeavesTheFrontier()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost);
-            state.TryUnlockNextZone();
-            view.Init(state, affordableSprite, lockedSprite);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
+            InitOnFirstTile();
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
+            view.Refresh();
 
             var collider = host.GetComponent<BoxCollider>();
             Assert.That(collider.enabled, Is.False,

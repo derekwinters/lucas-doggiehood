@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Expansion;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -247,14 +249,15 @@ namespace Doggiehood.Unity.EditModeTests
             // of its lots gets a tappable "build here" marker.
             var state = GameState.CreateNew();
             state.Wallet.Deposit(100);
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
             Object.DestroyImmediate(root);
             root = WorldBuilder.Build(state);
 
             var markers = root.GetComponentsInChildren<EmptyLotView>();
-            var zone = state.UnlockedZones[0];
-            Assert.That(markers.Select(m => m.HouseId), Is.EquivalentTo(zone.Lots.Select(lot => lot.HouseId)));
+            var zoneLots = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile);
+            Assert.That(markers.Select(m => m.HouseId), Is.EquivalentTo(zoneLots.Select(lot => lot.HouseId)));
         }
 
         [Test]
@@ -262,9 +265,10 @@ namespace Doggiehood.Unity.EditModeTests
         {
             var state = GameState.CreateNew();
             state.Wallet.Deposit(150);
-            state.TryUnlockNextZone();
-            var zone = state.UnlockedZones[0];
-            var builtLot = zone.Lots[0];
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
+            var zoneLots = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile);
+            var builtLot = zoneLots[0];
             state.TryBuildHouse(builtLot.HouseId);
 
             Object.DestroyImmediate(root);
@@ -272,7 +276,7 @@ namespace Doggiehood.Unity.EditModeTests
 
             var markers = root.GetComponentsInChildren<EmptyLotView>();
             Assert.That(markers.Select(m => m.HouseId).ToList(), Has.No.Member(builtLot.HouseId));
-            Assert.That(markers.Length, Is.EqualTo(zone.Lots.Count - 1));
+            Assert.That(markers.Length, Is.EqualTo(zoneLots.Count - 1));
         }
 
         [Test]
@@ -282,7 +286,7 @@ namespace Doggiehood.Unity.EditModeTests
             // 0.2m tap-pad into a low raised graybox "foundation" slab that
             // reads as "a house goes here" — still a single primitive box
             // painted the marker color, its base flush on the ground plane.
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = FrontierEditModeWorld.FirstTileLots()[0];
             var container = new GameObject("EmptyLotSlabTestContainer");
 
             var marker = WorldBuilder.BuildEmptyLot(container.transform, lot);
@@ -330,7 +334,7 @@ namespace Doggiehood.Unity.EditModeTests
             // HouseId, so ExpansionDirector's tap -> GameState.TryBuildHouse
             // routing (pinned end-to-end by ExpansionDirectorTests) is
             // unchanged.
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = FrontierEditModeWorld.FirstTileLots()[0];
             var container = new GameObject("EmptyLotTapTestContainer");
 
             var marker = WorldBuilder.BuildEmptyLot(container.transform, lot);
@@ -352,13 +356,14 @@ namespace Doggiehood.Unity.EditModeTests
             // render sites via the existing BuildYardLandscaping(lot) helper.
             var state = GameState.CreateNew();
             state.Wallet.Deposit(100);
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
             Object.DestroyImmediate(root);
             root = WorldBuilder.Build(state);
 
-            var zone = state.UnlockedZones[0];
-            var treedLot = zone.Lots.First(lot =>
+            var zoneLots = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile);
+            var treedLot = zoneLots.First(lot =>
                 YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).Any());
 
             Assert.That(root.transform.Find(WorldBuilder.YardLandscapingNamePrefix + treedLot.HouseId),
@@ -376,12 +381,13 @@ namespace Doggiehood.Unity.EditModeTests
             // BuildEmptyLot helper.
             var state = GameState.CreateNew();
             state.Wallet.Deposit(100);
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
             Object.DestroyImmediate(root);
             root = WorldBuilder.Build(state);
 
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
             var footprint = HousePlacement.HouseFootprint(lot);
             var slab = root.transform.Find(WorldBuilder.EmptyLotNamePrefix + lot.HouseId);
 
@@ -416,7 +422,8 @@ namespace Doggiehood.Unity.EditModeTests
         {
             var state = GameState.CreateNew();
             state.Wallet.Deposit(1000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "the test needs the first zone unlocked");
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True, "the test needs the first zone unlocked");
             return state;
         }
 
@@ -439,7 +446,7 @@ namespace Doggiehood.Unity.EditModeTests
             var extent = MapExtent.Covering(state.Map);
             var halfDepth = ground.localScale.z * 10f / 2f; // a Unity Plane is 10m at scale 1
             var northReach = ground.position.z + halfDepth;
-            var northLotZ = ZoneCatalog.FirstZone.Lots.Max(lot => lot.Position.Z);
+            var northLotZ = FrontierEditModeWorld.FirstTileLots().Max(lot => lot.Position.Z);
             Assert.That(northReach, Is.GreaterThanOrEqualTo(northLotZ),
                 "grass now reaches under the northern zone's lots");
             Assert.That(northReach, Is.EqualTo(extent.MaxZ).Within(0.001f),
@@ -604,7 +611,7 @@ namespace Doggiehood.Unity.EditModeTests
             // assignment is undesigned) — BuildHouse must render the
             // existing graybox fallback rather than crashing on
             // HouseStyleTable.ForHouse's ArgumentException.
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            var lot = FrontierEditModeWorld.FirstTileLots()[0];
             var house = new House(lot.HouseId, lot.Quadrant);
             var container = new GameObject("ZoneHouseTestContainer");
 
@@ -871,18 +878,50 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildsTheExpansionIndicatorMarker_WithTheLockIconAndACoreDrivenView()
+        public void SyncExpansionIndicators_BuildsOneViewPerUnlockableFrontierCoordinate_AndStaysInSync()
         {
-            // #178: one marker for the map-expansion lock indicator,
-            // rendering the #183 lock icon via a SpriteRenderer and driven
-            // live by ExpansionIndicatorView — position/tint are Core's
-            // job (covered by ExpansionIndicatorViewTests), this just pins
-            // that WorldBuilder actually wires the marker into the scene.
-            var marker = root.transform.Find(WorldBuilder.ExpansionIndicatorName);
+            // #453: the multi-lock rework — WorldBuilder builds ONE
+            // ExpansionIndicatorView per currently-unlockable frontier
+            // coordinate (rendering the #183 lock icon via a SpriteRenderer),
+            // and the set stays in sync as coordinates unlock (spawn for new
+            // frontier entries, destroy for placed ones), superseding the single
+            // fixed marker.
+            var state = FrontierEditModeWorld.WithTargetMap();
+            var container = new GameObject("indicator-container");
+            var views = new Dictionary<TileCoordinate, ExpansionIndicatorView>();
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            texture.Apply();
+            var sprite = Sprite.Create(texture, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
+            try
+            {
+                // During onboarding only the single scripted (0,1) tile is
+                // unlockable — exactly one lock.
+                WorldBuilder.SyncExpansionIndicators(container.transform, state, views, sprite, sprite, null);
+                Assert.That(views.Keys, Is.EquivalentTo(new[] { FrontierEditModeWorld.FirstTile }),
+                    "onboarding-gated: one lock on the scripted first tile");
+                var firstView = views[FrontierEditModeWorld.FirstTile];
+                Assert.That(firstView.GetComponent<SpriteRenderer>(), Is.Not.Null);
 
-            Assert.That(marker, Is.Not.Null, "missing the expansion indicator marker");
-            Assert.That(marker.GetComponent<SpriteRenderer>(), Is.Not.Null);
-            Assert.That(marker.GetComponent<ExpansionIndicatorView>(), Is.Not.Null);
+                // After onboarding the whole frontier opens — multiple locks.
+                state.RestoreRewardChainStep(OnboardingRewardStep.Done);
+                WorldBuilder.SyncExpansionIndicators(container.transform, state, views, sprite, sprite, null);
+                Assert.That(views.Count, Is.GreaterThanOrEqualTo(2),
+                    "post-onboarding the origin borders multiple open frontier tiles at once");
+                Assert.That(views.ContainsKey(FrontierEditModeWorld.FirstTile), Is.True,
+                    "the existing scripted-tile view is kept, not rebuilt");
+                Assert.That(views[FrontierEditModeWorld.FirstTile], Is.SameAs(firstView));
+
+                // Unlocking a coordinate destroys its lock and drops it from the set.
+                state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
+                Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
+                WorldBuilder.SyncExpansionIndicators(container.transform, state, views, sprite, sprite, null);
+                Assert.That(views.ContainsKey(FrontierEditModeWorld.FirstTile), Is.False,
+                    "a placed coordinate's lock is destroyed and drops out of the set");
+            }
+            finally
+            {
+                Object.DestroyImmediate(container);
+            }
         }
 
         private static HouseLot ZoneLot(bool hasFence = false)
@@ -892,7 +931,7 @@ namespace Doggiehood.Unity.EditModeTests
             // tile. This exercises the actual zone geometry whose lot-quadrant
             // bounds regressed in #405 (a starting-tile lot would not reproduce
             // it). Its model resolves through HouseVariantAssignment (#414).
-            var lot = ZoneCatalog.FirstZone.Lots.First();
+            var lot = FrontierEditModeWorld.FirstTileLots().First();
             return hasFence ? new HouseLot(lot.HouseId, lot.Quadrant, lot.Position, true) : lot;
         }
 
@@ -932,14 +971,14 @@ namespace Doggiehood.Unity.EditModeTests
             // its OWN cul-de-sac road (a TileRoadSegment, invisible to the
             // origin-roads-only clip), so no rendered tree sits in the paved
             // strip. The first zone is a CulDeSacSouth at (0,1).
-            var placement = ZoneCatalog.FirstZone.TilePlacements.First();
-            var roadStrips = TileRoadGeometry.SegmentsFor(placement.Coordinate, placement.Type)
+            var roadStrips = TileRoadGeometry.SegmentsFor(
+                    FrontierEditModeWorld.FirstTile, FrontierEditModeWorld.FirstTileType)
                 .Select(RoadStrip).ToList();
 
             var host = new GameObject("tile-aware-yard-host");
             try
             {
-                foreach (var lot in ZoneCatalog.FirstZone.Lots)
+                foreach (var lot in FrontierEditModeWorld.FirstTileLots())
                 {
                     WorldBuilder.BuildYardLandscaping(host.transform, lot, placement.Type);
 
@@ -991,8 +1030,9 @@ namespace Doggiehood.Unity.EditModeTests
             // the lot's own tile sidewalks (and, once built, its front walkway).
             var state = GameState.CreateNew();
             state.Wallet.Deposit(1_000_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
-            var built = ZoneCatalog.FirstZone.Lots.First();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True, "the first zone unlocks");
+            var built = FrontierEditModeWorld.FirstTileLots().First();
             Assert.That(state.TryBuildHouse(built.HouseId), Is.True, "the zone house builds");
             var zoneLot = new HouseLot(built.HouseId, built.Quadrant, built.Position, hasFence: true);
             var expected = LotFence.GeometryFor(zoneLot, state);
@@ -1024,8 +1064,9 @@ namespace Doggiehood.Unity.EditModeTests
             // is fenced alongside the four starters.
             var withZoneHouse = GameState.CreateNew();
             withZoneHouse.Wallet.Deposit(150);
-            Assert.That(withZoneHouse.TryUnlockNextZone(), Is.True, "the test needs the first zone unlocked");
-            var zoneLot = withZoneHouse.UnlockedZones[0].Lots[0];
+            withZoneHouse.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(withZoneHouse.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True, "the test needs the first zone unlocked");
+            var zoneLot = withZoneHouse.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
             Assert.That(withZoneHouse.TryBuildHouse(zoneLot.HouseId), Is.True, "the test needs a zone house built");
             Assert.That(zoneLot.HouseId, Is.GreaterThanOrEqualTo(HouseVariantAssignment.FirstZoneHouseId),
                 "the built lot is a real zone lot (id >= 5)");
@@ -1067,8 +1108,9 @@ namespace Doggiehood.Unity.EditModeTests
             // zone house too — not only the starting four.
             var withZoneHouse = GameState.CreateNew();
             withZoneHouse.Wallet.Deposit(150);
-            withZoneHouse.TryUnlockNextZone();
-            var zoneLot = withZoneHouse.UnlockedZones[0].Lots[0];
+            withZoneHouse.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            withZoneHouse.TryUnlockTile(FrontierEditModeWorld.FirstTile);
+            var zoneLot = withZoneHouse.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
             withZoneHouse.TryBuildHouse(zoneLot.HouseId);
 
             var original = WorldBuilder.ForceFencesVisible;

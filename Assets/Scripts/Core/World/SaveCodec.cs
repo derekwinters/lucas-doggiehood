@@ -26,18 +26,6 @@ namespace Doggiehood.Core.World
             builder.Append("coins=").Append(state.Wallet.Coins.ToString(CultureInfo.InvariantCulture)).Append('\n');
             builder.Append("onboarded=").Append(state.OnboardingComplete ? "1" : "0").Append('\n');
 
-            // #343: how many authored zones have been unlocked. Zones are
-            // deterministic (ZoneCatalog), so the count alone rebuilds both
-            // Map and UnlockedZones on load — an unlocked zone survives a
-            // relaunch instead of resetting each session. Omitted (loads as 0)
-            // for a game that has unlocked nothing.
-            if (state.UnlockedZones.Count > 0)
-            {
-                builder.Append("zones=")
-                    .Append(state.UnlockedZones.Count.ToString(CultureInfo.InvariantCulture))
-                    .Append('\n');
-            }
-
             // #295: player-choice frontier tiles, unlocked one at a time. The
             // set of unlocked coordinates (with each tile's type so the map can
             // be rebuilt without the authored target map on hand) round-trips
@@ -236,10 +224,6 @@ namespace Doggiehood.Core.World
                 {
                     state.RecordRotationUtc(DateTime.Parse(
                         value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
-                }
-                else if (key == "zones")
-                {
-                    state.RestoreUnlockedZoneCount(int.Parse(value, CultureInfo.InvariantCulture));
                 }
                 else if (key == "tile")
                 {

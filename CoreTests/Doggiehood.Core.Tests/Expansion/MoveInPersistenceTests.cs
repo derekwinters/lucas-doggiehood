@@ -14,7 +14,7 @@ namespace Doggiehood.Core.Tests.Expansion
     /// — odds silently fell back to the 5% base and a used easter-egg name
     /// could reappear. Persisted through <see cref="SaveCodec"/> following the
     /// established restore-without-re-firing pattern
-    /// (<see cref="GameState.RestoreUnlockedZoneCount"/>).
+    /// (<see cref="GameState.RestoreRewardChainStep"/>).
     /// </summary>
     public class MoveInPersistenceTests
     {
@@ -24,10 +24,8 @@ namespace Doggiehood.Core.Tests.Expansion
         // against, exactly like MoveInReflectionTests does.
         private static GameState StateWithOneVacantHouse()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(100_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "precondition: a zone unlocks");
-            var lotId = state.UnlockedZones[0].Lots[0].HouseId;
+            var state = Doggiehood.Core.Tests.World.FrontierTestWorld.WithFirstTileUnlocked(100_000);
+            var lotId = Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId;
             Assert.That(state.TryBuildHouse(lotId), Is.True, "precondition: a vacant lot is built");
             Assert.That(state.Houses.Single(h => h.Id == lotId).IsVacant, Is.True,
                 "precondition: the freshly built zone house starts vacant");

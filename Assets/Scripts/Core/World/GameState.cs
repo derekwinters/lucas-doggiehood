@@ -19,27 +19,26 @@ namespace Doggiehood.Core.World
         /// first-zone layout's "starting FourWay at grid (0,0)".</summary>
         private static readonly TileCoordinate StartingIntersectionCoordinate = new TileCoordinate(0, 0);
 
-        /// <summary>#295: the single scripted tile the onboarding "expand the
-        /// map" step unlocks. Before that step completes it is the only
+        /// <summary>#295/#453: the single scripted tile the onboarding "expand
+        /// the map" step unlocks. Before that step completes it is the only
         /// unlockable frontier coordinate (Derek's "this only works after the
-        /// first onboarding expansion happens"). Sourced from the authored first
-        /// zone so the scripted tile stays in one place.</summary>
-        private static TileCoordinate OnboardingExpansionTile
-        {
-            get { return ZoneCatalog.FirstZone.TilePlacements[0].Coordinate; }
-        }
+        /// first onboarding expansion happens"). A plain constant — the confirmed
+        /// first cul-de-sac directly north of the starting intersection, (0,1)
+        /// (docs/specs/expansion.md "Map shape"). Was sourced from
+        /// <c>ZoneCatalog.FirstZone</c> until #453 retired the legacy zone path;
+        /// the coordinate is unchanged.</summary>
+        private static readonly TileCoordinate OnboardingExpansionTile = new TileCoordinate(0, 1);
 
         private readonly List<House> houses;
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
         private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
         private readonly List<Dog> dogs;
-        private readonly List<Zone> unlockedZones = new List<Zone>();
 
-        /// <summary>#434: the <see cref="HouseVariant"/> rolled and locked in for
-        /// each zone lot the moment its zone unlocks (its lots first appear),
-        /// keyed by house id — so an empty lot already knows the house that will
-        /// stand on it (its footprint, its trees) before it is built. Populated
-        /// by <see cref="TryUnlockNextZone"/>, persisted through
+        /// <summary>#434/#453: the <see cref="HouseVariant"/> rolled and locked in
+        /// for each frontier lot the moment its tile unlocks (its lots first
+        /// appear), keyed by house id — so an empty lot already knows the house
+        /// that will stand on it (its footprint, its trees) before it is built.
+        /// Populated by <see cref="TryUnlockTile"/>, persisted through
         /// <see cref="SaveCodec"/>, and read (with a deterministic fallback) by
         /// <see cref="TryBuildHouse"/>. A built lot keeps its entry — the built
         /// <see cref="House"/> is the source of truth from then on, so the save
@@ -48,8 +47,8 @@ namespace Doggiehood.Core.World
 
         /// <summary>#295: the coordinates unlocked one-at-a-time through the
         /// player-choice frontier (<see cref="TryUnlockTile"/>), in unlock
-        /// order. Distinct from the legacy <see cref="unlockedZones"/> group
-        /// model this supersedes; both place onto <see cref="Map"/>.</summary>
+        /// order. Distinct from the retired zone group
+        /// model this superseded; both place onto <see cref="Map"/>.</summary>
         private readonly List<TileCoordinate> unlockedTiles = new List<TileCoordinate>();
 
         /// <summary>Owns the shared move-in pity counter and easter-egg
@@ -131,7 +130,7 @@ namespace Doggiehood.Core.World
         /// The walkable graph (#106) spanning every unlocked tile (#398):
         /// sidewalks and crosswalks for all of <see cref="Map"/>'s
         /// road-bearing tiles, plus a front walkway for every built house.
-        /// Rebuilds after a successful <see cref="TryUnlockNextZone"/> or
+        /// Rebuilds after a successful <see cref="TryUnlockTile"/> or
         /// <see cref="TryBuildHouse"/> (and on save-restore); a failed action
         /// leaves the cached instance untouched. Dogs wander this graph, so
         /// unlocking a zone lets them explore its sidewalks.
@@ -166,13 +165,6 @@ namespace Doggiehood.Core.World
             walkNetwork = null;
         }
 
-        /// <summary>Zones unlocked so far, in unlock order (#56). Empty for
-        /// a new game — the starting intersection isn't itself a zone.</summary>
-        public IReadOnlyList<Zone> UnlockedZones
-        {
-            get { return unlockedZones; }
-        }
-
         /// <summary>#295: the coordinates the player has unlocked one-at-a-time
         /// via <see cref="TryUnlockTile"/>, in unlock order. Persisted as a set
         /// (SaveCodec) so player-chosen unlock order round-trips.</summary>
@@ -181,11 +173,11 @@ namespace Doggiehood.Core.World
             get { return unlockedTiles; }
         }
 
-        /// <summary>#434: the pre-assigned <see cref="HouseVariant"/> for each
-        /// zone lot, keyed by house id — rolled and locked in at unlock so an
-        /// empty lot reads as the plot of its predetermined house. Persisted
+        /// <summary>#434/#453: the pre-assigned <see cref="HouseVariant"/> for
+        /// each frontier lot, keyed by house id — rolled and locked in at unlock
+        /// so an empty lot reads as the plot of its predetermined house. Persisted
         /// (SaveCodec) for unbuilt lots; a built lot's variant lives on its
-        /// <see cref="House"/> instead. Empty for a game with no zone
+        /// <see cref="House"/> instead. Empty for a game with no tile
         /// unlocked.</summary>
         public IReadOnlyDictionary<int, HouseVariant> AssignedLotVariants
         {
@@ -319,7 +311,7 @@ namespace Doggiehood.Core.World
         /// currently-unlockable frontier tile (see <see cref="UnlockableFrontier"/>)
         /// or the balance can't afford the cost. Advances the onboarding
         /// reward chain's "expand the map" step on success (a no-op once that
-        /// step is already past), mirroring <see cref="TryUnlockNextZone"/>.
+        /// step is already past).
         /// </summary>
         public bool TryUnlockTile(TileCoordinate coordinate)
         {
@@ -335,17 +327,35 @@ namespace Doggiehood.Core.World
 
             Map.Place(coordinate, TargetMap.GetTileAt(coordinate));
             unlockedTiles.Add(coordinate);
+            AssignFrontierLotVariants(coordinate);
             InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
             return true;
+        }
+
+        /// <summary>#453: rolls and locks in each of a freshly unlocked frontier
+        /// tile's lot variants (ladder + tint) the moment the lots appear, so the
+        /// empty lot already reads as the plot of its predetermined house — the
+        /// frontier equivalent of the retired zone path's <c>AssignZoneLotVariants</c>.
+        /// The roll is the same deterministic
+        /// <see cref="HouseVariantAssignment.ForHouse"/> the build path falls back
+        /// to, so assigning it here only changes WHEN it happens, not the value.
+        /// Every frontier lot id is >= <see cref="FrontierHouseId.BaseId"/>, well
+        /// above <see cref="HouseVariantAssignment.FirstZoneHouseId"/>, so none is
+        /// rejected.</summary>
+        private void AssignFrontierLotVariants(TileCoordinate coordinate)
+        {
+            foreach (var lot in LotsForUnlockedTile(coordinate))
+            {
+                assignedLotVariants[lot.HouseId] = HouseVariantAssignment.ForHouse(lot.HouseId);
+            }
         }
 
         /// <summary>
         /// #295: restores a persisted player-unlocked tile on load — places it
         /// onto <see cref="Map"/> with its persisted type and records it in
         /// <see cref="UnlockedTiles"/>, WITHOUT charging the wallet or advancing
-        /// the reward chain (both persist separately). The parallel of
-        /// <see cref="RestoreUnlockedZoneCount"/>. Defensively a no-op if the
+        /// the reward chain (both persist separately). Defensively a no-op if the
         /// coordinate is already placed or would fail #109 adjacency.
         /// </summary>
         public void RestoreUnlockedTile(TileCoordinate coordinate, TileType type)
@@ -357,6 +367,10 @@ namespace Doggiehood.Core.World
 
             Map.Place(coordinate, type);
             unlockedTiles.Add(coordinate);
+            // #453: variants are NOT re-assigned here — a persisted unbuilt lot's
+            // variant is restored from its lotvariant= line (RestoreAssignedLotVariant),
+            // and an unpersisted one falls back to the deterministic roll at build
+            // (TryBuildHouse), exactly as the retired zone-restore path did.
             InvalidateWalkNetwork();
         }
 
@@ -413,7 +427,7 @@ namespace Doggiehood.Core.World
         /// rebuilds <see cref="moveInSystem"/> from the saved pity counter and
         /// the remaining easter-egg/reserved-breed reserves, WITHOUT rolling
         /// any dice or firing a move-in (the parallel of
-        /// <see cref="RestoreUnlockedZoneCount"/> / <see cref="RestoreRewardChainStep"/>).
+        /// <see cref="RestoreRewardChainStep"/>).
         /// A legacy save with no move-in line simply keeps
         /// <see cref="CreateNew"/>'s default fresh system.</summary>
         public void RestoreMoveInState(
@@ -425,55 +439,8 @@ namespace Doggiehood.Core.World
                 remainingEasterEggNames, remainingReservedBreeds, questsSinceLastMoveIn);
         }
 
-        /// <summary>
-        /// Unlocks the next authored <see cref="Zone"/> (#56,
-        /// <see cref="ZoneCatalog.Zones"/>) in sequence: the nth zone costs
-        /// <see cref="Expansion.ZoneUnlock.CostForZoneNumber"/>, deducted
-        /// from <see cref="Wallet"/>. Returns false with no state change
-        /// (no deduction, no tiles placed) when the balance can't afford
-        /// it, or when every authored zone is already unlocked.
-        /// </summary>
-        public bool TryUnlockNextZone()
-        {
-            var zoneNumber = unlockedZones.Count + 1;
-            if (zoneNumber > ZoneCatalog.Zones.Count)
-            {
-                return false;
-            }
-
-            var cost = Expansion.ZoneUnlock.CostForZoneNumber(zoneNumber);
-            if (!Wallet.TrySpend(cost))
-            {
-                return false;
-            }
-
-            var zone = ZoneCatalog.Zones[zoneNumber - 1];
-            zone.PlaceOnto(Map);
-            unlockedZones.Add(zone);
-            AssignZoneLotVariants(zone);
-            InvalidateWalkNetwork();
-            AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
-            return true;
-        }
-
-        /// <summary>#434: rolls and locks in each of a freshly unlocked zone's
-        /// lot variants (ladder + tint) the moment the lots appear, so the empty
-        /// lot already knows the house that will stand on it. The roll is the
-        /// same deterministic <see cref="HouseVariantAssignment.ForHouse"/> the
-        /// build path used to invoke lazily (#299) — moving it here (#434) only
-        /// changes WHEN it happens, not the value. Every zone lot id is a zone
-        /// house id (>= <see cref="HouseVariantAssignment.FirstZoneHouseId"/>),
-        /// so none is rejected.</summary>
-        private void AssignZoneLotVariants(Zone zone)
-        {
-            foreach (var lot in zone.Lots)
-            {
-                assignedLotVariants[lot.HouseId] = HouseVariantAssignment.ForHouse(lot.HouseId);
-            }
-        }
-
         /// <summary>#434: restores a persisted lot-variant assignment on load —
-        /// records the <paramref name="variant"/> for an unbuilt zone lot so
+        /// records the <paramref name="variant"/> for an unbuilt frontier lot so
         /// <see cref="TryBuildHouse"/> reads the SAVED value rather than
         /// re-rolling (future-proofing against an RNG or palette retune). The
         /// parallel of <see cref="RestoreBuiltHouse"/> for a lot that has an
@@ -485,9 +452,9 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>Whether <paramref name="houseId"/> (a <see cref="HouseLot"/>
-        /// id from a <see cref="Zone"/>, or the starting layout) has no
+        /// id from an unlocked frontier tile, or the starting layout) has no
         /// <see cref="House"/> built on it yet (#56, #57) — a freshly
-        /// unlocked zone reports every one of its lots buildable this way.</summary>
+        /// unlocked tile reports every one of its lots buildable this way.</summary>
         public bool IsLotBuildable(int houseId)
         {
             return Houses.All(house => house.Id != houseId);
@@ -499,7 +466,7 @@ namespace Doggiehood.Core.World
         /// and adds a new <see cref="House"/> at <see cref="House.InitialLevel"/>,
         /// vacant (#58). Returns false with no state change (no deduction,
         /// no house added) when the lot already has a house
-        /// (<see cref="IsLotBuildable"/> false), the lot's zone hasn't been
+        /// (<see cref="IsLotBuildable"/> false), the lot's tile hasn't been
         /// unlocked yet, or the balance can't afford the cost.
         /// </summary>
         public bool TryBuildHouse(int houseId)
@@ -509,7 +476,7 @@ namespace Doggiehood.Core.World
                 return false;
             }
 
-            var lot = FindLotInUnlockedZones(houseId);
+            var lot = FindFrontierLot(houseId);
             if (lot == null)
             {
                 return false;
@@ -521,11 +488,10 @@ namespace Doggiehood.Core.World
             }
 
             // #434: the art variant (ladder + tint) was already rolled and
-            // persisted when the zone unlocked (AssignedLotVariants), so the
-            // build reads that pre-assignment rather than re-rolling. A legacy
-            // save whose zone predates #434 has no persisted entry; the
-            // deterministic #299 roll is the fallback — bit-identical, since it
-            // is a pure function of the house id.
+            // persisted when the tile unlocked (AssignedLotVariants), so the
+            // build reads that pre-assignment rather than re-rolling. If no entry
+            // is present the deterministic #299 roll is the fallback —
+            // bit-identical, since it is a pure function of the house id.
             var variant = assignedLotVariants.TryGetValue(houseId, out var assigned)
                 ? assigned
                 : HouseVariantAssignment.ForHouse(houseId);
@@ -646,39 +612,14 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
-        /// #343: restores <paramref name="count"/> already-unlocked zones on
-        /// load — replays the first <paramref name="count"/> authored
-        /// <see cref="ZoneCatalog.Zones"/> onto <see cref="Map"/> and
-        /// <see cref="UnlockedZones"/> in sequence, WITHOUT charging the
-        /// wallet or advancing the reward chain (both persist separately).
-        /// The parallel of <see cref="RestoreRewardChainStep"/>: round-trips
-        /// progress so a persisted zone is never re-paid on reload. A no-op
-        /// for 0; ignores a count beyond the authored zones (a save can only
-        /// legitimately hold what was unlockable when it was written).
-        /// </summary>
-        public void RestoreUnlockedZoneCount(int count)
-        {
-            var target = Math.Min(count, ZoneCatalog.Zones.Count);
-            while (unlockedZones.Count < target)
-            {
-                var zone = ZoneCatalog.Zones[unlockedZones.Count];
-                zone.PlaceOnto(Map);
-                unlockedZones.Add(zone);
-            }
-
-            InvalidateWalkNetwork();
-        }
-
-        /// <summary>
-        /// #299: restores a zone-built house on load — recreates the
+        /// #299/#453: restores a frontier-built house on load — recreates the
         /// <see cref="House"/> at its persisted level/vacancy carrying its
         /// persisted <see cref="HouseVariant"/> (ladder + tint), WITHOUT
         /// charging the wallet or advancing the reward chain (the parallel of
-        /// <see cref="RestoreUnlockedZoneCount"/> / <see cref="RestoreRewardChainStep"/>).
-        /// The house's quadrant comes from its lot in the already-restored
-        /// unlocked zones, so <see cref="RestoreUnlockedZoneCount"/> must run
-        /// first (SaveCodec emits zones before houses). Defensively a no-op if
-        /// the lot already has a house or its zone isn't unlocked.
+        /// <see cref="RestoreRewardChainStep"/>). The house's quadrant comes from
+        /// its lot on the already-restored unlocked tiles, so the tile= lines must
+        /// be replayed first (SaveCodec emits tiles before houses). Defensively a
+        /// no-op if the lot already has a house or its tile isn't unlocked.
         /// </summary>
         public void RestoreBuiltHouse(int houseId, int level, bool isVacant, HouseVariant variant)
         {
@@ -687,7 +628,7 @@ namespace Doggiehood.Core.World
                 return;
             }
 
-            var lot = FindLotInUnlockedZones(houseId);
+            var lot = FindFrontierLot(houseId);
             if (lot == null)
             {
                 return;
@@ -699,10 +640,10 @@ namespace Doggiehood.Core.World
 
         /// <summary>
         /// Resolves the <see cref="HouseLot"/> for any known house id — the
-        /// starting layout's lots (#38) or an unlocked zone's lots (#56) —
-        /// for callers (Unity's WorldBuilder) that need a built house's
-        /// position/quadrant. Throws if the id isn't part of the starting
-        /// layout or any unlocked zone.
+        /// starting layout's lots (#38) or an unlocked frontier tile's lots
+        /// (#295/#453) — for callers (Unity's WorldBuilder) that need a built
+        /// house's position/quadrant. Throws if the id isn't part of the starting
+        /// layout or any unlocked frontier tile.
         /// </summary>
         public HouseLot GetHouseLot(int houseId)
         {
@@ -712,14 +653,15 @@ namespace Doggiehood.Core.World
                 return startingLot;
             }
 
-            var zoneLot = FindLotInUnlockedZones(houseId);
-            if (zoneLot != null)
+            var frontierLot = FindFrontierLot(houseId);
+            if (frontierLot != null)
             {
-                return zoneLot;
+                return frontierLot;
             }
 
             throw new ArgumentException(
-                $"No house lot with id {houseId} in the starting layout or any unlocked zone.", nameof(houseId));
+                $"No house lot with id {houseId} in the starting layout or any unlocked frontier tile.",
+                nameof(houseId));
         }
 
         /// <summary>
@@ -737,18 +679,66 @@ namespace Doggiehood.Core.World
             return house == null ? House.InitialLevel : house.Level;
         }
 
-        private HouseLot FindLotInUnlockedZones(int houseId)
+        /// <summary>#453: the <see cref="HouseLot"/> for a frontier lot id
+        /// (id from <see cref="FrontierHouseId.For"/>) across every currently
+        /// unlocked tile, or null if no unlocked tile carries that lot — the
+        /// frontier replacement for the retired zone-lot lookup. A pure derivation
+        /// from <see cref="UnlockedTiles"/> + the tile catalog, so no per-lot
+        /// state is stored.</summary>
+        private HouseLot FindFrontierLot(int houseId)
         {
-            foreach (var zone in unlockedZones)
+            foreach (var coordinate in unlockedTiles)
             {
-                var lot = zone.Lots.FirstOrDefault(candidate => candidate.HouseId == houseId);
-                if (lot != null)
+                foreach (var lot in LotsForUnlockedTile(coordinate))
                 {
-                    return lot;
+                    if (lot.HouseId == houseId)
+                    {
+                        return lot;
+                    }
                 }
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// #453: the <see cref="HouseLot"/> slots an unlocked frontier tile
+        /// carries — one per quadrant lot the tile's type defines
+        /// (<see cref="TileLotCatalog.LotsFor"/>), positioned from the tile centre
+        /// (<see cref="TileGeometry.CenterOf"/>) and given the stable
+        /// <see cref="FrontierHouseId.For"/> id. The tile type is read from the
+        /// live <see cref="Map"/> (the coordinate is already placed), so this
+        /// needs no <see cref="TargetMap"/> on hand. A coordinate that isn't
+        /// placed, or a <see cref="TileType.FourWay"/> (whose lots belong to the
+        /// starting layout, not the per-type catalog), yields none. The Unity
+        /// world-build reads this to render a frontier tile's empty lots, its
+        /// roads, and its pre-baked trees — the frontier replacement for the
+        /// retired per-zone <c>Zone.Lots</c>.
+        /// </summary>
+        public IReadOnlyList<HouseLot> LotsForUnlockedTile(TileCoordinate coordinate)
+        {
+            var lots = new List<HouseLot>();
+            if (!Map.HasTileAt(coordinate))
+            {
+                return lots;
+            }
+
+            var type = Map.GetTileAt(coordinate);
+            if (type == TileType.FourWay)
+            {
+                return lots;
+            }
+
+            var center = TileGeometry.CenterOf(coordinate);
+            foreach (var pair in TileLotCatalog.LotsFor(type))
+            {
+                var quadrant = pair.Key;
+                var offset = pair.Value;
+                var position = new GridPoint(center.X + offset.X, center.Z + offset.Z);
+                lots.Add(new HouseLot(FrontierHouseId.For(coordinate, quadrant), quadrant, position));
+            }
+
+            return lots;
         }
 
         /// <summary>First-launch tutorial flag (#44); persists in the save.</summary>

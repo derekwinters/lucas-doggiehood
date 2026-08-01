@@ -202,7 +202,8 @@ namespace Doggiehood.Unity.EditModeTests
             }
 
             state.Wallet.Deposit(100);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
 
             var reachedZone = false;
             for (var step = 0; step < 1000 && !reachedZone; step++)

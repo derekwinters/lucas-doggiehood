@@ -8,8 +8,8 @@ namespace Doggiehood.Core.Expansion
     /// can afford it right now. This is the single Core source the tap-to-build
     /// confirmation dialog reads — the cost it shows on Yes, and the buildability
     /// that gates whether a lot tap does anything (a non-buildable lot's tap is a
-    /// no-op that never opens the dialog). The build-side twin of
-    /// <see cref="ZoneUnlockOffer"/>; Core stays the sole authority on the spend
+    /// no-op that never opens the dialog). The build-side twin of the frontier
+    /// tile-unlock offer; Core stays the sole authority on the spend
     /// (<see cref="GameState.TryBuildHouse"/>) either way. Always computed fresh
     /// from live state — nothing here is cached.
     /// </summary>

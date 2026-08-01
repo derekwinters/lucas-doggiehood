@@ -103,6 +103,7 @@ namespace Doggiehood.Core.Tests.Onboarding
             // 100 bonus >= 100 upgrade; upgrade reward >= 100 expand; expand
             // reward >= 50 build; the player ends with a small cushion.
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.FirstQuest));
 
@@ -120,14 +121,14 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.ExpandMap));
 
             // Step 3: expand the map (first zone, cost 100) — funded by step 2.
-            Assert.That(state.Wallet.CanAfford(ZoneUnlockNumbers.BaseCost), Is.True,
+            Assert.That(state.Wallet.CanAfford(TileUnlock.Cost(state.Map.Tiles.Count)), Is.True,
                 "the upgrade reward covers the 100 expand");
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True);
             Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.BuildHouse));
 
             // Step 4: build a house on the newly unlocked lot (cost 50).
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
             Assert.That(state.Wallet.CanAfford(HouseBuildNumbers.Cost), Is.True,
                 "the expand reward covers the 50 build");
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
@@ -146,6 +147,7 @@ namespace Doggiehood.Core.Tests.Onboarding
             // is in progress; the first normal rotation is released exactly when
             // step 4 (build) completes.
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0));
 
             state.GrantOnboardingCompletionReward(state.Houses[0].Id);
@@ -154,10 +156,10 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.TryUpgradeHouse(state.Houses[0].Id), Is.True);
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "no rotation at step 2");
 
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True);
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "no rotation at step 3");
 
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.RewardChain.IsComplete, Is.True);
@@ -169,6 +171,7 @@ namespace Doggiehood.Core.Tests.Onboarding
         public void RewardChainStep_RoundTripsThroughSaveCodec_SoItIsNotRestartedOnReload()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
@@ -182,10 +185,11 @@ namespace Doggiehood.Core.Tests.Onboarding
         public void CompletedRewardChain_RoundTripsAsComplete()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             state.TryUpgradeHouse(state.Houses[0].Id);
-            state.TryUnlockNextZone();
-            state.TryBuildHouse(state.UnlockedZones[0].Lots[0].HouseId);
+            state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);
+            state.TryBuildHouse(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId);
             Assert.That(state.RewardChain.IsComplete, Is.True);
 
             var reloaded = SaveCodec.Load(SaveCodec.Save(state));

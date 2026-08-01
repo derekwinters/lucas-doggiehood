@@ -132,7 +132,7 @@ namespace Doggiehood.Unity
             // Render those treatments for the newly built lot so it matches a
             // starting-neighborhood house.
             // #434: the lot's yard trees were ALREADY placed when its zone
-            // unlocked (WorldBuilder.BuildEmptyLots / RenderUnlockedZone), so we
+            // unlocked (WorldBuilder.BuildEmptyLots / RenderUnlockedTile), so we
             // deliberately do NOT re-render them here — only the foundation slab
             // (destroyed above) is swapped for the house mesh. Re-rendering would
             // duplicate the "Yard - N" container.

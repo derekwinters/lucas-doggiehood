@@ -15,10 +15,12 @@ namespace Doggiehood.Core.Tests.World
     {
         private static GameState UnlockedZoneState()
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(10_000);
-            state.TryUnlockNextZone();
-            return state;
+            return FrontierTestWorld.WithFirstTileUnlocked(10_000);
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<HouseLot> Lots(GameState state)
+        {
+            return state.LotsForUnlockedTile(FrontierTestWorld.FirstTile);
         }
 
         [Test]
@@ -27,7 +29,7 @@ namespace Doggiehood.Core.Tests.World
             // #430 item 1: once a zone lot has a built house (rolled variant /
             // resolved model), its lot joins the network with a front walkway.
             var state = UnlockedZoneState();
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = Lots(state)[0];
 
             Assert.That(state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out _), Is.False,
                 "an empty zone lot must not have a front walkway before it is built");
@@ -45,8 +47,8 @@ namespace Doggiehood.Core.Tests.World
             // an unlocked-but-unbuilt sibling lot must stay excluded exactly as
             // today (a bare empty-lot marker never gets a walkway).
             var state = UnlockedZoneState();
-            var built = state.UnlockedZones[0].Lots[0];
-            var stillEmpty = state.UnlockedZones[0].Lots[1];
+            var built = Lots(state)[0];
+            var stillEmpty = Lots(state)[1];
 
             Assert.That(state.TryBuildHouse(built.HouseId), Is.True);
 
@@ -62,7 +64,7 @@ namespace Doggiehood.Core.Tests.World
             // derived from the walkway (door -> sidewalk) rather than the crude
             // single-arg Z-sign fallback.
             var state = UnlockedZoneState();
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = Lots(state)[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway), Is.True);
@@ -82,7 +84,7 @@ namespace Doggiehood.Core.Tests.World
             // door node. The single-arg overload (starting-tile network only)
             // would return the un-set-back lot centre for a zone lot.
             var state = UnlockedZoneState();
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = Lots(state)[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway), Is.True);
@@ -102,7 +104,7 @@ namespace Doggiehood.Core.Tests.World
             // (e.g. an unbuilt zone lot) keeps its lot-centre position — the same
             // contract the single-arg overload holds.
             var state = UnlockedZoneState();
-            var unbuilt = state.UnlockedZones[0].Lots[0];
+            var unbuilt = Lots(state)[0];
 
             var position = HousePlacement.Position(unbuilt, HousePlacement.KitScale, state.WalkNetwork);
 

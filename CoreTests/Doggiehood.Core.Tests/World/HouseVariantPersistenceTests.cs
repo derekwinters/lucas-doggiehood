@@ -7,10 +7,10 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #299 "assign once, persist": a zone-built house (id >= 5) rolls its
-    /// <see cref="HouseVariant"/> (ladder + tint) once at build and keeps it
-    /// unchanged across app relaunches (SaveCodec round-trip) and across its
-    /// L1->L4 upgrades. The variant is deterministic
+    /// #299 "assign once, persist": a frontier-built house (id >= 5) rolls its
+    /// <see cref="HouseVariant"/> (ladder + tint) once and keeps it unchanged
+    /// across app relaunches (SaveCodec round-trip) and across its L1->L4
+    /// upgrades. The variant is deterministic
     /// (<see cref="HouseVariantAssignment"/>), and its ladder id / tint INDEX
     /// are stored in the save so they survive an RNG or palette retune.
     /// </summary>
@@ -18,17 +18,15 @@ namespace Doggiehood.Core.Tests.World
     {
         private static GameState UnlockedGameWithFunds(int extraCoins)
         {
-            var state = GameState.CreateNew();
-            state.Wallet.Deposit(ZoneUnlockNumbers.BaseCost + HouseBuildNumbers.Cost + extraCoins);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "precondition: the first zone unlocks");
-            return state;
+            // A first tile unlocked, plus enough to build one house (+extra).
+            return FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.Cost + extraCoins);
         }
 
         [Test]
         public void BuiltZoneHouse_GetsItsDeterministicVariant()
         {
             var state = UnlockedGameWithFunds(0);
-            var lotId = ZoneCatalog.FirstZone.Lots.First().HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
 
             Assert.That(state.TryBuildHouse(lotId), Is.True, "precondition: the house builds");
 
@@ -53,7 +51,7 @@ namespace Doggiehood.Core.Tests.World
         public void ZoneHouseVariant_RoundTripsThroughSaveCodec_Unchanged()
         {
             var state = UnlockedGameWithFunds(0);
-            var lotId = ZoneCatalog.FirstZone.Lots.First().HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
             state.TryBuildHouse(lotId);
             var built = state.Houses.First(h => h.Id == lotId).Variant.Value;
 
@@ -75,7 +73,7 @@ namespace Doggiehood.Core.Tests.World
                 HouseUpgradeNumbers.CostToReach(2)
                 + HouseUpgradeNumbers.CostToReach(3)
                 + HouseUpgradeNumbers.CostToReach(4));
-            var lotId = ZoneCatalog.FirstZone.Lots.First().HouseId;
+            var lotId = FrontierTestWorld.FirstLotId;
             state.TryBuildHouse(lotId);
             var atLevel1 = state.Houses.First(h => h.Id == lotId).Variant.Value;
 

@@ -59,6 +59,7 @@ namespace Doggiehood.Core.Tests.World
             // persisted state — a lot with the static HasFence flag off still
             // renders its fence once its house owns a placed "fence".
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var lot = NeighborhoodLayout.HouseLots[0];
             Assert.That(lot.HasFence, Is.False, "precondition: the lot's static flag is off");
 
@@ -77,6 +78,7 @@ namespace Doggiehood.Core.Tests.World
             // #318: the persisted-fence source is ADDITIVE to the existing
             // static HouseLot.HasFence flag, not a replacement.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var lot = FencedCloneOf(NeighborhoodLayout.HouseLots[0]);
 
             Assert.That(LotFence.RunsFor(lot, state), Is.EqualTo(LotFence.GeometryFor(lot)));
@@ -545,7 +547,7 @@ namespace Doggiehood.Core.Tests.World
             // lots, whose positions sit on their own zone tile. Resolves the
             // rolled model (#414/#299), the tile-centered QuadrantBounds
             // (#429/#405), and the fallback facing.
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 Assert.That(() => LotFence.GeometryFor(lot), Throws.Nothing,
                     $"zone lot {lot.HouseId} at {lot.Position}: fence geometry must not throw");
@@ -563,7 +565,7 @@ namespace Doggiehood.Core.Tests.World
             // live-network street facing is deferred to #430). The two open
             // ends reach the house side-wall midpoints and nothing crosses the
             // open front.
-            foreach (var lot in ZoneCatalog.FirstZone.Lots)
+            foreach (var lot in FrontierTestWorld.FirstTileLots())
             {
                 var runs = LotFence.RunsFor(FencedCloneOf(lot));
                 Assert.That(runs.Count, Is.EqualTo(5),
@@ -754,6 +756,7 @@ namespace Doggiehood.Core.Tests.World
             // state overload must produce byte-for-byte the same runs as the
             // level-blind geometry — the fix must not disturb today's shape.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             foreach (var lot in NeighborhoodLayout.HouseLots)
             {
                 var blind = LotFence.GeometryFor(lot);
@@ -782,6 +785,7 @@ namespace Doggiehood.Core.Tests.World
             // stay pinned to the level-1 half-width (which would land inside the
             // wider upgraded house).
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var lot = NeighborhoodLayout.HouseLots.Single(l => l.HouseId == 1);
 
             UpgradeTo(state, 1, 4); // r -> c -> s -> b, footprint grows every rung
@@ -831,6 +835,7 @@ namespace Doggiehood.Core.Tests.World
             // ends whenever the ladder's footprint changes, so the fix can't
             // silently no-op.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             var fencedLot = FencedCloneOf(NeighborhoodLayout.HouseLots.Single(l => l.HouseId == 1));
 
             Assert.That(HouseModelCatalog.ForHouse(1, 2).FootprintX,
@@ -851,9 +856,10 @@ namespace Doggiehood.Core.Tests.World
             // #460: the level-aware resolution covers a ZONE house (id >= 5)
             // upgrading through its rolled ladder, not just a starter house.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(100000);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            Assert.That(state.TryUnlockTile(FrontierTestWorld.FirstTile), Is.True);
+            var lot = FrontierTestWorld.FirstTileLots()[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds at level 1");
             var fencedLot = FencedCloneOf(lot);
 
@@ -902,9 +908,10 @@ namespace Doggiehood.Core.Tests.World
             // side-wall midpoints offset along Z (perp of an X-facing) — the exact
             // opposite of the Z-sign guess (0, -1), whose perp is along X.
             var state = GameState.CreateNew();
+            state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(1_000_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
-            var lot = ZoneCatalog.FirstZone.Lots[0];
+            Assert.That(state.TryUnlockTile(FrontierTestWorld.FirstTile), Is.True, "the first zone unlocks");
+            var lot = FrontierTestWorld.FirstTileLots()[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds");
 
             var realFacing = HousePlacement.FrontFacing(lot, state.WalkNetwork);

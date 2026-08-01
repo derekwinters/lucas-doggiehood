@@ -320,11 +320,12 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the expand step");
             Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.ExpandMapPrompt));
 
-            Assert.That(state.TryUnlockNextZone(), Is.True);
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
             Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the build step");
             Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.BuildHousePrompt));
 
-            var lot = state.UnlockedZones[0].Lots[0];
+            var lot = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
             Assert.That(state.RewardChain.IsComplete, Is.True);
             Assert.That(overlay.ShouldDraw, Is.False,
@@ -411,7 +412,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.GrowTheNeighborhoodTitle),
                 "expand phase");
 
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
             Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.BuildHouseTitle),
                 "build phase");
         }

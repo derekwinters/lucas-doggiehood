@@ -218,9 +218,10 @@ namespace Doggiehood.Core.Tests.Quests
         private static GameState StateWithOneVacantZoneHouse()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.Wallet.Deposit(10_000);
-            Assert.That(state.TryUnlockNextZone(), Is.True);
-            var lot = state.UnlockedZones[0].Lots[0];
+            Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True);
+            var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
             Assert.That(state.Houses.Single(h => h.Id == lot.HouseId).IsVacant, Is.True,
                 "a freshly built zone house starts vacant");

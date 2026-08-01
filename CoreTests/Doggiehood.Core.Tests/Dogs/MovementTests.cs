@@ -1,3 +1,4 @@
+using Doggiehood.Core.Tests.World;
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
@@ -223,7 +224,7 @@ namespace Doggiehood.Core.Tests.Dogs
         private static WalkNetwork BuildMultiTileNetwork()
         {
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
-            ZoneCatalog.FirstZone.PlaceOnto(map);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
             return MapWalkNetwork.BuildFrom(map, NeighborhoodLayout.HouseLots);
         }
 

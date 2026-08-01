@@ -4,13 +4,14 @@ using Doggiehood.Core.World;
 namespace Doggiehood.Core.Expansion
 {
     /// <summary>
-    /// Where the map-expansion lock indicator hovers for a given locked
-    /// <see cref="Zone"/> (#178): the boundary between the currently
-    /// placed <see cref="TileMap"/> and the zone's entrance tile (its
-    /// first authored placement), pushed <see cref="ExpansionIndicatorNumbers.HoverOffset"/>
-    /// further past that edge — "just past the end of the road", per
-    /// docs/specs/expansion.md "Expansion indicator". Derived entirely
-    /// from the #109 tile layout, never a separately hand-picked position.
+    /// Where the map-expansion lock indicator hovers for a given frontier
+    /// coordinate (#178/#453): the boundary between the currently placed
+    /// <see cref="TileMap"/> and that coordinate, pushed
+    /// <see cref="ExpansionIndicatorNumbers.HoverOffset"/> further past that edge
+    /// — "just past the end of the road", per docs/specs/expansion.md "Expansion
+    /// indicator". Derived entirely from the #109 tile layout, never a separately
+    /// hand-picked position. Keyed on a coordinate (the #453 multi-lock frontier
+    /// model), not the retired <c>Zone</c>.
     /// </summary>
     public static class ExpansionIndicatorPlacement
     {
@@ -20,33 +21,30 @@ namespace Doggiehood.Core.Expansion
         };
 
         /// <summary>
-        /// Resolves <paramref name="zone"/>'s indicator position against
-        /// <paramref name="map"/>: finds which edge of the zone's first
-        /// tile placement already borders a tile on the map, then hovers
-        /// past that shared edge's midpoint, away from the map. Throws if
-        /// the zone's entrance tile doesn't border the map at all — a
-        /// caller error, since every authored zone's first placement is
-        /// required (by #109's adjacency rule) to touch the map it will
-        /// eventually be placed onto.
+        /// Resolves the indicator position for the frontier
+        /// <paramref name="frontierCoordinate"/> against <paramref name="placed"/>:
+        /// finds which edge of the coordinate already borders a placed tile, then
+        /// hovers past that shared edge's midpoint, away from the map. Throws if
+        /// the coordinate doesn't border the map at all — a caller error, since a
+        /// frontier coordinate is by definition adjacent to a placed tile
+        /// (<see cref="TileFrontier"/>).
         /// </summary>
-        public static GridPoint Resolve(TileMap map, Zone zone)
+        public static GridPoint Resolve(TileMap placed, TileCoordinate frontierCoordinate)
         {
-            var entry = zone.TilePlacements[0];
-
             foreach (var edgeTowardMap in AllEdges)
             {
-                var neighborCoordinate = entry.Coordinate.Neighbor(edgeTowardMap);
-                if (!map.HasTileAt(neighborCoordinate))
+                var neighborCoordinate = frontierCoordinate.Neighbor(edgeTowardMap);
+                if (!placed.HasTileAt(neighborCoordinate))
                 {
                     continue;
                 }
 
-                var boundary = TileGeometry.EdgeMidpoint(entry.Coordinate, edgeTowardMap);
+                var boundary = TileGeometry.EdgeMidpoint(frontierCoordinate, edgeTowardMap);
                 return Push(boundary, edgeTowardMap.Opposite(), ExpansionIndicatorNumbers.HoverOffset);
             }
 
             throw new InvalidOperationException(
-                $"Zone entrance at {entry.Coordinate} does not border the given map — no boundary to hover past.");
+                $"Frontier coordinate {frontierCoordinate} does not border the given map — no boundary to hover past.");
         }
 
         /// <summary>Moves <paramref name="point"/> <paramref name="distance"/>

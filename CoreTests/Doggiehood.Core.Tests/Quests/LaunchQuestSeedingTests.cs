@@ -23,6 +23,7 @@ namespace Doggiehood.Core.Tests.Quests
             for (var seed = 0; seed < 10; seed++)
             {
                 var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
 
                 state.Quests.EnsureQuestsForLaunch(NowUtc, new Random(seed));
 
@@ -36,6 +37,7 @@ namespace Doggiehood.Core.Tests.Quests
         public void MidChain_GuidedSteps_SeedNothing()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.GrantOnboardingCompletionReward(state.Houses[0].Id); // advance past the first step
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
@@ -49,10 +51,11 @@ namespace Doggiehood.Core.Tests.Quests
         public void PostChain_RunsTheRecurringRotation()
         {
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             state.TryUpgradeHouse(state.Houses[0].Id);
-            state.TryUnlockNextZone();
-            state.TryBuildHouse(state.UnlockedZones[0].Lots[0].HouseId);
+            state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);
+            state.TryBuildHouse(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId);
             Assert.That(state.RewardChain.IsComplete, Is.True);
 
             // The build step already released the first rotation; a later launch

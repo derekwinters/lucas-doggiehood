@@ -59,7 +59,8 @@ namespace Doggiehood.Unity.EditModeTests
             // resulting house through TapRouter.
             var state = GameState.CreateNew();
             state.Wallet.Deposit(150); // 100 to unlock the first zone + 50 to build a house
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
             var worldRoot = WorldBuilder.Build(state);
             var canvasHost = new GameObject("ui-canvas", typeof(Canvas));

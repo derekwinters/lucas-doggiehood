@@ -36,7 +36,8 @@ namespace Doggiehood.Unity.EditModeTests
 
             state = GameState.CreateNew();
             state.Wallet.Deposit(150); // 100 to unlock the first zone + 50 to build a house
-            state.TryUnlockNextZone();
+            state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
+            state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
             worldRoot = WorldBuilder.Build(state);
 
