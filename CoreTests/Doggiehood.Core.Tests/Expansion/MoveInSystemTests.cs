@@ -356,6 +356,34 @@ namespace Doggiehood.Core.Tests.Expansion
         }
 
         [Test]
+        public void PersistenceConstructor_CarriesQuestsSinceLastMoveIn_WithoutRollingDice()
+        {
+            // #437: reconstructing a system from a save must carry the pity
+            // counter forward (accumulated move-in chance) without rolling any
+            // dice, exactly like it carries the remaining reserves forward.
+            const int persistedQuests = 3;
+            var system = new MoveInSystem(
+                Array.Empty<string>(),
+                new[] { Breed.FrenchBulldog },
+                persistedQuests);
+
+            Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(persistedQuests));
+            Assert.That(system.CurrentMoveInChance,
+                Is.EqualTo(MoveInNumbers.BaseMoveInChance + persistedQuests * MoveInNumbers.MoveInChanceIncrementPerQuest)
+                    .Within(1e-9));
+            Assert.That(system.RemainingReservedBreeds, Is.EqualTo(new[] { Breed.FrenchBulldog }));
+        }
+
+        [Test]
+        public void PersistenceConstructor_DefaultsTheCounterToZero_WhenNotSupplied()
+        {
+            var system = new MoveInSystem(Array.Empty<string>(), Array.Empty<Breed>());
+
+            Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(0));
+            Assert.That(system.CurrentMoveInChance, Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+        }
+
+        [Test]
         public void CompositionWeights_SumToOneHundred()
         {
             // Guards the named constants against a future tuning typo.

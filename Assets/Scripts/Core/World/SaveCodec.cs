@@ -103,6 +103,22 @@ namespace Doggiehood.Core.World
             // reload. Stored by name so it survives any future enum reordering.
             builder.Append("rewardChain=").Append(state.RewardChain.CurrentStep.ToString()).Append('\n');
 
+            // #437: the shared move-in state — the pity counter
+            // (quests-since-last-move-in) and the not-yet-consumed easter-egg
+            // and reserved-breed reserves — as
+            // <questsSinceLastMoveIn>|<remaining egg names>|<remaining reserved
+            // breeds>. Without this the accumulated move-in odds reset to the
+            // 5% base and a used easter-egg name could reappear every session.
+            // Breeds are stored by name (like rewardChain) so they survive an
+            // enum reordering; either reserve segment is empty once exhausted.
+            builder.Append("moveIn=")
+                .Append(state.MoveInQuestsSinceLastMoveIn.ToString(CultureInfo.InvariantCulture))
+                .Append('|')
+                .Append(string.Join(",", state.MoveInRemainingEasterEggNames))
+                .Append('|')
+                .Append(string.Join(",", state.MoveInRemainingReservedBreeds))
+                .Append('\n');
+
             // #310: the quest-rotation cadence marker. UTC round-trip format
             // ("O") preserves the exact instant and its UTC kind; the line is
             // omitted entirely until the first rotation has run (null marker).
@@ -174,6 +190,27 @@ namespace Doggiehood.Core.World
                     {
                         state.RestoreRewardChainStep(step);
                     }
+                }
+                else if (key == "moveIn")
+                {
+                    // #437: questsSinceLastMoveIn|remaining egg names|remaining
+                    // reserved breeds — restore the pity counter and both
+                    // reserves without rolling dice. Absence of the line leaves
+                    // CreateNew's default fresh MoveInSystem in place, so a
+                    // legacy save needs no special path (like zones=/house=).
+                    var parts = value.Split('|');
+                    var quests = int.Parse(parts[0], CultureInfo.InvariantCulture);
+                    var eggNames = parts[1].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    var breeds = new List<Dogs.Breed>();
+                    foreach (var name in parts[2].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (Enum.TryParse(name, out Dogs.Breed breed))
+                        {
+                            breeds.Add(breed);
+                        }
+                    }
+
+                    state.RestoreMoveInState(quests, eggNames, breeds);
                 }
                 else if (key == "rotatedUtc")
                 {
