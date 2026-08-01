@@ -180,6 +180,23 @@ namespace Doggiehood.Core.Quests
             state.RecordRotationUtc(nowUtc);
         }
 
+        /// <summary>#457: the Debug-tab "Refresh quests now" seam. Runs the same
+        /// <see cref="StartNewDay"/> top-up and rotation-timestamp record as
+        /// <see cref="MaybeStartNewDay"/>, but <em>unconditionally</em> — skipping
+        /// the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence gate — so a
+        /// tester can trigger the new-quest randomization without waiting out the
+        /// 8h timer. Recording <paramref name="nowUtc"/> also restarts that 8h
+        /// window, so a forced refresh matches a natural one exactly except for
+        /// <em>when</em> it is allowed to fire. Still purely additive (headroom-
+        /// bounded, never removing or failing a quest — economy.md #28).
+        /// <paramref name="nowUtc"/> is a UTC instant (<c>DateTime.UtcNow</c> in
+        /// production).</summary>
+        public void ForceRefresh(DateTime nowUtc, Random rng)
+        {
+            StartNewDay(rng);
+            state.RecordRotationUtc(nowUtc);
+        }
+
         /// <summary>Daily rotation (#26, #310): tops up toward the pacing
         /// policy's population-scaled <see cref="QuestPacingPolicy.TargetActiveCount"/>
         /// — adds <c>min(batch, target − activeCount, freeDogs)</c>, floored at

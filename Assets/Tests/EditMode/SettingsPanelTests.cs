@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
@@ -351,6 +352,57 @@ namespace Doggiehood.Unity.EditModeTests
             Object.DestroyImmediate(hudHost);
         }
 
+        // --- #457: Debug-tab "Refresh quests now" action ---
+
+        [Test]
+        public void DebugPane_RendersARefreshQuestsRow_BelowTheAddCoinsRow()
+        {
+            Assert.That(panel.RefreshQuestsRowRect, Is.Not.Null,
+                "the Debug pane lists a Refresh quests now action row (#457)");
+            Assert.That(panel.RefreshQuestsRowRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugRowHeightPx),
+                "the action row reuses the approved debug-row height — no new constant (#218)");
+            Assert.That(panel.RefreshQuestsRowRect.anchoredPosition.y,
+                Is.EqualTo(-2f * (SettingsPanel.DebugRowHeightPx + SettingsPanel.DebugRowGapPx)),
+                "it stacks two rows-and-gaps below the fence toggle, inventing no new layout");
+        }
+
+        [Test]
+        public void RefreshQuestsButton_IsPresent_SizedFromTheExistingActionConstants()
+        {
+            Assert.That(panel.RefreshQuestsButtonRect, Is.Not.Null);
+            Assert.That(panel.RefreshQuestsButtonRect.sizeDelta.x, Is.EqualTo(SettingsPanel.DebugActionWidthPx));
+            Assert.That(panel.RefreshQuestsButtonRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugActionHeightPx));
+        }
+
+        [Test]
+        public void RefreshQuestsRow_IsGatedBehindTheDebugUnlock_LikeTheOtherRows()
+        {
+            // The row lives in the same Debug pane as Add coins, so it is
+            // unreachable until the Debug tab is unlocked and selected.
+            Assert.That(panel.RefreshQuestsRowRect.parent, Is.EqualTo(panel.AddCoinsRowRect.parent),
+                "the refresh row shares the Debug pane, so it is gated identically");
+            Assert.That(panel.RefreshQuestsRowRect.gameObject.activeInHierarchy, Is.False,
+                "it stays hidden until the Debug tab is unlocked, like the existing rows");
+        }
+
+        [Test]
+        public void RefreshQuests_ForcesAQuestRotation_ViaTheCoreSeam()
+        {
+            Assert.That(state.LastRotationUtc, Is.Null, "precondition: no rotation has happened yet");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "precondition: no active quests yet");
+
+            var before = System.DateTime.UtcNow;
+            panel.RefreshQuests();
+            var after = System.DateTime.UtcNow;
+
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
+                "tapping the action forces a new-quest top-up through QuestManager.ForceRefresh (#457)");
+            Assert.That(state.LastRotationUtc, Is.Not.Null,
+                "the forced refresh records its instant, restarting the 8h window");
+            Assert.That(state.LastRotationUtc.Value, Is.InRange(before, after),
+                "it passes DateTime.UtcNow to the Core seam exactly once");
+        }
+
         // --- #298: Candy Cottage chrome restyle (shared-components.md via CandyChromeUgui) ---
 
         [Test]
@@ -399,6 +451,15 @@ namespace Doggiehood.Unity.EditModeTests
                 "the Add coins action is a Gold #FFC23C pill (#286/#298)");
             AssertInkOutline(panel.AddCoinsButtonRect.gameObject);
             AssertHardShadow(panel.AddCoinsButtonRect.gameObject);
+        }
+
+        [Test]
+        public void RefreshQuestsAction_IsAGoldPill_WithOutlineAndHardShadow()
+        {
+            AssertHex(panel.RefreshQuestsButtonRect.GetComponent<Image>().color, 0xFF, 0xC2, 0x3C,
+                "the Refresh quests action is a Gold #FFC23C pill, styled like Add coins (#457/#298)");
+            AssertInkOutline(panel.RefreshQuestsButtonRect.gameObject);
+            AssertHardShadow(panel.RefreshQuestsButtonRect.gameObject);
         }
 
         [Test]

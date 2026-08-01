@@ -91,6 +91,11 @@ namespace Doggiehood.Unity
         // ASCII "+" — the bundled UI font (DejaVu Sans, #291) does not carry the
         // mockup's fullwidth plus (U+FF0B), so it would draw nothing in the build.
         private const string AddCoinsGlyph = "+";
+        // #457: the Debug-tab "Refresh quests now" action — a one-shot pill styled
+        // like Add coins. ASCII-only glyph for the same bundled-font reason.
+        private const string RefreshQuestsRowLabelText = "Refresh quests now";
+        private const string RefreshQuestsRowSubtitleText = "Force new-quest randomization, skip the 8h timer (#457)";
+        private const string RefreshQuestsGlyph = "Go";
 
         /// <summary>#291: the bundled UI font, loaded from a Resources folder so
         /// it ships in the Android build. Runtime-built UGUI cannot rely on
@@ -140,6 +145,8 @@ namespace Doggiehood.Unity
         private RectTransform fenceKnobRect;
         private RectTransform addCoinsRowRect;
         private RectTransform addCoinsButtonRect;
+        private RectTransform refreshQuestsRowRect;
+        private RectTransform refreshQuestsButtonRect;
         private Text versionLabel;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
@@ -156,6 +163,8 @@ namespace Doggiehood.Unity
         public RectTransform FenceKnobRect => fenceKnobRect;
         public RectTransform AddCoinsRowRect => addCoinsRowRect;
         public RectTransform AddCoinsButtonRect => addCoinsButtonRect;
+        public RectTransform RefreshQuestsRowRect => refreshQuestsRowRect;
+        public RectTransform RefreshQuestsButtonRect => refreshQuestsButtonRect;
         public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
 
@@ -245,6 +254,19 @@ namespace Doggiehood.Unity
         public void AddCoins()
         {
             state?.Wallet.Deposit(DebugAddCoinsAmount);
+        }
+
+        /// <summary>#457: the Debug-tab "Refresh quests now" action — forces the
+        /// new-quest randomization immediately, skipping the 8h refresh timer, so
+        /// quest content can be tested without waiting. Thin wiring: the decision
+        /// lives in Core (<see cref="Doggiehood.Core.Quests.QuestManager.ForceRefresh"/>),
+        /// which runs the same top-up + timestamp-record as a natural rotation but
+        /// without the cadence gate. Uses a fresh <see cref="System.Random"/> like
+        /// the launch seeding bootstrap, since this entry point has no
+        /// caller-supplied one.</summary>
+        public void RefreshQuests()
+        {
+            state?.Quests.ForceRefresh(DateTime.UtcNow, new System.Random());
         }
 
         private void OnToggleChanged(string key, bool value)
@@ -442,6 +464,7 @@ namespace Doggiehood.Unity
 
             BuildFenceRow(debugPaneRect);
             BuildAddCoinsRow(debugPaneRect);
+            BuildRefreshQuestsRow(debugPaneRect);
             debugPaneRect.gameObject.SetActive(false);
         }
 
@@ -526,6 +549,40 @@ namespace Doggiehood.Unity
             // "+100" built from the named amount — no bare literal (#161).
             CreateLabel("Glyph", addCoinsButtonRect, AddCoinsGlyph + DebugAddCoinsAmount, DebugActionFontSizePx, TextAnchor.MiddleCenter);
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(AddCoins);
+        }
+
+        /// <summary>#457: the third Debug-tab row — a "Refresh quests now" action
+        /// pill styled exactly like <see cref="BuildAddCoinsRow"/> (same
+        /// <see cref="DebugActionWidthPx"/>/<see cref="DebugActionHeightPx"/> Gold
+        /// pill), stacked one row below Add coins via the existing
+        /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> constants
+        /// (#161 — no new named layout values). Wired to the Core forced-refresh
+        /// seam so the 8h timer can be skipped for playtesting.</summary>
+        private void BuildRefreshQuestsRow(RectTransform parent)
+        {
+            refreshQuestsRowRect = CreateDebugRow(parent, "RefreshQuestsRow", order: 2);
+
+            var label = CreateLabel("Label", refreshQuestsRowRect, RefreshQuestsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
+            label.rectTransform.offsetMin = new Vector2(TabRadiusPx, label.rectTransform.offsetMin.y);
+
+            var subtitle = CreateLabel("Subtitle", refreshQuestsRowRect, RefreshQuestsRowSubtitleText, DebugRowSubtitleFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(subtitle.rectTransform, DebugRowLabelFontSizePx * 1.4f, DebugRowSubtitleFontSizePx * 1.3f);
+            subtitle.rectTransform.offsetMin = new Vector2(TabRadiusPx, subtitle.rectTransform.offsetMin.y);
+
+            var actionImage = CreateImage("Action", refreshQuestsRowRect, ActionColor);
+            refreshQuestsButtonRect = actionImage.rectTransform;
+            refreshQuestsButtonRect.anchorMin = new Vector2(1f, 0.5f);
+            refreshQuestsButtonRect.anchorMax = new Vector2(1f, 0.5f);
+            refreshQuestsButtonRect.pivot = new Vector2(1f, 0.5f);
+            refreshQuestsButtonRect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
+            refreshQuestsButtonRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            // Refresh action: a Gold pill with the Ink outline + hard shadow,
+            // matching the Add coins action (#457/#298).
+            CandyChromeUgui.ApplyPill(actionImage, ActionColor, DebugActionHeightPx, withShadow: true);
+
+            CreateLabel("Glyph", refreshQuestsButtonRect, RefreshQuestsGlyph, DebugActionFontSizePx, TextAnchor.MiddleCenter);
+            actionImage.gameObject.AddComponent<Button>().onClick.AddListener(RefreshQuests);
         }
 
         private void SyncFenceToggleVisual(bool on)
