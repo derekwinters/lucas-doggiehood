@@ -109,14 +109,17 @@ namespace Doggiehood.Core.World
 
         private WalkNetwork BuildWalkNetwork()
         {
-            // Only houses with an authored style (#64) can grow a front
-            // walkway — the walkway ends at the house's catalog front door,
-            // and an unstyled expansion-built house (#57) has no model/door
-            // yet (the render layer already grayboxes it). Its lot is left
-            // off the walk graph; the tile's sidewalks/crosswalks still span
-            // it, since those derive from the Map's roads, not its houses.
+            // A built house grows a front walkway (#430) when it has a resolved
+            // model to derive the door from: either an authored starter style
+            // (#64) OR a zone-built house's rolled variant (#299, #414). A zone
+            // lot with no house yet has no entry in `houses`, so it stays off
+            // the graph exactly as before — the tile's sidewalks/crosswalks
+            // still span it, since those derive from the Map's roads, not its
+            // houses. The zone house's walkway is a real graph edge; the
+            // resident-only wander gate (WanderBehavior) keeps every OTHER dog
+            // off it.
             var builtLots = houses
-                .Where(house => Art.HouseStyleTable.HasStyle(house.Id))
+                .Where(house => Art.HouseStyleTable.HasStyle(house.Id) || house.Variant.HasValue)
                 .Select(house => GetHouseLot(house.Id))
                 .ToList();
             return MapWalkNetwork.BuildFrom(Map, builtLots);

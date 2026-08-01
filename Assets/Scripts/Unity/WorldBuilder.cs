@@ -255,10 +255,10 @@ namespace Doggiehood.Unity
 
             foreach (var house in state.Houses)
             {
-                BuildHouse(root.transform, house, state.GetHouseLot(house.Id));
+                BuildHouse(root.transform, house, state.GetHouseLot(house.Id), state.WalkNetwork);
             }
 
-            BuildWalkways(root.transform);
+            BuildWalkways(root.transform, state);
             BuildFences(root.transform, state);
             BuildYardLandscaping(root.transform);
             BuildEmptyLots(root.transform, state);
@@ -548,11 +548,16 @@ namespace Doggiehood.Unity
         /// the walkway always exists visually. All geometry comes from
         /// Core either way — nothing here decides where a walkway goes.
         /// </summary>
-        private static void BuildWalkways(Transform parent)
+        private static void BuildWalkways(Transform parent, GameState state)
         {
-            foreach (var lot in NeighborhoodLayout.HouseLots)
+            // #430: render a front walkway for EVERY built house against the
+            // live map-spanning network (mirroring #424's BuildFences), so a
+            // zone house's walkway is rendered on world (re)build too — not only
+            // when it is first built mid-game via ExpansionDirector. A lot with
+            // no front-walkway edge in the network renders nothing.
+            foreach (var house in state.Houses)
             {
-                BuildWalkway(parent, lot);
+                BuildWalkway(parent, state.GetHouseLot(house.Id), state.WalkNetwork);
             }
         }
 
@@ -568,7 +573,21 @@ namespace Doggiehood.Unity
         /// </summary>
         public static void BuildWalkway(Transform parent, HouseLot lot)
         {
-            if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            BuildWalkway(parent, lot, NeighborhoodLayout.WalkNetwork);
+        }
+
+        /// <summary>
+        /// #430: renders one lot's front walkway from an explicit walk network
+        /// rather than the starting-tile <see cref="NeighborhoodLayout.WalkNetwork"/>
+        /// singleton. A zone lot only has a walkway edge in the live map-spanning
+        /// <see cref="GameState.WalkNetwork"/>, so ExpansionDirector passes that
+        /// through to render a mid-game zone house's walkway (the singleton
+        /// no-ops for it). A lot with no front-walkway edge in the given network
+        /// renders nothing — the same skip the starting-house loop makes.
+        /// </summary>
+        public static void BuildWalkway(Transform parent, HouseLot lot, WalkNetwork network)
+        {
+            if (!network.TryGetFrontWalkway(lot.HouseId, out var walkway))
             {
                 return;
             }
@@ -1145,13 +1164,28 @@ namespace Doggiehood.Unity
         /// </summary>
         public static GameObject BuildHouse(Transform parent, House house, HouseLot lot)
         {
+            return BuildHouse(parent, house, lot, NeighborhoodLayout.WalkNetwork);
+        }
+
+        /// <summary>
+        /// #430: <see cref="BuildHouse(Transform, House, HouseLot)"/> against an
+        /// explicit walk network. A zone house's front-walkway edge (and so its
+        /// street-ward facing + front-setback position) lives only in the live
+        /// map-spanning <see cref="GameState.WalkNetwork"/>, so ExpansionDirector
+        /// passes that through when it builds a house on a zone lot mid-game —
+        /// the starting-tile singleton has no edge for it, which is why the
+        /// house used to render at the lot centre with the Z-sign facing
+        /// fallback. Starting houses render identically through either network.
+        /// </summary>
+        public static GameObject BuildHouse(Transform parent, House house, HouseLot lot, WalkNetwork network)
+        {
             // #127: the house stands at Core's front-setback position —
             // pulled from the lot center toward its facing street so the
             // scaled front facade sits HousePlacement.FrontSetback from
             // the sidewalk's outer edge. The lot center itself is not
             // moved (it still anchors the deferred expansion geometry);
             // since #128 the walk network connects at the front DOOR.
-            var position = HousePlacement.Position(lot, HouseKitScale);
+            var position = HousePlacement.Position(lot, HouseKitScale, network);
 
             var houseRoot = new GameObject(HouseNamePrefix + house.Id);
             houseRoot.transform.SetParent(parent);
@@ -1211,13 +1245,13 @@ namespace Doggiehood.Unity
                     // per-house look is the generated palette tint (Colormap
                     // texture, no variant swap), applied as a color-multiply.
                     var paletteTintHex = Palette.HouseTintHex(house.Variant.Value.TintIndex);
-                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot),
+                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot, network),
                         HouseTintVariant.Colormap, paletteTintHex, house.IsVacant);
                 }
                 else
                 {
                     var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
-                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot), tintVariant, null, house.IsVacant);
+                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot, network), tintVariant, null, house.IsVacant);
                 }
 
                 return houseRoot;
@@ -1250,9 +1284,9 @@ namespace Doggiehood.Unity
         /// engine-free); this is just the Vector3 conversion at the Unity
         /// boundary.
         /// </summary>
-        private static Vector3 HouseFrontFacing(HouseLot lot)
+        private static Vector3 HouseFrontFacing(HouseLot lot, WalkNetwork network)
         {
-            var facing = HousePlacement.FrontFacing(lot);
+            var facing = HousePlacement.FrontFacing(lot, network);
             return new Vector3(facing.X, 0f, facing.Z);
         }
 

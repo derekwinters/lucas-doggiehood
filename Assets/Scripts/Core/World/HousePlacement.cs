@@ -146,7 +146,28 @@ namespace Doggiehood.Core.World
                 throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
             }
 
-            if (!NeighborhoodLayout.WalkNetwork.TryGetFrontWalkway(lot.HouseId, out var walkway))
+            return Position(lot, uniformScale, NeighborhoodLayout.WalkNetwork);
+        }
+
+        /// <summary>
+        /// <see cref="Position(HouseLot, float)"/> against an explicit walk
+        /// network rather than the starting-tile
+        /// <see cref="NeighborhoodLayout.WalkNetwork"/> singleton (#430). A zone
+        /// lot (id >= 5) has no front-walkway edge in the starting network, so
+        /// the single-arg overload leaves its house at the un-set-back lot
+        /// centre; given the #398 map-spanning network (which grows walkway
+        /// edges onto unlocked tiles), this returns the real front-setback
+        /// position so the rendered mesh lines up with the walkway's door. The
+        /// companion of <see cref="FrontFacing(HouseLot, WalkNetwork)"/>.
+        /// </summary>
+        public static GridPoint Position(HouseLot lot, float uniformScale, WalkNetwork network)
+        {
+            if (uniformScale <= 0f)
+            {
+                throw new ArgumentException("Uniform scale must be positive.", nameof(uniformScale));
+            }
+
+            if (network == null || !network.TryGetFrontWalkway(lot.HouseId, out var walkway))
             {
                 return lot.Position;
             }

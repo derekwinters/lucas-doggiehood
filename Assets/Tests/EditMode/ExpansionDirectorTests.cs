@@ -106,16 +106,17 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void ConfirmingYes_AlsoRendersTheYardAndFence_ForTheBuiltZoneLot()
+        public void ConfirmingYes_AlsoRendersTheWalkwayYardAndFence_ForTheBuiltZoneLot()
         {
-            // #405: a mid-game zone-lot build used to render only the house
-            // mesh. After BuildHouse succeeds, ExpansionDirector now also calls
-            // the single-lot walkway/yard/fence helpers, so the zone house gets
-            // the same treatments a starting house gets at world-build time.
-            // Yard trees render for any zone lot; the fence renders here with
-            // ForceFencesVisible on (the default lot is unfenced). The walkway
-            // stays a no-op until the zone lot gains a front-walkway edge — its
-            // single-lot render parity is covered by WorldBuilderTests.
+            // #405/#430: a mid-game zone-lot build used to render only the house
+            // mesh. After BuildHouse succeeds, ExpansionDirector now calls the
+            // single-lot walkway/yard/fence helpers against the LIVE walk network
+            // (#430), so the zone house gets the same treatments a starting house
+            // gets at world-build time. Yard trees render for any zone lot; the
+            // fence renders here with ForceFencesVisible on (the default lot is
+            // unfenced). The walkway now renders too — since #430 the zone lot has
+            // a real front-walkway edge in GameState.WalkNetwork, so it is no
+            // longer the pre-#430 no-op.
             var originalFences = WorldBuilder.ForceFencesVisible;
             WorldBuilder.ForceFencesVisible = true;
             try
@@ -126,6 +127,10 @@ namespace Doggiehood.Unity.EditModeTests
                 lotView.OnTapped();
                 dialog.YesButton.onClick.Invoke();
 
+                Assert.That(state.WalkNetwork.TryGetFrontWalkway(houseId, out _), Is.True,
+                    "#430: the built zone house joins the live walk network with a front walkway");
+                Assert.That(worldRoot.transform.Find(WorldBuilder.WalkwayNamePrefix + houseId),
+                    Is.Not.Null, "the built zone house gets its front walkway rendered");
                 Assert.That(worldRoot.transform.Find(WorldBuilder.YardLandscapingNamePrefix + houseId),
                     Is.Not.Null, "the built zone house gets its yard trees rendered");
                 Assert.That(worldRoot.transform.Find(WorldBuilder.FenceNamePrefix + houseId),

@@ -21,21 +21,35 @@ namespace Doggiehood.Core.Dogs
     /// </summary>
     public sealed class WanderBehavior
     {
+        /// <summary>#430: the resident-house id meaning "this dog belongs to no
+        /// house on the network" — the default, under which EVERY front walkway
+        /// stays excluded exactly as the pre-#430 single-line filter did. Real
+        /// house ids are always &gt;= 1 (starting ids 1-4, zone ids &gt;= 5), so
+        /// 0 can never match a walkway's owning house.</summary>
+        public const int NoResidentHouseId = 0;
+
         private readonly Random random;
         private readonly MovementProfile profile;
         private readonly Func<WalkNetwork> networkProvider;
+
+        // #430: the id of the house this dog lives in. A FrontWalkway edge is a
+        // wander candidate only when it is THIS house's own walkway; every other
+        // front walkway stays excluded, so dogs never detour onto a neighbor's
+        // lot. NoResidentHouseId excludes all front walkways.
+        private readonly int residentHouseId;
 
         // The node the dog was at before its most recent hop — null until
         // the first call, since there's no arrival direction yet.
         private GridPoint? previousNode;
 
-        public WanderBehavior(int seed, MovementProfile profile)
-            : this(seed, profile, () => NeighborhoodLayout.WalkNetwork)
+        public WanderBehavior(int seed, MovementProfile profile, int residentHouseId = NoResidentHouseId)
+            : this(seed, profile, () => NeighborhoodLayout.WalkNetwork, residentHouseId)
         {
         }
 
-        public WanderBehavior(int seed, MovementProfile profile, WalkNetwork network)
-            : this(seed, profile, () => network)
+        public WanderBehavior(int seed, MovementProfile profile, WalkNetwork network,
+            int residentHouseId = NoResidentHouseId)
+            : this(seed, profile, () => network, residentHouseId)
         {
         }
 
@@ -44,13 +58,16 @@ namespace Doggiehood.Core.Dogs
         /// (#398): DogView passes <c>() =&gt; state.WalkNetwork</c>, so an
         /// already-spawned dog automatically wanders onto newly unlocked
         /// tiles the moment the map-derived network grows — no re-spawn, no
-        /// rebinding.
+        /// rebinding. <paramref name="residentHouseId"/> (#430) is the dog's own
+        /// house, gating which front walkway (if any) it may step onto.
         /// </summary>
-        public WanderBehavior(int seed, MovementProfile profile, Func<WalkNetwork> networkProvider)
+        public WanderBehavior(int seed, MovementProfile profile, Func<WalkNetwork> networkProvider,
+            int residentHouseId = NoResidentHouseId)
         {
             random = new Random(seed);
             this.profile = profile;
             this.networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
+            this.residentHouseId = residentHouseId;
         }
 
         /// <summary>Next node, weighting continue-straight-vs-deviate/turn
@@ -71,7 +88,7 @@ namespace Doggiehood.Core.Dogs
             var network = networkProvider();
             var node = network.NearestWalkableNode(current);
             var candidates = network.EdgesFrom(node)
-                .Where(e => e.Kind != WalkEdgeKind.FrontWalkway)
+                .Where(e => IsWalkable(e, network))
                 .ToList();
 
             var next = candidates.Count == 0
@@ -80,6 +97,30 @@ namespace Doggiehood.Core.Dogs
 
             previousNode = node;
             return next;
+        }
+
+        /// <summary>#430: which edges general wander may take from a node.
+        /// Sidewalks and crosswalks are always fair game. A FrontWalkway is a
+        /// candidate ONLY when it is this dog's own house's walkway — resolved
+        /// by looking that house's walkway up on the network and matching its
+        /// endpoints. Every other front walkway (and all of them, for a dog with
+        /// <see cref="NoResidentHouseId"/>) stays excluded, so no dog wanders
+        /// onto a lot that isn't its own.</summary>
+        private bool IsWalkable(WalkEdge edge, WalkNetwork network)
+        {
+            if (edge.Kind != WalkEdgeKind.FrontWalkway)
+            {
+                return true;
+            }
+
+            return residentHouseId != NoResidentHouseId
+                && network.TryGetFrontWalkway(residentHouseId, out var mine)
+                && SameEdge(edge, mine);
+        }
+
+        private static bool SameEdge(WalkEdge a, WalkEdge b)
+        {
+            return (a.A.Equals(b.A) && a.B.Equals(b.B)) || (a.A.Equals(b.B) && a.B.Equals(b.A));
         }
 
         private GridPoint ChooseNext(GridPoint node, List<WalkEdge> candidates, float continueWeight, float deviateWeight)
