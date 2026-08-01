@@ -1103,6 +1103,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-title-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-title region
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gesture-arrow-coach-330" class="md-nav__link">
     <span class="md-ellipsis">
       Gesture-arrow coach (#330)
@@ -1696,6 +1705,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-title-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase-title region
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gesture-arrow-coach-330" class="md-nav__link">
     <span class="md-ellipsis">
       Gesture-arrow coach (#330)
@@ -1742,7 +1760,7 @@
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>First-launch guidance (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/18">#18</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/44">#44</a>), layered over live gameplay — there is <strong>no blocking modal</strong>. A slim coach prompt sits <strong>bottom-center</strong> and advances itself through the four onboarding steps (pan, zoom, tap the speech bubble, complete the first quest) as the player performs each real action, then auto-dismisses for good. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
-<p>The whole overlay is a single <strong>coach bar</strong> — a slim pill floated over the neighborhood. It carries three inline regions:</p>
+<p>The whole overlay is a single <strong>coach bar</strong> — a slim pill floated over the neighborhood. It carries an inline content row plus an overlapping title tab:</p>
 <table>
 <thead>
 <tr>
@@ -1753,6 +1771,11 @@
 </thead>
 <tbody>
 <tr>
+<td>Phase-title tab</td>
+<td>An overlapping gold tab at the coach bar's top-left naming the current onboarding <strong>phase</strong> (not step) — see <a href="#phase-title-region">Phase-title region</a></td>
+<td>Styled like the <a href="../shared-components/#dialogue-box-dialoguebox">DialogueBox</a> name tag; drawn procedurally via <code>CandyChrome</code></td>
+</tr>
+<tr>
 <td>Leading badge</td>
 <td>A round paw badge that marks the prompt as the coach's voice</td>
 <td>Reuses the Candy Cottage baseline (thick outline, hard shadow, pill) from <a href="../shared-components/">Shared UI Components</a> / <a href="../../world/art-style/">Art &amp; UI Style</a></td>
@@ -1760,11 +1783,6 @@
 <tr>
 <td>Message text</td>
 <td>The current step's guidance text (from the Core <code>OnboardingSequence</code>)</td>
-<td>—</td>
-</tr>
-<tr>
-<td>Trailing step-dots</td>
-<td>A row of <code>StepDotCount</code> progress dots; the current step's dot is filled</td>
 <td>—</td>
 </tr>
 </tbody>
@@ -1800,17 +1818,13 @@
 <td>Gap below the coach bar</td>
 </tr>
 <tr>
-<td><code>StepDotCount</code></td>
-<td><code>4</code></td>
-<td>Number of progress dots (one per guided step)</td>
-</tr>
-<tr>
 <td><code>MsgFontPx</code></td>
 <td><code>30</code></td>
 <td>Step message text size</td>
 </tr>
 </tbody>
 </table>
+<p>The coach bar carries a <strong>phase-title tab</strong> — an overlapping gold tab at its top-left corner, styled like the <a href="../shared-components/#dialogue-box-dialoguebox">DialogueBox</a> name tag — in place of any progress indicator; its constants, per-phase titles, and content-sizing rule live in <a href="#phase-title-region">Phase-title region</a> below.</p>
 <p>The bar's <strong>style</strong> — thick outline, hard drop shadow, pill (999 px) radius — is the shared Candy Cottage baseline from <a href="../shared-components/">Shared UI Components</a> / <a href="../../world/art-style/">Art &amp; UI Style</a> and is not re-specified here; this page places the bar and sizes it and its message text.</p>
 <h2 id="standard-onboarding-coverage-374">Standard onboarding coverage (#374)<a class="headerlink" href="#standard-onboarding-coverage-374" title="Permanent link">&para;</a></h2>
 <p><em>Approved extension: Derek, 2026-07-30 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403"><code>/approve</code> on #374</a>) — authoritative. This coach bar is the </em><em>one standard guidance surface</em><em> for </em><em>all</em><em> onboarding steps — not just the first four — so no new prompt design is invented per flow.</em></p>
@@ -1822,7 +1836,7 @@
 </ol>
 </li>
 <li>
-<p><strong>Grow-to-fit width (folds in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/369">#369</a>).</strong> <code>CoachWidthPx</code> (900) becomes a <strong>minimum</strong>, not a fixed width: the bar sizes its width to the measured message (plus the paw badge, step-dots, and paddings), clamped to a <code>CoachMaxWidthPx</code> beyond which the text <strong>wraps</strong> to a second line and the bar grows in height instead — so no step string ever overflows the pill or runs off-screen. Bottom-center anchor and the panel-open behavior are unchanged. When wrapping, the bar height grows by one <code>MsgFontPx</code> line + existing vertical padding.</p>
+<p><strong>Grow-to-fit width (folds in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/369">#369</a>).</strong> <code>CoachWidthPx</code> (900) becomes a <strong>minimum</strong>, not a fixed width: the bar sizes its width to the measured message (plus the paw badge and paddings), clamped to a <code>CoachMaxWidthPx</code> beyond which the text <strong>wraps</strong> to a second line and the bar grows in height instead — so no step string ever overflows the pill or runs off-screen. Bottom-center anchor and the panel-open behavior are unchanged. When wrapping, the bar height grows by one <code>MsgFontPx</code> line + existing vertical padding.</p>
 <p><strong>Locked #374 constants</strong> (these are the values <a href="https://github.com/derekwinters/lucas-doggiehood/issues/371">#371</a> declares and EditMode-tests against, per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>'s no-inline-literals rule):</p>
 <table>
 <thead>
@@ -1844,22 +1858,12 @@
 <td>Max width before the message <strong>wraps</strong> and the bar grows in height instead</td>
 </tr>
 <tr>
-<td><code>StepDotCount</code></td>
-<td><code>4</code></td>
-<td>Unchanged; dots track the first-launch four steps only (see step-dots note below)</td>
-</tr>
-<tr>
-<td>- <strong>Step-dots (resolved — accepted default).</strong> <code>StepDotCount</code> stays <code>4</code>: the progress dots track only the first-launch four steps and are <strong>dropped</strong> for the post-first-quest reward-chain steps (upgrade → expand → build), matching the approved mockup's original four-dot bar. (This was flagged as an open sub-decision in the proposal; the bare <code>/approve</code> accepts the mockup's default — flagged for Derek to confirm in the distilling PR.)</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
 <td>- <strong>Completion hands off to the reward panel.</strong> Each step's completion raises the bespoke <a href="../onboarding-reward/">onboarding reward panel</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) celebrating the step + its coin reward; the coach bar then shows the next step's prompt (or dismisses after the last).</td>
 <td></td>
 <td></td>
 </tr>
 <tr>
-<td>- <strong>Coverage status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/371">#371</a>): implemented.</strong> The coach bar re-shows for the three reward-chain steps with the accepted copy above, advancing on each <strong>real action</strong> — upgrade a house / unlock a zone / build a house — observed on <code>GameState.RewardChain</code>, and dismisses for good once the chain completes at the build step (releasing normal quest rotation, the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>→<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a> handoff). The engine-free decision — the per-step prompt lookup and the "keep showing until the chain completes" dismissal gate — lives in Core <code>OnboardingCoach</code>; the thin <code>OnboardingOverlay</code> renders it. The grow-to-fit width (<code>CoachWidthPx</code> minimum, <code>CoachMaxWidthPx</code> wrap) and the frozen four-step dots (they stay filled at 4/4 through the reward chain, not advancing) are wired against the Locked #374 constants above. (The reward panel itself is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/372">#372</a>'s job, not wired here.)</td>
+<td>- <strong>Coverage status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/371">#371</a>): implemented.</strong> The coach bar re-shows for the three reward-chain steps with the accepted copy above, advancing on each <strong>real action</strong> — upgrade a house / unlock a zone / build a house — observed on <code>GameState.RewardChain</code>, and dismisses for good once the chain completes at the build step (releasing normal quest rotation, the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>→<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a> handoff). The engine-free decision — the per-step prompt lookup, the per-phase title lookup, and the "keep showing until the chain completes" dismissal gate — lives in Core <code>OnboardingCoach</code>; the thin <code>OnboardingOverlay</code> renders it. The grow-to-fit width (<code>CoachWidthPx</code> minimum, <code>CoachMaxWidthPx</code> wrap) and the <a href="#phase-title-region">phase-title tab</a> are wired against the Locked #374 constants above and the phase-title constants below. (The reward panel itself is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/372">#372</a>'s job, not wired here.)</td>
 <td></td>
 <td></td>
 </tr>
@@ -1867,6 +1871,95 @@
 </table>
 </li>
 </ul>
+<h2 id="phase-title-region">Phase-title region<a class="headerlink" href="#phase-title-region" title="Permanent link">&para;</a></h2>
+<p><em>Approved: Derek, 2026-07-31 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/435#issuecomment-5148389570"><code>/approve</code> on #435</a>). Replaces the earlier trailing step-dots region: the dot count tracked only the first-launch four steps and froze at 4/4 through the reward chain, so it was misleading now that onboarding spans four </em><em>phases</em><em> across two state machines. <code>StepDotCount</code>/the step-dots region are </em><em>dropped entirely</em><em>.</em></p>
+<p>Instead of a progress indicator, the coach bar names the current onboarding <strong>phase</strong> with a <strong>phase-title tab</strong>: an overlapping gold tab at the bar's top-left corner, echoing the <a href="../shared-components/#dialogue-box-dialoguebox">DialogueBox name tag</a>. It is <strong>styled</strong> like the name tag (same overlap/padding/font proportions, same <code>Gold</code> "coin token, name tag" role fill) but is <strong>not</strong> a literal component reuse — the coach bar is drawn procedurally on IMGUI via <code>CandyChrome</code>, not the UGUI <code>DialogueBox</code> shell the name tag belongs to.</p>
+<p><strong>Layout constants</strong> (authored at the 1920×1200 reference; named per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Applies to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PhaseTitleAnchor</code></td>
+<td><code>TopLeft</code></td>
+<td>Tab position, overlapping the coach bar's top edge</td>
+</tr>
+<tr>
+<td><code>PhaseTitleLeftInsetPx</code></td>
+<td><code>34</code></td>
+<td>Tab inset from the bar's left edge (aligns above the paw badge)</td>
+</tr>
+<tr>
+<td><code>PhaseTitleOffsetPx</code></td>
+<td><code>28</code></td>
+<td>Vertical overlap above the bar's top edge (matches <code>NameTagOffsetPx</code>)</td>
+</tr>
+<tr>
+<td><code>PhaseTitlePaddingXPx</code></td>
+<td><code>30</code></td>
+<td>Tab horizontal label inset (matches the name tag)</td>
+</tr>
+<tr>
+<td><code>PhaseTitlePaddingYPx</code></td>
+<td><code>8</code></td>
+<td>Tab vertical label inset (matches the name tag)</td>
+</tr>
+<tr>
+<td><code>PhaseTitleFontPx</code></td>
+<td><code>26</code></td>
+<td>Tab label size (matches the name tag)</td>
+</tr>
+<tr>
+<td><code>PhaseTitleContentTopPaddingPx</code></td>
+<td><code>48</code></td>
+<td>Top padding inside the coach bar's content row when the phase-title tab is shown, so the badge/message row clears the tab</td>
+</tr>
+<tr>
+<td><code>PhaseTitleContentBottomPaddingPx</code></td>
+<td><code>16</code></td>
+<td>Bottom padding inside the content row, keeping a wrapped two-line message symmetric instead of crowding the bar's bottom edge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Content-sized bar (clears the tab at any message length).</strong> When the phase-title tab is shown, the bar's height is <strong>not</strong> fixed: it is <code>max(CoachHeightPx, measured content height) + PhaseTitleContentTopPaddingPx + PhaseTitleContentBottomPaddingPx</code> (88 + 48 + 16 = 152 for a single-line message; taller for a wrapped one). A longer or wrapped message grows the bar instead of colliding with the tab — the same "wrap and grow taller" behavior as the grow-to-fit width above, composed with the tab's clearance. <code>CoachBottomMarginPx</code> is unaffected: the bar grows <strong>upward</strong> from its bottom-anchored position. (The worst case is the tutorial step-1 message, which wraps to two lines at <code>CoachWidthPx</code>.)</p>
+<p><strong>Per-phase titles.</strong> The tab's label swaps once per <strong>phase</strong>, not per step — all four tutorial steps show "Learn the ropes"; each reward-chain step shows its own phase title:</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Steps covered</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tutorial</td>
+<td>pan → zoom → tap bubble → complete quest</td>
+<td>"Learn the ropes"</td>
+</tr>
+<tr>
+<td>Upgrade</td>
+<td>upgrade a house</td>
+<td>"Fix up a home"</td>
+</tr>
+<tr>
+<td>Expand</td>
+<td>expand the map</td>
+<td>"Grow the neighborhood"</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>build a house</td>
+<td>"Build a house"</td>
+</tr>
+</tbody>
+</table>
+<p>Source lives in Core (a per-phase title lookup alongside <code>OnboardingCoach</code>'s existing per-step prompt lookup), à la <code>OnboardingRewardCopy</code>; the thin <code>OnboardingOverlay</code> only renders it.</p>
 <h2 id="gesture-arrow-coach-330">Gesture-arrow coach (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330">#330</a>)<a class="headerlink" href="#gesture-arrow-coach-330" title="Permanent link">&para;</a></h2>
 <p><em>Approved: Derek, 2026-07-31 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330#issuecomment-5148157973"><code>/approve</code> on #330</a>). </em><em>Status: distilled</em><em> (was Proposed) — implemented in the same PR.</em></p>
 <p>Because this is a kids' game, the two <strong>movement</strong> steps <em>show</em> the gesture, not just tell it: a looping directional-arrow coach layers over the map during the <strong>Pan</strong> and <strong>Zoom</strong> steps only (the <code>TapBubble</code>/<code>CompleteQuest</code> steps are unchanged). The arrows are a non-blocking visual coach — Candy Cottage chevron-arrows with a thick Ink outline and <strong>Gold</strong> fill (a color the coach bar's own chrome does not use, so it reads as "look here, do this") — drawn procedurally via the same <code>CandyChrome</code> IMGUI routines as the rest of the overlay. There is <strong>no new rendering path</strong> and no separate soft-lock: the arrows draw only while <code>OnboardingOverlay.ShouldDrawGesture</code> is true (the sequence is on <code>Pan</code>/<code>Zoom</code>) and vanish the instant <code>OnboardingOverlay.AdvanceCameraSteps</code> registers the real pan/zoom, the same real-action gate that advances the coach bar.</p>
@@ -1971,7 +2064,7 @@
 3. <strong><code>GestureCenterYPx</code> fixed at 480</strong>, not tied to the target dog's live position — the bubble is suppressed during Pan/Zoom anyway (#329), so a fixed, generous anchor avoids coupling this layout to gameplay state.</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Restyle status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/297">#297</a>): implemented.</strong> The coach bar renders the Candy Cottage chrome — a cream pill with a thick Ink outline, a hard straight-down drop-shadow, a round Leaf paw badge, the message text, and a trailing row of outlined step-dots (the current step filled). It is drawn <strong>procedurally on IMGUI</strong> via the shared <code>CandyChrome</code> helper (the same runtime white-AA-circle routine established by the HUD chip <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>), with the message set in the bundled <code>DejaVuSans</code> Resources font (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). The bar stays on <strong>IMGUI</strong> rather than migrating to UGUI: the procedural-chrome path avoids the #291 UGUI shader/font-stripping build risk and keeps the coach bar consistent with the HUD. The leaf badge draws a <strong>procedural ink paw-print</strong> (one pad + three toes) rather than the mockup's 🐾 emoji glyph, since the bundled font carries no paw-emoji glyph (it would render as tofu on device). Implemented in <code>Assets/Scripts/Unity/OnboardingOverlay.cs</code>; on-device re-playtest is the final visual check.</li>
+<li><strong>Restyle status (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/297">#297</a>): implemented (phase-title tab pending implementation — see <a href="#phase-title-region">Phase-title region</a>).</strong> The coach bar renders the Candy Cottage chrome — a cream pill with a thick Ink outline, a hard straight-down drop-shadow, a round Leaf paw badge, and the message text; the top-left gold <a href="#phase-title-region">phase-title tab</a> replaces the former trailing step-dots. It is drawn <strong>procedurally on IMGUI</strong> via the shared <code>CandyChrome</code> helper (the same runtime white-AA-circle routine established by the HUD chip <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>), with the message set in the bundled <code>DejaVuSans</code> Resources font (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). The bar stays on <strong>IMGUI</strong> rather than migrating to UGUI: the procedural-chrome path avoids the #291 UGUI shader/font-stripping build risk and keeps the coach bar consistent with the HUD. The leaf badge draws a <strong>procedural ink paw-print</strong> (one pad + three toes) rather than the mockup's 🐾 emoji glyph, since the bundled font carries no paw-emoji glyph (it would render as tofu on device). Implemented in <code>Assets/Scripts/Unity/OnboardingOverlay.cs</code>; on-device re-playtest is the final visual check.</li>
 <li><strong>Runs once, over live gameplay.</strong> The sequence runs only on first launch (driven by the Core <code>OnboardingSequence</code>) and never blocks input — it floats over the real neighborhood, real dog, real quest, and real reward, not a scripted tutorial scene.</li>
 <li><strong>Advances on the real action.</strong> Each step advances automatically when the player performs the actual action — pan, then zoom, then tap the speech bubble, then complete the quest — and the overlay auto-dismisses after step 4.</li>
 <li><strong>Panel-open steps.</strong> For the "tap the bubble" and "complete the quest" steps, the <a href="../conversation-panel/">Conversation Panel</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/175">#175</a>) opens bottom-center; the coach bar sits <strong>just above</strong> the panel so both stay visible.</li>
