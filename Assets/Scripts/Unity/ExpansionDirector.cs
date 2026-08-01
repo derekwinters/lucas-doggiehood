@@ -32,13 +32,24 @@ namespace Doggiehood.Unity
 
         private Transform worldRoot;
         private ConfirmationDialog dialog;
+        private System.Action<HouseView> onHouseBuilt;
         private readonly HashSet<EmptyLotView> wiredLots = new HashSet<EmptyLotView>();
 
-        public void Init(GameState state, Transform worldRoot, ConfirmationDialog dialog)
+        /// <summary>#456: a house built here is the only house that is both vacant
+        /// and never rebuilt, so — unlike a starter house (wired at bootstrap) or
+        /// an occupied house (re-wired on every move-in/upgrade rebuild) — nothing
+        /// else subscribes to its <see cref="HouseView.Tapped"/>. WorldBootstrap
+        /// passes <paramref name="onHouseBuilt"/> (the same wiring it hands the
+        /// HouseUpgradeDirector rebuild callback) so the freshly built house's tap
+        /// opens its profile. Optional: EditMode tests that don't exercise the tap
+        /// leave it null.</summary>
+        public void Init(GameState state, Transform worldRoot, ConfirmationDialog dialog,
+            System.Action<HouseView> onHouseBuilt = null)
         {
             State = state;
             this.worldRoot = worldRoot;
             this.dialog = dialog;
+            this.onHouseBuilt = onHouseBuilt;
             WireLots();
         }
 
@@ -105,7 +116,16 @@ namespace Doggiehood.Unity
             // its street-ward facing + front-setback position) lives only there.
             // With it, the zone house now faces the street and renders a real
             // walkway instead of the Z-sign fallback / no-op.
-            WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork);
+            var houseRoot = WorldBuilder.BuildHouse(worldRoot, house, lot, State.WalkNetwork);
+
+            // #456: wire the freshly built (vacant) house's tap so it opens its
+            // profile — the break the issue reported. Nothing else covers a house
+            // that has never been rebuilt, so without this the tap did nothing.
+            var houseView = houseRoot.GetComponent<HouseView>();
+            if (houseView != null)
+            {
+                onHouseBuilt?.Invoke(houseView);
+            }
 
             // #405: a starting house gets its front walkway and fence at
             // world-build time; a mid-game zone-lot build only rendered the mesh.

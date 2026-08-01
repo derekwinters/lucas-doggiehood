@@ -62,7 +62,8 @@ namespace Doggiehood.Unity
             // and (#407) re-renders the world house so its mesh visibly grows.
             // The quest director is passed so the #407 re-render can re-wire the
             // rebuilt HouseView's spray tap alongside the profile tap.
-            BuildHouseProfileOverlay(canvas, state, root.transform, dogProfile, director, upgradeDirector);
+            var houseProfile = BuildHouseProfileOverlay(
+                canvas, state, root.transform, dogProfile, director, upgradeDirector);
 
             // Reusable confirmation dialog (#343/#344), shared by both expansion
             // spends below. A device-safe UGUI overlay (#298/#291) built under the
@@ -73,8 +74,19 @@ namespace Doggiehood.Unity
             // confirmation dialog ("Build a house here?" + the flat cost on Yes),
             // and only Yes calls GameState.TryBuildHouse — a stray tap no longer
             // spends coins.
+            // #456: a house built on an empty lot is vacant and never rebuilt, so
+            // — unlike a starter house (wired in BuildHouseProfileOverlay's
+            // foreach) or an occupied house (re-wired on move-in/upgrade rebuild)
+            // — nothing else subscribes to its tap. Wire the freshly built house
+            // to the profile-open + spray taps here, the same wiring the
+            // HouseUpgradeDirector rebuild callback applies to a rebuilt house.
             var expansionDirector = gameObject.AddComponent<ExpansionDirector>();
-            expansionDirector.Init(state, root.transform, confirmationDialog);
+            expansionDirector.Init(state, root.transform, confirmationDialog, built =>
+            {
+                var builtId = built.HouseId;
+                built.Tapped += () => OpenHouseProfile(houseProfile, state, builtId);
+                director.WireHouses();
+            });
 
             // Map-expansion unlock trigger (#343, Option A): tapping the
             // affordable lock indicator raises the same reusable confirmation
