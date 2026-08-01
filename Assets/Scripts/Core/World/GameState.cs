@@ -19,11 +19,27 @@ namespace Doggiehood.Core.World
         /// first-zone layout's "starting FourWay at grid (0,0)".</summary>
         private static readonly TileCoordinate StartingIntersectionCoordinate = new TileCoordinate(0, 0);
 
+        /// <summary>#295: the single scripted tile the onboarding "expand the
+        /// map" step unlocks. Before that step completes it is the only
+        /// unlockable frontier coordinate (Derek's "this only works after the
+        /// first onboarding expansion happens"). Sourced from the authored first
+        /// zone so the scripted tile stays in one place.</summary>
+        private static TileCoordinate OnboardingExpansionTile
+        {
+            get { return ZoneCatalog.FirstZone.TilePlacements[0].Coordinate; }
+        }
+
         private readonly List<House> houses;
         private readonly List<PlacedItem> placedItems = new List<PlacedItem>();
         private readonly List<Decorations.Decoration> decorations = new List<Decorations.Decoration>();
         private readonly List<Dog> dogs;
         private readonly List<Zone> unlockedZones = new List<Zone>();
+
+        /// <summary>#295: the coordinates unlocked one-at-a-time through the
+        /// player-choice frontier (<see cref="TryUnlockTile"/>), in unlock
+        /// order. Distinct from the legacy <see cref="unlockedZones"/> group
+        /// model this supersedes; both place onto <see cref="Map"/>.</summary>
+        private readonly List<TileCoordinate> unlockedTiles = new List<TileCoordinate>();
 
         /// <summary>Owns the shared move-in pity counter and easter-egg
         /// reserve (#54). Not yet persisted through SaveCodec — see
@@ -52,6 +68,23 @@ namespace Doggiehood.Core.World
         /// <summary>The grid-coordinate tile map (#109), seeded with just
         /// the starting FourWay intersection until zones are unlocked (#56).</summary>
         public TileMap Map { get; }
+
+        /// <summary>#295: the full authored target neighborhood
+        /// (<c>docs/tools/map-data.json</c>, loaded via #383's
+        /// <see cref="MapLoader"/>) against which the player-choice frontier is
+        /// derived. Null until wired (a fresh <see cref="CreateNew"/> game has
+        /// none until the Unity layer supplies it), in which case there is no
+        /// frontier to unlock. Not itself persisted — it is fixed design data,
+        /// re-supplied on every launch.</summary>
+        public TileMap TargetMap { get; private set; }
+
+        /// <summary>#295: supplies the authored target map used to compute the
+        /// unlock frontier. The thin Unity layer loads the authored map data
+        /// and calls this once at bootstrap.</summary>
+        public void SetTargetMap(TileMap targetMap)
+        {
+            TargetMap = targetMap;
+        }
 
         // #398: the live sidewalk+crosswalk+front-walkway network, derived
         // from the whole unlocked Map (not the starting-tile-only
@@ -101,6 +134,14 @@ namespace Doggiehood.Core.World
         public IReadOnlyList<Zone> UnlockedZones
         {
             get { return unlockedZones; }
+        }
+
+        /// <summary>#295: the coordinates the player has unlocked one-at-a-time
+        /// via <see cref="TryUnlockTile"/>, in unlock order. Persisted as a set
+        /// (SaveCodec) so player-chosen unlock order round-trips.</summary>
+        public IReadOnlyList<TileCoordinate> UnlockedTiles
+        {
+            get { return unlockedTiles; }
         }
 
         /// <summary>Permanent world changes from completed quests (#27).</summary>
@@ -185,6 +226,90 @@ namespace Doggiehood.Core.World
 
             decorations.Add(decoration);
             return true;
+        }
+
+        /// <summary>
+        /// #295: the frontier coordinates the player may currently unlock. The
+        /// full geometric frontier (<see cref="Expansion.TileFrontier"/> over
+        /// the live <see cref="Map"/> and <see cref="TargetMap"/>) is offered
+        /// once the onboarding "expand the map" step has completed; before that,
+        /// only the single scripted <see cref="OnboardingExpansionTile"/> is
+        /// offered (Derek's "the lock icons don't appear on the remaining open
+        /// ended roads until the onboarding quests have been completed").
+        /// Empty when no <see cref="TargetMap"/> has been supplied.
+        /// </summary>
+        public IReadOnlyCollection<TileCoordinate> UnlockableFrontier()
+        {
+            if (TargetMap == null)
+            {
+                return Array.Empty<TileCoordinate>();
+            }
+
+            var frontier = Expansion.TileFrontier.Compute(Map, TargetMap);
+            if (RewardChain.CurrentStep > OnboardingRewardStep.ExpandMap)
+            {
+                return frontier;
+            }
+
+            // Onboarding gate: only the scripted expand tile is unlockable until
+            // the "expand the map" step completes.
+            var gated = new List<TileCoordinate>();
+            if (frontier.Contains(OnboardingExpansionTile))
+            {
+                gated.Add(OnboardingExpansionTile);
+            }
+
+            return gated;
+        }
+
+        /// <summary>
+        /// #295: the single player-choice unlock entry point. Places the chosen
+        /// frontier tile (its type read from <see cref="TargetMap"/>, validated
+        /// through <see cref="TileMap.Place"/>) after charging the flat
+        /// <see cref="Expansion.TileUnlock.Cost"/>. Returns false with no state
+        /// change (no deduction, no tile placed) when the coordinate isn't a
+        /// currently-unlockable frontier tile (see <see cref="UnlockableFrontier"/>)
+        /// or the balance can't afford the cost. Advances the onboarding
+        /// reward chain's "expand the map" step on success (a no-op once that
+        /// step is already past), mirroring <see cref="TryUnlockNextZone"/>.
+        /// </summary>
+        public bool TryUnlockTile(TileCoordinate coordinate)
+        {
+            if (!UnlockableFrontier().Contains(coordinate))
+            {
+                return false;
+            }
+
+            if (!Wallet.TrySpend(Expansion.TileUnlock.Cost(Map.Tiles.Count)))
+            {
+                return false;
+            }
+
+            Map.Place(coordinate, TargetMap.GetTileAt(coordinate));
+            unlockedTiles.Add(coordinate);
+            InvalidateWalkNetwork();
+            AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
+            return true;
+        }
+
+        /// <summary>
+        /// #295: restores a persisted player-unlocked tile on load — places it
+        /// onto <see cref="Map"/> with its persisted type and records it in
+        /// <see cref="UnlockedTiles"/>, WITHOUT charging the wallet or advancing
+        /// the reward chain (both persist separately). The parallel of
+        /// <see cref="RestoreUnlockedZoneCount"/>. Defensively a no-op if the
+        /// coordinate is already placed or would fail #109 adjacency.
+        /// </summary>
+        public void RestoreUnlockedTile(TileCoordinate coordinate, TileType type)
+        {
+            if (Map.HasTileAt(coordinate) || !Map.CanPlace(coordinate, type))
+            {
+                return;
+            }
+
+            Map.Place(coordinate, type);
+            unlockedTiles.Add(coordinate);
+            InvalidateWalkNetwork();
         }
 
         /// <summary>A newly moved-in dog (#54) joins the live roster
