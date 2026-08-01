@@ -869,8 +869,12 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(after.Any(a => !before.Any(b => PointsNearlyEqual(a, b))), Is.True,
                 "a zone house's connector endpoints must track its rolled ladder's per-level footprint");
 
-            var facing = HousePlacement.FrontFacing(lot);
-            var house = HousePlacement.Position(lot, HousePlacement.KitScale);
+            // #461: the zone fence now orients to the lot's REAL walk-network
+            // facing/position (state.WalkNetwork), not the pre-rotation single-arg
+            // Z-sign fallback — so the expected side-wall midpoints are computed
+            // from that same live resolution.
+            var facing = HousePlacement.FrontFacing(lot, state.WalkNetwork);
+            var house = HousePlacement.Position(lot, HousePlacement.KitScale, state.WalkNetwork);
             var perp = new GridPoint(-facing.Z, facing.X);
             var halfWidth = HousePlacement.KitScale
                 * HouseModelCatalog.ForHouse(lot.HouseId, 2).FootprintX / 2f;
@@ -883,6 +887,64 @@ namespace Doggiehood.Core.Tests.World
             {
                 Assert.That(after.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
                     $"a zone connector must reach its LEVEL-2 side-wall midpoint {anchor}");
+            }
+        }
+
+        // ---- #461: zone-lot fence orients to the REAL walk-network facing ----
+
+        [Test]
+        public void GeometryFor_WithState_ForABuiltZoneLot_TracesTheRealFacing_NotTheZSignFallback()
+        {
+            // #461: the state-aware GeometryFor must trace fence runs from the
+            // lot's REAL walk-network front-facing edge (state.WalkNetwork), not
+            // NeighborhoodLayout.WalkNetwork's Z-sign fallback. The first zone's
+            // cul-de-sac lots face along X once built, so the connectors reach the
+            // side-wall midpoints offset along Z (perp of an X-facing) — the exact
+            // opposite of the Z-sign guess (0, -1), whose perp is along X.
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1_000_000);
+            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds");
+
+            var realFacing = HousePlacement.FrontFacing(lot, state.WalkNetwork);
+            var zSignFacing = HousePlacement.FrontFacing(lot); // singleton -> Z-sign fallback
+            Assert.That(realFacing, Is.Not.EqualTo(zSignFacing),
+                "sanity: this zone lot's real facing differs from the Z-sign fallback");
+
+            var runs = LotFence.GeometryFor(FencedCloneOf(lot), state);
+            Assert.That(runs.Count, Is.EqualTo(5), "the five-run backyard shape");
+
+            var house = HousePlacement.Position(lot, HousePlacement.KitScale, state.WalkNetwork);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId);
+            var halfWidth = HousePlacement.KitScale * model.FootprintX / 2f;
+            var realPerp = new GridPoint(-realFacing.Z, realFacing.X);
+            var realAnchors = new[]
+            {
+                new GridPoint(house.X + realPerp.X * halfWidth, house.Z + realPerp.Z * halfWidth),
+                new GridPoint(house.X - realPerp.X * halfWidth, house.Z - realPerp.Z * halfWidth),
+            };
+
+            var openEnds = OpenEndsOf(runs);
+            Assert.That(openEnds.Count, Is.EqualTo(2), "one open polyline with two ends");
+            foreach (var anchor in realAnchors)
+            {
+                Assert.That(openEnds.Any(e => PointsNearlyEqual(e, anchor)), Is.True,
+                    $"a connector must reach the REAL-facing side-wall midpoint {anchor}");
+            }
+
+            // The Z-sign fallback's side-wall midpoints (perp along X) must NOT be
+            // where the connectors land — proving the fence rotated with the house.
+            var zPerp = new GridPoint(-zSignFacing.Z, zSignFacing.X);
+            var zAnchors = new[]
+            {
+                new GridPoint(lot.Position.X + zPerp.X * halfWidth, lot.Position.Z + zPerp.Z * halfWidth),
+                new GridPoint(lot.Position.X - zPerp.X * halfWidth, lot.Position.Z - zPerp.Z * halfWidth),
+            };
+            foreach (var stale in zAnchors)
+            {
+                Assert.That(openEnds.Any(e => PointsNearlyEqual(e, stale)), Is.False,
+                    $"the connectors must NOT sit at the pre-rotation Z-sign midpoint {stale}");
             }
         }
 

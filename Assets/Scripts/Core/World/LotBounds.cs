@@ -212,6 +212,21 @@ namespace Doggiehood.Core.World
             return YardSplit(lot, RoadsFor(lot, tileType)).Front;
         }
 
+        /// <summary>
+        /// #461: <see cref="FrontYard(HouseLot, TileType)"/> resolving the house's
+        /// facing/position from an explicit map-spanning <paramref name="network"/>
+        /// (via <see cref="HousePlacement.PredeterminedFrontFacing"/>/
+        /// <see cref="HousePlacement.PredeterminedPosition"/>) rather than the
+        /// starting-tile singleton — so a zone lot's front yard is split on the
+        /// house's REAL street-ward facing even before it is built (its trees are
+        /// pre-baked at unlock, #434/#450). The road clip is still tile-aware
+        /// (#455).
+        /// </summary>
+        public static LotRect FrontYard(HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return YardSplit(lot, RoadsFor(lot, tileType), network).Front;
+        }
+
         /// <summary>The portion of <see cref="QuadrantBounds"/> behind the
         /// house (away from the faced street), excluding the house
         /// footprint.</summary>
@@ -226,6 +241,13 @@ namespace Doggiehood.Core.World
         public static LotRect BackYard(HouseLot lot, TileType tileType)
         {
             return YardSplit(lot, RoadsFor(lot, tileType)).Back;
+        }
+
+        /// <summary><see cref="FrontYard(HouseLot, TileType, WalkNetwork)"/>'s
+        /// back-yard companion (#461) — split on the network-resolved facing.</summary>
+        public static LotRect BackYard(HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return YardSplit(lot, RoadsFor(lot, tileType), network).Back;
         }
 
         /// <summary>
@@ -333,9 +355,28 @@ namespace Doggiehood.Core.World
 
         private static (LotRect Front, LotRect Back) YardSplit(HouseLot lot, IReadOnlyList<Road> roads)
         {
-            var bounds = QuadrantBounds(lot);
             var facing = HousePlacement.FrontFacing(lot);
             var house = HousePlacement.Position(lot, HousePlacement.KitScale);
+            return YardSplit(lot, roads, facing, house);
+        }
+
+        /// <summary>#461: <see cref="YardSplit(HouseLot, IReadOnlyList{Road})"/>
+        /// with the facing/position resolved from an explicit map-spanning
+        /// <paramref name="network"/> (Predetermined*), so an unbuilt zone lot's
+        /// yards split on the house's real street-ward facing.</summary>
+        private static (LotRect Front, LotRect Back) YardSplit(
+            HouseLot lot, IReadOnlyList<Road> roads, WalkNetwork network)
+        {
+            var facing = HousePlacement.PredeterminedFrontFacing(lot, network);
+            var house = HousePlacement.PredeterminedPosition(
+                lot, HousePlacement.KitScale, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
+            return YardSplit(lot, roads, facing, house);
+        }
+
+        private static (LotRect Front, LotRect Back) YardSplit(
+            HouseLot lot, IReadOnlyList<Road> roads, GridPoint facing, GridPoint house)
+        {
+            var bounds = QuadrantBounds(lot);
             var halfDepth = HalfDepthOf(lot);
 
             if (facing.X > 0f)

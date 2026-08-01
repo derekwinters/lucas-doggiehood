@@ -985,14 +985,23 @@ namespace Doggiehood.Unity.EditModeTests
             // lot model through HouseModelCatalog.ForHouse, which used to throw
             // for a zone id. The single-lot fence helper renders a fenced zone
             // lot's runs without throwing now that ForHouse is zone-safe (#414).
-            var zoneLot = ZoneLot(hasFence: true);
-            var expected = LotFence.RunsFor(zoneLot);
+            // #461: the state-aware fence path resolves the lot's facing/position
+            // from state.WalkNetwork, so the realistic scenario a fence renders in
+            // is an UNLOCKED zone with a BUILT house — that live network carries
+            // the lot's own tile sidewalks (and, once built, its front walkway).
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1_000_000);
+            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+            var built = ZoneCatalog.FirstZone.Lots.First();
+            Assert.That(state.TryBuildHouse(built.HouseId), Is.True, "the zone house builds");
+            var zoneLot = new HouseLot(built.HouseId, built.Quadrant, built.Position, hasFence: true);
+            var expected = LotFence.GeometryFor(zoneLot, state);
             Assert.That(expected, Is.Not.Empty, "a fenced zone lot resolves fence runs");
 
             var host = new GameObject("zone-fence-host");
             try
             {
-                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot, GameState.CreateNew()), Throws.Nothing);
+                Assert.That(() => WorldBuilder.BuildFence(host.transform, zoneLot, state), Throws.Nothing);
 
                 var container = host.transform.Find(WorldBuilder.FenceNamePrefix + zoneLot.HouseId);
                 Assert.That(container, Is.Not.Null, "the fenced zone lot gets a fence container");

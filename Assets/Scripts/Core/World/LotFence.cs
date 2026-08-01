@@ -205,14 +205,51 @@ namespace Doggiehood.Core.World
                 throw new ArgumentNullException(nameof(state));
             }
 
+            // #461: resolve the fence's facing/position from the live map-spanning
+            // GameState.WalkNetwork, not the starting-tile singleton — so a zone
+            // house's fence rotates with the house's REAL street-ward facing
+            // instead of the pre-rotation Z-sign fallback. #460's per-level
+            // connector footprint (GetHouseLevel) rides the same call.
+            return GeometryFrom(lot, state.WalkNetwork, state.GetHouseLevel(lot.HouseId));
+        }
+
+        /// <summary>
+        /// #461: the lot's backyard fence geometry oriented to the facing/position
+        /// resolved from an explicit map-spanning <paramref name="network"/> (via
+        /// <see cref="HousePlacement.PredeterminedFrontFacing"/>/
+        /// <see cref="HousePlacement.PredeterminedPosition"/>) rather than the
+        /// starting-tile singleton. Used by the yard-tree pre-bake (#434/#450),
+        /// which rejection-samples back candidates against the fence line before
+        /// the house is built: the network still knows the lot's tile sidewalks,
+        /// so the fence orients to the house's real (predetermined) facing.
+        /// Level-blind (level 1), like the queryable
+        /// <see cref="GeometryFor(HouseLot)"/>; the level-aware fence tracking is
+        /// <see cref="GeometryFor(HouseLot, GameState)"/>'s job. A manual
+        /// <see cref="HouseLot.FenceOverride"/> (#223) still returns verbatim.
+        /// </summary>
+        public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot, WalkNetwork network)
+        {
+            return GeometryFrom(lot, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
+        }
+
+        /// <summary>
+        /// #461: shared builder behind the network/state-aware
+        /// <see cref="GeometryFor(HouseLot, GameState)"/> and
+        /// <see cref="GeometryFor(HouseLot, WalkNetwork)"/> — traces the five-run
+        /// backyard shape with the connector footprint at <paramref name="level"/>
+        /// and the facing/position resolved from <paramref name="network"/>.
+        /// </summary>
+        private static IReadOnlyList<FenceRun> GeometryFrom(HouseLot lot, WalkNetwork network, int level)
+        {
             if (lot.HasFenceOverride)
             {
                 return lot.FenceOverride;
             }
 
-            var model = HouseModelCatalog.ForHouse(lot.HouseId, state.GetHouseLevel(lot.HouseId));
-            var facing = HousePlacement.FrontFacing(lot);
-            var position = HousePlacement.Position(lot, HousePlacement.KitScale);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, level);
+            var facing = HousePlacement.PredeterminedFrontFacing(lot, network);
+            var position = HousePlacement.PredeterminedPosition(
+                lot, HousePlacement.KitScale, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
             var quadrant = LotBounds.QuadrantBounds(lot);
             return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale,
                 NeighborhoodLayout.Roads);

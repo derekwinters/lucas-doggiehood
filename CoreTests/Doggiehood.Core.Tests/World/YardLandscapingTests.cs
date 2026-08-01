@@ -556,6 +556,91 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(YardLandscaping.SelectBack(back, seed: 3), Is.Empty);
         }
 
+        // ---- #461: zone-lot yard trees orient to the REAL walk-network facing ----
+
+        [Test]
+        public void NetworkAwareCandidates_ForAZoneLot_AreOrientedToItsRealFacing_NotTheZSignFallback()
+        {
+            // #461: a zone lot's trees were pre-baked with the Z-sign fallback
+            // facing, so they didn't rotate with the house. The network-aware
+            // FrontCandidatesFor/BackCandidatesFor resolve the lot's REAL facing
+            // (via the map-spanning network) so candidates land in the correctly
+            // oriented yard regions.
+            const TileType type = TileType.CulDeSacSouth;
+            var state = UnlockedFirstZone();
+            var network = state.WalkNetwork;
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+
+            // The network-oriented yard regions differ from the Z-sign ones —
+            // the house faces along X here, not toward -Z.
+            var netFrontYard = LotBounds.FrontYard(lot, type, network);
+            var netBackYard = LotBounds.BackYard(lot, type, network);
+            var zFrontYard = LotBounds.FrontYard(lot, type);
+            Assert.That(YardsDiffer(netFrontYard, zFrontYard), Is.True,
+                "the network front yard must be oriented differently from the Z-sign front yard");
+
+            var front = YardLandscaping.FrontCandidatesFor(lot, type, network);
+            var back = YardLandscaping.BackCandidatesFor(lot, type, network);
+            Assert.That(back, Is.Not.Empty, "the zone lot's back yard fits candidates in its real orientation");
+
+            foreach (var candidate in front)
+            {
+                Assert.That(netFrontYard.Contains(candidate.Position), Is.True,
+                    $"front candidate {candidate.Position} must sit in the network-oriented front yard");
+            }
+
+            foreach (var candidate in back)
+            {
+                Assert.That(netBackYard.Contains(candidate.Position), Is.True,
+                    $"back candidate {candidate.Position} must sit in the network-oriented back yard");
+            }
+        }
+
+        [Test]
+        public void NetworkAwareYardRegions_ArePredeterminedAtUnlock_AndUnchangedOnceTheHouseIsBuilt()
+        {
+            // #461 (protects #434): trees are pre-baked at unlock and NEVER
+            // regenerated on build, so the predetermined yard regions resolved at
+            // unlock (no walkway yet, facing projected from the nearest sidewalk)
+            // must be byte-identical to the regions once the house — and its real
+            // walkway — exists. Otherwise the pre-baked trees would disagree with
+            // the built house's orientation.
+            const TileType type = TileType.CulDeSacSouth;
+            var state = UnlockedFirstZone();
+            var lot = ZoneCatalog.FirstZone.Lots[0];
+
+            var frontAtUnlock = LotBounds.FrontYard(lot, type, state.WalkNetwork);
+            var backAtUnlock = LotBounds.BackYard(lot, type, state.WalkNetwork);
+
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the zone house builds");
+
+            var frontBuilt = LotBounds.FrontYard(lot, type, state.WalkNetwork);
+            var backBuilt = LotBounds.BackYard(lot, type, state.WalkNetwork);
+
+            Assert.That(SameRect(frontAtUnlock, frontBuilt), Is.True,
+                "the predetermined front yard must equal the built front yard");
+            Assert.That(SameRect(backAtUnlock, backBuilt), Is.True,
+                "the predetermined back yard must equal the built back yard");
+        }
+
+        private static GameState UnlockedFirstZone()
+        {
+            var state = GameState.CreateNew();
+            state.Wallet.Deposit(1_000_000);
+            Assert.That(state.TryUnlockNextZone(), Is.True, "the first zone unlocks");
+            return state;
+        }
+
+        private static bool SameRect(LotRect a, LotRect b)
+        {
+            return a.MinX == b.MinX && a.MaxX == b.MaxX && a.MinZ == b.MinZ && a.MaxZ == b.MaxZ;
+        }
+
+        private static bool YardsDiffer(LotRect a, LotRect b)
+        {
+            return !SameRect(a, b);
+        }
+
         private static LotRect RoadStrip(TileRoadSegment segment)
         {
             var halfWidth = segment.Width / 2f;

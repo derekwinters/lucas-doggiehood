@@ -278,6 +278,33 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// #461: <see cref="FrontCandidatesFor(HouseLot, TileType)"/> resolving the
+        /// lot's facing/footprint/walkway from an explicit map-spanning
+        /// <paramref name="network"/> rather than the starting-tile singleton — so
+        /// a zone lot's front trees, pre-baked at unlock (#434/#450), orient to the
+        /// house's REAL street-ward facing instead of the Z-sign fallback. The
+        /// front yard region, the max-across-ladder footprint, and the walkway
+        /// obstacle all come from the passed network; the seed is unchanged, so a
+        /// FourWay lot routed through the live network keeps its picks.
+        /// </summary>
+        public static IReadOnlyList<YardTreeCandidate> FrontCandidatesFor(
+            HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return FrontCandidatesFor(lot, LotBounds.FrontYard(lot, tileType, network), network);
+        }
+
+        private static IReadOnlyList<YardTreeCandidate> FrontCandidatesFor(
+            HouseLot lot, LotRect frontYard, WalkNetwork network)
+        {
+            var footprint = HouseFootprintOf(lot, network);
+            var walkway = network != null && network.TryGetFrontWalkway(lot.HouseId, out var edge)
+                ? edge
+                : (WalkEdge?)null;
+
+            return GenerateFrontCandidates(frontYard, footprint, walkway, SeedFor(lot, FrontCandidateSeedSalt));
+        }
+
+        /// <summary>
         /// <see cref="GenerateBackCandidates(LotRect, LotRect, IReadOnlyList{FenceRun}, int)"/>
         /// for a real lot: resolves the back yard region, house
         /// footprint, and fence line from <see cref="NeighborhoodLayout"/>/
@@ -304,6 +331,24 @@ namespace Doggiehood.Core.World
         {
             var footprint = HouseFootprintOf(lot);
             var fenceRuns = LotFence.GeometryFor(lot);
+
+            return GenerateBackCandidates(backYard, footprint, fenceRuns, SeedFor(lot, BackCandidateSeedSalt));
+        }
+
+        /// <summary>#461: <see cref="FrontCandidatesFor(HouseLot, TileType, WalkNetwork)"/>'s
+        /// back-yard companion — the footprint and the backyard fence line are both
+        /// oriented to the network-resolved facing (<see cref="LotFence.GeometryFor(HouseLot, WalkNetwork)"/>).</summary>
+        public static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(
+            HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return BackCandidatesFor(lot, LotBounds.BackYard(lot, tileType, network), network);
+        }
+
+        private static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(
+            HouseLot lot, LotRect backYard, WalkNetwork network)
+        {
+            var footprint = HouseFootprintOf(lot, network);
+            var fenceRuns = LotFence.GeometryFor(lot, network);
 
             return GenerateBackCandidates(backYard, footprint, fenceRuns, SeedFor(lot, BackCandidateSeedSalt));
         }
@@ -370,6 +415,25 @@ namespace Doggiehood.Core.World
         public static IReadOnlyList<YardTreePlacement> BackTreesFor(HouseLot lot, TileType tileType)
         {
             return SelectBack(BackCandidatesFor(lot, tileType), SeedFor(lot, BackSelectionSeedSalt));
+        }
+
+        /// <summary>#461: the lot's selected front trees oriented to the facing
+        /// resolved from an explicit map-spanning <paramref name="network"/> — the
+        /// form the Unity layer uses for a zone lot's unlock-time pre-bake so the
+        /// trees rotate with the house's real street-ward facing. Same per-lot
+        /// seed, so a starting FourWay lot's picks are byte-identical.</summary>
+        public static IReadOnlyList<YardTreePlacement> FrontTreesFor(
+            HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return SelectFront(FrontCandidatesFor(lot, tileType, network), SeedFor(lot, FrontSelectionSeedSalt));
+        }
+
+        /// <summary>#461: the network-aware companion of
+        /// <see cref="BackTreesFor(HouseLot, TileType)"/>.</summary>
+        public static IReadOnlyList<YardTreePlacement> BackTreesFor(
+            HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return SelectBack(BackCandidatesFor(lot, tileType, network), SeedFor(lot, BackSelectionSeedSalt));
         }
 
         private static List<YardTreeCandidate> GenerateCandidates(
@@ -444,6 +508,15 @@ namespace Doggiehood.Core.World
         private static LotRect HouseFootprintOf(HouseLot lot)
         {
             return HousePlacement.MaxHouseFootprint(lot);
+        }
+
+        /// <summary>#461: <see cref="HouseFootprintOf(HouseLot)"/> oriented to the
+        /// facing/position resolved from an explicit map-spanning network — the
+        /// max-across-ladder reservation for a zone lot whose real street-ward
+        /// facing the singleton doesn't know.</summary>
+        private static LotRect HouseFootprintOf(HouseLot lot, WalkNetwork network)
+        {
+            return HousePlacement.MaxHouseFootprint(lot, network);
         }
 
         /// <summary>Draws one per-tree size multiplier (#458) from the SAME

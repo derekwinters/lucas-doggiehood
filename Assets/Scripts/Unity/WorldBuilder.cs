@@ -826,6 +826,27 @@ namespace Doggiehood.Unity
                     .Concat(YardLandscaping.BackTreesFor(lot, tileType)).ToList());
         }
 
+        /// <summary>
+        /// Renders one zone lot's yard trees oriented to the house's REAL
+        /// street-ward facing (#461), resolved from the live map-spanning
+        /// <paramref name="network"/> (<see cref="GameState.WalkNetwork"/>) instead
+        /// of the starting-tile singleton. A zone lot's trees are pre-baked at
+        /// unlock — before its house (and its front-walkway edge) exists — so
+        /// <see cref="YardLandscaping.FrontTreesFor(HouseLot, TileType, WalkNetwork)"/>
+        /// projects the lot centre onto its nearest sidewalk to derive the same
+        /// facing the eventual house build will use, rather than the pre-rotation
+        /// Z-sign fallback the tile-only overload fell back to. Deterministic per
+        /// lot, so the unlock-time pre-bake and any rebuild agree with the built
+        /// house's orientation (#434's no-regenerate assumption holds).
+        /// </summary>
+        public static void BuildYardLandscaping(Transform parent, HouseLot lot, TileType tileType,
+            WalkNetwork network)
+        {
+            RenderYardPicks(parent, lot,
+                YardLandscaping.FrontTreesFor(lot, tileType, network)
+                    .Concat(YardLandscaping.BackTreesFor(lot, tileType, network)).ToList());
+        }
+
         private static void RenderYardPicks(Transform parent, HouseLot lot, List<YardTreePlacement> picks)
         {
             if (picks.Count == 0)
@@ -933,7 +954,11 @@ namespace Doggiehood.Unity
                         // (YardLandscaping), so rendering them now and NOT
                         // re-rendering them when the house is built (see
                         // ExpansionDirector.ConfirmBuild) leaves no duplicates.
-                        BuildYardLandscaping(parent, lot, TileTypeForLot(zone, lot));
+                        // #461: thread the live map-spanning network so the
+                        // pre-baked trees orient to the house's real street-ward
+                        // facing (the predetermined per-tile facing), matching the
+                        // orientation the eventual build resolves.
+                        BuildYardLandscaping(parent, lot, TileTypeForLot(zone, lot), state.WalkNetwork);
                     }
                 }
             }
@@ -1019,7 +1044,9 @@ namespace Doggiehood.Unity
                     // #434: pre-place the lot's yard trees at unlock too, so a
                     // freshly unlocked zone's empty lots show trees + foundation
                     // — matching the initial-build path (BuildEmptyLots).
-                    BuildYardLandscaping(root, lot, TileTypeForLot(zone, lot));
+                    // #461: orient them to the real street-ward facing via the
+                    // live network, not the Z-sign fallback.
+                    BuildYardLandscaping(root, lot, TileTypeForLot(zone, lot), state.WalkNetwork);
                 }
             }
 
