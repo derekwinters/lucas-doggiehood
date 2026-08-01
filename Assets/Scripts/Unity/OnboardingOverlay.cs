@@ -32,7 +32,6 @@ namespace Doggiehood.Unity
         public const float CoachMaxWidthPx = 1500f;
         private const float CoachHeightPx = 88f;
         private const float CoachBottomMarginPx = 56f;
-        public const int StepDotCount = 4;
         private const int MsgFontPx = 30;
 
         // --- Shared Candy Cottage baseline (shared-components.md #65/#173) ---
@@ -57,10 +56,22 @@ namespace Doggiehood.Unity
         private const float PawCenterToeExtraRisePx = 5f; // middle toe sits a touch higher
         private const float PawPadDropPx = 6f;            // main pad below center
 
-        // --- Trailing step dots (mockup .dots) ---
-        public const float DotDiameterPx = 16f;         // each progress dot
-        public const float DotOutlineThicknessPx = 4f;  // hollow dot's ink ring
-        public const float DotGapPx = 12f;              // gap between dots
+        // --- Phase-title tab (#451, onboarding-overlay.md "Phase-title region") ---
+        // An overlapping gold tab at the bar's top-left naming the current
+        // onboarding PHASE, styled like the DialogueBox name tag but drawn
+        // procedurally via CandyChrome (the coach bar is IMGUI, not the UGUI
+        // shell). Replaces the former trailing step-dots. Values are the approved
+        // constants from the spec table, authored at the 1920x1200 reference; no
+        // inline geometry literals (#161).
+        public const float PhaseTitleLeftInsetPx = 34f;   // tab inset from bar's left edge
+        public const float PhaseTitleOffsetPx = 28f;      // overlap above the bar's top edge
+        public const float PhaseTitlePaddingXPx = 30f;    // tab horizontal label inset
+        public const float PhaseTitlePaddingYPx = 8f;     // tab vertical label inset
+        public const int PhaseTitleFontPx = 26;           // tab label size
+        // Content-row paddings so the badge/message row (and a wrapped two-line
+        // message) clears the overlapping tab instead of colliding with it.
+        public const float PhaseTitleContentTopPaddingPx = 48f;
+        public const float PhaseTitleContentBottomPaddingPx = 16f;
 
         // --- Fixed Candy Cottage palette (shared-components.md), via CandyChrome ---
         public static readonly Color InkColor = CandyChrome.InkColor;
@@ -110,6 +121,7 @@ namespace Doggiehood.Unity
         public const string LabelFontResource = "DejaVuSans";
 
         private static GUIStyle messageStyle;
+        private static GUIStyle phaseTitleStyle;
 
         private OnboardingSequence sequence;
         private GameState state;
@@ -388,23 +400,30 @@ namespace Doggiehood.Unity
             return desiredContentWidthPx > CoachMaxWidthPx;
         }
 
-        /// <summary>The bar's reference-px height: the base
-        /// <see cref="CoachHeightPx"/>, plus one <see cref="MsgFontPx"/> line
-        /// when the message wraps (#369/#374).</summary>
+        /// <summary>The bar's content-sized reference-px height (#451): the
+        /// measured content row height — the base <see cref="CoachHeightPx"/>,
+        /// grown by one <see cref="MsgFontPx"/> line when the message wraps —
+        /// clamped to at least <see cref="CoachHeightPx"/>, plus the
+        /// phase-title tab's content paddings so the row clears the overlapping
+        /// tab at any message length: <c>max(CoachHeightPx, content) +
+        /// PhaseTitleContentTopPaddingPx + PhaseTitleContentBottomPaddingPx</c>
+        /// (88 + 48 + 16 = 152 for a single line; taller when wrapped). The bar
+        /// grows upward, so <see cref="CoachBottomMarginPx"/> is unaffected.</summary>
         public static float ComputeCoachHeightPx(bool wrapped)
         {
-            return wrapped ? CoachHeightPx + MsgFontPx : CoachHeightPx;
+            var content = wrapped ? CoachHeightPx + MsgFontPx : CoachHeightPx;
+            return Mathf.Max(CoachHeightPx, content)
+                + PhaseTitleContentTopPaddingPx + PhaseTitleContentBottomPaddingPx;
         }
 
         /// <summary>The bar's full single-line content width in reference px for
         /// a message measured at <paramref name="messageWidthPx"/> reference px:
-        /// left/right padding + paw badge + gap + message + gap + the frozen
-        /// four-dot row. Drives the grow-to-fit width in <see cref="OnGUI"/>.</summary>
-        private static float DesiredContentWidthPx(float messageWidthPx)
+        /// left/right padding + paw badge + gap + message. Reserves no trailing
+        /// dots column (#451 removed the step dots). Drives the grow-to-fit width
+        /// in <see cref="OnGUI"/>; public so EditMode tests can assert it.</summary>
+        public static float DesiredContentWidthPx(float messageWidthPx)
         {
-            var dotsRow = StepDotCount * DotDiameterPx + (StepDotCount - 1) * DotGapPx;
-            return 2f * CoachPadXPx + PawDiameterPx + CoachGapPx
-                + messageWidthPx + CoachGapPx + dotsRow;
+            return 2f * CoachPadXPx + PawDiameterPx + CoachGapPx + messageWidthPx;
         }
 
         /// <summary>The coach bar's current message. While the first-quest
@@ -429,12 +448,37 @@ namespace Doggiehood.Unity
             }
         }
 
-        /// <summary>How many of the <c>StepDotCount</c> trailing dots are filled
-        /// for the given step — one per guided step, up to and including the
-        /// current one. The terminal Done state keeps them all filled.</summary>
-        public static int FilledDotCount(OnboardingStep step)
+        /// <summary>#451: the phase-title tab's label for the current onboarding
+        /// phase, from the engine-free <see cref="OnboardingCoach.PhaseTitle"/>
+        /// lookup — "Learn the ropes" through every tutorial step, then the
+        /// reward-chain phase title (fix up a home / grow the neighborhood /
+        /// build a house). Empty before Init or once onboarding is fully done.
+        /// Public so wiring tests can assert the label without rendering.</summary>
+        public string PhaseTitleText
         {
-            return StepIndex(step) + 1;
+            get
+            {
+                return sequence == null
+                    ? string.Empty
+                    : OnboardingCoach.PhaseTitle(sequence.CurrentStep, state.RewardChain.CurrentStep);
+            }
+        }
+
+        /// <summary>#451: the phase-title tab's rect for a coach bar at
+        /// <paramref name="coach"/> and a label measured at
+        /// <paramref name="labelWidthPx"/> screen px: top-left, inset
+        /// <see cref="PhaseTitleLeftInsetPx"/> from the bar's left edge and
+        /// overlapping <see cref="PhaseTitleOffsetPx"/> above its top edge, sized
+        /// to the label plus <see cref="PhaseTitlePaddingXPx"/>/<see cref="PhaseTitlePaddingYPx"/>.
+        /// Public static so EditMode tests can assert placement without rendering,
+        /// mirroring <see cref="ComputeCoachRect"/>.</summary>
+        public static Rect ComputePhaseTitleRect(Rect coach, float labelWidthPx, float scale)
+        {
+            var height = (PhaseTitleFontPx + 2f * PhaseTitlePaddingYPx) * scale;
+            var width = labelWidthPx + 2f * PhaseTitlePaddingXPx * scale;
+            var x = coach.x + PhaseTitleLeftInsetPx * scale;
+            var y = coach.y - PhaseTitleOffsetPx * scale;
+            return new Rect(x, y, width, height);
         }
 
         private void OnGUI()
@@ -563,11 +607,11 @@ namespace Doggiehood.Unity
             CandyChrome.DrawStadium(rect, fill);
         }
 
-        /// <summary>Draws the Candy Cottage coach bar (#297), back to front:
+        /// <summary>Draws the Candy Cottage coach bar (#297/#451), back to front:
         /// hard straight-down shadow, ink outline, cream pill fill, the leading
-        /// leaf paw badge, the trailing step dots, then the message text
-        /// centered between them. All chrome is procedural (CandyChrome) — no
-        /// external raster art.</summary>
+        /// leaf paw badge and the message text in a content row inset below the
+        /// tab, then the overlapping top-left gold phase-title tab. All chrome is
+        /// procedural (CandyChrome) — no external raster art.</summary>
         private void DrawCoachBar(Rect coach, float scale)
         {
             var outline = OutlineThicknessPx * scale;
@@ -587,17 +631,54 @@ namespace Doggiehood.Unity
             var contentLeft = coach.x + outline + padX;
             var contentRight = coach.xMax - outline - padX;
 
-            var pawDiameter = PawDiameterPx * scale;
-            var pawRect = new Rect(contentLeft, coach.center.y - pawDiameter / 2f, pawDiameter, pawDiameter);
-            DrawPawBadge(pawRect, scale);
+            // #451: the content row sits below the tab's overlap and above the
+            // bottom padding, so a wrapped two-line message clears the tab.
+            var contentTop = coach.y + PhaseTitleContentTopPaddingPx * scale;
+            var contentBottom = coach.yMax - PhaseTitleContentBottomPaddingPx * scale;
+            var contentCenterY = (contentTop + contentBottom) / 2f;
 
-            var dotsLeft = DrawStepDots(contentRight, coach.center.y, scale);
+            var pawDiameter = PawDiameterPx * scale;
+            var pawRect = new Rect(contentLeft, contentCenterY - pawDiameter / 2f, pawDiameter, pawDiameter);
+            DrawPawBadge(pawRect, scale);
 
             var gap = CoachGapPx * scale;
             var msgLeft = pawRect.xMax + gap;
-            var msgRight = dotsLeft - gap;
-            var msgRect = new Rect(msgLeft, coach.y, Mathf.Max(0f, msgRight - msgLeft), coach.height);
+            var msgRect = new Rect(msgLeft, contentTop, Mathf.Max(0f, contentRight - msgLeft),
+                Mathf.Max(0f, contentBottom - contentTop));
             GUI.Label(msgRect, MessageText, MessageStyle(scale));
+
+            // The tab is drawn last so it overlaps on top of the bar's top edge.
+            DrawPhaseTitleTab(coach, scale);
+        }
+
+        /// <summary>#451: draws the overlapping top-left gold phase-title tab —
+        /// an ink outline + Gold fill stadium (styled like the DialogueBox name
+        /// tag, drawn procedurally on IMGUI), labeled from the Core
+        /// <see cref="OnboardingCoach.PhaseTitle"/> lookup. Placement is
+        /// <see cref="ComputePhaseTitleRect"/> (EditMode-tested); this
+        /// rendering is verified on-device.</summary>
+        private void DrawPhaseTitleTab(Rect coach, float scale)
+        {
+            var title = PhaseTitleText;
+            if (string.IsNullOrEmpty(title))
+            {
+                return;
+            }
+
+            var style = PhaseTitleStyle(scale);
+            var labelWidth = style.CalcSize(new GUIContent(title)).x;
+            var tab = ComputePhaseTitleRect(coach, labelWidth, scale);
+
+            var outline = OutlineThicknessPx * scale;
+            CandyChrome.DrawStadium(tab, InkColor);
+            var fill = new Rect(
+                tab.x + outline,
+                tab.y + outline,
+                tab.width - 2f * outline,
+                tab.height - 2f * outline);
+            CandyChrome.DrawStadium(fill, CandyChrome.GoldColor);
+
+            GUI.Label(tab, title, style);
         }
 
         /// <summary>The leaf paw badge: an ink-ringed leaf disc with a
@@ -630,34 +711,6 @@ namespace Doggiehood.Unity
             CandyChrome.DrawCircle(new Rect(centerX - diameter / 2f, centerY - diameter / 2f, diameter, diameter), InkColor);
         }
 
-        /// <summary>Draws the trailing row of <c>StepDotCount</c> progress dots,
-        /// right-aligned to <paramref name="rightEdge"/>: filled dots are solid
-        /// ink discs, remaining dots are hollow (cream inner over an ink ring).
-        /// Returns the row's left edge so the message can stop short of it.</summary>
-        private float DrawStepDots(float rightEdge, float centerY, float scale)
-        {
-            var dotDiameter = DotDiameterPx * scale;
-            var dotGap = DotGapPx * scale;
-            var rowWidth = StepDotCount * dotDiameter + (StepDotCount - 1) * dotGap;
-            var left = rightEdge - rowWidth;
-
-            var filled = FilledDotCount(sequence.CurrentStep);
-            var inset = DotOutlineThicknessPx * scale;
-            for (var i = 0; i < StepDotCount; i++)
-            {
-                var x = left + i * (dotDiameter + dotGap);
-                var dot = new Rect(x, centerY - dotDiameter / 2f, dotDiameter, dotDiameter);
-                CandyChrome.DrawCircle(dot, InkColor);
-                if (i >= filled)
-                {
-                    var inner = new Rect(dot.x + inset, dot.y + inset, dot.width - 2f * inset, dot.height - 2f * inset);
-                    CandyChrome.DrawCircle(inner, CreamColor);
-                }
-            }
-
-            return left;
-        }
-
         private static GUIStyle MessageStyle(float scale)
         {
             if (messageStyle == null)
@@ -676,6 +729,27 @@ namespace Doggiehood.Unity
             return messageStyle;
         }
 
+        /// <summary>#451: the phase-title tab label style — bundled DejaVuSans,
+        /// bold, ink text centered in the gold tab, sized at
+        /// <see cref="PhaseTitleFontPx"/> (matching the name tag).</summary>
+        private static GUIStyle PhaseTitleStyle(float scale)
+        {
+            if (phaseTitleStyle == null)
+            {
+                phaseTitleStyle = new GUIStyle
+                {
+                    font = Resources.Load<Font>(LabelFontResource),
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                    wordWrap = false,
+                };
+                phaseTitleStyle.normal.textColor = InkColor;
+            }
+
+            phaseTitleStyle.fontSize = Mathf.RoundToInt(PhaseTitleFontPx * scale);
+            return phaseTitleStyle;
+        }
+
         private string PromptFor(OnboardingStep step)
         {
             switch (step)
@@ -689,21 +763,6 @@ namespace Doggiehood.Unity
                     return $"{name} has something to say — tap the speech bubble!";
                 default:
                     return "Help them out to finish your first quest!";
-            }
-        }
-
-        private static int StepIndex(OnboardingStep step)
-        {
-            switch (step)
-            {
-                case OnboardingStep.Pan:
-                    return 0;
-                case OnboardingStep.Zoom:
-                    return 1;
-                case OnboardingStep.TapBubble:
-                    return 2;
-                default:
-                    return 3;
             }
         }
     }

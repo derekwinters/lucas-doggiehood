@@ -66,5 +66,56 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.Done),
                 Is.False, "dismisses for good once the chain completes at build");
         }
+
+        [Test]
+        public void PhaseTitle_IsLearnTheRopes_ForEveryFirstQuestStep_SwappingOncePerPhaseNotPerStep()
+        {
+            // #451 / onboarding-overlay.md "Phase-title region": the tab names the
+            // current onboarding PHASE, not step — all four tutorial steps show the
+            // one Tutorial-phase title. The reward-chain state is FirstQuest
+            // throughout the first-quest sequence.
+            foreach (var step in new[]
+            {
+                OnboardingStep.Pan,
+                OnboardingStep.Zoom,
+                OnboardingStep.TapBubble,
+                OnboardingStep.CompleteQuest,
+            })
+            {
+                Assert.That(OnboardingCoach.PhaseTitle(step, OnboardingRewardStep.FirstQuest),
+                    Is.EqualTo("Learn the ropes"), step + " is still the Tutorial phase");
+                Assert.That(OnboardingCoach.PhaseTitle(step, OnboardingRewardStep.FirstQuest),
+                    Is.EqualTo(OnboardingCoach.LearnTheRopesTitle));
+            }
+        }
+
+        [Test]
+        public void PhaseTitle_NamesEachRewardChainPhase_AfterTheFirstQuestSequenceIsDone()
+        {
+            // Once the first-quest sequence is Done the reward-chain step decides
+            // the phase title — one per phase, per the approved spec table.
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse),
+                Is.EqualTo("Fix up a home"));
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.ExpandMap),
+                Is.EqualTo("Grow the neighborhood"));
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.BuildHouse),
+                Is.EqualTo("Build a house"));
+
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse),
+                Is.EqualTo(OnboardingCoach.FixUpAHomeTitle));
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.ExpandMap),
+                Is.EqualTo(OnboardingCoach.GrowTheNeighborhoodTitle));
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.BuildHouse),
+                Is.EqualTo(OnboardingCoach.BuildHouseTitle));
+        }
+
+        [Test]
+        public void PhaseTitle_IsEmpty_OnceEverythingIsDone()
+        {
+            // No phase to name once both state machines are Done (the coach bar
+            // is dismissed then anyway).
+            Assert.That(OnboardingCoach.PhaseTitle(OnboardingStep.Done, OnboardingRewardStep.Done),
+                Is.Empty);
+        }
     }
 }

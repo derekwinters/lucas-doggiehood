@@ -20,6 +20,15 @@ namespace Doggiehood.Core.Onboarding
         public const string ExpandMapPrompt = "Tap the glowing lock to open up a new street!";
         public const string BuildHousePrompt = "Tap the empty lot to build a new house!";
 
+        // #451 per-phase title copy for the coach bar's phase-title tab, distilled
+        // into the onboarding-overlay spec's "Phase-title region" table (do not
+        // invent new copy). One title per onboarding PHASE, not per step. Declared
+        // as named constants per the no-inline-literals rule (#161).
+        public const string LearnTheRopesTitle = "Learn the ropes";
+        public const string FixUpAHomeTitle = "Fix up a home";
+        public const string GrowTheNeighborhoodTitle = "Grow the neighborhood";
+        public const string BuildHouseTitle = "Build a house";
+
         /// <summary>The coach prompt for a reward-chain step. Empty for
         /// <see cref="OnboardingRewardStep.FirstQuest"/> (owned by the
         /// first-quest sequence's own four prompts) and
@@ -34,6 +43,34 @@ namespace Doggiehood.Core.Onboarding
                     return ExpandMapPrompt;
                 case OnboardingRewardStep.BuildHouse:
                     return BuildHousePrompt;
+                default:
+                    return string.Empty;
+            }
+        }
+
+        /// <summary>#451: the phase-title tab's label for the current onboarding
+        /// <b>phase</b> (not step), keyed the same way <see cref="ShouldShow"/>
+        /// combines the two state machines. While the first-quest sequence runs
+        /// (<paramref name="sequenceStep"/> not <see cref="OnboardingStep.Done"/>)
+        /// every tutorial step shows the one Tutorial-phase title; once the
+        /// sequence is Done the reward-chain step names its own phase. Empty once
+        /// everything is Done (the bar is dismissed then). Copy lives here in
+        /// Core; the thin <c>OnboardingOverlay</c> only renders it.</summary>
+        public static string PhaseTitle(OnboardingStep sequenceStep, OnboardingRewardStep rewardStep)
+        {
+            if (sequenceStep != OnboardingStep.Done)
+            {
+                return LearnTheRopesTitle;
+            }
+
+            switch (rewardStep)
+            {
+                case OnboardingRewardStep.UpgradeHouse:
+                    return FixUpAHomeTitle;
+                case OnboardingRewardStep.ExpandMap:
+                    return GrowTheNeighborhoodTitle;
+                case OnboardingRewardStep.BuildHouse:
+                    return BuildHouseTitle;
                 default:
                     return string.Empty;
             }
