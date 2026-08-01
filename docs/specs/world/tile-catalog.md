@@ -61,15 +61,16 @@ Maps are drawn and validated with the [Map Builder](../../tools/index.md) tool, 
 
 ## Property lots per tile
 
-*Design decisions 2026-07-30 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md). The Core lot rules below are implemented in `TileLotCatalog.LotsFor` and each bend's curved/cupped corner is exposed via `TileLotCatalog.TryGetCuppedCorner` ([#383](https://github.com/derekwinters/lucas-doggiehood/issues/383)).*
+*Design decisions 2026-07-30 / 2026-07-31 (Derek & Lucas), captured from the [Map Builder](../../tools/index.md). The Core lot rules below are implemented in `TileLotCatalog.LotsFor`; each bend's curved/cupped corner is exposed via `TileLotCatalog.TryGetCuppedCorner`, and a cul-de-sac's dropped bulb-side (tree) quadrants via `TileLotCatalog.TreeQuadrantsFor` ([#383](https://github.com/derekwinters/lucas-doggiehood/issues/383), refined by [#385](https://github.com/derekwinters/lucas-doggiehood/issues/385)).*
 
 Each tile offers up to four **property lots**, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see [Neighborhood Expansion](../expansion.md)):
 
 - **Twin bends (`OpposingTurnsNS`/`OpposingTurnsEW`): no lots.** Their two arcs leave no clean buildable quadrant.
-- **Bends (`Turn*`): three lots — drop the small corner the curve cups** (the bend's own corner: `TurnNE` drops NE, `TurnSW` drops SW, etc.). A bend renders as a **curved corner**, not two straight bands meeting at a right angle.
-- **All other types** (`FourWay`, `Straight*`, `Tee*`, `CulDeSac*`): all four quadrant lots.
+- **Bends (`Turn*`): two lots — drop the small corner the curve cups AND its diagonal opposite.** The cupped corner is the bend's own corner (`TurnNE` drops NE, `TurnSW` drops SW, etc.); the corner diagonally opposite it borders neither roaded edge, so it can never face a road and is dropped too. The two kept lots each border a straight roaded edge square-on: `TurnNE`→NW,SE · `TurnNW`→NE,SW · `TurnSE`→NE,SW · `TurnSW`→NW,SE. A bend renders as a **curved corner**, not two straight bands meeting at a right angle.
+- **Cul-de-sacs (`CulDeSac*`): two lots — keep the two quadrants adjacent to the single roaded edge.** `CulDeSacNorth`→NE,NW · `CulDeSacSouth`→SE,SW · `CulDeSacEast`→NE,SE · `CulDeSacWest`→NW,SW. The two bulb-side quadrants become **open space with trees** (reusing the #170 tree environment art, rendered by `WorldBuilder`).
+- **All other types** (`FourWay`, `Straight*`, `Tee*`): all four quadrant lots.
 
-**Open question — house facing (undecided):** on bends and cul-de-sacs the road curves, so corner houses no longer face it square-on. Either **rotate** each house to face its nearest road (keeping every lot; cul-de-sac houses fan around the bulb) or **remove** the lots that can't face a road (turning them into green space). Not yet decided — the Map Builder currently draws these houses axis-aligned as a placeholder.
+**House facing — settled (2026-07-31, Derek): remove, no rotation.** On bends and cul-de-sacs the road curves, so a corner house can't always face it square-on. Rather than rotate houses to fan around a curve, the lots that can't face a road square-on are simply **removed** (they become green space, or open space with trees for cul-de-sacs) — which is exactly why bends and cul-de-sacs keep only two lots above. Every remaining lot already borders a straight roaded edge square-on, so no house ever carries a facing/rotation value.
 
 ## Resolved: opposing-turn arches do not join into a loop
 

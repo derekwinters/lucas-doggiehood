@@ -39,19 +39,21 @@ namespace Doggiehood.Core.Tests.World
         {
             var zone = ZoneCatalog.FirstZone;
 
-            // One tile carries four quadrant lots (TileLotCatalog), so the
-            // whole zone has 4 lots with ids 5-8 continuing on from the 4
-            // starting houses (ids 1-4).
-            Assert.That(zone.Lots.Count, Is.EqualTo(4));
-            CollectionAssert.AreEqual(Enumerable.Range(5, 4), zone.Lots.Select(lot => lot.HouseId));
+            // CulDeSacSouth keeps the 2 lots adjacent to its south roaded edge
+            // (SE, SW); its two north bulb-side quadrants become open space with
+            // trees ("Property lots per tile", #385). So the zone has 2 lots
+            // with ids 5-6 continuing on from the 4 starting houses (ids 1-4).
+            Assert.That(zone.Lots.Count, Is.EqualTo(2));
+            CollectionAssert.AreEqual(Enumerable.Range(5, 2), zone.Lots.Select(lot => lot.HouseId));
 
             var tileCenter = TileGeometry.CenterOf(new TileCoordinate(0, 1));
             var offsets = TileLotCatalog.LotsFor(TileType.CulDeSacSouth);
             var firstLot = zone.Lots[0];
 
-            Assert.That(firstLot.Quadrant, Is.EqualTo(Quadrant.NorthEast));
-            Assert.That(firstLot.Position.X, Is.EqualTo(tileCenter.X + offsets[Quadrant.NorthEast].X));
-            Assert.That(firstLot.Position.Z, Is.EqualTo(tileCenter.Z + offsets[Quadrant.NorthEast].Z));
+            // SE is first among the kept SE,SW in Zone's fixed NE,NW,SE,SW order.
+            Assert.That(firstLot.Quadrant, Is.EqualTo(Quadrant.SouthEast));
+            Assert.That(firstLot.Position.X, Is.EqualTo(tileCenter.X + offsets[Quadrant.SouthEast].X));
+            Assert.That(firstLot.Position.Z, Is.EqualTo(tileCenter.Z + offsets[Quadrant.SouthEast].Z));
         }
 
         [Test]

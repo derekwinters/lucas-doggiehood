@@ -41,10 +41,12 @@ namespace Doggiehood.Core.Tests.World
         {
             var zone = TwoTileZone(firstHouseId: 5);
 
-            // TurnSW drops its own cupped corner -> 3 lots; CulDeSacEast keeps
-            // all 4 ("Property lots per tile", #383). Ids stay sequential.
-            Assert.That(zone.Lots.Count, Is.EqualTo(7));
-            CollectionAssert.AreEqual(Enumerable.Range(5, 7), zone.Lots.Select(lot => lot.HouseId));
+            // TurnSW keeps its 2 road-facing lots and CulDeSacEast keeps its 2
+            // (drop cupped+opposite / bulb-side quadrants respectively -
+            // "Property lots per tile", #385) -> 4 lots total. Ids stay
+            // sequential.
+            Assert.That(zone.Lots.Count, Is.EqualTo(4));
+            CollectionAssert.AreEqual(Enumerable.Range(5, 4), zone.Lots.Select(lot => lot.HouseId));
         }
 
         [Test]
@@ -56,9 +58,11 @@ namespace Doggiehood.Core.Tests.World
             var turnSwOffsets = TileLotCatalog.LotsFor(TileType.TurnSW);
             var firstLot = zone.Lots[0];
 
-            Assert.That(firstLot.Quadrant, Is.EqualTo(Quadrant.NorthEast));
-            Assert.That(firstLot.Position.X, Is.EqualTo(turnSwCenter.X + turnSwOffsets[Quadrant.NorthEast].X));
-            Assert.That(firstLot.Position.Z, Is.EqualTo(turnSwCenter.Z + turnSwOffsets[Quadrant.NorthEast].Z));
+            // TurnSW keeps NW and SE (drops SW cup + its NE opposite); NW is
+            // first in Zone's fixed NE,NW,SE,SW enumeration order.
+            Assert.That(firstLot.Quadrant, Is.EqualTo(Quadrant.NorthWest));
+            Assert.That(firstLot.Position.X, Is.EqualTo(turnSwCenter.X + turnSwOffsets[Quadrant.NorthWest].X));
+            Assert.That(firstLot.Position.Z, Is.EqualTo(turnSwCenter.Z + turnSwOffsets[Quadrant.NorthWest].Z));
         }
 
         [Test]

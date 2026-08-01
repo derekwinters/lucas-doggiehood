@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -73,6 +74,34 @@ namespace Doggiehood.Core.Tests.World
                 Assert.That(worldLots[i].X, Is.EqualTo(center.X + localOffsets[i].X));
                 Assert.That(worldLots[i].Z, Is.EqualTo(center.Z + localOffsets[i].Z));
             }
+        }
+
+        [Test]
+        public void TreeWorldPositionsFor_OffsetsTheTypesTreeQuadrantsByTheTilesCenter()
+        {
+            // #385: a cul-de-sac's two bulb-side quadrants render as open space
+            // with trees; their world positions are the local tree offsets
+            // shifted by the tile's center.
+            var coordinate = new TileCoordinate(0, 1);
+            var center = TileGeometry.CenterOf(coordinate);
+            var localTrees = TileLotCatalog.TreeQuadrantsFor(TileType.CulDeSacSouth).Values.ToList();
+
+            var worldTrees = TileGeometry.TreeWorldPositionsFor(TileType.CulDeSacSouth, coordinate);
+
+            Assert.That(worldTrees.Count, Is.EqualTo(localTrees.Count));
+            Assert.That(worldTrees.Count, Is.EqualTo(2));
+            for (int i = 0; i < worldTrees.Count; i++)
+            {
+                Assert.That(worldTrees[i].X, Is.EqualTo(center.X + localTrees[i].X));
+                Assert.That(worldTrees[i].Z, Is.EqualTo(center.Z + localTrees[i].Z));
+            }
+        }
+
+        [Test]
+        public void TreeWorldPositionsFor_IsEmpty_ForTypesWithoutOpenSpaceTrees()
+        {
+            Assert.That(TileGeometry.TreeWorldPositionsFor(TileType.TurnNE, new TileCoordinate(0, 1)), Is.Empty);
+            Assert.That(TileGeometry.TreeWorldPositionsFor(TileType.StraightNS, new TileCoordinate(0, 1)), Is.Empty);
         }
     }
 }
