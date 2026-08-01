@@ -33,6 +33,10 @@ namespace Doggiehood.Unity
 
         private const string NotNowLabel = "Not now";
 
+        // #472: the reminder's dismiss pill reuses the exact non-punishing
+        // "Not now" close, just relabeled for the active-quest context.
+        private const string StillLookingLabel = "Still looking";
+
         // --- Wireframe layout constants (docs/specs/ui/conversation-panel.md,
         // #175 / #161: named, never inline) ---
 
@@ -96,6 +100,16 @@ namespace Doggiehood.Unity
         public QuestDirector Director { get; set; }
 
         private Doggiehood.Core.Quests.Quest currentQuest;
+
+        /// <summary>#472: true when the open conversation is a reminder for an
+        /// already-Accepted quest (dismiss-only), false for an Available offer
+        /// (accept/decline). Drives the action row's single "Still looking" pill.</summary>
+        private bool isReminder;
+
+        /// <summary>#472: reminder lines are pure-random each fire (no anti-repeat,
+        /// no persisted state), matching the template's Model 2 convention — a
+        /// plain unseeded RNG in this Unity-facing layer.</summary>
+        private readonly System.Random reminderRng = new System.Random();
 
         /// <summary>Raised when a conversation opens (onboarding listens, #44).</summary>
         public event System.Action<Dog> Opened;
@@ -182,10 +196,15 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>Opens the dog's conversation; a no-op for dogs without
-        /// an active quest (Core returns null for those).</summary>
+        /// an active quest (Core returns null for those). An <c>Available</c>
+        /// quest opens the templated accept/decline offer; an already-<c>Accepted</c>
+        /// quest opens a dismiss-only contextual reminder instead of falling
+        /// through to the stale <see cref="ConversationStarter"/> placeholder
+        /// (#472).</summary>
         public bool TryOpen(Dog dog)
         {
             StatusMessage = null;
+            isReminder = false;
             currentDogName = dog.Name;
 
             if (State != null)
@@ -197,6 +216,26 @@ namespace Doggiehood.Unity
                 if (currentQuest != null)
                 {
                     Current = new Conversation(currentQuest.DialogueLines, ConversationEnding.Accept);
+                    ShowView();
+                    Opened?.Invoke(dog);
+                    return true;
+                }
+
+                // #472: the "active" quest re-tapping should remind about — a
+                // quest already accepted for this dog. Render its pooled reminder
+                // line and show a dismiss-only "Still looking" action row.
+                var acceptedQuest = System.Linq.Enumerable.FirstOrDefault(
+                    State.Quests.ActiveQuests,
+                    q => q.DogName == dog.Name && q.Status == Doggiehood.Core.Quests.QuestStatus.Accepted);
+
+                if (acceptedQuest != null)
+                {
+                    currentQuest = acceptedQuest;
+                    isReminder = true;
+                    var reminderLine = Doggiehood.Core.Quests.QuestTemplates
+                        .For(acceptedQuest.Type)
+                        .RenderReminder(dog, acceptedQuest.ItemName, reminderRng);
+                    Current = new Conversation(new[] { reminderLine }, ConversationEnding.Accept);
                     ShowView();
                     Opened?.Invoke(dog);
                     return true;
@@ -284,6 +323,7 @@ namespace Doggiehood.Unity
         {
             Current = null;
             currentQuest = null;
+            isReminder = false;
             StatusMessage = null;
             if (content != null)
             {
@@ -330,7 +370,9 @@ namespace Doggiehood.Unity
         /// <summary>Rebuilds the right-aligned action row for the open quest:
         /// "Not now" (leftmost, always present, #185) then either one option pill
         /// per decoration choice (#50) or a single Accept/Complete/Buy pill —
-        /// each greyed + non-interactive when unaffordable (#186).</summary>
+        /// each greyed + non-interactive when unaffordable (#186). For an
+        /// active-quest reminder (#472) the row is that single dismiss pill alone,
+        /// relabeled "Still looking" with no accept/complete affordance.</summary>
         private void RebuildActionRow()
         {
             foreach (var pill in allPills)
@@ -341,9 +383,20 @@ namespace Doggiehood.Unity
             allPills.Clear();
             acceptPills.Clear();
 
-            declinePill = CreatePill("NotNowPill", NotNowLabel, CandyChromeUgui.Cream, interactable: true);
+            declinePill = CreatePill(
+                "NotNowPill",
+                isReminder ? StillLookingLabel : NotNowLabel,
+                CandyChromeUgui.Cream,
+                interactable: true);
             declinePill.Button.onClick.AddListener(DeclineCurrent);
             allPills.Add(declinePill);
+
+            if (isReminder)
+            {
+                // #472: an active-quest reminder is dismiss-only — no accept or
+                // complete pill, matching Option A (no give-up mechanic here).
+                return;
+            }
 
             if (currentQuest != null && currentQuest.Options.Count > 0)
             {

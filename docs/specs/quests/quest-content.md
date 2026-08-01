@@ -52,6 +52,8 @@ All 3 types are implemented as templates, not one-off hand-written text — see 
 
 Item/subject names for all 3 types (and for decoration requests) are drawn from a single tagged item catalog, not per-type hand-written lists — see [Quest & Economy § Item catalog](economy.md#item-catalog). Find-only subjects (e.g. a lost puppy) carry no price, since they're found rather than bought.
 
+**Active-quest reminder copy ([#472](https://github.com/derekwinters/lucas-doggiehood/issues/472)).** Alongside the opener and closer, each quest type's template carries a third pooled line set — the **reminder** — shown when a dog with an *already-accepted* quest is re-tapped (e.g. *"Any sign of my {item} yet?"* for a lost item, *"Any luck getting me that {item}?"* for a buy-gift, a bugs-still-here nudge for pest control, a *"still thinking about that {item}?"* for a decoration request). It uses the exact same authoring model as the opener/closer — a personality-agnostic default pool plus optional per-personality flavor, `{dog}`/`{item}` slots filled from the same catalog, uniform-random per string via the injectable RNG — just a single reminder line rather than a two-line offer. The current lines are first-draft placeholders; the real writing pass is [#100](https://github.com/derekwinters/lucas-doggiehood/issues/100).
+
 ## Build checklist
 
 - [ ] "Lost something" quest: item placed in-scene, resolved by pan/zoom + tap, no separate search screen

@@ -119,6 +119,40 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ActiveQuestReminder_ShowsExactlyOneStillLookingPill_AndNoAcceptPill()
+        {
+            // #472: re-tapping a dog whose quest is Accepted shows a dismiss-only
+            // reminder — the single pill is the "Not now" close relabeled "Still
+            // looking", with no accept/complete affordance.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            state.Quests.Accept(quest);
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.AcceptPills, Is.Empty, "a reminder offers no accept/complete pill");
+            Assert.That(presenter.DeclinePill, Is.Not.Null, "the reminder still has its dismiss pill");
+            Assert.That(presenter.DeclinePill.Label.text, Is.EqualTo("Still looking"),
+                "the sole pill is the dismiss, relabeled for the active-quest reminder (#472)");
+        }
+
+        [Test]
+        public void StandardQuest_ReminderDoesNotAffectTheAvailableOffer()
+        {
+            // #472 regression: an Available (not-yet-accepted) quest is unchanged
+            // — still the templated opener/closer offer with a working Accept pill
+            // and a "Not now" decline.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.BodyLabel.text, Is.EqualTo(string.Join("\n", quest.DialogueLines)),
+                "an Available quest still renders its templated opener/closer");
+            Assert.That(presenter.AcceptPills.Count, Is.EqualTo(1), "the Available offer keeps its accept pill");
+            Assert.That(presenter.DeclinePill.Label.text, Is.EqualTo("Not now"),
+                "the Available offer's decline is still 'Not now', not 'Still looking'");
+        }
+
+        [Test]
         public void DecorationQuest_ShowsOnePillPerOption_WithNameAndCostLabels()
         {
             var dog = state.Dogs[2];
