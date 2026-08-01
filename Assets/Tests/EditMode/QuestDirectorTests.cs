@@ -183,6 +183,11 @@ namespace Doggiehood.Unity.EditModeTests
             state.Quests.DeliverPackage(quest);
             Assert.That(dog.WantsToWander, Is.True);
 
+            // The dog is now standing at its home node (front door). Capture
+            // that position BEFORE resuming so we can prove the fresh target is
+            // a real one-hop wander step from where it actually stands.
+            var homePosition = view.transform.position;
+
             // Resume the wander in the view — it must recompute, not resume stale.
             view.TickWander(0.0001f);
             Assert.That(view.HasWanderTarget, Is.True);
@@ -191,19 +196,38 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(freshTarget, Is.Not.EqualTo(staleTarget),
                 "the resumed wander must pick a fresh target, not the stale pre-quest one");
 
-            // On-network check against the network the dog actually wanders:
-            // DogSpawner binds every DogView (and its WanderBehavior) to the
-            // LIVE map-derived network via () => state.WalkNetwork (#398), NOT
-            // the starting-intersection-only NeighborhoodLayout singleton —
-            // whose coarser node set sits several units off the live nodes, so
-            // measuring against it would falsely read an on-network node as an
-            // off-network beeline. The fresh target is a genuine node of the
-            // dog's own network, so distance-to-nearest-node is ~0.
+            // The real "resumes on-network wander, not a stale beeline" property:
+            // the fresh target must be a SINGLE walk-network edge-hop from the
+            // node the dog currently stands on — exactly what a legitimate
+            // wander step is, and precisely what the #470 bug violated (it
+            // resumed the cached target from clear across the map, many hops
+            // away and reached by cutting straight off the network).
+            //
+            // NB: a plain distance-to-NearestWalkableNode check is the WRONG
+            // invariant here — after delivery the dog stands at its own front
+            // door, and per #430 a resident dog may step onto its own front-door
+            // node via its FrontWalkway edge. Front-door nodes are deliberately
+            // excluded from NearestWalkableNode (WalkNetwork), so that legitimate
+            // on-network pick sits one walkway-length (~4.75u) from the nearest
+            // *walkable* node even though it is genuinely connected by a real
+            // edge. The edge-adjacency check below is offset-agnostic and still
+            // fails a cross-map beeline.
             var network = state.WalkNetwork;
-            var nearest = network.NearestWalkableNode(new GridPoint(freshTarget.x, freshTarget.z));
-            Assert.That(Vector2.Distance(new Vector2(freshTarget.x, freshTarget.z), new Vector2(nearest.X, nearest.Z)),
-                Is.LessThan(0.01f),
-                "the fresh wander target must be an on-network node, not an off-network beeline point");
+            var homeNode = network.NearestWalkableNode(new GridPoint(homePosition.x, homePosition.z));
+            var oneHopTargets = network.EdgesFrom(homeNode).Select(e => e.Other(homeNode)).ToList();
+            var freshIsOneHop = oneHopTargets.Any(p =>
+                Vector2.Distance(new Vector2(p.X, p.Z), new Vector2(freshTarget.x, freshTarget.z)) < 0.01f);
+            Assert.That(freshIsOneHop, Is.True,
+                "the resumed wander target must be one walk-network edge-hop from the dog's current node, "
+                + "not a stale cross-map point reached by beelining off the network");
+
+            // And the stale pre-quest target is emphatically NOT one such hop —
+            // guarding that the assertion above actually discriminates the bug.
+            var staleIsOneHop = oneHopTargets.Any(p =>
+                Vector2.Distance(new Vector2(p.X, p.Z), new Vector2(staleTarget.x, staleTarget.z)) < 0.01f);
+            Assert.That(staleIsOneHop, Is.False,
+                "test sanity: the stale far-away target must not itself be adjacent to home, "
+                + "or the one-hop assertion wouldn't catch a beeline-to-stale regression");
         }
 
         [Test]
