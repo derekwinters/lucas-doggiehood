@@ -123,6 +123,22 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Open_RendersTheDogsBreedModelSnapshot_IntoThePortrait()
+        {
+            // #464: the portrait box is now a RawImage filled with a
+            // render-to-texture snapshot of the dog's breed-tinted model,
+            // captured once on Open (not a flat placeholder color).
+            overlay.Open(SampleDog());
+
+            Assert.That(overlay.PortraitImage, Is.Not.Null,
+                "the 220px portrait is a RawImage showing a rendered model, not a flat-color Image");
+            Assert.That(overlay.PortraitImage.texture, Is.Not.Null,
+                "Open captures the dog's model snapshot into the portrait's RawImage.texture");
+            Assert.That(overlay.Portrait.RenderCount, Is.EqualTo(1),
+                "exactly one snapshot per Open — captured once, not live every frame");
+        }
+
+        [Test]
         public void StatTiles_AreLabeledAgeAndPersonality()
         {
             overlay.Open(SampleDog());

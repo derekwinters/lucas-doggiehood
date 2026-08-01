@@ -128,6 +128,56 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Open_RendersTheHousesActualModelSnapshot_IntoTheThumbnail()
+        {
+            // #464: the thumbnail box is now a RawImage filled with a
+            // render-to-texture snapshot of the house's actual current model
+            // (respecting its level, variant, and vacancy tint), not a flat color.
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.ThumbnailImage, Is.Not.Null,
+                "the 220px thumbnail is a RawImage showing a rendered house model, not a flat-color Image");
+            Assert.That(overlay.ThumbnailImage.texture, Is.Not.Null,
+                "Open captures the house's model snapshot into the thumbnail's RawImage.texture");
+        }
+
+        [Test]
+        public void Open_RendersEachResidentsBreedModelSnapshot_IntoTheAvatar()
+        {
+            var residents = new List<Dog>
+            {
+                ResidentDog("Biscuit", Breed.FrenchBulldog),
+                ResidentDog("Nugget", Breed.Beagle),
+            };
+
+            overlay.Open(HouseAt(2, false), residents);
+
+            Assert.That(overlay.Residents.Count, Is.EqualTo(2));
+            foreach (var row in overlay.Residents)
+            {
+                Assert.That(row.Avatar, Is.Not.Null,
+                    "each 96px resident avatar is a RawImage showing a rendered model");
+                Assert.That(row.Avatar.texture, Is.Not.Null,
+                    "each resident's avatar gets a breed-tinted model snapshot");
+            }
+        }
+
+        [Test]
+        public void SnapshotCapture_IsOneShotPerOpen_OneHousePlusOnePerResident()
+        {
+            // #464 / Derek's rationale: capture once on Open, not live every
+            // frame. One render for the house thumbnail plus one per resident.
+            overlay.Open(HouseAt(2, false), new List<Dog>
+            {
+                ResidentDog("Biscuit", Breed.FrenchBulldog),
+                ResidentDog("Nugget", Breed.Beagle),
+            });
+
+            Assert.That(overlay.Portrait.RenderCount, Is.EqualTo(3),
+                "1 house thumbnail + 2 resident avatars = 3 one-shot captures");
+        }
+
+        [Test]
         public void Open_BuildsAResidentRowPerDog_FromTheirCoreData()
         {
             var residents = new List<Dog>

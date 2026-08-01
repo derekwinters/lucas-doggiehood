@@ -77,7 +77,6 @@ namespace Doggiehood.Unity
         private static readonly Color ScrimColor = new Color(46f / 255f, 42f / 255f, 38f / 255f, 0.46f);
         private static readonly Color PanelColor = new Color(1f, 0.99f, 0.97f, 1f);
         private static readonly Color CloseColor = new Color(1f, 0.953f, 0.851f, 1f);
-        private static readonly Color PortraitColor = new Color(0.749f, 0.890f, 0.949f, 1f);
         private static readonly Color BreedChipColor = new Color(0.431f, 0.776f, 0.878f, 1f);
         private static readonly Color StatColor = new Color(0.906f, 0.875f, 0.808f, 1f);
         private static readonly Color HomeButtonColor = new Color(0.345f, 0.753f, 0.416f, 1f);
@@ -88,6 +87,7 @@ namespace Doggiehood.Unity
         private RectTransform scrimRect;
         private RectTransform closeButtonRect;
         private RectTransform portraitRect;
+        private RawImage portraitImage;
         private RectTransform homeButtonRect;
         private Text nameLabel;
         private Text breedChipLabel;
@@ -95,6 +95,13 @@ namespace Doggiehood.Unity
         private Text ageValueLabel;
         private Text personalityKeyLabel;
         private Text personalityValueLabel;
+
+        // #464: the off-screen rig that snapshots the dog's model, lazily
+        // created and owned by this overlay, plus the live snapshot texture
+        // released and re-captured each Open.
+        private PortraitCamera portraitCamera;
+        private readonly System.Collections.Generic.List<RenderTexture> snapshots =
+            new System.Collections.Generic.List<RenderTexture>();
 
         private Dog currentDog;
 
@@ -108,6 +115,16 @@ namespace Doggiehood.Unity
         public RectTransform ScrimRect => scrimRect;
         public RectTransform CloseButtonRect => closeButtonRect;
         public RectTransform PortraitRect => portraitRect;
+
+        /// <summary>#464: the portrait box, now a <see cref="RawImage"/> that
+        /// shows a render-to-texture snapshot of the dog's breed-tinted model,
+        /// captured on <see cref="Open"/>.</summary>
+        public RawImage PortraitImage => portraitImage;
+
+        /// <summary>#464: the off-screen portrait rig this overlay owns (created
+        /// lazily on first render). Exposed so tests can confirm captures are
+        /// one-shot per <see cref="Open"/>.</summary>
+        public PortraitCamera Portrait => portraitCamera;
         public RectTransform HomeButtonRect => homeButtonRect;
         public Text NameLabel => nameLabel;
         public Text BreedChipLabel => breedChipLabel;
@@ -136,6 +153,11 @@ namespace Doggiehood.Unity
         {
             currentDog = dog;
             var profile = DogProfile.For(dog);
+
+            // #464: release the previous snapshot, then capture a fresh render of
+            // this dog's breed-tinted model into the portrait box.
+            ReleaseSnapshots();
+            portraitImage.texture = Snapshot(PortraitSubjects.ForDog(dog));
 
             nameLabel.text = profile.Name;
             breedChipLabel.text = profile.Breed;
@@ -219,7 +241,8 @@ namespace Doggiehood.Unity
             var header = PlaceTopLeft(CreateRect("Header", parent),
                 ProfilePaddingPx, ProfilePaddingPx, InnerWidth(), PortraitSizePx);
 
-            portraitRect = CreateImage("Portrait", header, PortraitColor).rectTransform;
+            portraitImage = CreateRawImage("Portrait", header);
+            portraitRect = portraitImage.rectTransform;
             portraitRect.anchorMin = new Vector2(0f, 0.5f);
             portraitRect.anchorMax = new Vector2(0f, 0.5f);
             portraitRect.pivot = new Vector2(0f, 0.5f);
@@ -336,6 +359,80 @@ namespace Doggiehood.Unity
             var image = CreateRect(name, parent).gameObject.AddComponent<Image>();
             image.color = color;
             return image;
+        }
+
+        /// <summary>#464: a box that displays a render-to-texture snapshot (the
+        /// dog portrait) instead of a flat placeholder color.</summary>
+        private static RawImage CreateRawImage(string name, RectTransform parent)
+        {
+            return CreateRect(name, parent).gameObject.AddComponent<RawImage>();
+        }
+
+        // ---------------------------------------------------------------
+        // #464: render-to-texture portrait snapshot (one-shot per Open)
+        // ---------------------------------------------------------------
+
+        private RenderTexture Snapshot(GameObject subject)
+        {
+            var texture = ResolvePortraitCamera().Capture(subject);
+            snapshots.Add(texture);
+            return texture;
+        }
+
+        private PortraitCamera ResolvePortraitCamera()
+        {
+            if (portraitCamera == null)
+            {
+                var rigObject = new GameObject("DogProfilePortraitCamera", typeof(Camera));
+                portraitCamera = rigObject.AddComponent<PortraitCamera>();
+                portraitCamera.Init();
+            }
+
+            return portraitCamera;
+        }
+
+        private void ReleaseSnapshots()
+        {
+            foreach (var texture in snapshots)
+            {
+                DestroyTexture(texture);
+            }
+
+            snapshots.Clear();
+        }
+
+        private static void DestroyTexture(RenderTexture texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            texture.Release();
+            if (Application.isPlaying)
+            {
+                Destroy(texture);
+            }
+            else
+            {
+                DestroyImmediate(texture);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseSnapshots();
+            if (portraitCamera != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(portraitCamera.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(portraitCamera.gameObject);
+                }
+            }
         }
 
         private static Text CreateLabel(string name, RectTransform parent, string value, int fontSize, TextAnchor anchor)

@@ -1302,41 +1302,21 @@ namespace Doggiehood.Unity
             // the lot. A zone house with no rolled variant (constructed
             // directly, or an unknown expansion id) resolves no mesh and falls
             // back to graybox, as does any mesh missing a catalog entry.
-            var isZoneHouse = HouseVariantAssignment.IsZoneHouse(house.Id);
-            string levelModelName;
-            if (isZoneHouse)
-            {
-                levelModelName = house.Variant.HasValue
-                    ? HouseLevelModelTable.ForHouseLevel(house.Variant.Value.LadderId, house.Level)
-                    : null;
-            }
-            else
-            {
-                levelModelName = HouseLevelModelTable.HasHouse(house.Id)
-                    ? HouseModelResourcePath(house.Id, house.Level)
-                    : null;
-            }
+            // #464: resolve the house's CURRENT model name through the shared
+            // Core.Art resolver, so the world render and the house-profile
+            // render-to-texture snapshot share ONE branch and can never drift.
+            // Output is identical to the previous inline zone/starter branch.
+            var levelModelName = HouseModelResolver.ResolveModelName(house.Id, house.Level, house.Variant);
 
             var model = (ForcePrimitiveFallback || levelModelName == null || !HouseModelCatalog.HasModel(levelModelName))
                 ? null
                 : Resources.Load<GameObject>(levelModelName);
             if (model != null)
             {
-                if (isZoneHouse)
-                {
-                    // #299: no HouseStyleTable style for zone houses — the
-                    // per-house look is the generated palette tint (Colormap
-                    // texture, no variant swap), applied as a color-multiply.
-                    var paletteTintHex = Palette.HouseTintHex(house.Variant.Value.TintIndex);
-                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot, network),
-                        HouseTintVariant.Colormap, paletteTintHex, house.IsVacant);
-                }
-                else
-                {
-                    var tintVariant = HouseStyleTable.ForHouse(house.Id).TintVariant;
-                    BuildHouseModel(houseRoot, model, HouseFrontFacing(lot, network), tintVariant, null, house.IsVacant);
-                }
-
+                // #464: the zone/starter tint selection moved into the shared
+                // ApplyHouseTints helper, so the world and the house-profile
+                // snapshot tint a house's model from ONE branch.
+                BuildHouseModel(houseRoot, model, HouseFrontFacing(lot, network), house);
                 return houseRoot;
             }
 
@@ -1388,8 +1368,7 @@ namespace Doggiehood.Unity
         /// GetComponentInParent) working. None of the primitive
         /// walls/roof/porch are built in this path.
         /// </summary>
-        private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing,
-            HouseTintVariant tintVariant, string paletteTintHex, bool isVacant)
+        private static void BuildHouseModel(GameObject houseRoot, GameObject model, Vector3 facing, House house)
         {
             var visual = Object.Instantiate(model, houseRoot.transform);
             visual.name = "Model";
@@ -1398,13 +1377,41 @@ namespace Doggiehood.Unity
                 * Quaternion.Euler(0f, HouseModelYawOffsetDegrees, 0f);
             visual.transform.localScale = Vector3.one * HouseKitScale;
 
-            ApplyTintVariant(visual, tintVariant);
-            ApplyPaletteTint(visual, paletteTintHex);
-            ApplyVacancyTint(visual, isVacant);
+            ApplyHouseTints(visual, house);
 
             // houseRoot has identity rotation and unit scale at this point,
             // matching TapColliders.AddFitted's requirement.
             TapColliders.AddFitted(houseRoot, visual);
+        }
+
+        /// <summary>
+        /// Applies a house's full tint stack to an instantiated kit model, in
+        /// the fixed order the world render uses (#464): the kit-texture variant
+        /// (starter houses) or the generated palette color-multiply (zone
+        /// houses), then the vacancy greyscale (which still wins while vacant).
+        /// Internal so the #464 house-profile snapshot (<see cref="PortraitSubjects"/>)
+        /// tints a house's portrait model through the SAME code the world uses —
+        /// no second, drift-prone copy of the zone-vs-starter branch.
+        /// </summary>
+        internal static void ApplyHouseTints(GameObject visual, House house)
+        {
+            if (HouseVariantAssignment.IsZoneHouse(house.Id))
+            {
+                // #299: no HouseStyleTable style for zone houses — the per-house
+                // look is the generated palette tint (Colormap texture, no
+                // variant swap), applied as a color-multiply.
+                if (house.Variant.HasValue)
+                {
+                    ApplyTintVariant(visual, HouseTintVariant.Colormap);
+                    ApplyPaletteTint(visual, Palette.HouseTintHex(house.Variant.Value.TintIndex));
+                }
+            }
+            else
+            {
+                ApplyTintVariant(visual, HouseStyleTable.ForHouse(house.Id).TintVariant);
+            }
+
+            ApplyVacancyTint(visual, house.IsVacant);
         }
 
         /// <summary>
