@@ -7,6 +7,15 @@ name: dashboard
 # See docs/engineering/issue-pipeline.md.
 
 on:
+  # Refresh immediately when an issue's labels change (issue #442) so the
+  # dashboard stays live between scheduled renders. This fires for human / UI /
+  # PAT-authored label moves; the automation's own `GITHUB_TOKEN`-authored moves
+  # do NOT fire a new run (GitHub's no-recursion guard), so the gatekeeper
+  # re-renders #193 inline instead (Option B — see the two gatekeeper glue
+  # scripts). PR label events are out of scope: the state machine is issue
+  # labels. The `concurrency` block below serializes the resulting bursts.
+  issues:
+    types: [labeled, unlabeled]
   schedule:
     # UTC. Offset ~1h after the AI routines (12:00 gatekeeper→analysis AM,
     # 23:00 gatekeeper review PM, 06:00 gatekeeper→dev nightly) so labels are

@@ -16,7 +16,6 @@ functions (`fetch_comment_event.build_snapshot`, `parse_commands.process`,
 
 import json
 import os
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -24,7 +23,7 @@ import apply_actions  # noqa: E402
 import fetch_comment_event  # noqa: E402
 import fire_routine  # noqa: E402
 import parse_commands  # noqa: E402
-from _github_api import request  # noqa: E402
+from _github_api import request, rerender_dashboard  # noqa: E402
 
 REPO_DEFAULT = "derekwinters/lucas-doggiehood"
 REPO_OWNER = "derekwinters"
@@ -47,11 +46,15 @@ def _milestone_number(repo, token, title):
 
 
 def _apply_action(repo, token, action, current_labels):
+    """Apply one parsed action; return True iff it changed the issue's labels
+    (so the caller can re-render #193 once per run — issue #442)."""
     number = action["issue"]
+    changed_labels = False
     new_labels = apply_actions.merge_labels(current_labels, action)
     if set(new_labels) != set(current_labels):
         request("PUT", "/repos/%s/issues/%d/labels" % (repo, number), token,
                  {"labels": new_labels})
+        changed_labels = True
         # Reactive triage (#378): the instant `ai-triage` is newly added
         # (/admit, /revise, /redo, /propose), fire the analysis Routine for
         # this issue so triage runs immediately. Best-effort — a missing
@@ -75,6 +78,8 @@ def _apply_action(repo, token, action, current_labels):
         request("POST", "/repos/%s/issues/comments/%d/reactions"
                 % (repo, action["comment_id"]), token, {"content": reaction})
 
+    return changed_labels
+
 
 def _apply_skip(repo, token, skip):
     text = apply_actions.render_skip_ack(skip)
@@ -86,32 +91,6 @@ def _apply_skip(repo, token, skip):
         for reaction in ("+1", "eyes"):
             request("POST", "/repos/%s/issues/comments/%d/reactions"
                     % (repo, comment_id), token, {"content": reaction})
-
-
-def _rerender_dashboard(repo, token, focus_title, cap):
-    """Persist a `/focus` / `/cap` marker by RE-RENDERING #193 — never a body
-    PATCH.
-
-    A read-modify-write of #193's body re-HTML-encodes it and breaks the
-    Mermaid charts (#204); the renderer instead writes the `<!-- pipeline-focus
-    -->` / `<!-- pipeline-cap -->` marker into a freshly rendered raw body via
-    the `DASHBOARD_SET_FOCUS` / `DASHBOARD_SET_CAP` overrides. This is the
-    documented mechanism (gatekeeper SKILL.md); it restores the `/focus` path
-    dropped in #238 (the parked #204/#234 gap) and reuses `/cap`'s seam (#240).
-    """
-    if focus_title is None and cap is None:
-        return
-    env = dict(os.environ)
-    env["GITHUB_TOKEN"] = token
-    env["DASHBOARD_REPO"] = repo
-    if focus_title is not None:
-        env["DASHBOARD_SET_FOCUS"] = focus_title
-    if cap is not None:
-        env["DASHBOARD_SET_CAP"] = str(cap)
-    renderer = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), os.pardir,
-        "pipeline-dashboard", "render_dashboard.py")
-    subprocess.run([sys.executable, renderer, "--write"], env=env, check=True)
 
 
 def main():
@@ -147,8 +126,9 @@ def main():
     current_labels = snapshot["issues"][0]["labels"]
     out = parse_commands.process(snapshot)
 
+    labels_changed = False
     for action in out["actions"]:
-        _apply_action(repo, token, action, current_labels)
+        labels_changed |= _apply_action(repo, token, action, current_labels)
         sys.stderr.write("#%d %s\n"
                           % (action["issue"], ",".join(action["commands"])))
 
@@ -157,9 +137,10 @@ def main():
         sys.stderr.write("#%s skipped: %s\n"
                           % (skip.get("issue"), skip.get("reason")))
 
-    # A `/focus` or `/cap` command persists its marker by re-rendering #193
-    # (never a body PATCH — see _rerender_dashboard / #204). Take the last
-    # value each command carries across the processed actions.
+    # Refresh #193 by re-rendering it inline (never a body PATCH — #204/#442),
+    # once per run after all label changes are applied. A `/focus` or `/cap`
+    # command also persists its marker this way, via the DASHBOARD_SET_* env
+    # overrides; take the last value each command carries across the actions.
     focus_title = None
     cap = None
     for action in out["actions"]:
@@ -167,8 +148,8 @@ def main():
             focus_title = action["set_focus"]
         if action.get("set_cap") is not None:
             cap = action["set_cap"]
-    if focus_title is not None or cap is not None:
-        _rerender_dashboard(repo, token, focus_title, cap)
+    if labels_changed or focus_title is not None or cap is not None:
+        rerender_dashboard(repo, token, focus_title, cap)
         sys.stderr.write("dashboard re-rendered: focus=%s cap=%s\n"
                           % (focus_title, cap))
 

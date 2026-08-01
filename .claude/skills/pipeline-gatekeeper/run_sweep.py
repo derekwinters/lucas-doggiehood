@@ -39,7 +39,7 @@ import check_revisits  # noqa: E402
 import fire_routine  # noqa: E402
 import parse_commands  # noqa: E402
 import reconcile  # noqa: E402
-from _github_api import request  # noqa: E402
+from _github_api import request, rerender_dashboard  # noqa: E402
 
 REPO_DEFAULT = "derekwinters/lucas-doggiehood"
 REPO_OWNER = "derekwinters"
@@ -89,6 +89,8 @@ def _has_watermark(repo, token, comment_id):
 
 
 def _replace_labels(repo, token, number, remove=(), add=()):
+    """Add/remove labels on an issue; return True iff the label set changed
+    (so the caller can re-render #193 once per run — issue #442)."""
     issue = request("GET", "/repos/%s/issues/%d" % (repo, number), token)
     current = [l["name"] for l in issue.get("labels", [])]
     remove = set(remove)
@@ -99,12 +101,16 @@ def _replace_labels(repo, token, number, remove=(), add=()):
     if set(new_labels) != set(current):
         request("PUT", "/repos/%s/issues/%d/labels" % (repo, number), token,
                  {"labels": new_labels})
+        return True
+    return False
 
 
 def _apply_revisit(repo, token, revisit, current_labels):
+    """Apply one blocker auto-revisit; return True iff it changed labels."""
     number = revisit["issue"]
-    _replace_labels(repo, token, number,
-                     remove=revisit["remove_labels"], add=revisit["add_labels"])
+    changed = _replace_labels(
+        repo, token, number,
+        remove=revisit["remove_labels"], add=revisit["add_labels"])
     # Reactive triage (#378): a blocker-cleared revisit re-adds `ai-triage`,
     # so fire the analysis Routine for this issue immediately (best-effort).
     new_labels = apply_actions.merge_labels(current_labels, revisit)
@@ -115,15 +121,19 @@ def _apply_revisit(repo, token, revisit, current_labels):
             % (blockers, parse_commands.MENUS[revisit["menu"]]))
     request("POST", "/repos/%s/issues/%d/comments" % (repo, number), token,
              {"body": text})
+    return changed
 
 
 def _apply_comment_action(repo, token, action):
+    """Apply one replayed missed command; return True iff it changed labels."""
     issue = request("GET", "/repos/%s/issues/%d" % (repo, action["issue"]), token)
     current_labels = [l["name"] for l in issue.get("labels", [])]
+    changed_labels = False
     new_labels = apply_actions.merge_labels(current_labels, action)
     if set(new_labels) != set(current_labels):
         request("PUT", "/repos/%s/issues/%d/labels"
                  % (repo, action["issue"]), token, {"labels": new_labels})
+        changed_labels = True
         # Reactive triage (#378): a missed /admit etc. replayed by the cron
         # safety net still fires the Routine when it newly adds `ai-triage`.
         if apply_actions.fires_triage(current_labels, new_labels):
@@ -135,6 +145,7 @@ def _apply_comment_action(repo, token, action):
     for reaction in apply_actions.reactions_for(action):
         request("POST", "/repos/%s/issues/comments/%d/reactions"
                 % (repo, action["comment_id"]), token, {"content": reaction})
+    return changed_labels
 
 
 def main(argv):
@@ -147,13 +158,19 @@ def main(argv):
 
     open_issues = _fetch_open_issues(repo, token, want_comments=cron)
 
+    # Track whether any issue's labels changed this run, so #193 is re-rendered
+    # once at the end (issue #442) — not once per touched issue. The renderer
+    # recomputes full board state, so a single render covers every change.
+    labels_changed = False
+
     # 1. Blocker auto-revisit (#241) — board-wide, both modes.
     revisit_input = [{"number": i["number"], "labels": i["labels"],
                        "body": i["body"]} for i in open_issues]
     labels_by_issue = {i["number"]: i["labels"] for i in open_issues}
     for revisit in check_revisits.check_blocker_revisits(revisit_input):
-        _apply_revisit(repo, token, revisit,
-                       labels_by_issue.get(revisit["issue"], []))
+        labels_changed |= _apply_revisit(
+            repo, token, revisit,
+            labels_by_issue.get(revisit["issue"], []))
         sys.stderr.write("#%d revisit (blockers %s)\n"
                           % (revisit["issue"], revisit["blockers_resolved"]))
 
@@ -162,12 +179,14 @@ def main(argv):
     rec_state = reconcile.fetch_state(repo, token)
     findings = reconcile.process(rec_state, events_only=not cron)
     for f in findings["strip_labels"]:
-        _replace_labels(repo, token, f["number"], remove=f["labels"])
+        labels_changed |= _replace_labels(
+            repo, token, f["number"], remove=f["labels"])
         sys.stderr.write("#%d strip stale labels %s\n"
                           % (f["number"], f["labels"]))
     for f in findings["requeue"]:
-        _replace_labels(repo, token, f["number"],
-                         remove=["in-progress"], add=["ready-for-work"])
+        labels_changed |= _replace_labels(
+            repo, token, f["number"],
+            remove=["in-progress"], add=["ready-for-work"])
         sys.stderr.write("#%d requeue -> ready-for-work\n" % f["number"])
     # flag_* findings are read-only — surfaced by the dashboard, never acted
     # on here (see pipeline-reconcile's non-negotiable: the sweep never
@@ -191,9 +210,16 @@ def main(argv):
         }
         out = parse_commands.process(snapshot)
         for action in out["actions"]:
-            _apply_comment_action(repo, token, action)
+            labels_changed |= _apply_comment_action(repo, token, action)
             sys.stderr.write("#%d %s (missed-command sweep)\n"
                               % (action["issue"], ",".join(action["commands"])))
+
+    # Refresh #193 inline once, after every label change this run is applied
+    # (issue #442). Same GITHUB_TOKEN, same job — no second workflow run, so
+    # the no-recursion guard never applies. The sweep never sets focus/cap.
+    if labels_changed:
+        rerender_dashboard(repo, token)
+        sys.stderr.write("dashboard re-rendered\n")
 
     return 0
 

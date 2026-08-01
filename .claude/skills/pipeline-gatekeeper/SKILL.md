@@ -144,10 +144,14 @@ silently ignored everywhere else.
      ```
 
      The renderer writes the new marker itself (raw) as part of the freshly
-     rendered body. In the deterministic workflow, `run_comment_event.py` does
-     this automatically for any processed action carrying `set_focus` /
-     `set_cap` (`_rerender_dashboard`); restoring the `/focus` override closed
-     the parked [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204) / [#234](https://github.com/derekwinters/lucas-doggiehood/issues/234) gap.
+     rendered body. In the deterministic workflow, both glue scripts re-render
+     #193 inline via the shared `_github_api.rerender_dashboard` helper after
+     **any** label change they apply — once per run — so the board stays live
+     ([#442](https://github.com/derekwinters/lucas-doggiehood/issues/442)); a
+     `/focus` / `/cap` action additionally passes its `set_focus` / `set_cap`
+     through the `DASHBOARD_SET_FOCUS` / `DASHBOARD_SET_CAP` override so the
+     marker persists. Restoring the `/focus` override closed the parked
+     [#204](https://github.com/derekwinters/lucas-doggiehood/issues/204) / [#234](https://github.com/derekwinters/lucas-doggiehood/issues/234) gap.
 
 4. **Acknowledge.** React to the source comment with 👍 (`+1`) to confirm the
    action, and — where it moves the issue to a state awaiting Derek — post a
