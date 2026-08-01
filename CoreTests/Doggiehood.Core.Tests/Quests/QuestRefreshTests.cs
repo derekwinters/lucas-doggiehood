@@ -184,5 +184,64 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(loaded.LastRotationUtc, Is.Null, "a never-rotated save loads back with no timestamp");
         }
+
+        // --- #457: the Debug-tab "Refresh quests now" forced refresh ---
+
+        [Test]
+        public void ForceRefresh_TopsUp_EvenWhenTheCadenceGateWouldBlock()
+        {
+            // A rotation just happened, so ShouldRefresh is false under the 8h
+            // window — yet the forced refresh must add quests anyway (skip the
+            // timer).
+            var state = GameState.CreateNew();
+            state.RecordRotationUtc(T0);
+            var justAfter = T0 + TimeSpan.FromHours(1);
+            Assert.That(new QuestPacingPolicy().ShouldRefresh(justAfter, state), Is.False,
+                "precondition: the natural cadence gate would block a refresh here");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "precondition: no active quests yet");
+
+            state.Quests.ForceRefresh(justAfter, new Random(1));
+
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
+                "the forced refresh tops up even inside the 8h window");
+        }
+
+        [Test]
+        public void ForceRefresh_RecordsThePassedInstant_RestartingTheEightHourWindow()
+        {
+            var state = GameState.CreateNew();
+            state.RecordRotationUtc(T0);
+            var forcedAt = T0 + TimeSpan.FromHours(1);
+
+            state.Quests.ForceRefresh(forcedAt, new Random(1));
+
+            Assert.That(state.LastRotationUtc, Is.EqualTo(forcedAt),
+                "the forced refresh records its instant, same as a natural rotation");
+            Assert.That(new QuestPacingPolicy().ShouldRefresh(forcedAt + TimeSpan.FromHours(1), state), Is.False,
+                "so the 8h window restarts from the forced refresh");
+        }
+
+        [Test]
+        public void ForceRefresh_AtTheCap_AddsNothing()
+        {
+            // Mirror StartNewDay's headroom behavior: once the neighborhood
+            // already holds the target number of active quests, a forced
+            // refresh is a no-op — no double-add past the cap.
+            var state = GameState.CreateNew();
+            var target = Target(state);
+            var rng = new Random(5);
+            var now = T0;
+            for (var i = 0; i < 12 && state.Quests.ActiveQuests.Count() < target; i++)
+            {
+                state.Quests.MaybeStartNewDay(now, rng);
+                now += EconomyNumbers.RefreshInterval;
+            }
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target), "precondition: at the cap");
+
+            state.Quests.ForceRefresh(now, new Random(99));
+
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                "a forced refresh at the cap adds nothing");
+        }
     }
 }
