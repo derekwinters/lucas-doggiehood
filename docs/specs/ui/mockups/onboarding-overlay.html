@@ -43,9 +43,13 @@
   .coach{position:absolute;left:510px;bottom:56px;width:900px;height:88px;background:var(--cream);border:6px solid var(--ink);border-radius:999px;box-shadow:0 8px 0 var(--ink);display:flex;align-items:center;gap:22px;padding:0 34px;}
   .coach .paw{width:52px;height:52px;border-radius:999px;background:var(--leaf);border:5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 auto;}
   .coach .msg{flex:1;font-size:30px;color:var(--ink);}
-  .coach .dots{display:flex;gap:12px;flex:0 0 auto;}
-  .coach .dots span{width:16px;height:16px;border-radius:999px;background:transparent;border:4px solid var(--ink);}
-  .coach .dots span.on{background:var(--ink);}
+  /* phase-title tab (#435) — an overlapping gold tab at the bar's top-left, styled like the
+     DialogueBox name tag, replacing the former trailing step-dots. The bar sizes to its content
+     (min-height 88px keeps single-line proportions; a wrapped 2-line message grows the bar
+     taller) plus PhaseTitleContentTopPaddingPx (48) above and PhaseTitleContentBottomPaddingPx
+     (16) below, so the badge/message row always clears the tab regardless of message line count. */
+  .coach.hasTitle{height:auto;min-height:88px;padding-top:48px;padding-bottom:16px;}
+  .coach .phaseTitle{position:absolute;top:-28px;left:34px;background:var(--gold);border:5px solid var(--ink);box-shadow:0 6px 0 var(--ink);border-radius:999px;padding:8px 30px;font-size:26px;color:var(--ink);}
   .mguide{position:absolute;left:960px;bottom:0;width:2px;height:56px;background:var(--guide);}
   .mguide::after{content:"CoachBottomMarginPx 56";position:absolute;left:8px;bottom:12px;font-size:22px;color:var(--guide);white-space:nowrap;}
 
@@ -133,7 +137,7 @@
   <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Scroll inside the frame to pan.</p>
 
   <div class="viewer">
-    <div class="screen" role="img" aria-label="Landscape tablet: neighborhood with a dog and speech bubble, and a slim onboarding coach prompt at the bottom center showing step 1 of 4">
+    <div class="screen" role="img" aria-label="Landscape tablet: neighborhood with a dog, and a slim onboarding coach prompt at the bottom center — Pan step, with an overlapping gold phase-title tab reading Learn the ropes">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
       <div class="dog"></div>
@@ -144,17 +148,17 @@
           <path d="M0 17 L144 17 L144 0 L200 28 L144 56 L144 39 L0 39 Z"/>
         </svg>
       </div>
-      <div class="coach">
+      <div class="coach hasTitle">
+        <div class="phaseTitle rounded">Learn the ropes</div>
         <div class="paw rounded">🐾</div>
         <div class="msg rounded">Welcome to Doggiehood! Drag to look around the neighborhood.</div>
-        <div class="dots" aria-label="step 1 of 4"><span class="on"></span><span></span><span></span><span></span></div>
       </div>
     </div>
   </div>
 
   <p class="scalenote" style="margin-top:22px;">Zoom step (#330) — the same coach, now demonstrating pinch. A symmetric arrow pair spreads apart to zoom in, then closes together to zoom out.</p>
   <div class="viewer">
-    <div class="screen" role="img" aria-label="Landscape tablet, zoom step: two gold arrows either side of center spread apart to show zoom-in, then close together to show zoom-out, with the coach prompt at the bottom center showing step 2 of 4">
+    <div class="screen" role="img" aria-label="Landscape tablet, zoom step: two gold arrows either side of center spread apart to show zoom-in, then close together to show zoom-out, with the coach prompt at the bottom center — Zoom step, overlapping gold phase-title tab reading Learn the ropes">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
       <div class="dog"></div>
@@ -167,10 +171,10 @@
           <path d="M0 17 L144 17 L144 0 L200 28 L144 56 L144 39 L0 39 Z"/>
         </svg>
       </div>
-      <div class="coach">
+      <div class="coach hasTitle">
+        <div class="phaseTitle rounded">Learn the ropes</div>
         <div class="paw rounded">🐾</div>
         <div class="msg rounded">Nice! Pinch (or scroll) to zoom in and out.</div>
-        <div class="dots" aria-label="step 2 of 4"><span class="on"></span><span class="on"></span><span></span><span></span></div>
       </div>
     </div>
   </div>
@@ -184,7 +188,6 @@
         <tr><td>CoachWidthPx</td><td class="val">900</td><td>prompt bar width</td></tr>
         <tr><td>CoachHeightPx</td><td class="val">88</td><td>prompt bar height</td></tr>
         <tr><td>CoachBottomMarginPx</td><td class="val">56</td><td>gap below the bar</td></tr>
-        <tr><td>StepDotCount</td><td class="val">4</td><td>progress indicator</td></tr>
         <tr><td>MsgFontPx</td><td class="val">30</td><td>step text</td></tr>
       </table>
     </div>
@@ -221,6 +224,28 @@
   </div>
 
   <div class="steps">
+    <h2>Phase-title region (#435): per-phase titles, replacing the step-dots</h2>
+    <table>
+      <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+      <tr><td>PhaseTitleAnchor</td><td class="val">TopLeft</td><td>tab position (overlaps bar top edge)</td></tr>
+      <tr><td>PhaseTitleLeftInsetPx</td><td class="val">34</td><td>tab inset from bar's left edge</td></tr>
+      <tr><td>PhaseTitleOffsetPx</td><td class="val">28</td><td>vertical overlap (matches NameTagOffsetPx)</td></tr>
+      <tr><td>PhaseTitlePaddingXPx</td><td class="val">30</td><td>tab label horizontal inset</td></tr>
+      <tr><td>PhaseTitlePaddingYPx</td><td class="val">8</td><td>tab label vertical inset</td></tr>
+      <tr><td>PhaseTitleFontPx</td><td class="val">26</td><td>tab label size</td></tr>
+      <tr><td>PhaseTitleContentTopPaddingPx</td><td class="val">48</td><td>content top padding, clears the tab regardless of message line count</td></tr>
+      <tr><td>PhaseTitleContentBottomPaddingPx</td><td class="val">16</td><td>content bottom padding, symmetric breathing room under a wrapped message</td></tr>
+    </table>
+    <div class="sgrid" style="margin-top:14px;">
+      <div class="srow"><span class="n">1</span><span class="t"><b>Tutorial</b> (pan → zoom → tap bubble → complete quest) — “Learn the ropes”</span></div>
+      <div class="srow"><span class="n">2</span><span class="t"><b>Upgrade</b> — “Fix up a home”</span></div>
+      <div class="srow"><span class="n">3</span><span class="t"><b>Expand</b> — “Grow the neighborhood”</span></div>
+      <div class="srow"><span class="n">4</span><span class="t"><b>Build</b> — “Build a house”</span></div>
+    </div>
+    <p class="note">Tab label swaps once per <b>phase</b>, not per step — all four tutorial steps show the same title. <code>StepDotCount</code> and the step-dots region are dropped entirely. The tab is an overlapping gold tab at the bar's top-left, styled like the <code>DialogueBox</code> name tag but drawn procedurally via <code>CandyChrome</code> (the coach bar is IMGUI, not the UGUI DialogueBox shell). When the tab is shown, the bar sizes to its content (<code>min-height</code> 88px) plus <code>PhaseTitleContentTopPaddingPx</code> (48px) above and <code>PhaseTitleContentBottomPaddingPx</code> (16px) below, so a wrapped two-line message (worst case: the tutorial step-1 copy) grows the bar taller instead of colliding with the tab. The bottom anchor (<code>CoachBottomMarginPx</code>) is unchanged; the bar only grows upward.</p>
+  </div>
+
+  <div class="steps">
     <h2>The four guided steps (text from <code>OnboardingSequence</code>)</h2>
     <div class="sgrid">
       <div class="srow"><span class="n">1</span><span class="t"><b>Pan</b> — “Welcome to Doggiehood! Drag to look around the neighborhood.”</span></div>
@@ -234,6 +259,7 @@
     Reuses the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill shape · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built bar's anchor/size against them.
     <br><span class="status">Approved (Derek, 2026-07-24) (#176)</span>
     <span class="status">Gesture-arrow coach approved (Derek, 2026-07-31) (#330) — distilled</span>
+    <span class="status">Phase-title tab approved (Derek, 2026-07-31) (#435) — distilled; step-dots removed</span>
   </footer>
 </div>
 </body>
