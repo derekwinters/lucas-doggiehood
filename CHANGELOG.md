@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.9.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.8.0...v0.9.0) (2026-08-01)
+
+
+### Features
+
+* add Debug-tab "Refresh quests now" forced quest rotation ([#487](https://github.com/derekwinters/lucas-doggiehood/issues/487)) ([6bcf4e6](https://github.com/derekwinters/lucas-doggiehood/commit/6bcf4e6c49ebcf0fe3799d154446bf64fd4759e9)), closes [#457](https://github.com/derekwinters/lucas-doggiehood/issues/457)
+* allow a manual per-lot fence-anchor override ([#483](https://github.com/derekwinters/lucas-doggiehood/issues/483)) ([6243fb4](https://github.com/derekwinters/lucas-doggiehood/commit/6243fb4e9b2147742a8a54284341be017d9e7532)), closes [#223](https://github.com/derekwinters/lucas-doggiehood/issues/223)
+* apply the Candy Cottage chrome to the house and dog profiles ([#495](https://github.com/derekwinters/lucas-doggiehood/issues/495)) ([de5b5e5](https://github.com/derekwinters/lucas-doggiehood/commit/de5b5e5c8b5e684f1e562468c6767770cb9ce0d8)), closes [#465](https://github.com/derekwinters/lucas-doggiehood/issues/465)
+* multi-lock frontier expansion, retiring the legacy zone-unlock path ([#503](https://github.com/derekwinters/lucas-doggiehood/issues/503)) ([c7573b8](https://github.com/derekwinters/lucas-doggiehood/commit/c7573b88e5a09683a0ce6eef3a579c5af3637b91)), closes [#453](https://github.com/derekwinters/lucas-doggiehood/issues/453)
+* reject a milestone that precedes an issue's blocker milestone ([#481](https://github.com/derekwinters/lucas-doggiehood/issues/481)) ([1843df8](https://github.com/derekwinters/lucas-doggiehood/commit/1843df810fbc52ad8515fbafe5ff4a99e0320c81)), closes [#212](https://github.com/derekwinters/lucas-doggiehood/issues/212)
+* render house and resident dog models in the house/dog profiles ([#494](https://github.com/derekwinters/lucas-doggiehood/issues/494)) ([ab48377](https://github.com/derekwinters/lucas-doggiehood/commit/ab483770beb2ca18d452ccd4dbedefd0560be36b)), closes [#464](https://github.com/derekwinters/lucas-doggiehood/issues/464)
+* vary yard tree size up to 25% larger, never smaller ([#488](https://github.com/derekwinters/lucas-doggiehood/issues/488)) ([376d793](https://github.com/derekwinters/lucas-doggiehood/commit/376d793a86236e85b86f9ca494ef944aba8c34ba)), closes [#458](https://github.com/derekwinters/lucas-doggiehood/issues/458)
+
+
+### Bug Fixes
+
+* clip yard trees against a lot's own tile road on cul-de-sac tiles ([#485](https://github.com/derekwinters/lucas-doggiehood/issues/485)) ([7b68deb](https://github.com/derekwinters/lucas-doggiehood/commit/7b68deb20ee87e6f1ca533f421456a5092f3a03e)), closes [#455](https://github.com/derekwinters/lucas-doggiehood/issues/455)
+* exclude the lost-puppy subject for puppy dogs ([#493](https://github.com/derekwinters/lucas-doggiehood/issues/493)) ([c1d0426](https://github.com/derekwinters/lucas-doggiehood/commit/c1d0426b28a749c0b4298f159f553072a0322a43)), closes [#463](https://github.com/derekwinters/lucas-doggiehood/issues/463)
+* make the delivered gift package drop at the door and be tappable ([#504](https://github.com/derekwinters/lucas-doggiehood/issues/504)) ([ed7d330](https://github.com/derekwinters/lucas-doggiehood/commit/ed7d330aaff01ede6a3eebe9da9b53d43b1dd3e0)), closes [#471](https://github.com/derekwinters/lucas-doggiehood/issues/471)
+* onboarding gesture arrows render for every direction and reset the gesture clock on step change ([#498](https://github.com/derekwinters/lucas-doggiehood/issues/498)) ([1f3b735](https://github.com/derekwinters/lucas-doggiehood/commit/1f3b735c3ed887d8f93a35329b0262f07419b31b)), closes [#468](https://github.com/derekwinters/lucas-doggiehood/issues/468)
+* orient zone-house fences and yard trees to the real street facing ([#491](https://github.com/derekwinters/lucas-doggiehood/issues/491)) ([282a920](https://github.com/derekwinters/lucas-doggiehood/commit/282a92051461ea06aabd4003602aea963ca4fc9c)), closes [#461](https://github.com/derekwinters/lucas-doggiehood/issues/461)
+* re-align an upgraded house to the sidewalk and its front door ([#484](https://github.com/derekwinters/lucas-doggiehood/issues/484)) ([4f2c02d](https://github.com/derekwinters/lucas-doggiehood/commit/4f2c02d8763e9facd3f7b171a9d80abf940e2642)), closes [#454](https://github.com/derekwinters/lucas-doggiehood/issues/454)
+* reserve yard trees against the house's max-across-ladder footprint ([#489](https://github.com/derekwinters/lucas-doggiehood/issues/489)) ([65c6a9f](https://github.com/derekwinters/lucas-doggiehood/commit/65c6a9f20d69ae1d46d8047090736cbcd3070b8c)), closes [#459](https://github.com/derekwinters/lucas-doggiehood/issues/459)
+* scope onboarding upgrade-house step to the first-quest dog's house ([#500](https://github.com/derekwinters/lucas-doggiehood/issues/500)) ([3c8e903](https://github.com/derekwinters/lucas-doggiehood/commit/3c8e9030be0e9c1384db370d1cda1fc938a0711c)), closes [#469](https://github.com/derekwinters/lucas-doggiehood/issues/469)
+* show a contextual reminder when re-tapping a dog with an active quest ([#505](https://github.com/derekwinters/lucas-doggiehood/issues/505)) ([af63833](https://github.com/derekwinters/lucas-doggiehood/commit/af63833aa17fcbbfff8f91ad4447a05070a88060)), closes [#472](https://github.com/derekwinters/lucas-doggiehood/issues/472)
+* size backyard-fence connectors from the house's current level ([#490](https://github.com/derekwinters/lucas-doggiehood/issues/490)) ([8edd54d](https://github.com/derekwinters/lucas-doggiehood/commit/8edd54d7fb9c79c50a0fa773d17141984eb75390)), closes [#460](https://github.com/derekwinters/lucas-doggiehood/issues/460)
+* stop buy-gift dog moonwalking home and beelining to a stale target ([#502](https://github.com/derekwinters/lucas-doggiehood/issues/502)) ([58c3ad5](https://github.com/derekwinters/lucas-doggiehood/commit/58c3ad50b3e7e4ef5b8a64a12e7263c8285fd6dc)), closes [#470](https://github.com/derekwinters/lucas-doggiehood/issues/470)
+* stretch settings sidebar-tab labels so they center and stay in their pill ([#497](https://github.com/derekwinters/lucas-doggiehood/issues/497)) ([ff92c44](https://github.com/derekwinters/lucas-doggiehood/commit/ff92c4434f90c7f088f009dfafc3809e5b4f0c32)), closes [#467](https://github.com/derekwinters/lucas-doggiehood/issues/467)
+* wire a freshly built empty house's tap to open its profile ([#486](https://github.com/derekwinters/lucas-doggiehood/issues/486)) ([9906145](https://github.com/derekwinters/lucas-doggiehood/commit/9906145084b35dfd80235c46118bbb67fdf69cbe)), closes [#456](https://github.com/derekwinters/lucas-doggiehood/issues/456)
+
 ## [0.8.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.7.0...v0.8.0) (2026-08-01)
 
 
