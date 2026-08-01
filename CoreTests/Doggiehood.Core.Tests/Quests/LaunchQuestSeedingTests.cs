@@ -36,7 +36,7 @@ namespace Doggiehood.Core.Tests.Quests
         public void MidChain_GuidedSteps_SeedNothing()
         {
             var state = GameState.CreateNew();
-            state.GrantOnboardingCompletionReward(); // advance past the first step
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id); // advance past the first step
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
             state.Quests.EnsureQuestsForLaunch(NowUtc, new Random(1));
@@ -49,7 +49,7 @@ namespace Doggiehood.Core.Tests.Quests
         public void PostChain_RunsTheRecurringRotation()
         {
             var state = GameState.CreateNew();
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             state.TryUpgradeHouse(state.Houses[0].Id);
             state.TryUnlockNextZone();
             state.TryBuildHouse(state.UnlockedZones[0].Lots[0].HouseId);

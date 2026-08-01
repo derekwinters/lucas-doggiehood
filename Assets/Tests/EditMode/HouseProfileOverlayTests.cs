@@ -413,6 +413,36 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void IneligibleHouse_DuringOnboardingUpgradeStep_GreysTheUpgradeButtonOntoTheDisabledRole()
+        {
+            // #469: while the onboarding "upgrade a house" step is scoped to the
+            // first-quest dog's house, a non-target house's Upgrade button reads
+            // as unavailable through the EXISTING disabled affordance — even when
+            // the wallet could afford the step — so the player isn't nudged to
+            // spend on a house that won't advance the chain.
+            overlay.ConfigureUpgrade(() => 1000, _ => false, _ => false); // affordable, but not the eligible house
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButton.interactable, Is.False,
+                "an ineligible house's Upgrade button is disabled even when affordable");
+            AssertHex(overlay.UpgradeButtonRect.GetComponent<Image>().color, 0xD8, 0xD2, 0xC6,
+                "the ineligible Upgrade button greys onto the same Disabled role as an unaffordable one");
+        }
+
+        [Test]
+        public void EligibleAffordableHouse_KeepsTheUpgradeButtonEnabled()
+        {
+            // #469 guard: the eligibility gate only disables the ineligible case;
+            // an eligible, affordable house's button stays enabled as before.
+            overlay.ConfigureUpgrade(() => 1000, _ => false, _ => true);
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+
+            Assert.That(overlay.UpgradeButton.interactable, Is.True);
+            AssertHex(overlay.UpgradeButtonRect.GetComponent<Image>().color, 0xFF, 0x7A, 0x5C,
+                "the eligible affordable Upgrade button keeps the Coral spend role tint");
+        }
+
+        [Test]
         public void InlineElements_CarryAnInkOutline_WithNoDropShadow()
         {
             overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });

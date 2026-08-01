@@ -107,7 +107,7 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.FirstQuest));
 
             // Step 1: first quest completed -> onboarding-completion bonus.
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
@@ -148,7 +148,7 @@ namespace Doggiehood.Core.Tests.Onboarding
             var state = GameState.CreateNew();
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0));
 
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "no rotation at step 1");
 
             Assert.That(state.TryUpgradeHouse(state.Houses[0].Id), Is.True);
@@ -169,7 +169,7 @@ namespace Doggiehood.Core.Tests.Onboarding
         public void RewardChainStep_RoundTripsThroughSaveCodec_SoItIsNotRestartedOnReload()
         {
             var state = GameState.CreateNew();
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
             var reloaded = SaveCodec.Load(SaveCodec.Save(state));
@@ -182,7 +182,7 @@ namespace Doggiehood.Core.Tests.Onboarding
         public void CompletedRewardChain_RoundTripsAsComplete()
         {
             var state = GameState.CreateNew();
-            state.GrantOnboardingCompletionReward();
+            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             state.TryUpgradeHouse(state.Houses[0].Id);
             state.TryUnlockNextZone();
             state.TryBuildHouse(state.UnlockedZones[0].Lots[0].HouseId);
