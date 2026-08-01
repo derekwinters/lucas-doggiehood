@@ -67,6 +67,43 @@ namespace Doggiehood.Unity
         public static readonly Color CreamColor = CandyChrome.CreamColor;
         public static readonly Color LeafColor = CandyChrome.LeafColor;
 
+        // --- Gesture-arrow coach (#330, docs/specs/ui/onboarding-overlay.md) ---
+        // A looping directional-arrow coach drawn over the Pan and Zoom steps
+        // only, so the gesture is shown, not just told. Values are the approved
+        // wireframe constants, authored at the 1200px reference; no inline
+        // geometry literals (#161). Timing (BeatDurationSec/BeatPauseSec) is the
+        // engine-free GestureCoach's; these are the on-screen geometry.
+        public const float GestureCenterYPx = 480f;       // vertical anchor of the group
+        public const float ArrowLengthPx = 200f;          // shaft + head, along its axis
+        public const float ArrowThicknessPx = 22f;        // shaft width
+        public const float ArrowHeadSizePx = 56f;         // chevron arrowhead span
+        public const float ArrowOutlineThicknessPx = 6f;  // ink outline (shared baseline)
+        public const float PanTravelPx = 260f;            // pan arrow center sweep per beat
+        public const float ZoomNearOffsetPx = 70f;        // zoom arrow distance, closest
+        public const float ZoomFarOffsetPx = 220f;        // zoom arrow distance, farthest
+        public const float ArrowFillOpacity = 0.92f;      // keeps the map faintly readable
+
+        // Gold fill (Decision 1): distinct from the coach bar's own chrome so the
+        // gesture reads as "do this", not decoration.
+        public static readonly Color GestureFillColor = CandyChrome.GoldColor;
+
+        // Chevron arrowhead arm angle off the shaft axis — an internal rendering
+        // constant (not a wireframe layout value), named per #161.
+        private const float ChevronHalfAngleDeg = 40f;
+
+        // Direction the canonical (points +x / right) arrow is rotated to, in
+        // GUI degrees (clockwise, y-down): right, down, left, up.
+        private const float ArrowAngleRightDeg = 0f;
+        private const float ArrowAngleDownDeg = 90f;
+        private const float ArrowAngleLeftDeg = 180f;
+        private const float ArrowAngleUpDeg = 270f;
+
+        /// <summary>Elapsed seconds the current gesture animation has been
+        /// playing; accumulated in <see cref="Update"/> while the arrows show and
+        /// reset otherwise, then mapped to a beat by the Core
+        /// <see cref="GestureCoach"/>.</summary>
+        private float gestureElapsed;
+
         /// <summary>#291: the bundled UI font, loaded from Resources so it ships
         /// in the Android build — never an editor-only built-in font, which
         /// renders invisible in the player. Same asset the HUD chip uses.</summary>
@@ -100,6 +137,22 @@ namespace Doggiehood.Unity
             {
                 return sequence != null
                     && OnboardingCoach.ShouldShow(sequence.CurrentStep, state.RewardChain.CurrentStep);
+            }
+        }
+
+        /// <summary>#330: whether the animated gesture-arrow coach should draw
+        /// this frame — only during the <see cref="OnboardingStep.Pan"/> and
+        /// <see cref="OnboardingStep.Zoom"/> movement steps, and only while the
+        /// coach itself is showing. Because <see cref="AdvanceCameraSteps"/>
+        /// advances the sequence past Pan/Zoom the instant the real pan/zoom is
+        /// registered, this flips false at that same moment — the arrows are a
+        /// non-blocking visual coach with no separate hide gate to get wrong.</summary>
+        public bool ShouldDrawGesture
+        {
+            get
+            {
+                return ShouldDraw
+                    && (CurrentStep == OnboardingStep.Pan || CurrentStep == OnboardingStep.Zoom);
             }
         }
 
@@ -160,6 +213,18 @@ namespace Doggiehood.Unity
         private void Update()
         {
             Poll();
+
+            // #330: advance the gesture animation clock while the arrows show,
+            // and reset it when they don't so each movement step restarts from
+            // the first beat.
+            if (ShouldDrawGesture)
+            {
+                gestureElapsed += Time.deltaTime;
+            }
+            else
+            {
+                gestureElapsed = 0f;
+            }
         }
 
         private void AdvanceCameraSteps()
@@ -202,6 +267,84 @@ namespace Doggiehood.Unity
             sequence.NotifyTargetDogQuestResolved();
             // Persistence on reaching Done is handled centrally in Poll (#329),
             // which also covers the self-heal cascade path to Done.
+        }
+
+        /// <summary>The two zoom arrows' screen centers, symmetric about the
+        /// gesture anchor (#330).</summary>
+        public readonly struct ZoomArrowCenters
+        {
+            public ZoomArrowCenters(Vector2 left, Vector2 right)
+            {
+                Left = left;
+                Right = right;
+            }
+
+            public Vector2 Left { get; }
+            public Vector2 Right { get; }
+        }
+
+        /// <summary>#330: the pan arrow's screen center for a beat + 0-1 progress,
+        /// scaled from the 1200px reference. Horizontal beats sweep x by
+        /// <see cref="PanTravelPx"/> about the anchor (screen-center-x at
+        /// <see cref="GestureCenterYPx"/>); vertical beats sweep y. Public static
+        /// so EditMode tests can assert it without a running player loop, mirroring
+        /// <see cref="ComputeCoachRect"/>.</summary>
+        public static Vector2 ComputePanArrowCenter(float screenWidth, float screenHeight, GestureBeat beat, float progress)
+        {
+            var scale = screenHeight / ReferenceHeightPx;
+            var anchorX = screenWidth / 2f;
+            var anchorY = GestureCenterYPx * scale;
+            var travel = PanTravelPx * scale;
+            var offset = Mathf.Lerp(-travel / 2f, travel / 2f, progress);
+
+            switch (beat)
+            {
+                case GestureBeat.LeftToRight:
+                    return new Vector2(anchorX + offset, anchorY);
+                case GestureBeat.RightToLeft:
+                    return new Vector2(anchorX - offset, anchorY);
+                case GestureBeat.UpToDown:
+                    return new Vector2(anchorX, anchorY + offset);
+                case GestureBeat.DownToUp:
+                    return new Vector2(anchorX, anchorY - offset);
+                default:
+                    return new Vector2(anchorX, anchorY);
+            }
+        }
+
+        /// <summary>#330: each zoom arrow's scaled distance from the anchor for a
+        /// beat + 0-1 progress — zoom-in spreads from <see cref="ZoomNearOffsetPx"/>
+        /// to <see cref="ZoomFarOffsetPx"/>, zoom-out closes the other way. Both
+        /// arrows sit this far either side of the anchor.</summary>
+        public static float ComputeZoomArrowOffsetPx(float screenHeight, GestureBeat beat, float progress)
+        {
+            var scale = screenHeight / ReferenceHeightPx;
+            var near = ZoomNearOffsetPx * scale;
+            var far = ZoomFarOffsetPx * scale;
+
+            switch (beat)
+            {
+                case GestureBeat.ZoomIn:
+                    return Mathf.Lerp(near, far, progress);
+                case GestureBeat.ZoomOut:
+                    return Mathf.Lerp(far, near, progress);
+                default:
+                    return near;
+            }
+        }
+
+        /// <summary>#330: the two zoom arrows' screen centers, placed
+        /// symmetrically either side of the gesture anchor by
+        /// <see cref="ComputeZoomArrowOffsetPx"/>.</summary>
+        public static ZoomArrowCenters ComputeZoomArrowCenters(float screenWidth, float screenHeight, GestureBeat beat, float progress)
+        {
+            var scale = screenHeight / ReferenceHeightPx;
+            var anchorX = screenWidth / 2f;
+            var anchorY = GestureCenterYPx * scale;
+            var offset = ComputeZoomArrowOffsetPx(screenHeight, beat, progress);
+            return new ZoomArrowCenters(
+                new Vector2(anchorX - offset, anchorY),
+                new Vector2(anchorX + offset, anchorY));
         }
 
         /// <summary>Computes the coach bar rect for the given screen size at
@@ -312,6 +455,112 @@ namespace Doggiehood.Unity
             style.wordWrap = NeedsWrap(desiredContentPx);
 
             DrawCoachBar(ComputeCoachRect(Screen.width, Screen.height, desiredContentPx), scale);
+
+            // #330: the animated gesture-arrow coach layers over the map during
+            // the Pan/Zoom steps only.
+            if (ShouldDrawGesture)
+            {
+                DrawGesture(scale);
+            }
+        }
+
+        /// <summary>#330: draws the looping directional-arrow coach for the
+        /// current movement step — a single sweeping arrow for Pan, a symmetric
+        /// pair for Zoom — using the beat + progress from the engine-free
+        /// <see cref="GestureCoach"/>. Purely presentational; the beat logic and
+        /// the arrow offsets are covered by Core and EditMode tests respectively,
+        /// while this rotation/rendering is verified on-device.</summary>
+        private void DrawGesture(float scale)
+        {
+            var beatState = GestureCoach.BeatAt(CurrentStep, gestureElapsed);
+            if (beatState.Beat == GestureBeat.Hidden)
+            {
+                return;
+            }
+
+            if (beatState.Beat == GestureBeat.ZoomIn || beatState.Beat == GestureBeat.ZoomOut)
+            {
+                var centers = ComputeZoomArrowCenters(Screen.width, Screen.height, beatState.Beat, beatState.Progress);
+                // Zoom-in points outward (apart); zoom-out points inward (together).
+                var leftAngle = beatState.Beat == GestureBeat.ZoomIn ? ArrowAngleLeftDeg : ArrowAngleRightDeg;
+                var rightAngle = beatState.Beat == GestureBeat.ZoomIn ? ArrowAngleRightDeg : ArrowAngleLeftDeg;
+                DrawArrow(centers.Left, leftAngle, scale);
+                DrawArrow(centers.Right, rightAngle, scale);
+            }
+            else
+            {
+                var center = ComputePanArrowCenter(Screen.width, Screen.height, beatState.Beat, beatState.Progress);
+                DrawArrow(center, PanBeatAngleDeg(beatState.Beat), scale);
+            }
+        }
+
+        private static float PanBeatAngleDeg(GestureBeat beat)
+        {
+            switch (beat)
+            {
+                case GestureBeat.RightToLeft:
+                    return ArrowAngleLeftDeg;
+                case GestureBeat.UpToDown:
+                    return ArrowAngleDownDeg;
+                case GestureBeat.DownToUp:
+                    return ArrowAngleUpDeg;
+                default:
+                    return ArrowAngleRightDeg; // LeftToRight
+            }
+        }
+
+        /// <summary>Draws one Candy Cottage arrow (Gold fill, ink outline)
+        /// centered at <paramref name="center"/> and rotated to
+        /// <paramref name="directionDeg"/> — a stadium shaft plus a two-armed
+        /// chevron head, all built from <see cref="CandyChrome"/> stadiums so
+        /// there is no external raster art.</summary>
+        private static void DrawArrow(Vector2 center, float directionDeg, float scale)
+        {
+            var previous = GUI.matrix;
+            GUIUtility.RotateAroundPivot(directionDeg, center);
+
+            var length = ArrowLengthPx * scale;
+            var thickness = ArrowThicknessPx * scale;
+            var head = ArrowHeadSizePx * scale;
+            var outline = ArrowOutlineThicknessPx * scale;
+
+            var left = center.x - length / 2f;
+            var tipX = center.x + length / 2f;
+            var shaftRight = tipX - head;
+
+            var shaft = new Rect(left, center.y - thickness / 2f, Mathf.Max(0f, shaftRight - left), thickness);
+            DrawArrowStroke(shaft, outline);
+
+            // Chevron head: two arms running back from the tip at +/- the half-angle.
+            var arm = new Rect(tipX - head, center.y - thickness / 2f, head, thickness);
+            var tip = new Vector2(tipX, center.y);
+            DrawRotatedArrowStroke(arm, ChevronHalfAngleDeg, tip, outline);
+            DrawRotatedArrowStroke(arm, -ChevronHalfAngleDeg, tip, outline);
+
+            GUI.matrix = previous;
+        }
+
+        private static void DrawRotatedArrowStroke(Rect rect, float angleDeg, Vector2 pivot, float outline)
+        {
+            var saved = GUI.matrix;
+            GUIUtility.RotateAroundPivot(angleDeg, pivot);
+            DrawArrowStroke(rect, outline);
+            GUI.matrix = saved;
+        }
+
+        private static void DrawArrowStroke(Rect rect, float outline)
+        {
+            if (rect.width <= 0f || rect.height <= 0f)
+            {
+                return;
+            }
+
+            var ink = new Rect(rect.x - outline, rect.y - outline, rect.width + 2f * outline, rect.height + 2f * outline);
+            CandyChrome.DrawStadium(ink, InkColor);
+
+            var fill = GestureFillColor;
+            fill.a = ArrowFillOpacity;
+            CandyChrome.DrawStadium(rect, fill);
         }
 
         /// <summary>Draws the Candy Cottage coach bar (#297), back to front:
