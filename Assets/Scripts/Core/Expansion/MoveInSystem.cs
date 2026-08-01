@@ -48,11 +48,18 @@ namespace Doggiehood.Core.Expansion
         /// <summary>Reconstructs a system from persisted state (#54: "used
         /// entries never reappear, including across save/load") — the
         /// remaining-names/remaining-breeds lists are the save-friendly
-        /// boundary a real save file would store verbatim.</summary>
-        public MoveInSystem(IEnumerable<string> remainingEasterEggNames, IEnumerable<Breed> remainingReservedBreeds)
+        /// boundary a real save file would store verbatim. #437: the pity
+        /// counter (<paramref name="questsSinceLastMoveIn"/>) rides along too,
+        /// so the accumulated move-in chance is carried forward without rolling
+        /// any dice.</summary>
+        public MoveInSystem(
+            IEnumerable<string> remainingEasterEggNames,
+            IEnumerable<Breed> remainingReservedBreeds,
+            int questsSinceLastMoveIn = 0)
         {
             this.remainingEasterEggNames = new List<string>(remainingEasterEggNames);
             this.remainingReservedBreeds = new List<Breed>(remainingReservedBreeds);
+            QuestsSinceLastMoveIn = questsSinceLastMoveIn;
         }
 
         public int QuestsSinceLastMoveIn { get; private set; }

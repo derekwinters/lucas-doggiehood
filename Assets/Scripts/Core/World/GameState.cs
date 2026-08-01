@@ -53,9 +53,11 @@ namespace Doggiehood.Core.World
         private readonly List<TileCoordinate> unlockedTiles = new List<TileCoordinate>();
 
         /// <summary>Owns the shared move-in pity counter and easter-egg
-        /// reserve (#54). Not yet persisted through SaveCodec — see
-        /// docs/specs/expansion.md's move-in system note.</summary>
-        private readonly Expansion.MoveInSystem moveInSystem = new Expansion.MoveInSystem();
+        /// reserve (#54). Persisted through SaveCodec (#437): read via the
+        /// MoveIn* accessors on save and rebuilt on load by
+        /// <see cref="RestoreMoveInState"/> — which is why the field is not
+        /// readonly (restore replaces it wholesale, no dice rolled).</summary>
+        private Expansion.MoveInSystem moveInSystem = new Expansion.MoveInSystem();
 
         public IReadOnlyList<House> Houses
         {
@@ -360,6 +362,46 @@ namespace Doggiehood.Core.World
             }
 
             return household;
+        }
+
+        /// <summary>#437: the shared move-in pity counter
+        /// (quests-since-last-move-in) as it stands now — read on save so the
+        /// accumulated move-in chance survives a relaunch instead of resetting
+        /// to the 5% base.</summary>
+        public int MoveInQuestsSinceLastMoveIn
+        {
+            get { return moveInSystem.QuestsSinceLastMoveIn; }
+        }
+
+        /// <summary>#437: the easter-egg names not yet consumed — read on save
+        /// so a used easter-egg name never reappears after a relaunch.</summary>
+        public IReadOnlyList<string> MoveInRemainingEasterEggNames
+        {
+            get { return moveInSystem.RemainingEasterEggNames; }
+        }
+
+        /// <summary>#437: the reserved breeds not yet introduced — read on save
+        /// so the reserved-breed pair isn't handed out twice across a
+        /// relaunch.</summary>
+        public IReadOnlyList<Dogs.Breed> MoveInRemainingReservedBreeds
+        {
+            get { return moveInSystem.RemainingReservedBreeds; }
+        }
+
+        /// <summary>#437: restores the persisted move-in state on load —
+        /// rebuilds <see cref="moveInSystem"/> from the saved pity counter and
+        /// the remaining easter-egg/reserved-breed reserves, WITHOUT rolling
+        /// any dice or firing a move-in (the parallel of
+        /// <see cref="RestoreUnlockedZoneCount"/> / <see cref="RestoreRewardChainStep"/>).
+        /// A legacy save with no move-in line simply keeps
+        /// <see cref="CreateNew"/>'s default fresh system.</summary>
+        public void RestoreMoveInState(
+            int questsSinceLastMoveIn,
+            IEnumerable<string> remainingEasterEggNames,
+            IEnumerable<Dogs.Breed> remainingReservedBreeds)
+        {
+            moveInSystem = new Expansion.MoveInSystem(
+                remainingEasterEggNames, remainingReservedBreeds, questsSinceLastMoveIn);
         }
 
         /// <summary>
