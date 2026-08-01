@@ -584,6 +584,80 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ComputeChevronArmEnd_LandsWhereASingleConsistentRotationPlacesIt_ForANonZeroDirection()
+        {
+            // #468: the chevron head was drawn by nesting a second
+            // RotateAroundPivot(ChevronHalfAngleDeg, tip) on top of the already
+            // active per-direction rotation about `center`. Because the two
+            // pivots differ, that composition mispositions the arm for every
+            // direction except 0. The fix computes each arm under ONE consistent
+            // rotation via a public static helper (mirroring ComputePanArrowCenter),
+            // so it is EditMode-testable without a running player loop. Assert, for
+            // a non-zero direction (RightToLeft / 180 deg), that both arm endpoints
+            // land exactly where a single vector rotation of the local arm places
+            // them from the rotated tip.
+            const float scale = 1f;
+            const float dir = 180f; // ArrowAngleLeftDeg — points left
+            const float armHalfAngle = 40f; // matches ChevronHalfAngleDeg
+            var center = new Vector2(600f, 480f);
+
+            var tip = OnboardingOverlay.ComputeArrowTip(center, dir, scale);
+            // Points left: the tip is half a shaft-length to the left of center.
+            Assert.That(tip.x, Is.EqualTo(center.x - OnboardingOverlay.ArrowLengthPx / 2f).Within(0.01f),
+                "the tip lands where a single per-direction rotation places it");
+            Assert.That(tip.y, Is.EqualTo(center.y).Within(0.01f));
+
+            var head = OnboardingOverlay.ArrowHeadSizePx; // scale 1
+            foreach (var s in new[] { 1f, -1f })
+            {
+                var rad = (dir + s * armHalfAngle) * Mathf.Deg2Rad;
+                // Single consistent rotation: rotate the local arm vector (-head, 0)
+                // by (dir + s*halfAngle) about the tip.
+                var expected = new Vector2(
+                    tip.x + (-head) * Mathf.Cos(rad),
+                    tip.y + (-head) * Mathf.Sin(rad));
+
+                var actual = OnboardingOverlay.ComputeChevronArmEnd(center, dir, s * armHalfAngle, scale);
+                Assert.That(actual.x, Is.EqualTo(expected.x).Within(0.01f), "arm x under one consistent rotation");
+                Assert.That(actual.y, Is.EqualTo(expected.y).Within(0.01f), "arm y under one consistent rotation");
+
+                // The bug's tell: a non-zero direction must tilt the arm off the
+                // horizontal — the old nested-pivot head stayed at tip.y here.
+                Assert.That(actual.y, Is.Not.EqualTo(tip.y).Within(1f),
+                    "a non-zero direction tilts the chevron arm off the horizontal");
+            }
+        }
+
+        [Test]
+        public void GestureClock_ResetsToZero_OnThePanToZoomStepChange()
+        {
+            // #468 secondary: gestureElapsed only reset when ShouldDrawGesture went
+            // false — but it stays true across the Pan -> Zoom handoff (both are
+            // gesture-eligible), so the Zoom beat loop used to start wherever Pan's
+            // clock left off instead of at its first beat. The fix resets the clock
+            // on ANY CurrentStep change. StepGestureClock is public so the reset is
+            // observable without a running player loop.
+            overlay.Init(state, rig, presenter);
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Pan));
+
+            // Accumulate some Pan gesture time.
+            overlay.StepGestureClock(0.5f);
+            Assert.That(overlay.StepGestureClock(0.5f), Is.GreaterThan(0f),
+                "the clock accumulates while the Pan arrows show");
+
+            // A real pan advances Pan -> Zoom; the arrows keep showing across it.
+            rig.HandleDrag(120f, 0f, 1000f);
+            overlay.Poll();
+            Assert.That(overlay.CurrentStep, Is.EqualTo(OnboardingStep.Zoom));
+            Assert.That(overlay.ShouldDrawGesture, Is.True,
+                "the Zoom arrows show, so the old ShouldDrawGesture-false reset never fires");
+
+            // The clock restarts at the Zoom step's first beat, not Pan's leftover.
+            Assert.That(overlay.StepGestureClock(0f), Is.EqualTo(0f),
+                "gestureElapsed resets to 0 on the Pan -> Zoom step change");
+        }
+
+        [Test]
         public void ShouldDrawGesture_OnlyDuringPanAndZoom_AndHidesTheInstantTheRealActionRegisters()
         {
             // #330: the arrow coach is scoped to the two movement steps and hides
