@@ -8,6 +8,7 @@ A dedicated Claude Code agent (`.claude/agents/`), not ad-hoc chat sessions, doe
 
 - Enforces strict [TDD](testing.md) — red, green, refactor, every time, no exceptions.
 - Defaults new logic to the Unity-independent Core assembly (see [Tech Stack](tech-stack.md#code-architecture-core-unity-split)).
+- Declares every geometry/layout/tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — as a named constant/static/serialized field at the top of its type, never a bare inline literal in a method body, in Core and the Unity layer, graybox included (see [Geometry, layout, and tuning values are named variables](tech-stack.md#geometry-layout-and-tuning-values-are-named-variables); a CI backstop catches the egregious case).
 - Follows Conventional Commits for everything it commits, since [release-please](versioning.md) depends on them.
 - Works from one GitHub issue at a time, using that issue's build checklist as its acceptance criteria.
 

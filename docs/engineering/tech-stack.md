@@ -34,6 +34,12 @@ Every geometry, layout, and tuning value — sizes, offsets, margins, positions,
 
 For **UI layout** values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its [UI wireframe spec](../specs/ui/index.md) first (see the [UI Design Process](ui-design-process.md)); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.
 
+#### Automated backstop
+
+The rule above is the standard, and it's absolute — but a lightweight CI check (`.github/scripts/check_geometry_literals.py`, wired via `geometry-lint.yml`) catches the egregious case that motivated it (#159 shipped `140f`/`16f`/`32f` inside `OnGUI`). It's deliberately conservative and low-false-positive: it flags an f-suffixed float literal only when it sits in a method body (not a type-level `const`/field declaration) and its magnitude is at least `3` — so structural values (`0`/`1`/`2` for identity, both-sides, centering) and sub-unit fractions (anchors, colour channels, epsilons) are ignored. It is a backstop for the obvious pixel-size/offset/rotation/speed literal, **not** a replacement for the human standard, which still covers every geometry/tuning value regardless of magnitude.
+
+Because the game tree predates the rule, the check **ratchets against a committed baseline** (`.github/scripts/geometry_literals_baseline.txt`): the pre-existing literals are recorded there and don't fail CI, while any newly introduced one does. The baseline is the burn-down list — as literals get named, regenerate it with `python3 .github/scripts/check_geometry_literals.py --update-baseline`. Its unit tests run in the same job. Adding a genuinely new named-constant-worthy literal, or one below the heuristic's threshold, is still governed by the absolute rule and by review — the check only automates the floor.
+
 ## Editor developer menus
 
 Playtesting/authoring helpers live under the top-level **`Doggiehood`** editor

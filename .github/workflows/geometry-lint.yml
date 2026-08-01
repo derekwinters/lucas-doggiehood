@@ -1,0 +1,48 @@
+name: geometry-lint
+
+# Enforces the geometry/tuning inline-literal rule (#161): sizes, offsets,
+# margins, positions, durations, speeds, and payouts must be named
+# constants/static/serialized fields at the top of their type, never bare
+# numeric literals in method bodies. See docs/engineering/tech-stack.md.
+#
+# The check is a conservative, baseline-ratcheted backstop: pre-existing
+# literals are recorded in .github/scripts/geometry_literals_baseline.txt and
+# tolerated, while any NEWLY introduced one fails this job. Pure Python, stdlib
+# only — no Unity, no pip deps.
+
+on:
+  pull_request:
+    paths:
+      - "Assets/**"
+      - ".github/scripts/check_geometry_literals.py"
+      - ".github/scripts/geometry_literals_baseline.txt"
+      - ".github/scripts/tests/test_check_geometry_literals.py"
+      - ".github/workflows/geometry-lint.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "Assets/**"
+      - ".github/scripts/check_geometry_literals.py"
+      - ".github/scripts/geometry_literals_baseline.txt"
+      - ".github/scripts/tests/test_check_geometry_literals.py"
+      - ".github/workflows/geometry-lint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unit-test the check's decision logic
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_check_geometry_literals.py"
+
+      - name: Check for new inline geometry/tuning literals
+        run: python3 .github/scripts/check_geometry_literals.py
