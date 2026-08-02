@@ -61,14 +61,14 @@ Maps are drawn and validated with the [Map Builder](../../tools/index.md) tool, 
 
 ### Road tile art — kit meshes per type
 
-Each junction/terminus type renders a **single Kenney City Kit Roads mesh at the tile centre**, plus tiled `road-straight` arms reaching out to each road edge. `RoadTileArt` (Core) resolves the `TileType` → `(Resources key, yaw, bakes-crosswalks)` mapping; `WorldBuilder` places the mesh and yaws it so its authored orientation lines up with the tile's declared edges ([#508](https://github.com/derekwinters/lucas-doggiehood/issues/508)). The authored (0°-yaw) orientation of each staged 1×1-unit piece (→10×10m at `RoadTileScale`) was read from the kit OBJ vertices.
+Each junction/terminus type renders a **single Kenney City Kit Roads mesh at the tile centre**, plus tiled `road-straight` arms reaching out to each road edge. `RoadTileArt` (Core) resolves the `TileType` → `(Resources key, yaw, bakes-crosswalks)` mapping; `WorldBuilder` places the mesh and yaws it so its **imported** orientation lines up with the tile's declared edges ([#508](https://github.com/derekwinters/lucas-doggiehood/issues/508)). The 0°-yaw orientation of each staged 1×1-unit piece (→10×10m at `RoadTileScale`) is the mesh as Unity **imports** it — which matters because Unity's FBX import applies a handedness (X-axis) mirror. That mirror is invisible on the symmetric pieces (4-way, straight) and on the E/W-symmetric Tee, but it flips the two chirally-asymmetric pieces: the cul-de-sac round end and the bend. #508 read the yaws from the un-imported kit OBJ/FBX source pose instead, so both of those shipped 180°/mirrored off ([#514](https://github.com/derekwinters/lucas-doggiehood/issues/514) fixed the cul-de-sac; [#515](https://github.com/derekwinters/lucas-doggiehood/issues/515) the bend). The empirical mesh-geometry guard that pins each yaw against the real imported vertices lives in the EditMode `WorldKitArtTests` (it needs `UnityEngine.Mesh`); the Core `RoadTileArtTests` stays a pure data-table pin.
 
 | Type(s) | Kit mesh | Baked crosswalks | Authored (0°) orientation |
 |---|---|---|---|
 | `FourWay` | `road-crossroad-path` | yes (4 arms) | symmetric |
 | `TeeNorth/East/South/West` | `road-intersection-path` | yes (3 arms) | omits the SOUTH arm = `TeeNorth`; others are 90°/180°/270° |
 | `TurnNW/NE/SE/SW` | `road-bend` | no | connects NORTH+WEST = `TurnNW`; rounded corner (Derek's locked call; `road-bend-square` is a one-line swap) |
-| `CulDeSacEast/South/West/North` | `road-end-round` | no | road exits EAST = `CulDeSacEast`; rounded bulb |
+| `CulDeSacEast/South/West/North` | `road-end-round` | no | imported open road exits WEST at 0-yaw (the raw kit source exits +X/EAST, mirrored on FBX import), so `CulDeSacEast` takes a half-turn to bring the open road to its EAST edge; rounded bulb caps the other side ([#514](https://github.com/derekwinters/lucas-doggiehood/issues/514)) |
 | `StraightNS`, `StraightEW` | *(none — tiled `road-straight` arms)* | n/a | — |
 | `OpposingTurnsNS/EW` | *(none yet — #508 follow-up)* | n/a | would compose two independent bends |
 
