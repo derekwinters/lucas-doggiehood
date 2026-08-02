@@ -1985,7 +1985,7 @@
 <td><code>TurnNW/NE/SE/SW</code></td>
 <td><code>road-bend</code></td>
 <td>no</td>
-<td>connects NORTH+WEST = <code>TurnNW</code>; rounded corner (Derek's locked call; <code>road-bend-square</code> is a one-line swap)</td>
+<td>raw kit connects NORTH+WEST, but the FBX-import X-mirror (W↔E) flips it, so the imported bend connects NORTH+EAST = <code>TurnNE</code> at 0-yaw; the mirror also reverses rotation sense, so the four yaws are derived per-arm (<code>TurnNE</code> 0°, <code>TurnSE</code> 90°, <code>TurnSW</code> 180°, <code>TurnNW</code> 270°), not a uniform offset (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/515">#515</a>). Rounded corner (Derek's locked call; <code>road-bend-square</code> is a one-line swap)</td>
 </tr>
 <tr>
 <td><code>CulDeSacEast/South/West/North</code></td>
