@@ -15,7 +15,7 @@ Rather than giving every personality its own animation set, mood is conveyed thr
 - **Excited**: fast walking speed, long straight stretches down a street before turning — covers real distance rather than pacing back and forth.
 - **Grumpy/sad**: slow walking speed, turns almost every step — shuffles around a small area. *(Deferred past v1.0 — see below.)*
 
-Other personalities (Brave, Shy, Adventurous/Exploring, Athletic) can get their own speed/turn-pattern combinations later using the same system.
+Other personalities (Brave, Shy, Adventurous, Athletic) can get their own speed/turn-pattern combinations later using the same system.
 
 **v1.0 scope**: only the general speed/turn-pattern system needs to exist. **Excited** is the one pattern to actually implement for the first complete release. Grumpy's distinct movement pattern is deferred — Grumpy remains a valid personality for dialogue/flavor (Pepper is Grumpy, see [Dog Roster & Names](roster-names.md)), it just won't have distinct movement behavior yet.
 
@@ -37,7 +37,7 @@ Breed is a **data** attribute (the `Breed` enum), not a distinct mesh. Every dog
 
 Every dog has a defined personality trait that colors its dialogue tone and the kinds of quests it gives. ([#36](https://github.com/derekwinters/lucas-doggiehood/issues/36))
 
-**Personality types**: Brave, Adventurous/Exploring, Shy, Excited, Grumpy, Athletic.
+**Personality types**: Brave, Adventurous, Shy, Excited, Grumpy, Athletic.
 
 ## Scope
 

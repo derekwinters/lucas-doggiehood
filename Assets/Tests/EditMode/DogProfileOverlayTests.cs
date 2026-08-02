@@ -48,8 +48,8 @@ namespace Doggiehood.Unity.EditModeTests
 
         private static Dog SampleDog()
         {
-            // Bailey — Golden Retriever, Adventurous/Exploring, house 2, adult.
-            return new Dog("Bailey", Breed.GoldenRetriever, Personality.AdventurousExploring, 2, false);
+            // Bailey — Golden Retriever, Adventurous, house 2, adult.
+            return new Dog("Bailey", Breed.GoldenRetriever, Personality.Adventurous, 2, false);
         }
 
         [Test]
@@ -119,7 +119,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(overlay.NameLabel.text, Is.EqualTo("Bailey"));
             Assert.That(overlay.BreedChipLabel.text, Is.EqualTo("Golden Retriever"));
             Assert.That(overlay.AgeValueLabel.text, Is.EqualTo("Adult"));
-            Assert.That(overlay.PersonalityValueLabel.text, Is.EqualTo("Adventurous/Exploring"));
+            Assert.That(overlay.PersonalityValueLabel.text, Is.EqualTo("Adventurous"));
         }
 
         [Test]

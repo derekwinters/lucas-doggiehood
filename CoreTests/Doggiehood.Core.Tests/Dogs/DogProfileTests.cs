@@ -15,12 +15,12 @@ namespace Doggiehood.Core.Tests.Dogs
         [Test]
         public void For_ReadsNamePersonalityDisplayAndHouse_FromTheDog()
         {
-            var dog = new Dog("Bailey", Breed.GoldenRetriever, Personality.AdventurousExploring, 2, false);
+            var dog = new Dog("Bailey", Breed.GoldenRetriever, Personality.Adventurous, 2, false);
 
             var profile = DogProfile.For(dog);
 
             Assert.That(profile.Name, Is.EqualTo("Bailey"));
-            Assert.That(profile.Personality, Is.EqualTo("Adventurous/Exploring"));
+            Assert.That(profile.Personality, Is.EqualTo("Adventurous"));
             Assert.That(profile.HouseId, Is.EqualTo(2));
         }
 
@@ -52,7 +52,7 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [TestCase(Personality.Brave, "Brave")]
-        [TestCase(Personality.AdventurousExploring, "Adventurous/Exploring")]
+        [TestCase(Personality.Adventurous, "Adventurous")]
         [TestCase(Personality.Shy, "Shy")]
         [TestCase(Personality.Excited, "Excited")]
         [TestCase(Personality.Grumpy, "Grumpy")]

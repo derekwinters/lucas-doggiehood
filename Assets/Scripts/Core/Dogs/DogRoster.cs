@@ -14,11 +14,11 @@ namespace Doggiehood.Core.Dogs
             {
                 new Dog("Zeus", Breed.GermanShepherd, Personality.Brave, 1, false),
                 new Dog("Nala", Breed.GermanShepherd, Personality.Excited, 1, true),
-                new Dog("Bailey", Breed.GoldenRetriever, Personality.AdventurousExploring, 2, false),
+                new Dog("Bailey", Breed.GoldenRetriever, Personality.Adventurous, 2, false),
                 new Dog("Sunny", Breed.GoldenRetriever, Personality.Excited, 2, true),
                 new Dog("Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false),
                 new Dog("Duke", Breed.Labrador, Personality.Brave, 4, false),
-                new Dog("Scout", Breed.Beagle, Personality.AdventurousExploring, 4, false),
+                new Dog("Scout", Breed.Beagle, Personality.Adventurous, 4, false),
                 new Dog("Waffles", Breed.Frenchton, Personality.Shy, 4, false),
             };
         }
