@@ -67,7 +67,7 @@ Each junction/terminus type renders a **single Kenney City Kit Roads mesh at the
 |---|---|---|---|
 | `FourWay` | `road-crossroad-path` | yes (4 arms) | symmetric |
 | `TeeNorth/East/South/West` | `road-intersection-path` | yes (3 arms) | omits the SOUTH arm = `TeeNorth`; others are 90°/180°/270° |
-| `TurnNW/NE/SE/SW` | `road-bend` | no | connects NORTH+WEST = `TurnNW`; rounded corner (Derek's locked call; `road-bend-square` is a one-line swap) |
+| `TurnNW/NE/SE/SW` | `road-bend` | no | raw kit connects NORTH+WEST, but the FBX-import X-mirror (W↔E) flips it, so the imported bend connects NORTH+EAST = `TurnNE` at 0-yaw; the mirror also reverses rotation sense, so the four yaws are derived per-arm (`TurnNE` 0°, `TurnSE` 90°, `TurnSW` 180°, `TurnNW` 270°), not a uniform offset ([#515](https://github.com/derekwinters/lucas-doggiehood/issues/515)). Rounded corner (Derek's locked call; `road-bend-square` is a one-line swap) |
 | `CulDeSacEast/South/West/North` | `road-end-round` | no | imported open road exits WEST at 0-yaw (the raw kit source exits +X/EAST, mirrored on FBX import), so `CulDeSacEast` takes a half-turn to bring the open road to its EAST edge; rounded bulb caps the other side ([#514](https://github.com/derekwinters/lucas-doggiehood/issues/514)) |
 | `StraightNS`, `StraightEW` | *(none — tiled `road-straight` arms)* | n/a | — |
 | `OpposingTurnsNS/EW` | *(none yet — #508 follow-up)* | n/a | would compose two independent bends |

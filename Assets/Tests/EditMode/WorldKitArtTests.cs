@@ -438,6 +438,43 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Turn_ImportedConnectedEdges_YawOntoItsCatalogEdges()
+        {
+            // #515 regression guard (sibling of the #514 cul-de-sac one above):
+            // the pre-fix Turn* yaws were derived from the un-imported kit source
+            // pose (bend connects NORTH + WEST), but Unity's FBX import mirrors
+            // the X axis (W<->E), so the *imported* bend connects NORTH + EAST —
+            // and the mirror also reverses the rotation sense, so the four Turn
+            // yaws are not a uniform offset. At the old table every turn left one
+            // of its two arms disconnected. RoadTileArtTests only pinned the
+            // declared yaw numbers, never the real geometry, so a mis-read passed.
+            //
+            // Derive road-bend's two connected edges from the imported mesh, then
+            // assert RoadTileArt's yaw for each Turn type rotates BOTH imported
+            // arms onto that type's two declared TileCatalog edges. Against the
+            // pre-fix table this fails; it passes only once all four yaws are
+            // corrected (TurnNE 0, TurnSE 90, TurnSW 180, TurnNW 270).
+            var connectedEdges = ImportedRoadEdgesAtZeroYaw(RoadTileArt.BendKey);
+            Assert.That(connectedEdges, Has.Count.EqualTo(2),
+                "a bend connects exactly two adjacent edges; the other two are unroaded");
+            Assert.That(connectedEdges, Is.EquivalentTo(new[] { TileEdge.North, TileEdge.East }),
+                "the imported road-bend connects NORTH + EAST (raw N+W, X-mirrored on FBX import)");
+
+            foreach (var type in new[]
+            {
+                TileType.TurnNE, TileType.TurnSE, TileType.TurnSW, TileType.TurnNW,
+            })
+            {
+                Assert.That(RoadTileArt.TryGetCenterPiece(type, out var piece), Is.True);
+                var rendered = connectedEdges.Select(e => EdgeAfterYaw(e, piece.YawDegrees)).ToList();
+                var declared = TileCatalog.Get(type).RoadEdges.ToList();
+                Assert.That(rendered, Is.EquivalentTo(declared),
+                    $"{type}: the imported bend arms yawed {piece.YawDegrees} must meet catalog edges " +
+                    string.Join(",", declared));
+            }
+        }
+
+        [Test]
         public void UnlockedTee_RendersTheIntersectionMeshAtItsCentre_WithTheCatalogYaw_AndNoSeparateCrosswalkQuads()
         {
             // #508: the visible fix. A three-way tile renders the baked-crosswalk

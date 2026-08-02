@@ -38,18 +38,26 @@ namespace Doggiehood.Core.World
     /// <item><c>road-crossroad-path</c> — the symmetric 4-way (baked crosswalks).</item>
     /// <item><c>road-intersection-path</c> — a 3-way whose omitted arm is SOUTH,
     /// i.e. roads on N/E/W == <see cref="TileType.TeeNorth"/> (baked crosswalks).</item>
-    /// <item><c>road-bend</c> — a 90-degree turn connecting its NORTH and WEST
-    /// edges == <see cref="TileType.TurnNW"/>.</item>
+    /// <item><c>road-bend</c> — a 90-degree turn. Its raw kit OBJ/FBX connects
+    /// its NORTH and WEST edges, but the same handedness (X-axis) mirror Unity's
+    /// FBX import applies (W↔E) flips it, so the <em>imported</em> bend connects
+    /// NORTH and EAST at 0-yaw == <see cref="TileType.TurnNE"/> (#515,
+    /// correcting the #508 reading that trusted the un-imported OBJ pose and
+    /// left one arm of every turn disconnected). Because the mirror also
+    /// reverses the rotation sense, the four Turn yaws are NOT a uniform offset
+    /// from the cul-de-sac's: each is derived from the imported N+E pair —
+    /// <see cref="TileType.TurnNE"/> 0, <see cref="TileType.TurnSE"/> 90,
+    /// <see cref="TileType.TurnSW"/> 180, <see cref="TileType.TurnNW"/> 270.</item>
     /// <item><c>road-end-round</c> — a rounded dead-end. In the raw kit OBJ/FBX
-    /// its single open road exits +X, but Unity's FBX import applies a
-    /// handedness (X-axis) mirror that only shows on chirally-asymmetric pieces,
-    /// so the <em>imported</em> mesh's open road exits WEST at 0-yaw. Its bulb
+    /// its single open road exits +X, but that same FBX-import handedness
+    /// (X-axis) mirror only shows on chirally-asymmetric pieces, so the
+    /// <em>imported</em> mesh's open road exits WEST at 0-yaw. Its bulb
     /// is symmetric about the road axis, so that mirror is exactly a half-turn:
     /// <see cref="TileType.CulDeSacEast"/> yaws the open road back to the EAST
     /// edge at <see cref="YawHalf"/> (#514, correcting the #508 reading that
     /// trusted the un-imported OBJ pose and shipped every CulDeSac 180-degrees
     /// off — its cap facing the connecting road). The <c>road-bend</c> turn is
-    /// the sibling half of the same import mirror, tracked separately in #515.</item>
+    /// the sibling half of the same import mirror (#515).</item>
     /// </list>
     /// The yaw for any other rotation of that family is the clockwise (about +Y)
     /// step count from that imported orientation — the same
@@ -80,10 +88,10 @@ namespace Doggiehood.Core.World
             { TileType.TeeSouth, new RoadTilePiece(IntersectionPathKey, YawHalf, true) },
             { TileType.TeeWest, new RoadTilePiece(IntersectionPathKey, YawThreeQuarterCW, true) },
 
-            { TileType.TurnNW, new RoadTilePiece(BendKey, YawNone, false) },
-            { TileType.TurnNE, new RoadTilePiece(BendKey, YawQuarterCW, false) },
-            { TileType.TurnSE, new RoadTilePiece(BendKey, YawHalf, false) },
-            { TileType.TurnSW, new RoadTilePiece(BendKey, YawThreeQuarterCW, false) },
+            { TileType.TurnNE, new RoadTilePiece(BendKey, YawNone, false) },
+            { TileType.TurnSE, new RoadTilePiece(BendKey, YawQuarterCW, false) },
+            { TileType.TurnSW, new RoadTilePiece(BendKey, YawHalf, false) },
+            { TileType.TurnNW, new RoadTilePiece(BendKey, YawThreeQuarterCW, false) },
 
             { TileType.CulDeSacEast, new RoadTilePiece(EndRoundKey, YawHalf, false) },
             { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, YawThreeQuarterCW, false) },
