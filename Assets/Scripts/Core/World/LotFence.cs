@@ -210,7 +210,14 @@ namespace Doggiehood.Core.World
             // house's fence rotates with the house's REAL street-ward facing
             // instead of the pre-rotation Z-sign fallback. #460's per-level
             // connector footprint (GetHouseLevel) rides the same call.
-            return GeometryFrom(lot, state.WalkNetwork, state.GetHouseLevel(lot.HouseId));
+            // #509: the lot's live tile type rides too, so BackyardRuns
+            // corridor-clears against the tile's OWN roads (LotBounds.RoadsFor),
+            // not just the origin FourWay arms — the same map-spanning source the
+            // facing/position resolve from. Derived from state.Map exactly like the
+            // network and level above, so no per-lot road plumbing is needed.
+            var tileType = state.Map.GetTileAt(LotBounds.NearestTileCoordinate(lot.Position));
+            return GeometryFrom(
+                lot, state.WalkNetwork, state.GetHouseLevel(lot.HouseId), tileType);
         }
 
         /// <summary>
@@ -222,24 +229,34 @@ namespace Doggiehood.Core.World
         /// which rejection-samples back candidates against the fence line before
         /// the house is built: the network still knows the lot's tile sidewalks,
         /// so the fence orients to the house's real (predetermined) facing.
+        /// #509: <paramref name="tileType"/> (the caller's own tile) feeds
+        /// <see cref="LotBounds.RoadsFor"/>, so the fence corridor-clears against
+        /// the lot's own tile roads rather than only the origin arms.
         /// Level-blind (level 1), like the queryable
         /// <see cref="GeometryFor(HouseLot)"/>; the level-aware fence tracking is
         /// <see cref="GeometryFor(HouseLot, GameState)"/>'s job. A manual
         /// <see cref="HouseLot.FenceOverride"/> (#223) still returns verbatim.
         /// </summary>
-        public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot, WalkNetwork network)
+        public static IReadOnlyList<FenceRun> GeometryFor(HouseLot lot, WalkNetwork network, TileType tileType)
         {
-            return GeometryFrom(lot, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
+            return GeometryFrom(lot, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel, tileType);
         }
 
         /// <summary>
         /// #461: shared builder behind the network/state-aware
         /// <see cref="GeometryFor(HouseLot, GameState)"/> and
-        /// <see cref="GeometryFor(HouseLot, WalkNetwork)"/> — traces the five-run
-        /// backyard shape with the connector footprint at <paramref name="level"/>
-        /// and the facing/position resolved from <paramref name="network"/>.
+        /// <see cref="GeometryFor(HouseLot, WalkNetwork, TileType)"/> — traces the
+        /// five-run backyard shape with the connector footprint at
+        /// <paramref name="level"/> and the facing/position resolved from
+        /// <paramref name="network"/>. #509: the road-corridor clear uses
+        /// <see cref="LotBounds.RoadsFor"/> for <paramref name="tileType"/> — the
+        /// origin FourWay arms PLUS the lot's own tile's roads — so a
+        /// road-bordering edge on an expansion tile (whose road is absent from
+        /// <see cref="NeighborhoodLayout.Roads"/>) is corridor-cleared and the
+        /// fence stays out of the paved road.
         /// </summary>
-        private static IReadOnlyList<FenceRun> GeometryFrom(HouseLot lot, WalkNetwork network, int level)
+        private static IReadOnlyList<FenceRun> GeometryFrom(
+            HouseLot lot, WalkNetwork network, int level, TileType tileType)
         {
             if (lot.HasFenceOverride)
             {
@@ -252,7 +269,7 @@ namespace Doggiehood.Core.World
                 lot, HousePlacement.KitScale, network, Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
             var quadrant = LotBounds.QuadrantBounds(lot);
             return BackyardRuns(quadrant, model, position, facing, HousePlacement.KitScale,
-                NeighborhoodLayout.Roads);
+                LotBounds.RoadsFor(lot, tileType));
         }
 
         /// <summary>
