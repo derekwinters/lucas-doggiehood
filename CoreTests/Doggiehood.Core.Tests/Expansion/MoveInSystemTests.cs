@@ -296,9 +296,19 @@ namespace Doggiehood.Core.Tests.Expansion
         public void NewlyMovedInDog_IsImmediatelyEligibleForTheDailyQuestRotation()
         {
             // #54: "New dogs join the daily quest rotation immediately."
+            // #520: the moved-in dog needs a REAL resolvable home lot (a
+            // LostItem quest now hides its item on the dog's own tile), so
+            // build one vacant frontier house and move the dog into it rather
+            // than a fabricated house id.
             var state = GameState.CreateNew();
+            state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
+            state.Wallet.Deposit(10_000);
+            state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);
+            var vacantLot = state.LotsForUnlockedTile(
+                Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
+            state.TryBuildHouse(vacantLot.HouseId);
             var system = new MoveInSystem();
-            var vacant = new VacantHouses(new[] { 999 });
+            var vacant = new VacantHouses(new[] { vacantLot.HouseId });
 
             var household = system.OnQuestCompleted(vacant, state.Dogs, new SequenceRandom(0.0));
             Assert.That(household, Is.Not.Empty);
