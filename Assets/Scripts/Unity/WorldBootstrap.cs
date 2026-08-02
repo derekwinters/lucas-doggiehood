@@ -115,6 +115,16 @@ namespace Doggiehood.Unity
             var rewardPanel = BuildOnboardingRewardPanel(canvas);
             gameObject.AddComponent<OnboardingRewardDirector>().Init(state, rewardPanel);
 
+            // Move-in welcome (#518): the approved "Welcome to the
+            // neighborhood!" pop-up (docs/specs/ui/welcome-popup.md) pops a beat
+            // after a household moves into a vacant house, off the same Core
+            // MoveInOccurred event QuestDirector uses to spawn the new dogs — so
+            // the player is told a move-in happened and where. Its "Say hi!"
+            // button pans the camera to the new house; the director only
+            // presents the Core-composed copy (WelcomeMessage) and moves no state.
+            var welcomePopup = BuildWelcomePopup(canvas);
+            gameObject.AddComponent<WelcomePopupDirector>().Init(state, welcomePopup, root.transform);
+
             // Persistent HUD (#159): the currency chip now wears the full Candy
             // Cottage chrome (#65/#296) — cream pill, Ink outline, hard shadow,
             // gold coin token. The top-right gear opens Settings (#219).
@@ -228,6 +238,22 @@ namespace Doggiehood.Unity
             var panel = panelObject.AddComponent<OnboardingRewardPanel>();
             panel.Init();
             return panel;
+        }
+
+        /// <summary>
+        /// Builds the reusable move-in welcome pop-up (#518,
+        /// docs/specs/ui/welcome-popup.md) under the shared canvas, starting
+        /// closed. The welcome director raises it a beat after each move-in with
+        /// the Core-composed copy; the pop-up is pure presentation apart from the
+        /// "Say hi!" camera pan the director wires.
+        /// </summary>
+        private WelcomePopup BuildWelcomePopup(GameObject canvas)
+        {
+            var popupObject = new GameObject("WelcomePopup");
+            popupObject.transform.SetParent(canvas.transform, false);
+            var popup = popupObject.AddComponent<WelcomePopup>();
+            popup.Init();
+            return popup;
         }
 
         /// <summary>
