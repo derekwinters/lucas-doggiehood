@@ -1,3 +1,4 @@
+using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -69,9 +70,31 @@ namespace Doggiehood.Unity
         private const float SphereScale = 0.6f;
         private const float SphereGroundHeight = 0.3f;
 
+        /// <summary>#521: child object names for the finder-glow parts, so
+        /// EditMode tests and any wiring can find them by name.</summary>
+        private const string GlowRootName = "FinderGlow";
+        private const string HaloName = "Halo";
+        private const string GroundRingName = "GroundRing";
+        private const string SparkleName = "Sparkle";
+
+        /// <summary>Translucency of the graybox glow materials — a soft halo
+        /// reads through rather than as a solid red blob. Named per #161.</summary>
+        private const float GlowAlpha = 0.55f;
+
+        /// <summary>Unity Standard-shader keyword/constants for switching a
+        /// cloned material to additive-ish transparent rendering so the glow
+        /// blends over the surface instead of occluding it.</summary>
+        private const string ShaderModeProperty = "_Mode";
+        private const float ShaderTransparentMode = 3f;
+
         private GameState state;
         private Quest quest;
         private bool looksAround;
+
+        private Transform glowRoot;
+        private Transform haloTransform;
+        private Transform sparkleTransform;
+        private float glowElapsedSeconds;
 
         public static LostItemView Spawn(GameState state, Quest quest, Transform parent)
         {
@@ -133,7 +156,126 @@ namespace Doggiehood.Unity
             view.state = state;
             view.quest = quest;
             view.looksAround = looksAround;
+            if (LostItemGlow.ShouldShow(quest))
+            {
+                view.AttachFinderGlow();
+            }
+
             return view;
+        }
+
+        /// <summary>#521: builds the red finder glow as a child of the item — a
+        /// soft pulsing halo, a flat ground contact ring and a subtle orbiting
+        /// sparkle — so the item pops on any surface regardless of its own
+        /// colour. Pure decoration: every part is collider-free and
+        /// non-interactable, so TapRouter's raycast passes through to the item
+        /// beneath and tap-to-collect (<see cref="LostItemTapZone"/>) is
+        /// untouched. A graybox first pass built from Unity primitives; all
+        /// sizes/timings are the named <see cref="LostItemGlow"/> constants
+        /// (#161) and the colour is the named <c>Palette.LostItemGlowHex</c>.
+        /// </summary>
+        private void AttachFinderGlow()
+        {
+            var glowColor = CoreColors.FromHex(Palette.LostItemGlowHex);
+
+            var glow = new GameObject(GlowRootName);
+            glowRoot = glow.transform;
+            glowRoot.SetParent(transform, worldPositionStays: false);
+            // Neutralise the item root's own scale (e.g. the sphere fallback
+            // sits at SphereScale) so the glow dimensions are absolute world
+            // units, consistent across every item model. Also drop the glow
+            // container to ground level so the contact ring sits on the surface
+            // no matter the item root's Y (sphere floats at SphereGroundHeight,
+            // the puppy is grounded).
+            var rootScale = transform.localScale;
+            glowRoot.localScale = new Vector3(
+                Invert(rootScale.x), Invert(rootScale.y), Invert(rootScale.z));
+            glowRoot.localPosition = new Vector3(
+                0f, -transform.position.y * Invert(rootScale.y), 0f);
+
+            var halo = BuildGlowPart(
+                glowRoot, HaloName, PrimitiveType.Sphere, glowColor,
+                new Vector3(0f, LostItemGlow.HaloHeight, 0f),
+                Vector3.one * LostItemGlow.HaloScale);
+            haloTransform = halo.transform;
+
+            BuildGlowPart(
+                glowRoot, GroundRingName, PrimitiveType.Cylinder, glowColor,
+                new Vector3(0f, LostItemGlow.GroundRingHeight, 0f),
+                new Vector3(LostItemGlow.GroundRingScale, LostItemGlow.GroundRingThickness, LostItemGlow.GroundRingScale));
+
+            var sparkle = BuildGlowPart(
+                glowRoot, SparkleName, PrimitiveType.Sphere, glowColor,
+                new Vector3(LostItemGlow.SparkleOrbitRadius, LostItemGlow.SparkleHeight, 0f),
+                Vector3.one * LostItemGlow.SparkleScale);
+            sparkleTransform = sparkle.transform;
+        }
+
+        /// <summary>Builds one glow child primitive, strips its collider (the
+        /// glow is non-interactive) and paints it with a translucent clone of
+        /// the glow colour.</summary>
+        private static GameObject BuildGlowPart(
+            Transform parent, string name, PrimitiveType shape, Color color,
+            Vector3 localPosition, Vector3 localScale)
+        {
+            var part = GameObject.CreatePrimitive(shape);
+            part.name = name;
+
+            // Non-interactive: primitives ship a collider; remove it so the
+            // glow never intercepts a tap meant for the item. Mode-aware like
+            // Collect (#157) — DestroyImmediate so EditMode tests see it gone
+            // at once, Destroy under Play.
+            var collider = part.GetComponent<Collider>();
+            if (collider != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(collider);
+                }
+                else
+                {
+                    DestroyImmediate(collider);
+                }
+            }
+
+            part.transform.SetParent(parent, worldPositionStays: false);
+            part.transform.localPosition = localPosition;
+            part.transform.localScale = localScale;
+            PaintGlow(part, color);
+            return part;
+        }
+
+        /// <summary>Paints a glow primitive with a translucent clone of the
+        /// standard material so the halo blends over the surface rather than
+        /// occluding it — mirrors <see cref="PaintModel"/> but for the glow's
+        /// see-through look.</summary>
+        private static void PaintGlow(GameObject part, Color color)
+        {
+            var renderer = part.GetComponent<Renderer>();
+            var material = renderer.sharedMaterial != null
+                ? new Material(renderer.sharedMaterial)
+                : new Material(Shader.Find("Standard"));
+            var translucent = new Color(color.r, color.g, color.b, GlowAlpha);
+            material.color = translucent;
+            if (material.HasProperty(ShaderModeProperty))
+            {
+                material.SetFloat(ShaderModeProperty, ShaderTransparentMode);
+            }
+
+            renderer.sharedMaterial = material;
+        }
+
+        private static float Invert(float value)
+        {
+            return Mathf.Approximately(value, 0f) ? 1f : 1f / value;
+        }
+
+        /// <summary>True when a renderer belongs to the finder-glow subtree, so
+        /// the tap-bounds computation can skip it (the glow is non-interactive
+        /// decoration, not part of the item's tap footprint).</summary>
+        private bool IsGlowRenderer(Renderer renderer)
+        {
+            return glowRoot != null && renderer.transform.IsChildOf(glowRoot);
         }
 
         /// <summary>Tints every renderer on the imported model by cloning its
@@ -155,6 +297,33 @@ namespace Doggiehood.Unity
         private void Update()
         {
             TickLookAround(Time.deltaTime);
+            TickGlow(Time.deltaTime);
+        }
+
+        /// <summary>#521: advances the finder glow by one frame — pulses the
+        /// halo along the deterministic <see cref="LostItemGlow.PulseScaleAt"/>
+        /// breathe and drifts the sparkle around the item on
+        /// <see cref="LostItemGlow.SparkleAngleAt"/>. Public and deterministic so
+        /// EditMode tests can drive it without the Play-mode Update loop
+        /// (mirroring <see cref="TickLookAround"/>). A silent no-op when the
+        /// glow isn't present (e.g. it was gated off).</summary>
+        public void TickGlow(float deltaTime)
+        {
+            if (haloTransform == null)
+            {
+                return;
+            }
+
+            glowElapsedSeconds += deltaTime;
+
+            haloTransform.localScale =
+                Vector3.one * (LostItemGlow.HaloScale * LostItemGlow.PulseScaleAt(glowElapsedSeconds));
+
+            var angleRadians = LostItemGlow.SparkleAngleAt(glowElapsedSeconds) * Mathf.Deg2Rad;
+            sparkleTransform.localPosition = new Vector3(
+                Mathf.Cos(angleRadians) * LostItemGlow.SparkleOrbitRadius,
+                LostItemGlow.SparkleHeight,
+                Mathf.Sin(angleRadians) * LostItemGlow.SparkleOrbitRadius);
         }
 
         /// <summary>#335 (optional): advances the puppy's slow in-place yaw by
@@ -195,15 +364,32 @@ namespace Doggiehood.Unity
         public bool TryHandleLostItemTap(Camera camera, Vector2 screenPosition)
         {
             var renderers = GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0)
+            // #521: the finder glow adds child renderers, but it's decoration —
+            // exclude its subtree so the padded tap zone stays sized to the item
+            // itself, not inflated by the halo/ring/sparkle.
+            var hasBounds = false;
+            var bounds = default(Bounds);
+            foreach (var renderer in renderers)
             {
-                return false;
+                if (IsGlowRenderer(renderer))
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
             }
 
-            var bounds = renderers[0].bounds;
-            for (var i = 1; i < renderers.Length; i++)
+            if (!hasBounds)
             {
-                bounds.Encapsulate(renderers[i].bounds);
+                return false;
             }
 
             var minX = float.MaxValue;

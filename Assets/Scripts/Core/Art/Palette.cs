@@ -82,6 +82,18 @@ namespace Doggiehood.Core.Art
         /// </summary>
         public const string ExpansionIndicatorLockedHex = "#4A4A4A";
 
+        /// <summary>
+        /// Lost-item "finder glow" colour (#521, Derek 2026-08-02: "Option 1 —
+        /// a world-space glow on the item itself, colored RED"). A bright,
+        /// saturated red so the soft pulsing halo / ground ring / sparkle
+        /// (<see cref="Doggiehood.Core.Quests.LostItemGlow"/>) reads on the
+        /// sidewalk (<see cref="SidewalkHex"/>), grass (<see cref="GrassHex"/>)
+        /// and road (<see cref="StreetHex"/>) alike — it's the glow the eye
+        /// catches, regardless of the item's own colour. The Unity
+        /// <c>LostItemView</c> applies it via CoreColors.FromHex.
+        /// </summary>
+        public const string LostItemGlowHex = "#FF2A2A";
+
         /// <summary>Fixed saturation of every generated house tint (#299,
         /// Derek 2026-07-28): 20 hues evenly around the wheel all share this
         /// S so the whole palette reads as one bright, playful family.</summary>
