@@ -539,11 +539,27 @@ namespace Doggiehood.Unity.EditModeTests
         private static (float minX, float minY, float maxX, float maxY) ProjectedScreenBounds(
             Camera camera, Transform root)
         {
-            var renderers = root.GetComponentsInChildren<Renderer>();
-            var bounds = renderers[0].bounds;
-            for (var i = 1; i < renderers.Length; i++)
+            // #521: exclude the non-interactive finder-glow subtree so these
+            // bounds describe the ball itself — the #311 padding probe below is
+            // meant to land "just beyond the ball", not beyond the wide glow.
+            var bounds = default(Bounds);
+            var hasBounds = false;
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>())
             {
-                bounds.Encapsulate(renderers[i].bounds);
+                if (IsUnderFinderGlow(renderer.transform))
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
             }
 
             var minX = float.MaxValue;
@@ -564,6 +580,21 @@ namespace Doggiehood.Unity.EditModeTests
             }
 
             return (minX, minY, maxX, maxY);
+        }
+
+        /// <summary>#521: true when a transform sits under the lost item's
+        /// "FinderGlow" decoration subtree, so tap-bounds helpers can skip it.</summary>
+        private static bool IsUnderFinderGlow(Transform transform)
+        {
+            for (var t = transform; t != null; t = t.parent)
+            {
+                if (t.name == "FinderGlow")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Bounds CombinedRendererBounds(Renderer[] renderers)

@@ -76,6 +76,28 @@ namespace Doggiehood.Core.Tests.Art
         }
 
         [Test]
+        public void LostItemGlow_IsABrightSaturatedRed_ThatPopsOffEverySurface()
+        {
+            // #521: the lost-item finder glow is RED (Derek's decision), a
+            // named Palette constant. It must be a genuinely red, bright,
+            // saturated colour so it reads on sidewalk (#EFE8D8), grass
+            // (#7ED957) and road (#8A8FA3) alike, and be distinct from those
+            // surfaces.
+            Assert.That(() => ColorRgb.Parse(Palette.LostItemGlowHex), Throws.Nothing);
+
+            var glow = ColorRgb.Parse(Palette.LostItemGlowHex);
+            Assert.That(glow.Hue, Is.LessThanOrEqualTo(20f).Or.GreaterThanOrEqualTo(340f),
+                "the finder glow is red (hue near 0 deg)");
+            Assert.That(glow.Saturation, Is.GreaterThanOrEqualTo(0.6f), "vividly saturated");
+            Assert.That(glow.Value, Is.GreaterThanOrEqualTo(0.7f), "bright");
+
+            foreach (var surface in new[] { Palette.SidewalkHex, Palette.GrassHex, Palette.StreetHex })
+            {
+                Assert.That(Palette.LostItemGlowHex, Is.Not.EqualTo(surface));
+            }
+        }
+
+        [Test]
         public void YardLandscapingFallback_IsAValidColor_DistinctFromTheGrassGround()
         {
             // #170: the graybox-fallback yard tree marker must read as its
