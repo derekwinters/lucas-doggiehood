@@ -90,6 +90,31 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void HasRoadConnectionAt_ReturnsTrue_WhenSharingARoadToRoadEdge()
+        {
+            var map = NewMapSeededWithFourWay();
+
+            // FourWay's East edge has a road; StraightEW's West edge (the
+            // shared boundary) also has a road - a real road connection.
+            Assert.That(map.HasRoadConnectionAt(new TileCoordinate(1, 0), TileType.StraightEW), Is.True);
+        }
+
+        [Test]
+        public void HasRoadConnectionAt_ReturnsFalse_WhenTouchingOnlyViaANoRoadEdge()
+        {
+            // Seed a tile whose only road edge is North, so its East edge
+            // carries no road.
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.CulDeSacNorth);
+
+            // CulDeSacNorth to the east shares a no-road/no-road boundary:
+            // the edges agree (CanPlace-valid) but nothing connects by road.
+            Assert.That(map.CanPlace(new TileCoordinate(1, 0), TileType.CulDeSacNorth), Is.True,
+                "precondition: edge-agreement makes it a valid placement");
+            Assert.That(map.HasRoadConnectionAt(new TileCoordinate(1, 0), TileType.CulDeSacNorth), Is.False,
+                "no shared edge carries a road on both sides");
+        }
+
+        [Test]
         public void CanPlace_RejectsMismatchAgainstANewlyPlacedNeighbor_NotJustTheSeed()
         {
             var map = NewMapSeededWithFourWay();

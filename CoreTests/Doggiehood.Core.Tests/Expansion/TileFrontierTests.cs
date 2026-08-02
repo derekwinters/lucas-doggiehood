@@ -75,6 +75,44 @@ namespace Doggiehood.Core.Tests.Expansion
             Assert.That(frontier, Does.Contain(new TileCoordinate(1, 1)));
         }
 
+        [Test]
+        public void Compute_ExcludesACanPlaceValidCoordinateReachableOnlyViaNoRoadEdges()
+        {
+            // Placed map: a single CulDeSacNorth (road only on its North edge),
+            // so its East edge carries no road.
+            var placed = new TileMap(new TileCoordinate(0, 0), TileType.CulDeSacNorth);
+
+            // Target authors a CulDeSacNorth to the east: the shared boundary
+            // is no-road/no-road, which CanPlace accepts (edges agree) even
+            // though no road leads into it.
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.CulDeSacNorth);
+            target.Place(new TileCoordinate(1, 0), TileType.CulDeSacNorth);
+            Assert.That(placed.CanPlace(new TileCoordinate(1, 0), TileType.CulDeSacNorth), Is.True,
+                "precondition: the coordinate would place validly");
+
+            var frontier = TileFrontier.Compute(placed, target);
+
+            Assert.That(frontier, Does.Not.Contain(new TileCoordinate(1, 0)),
+                "a tile with no road connection to the network is not on the unlock frontier");
+        }
+
+        [Test]
+        public void Compute_IncludesACoordinateReachableViaARealRoadConnection()
+        {
+            // Placed FourWay carries a road on every edge.
+            var placed = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+
+            // Target authors a StraightEW to the east: its West edge has a
+            // road that meets FourWay's East road - a genuine connection.
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            target.Place(new TileCoordinate(1, 0), TileType.StraightEW);
+
+            var frontier = TileFrontier.Compute(placed, target);
+
+            Assert.That(frontier, Does.Contain(new TileCoordinate(1, 0)),
+                "a road-connected frontier tile is still offered");
+        }
+
         private static TileMap LoadAuthoredTargetMap()
         {
             var definition = MapDefinition.Parse(File.ReadAllText(AuthoredMapPath()));
