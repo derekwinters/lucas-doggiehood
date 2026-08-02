@@ -68,16 +68,15 @@ namespace Doggiehood.Core.Dogs
         }
 
         /// <summary>The documented personality trait name
-        /// (docs/specs/dogs/behavior.md): note Adventurous/Exploring carries a
-        /// slash, so a plain enum-name split would not reproduce it.</summary>
+        /// (docs/specs/dogs/behavior.md).</summary>
         private static string PersonalityName(Personality personality)
         {
             switch (personality)
             {
                 case Dogs.Personality.Brave:
                     return "Brave";
-                case Dogs.Personality.AdventurousExploring:
-                    return "Adventurous/Exploring";
+                case Dogs.Personality.Adventurous:
+                    return "Adventurous";
                 case Dogs.Personality.Shy:
                     return "Shy";
                 case Dogs.Personality.Excited:

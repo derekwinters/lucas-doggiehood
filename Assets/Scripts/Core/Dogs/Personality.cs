@@ -4,7 +4,7 @@ namespace Doggiehood.Core.Dogs
     public enum Personality
     {
         Brave,
-        AdventurousExploring,
+        Adventurous,
         Shy,
         Excited,
         Grumpy,

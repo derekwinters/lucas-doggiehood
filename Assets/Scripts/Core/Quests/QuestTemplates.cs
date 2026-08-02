@@ -29,7 +29,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} bounces in circles! \"My {item}! It's GONE! Ooh ooh, can you find it?!\"" } },
                 { Personality.Shy, new[] { "{dog} whispers from behind a bush. \"Um... I lost my {item}. Could you maybe... look for it?\"" } },
                 { Personality.Brave, new[] { "{dog} stands tall. \"My {item} has gone missing. I'd search myself, but I'm guarding the street.\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} trots up. \"I explored a bit too far and dropped my {item} somewhere out there!\"" } },
+                { Personality.Adventurous, new[] { "{dog} trots up. \"I explored a bit too far and dropped my {item} somewhere out there!\"" } },
                 { Personality.Athletic, new[] { "{dog} skids to a stop. \"Dropped my {item} mid-zoomies! Help me track it down?\"" } },
             },
             new[]
@@ -50,7 +50,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} bounces! \"Ooh, did you find my {item}?! Did you?!\"" } },
                 { Personality.Shy, new[] { "{dog} peeks out from behind a bush. \"Um... any luck with my {item}?\"" } },
                 { Personality.Brave, new[] { "{dog} stands tall. \"Report: has my {item} been recovered?\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} trots over. \"Found my {item} on your travels yet?\"" } },
+                { Personality.Adventurous, new[] { "{dog} trots over. \"Found my {item} on your travels yet?\"" } },
                 { Personality.Athletic, new[] { "{dog} jogs in place. \"Still chasing down my {item}? Keep at it!\"" } },
             });
 
@@ -67,7 +67,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} wags at top speed! \"A {item}! A {item}! Can I have a {item}? Please please please!\"" } },
                 { Personality.Shy, new[] { "{dog} paws the ground. \"I've... always wanted a {item}. If it's not too much trouble...\"" } },
                 { Personality.Brave, new[] { "{dog} nods firmly. \"A {item} would serve this household well. Can you arrange it?\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} grins. \"You know what my next adventure needs? A {item}!\"" } },
+                { Personality.Adventurous, new[] { "{dog} grins. \"You know what my next adventure needs? A {item}!\"" } },
                 { Personality.Athletic, new[] { "{dog} stretches. \"Training's better with gear. How about a {item}?\"" } },
             },
             new[]
@@ -88,7 +88,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} spins in a circle! \"Is it {item} time yet?! Is it?!\"" } },
                 { Personality.Shy, new[] { "{dog} paws the ground. \"No rush on the {item}... but, um, any news?\"" } },
                 { Personality.Brave, new[] { "{dog} nods firmly. \"Status on the {item}? The household is counting on it.\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} grins. \"That {item} for my next adventure — on its way?\"" } },
+                { Personality.Adventurous, new[] { "{dog} grins. \"That {item} for my next adventure — on its way?\"" } },
                 { Personality.Athletic, new[] { "{dog} stretches. \"Still need that {item} for training. Close?\"" } },
             });
 
@@ -105,7 +105,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} spins around! \"There are bugs EVERYWHERE! It's awful! Spray them! Quick!\"" } },
                 { Personality.Shy, new[] { "{dog} shudders. \"There are... creepy crawlies in my house. I can't go in...\"" } },
                 { Personality.Brave, new[] { "{dog} stands guard. \"Bugs have invaded my home. I need backup — bring the spray.\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} reports back. \"Scouted the house. Bug infestation confirmed. Over to you!\"" } },
+                { Personality.Adventurous, new[] { "{dog} reports back. \"Scouted the house. Bug infestation confirmed. Over to you!\"" } },
                 { Personality.Athletic, new[] { "{dog} paces. \"Can't do my morning laps with bugs in the house! Spray 'em out?\"" } },
             },
             new[]
@@ -126,7 +126,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} spins around! \"The bugs! Are they gone yet?! Please say yes!\"" } },
                 { Personality.Shy, new[] { "{dog} hides behind you. \"I... still can't go inside. Are the bugs gone?\"" } },
                 { Personality.Brave, new[] { "{dog} stands guard. \"The invasion holds. Have you cleared my house?\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} reports back. \"Re-scouted — bugs still present. Any progress?\"" } },
+                { Personality.Adventurous, new[] { "{dog} reports back. \"Re-scouted — bugs still present. Any progress?\"" } },
                 { Personality.Athletic, new[] { "{dog} paces. \"Can't do my laps yet — bugs still in the house?\"" } },
             });
 
@@ -143,7 +143,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} zooms across the yard! \"Imagine a {item} RIGHT HERE! Wouldn't that be amazing?!\"" } },
                 { Personality.Shy, new[] { "{dog} looks at the ground. \"The yard feels a bit bare... a {item} might be nice...\"" } },
                 { Personality.Brave, new[] { "{dog} surveys the yard. \"Every good post needs a {item}. Can you supply one?\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} flops down. \"After a long trek, a {item} to rest on would be perfect.\"" } },
+                { Personality.Adventurous, new[] { "{dog} flops down. \"After a long trek, a {item} to rest on would be perfect.\"" } },
                 { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery matters! A {item} for the yard, coach?\"" } },
             },
             new[]
@@ -164,7 +164,7 @@ namespace Doggiehood.Core.Quests
                 { Personality.Excited, new[] { "{dog} zooms across the yard! \"Is the {item} coming?! I can't wait to try it out!\"" } },
                 { Personality.Shy, new[] { "{dog} looks at the ground. \"The yard's still a bit bare... any news on the {item}?\"" } },
                 { Personality.Brave, new[] { "{dog} surveys the yard. \"The {item} for the post — arranged yet?\"" } },
-                { Personality.AdventurousExploring, new[] { "{dog} flops down. \"Still craving that {item} to rest on after a trek.\"" } },
+                { Personality.Adventurous, new[] { "{dog} flops down. \"Still craving that {item} to rest on after a trek.\"" } },
                 { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery {item} for the yard — close, coach?\"" } },
             });
 

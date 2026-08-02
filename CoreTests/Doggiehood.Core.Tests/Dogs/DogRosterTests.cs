@@ -17,11 +17,11 @@ namespace Doggiehood.Core.Tests.Dogs
 
             AssertDog(dogs, "Zeus", Breed.GermanShepherd, Personality.Brave, 1, false);
             AssertDog(dogs, "Nala", Breed.GermanShepherd, Personality.Excited, 1, true);
-            AssertDog(dogs, "Bailey", Breed.GoldenRetriever, Personality.AdventurousExploring, 2, false);
+            AssertDog(dogs, "Bailey", Breed.GoldenRetriever, Personality.Adventurous, 2, false);
             AssertDog(dogs, "Sunny", Breed.GoldenRetriever, Personality.Excited, 2, true);
             AssertDog(dogs, "Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false);
             AssertDog(dogs, "Duke", Breed.Labrador, Personality.Brave, 4, false);
-            AssertDog(dogs, "Scout", Breed.Beagle, Personality.AdventurousExploring, 4, false);
+            AssertDog(dogs, "Scout", Breed.Beagle, Personality.Adventurous, 4, false);
             AssertDog(dogs, "Waffles", Breed.Frenchton, Personality.Shy, 4, false);
         }
 
