@@ -80,11 +80,23 @@ namespace Doggiehood.Core.Onboarding
         /// first-quest sequence is running (<paramref name="sequenceStep"/> not
         /// <see cref="OnboardingStep.Done"/>) OR the reward chain has not yet
         /// completed. Dismissal is gated on the reward chain finishing at the
-        /// build step (#371) — not on the first-quest sequence alone.</summary>
-        public static bool ShouldShow(OnboardingStep sequenceStep, OnboardingRewardStep rewardStep)
+        /// build step (#371) — not on the first-quest sequence alone.
+        ///
+        /// <para>#506: a centered modal panel (e.g. the house profile the Upgrade
+        /// step tells the player to open) covers the bottom-anchored coach bar and
+        /// the very button it points at, so while such a panel is open the bar is
+        /// suppressed outright — <paramref name="centeredPanelOpen"/> wins over the
+        /// step state. Suppression is not a step advance: closing the panel restores
+        /// whatever the bar would otherwise show, and a chain that has already
+        /// completed stays dismissed regardless.</para></summary>
+        public static bool ShouldShow(
+            OnboardingStep sequenceStep,
+            OnboardingRewardStep rewardStep,
+            bool centeredPanelOpen = false)
         {
-            return sequenceStep != OnboardingStep.Done
-                || rewardStep != OnboardingRewardStep.Done;
+            return !centeredPanelOpen
+                && (sequenceStep != OnboardingStep.Done
+                    || rewardStep != OnboardingRewardStep.Done);
         }
     }
 }

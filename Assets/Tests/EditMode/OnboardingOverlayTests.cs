@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace Doggiehood.Unity.EditModeTests
@@ -484,6 +487,92 @@ namespace Doggiehood.Unity.EditModeTests
             var contentTop = wrapped.y + OnboardingOverlay.PhaseTitleContentTopPaddingPx;
             Assert.That(contentTop, Is.GreaterThanOrEqualTo(tab.yMax),
                 "the wrapped message's top edge clears the tab's bottom edge");
+        }
+
+        [Test]
+        public void ShouldDraw_IsSuppressed_WhileTheHouseProfileIsOpen_DuringTheUpgradeStep()
+        {
+            // #506 (Option 1): during the Upgrade step the coach bar overlaps the
+            // house profile's footer Upgrade button. The overlay observes an
+            // "is a centered panel open" predicate wired from WorldBootstrap and
+            // suppresses the bar while a centered modal panel is open, restoring it
+            // on close (with the same step prompt — closing is not a step advance).
+            var canvasHost = BuildCanvasHost();
+            var houseHost = new GameObject("house-profile");
+            houseHost.transform.SetParent(canvasHost.transform, false);
+            var houseProfile = houseHost.AddComponent<HouseProfileOverlay>();
+            houseProfile.Init();
+
+            try
+            {
+                overlay.Init(state, rig, presenter, () => houseProfile.IsOpen);
+                DriveFirstQuestSequenceToDone();
+                Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
+                Assert.That(overlay.ShouldDraw, Is.True,
+                    "with no panel open the coach bar shows for the Upgrade step");
+
+                houseProfile.Open(
+                    new House(2, Quadrant.NorthWest, isVacant: false, level: 1),
+                    new List<Dog> { new Dog("Biscuit", Breed.FrenchBulldog, Personality.Brave, 2, false) });
+                Assert.That(houseProfile.IsOpen, Is.True, "the centered house profile is open");
+                Assert.That(overlay.ShouldDraw, Is.False,
+                    "the open house profile suppresses the coach bar so the Upgrade button is unobstructed");
+
+                houseProfile.Close();
+                Assert.That(overlay.ShouldDraw, Is.True,
+                    "closing the profile brings the coach bar back");
+                Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.UpgradeHousePrompt),
+                    "the same Upgrade-step prompt as before — the panel did not advance the step");
+            }
+            finally
+            {
+                Object.DestroyImmediate(canvasHost);
+            }
+        }
+
+        [Test]
+        public void ShouldDraw_IsSuppressed_WhileTheDogProfileIsOpen_ProvingItGeneralizesBeyondHouses()
+        {
+            // #506: Option 1 is meant to generalize to every centered modal panel,
+            // not special-case houses — the DogProfileOverlay (also center-anchored)
+            // suppresses the coach bar the same way.
+            var canvasHost = BuildCanvasHost();
+            var dogHost = new GameObject("dog-profile");
+            dogHost.transform.SetParent(canvasHost.transform, false);
+            var dogProfile = dogHost.AddComponent<DogProfileOverlay>();
+            dogProfile.Init();
+
+            try
+            {
+                overlay.Init(state, rig, presenter, () => dogProfile.IsOpen);
+                DriveFirstQuestSequenceToDone();
+                Assert.That(overlay.ShouldDraw, Is.True, "coach bar shows for the Upgrade step");
+
+                dogProfile.Open(new Dog("Bailey", Breed.GoldenRetriever, Personality.Brave, 2, false));
+                Assert.That(dogProfile.IsOpen, Is.True);
+                Assert.That(overlay.ShouldDraw, Is.False,
+                    "an open dog profile suppresses the coach bar too — the fix is not house-specific");
+
+                dogProfile.Close();
+                Assert.That(overlay.ShouldDraw, Is.True, "closing the dog profile restores the coach bar");
+            }
+            finally
+            {
+                Object.DestroyImmediate(canvasHost);
+            }
+        }
+
+        /// <summary>Builds a configured <see cref="UiCanvas"/> host for the centered
+        /// profile overlays, importing the bundled label font first so a fresh CI
+        /// Library resolves it before the overlays build (mirrors the profile
+        /// overlay tests' setup, docs/engineering/unity-serialization.md §4).</summary>
+        private static GameObject BuildCanvasHost()
+        {
+            AssetDatabase.ImportAsset("Assets/UI/Fonts/Resources/DejaVuSans.ttf",
+                ImportAssetOptions.ForceSynchronousImport);
+            var canvasHost = new GameObject("ui-canvas", typeof(Canvas));
+            canvasHost.AddComponent<UiCanvas>().Configure();
+            return canvasHost;
         }
 
         /// <summary>Drives the first-quest sequence (pan -> zoom -> tap bubble ->
