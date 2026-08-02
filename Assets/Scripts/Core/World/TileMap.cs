@@ -77,6 +77,39 @@ namespace Doggiehood.Core.World
             return adjacentToMap;
         }
 
+        /// <summary>
+        /// Whether placing <paramref name="type"/> at
+        /// <paramref name="coordinate"/> would form a real road connection into
+        /// the existing network: at least one edge shared with a placed
+        /// neighbor must carry a road on <b>both</b> sides. This is strictly
+        /// narrower than <see cref="CanPlace"/>, whose edge-agreement check is
+        /// satisfied just as well by a no-road/no-road boundary — so the
+        /// expansion frontier (#295/#507) keys the unlock indicator to this
+        /// predicate, "a road with a connection point that has another tile
+        /// defined", rather than to mere grid-adjacency.
+        /// </summary>
+        public bool HasRoadConnectionAt(TileCoordinate coordinate, TileType type)
+        {
+            var definition = TileCatalog.Get(type);
+
+            foreach (var edge in AllEdges)
+            {
+                var neighborCoordinate = coordinate.Neighbor(edge);
+                if (!tiles.TryGetValue(neighborCoordinate, out var neighborType))
+                {
+                    continue;
+                }
+
+                var neighborDefinition = TileCatalog.Get(neighborType);
+                if (definition.HasRoadOn(edge) && neighborDefinition.HasRoadOn(edge.Opposite()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void Place(TileCoordinate coordinate, TileType type)
         {
             if (!CanPlace(coordinate, type))

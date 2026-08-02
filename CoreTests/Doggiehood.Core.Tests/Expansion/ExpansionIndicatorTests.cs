@@ -89,6 +89,34 @@ namespace Doggiehood.Core.Tests.Expansion
             }
         }
 
+        [Test]
+        public void ResolveAll_EmitsNoIndicator_ForACoordinateWithoutARealRoadConnection()
+        {
+            // Target map: origin FourWay -> TeeWest at (1,0) (its West road
+            // meets the origin, its East edge carries no road) -> CulDeSacNorth
+            // at (2,0) (road only North, West edge no road). The (1,0)/(2,0)
+            // boundary is no-road/no-road: CanPlace-valid, but nothing connects
+            // by road, so (2,0) must never surface a lock indicator.
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            target.Place(new TileCoordinate(1, 0), TileType.TeeWest);
+            target.Place(new TileCoordinate(2, 0), TileType.CulDeSacNorth);
+
+            var state = GameState.CreateNew();
+            state.SetTargetMap(target);
+            state.RestoreRewardChainStep(OnboardingRewardStep.Done);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
+
+            Assert.That(ExpansionIndicator.ResolveAll(state).Select(i => i.Coordinate),
+                Does.Contain(new TileCoordinate(1, 0)),
+                "precondition: the road-connected frontier tile is offered");
+            Assert.That(state.TryUnlockTile(new TileCoordinate(1, 0)), Is.True,
+                "precondition: unlocking the road-connected tile succeeds");
+
+            Assert.That(ExpansionIndicator.ResolveAll(state).Select(i => i.Coordinate),
+                Does.Not.Contain(new TileCoordinate(2, 0)),
+                "a frontier tile with no road connection to the network shows no lock indicator");
+        }
+
         private static GameState AfterOnboarding()
         {
             var state = GameState.CreateNew();
