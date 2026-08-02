@@ -496,45 +496,74 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void LostItem_HiddenPositionClearsEveryHouseFootprintByBuffer()
+        public void LostItem_HiddenPositionClearsTheQuestDogsHouseFootprintByBuffer()
         {
-            // #290: a lost toy must never spawn within HouseClearanceBuffer
-            // of any house footprint, or the house geometry/collider
-            // occludes the tap and the item is unreachable.
+            // #290/#520: a lost toy must never spawn within HouseClearanceBuffer
+            // of the quest dog's own house footprint, or the house geometry/
+            // collider occludes the tap and the item is unreachable.
             for (var seed = 0; seed < 500; seed++)
             {
                 var state = NewState();
-                var quest = state.Quests.GiveQuestTo(
-                    state.Dogs[0], QuestType.LostItem, new Random(seed));
-                var pos = quest.HiddenItemPosition.Value;
+                var dog = state.Dogs[0];
+                var pos = state.Quests
+                    .GiveQuestTo(dog, QuestType.LostItem, new Random(seed))
+                    .HiddenItemPosition.Value;
 
-                foreach (var lot in NeighborhoodLayout.HouseLots)
-                {
-                    var footprint = HousePlacement.HouseFootprint(lot);
-                    Assert.That(footprint.DistanceTo(pos),
-                        Is.GreaterThanOrEqualTo(QuestManager.HouseClearanceBuffer),
-                        $"seed {seed}: lost item {pos} too close to house "
-                        + $"{lot.HouseId} footprint");
-                }
+                var footprint = HousePlacement.HouseFootprint(state.GetHouseLot(dog.HouseId));
+                Assert.That(footprint.DistanceTo(pos),
+                    Is.GreaterThanOrEqualTo(QuestManager.HouseClearanceBuffer),
+                    $"seed {seed}: lost item {pos} too close to the dog's house footprint");
             }
         }
 
         [Test]
-        public void LostItem_HiddenPositionStaysWithinExtentBounds()
+        public void LostItem_HiddenPositionStaysWithinTheQuestDogsTileBounds()
         {
-            // #290: rejection sampling must always terminate with a valid
-            // position inside the existing placement bounds.
+            // #520: rejection sampling must always terminate with a valid
+            // position inside the quest dog's own home-tile quadrant bounds —
+            // the starting-layout regression, mirroring the frontier-tile case.
             for (var seed = 0; seed < 500; seed++)
             {
                 var state = NewState();
+                var dog = state.Dogs[0];
                 var pos = state.Quests
-                    .GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(seed))
+                    .GiveQuestTo(dog, QuestType.LostItem, new Random(seed))
                     .HiddenItemPosition.Value;
 
-                Assert.That(Math.Abs(pos.X),
-                    Is.LessThanOrEqualTo(QuestManager.HiddenItemExtent), $"seed {seed}");
-                Assert.That(Math.Abs(pos.Z),
-                    Is.LessThanOrEqualTo(QuestManager.HiddenItemExtent), $"seed {seed}");
+                var bounds = LotBounds.QuadrantBounds(state.GetHouseLot(dog.HouseId));
+                Assert.That(bounds.Contains(pos), Is.True,
+                    $"seed {seed}: lost item {pos} landed outside the quest dog's "
+                    + $"tile bounds [{bounds.MinX}..{bounds.MaxX}]x[{bounds.MinZ}..{bounds.MaxZ}]");
+            }
+        }
+
+        [Test]
+        public void LostItem_ForADogOnANonOriginTile_HidesItemWithinThatDogsTileBounds()
+        {
+            // #520: the hidden item must land on the quest dog's OWN home
+            // tile, not the fixed origin-centered spawn square. A dog whose
+            // house sits on an unlocked frontier tile (well off the origin)
+            // gets its lost item within that lot's quadrant bounds — and
+            // clear of that lot's own house footprint by the buffer.
+            var state = Doggiehood.Core.Tests.World.FrontierTestWorld.WithFirstTileUnlocked();
+            var lot = state.LotsForUnlockedTile(
+                Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
+            var dog = new Dog("Rover", Breed.Beagle, Personality.Brave, lot.HouseId, isPuppy: false);
+            var bounds = LotBounds.QuadrantBounds(lot);
+            var footprint = HousePlacement.HouseFootprint(lot);
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var pos = state.Quests
+                    .GiveQuestTo(dog, QuestType.LostItem, new Random(seed))
+                    .HiddenItemPosition.Value;
+
+                Assert.That(bounds.Contains(pos), Is.True,
+                    $"seed {seed}: lost item {pos} landed outside the quest dog's "
+                    + $"tile bounds [{bounds.MinX}..{bounds.MaxX}]x[{bounds.MinZ}..{bounds.MaxZ}]");
+                Assert.That(footprint.DistanceTo(pos),
+                    Is.GreaterThanOrEqualTo(QuestManager.HouseClearanceBuffer),
+                    $"seed {seed}: lost item {pos} too close to the dog's house footprint");
             }
         }
 

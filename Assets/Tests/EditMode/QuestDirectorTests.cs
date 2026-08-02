@@ -416,9 +416,9 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // #311: the item is left exactly where Core placed it — inside
             // the full-map ground Plane (WorldBuilder.BuildGround,
-            // GroundExtent 30, comfortably covering the item's
-            // QuestManager.HiddenItemExtent 25 spawn square) and clear of
-            // house footprints (#290) — and viewed through the real rig's
+            // GroundExtent 30, comfortably covering the item's spawn region,
+            // the quest dog's own home-tile quadrant bounds, #520) and clear
+            // of that lot's house footprint (#290) — and viewed through the real rig's
             // 45-degree pitch/DefaultZoom, unlike the isolated dead-center
             // test above. Under that real view the ball's SphereCollider
             // (radius 0.3) projects to only ~18px, so a tap that lands near
