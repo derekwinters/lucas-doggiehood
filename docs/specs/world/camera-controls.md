@@ -14,6 +14,8 @@ Drag/swipe to pan the camera across the neighborhood; pinch to zoom in and out �
 
 **The pan bounds grow with the map.** Panning is clamped to the neighborhood's extent, but that extent is not fixed: it is derived from the live tile map (`Doggiehood.Core.World.MapExtent.Covering` — a named margin beyond the outermost tiles) and **recomputes when a zone is unlocked** (`CameraController.RecomputeBoundsFromMap`), so the player can always pan over to reach a newly unlocked zone rather than being clamped out of it ([#373](https://github.com/derekwinters/lucas-doggiehood/issues/373)). The starting bounds derive from the same map-based path (the seeded origin tile), so there is one derivation for both the initial world and every expansion.
 
+**The maximum zoom-out grows with the map too.** The minimum zoom-in and the default zoom are fixed, but the *max zoom-out* is not: it is re-derived from the same live map extent alongside the pan bounds, in the same `CameraController.RecomputeBoundsFromMap` recompute (a named padding beyond the outermost tiles so the map isn't framed edge-to-edge). So as the neighborhood spreads out with each expansion the player can always zoom out far enough to take the whole current map in at once, rather than hitting a fixed cap. Whenever the range recomputes, the current zoom is re-clamped into it — mirroring how the position is re-clamped — so an unlock never leaves the camera zoomed out past the new cap ([#510](https://github.com/derekwinters/lucas-doggiehood/issues/510)).
+
 ## Camera angle
 
 Isometric / angled top-down camera — in the spirit of SimCity or Animal Crossing — rather than a straight bird's-eye view or a full free-orbit 3D camera. This shows house facades and roofs and keeps dogs easy to spot and tap. ([#21](https://github.com/derekwinters/lucas-doggiehood/issues/21))
@@ -33,7 +35,7 @@ This is one facet of the project's platform target, stated authoritatively once 
 - [ ] Fixed pitch (45°) and orthographic projection, with free twist-driven yaw rotation (continuous, no snapping/clamping)
 - [ ] Camera-facing world markers (speech bubbles, map-expansion lock icon) track the live camera yaw and read head-on at every rotation (#266); broader fixed-angle scene-art readability remains a follow-on
 - [ ] Pan via drag/swipe within the bounds of the current neighborhood scene (the bounds grow with the map, recomputed from the live tile extent on zone unlock — [#373](https://github.com/derekwinters/lucas-doggiehood/issues/373))
-- [ ] Pinch-to-zoom with sane min/max zoom limits
+- [ ] Pinch-to-zoom with a fixed min zoom-in and a max zoom-out that grows with the live map extent (recomputed from the tile extent on zone unlock, mirroring the pan bounds — [#510](https://github.com/derekwinters/lucas-doggiehood/issues/510)); the current zoom is re-clamped into the new range on each recompute
 - [ ] Tap-to-interact hit-testing on dogs and houses works at all zoom levels
 - [ ] A tap over an open dialog/menu (or its scrim, or the HUD gear) is absorbed by that UI and never reaches a world interactable behind it ([#422](https://github.com/derekwinters/lucas-doggiehood/issues/422))
 - [ ] App is locked to landscape orientation

@@ -122,7 +122,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var house = world.GetComponentsInChildren<HouseView>()[0];
                 Physics.SyncTransforms();
 
-                foreach (var targetZoom in new[] { CameraController.MinZoom, CameraController.DefaultZoom, CameraController.MaxZoom })
+                foreach (var targetZoom in new[] { CameraController.MinZoom, CameraController.DefaultZoom, rig.Controller.MaxZoom })
                 {
                     rig.Controller.ZoomBy(targetZoom - rig.Controller.Zoom);
                     rig.ApplyConfiguration();

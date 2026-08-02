@@ -11,7 +11,6 @@ namespace Doggiehood.Core.Cameras
     public sealed class CameraController
     {
         public const float MinZoom = 6f;
-        public const float MaxZoom = 30f;
         public const float DefaultZoom = 18f;
 
         /// <summary>Starting yaw (#203): the old fixed isometric angle,
@@ -24,9 +23,23 @@ namespace Doggiehood.Core.Cameras
         /// exactly to their edges.</summary>
         private const float BoundsMargin = 12f;
 
+        /// <summary>Extra orthographic half-height (meters) added beyond the
+        /// map's tile coverage when deriving <see cref="MaxZoom"/> (#510), so
+        /// the neighborhood isn't pinned edge-to-edge at the far zoom-out —
+        /// mirroring how <see cref="BoundsMargin"/> pads the pan bounds.</summary>
+        private const float ZoomOutPadding = 12f;
+
         public WorldBounds Bounds { get; private set; }
         public GridPoint Position { get; private set; }
         public float Zoom { get; private set; }
+
+        /// <summary>The maximum zoom-out (orthographic half-height, meters).
+        /// Unlike <see cref="MinZoom"/>/<see cref="DefaultZoom"/>, this is
+        /// per-instance and grows with the live map extent (#510): it is
+        /// re-derived from the map alongside the pan <see cref="Bounds"/> on
+        /// every <see cref="RecomputeBoundsFromMap"/>, so the player can always
+        /// zoom out far enough to frame the whole current neighborhood.</summary>
+        public float MaxZoom { get; private set; }
 
         /// <summary>Camera yaw in degrees (#203). Free continuous rotation —
         /// never clamped or snapped, unlike Position (bounds) or Zoom (min/max).</summary>
@@ -35,6 +48,7 @@ namespace Doggiehood.Core.Cameras
         public CameraController(WorldBounds bounds, GridPoint startPosition, float startZoom)
         {
             Bounds = bounds;
+            MaxZoom = MaxZoomForBounds(bounds);
             Position = new GridPoint(bounds.ClampX(startPosition.X), bounds.ClampZ(startPosition.Z));
             Zoom = ClampZoom(startZoom);
             Yaw = DefaultYaw;
@@ -55,12 +69,18 @@ namespace Doggiehood.Core.Cameras
         /// (e.g. the #360 north cul-de-sac), the bounds grow to cover the new
         /// tiles so <see cref="Pan"/>/<see cref="FocusOn"/> can reach them.
         /// The current <see cref="Position"/> is re-clamped into the new
-        /// bounds so it never sits outside them.
+        /// bounds so it never sits outside them. The maximum zoom-out
+        /// (<see cref="MaxZoom"/>) is re-derived from the same grown extent
+        /// (#510) and the current <see cref="Zoom"/> re-clamped into the new
+        /// range, so the player can frame the larger map and an unlock never
+        /// leaves the camera zoomed out past the new cap.
         /// </summary>
         public void RecomputeBoundsFromMap(TileMap map)
         {
             Bounds = BoundsForMap(map);
+            MaxZoom = MaxZoomForBounds(Bounds);
             Position = new GridPoint(Bounds.ClampX(Position.X), Bounds.ClampZ(Position.Z));
+            Zoom = ClampZoom(Zoom);
         }
 
         private static WorldBounds BoundsForMap(TileMap map)
@@ -69,6 +89,21 @@ namespace Doggiehood.Core.Cameras
             return new WorldBounds(
                 extent.MinX - BoundsMargin, extent.MaxX + BoundsMargin,
                 extent.MinZ - BoundsMargin, extent.MaxZ + BoundsMargin);
+        }
+
+        /// <summary>Derives the maximum zoom-out from the map-scaled pan
+        /// <paramref name="bounds"/> (#510): half the larger of the bounds'
+        /// spans (Zoom is an orthographic half-height) plus
+        /// <see cref="ZoomOutPadding"/>, so the far zoom-out frames roughly the
+        /// whole current neighborhood with a little breathing room. Because the
+        /// bounds already scale with <see cref="MapExtent.Covering"/>, the cap
+        /// grows automatically with every expansion.</summary>
+        private static float MaxZoomForBounds(WorldBounds bounds)
+        {
+            float spanX = bounds.MaxX - bounds.MinX;
+            float spanZ = bounds.MaxZ - bounds.MinZ;
+            float largerSpan = spanX > spanZ ? spanX : spanZ;
+            return largerSpan / 2f + ZoomOutPadding;
         }
 
         public void Pan(float deltaX, float deltaZ)
@@ -99,7 +134,7 @@ namespace Doggiehood.Core.Cameras
             Yaw += deltaDegrees;
         }
 
-        private static float ClampZoom(float zoom)
+        private float ClampZoom(float zoom)
         {
             return zoom < MinZoom ? MinZoom : (zoom > MaxZoom ? MaxZoom : zoom);
         }

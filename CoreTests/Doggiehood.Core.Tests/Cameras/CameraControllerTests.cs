@@ -148,6 +148,76 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
+        public void MaxZoom_ForStartingNeighborhood_FramesTheSeededIntersection()
+        {
+            // #510: the max zoom-out is now a per-instance value derived from
+            // the map extent (no longer a fixed static const). Even the tiny
+            // starting map must let the player frame the whole seeded tile.
+            var camera = NewController();
+
+            Assert.That(camera.MaxZoom, Is.GreaterThan(CameraController.DefaultZoom));
+            Assert.That(camera.MaxZoom, Is.GreaterThanOrEqualTo(WorldDimensions.TileSize / 2f));
+        }
+
+        [Test]
+        public void RecomputeBoundsFromMap_GrowsTheMaxZoomOutAsTheMapGrows()
+        {
+            // #510: mirroring how the pan bounds already grow, the max zoom-out
+            // scales up with the live map extent so the player can zoom out far
+            // enough to see the whole larger neighborhood at once.
+            var camera = NewController();
+            var startingMaxZoom = camera.MaxZoom;
+
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+            camera.RecomputeBoundsFromMap(map);
+
+            Assert.That(camera.MaxZoom, Is.GreaterThan(startingMaxZoom),
+                "growing the map raises the zoom-out cap");
+        }
+
+        [Test]
+        public void AfterBoundsGrow_ZoomBy_CanReachTheNewLargerMaxZoom()
+        {
+            // #510: previously ZoomBy was clamped at a fixed 30f. After the map
+            // grows, the player can zoom out past the old cap to the new one.
+            var camera = NewController();
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+            camera.RecomputeBoundsFromMap(map);
+
+            camera.ZoomBy(100000f);
+
+            Assert.That(camera.Zoom, Is.EqualTo(camera.MaxZoom));
+            Assert.That(camera.Zoom, Is.GreaterThan(30f),
+                "the grown map lets the camera zoom out past the old fixed cap");
+        }
+
+        [Test]
+        public void RecomputeBoundsFromMap_ReclampsTheZoomIntoTheNewRange()
+        {
+            // #510: whenever the range recomputes, the current Zoom is re-settled
+            // into [MinZoom, MaxZoom] — mirroring how Position is re-clamped — so
+            // recomputing to a smaller map never leaves the camera past the cap.
+            var camera = NewController();
+
+            var big = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            big.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+            camera.RecomputeBoundsFromMap(big);
+            camera.ZoomBy(100000f); // pinned at the big map's max zoom-out
+            var zoomedOut = camera.Zoom;
+
+            var small = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            camera.RecomputeBoundsFromMap(small);
+
+            Assert.That(camera.MaxZoom, Is.LessThan(zoomedOut),
+                "the smaller map has a smaller zoom-out cap");
+            Assert.That(camera.Zoom, Is.EqualTo(camera.MaxZoom),
+                "the current zoom is pulled back down onto the new cap");
+            Assert.That(camera.Zoom, Is.InRange(CameraController.MinZoom, camera.MaxZoom));
+        }
+
+        [Test]
         public void ZoomBy_ChangesTheZoomLevel()
         {
             var camera = NewController();
@@ -167,7 +237,7 @@ namespace Doggiehood.Core.Tests.Cameras
             Assert.That(camera.Zoom, Is.EqualTo(CameraController.MinZoom));
 
             camera.ZoomBy(10000f);
-            Assert.That(camera.Zoom, Is.EqualTo(CameraController.MaxZoom));
+            Assert.That(camera.Zoom, Is.EqualTo(camera.MaxZoom));
         }
 
         [Test]
@@ -175,7 +245,7 @@ namespace Doggiehood.Core.Tests.Cameras
         {
             var camera = NewController();
 
-            Assert.That(camera.Zoom, Is.InRange(CameraController.MinZoom, CameraController.MaxZoom));
+            Assert.That(camera.Zoom, Is.InRange(CameraController.MinZoom, camera.MaxZoom));
         }
 
         [Test]
