@@ -101,6 +101,10 @@
   .tile-btn.sel:active { transform: scale(.97); }
   .tile-btn svg { width: 46px; height: 46px; display: block; }
   .tile-btn .nm { font-size: .64rem; color: var(--ink-soft); text-align: center; line-height: 1.15; }
+  /* #516: types the City Kit can't render as one tile — greyed out, not placeable. */
+  .tile-btn.unbuildable { opacity: .42; cursor: not-allowed; filter: grayscale(1); }
+  .tile-btn.unbuildable:hover { border-color: var(--panel-edge); }
+  .tile-btn .badge { font-size: .56rem; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .02em; }
   .fam-label { grid-column: 1 / -1; font-size: .74rem; font-weight: 600; color: var(--ink-soft); margin: 6px 0 -2px; }
 
   .modes { display: flex; gap: 8px; }
@@ -260,7 +264,7 @@
 "use strict";
 
 /* ---- the authored neighborhood (default map) ---- */
-const NEIGHBORHOOD = {name:"Our neighborhood",tiles:[{x:-3,y:-4,type:"TurnNE"},{x:-2,y:-4,type:"StraightEW"},{x:-1,y:-4,type:"CulDeSacWest"},{x:2,y:-4,type:"TurnNE"},{x:3,y:-4,type:"StraightEW"},{x:4,y:-4,type:"StraightEW"},{x:5,y:-4,type:"StraightEW"},{x:6,y:-4,type:"StraightEW"},{x:7,y:-4,type:"StraightEW"},{x:8,y:-4,type:"TeeNorth"},{x:-3,y:-3,type:"TeeEast"},{x:-2,y:-3,type:"TeeNorth"},{x:-1,y:-3,type:"StraightEW"},{x:0,y:-3,type:"TeeNorth"},{x:1,y:-3,type:"StraightEW"},{x:2,y:-3,type:"TurnSW"},{x:3,y:-3,type:"CulDeSacEast"},{x:4,y:-3,type:"StraightEW"},{x:5,y:-3,type:"StraightEW"},{x:6,y:-3,type:"TeeNorth"},{x:7,y:-3,type:"StraightEW"},{x:8,y:-3,type:"TeeWest"},{x:-3,y:-2,type:"StraightNS"},{x:-2,y:-2,type:"CulDeSacSouth"},{x:-1,y:-2,type:"CulDeSacNorth"},{x:0,y:-2,type:"TurnSE"},{x:1,y:-2,type:"TeeNorth"},{x:2,y:-2,type:"StraightEW"},{x:3,y:-2,type:"TurnNW"},{x:4,y:-2,type:"CulDeSacEast"},{x:5,y:-2,type:"StraightEW"},{x:6,y:-2,type:"FourWay"},{x:7,y:-2,type:"StraightEW"},{x:8,y:-2,type:"TurnSW"},{x:-3,y:-1,type:"TeeEast"},{x:-2,y:-1,type:"TeeNorth"},{x:-1,y:-1,type:"FourWay"},{x:0,y:-1,type:"TurnNW"},{x:1,y:-1,type:"CulDeSacSouth"},{x:2,y:-1,type:"CulDeSacNorth"},{x:3,y:-1,type:"CulDeSacSouth"},{x:4,y:-1,type:"CulDeSacNorth"},{x:5,y:-1,type:"TurnNE"},{x:6,y:-1,type:"OpposingTurnsNS"},{x:7,y:-1,type:"TurnNW"},{x:-3,y:0,type:"StraightNS"},{x:-2,y:0,type:"CulDeSacSouth"},{x:-1,y:0,type:"TeeEast"},{x:0,y:0,type:"FourWay"},{x:1,y:0,type:"TeeNorth"},{x:2,y:0,type:"FourWay"},{x:3,y:0,type:"TurnNW"},{x:4,y:0,type:"StraightNS"},{x:5,y:0,type:"StraightNS"},{x:6,y:0,type:"StraightNS"},{x:7,y:0,type:"StraightNS"},{x:-3,y:1,type:"StraightNS"},{x:-1,y:1,type:"StraightNS"},{x:0,y:1,type:"CulDeSacSouth"},{x:1,y:1,type:"StraightNS"},{x:2,y:1,type:"TurnSE"},{x:3,y:1,type:"TeeSouth"},{x:4,y:1,type:"FourWay"},{x:5,y:1,type:"TeeWest"},{x:6,y:1,type:"StraightNS"},{x:7,y:1,type:"StraightNS"},{x:-3,y:2,type:"StraightNS"},{x:-1,y:2,type:"TurnSE"},{x:0,y:2,type:"StraightEW"},{x:1,y:2,type:"TurnSW"},{x:4,y:2,type:"StraightNS"},{x:5,y:2,type:"TurnSE"},{x:6,y:2,type:"TeeSouth"},{x:7,y:2,type:"TurnSW"},{x:-3,y:3,type:"StraightNS"},{x:4,y:3,type:"StraightNS"},{x:-3,y:4,type:"TurnSE"},{x:-2,y:4,type:"StraightEW"},{x:-1,y:4,type:"StraightEW"},{x:0,y:4,type:"StraightEW"},{x:1,y:4,type:"StraightEW"},{x:2,y:4,type:"StraightEW"},{x:3,y:4,type:"StraightEW"},{x:4,y:4,type:"TurnSW"}]};
+const NEIGHBORHOOD = {name:"Our neighborhood",tiles:[{x:-3,y:-4,type:"TurnNE"},{x:-2,y:-4,type:"StraightEW"},{x:-1,y:-4,type:"CulDeSacWest"},{x:2,y:-4,type:"TurnNE"},{x:3,y:-4,type:"StraightEW"},{x:4,y:-4,type:"StraightEW"},{x:5,y:-4,type:"StraightEW"},{x:6,y:-4,type:"StraightEW"},{x:7,y:-4,type:"StraightEW"},{x:8,y:-4,type:"TeeNorth"},{x:-3,y:-3,type:"TeeEast"},{x:-2,y:-3,type:"TeeNorth"},{x:-1,y:-3,type:"StraightEW"},{x:0,y:-3,type:"TeeNorth"},{x:1,y:-3,type:"StraightEW"},{x:2,y:-3,type:"TurnSW"},{x:3,y:-3,type:"CulDeSacEast"},{x:4,y:-3,type:"StraightEW"},{x:5,y:-3,type:"StraightEW"},{x:6,y:-3,type:"TeeNorth"},{x:7,y:-3,type:"StraightEW"},{x:8,y:-3,type:"TeeWest"},{x:-3,y:-2,type:"StraightNS"},{x:-2,y:-2,type:"CulDeSacSouth"},{x:-1,y:-2,type:"CulDeSacNorth"},{x:0,y:-2,type:"TurnSE"},{x:1,y:-2,type:"TeeNorth"},{x:2,y:-2,type:"StraightEW"},{x:3,y:-2,type:"TurnNW"},{x:4,y:-2,type:"CulDeSacEast"},{x:5,y:-2,type:"StraightEW"},{x:6,y:-2,type:"FourWay"},{x:7,y:-2,type:"StraightEW"},{x:8,y:-2,type:"TurnSW"},{x:-3,y:-1,type:"TeeEast"},{x:-2,y:-1,type:"TeeNorth"},{x:-1,y:-1,type:"FourWay"},{x:0,y:-1,type:"TurnNW"},{x:1,y:-1,type:"CulDeSacSouth"},{x:2,y:-1,type:"CulDeSacNorth"},{x:3,y:-1,type:"CulDeSacSouth"},{x:4,y:-1,type:"CulDeSacNorth"},{x:5,y:-1,type:"TurnNE"},{x:6,y:-1,type:"FourWay"},{x:7,y:-1,type:"TurnNW"},{x:-3,y:0,type:"StraightNS"},{x:-2,y:0,type:"CulDeSacSouth"},{x:-1,y:0,type:"TeeEast"},{x:0,y:0,type:"FourWay"},{x:1,y:0,type:"TeeNorth"},{x:2,y:0,type:"FourWay"},{x:3,y:0,type:"TurnNW"},{x:4,y:0,type:"StraightNS"},{x:5,y:0,type:"StraightNS"},{x:6,y:0,type:"StraightNS"},{x:7,y:0,type:"StraightNS"},{x:-3,y:1,type:"StraightNS"},{x:-1,y:1,type:"StraightNS"},{x:0,y:1,type:"CulDeSacSouth"},{x:1,y:1,type:"StraightNS"},{x:2,y:1,type:"TurnSE"},{x:3,y:1,type:"TeeSouth"},{x:4,y:1,type:"FourWay"},{x:5,y:1,type:"TeeWest"},{x:6,y:1,type:"StraightNS"},{x:7,y:1,type:"StraightNS"},{x:-3,y:2,type:"StraightNS"},{x:-1,y:2,type:"TurnSE"},{x:0,y:2,type:"StraightEW"},{x:1,y:2,type:"TurnSW"},{x:4,y:2,type:"StraightNS"},{x:5,y:2,type:"TurnSE"},{x:6,y:2,type:"TeeSouth"},{x:7,y:2,type:"TurnSW"},{x:-3,y:3,type:"StraightNS"},{x:4,y:3,type:"StraightNS"},{x:-3,y:4,type:"TurnSE"},{x:-2,y:4,type:"StraightEW"},{x:-1,y:4,type:"StraightEW"},{x:0,y:4,type:"StraightEW"},{x:1,y:4,type:"StraightEW"},{x:2,y:4,type:"StraightEW"},{x:3,y:4,type:"StraightEW"},{x:4,y:4,type:"TurnSW"}]};
 
 /* ---- tile catalog: name -> 5-char connectivity code (N S E W + tag) ---- */
 const TYPES = {
@@ -509,18 +513,27 @@ document.getElementById("map").addEventListener("click", e => {
 function miniSVG(typeName) {
   return `<svg viewBox="0 0 100 100">${tileMarkup(typeName, { houses: false })}</svg>`;
 }
+/* #516: OpposingTurns* ("Twin bends") have no single City Kit mesh — two
+   independent quarter-arcs in one tile can't be rendered, so they must not be
+   placed on the live map. The palette greys them out and blocks selection. */
+const UNBUILDABLE = new Set(["OpposingTurnsNS", "OpposingTurnsEW"]);
 function buildPalette() {
   const el = document.getElementById("palette");
   let html = "";
   for (const [fam, items] of PALETTE) {
     html += `<div class="fam-label">${fam}</div>`;
     for (const [type, nm] of items) {
-      html += `<button class="tile-btn${type === state.brush ? " sel" : ""}" data-type="${type}" title="${type} (${TYPES[type]})">`
-        + miniSVG(type) + `<span class="nm">${nm}</span></button>`;
+      const blocked = UNBUILDABLE.has(type);
+      const cls = "tile-btn" + (type === state.brush ? " sel" : "") + (blocked ? " unbuildable" : "");
+      const title = blocked ? `${type} — not kit-renderable (#516)` : `${type} (${TYPES[type]})`;
+      html += `<button class="${cls}" data-type="${type}" title="${title}"${blocked ? " disabled aria-disabled=\"true\"" : ""}>`
+        + miniSVG(type) + `<span class="nm">${nm}</span>`
+        + (blocked ? `<span class="badge">Not buildable</span>` : "") + `</button>`;
     }
   }
   el.innerHTML = html;
   el.querySelectorAll(".tile-btn").forEach(b => b.addEventListener("click", () => {
+    if (UNBUILDABLE.has(b.dataset.type)) return;   // block placing an unrenderable type
     state.brush = b.dataset.type;
     if (state.mode !== "place") setMode("place");
     el.querySelectorAll(".tile-btn").forEach(x => x.classList.toggle("sel", x === b));

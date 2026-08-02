@@ -88,6 +88,31 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void Load_RealAuthoredMap_EveryTileHasKitRenderPath()
+        {
+            // #516: every tile on the live map must render — either it resolves a
+            // RoadTileArt centre piece, or it is a plain-straight type (tiled
+            // road-straight arms). OpposingTurns* has no kit render path (deferred
+            // in #508), so its presence on the live map is this bug's repro.
+            var definition = MapDefinition.Parse(File.ReadAllText(AuthoredMapPath()));
+
+            var result = MapLoader.Load(definition);
+
+            var unrenderable = result.Map.Tiles
+                .Where(tile => !PlainStraightTypes.Contains(tile.Value)
+                               && !RoadTileArt.TryGetCenterPiece(tile.Value, out _))
+                .Select(tile => tile.Value)
+                .ToList();
+
+            Assert.That(unrenderable, Is.Empty,
+                "Every live-map tile must resolve a kit render path; "
+                + "OpposingTurns* (no kit mesh) must not appear on the live map.");
+        }
+
+        private static readonly TileType[] PlainStraightTypes =
+            { TileType.StraightNS, TileType.StraightEW };
+
+        [Test]
         public void Load_ExposesCurvedCornerPerTurnTile()
         {
             var definition = MapDefinition.Parse(
