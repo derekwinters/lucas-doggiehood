@@ -136,6 +136,15 @@ namespace Doggiehood.Unity
         private GridPoint startPosition;
         private float startZoom;
 
+        /// <summary>#506: reports whether a centered modal panel (house/dog
+        /// profile, and any future centered panel) is currently open. Wired from
+        /// <c>WorldBootstrap</c>, which owns the references to those overlays; the
+        /// bottom-anchored coach bar is suppressed while one is open so it can't
+        /// cover the very button it points at (e.g. the house-profile Upgrade
+        /// button during the Upgrade step). Null when unwired — treated as "no
+        /// panel open", preserving the pre-#506 behavior.</summary>
+        private System.Func<bool> centeredPanelOpen;
+
         /// <summary>The live sequence step; used by wiring tests to observe
         /// advancement. Done once onboarding is complete.</summary>
         public OnboardingStep CurrentStep
@@ -148,15 +157,28 @@ namespace Doggiehood.Unity
         /// is Done AND the reward chain has completed. Dismissal is gated on the
         /// reward chain finishing at the build step, not on the first quest
         /// alone (#207 auto-dismiss, extended to the whole guided journey by
-        /// #374). The decision itself is engine-free Core
-        /// (<see cref="OnboardingCoach.ShouldShow"/>).</summary>
+        /// #374). #506: also false while a centered modal panel is open (see
+        /// <see cref="centeredPanelOpen"/>), so the bottom-anchored bar never
+        /// covers a centered panel's controls. The decision itself is engine-free
+        /// Core (<see cref="OnboardingCoach.ShouldShow"/>).</summary>
         public bool ShouldDraw
         {
             get
             {
                 return sequence != null
-                    && OnboardingCoach.ShouldShow(sequence.CurrentStep, state.RewardChain.CurrentStep);
+                    && OnboardingCoach.ShouldShow(
+                        sequence.CurrentStep,
+                        state.RewardChain.CurrentStep,
+                        IsCenteredPanelOpen);
             }
+        }
+
+        /// <summary>#506: whether a centered modal panel is currently open, per the
+        /// wired <see cref="centeredPanelOpen"/> observer. False when no observer
+        /// was wired (the pre-#506 default).</summary>
+        private bool IsCenteredPanelOpen
+        {
+            get { return centeredPanelOpen != null && centeredPanelOpen(); }
         }
 
         /// <summary>#330: whether the animated gesture-arrow coach should draw
@@ -175,10 +197,12 @@ namespace Doggiehood.Unity
             }
         }
 
-        public void Init(GameState state, CameraRig rig, ConversationPresenter presenter)
+        public void Init(GameState state, CameraRig rig, ConversationPresenter presenter,
+            System.Func<bool> centeredPanelOpen = null)
         {
             this.state = state;
             this.rig = rig;
+            this.centeredPanelOpen = centeredPanelOpen;
             sequence = new OnboardingSequence(state);
 
             if (rig != null)

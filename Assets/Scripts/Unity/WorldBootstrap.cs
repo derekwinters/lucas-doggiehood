@@ -135,7 +135,15 @@ namespace Doggiehood.Unity
                         ?? Camera.main.gameObject.AddComponent<CameraRig>();
                 }
 
-                gameObject.AddComponent<OnboardingOverlay>().Init(state, rig, presenter);
+                // #506: the bottom-anchored coach bar would otherwise cover a
+                // centered modal panel's controls — most visibly the house
+                // profile's footer Upgrade button during the Upgrade step. Suppress
+                // the bar while any centered panel is open. Composed here (not
+                // special-cased inside the overlay) so it generalizes to every
+                // current/future centered panel — house and dog profiles today.
+                gameObject.AddComponent<OnboardingOverlay>()
+                    .Init(state, rig, presenter,
+                        () => houseProfile.IsOpen || dogProfile.IsOpen);
             }
         }
 

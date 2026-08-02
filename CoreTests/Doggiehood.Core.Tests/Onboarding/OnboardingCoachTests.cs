@@ -68,6 +68,59 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
+        public void ShouldShow_IsFalse_WhenACenteredPanelIsOpen_EvenMidRewardChain()
+        {
+            // #506: during the Upgrade step the player must open HouseProfileOverlay
+            // (a centered modal) and tap its footer Upgrade button — but the
+            // bottom-anchored coach bar overlaps that button. Option 1 (approved):
+            // suppress the coach bar while a centered modal panel is open, even
+            // though the bar would otherwise be showing mid-reward-chain.
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse, centeredPanelOpen: false),
+                Is.True, "with no panel open the bar shows for the Upgrade step");
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse, centeredPanelOpen: true),
+                Is.False, "a centered modal panel suppresses the coach bar outright");
+        }
+
+        [Test]
+        public void ShouldShow_ReturnsToItsPriorValue_OnceThePanelCloses()
+        {
+            // Suppression is not a step advance: closing the panel restores whatever
+            // the bar would otherwise be showing for the current step.
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse, centeredPanelOpen: true),
+                Is.False, "hidden while the panel is open");
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.UpgradeHouse, centeredPanelOpen: false),
+                Is.True, "the same step's bar returns once the panel closes");
+        }
+
+        [Test]
+        public void ShouldShow_StaysHidden_WhenTheChainCompletesWhileAPanelIsOpen_ThenThePanelCloses()
+        {
+            // Suppression composes with legitimate dismissal: if the reward chain
+            // completes to Done while a panel is open, the bar is hidden — and it
+            // must STAY hidden when the panel later closes (dismissal doesn't get
+            // "un-suppressed" back on).
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.Done, centeredPanelOpen: true),
+                Is.False, "hidden: both the chain is complete and a panel is open");
+            Assert.That(
+                OnboardingCoach.ShouldShow(OnboardingStep.Done, OnboardingRewardStep.Done, centeredPanelOpen: false),
+                Is.False, "stays dismissed once the chain is complete, panel or not");
+        }
+
+        [Test]
+        public void ShouldShow_DefaultsToNoPanelOpen_PreservingTheTwoArgBehavior()
+        {
+            // The panel-open argument is optional; the two-arg form (no panel) keeps
+            // the pre-#506 decision so existing call sites are unchanged.
+            Assert.That(OnboardingCoach.ShouldShow(OnboardingStep.Pan, OnboardingRewardStep.FirstQuest),
+                Is.EqualTo(OnboardingCoach.ShouldShow(OnboardingStep.Pan, OnboardingRewardStep.FirstQuest, centeredPanelOpen: false)));
+        }
+
+        [Test]
         public void PhaseTitle_IsLearnTheRopes_ForEveryFirstQuestStep_SwappingOncePerPhaseNotPerStep()
         {
             // #451 / onboarding-overlay.md "Phase-title region": the tab names the
