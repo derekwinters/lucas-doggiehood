@@ -6,7 +6,7 @@ namespace Doggiehood.Core.Art
     /// Deterministically assigns a <see cref="HouseVariant"/> to a zone-built
     /// house (#299): each house id >= <see cref="FirstZoneHouseId"/> rolls one
     /// of the five <see cref="HouseLevelModelTable"/> ladders and one of the
-    /// <see cref="TintCount"/> generated palette tints. The roll is a pure
+    /// <see cref="TintCount"/> curated palette tints. The roll is a pure
     /// function of the house id — a seeded RNG whose seed is a hash of the id,
     /// so the same id always yields the same variant regardless of when or in
     /// what order houses are built, and no wall-clock or shared mutable RNG is
@@ -31,10 +31,9 @@ namespace Doggiehood.Core.Art
         public const int LadderCount = 5;
 
         /// <summary>How many palette tints the roll picks from — the size of
-        /// the generated even-hue house palette. Single source of truth for
-        /// that count: <see cref="Palette.HouseTintHex"/> generates exactly
-        /// this many colors and <see cref="HouseVariant.TintIndex"/> indexes
-        /// 0..TintCount-1.</summary>
+        /// the curated house palette. Single source of truth for that count:
+        /// <see cref="Palette.HouseTintHex"/> exposes exactly this many colours
+        /// and <see cref="HouseVariant.TintIndex"/> indexes 0..TintCount-1.</summary>
         public const int TintCount = 20;
 
         /// <summary>Whether <paramref name="houseId"/> is a zone-built house

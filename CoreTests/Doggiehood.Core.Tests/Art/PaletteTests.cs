@@ -36,35 +36,44 @@ namespace Doggiehood.Core.Tests.Art
             Assert.That(surfaces, Is.Unique);
         }
 
-        [Test]
-        public void HouseTintPalette_Is20EvenlySpacedHues_SharingSaturationAndValue()
+        // #519 (Derek & Lucas, 2026-08-02): the zone-house tint palette is a
+        // CURATED explicit 20-entry list, not the old generated even-18-deg-hue
+        // rule — 10 slots kept, the 10 flagged (electric) ones softened, cool
+        // blues/violets nudged lighter. Index-stable (TintCount stays 20) so
+        // every persisted house tint INDEX recolors for free, no save migration.
+        private static readonly string[] ApprovedHouseTints =
         {
-            // #299: the zone-house tint palette is GENERATED, not authored as
-            // 20 literals — 20 hues evenly around the wheel (18 deg apart),
-            // fixed S = 0.70, V = 0.90, converted HSV->RGB. Assert the rule,
-            // not fixed hex strings, so a palette retune only touches S/V/hue.
+            "#E64545", "#E67545", "#E6A545", "#E6D545", "#C5E645",
+            "#95E645", "#88D15E", "#6ACC9E", "#45E685", "#45E6B5",
+            "#45E6E6", "#45B5E6", "#6AB5EB", "#809DED", "#9E8EED",
+            "#C18AE6", "#D87EE6", "#E879D9", "#ED72AF", "#ED6B85",
+        };
+
+        [Test]
+        public void HouseTintPalette_IsTheCurated20EntryList()
+        {
+            // Pin every index to its approved curated colour (#519).
+            Assert.That(ApprovedHouseTints.Length, Is.EqualTo(HouseVariantAssignment.TintCount),
+                "the curated palette has exactly TintCount entries");
+
             for (var i = 0; i < HouseVariantAssignment.TintCount; i++)
             {
-                var hex = Palette.HouseTintHex(i);
-                Assert.That(() => ColorRgb.Parse(hex), Throws.Nothing, $"tint {i} is a valid hex");
-
-                var color = ColorRgb.Parse(hex);
-                Assert.That(color.Hue, Is.EqualTo(i * Palette.HouseTintHueStepDegrees).Within(2f),
-                    $"tint {i} hue is {i} steps of {Palette.HouseTintHueStepDegrees} deg around the wheel");
-                Assert.That(color.Saturation, Is.EqualTo(Palette.HouseTintSaturation).Within(0.02f),
-                    $"tint {i} shares the fixed saturation");
-                Assert.That(color.Value, Is.EqualTo(Palette.HouseTintValue).Within(0.02f),
-                    $"tint {i} shares the fixed value");
+                Assert.That(Palette.HouseTintHex(i), Is.EqualTo(ApprovedHouseTints[i]),
+                    $"tint {i} is the approved curated colour");
             }
         }
 
         [Test]
-        public void HouseTintPalette_HasEvenHueStep_ForItsSize()
+        public void HouseTintPalette_EntriesAreAllValidAndDistinct()
         {
-            // The step is derived from the count (360 / 20), not hard-coded to
-            // 18 in two places — retuning the count retunes the spacing.
-            Assert.That(Palette.HouseTintHueStepDegrees,
-                Is.EqualTo(360f / HouseVariantAssignment.TintCount).Within(0.0001f));
+            var tints = new string[HouseVariantAssignment.TintCount];
+            for (var i = 0; i < HouseVariantAssignment.TintCount; i++)
+            {
+                tints[i] = Palette.HouseTintHex(i);
+                Assert.That(() => ColorRgb.Parse(tints[i]), Throws.Nothing, $"tint {i} is a valid hex");
+            }
+
+            Assert.That(tints, Is.Unique, "every curated tint is a distinct colour");
         }
 
         [Test]

@@ -94,30 +94,36 @@ namespace Doggiehood.Core.Art
         /// </summary>
         public const string LostItemGlowHex = "#FF2A2A";
 
-        /// <summary>Fixed saturation of every generated house tint (#299,
-        /// Derek 2026-07-28): 20 hues evenly around the wheel all share this
-        /// S so the whole palette reads as one bright, playful family.</summary>
-        public const float HouseTintSaturation = 0.70f;
-
-        /// <summary>Fixed value (brightness) of every generated house tint
-        /// (#299).</summary>
-        public const float HouseTintValue = 0.90f;
-
-        /// <summary>Hue spacing (degrees) between consecutive house tints —
-        /// derived from the palette size so the 20 tints sit evenly around the
-        /// wheel (H_i = i x 18 deg). Retuning the count retunes the spacing;
-        /// there is no second hard-coded 18.</summary>
-        public const float HouseTintHueStepDegrees = 360f / HouseVariantAssignment.TintCount;
+        /// <summary>
+        /// The #299 zone-house tint palette — a CURATED, explicit 20-entry
+        /// ordered table (Derek &amp; Lucas, 2026-08-02, #519), replacing the
+        /// earlier generated even-18-deg-hue / fixed S=0.70,V=0.90 rule that
+        /// produced an unpleasant electric violet/blue. 10 slots are kept from
+        /// the old generated values; the 10 flagged ones are softened — mostly
+        /// desaturated, with the cool blues/violets nudged lighter. These are
+        /// the palette definition (named palette data, born-and-approved here),
+        /// the single source of truth for what colour each tint index paints.
+        /// Ordering is index-stable: entry <c>i</c> is the colour for tint
+        /// index <c>i</c>, and the count stays 20, so a house persists its tint
+        /// INDEX (SaveCodec) with no save migration.
+        /// </summary>
+        private static readonly string[] HouseTints =
+        {
+            "#E64545", "#E67545", "#E6A545", "#E6D545", "#C5E645",
+            "#95E645", "#88D15E", "#6ACC9E", "#45E685", "#45E6B5",
+            "#45E6E6", "#45B5E6", "#6AB5EB", "#809DED", "#9E8EED",
+            "#C18AE6", "#D87EE6", "#E879D9", "#ED72AF", "#ED6B85",
+        };
 
         /// <summary>
         /// The #299 zone-house tint at <paramref name="index"/> (0-based, in
-        /// 0..<see cref="HouseVariantAssignment.TintCount"/>-1), GENERATED from
-        /// the even-hue HSV rule (hue = index x <see cref="HouseTintHueStepDegrees"/>,
-        /// fixed <see cref="HouseTintSaturation"/>/<see cref="HouseTintValue"/>)
-        /// rather than stored as a literal — so a house persists its tint
-        /// INDEX (SaveCodec) and survives any palette retune. Applied as a
-        /// material color-multiply over the mesh (the ApplyVacancyTint
-        /// technique), not a kit-texture-variant swap.
+        /// 0..<see cref="HouseVariantAssignment.TintCount"/>-1), looked up from
+        /// the curated <see cref="HouseTints"/> table (Derek &amp; Lucas #519).
+        /// A house persists its tint INDEX (SaveCodec), not the colour, so the
+        /// curated retune re-colours existing houses onto the approved palette
+        /// with no save migration. Applied as a material color-multiply over
+        /// the mesh (the ApplyVacancyTint technique), not a kit-texture-variant
+        /// swap.
         /// </summary>
         public static string HouseTintHex(int index)
         {
@@ -127,7 +133,7 @@ namespace Doggiehood.Core.Art
                     nameof(index), index, $"House tint index must be 0..{HouseVariantAssignment.TintCount - 1}.");
             }
 
-            return ColorRgb.FromHsv(index * HouseTintHueStepDegrees, HouseTintSaturation, HouseTintValue).ToHex();
+            return HouseTints[index];
         }
     }
 }
