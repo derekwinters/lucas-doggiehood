@@ -955,6 +955,94 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        // ---- #509: expansion-tile fence stays out of the tile's own road ----
+
+        [Test]
+        public void GeometryFor_WithState_OnAnExpansionTile_CorridorClearsThatTilesOwnRoad_NotJustTheOriginRoads()
+        {
+            // #509: GeometryFor(lot, state) resolved the road-corridor clear from
+            // the static NeighborhoodLayout.Roads (the origin FourWay's arms only),
+            // so on an EXPANSION tile a lot whose SIDE edge borders that tile's own
+            // road — a road absent from NeighborhoodLayout.Roads — was never
+            // recognised as road-bordering. Its fence side run was inset by a plain
+            // BoundaryOffset off an edge sitting on the road centerline, landing the
+            // fence in the paved road. The fix feeds LotBounds.RoadsFor(lot, tileType)
+            // (origin roads PLUS the lot's own tile's roads) so every tile's
+            // road-bordering edges are corridor-cleared.
+            //
+            // TeeEast at (-1, 0) — directly west of the origin, a legal frontier
+            // unlock — has a N-S crossbar (the faced road, front-open) plus an EAST
+            // stem arm. Its NorthEast lot borders that stem on a SIDE edge; the stem
+            // lives only in the per-tile road geometry, never in
+            // NeighborhoodLayout.Roads.
+            var state = FrontierTestWorld.AfterOnboarding();
+            state.Wallet.Deposit(1_000_000);
+
+            var tile = new TileCoordinate(-1, 0);
+            Assert.That(state.TryUnlockTile(tile), Is.True, "precondition: the TeeEast tile unlocks");
+            var tileType = state.Map.GetTileAt(tile);
+            Assert.That(tileType, Is.EqualTo(TileType.TeeEast), "precondition: authored map places TeeEast here");
+
+            var houseId = FrontierHouseId.For(tile, Quadrant.NorthEast);
+            Assert.That(state.TryBuildHouse(houseId), Is.True, "precondition: the lot's house builds");
+            var lot = state.GetHouseLot(houseId);
+
+            var roads = LotBounds.RoadsFor(lot, tileType);
+
+            // Reconstruct the pre-fix geometry: the same five-run shape the buggy
+            // GeometryFrom produced, given ONLY the origin roads. It proves the
+            // setup genuinely triggers the bug (non-vacuous) — a side run sits in
+            // the tile's own paved road.
+            var facing = HousePlacement.PredeterminedFrontFacing(lot, state.WalkNetwork);
+            var position = HousePlacement.PredeterminedPosition(
+                lot, HousePlacement.KitScale, state.WalkNetwork,
+                Doggiehood.Core.Art.HouseLevelModelTable.MinLevel);
+            var model = HouseModelCatalog.ForHouse(lot.HouseId, state.GetHouseLevel(lot.HouseId));
+            var quadrant = LotBounds.QuadrantBounds(lot);
+            var preFixRuns = LotFence.BackyardRuns(
+                quadrant, model, position, facing, HousePlacement.KitScale, NeighborhoodLayout.Roads);
+            Assert.That(
+                preFixRuns.SelectMany(RunEndpoints).Any(p => roads.Any(r => InsidePavedRoad(p, r))),
+                Is.True,
+                "sanity: with only the origin roads the fence lands in the expansion tile's own road");
+
+            // The fix: GeometryFor(lot, state) corridor-clears against the tile's
+            // own roads, so NO fence point sits in any paved road.
+            var runs = LotFence.GeometryFor(FencedCloneOf(lot), state);
+            foreach (var point in runs.SelectMany(RunEndpoints))
+            {
+                foreach (var road in roads)
+                {
+                    Assert.That(InsidePavedRoad(point, road), Is.False,
+                        $"fence point {point} must not sit inside the paved road at {road.Center}");
+                }
+            }
+        }
+
+        private static IEnumerable<GridPoint> RunEndpoints(FenceRun run)
+        {
+            yield return run.A;
+            yield return run.B;
+        }
+
+        /// <summary>Whether <paramref name="p"/> lies inside <paramref name="road"/>'s
+        /// paved corridor: within half a <see cref="WorldDimensions.RoadWidth"/> of the
+        /// centerline (perpendicular) AND within the road's finite extent (along).</summary>
+        private static bool InsidePavedRoad(GridPoint p, Road road)
+        {
+            var halfWidth = WorldDimensions.RoadWidth / 2f;
+            if (road.Orientation == StreetOrientation.NorthSouth)
+            {
+                var withinExtent = p.Z > road.Center.Z - road.HalfLength - Epsilon
+                    && p.Z < road.Center.Z + road.HalfLength + Epsilon;
+                return withinExtent && Math.Abs(p.X - road.Center.X) < halfWidth - Epsilon;
+            }
+
+            var withinAlong = p.X > road.Center.X - road.HalfLength - Epsilon
+                && p.X < road.Center.X + road.HalfLength + Epsilon;
+            return withinAlong && Math.Abs(p.Z - road.Center.Z) < halfWidth - Epsilon;
+        }
+
         /// <summary>Deposits exactly what each rung costs and upgrades
         /// <paramref name="houseId"/> one level at a time to
         /// <paramref name="targetLevel"/> through the real

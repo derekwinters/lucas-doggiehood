@@ -341,14 +341,14 @@ namespace Doggiehood.Core.World
         public static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(
             HouseLot lot, TileType tileType, WalkNetwork network)
         {
-            return BackCandidatesFor(lot, LotBounds.BackYard(lot, tileType, network), network);
+            return BackCandidatesFor(lot, LotBounds.BackYard(lot, tileType, network), tileType, network);
         }
 
         private static IReadOnlyList<YardTreeCandidate> BackCandidatesFor(
-            HouseLot lot, LotRect backYard, WalkNetwork network)
+            HouseLot lot, LotRect backYard, TileType tileType, WalkNetwork network)
         {
             var footprint = HouseFootprintOf(lot, network);
-            var fenceRuns = LotFence.GeometryFor(lot, network);
+            var fenceRuns = LotFence.GeometryFor(lot, network, tileType);
 
             return GenerateBackCandidates(backYard, footprint, fenceRuns, SeedFor(lot, BackCandidateSeedSalt));
         }
