@@ -306,6 +306,137 @@ namespace Doggiehood.Unity.EditModeTests
             }), "all four junction/terminus meshes are wired");
         }
 
+        // #514 — the compass edges as unit directions in the same world frame
+        // WorldBuilder yaws the centre mesh into (East=+X, North=+Z), so a
+        // derived open-road direction can be rotated by RoadTilePiece.YawDegrees
+        // and read back as a compass edge with real Unity quaternion math.
+        private static readonly (TileEdge Edge, Vector3 Direction)[] CompassEdges =
+        {
+            (TileEdge.East, Vector3.right),
+            (TileEdge.West, Vector3.left),
+            (TileEdge.North, Vector3.forward),
+            (TileEdge.South, Vector3.back),
+        };
+
+        // A real connecting road band is centred on the tile and reaches an edge
+        // spanning both sides of the centreline (the road runs down the middle);
+        // a rounded cap or a corner artifact only touches the edge off-centre or
+        // near the tip. Requiring the raised road surface at an edge to straddle
+        // the centreline by at least this fraction of the tile width cleanly
+        // separates the single open throat from the capped sides. Named per #161.
+        private const float RoadBandCentreReachFraction = 0.25f;
+        private const float EdgeProximityFraction = 0.06f;
+        private const float RaisedSurfaceFraction = 0.3f;
+
+        /// <summary>
+        /// #514: the tile edges an imported road-kit mesh actually carries a
+        /// connecting road on, derived from the mesh's post-import vertices — so
+        /// Unity's FBX-import coordinate conversion (the handedness/X mirror that
+        /// is invisible on symmetric pieces but flips the chirally-asymmetric
+        /// round-end and bend) is included, exactly as it renders. This is the
+        /// empirical check the pure-data Core <c>RoadTileArtTests</c> cannot make.
+        /// Read at the mesh's authored (0-yaw) pose; callers apply the piece yaw.
+        /// </summary>
+        private static List<TileEdge> ImportedRoadEdgesAtZeroYaw(string resourceKey)
+        {
+            var model = Resources.Load<GameObject>(resourceKey);
+            Assert.That(model, Is.Not.Null, $"kit mesh '{resourceKey}' must load from Resources");
+            var instance = Object.Instantiate(model);
+            try
+            {
+                instance.transform.position = Vector3.zero;
+                instance.transform.rotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one * WorldBuilder.RoadTileScale;
+                var filter = instance.GetComponentInChildren<MeshFilter>();
+                Assert.That(filter, Is.Not.Null, $"'{resourceKey}' must have a mesh");
+
+                // World-space vertices at 0-yaw: TransformPoint threads the whole
+                // imported hierarchy (any import-baked child rotation or negative
+                // scale that expresses the handedness flip), so we read the mesh
+                // exactly as WorldBuilder places it before the yaw is applied.
+                var world = filter.sharedMesh.vertices
+                    .Select(v => filter.transform.TransformPoint(v)).ToList();
+
+                float minX = world.Min(v => v.x), maxX = world.Max(v => v.x);
+                float minY = world.Min(v => v.y), maxY = world.Max(v => v.y);
+                float minZ = world.Min(v => v.z), maxZ = world.Max(v => v.z);
+                float width = Mathf.Max(maxX - minX, maxZ - minZ);
+                float yThreshold = minY + (maxY - minY) * RaisedSurfaceFraction;
+                float eps = width * EdgeProximityFraction;
+                float centreReach = width * RoadBandCentreReachFraction;
+                var raised = world.Where(v => v.y >= yThreshold).ToList();
+
+                var edges = new List<TileEdge>();
+                foreach (var (edge, dir) in CompassEdges)
+                {
+                    bool alongX = !Mathf.Approximately(dir.x, 0f);
+                    float extreme = alongX ? (dir.x > 0f ? maxX : minX) : (dir.z > 0f ? maxZ : minZ);
+                    var near = raised
+                        .Where(v => Mathf.Abs((alongX ? v.x : v.z) - extreme) <= eps)
+                        .Select(v => alongX ? v.z : v.x)
+                        .ToList();
+                    if (near.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    // A connecting road band straddles the centreline on both sides.
+                    if (near.Min() <= -centreReach && near.Max() >= centreReach)
+                    {
+                        edges.Add(edge);
+                    }
+                }
+
+                return edges;
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        private static TileEdge EdgeAfterYaw(TileEdge edge, float yawDegrees)
+        {
+            var direction = CompassEdges.First(e => e.Edge == edge).Direction;
+            var rotated = Quaternion.Euler(0f, yawDegrees, 0f) * direction;
+            return CompassEdges.OrderByDescending(e => Vector3.Dot(e.Direction, rotated)).First().Edge;
+        }
+
+        [Test]
+        public void CulDeSac_ImportedOpenRoad_YawsOntoItsCatalogEdge()
+        {
+            // #514 regression guard, and the test gap that let the bug ship: the
+            // pre-fix CulDeSac* yaws were derived from the un-imported kit source
+            // pose (open road +X = East), but Unity's FBX import mirrors the X
+            // axis, so the *imported* round-end's open road exits the opposite
+            // edge — leaving each cul-de-sac's rounded cap facing the connecting
+            // road on device. RoadTileArtTests only pinned the declared yaw
+            // numbers, never the real geometry, so a 180-off reading passed CI.
+            //
+            // Derive road-end-round's open-road edge from the imported mesh, then
+            // assert RoadTileArt's yaw for each CulDeSac type rotates that open
+            // road onto the type's single declared TileCatalog edge. Against the
+            // pre-fix table this fails (the open road lands 180 off); it passes
+            // only once all four yaws are corrected.
+            var openEdges = ImportedRoadEdgesAtZeroYaw(RoadTileArt.EndRoundKey);
+            Assert.That(openEdges, Has.Count.EqualTo(1),
+                "a cul-de-sac round end connects exactly one edge; the other three are capped");
+            var importedOpenEdge = openEdges[0];
+
+            foreach (var type in new[]
+            {
+                TileType.CulDeSacEast, TileType.CulDeSacSouth,
+                TileType.CulDeSacWest, TileType.CulDeSacNorth,
+            })
+            {
+                Assert.That(RoadTileArt.TryGetCenterPiece(type, out var piece), Is.True);
+                var rendered = EdgeAfterYaw(importedOpenEdge, piece.YawDegrees);
+                var declared = TileCatalog.Get(type).RoadEdges.Single();
+                Assert.That(rendered, Is.EqualTo(declared),
+                    $"{type}: the imported open road yawed {piece.YawDegrees} must meet catalog edge {declared}");
+            }
+        }
+
         [Test]
         public void UnlockedTee_RendersTheIntersectionMeshAtItsCentre_WithTheCatalogYaw_AndNoSeparateCrosswalkQuads()
         {

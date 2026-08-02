@@ -40,11 +40,19 @@ namespace Doggiehood.Core.World
     /// i.e. roads on N/E/W == <see cref="TileType.TeeNorth"/> (baked crosswalks).</item>
     /// <item><c>road-bend</c> — a 90-degree turn connecting its NORTH and WEST
     /// edges == <see cref="TileType.TurnNW"/>.</item>
-    /// <item><c>road-end-round</c> — a rounded dead-end whose road exits EAST
-    /// == <see cref="TileType.CulDeSacEast"/>.</item>
+    /// <item><c>road-end-round</c> — a rounded dead-end. In the raw kit OBJ/FBX
+    /// its single open road exits +X, but Unity's FBX import applies a
+    /// handedness (X-axis) mirror that only shows on chirally-asymmetric pieces,
+    /// so the <em>imported</em> mesh's open road exits WEST at 0-yaw. Its bulb
+    /// is symmetric about the road axis, so that mirror is exactly a half-turn:
+    /// <see cref="TileType.CulDeSacEast"/> yaws the open road back to the EAST
+    /// edge at <see cref="YawHalf"/> (#514, correcting the #508 reading that
+    /// trusted the un-imported OBJ pose and shipped every CulDeSac 180-degrees
+    /// off — its cap facing the connecting road). The <c>road-bend</c> turn is
+    /// the sibling half of the same import mirror, tracked separately in #515.</item>
     /// </list>
     /// The yaw for any other rotation of that family is the clockwise (about +Y)
-    /// step count from the authored member — the same
+    /// step count from that imported orientation — the same
     /// <see cref="StreetOrientation.NorthSouth"/> == 90-degree convention the
     /// existing kit road tiles already use.
     /// </summary>
@@ -77,10 +85,10 @@ namespace Doggiehood.Core.World
             { TileType.TurnSE, new RoadTilePiece(BendKey, YawHalf, false) },
             { TileType.TurnSW, new RoadTilePiece(BendKey, YawThreeQuarterCW, false) },
 
-            { TileType.CulDeSacEast, new RoadTilePiece(EndRoundKey, YawNone, false) },
-            { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, YawQuarterCW, false) },
-            { TileType.CulDeSacWest, new RoadTilePiece(EndRoundKey, YawHalf, false) },
-            { TileType.CulDeSacNorth, new RoadTilePiece(EndRoundKey, YawThreeQuarterCW, false) },
+            { TileType.CulDeSacEast, new RoadTilePiece(EndRoundKey, YawHalf, false) },
+            { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, YawThreeQuarterCW, false) },
+            { TileType.CulDeSacWest, new RoadTilePiece(EndRoundKey, YawNone, false) },
+            { TileType.CulDeSacNorth, new RoadTilePiece(EndRoundKey, YawQuarterCW, false) },
 
             // TODO(#508 follow-up): OpposingTurns compose two independent bends
             // (a NE + SW arc, or NW + SE) — no single centre mesh, and no
