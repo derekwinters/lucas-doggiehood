@@ -41,6 +41,13 @@ A required CI check lints PR titles against Conventional Commits and fails the P
 
 **`geometry-lint.yml`** enforces the [named-values rule](tech-stack.md#geometry-layout-and-tuning-values-are-named-variables) ([#161](https://github.com/derekwinters/lucas-doggiehood/issues/161)): on any PR touching `Assets/**` (or the check itself), it runs `.github/scripts/check_geometry_literals.py`, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against `.github/scripts/geometry_literals_baseline.txt` so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with `--update-baseline`.
 
+## Test suites (`tests`)
+
+**`ci-tests.yml`** runs the two suites from [Testing strategy](testing.md): a **Core NUnit** job (plain `dotnet test`, no Unity) and a headless **Unity EditMode** job via `game-ci/unity-test-runner`. It's path-gated to `Assets/**`, `Packages/**`, `ProjectSettings/**`, `CoreTests/**`, and the EditMode-gate files. The EditMode job still fails outright when the `UNITY_LICENSE` secret is missing, so a required check can't go green without the suite actually running ([#163](https://github.com/derekwinters/lucas-doggiehood/issues/163)).
+
+!!! note "EditMode verdict comes from the results XML, not the runner's exit code ([#534](https://github.com/derekwinters/lucas-doggiehood/issues/534))"
+    `game-ci/unity-test-runner` occasionally returns a nonzero docker exit code during editor **teardown** — license return / batch-mode shutdown — *after* a fully green run: the NUnit results XML is written and every test-case reads `result="Passed"`, yet the step is marked failed (it flaked four runs straight on #534, and re-running doesn't help because the flake is in the teardown, not the tests). So the runner step is `continue-on-error`, and **`.github/scripts/verify_editmode_results.py`** re-derives the real verdict from the results XML: it passes only when the suite ran (a `<test-run>` document exists with `total > 0`) and no test failed, and it forgives *only* the teardown exit code. A genuine test failure, a run that died before producing results (the earlier flake mode), or a missing results file still fails the job — the #163 invariant is preserved. The gate's stdlib-only unit tests run in the same job before it's trusted (same posture as the geometry-lint check).
+
 ## Docs site build & publish
 
 - **`docs-test.yml`**: runs its `build` job on **every** PR (no path filter) so it can report a status on code-only PRs too, backing the [docs-reconciliation rule](agent-workflow.md):

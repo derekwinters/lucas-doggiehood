@@ -37,6 +37,6 @@ Agent execution environments do not have the Unity Editor installed, so EditMode
 
 1. Write the EditMode test first, before the implementation exists — the red phase is the test referencing a type or member that doesn't exist yet (a compile error).
 2. Implement the minimum to satisfy it.
-3. CI runs the EditMode suite headlessly (`-batchmode -nographics`) on the PR and is the authoritative green.
+3. CI runs the EditMode suite headlessly (`-batchmode -nographics`) on the PR and is the authoritative green. The green is derived from the NUnit results XML (suite ran + every test passed), not the runner's raw exit code, so a `game-ci` teardown-only flake doesn't mask a passing suite — see [CI/CD](ci-cd.md#test-suites-tests).
 
 This is the expected, documented workflow — **not** a deviation. Agent PRs should not list "EditMode tests were not executed locally" in their `## Deviations and Decisions` section; it's only reportable if CI itself fails or the test-first ordering wasn't followed.
