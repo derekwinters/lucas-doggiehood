@@ -57,7 +57,9 @@ namespace Doggiehood.Unity.EditModeTests
         {
             InitOnFirstTile();
 
-            var expected = ExpansionIndicatorPlacement.Resolve(state.Map, FrontierEditModeWorld.FirstTile);
+            var expected = ExpansionIndicatorPlacement.Resolve(
+                state.Map, FrontierEditModeWorld.FirstTile,
+                state.TargetMap.GetTileAt(FrontierEditModeWorld.FirstTile));
             var renderer = host.GetComponent<SpriteRenderer>();
             Assert.That(renderer.enabled, Is.True);
             Assert.That(host.transform.position.x, Is.EqualTo(expected.X).Within(0.001f));

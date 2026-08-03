@@ -22,19 +22,32 @@ namespace Doggiehood.Core.Expansion
 
         /// <summary>
         /// Resolves the indicator position for the frontier
-        /// <paramref name="frontierCoordinate"/> against <paramref name="placed"/>:
-        /// finds which edge of the coordinate already borders a placed tile, then
-        /// hovers past that shared edge's midpoint, away from the map. Throws if
-        /// the coordinate doesn't border the map at all — a caller error, since a
-        /// frontier coordinate is by definition adjacent to a placed tile
-        /// (<see cref="TileFrontier"/>).
+        /// <paramref name="frontierCoordinate"/> (whose authored tile is
+        /// <paramref name="frontierType"/>) against <paramref name="placed"/>:
+        /// finds which edge of the coordinate carries a road into a placed tile —
+        /// a road on <b>both</b> sides of the shared edge, the same
+        /// <see cref="TileMap.HasRoadConnectionAt"/> predicate that gates the
+        /// frontier (#537) — then hovers past that road edge's midpoint, away from
+        /// the map. Throws if no shared edge carries a road — a caller error,
+        /// since a frontier coordinate is by definition road-connected to the
+        /// placed network (<see cref="TileFrontier"/>). A lock never anchors to a
+        /// grass/non-road neighbour edge.
         /// </summary>
-        public static GridPoint Resolve(TileMap placed, TileCoordinate frontierCoordinate)
+        public static GridPoint Resolve(TileMap placed, TileCoordinate frontierCoordinate, TileType frontierType)
         {
+            var frontierDefinition = TileCatalog.Get(frontierType);
+
             foreach (var edgeTowardMap in AllEdges)
             {
                 var neighborCoordinate = frontierCoordinate.Neighbor(edgeTowardMap);
                 if (!placed.HasTileAt(neighborCoordinate))
+                {
+                    continue;
+                }
+
+                var neighborDefinition = TileCatalog.Get(placed.GetTileAt(neighborCoordinate));
+                if (!frontierDefinition.HasRoadOn(edgeTowardMap)
+                    || !neighborDefinition.HasRoadOn(edgeTowardMap.Opposite()))
                 {
                     continue;
                 }
@@ -44,7 +57,7 @@ namespace Doggiehood.Core.Expansion
             }
 
             throw new InvalidOperationException(
-                $"Frontier coordinate {frontierCoordinate} does not border the given map — no boundary to hover past.");
+                $"Frontier coordinate {frontierCoordinate} shares no road-carrying edge with the given map — no road end to hover past.");
         }
 
         /// <summary>Moves <paramref name="point"/> <paramref name="distance"/>
