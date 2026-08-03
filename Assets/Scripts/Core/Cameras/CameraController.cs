@@ -83,6 +83,25 @@ namespace Doggiehood.Core.Cameras
             Zoom = ClampZoom(Zoom);
         }
 
+        /// <summary>The world-space extent the ground plane must cover for a
+        /// given <paramref name="map"/> so the grass always outruns the farthest
+        /// the camera can see at max zoom-out (#536). It is the pan
+        /// <see cref="BoundsForMap"/> padded on every side by
+        /// <see cref="MaxZoomForBounds"/> — the orthographic half-height at the
+        /// far zoom-out — so even with the focus panned to a bounds edge the
+        /// view (±MaxZoom) still lands on grass, never the flat clear colour.
+        /// Sharing the same <see cref="BoundsForMap"/>/<see cref="MaxZoomForBounds"/>
+        /// the live camera derives its reach from keeps ground coverage and
+        /// camera reach from drifting apart on a future max-zoom change.</summary>
+        public static MapExtent GroundExtentForMap(TileMap map)
+        {
+            var bounds = BoundsForMap(map);
+            float radius = MaxZoomForBounds(bounds);
+            return new MapExtent(
+                bounds.MinX - radius, bounds.MaxX + radius,
+                bounds.MinZ - radius, bounds.MaxZ + radius);
+        }
+
         private static WorldBounds BoundsForMap(TileMap map)
         {
             var extent = MapExtent.Covering(map);
