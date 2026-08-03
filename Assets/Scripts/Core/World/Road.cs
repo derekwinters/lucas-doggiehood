@@ -41,6 +41,28 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// True when <paramref name="point"/> lies on this road's paved
+        /// surface (#538): within <see cref="HalfLength"/> along the road's
+        /// axis of <see cref="Center"/> and within half the road
+        /// <see cref="Width"/> perpendicular to it. Used to guard the
+        /// "a delivery truck never leaves the roadway" invariant.
+        /// </summary>
+        public bool Contains(GridPoint point)
+        {
+            var alongAxis = Orientation == StreetOrientation.NorthSouth
+                ? point.Z - Center.Z
+                : point.X - Center.X;
+            var perpendicular = Orientation == StreetOrientation.NorthSouth
+                ? point.X - Center.X
+                : point.Z - Center.Z;
+
+            return System.Math.Abs(alongAxis) <= HalfLength + Epsilon
+                   && System.Math.Abs(perpendicular) <= (Width / 2f) + Epsilon;
+        }
+
+        private const float Epsilon = 0.0001f;
+
+        /// <summary>
         /// A world point on this road's line: <paramref name="alongAxis"/>
         /// is the signed distance from <see cref="Center"/> along the
         /// road's own axis (Z for a north-south road, X for east-west);
