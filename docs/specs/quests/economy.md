@@ -37,15 +37,17 @@ Population-gated cost tiers *(decision 2026-07-28, Derek — see [#317](https://
     | **Mid** | 60-90 coins | 5 |
     | **Premium** | 100+ coins (no ceiling) | 10 |
 
-v0.4 expansion sinks *(decisions 2026-07-14, Derek — see [Neighborhood Expansion](../expansion.md#pricing))*:
+v0.4 expansion sinks *(decisions 2026-07-14, Derek; tile/build costs rebalanced 2026-08-03 on [#540](https://github.com/derekwinters/lucas-doggiehood/issues/540) — see [Neighborhood Expansion](../expansion.md#pricing))*:
 
-- Zone unlock: **100 coins** for the first zone, **+100 per subsequent zone** (100, 200, 300, …).
-- Building a house: **50 coins**, flat.
+- Tile unlock (frontier): **50-coin base + 10 per already-unlocked tile** (`TileUnlock.Cost`), no cap — the first unlock matches a house build, then climbs by 10 each. The origin FourWay is excluded, so the first unlock is at the base. *(#540 cheapened the base from a flat 100 and added the scaling; this supersedes the retired sequential zone formula 100/200/300…)*
+- Building a house: **50-coin base + 5 per 4 houses built** (`HouseBuildNumbers.Cost`), no cap — builds 1-4 at 50, 5-8 at 55, and so on. The 4 starting houses are excluded, so the first build is at the base. *(#540 added the scaling; the base is unchanged.)*
 - House upgrades: **100 / 200 / 400 coins** for levels 2 / 3 / 4.
+
+> **#540 in plain English:** the very first expansion is now as cheap as a house (50, not 100), so a new player gets moving faster; from there both sinks rise gently so growth can't run away — tiles +10 each, houses +5 every 4. Only player actions count toward the curves (the starting FourWay and the 4 starting houses are excluded), and neither curve is capped.
 
 Onboarding reward-chain *(decision 2026-07-28, Derek — see [Onboarding](../onboarding.md#onboarding-reward-chain-316))*:
 
-- Each of the four guided steps pays a flat **100 coins** (`OnboardingRewardChainNumbers.RewardPerStep`), reusing the quest reward-payout path (a wallet deposit), not the random rotation. The ladder is **self-funding**: the 100 bonus covers the 100 upgrade, the upgrade reward covers the 100 expand, the expand reward covers the 50 build, and the player ends the chain with a small cushion. See [Neighborhood Expansion → pricing](../expansion.md#pricing) for the matching sink costs.
+- Each of the four guided steps pays a flat **100 coins** (`OnboardingRewardChainNumbers.RewardPerStep`), reusing the quest reward-payout path (a wallet deposit), not the random rotation. The ladder is **self-funding**: the 100 bonus covers the 100 upgrade, the upgrade reward covers the **50** expand (the first tile is 50 since [#540](https://github.com/derekwinters/lucas-doggiehood/issues/540)), the expand reward covers the 50 build, and the player ends the chain with a cushion (larger now the first tile is cheaper — a Core test pins this end-to-end). See [Neighborhood Expansion → pricing](../expansion.md#pricing) for the matching sink costs.
 
 These are starting values, not final balance — expect to tune once the daily-rotation pacing can actually be felt in a playable build. Every one of them is a named constant in Core so playtesting adjustments are one-line changes.
 

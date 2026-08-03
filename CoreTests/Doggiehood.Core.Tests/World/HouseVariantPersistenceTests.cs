@@ -19,7 +19,7 @@ namespace Doggiehood.Core.Tests.World
         private static GameState UnlockedGameWithFunds(int extraCoins)
         {
             // A first tile unlocked, plus enough to build one house (+extra).
-            return FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.Cost + extraCoins);
+            return FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.BaseCost + extraCoins);
         }
 
         [Test]

@@ -146,7 +146,8 @@ namespace Doggiehood.Core.Tests.World
             }), "after onboarding the whole geometric frontier is open at once");
 
             // Player picks in an arbitrary order — not a fixed authored sequence.
-            state.Wallet.Deposit(TileUnlock.Cost(1) * 2);
+            // Two unlocks: the first at the base, the second scaled by +10 (#540).
+            state.Wallet.Deposit(TileUnlock.Cost(1) + TileUnlock.Cost(2));
             Assert.That(state.TryUnlockTile(new TileCoordinate(-1, 0)), Is.True);
             Assert.That(state.TryUnlockTile(new TileCoordinate(0, -1)), Is.True);
         }

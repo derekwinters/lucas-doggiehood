@@ -7,7 +7,7 @@ namespace Doggiehood.Core.Tests.Expansion
 {
     /// <summary>
     /// #406: the actionable "build a house on this lot" offer resolved off
-    /// <see cref="GameState"/> — the flat <see cref="HouseBuildNumbers.Cost"/>
+    /// <see cref="GameState"/> — the flat <see cref="HouseBuildNumbers.BaseCost"/>
     /// and whether the wallet can afford it right now. This is the single Core
     /// source the tap-to-build confirmation dialog reads for the cost it shows
     /// on Yes; the twin of the frontier tile-unlock offer for the build spend.
@@ -27,7 +27,7 @@ namespace Doggiehood.Core.Tests.Expansion
         public void Resolve_ReturnsNull_ForALotThatAlreadyHasAHouse()
         {
             var state = WithUnlockedFirstZone();
-            state.Wallet.Deposit(HouseBuildNumbers.Cost);
+            state.Wallet.Deposit(HouseBuildNumbers.BaseCost);
             var lotId = FrontierTestWorld.FirstLotId;
             state.TryBuildHouse(lotId); // the lot now carries a house
 
@@ -45,7 +45,7 @@ namespace Doggiehood.Core.Tests.Expansion
             var offer = HouseBuildOffer.Resolve(state, lotId);
 
             Assert.That(offer, Is.Not.Null);
-            Assert.That(offer.Value.Cost, Is.EqualTo(HouseBuildNumbers.Cost));
+            Assert.That(offer.Value.Cost, Is.EqualTo(HouseBuildNumbers.BaseCost));
             Assert.That(offer.Value.IsAffordable, Is.False,
                 "an empty wallet can't afford the flat build cost");
         }
@@ -56,14 +56,14 @@ namespace Doggiehood.Core.Tests.Expansion
             var state = WithUnlockedFirstZone();
             var lotId = FrontierTestWorld.FirstLotId;
 
-            state.Wallet.Deposit(HouseBuildNumbers.Cost - 1);
+            state.Wallet.Deposit(HouseBuildNumbers.BaseCost - 1);
             Assert.That(HouseBuildOffer.Resolve(state, lotId).Value.IsAffordable, Is.False);
 
             state.Wallet.Deposit(1);
             var offer = HouseBuildOffer.Resolve(state, lotId);
             Assert.That(offer.Value.IsAffordable, Is.True);
             Assert.That(offer.Value.IsAffordable,
-                Is.EqualTo(state.Wallet.CanAfford(HouseBuildNumbers.Cost)),
+                Is.EqualTo(state.Wallet.CanAfford(HouseBuildNumbers.BaseCost)),
                 "IsAffordable mirrors Wallet.CanAfford for the flat cost");
         }
     }

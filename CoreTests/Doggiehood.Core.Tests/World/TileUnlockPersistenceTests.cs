@@ -22,7 +22,8 @@ namespace Doggiehood.Core.Tests.World
             var state = GameState.CreateNew();
             state.SetTargetMap(LoadAuthoredTargetMap());
             state.RestoreRewardChainStep(OnboardingRewardStep.Done);
-            state.Wallet.Deposit(TileUnlock.Cost(1) * 2);
+            // Two unlocks: the first at the base, the second scaled by +10 (#540).
+            state.Wallet.Deposit(TileUnlock.Cost(1) + TileUnlock.Cost(2));
             Assert.That(state.TryUnlockTile(new TileCoordinate(0, 1)), Is.True);
             Assert.That(state.TryUnlockTile(new TileCoordinate(1, 0)), Is.True);
             var mapTileCountBefore = state.Map.Tiles.Count;

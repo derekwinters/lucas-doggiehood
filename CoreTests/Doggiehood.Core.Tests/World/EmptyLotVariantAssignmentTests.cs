@@ -52,7 +52,7 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void TryBuildHouse_UsesThePersistedAssignedVariant_RatherThanReRolling()
         {
-            var state = FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.Cost);
+            var state = FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.BaseCost);
             var lotId = FrontierTestWorld.FirstLotId;
 
             // Pin an assignment deliberately DIFFERENT from the deterministic
@@ -79,7 +79,7 @@ namespace Doggiehood.Core.Tests.World
             // A save carrying tile= but no lotvariant= lines (e.g. an unbuilt lot
             // whose variant line was dropped) still resolves the same variant.
             var reloaded = SaveCodec.Load(
-                "version=1\ncoins=" + HouseBuildNumbers.Cost + "\nonboarded=1\ntile=0|1|CulDeSacSouth\n");
+                "version=1\ncoins=" + HouseBuildNumbers.BaseCost + "\nonboarded=1\ntile=0|1|CulDeSacSouth\n");
             var lotId = FrontierTestWorld.FirstLotId;
 
             Assert.That(reloaded.AssignedLotVariants.ContainsKey(lotId), Is.False,
@@ -96,7 +96,7 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void BuiltLot_IsPersistedAsAHouseLine_NotADuplicateLotVariantLine()
         {
-            var state = FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.Cost);
+            var state = FrontierTestWorld.WithFirstTileUnlocked(HouseBuildNumbers.BaseCost);
             var lotId = FrontierTestWorld.FirstLotId;
             Assert.That(state.TryBuildHouse(lotId), Is.True);
 

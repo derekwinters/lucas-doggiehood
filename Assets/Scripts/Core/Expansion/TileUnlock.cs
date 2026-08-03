@@ -1,22 +1,28 @@
+using System;
+
 namespace Doggiehood.Core.Expansion
 {
     /// <summary>
-    /// The per-tile frontier unlock cost (#295) — a single, named, swappable
-    /// function so flat-vs-scaling is a one-place change later. Today it returns
-    /// the flat <see cref="TileUnlockNumbers.BaseCost"/> and ignores
-    /// <paramref name="placedTileCount"/>; the count is threaded through so
-    /// Derek's future "+10 coins per existing tile" scaling is a one-line edit
-    /// here (e.g. <c>BaseCost + placedTileCount * Step</c>) with no caller
-    /// changes.
+    /// The per-tile frontier unlock cost (#295, rebalanced #540) — a single,
+    /// named, swappable balance function so the curve is a one-place tune later.
+    /// It charges <see cref="TileUnlockNumbers.BaseCost"/> plus
+    /// <see cref="TileUnlockNumbers.PerExistingTileStep"/> for every tile the
+    /// player has already unlocked (Derek's "+10 per existing tile"). Callers
+    /// thread the live <c>Map.Tiles.Count</c> (total placed tiles, origin
+    /// included); the origin FourWay is subtracted
+    /// (<see cref="TileUnlockNumbers.OriginTileCount"/>) so the scaling counts
+    /// only player-unlocked tiles and the first unlock is at the base. No cap.
     /// </summary>
     public static class TileUnlock
     {
         /// <summary><paramref name="placedTileCount"/> is the number of tiles
-        /// already on the live map; unused today (flat cost) but available so a
-        /// future scaling formula can price by neighborhood size.</summary>
+        /// already on the live map, INCLUDING the seeded origin FourWay. The
+        /// origin is excluded from the scaling here, so the first player unlock
+        /// (only the origin placed, count == 1) is priced at the base.</summary>
         public static int Cost(int placedTileCount)
         {
-            return TileUnlockNumbers.BaseCost;
+            var playerUnlockedTiles = Math.Max(0, placedTileCount - TileUnlockNumbers.OriginTileCount);
+            return TileUnlockNumbers.BaseCost + TileUnlockNumbers.PerExistingTileStep * playerUnlockedTiles;
         }
     }
 }

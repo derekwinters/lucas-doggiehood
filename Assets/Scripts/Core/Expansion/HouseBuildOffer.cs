@@ -3,9 +3,10 @@ using Doggiehood.Core.World;
 namespace Doggiehood.Core.Expansion
 {
     /// <summary>
-    /// The actionable "build a house on this lot" offer (#406): the flat
-    /// <see cref="HouseBuildNumbers.Cost"/> and whether <see cref="GameState.Wallet"/>
-    /// can afford it right now. This is the single Core source the tap-to-build
+    /// The actionable "build a house on this lot" offer (#406): the current
+    /// scaled <see cref="HouseBuildNumbers.Cost"/> (#540, priced off
+    /// <see cref="GameState.PlayerBuiltHouseCount"/>) and whether
+    /// <see cref="GameState.Wallet"/> can afford it right now. This is the single Core source the tap-to-build
     /// confirmation dialog reads — the cost it shows on Yes, and the buildability
     /// that gates whether a lot tap does anything (a non-buildable lot's tap is a
     /// no-op that never opens the dialog). The build-side twin of the frontier
@@ -30,8 +31,9 @@ namespace Doggiehood.Core.Expansion
         /// <summary>
         /// Resolves the offer for <paramref name="houseId"/>'s lot, or null when
         /// the lot isn't buildable (<see cref="GameState.IsLotBuildable"/> false —
-        /// it already carries a house). The build cost is the flat
-        /// <see cref="HouseBuildNumbers.Cost"/>.
+        /// it already carries a house). The build cost is the current scaled
+        /// <see cref="HouseBuildNumbers.Cost"/> for how many houses the player has
+        /// already built (#540).
         /// </summary>
         public static HouseBuildOffer? Resolve(GameState state, int houseId)
         {
@@ -40,7 +42,7 @@ namespace Doggiehood.Core.Expansion
                 return null;
             }
 
-            var cost = HouseBuildNumbers.Cost;
+            var cost = HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount);
             return new HouseBuildOffer(cost, state.Wallet.CanAfford(cost));
         }
     }

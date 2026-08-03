@@ -73,7 +73,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(dialog.IsOpen, Is.True, "an empty-lot tap raises the confirmation dialog");
             Assert.That(dialog.TitleLabel.text, Is.EqualTo(ExpectedTitle));
             Assert.That(dialog.CostGroup.activeSelf, Is.True, "the build cost is shown on Yes");
-            Assert.That(dialog.CostAmountLabel.text, Is.EqualTo(HouseBuildNumbers.Cost.ToString()));
+            Assert.That(dialog.CostAmountLabel.text, Is.EqualTo(HouseBuildNumbers.BaseCost.ToString()));
 
             // Nothing is spent or built until Yes.
             Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore), "the tap alone spends nothing");
@@ -92,7 +92,7 @@ namespace Doggiehood.Unity.EditModeTests
             lotView.OnTapped();
             dialog.YesButton.onClick.Invoke();
 
-            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore - HouseBuildNumbers.Cost));
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore - HouseBuildNumbers.BaseCost));
             var house = state.Houses.SingleOrDefault(h => h.Id == houseId);
             Assert.That(house, Is.Not.Null);
             Assert.That(house.IsVacant, Is.True);

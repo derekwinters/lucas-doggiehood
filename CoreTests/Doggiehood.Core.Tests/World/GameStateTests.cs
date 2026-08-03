@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -111,7 +112,7 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
 
             var unlocked = state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
@@ -158,11 +159,11 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void TryBuildHouse_Succeeds_DeductsTheFlatCost_AndAddsALevelOneVacantHouse_OnAnEmptyLotInAnUnlockedZone()
         {
-            // #57: 100 to unlock the first zone + 50 (HouseBuildNumbers.Cost)
+            // #57/#540: 50 to unlock the first tile + 50 (HouseBuildNumbers base)
             // to build on one of its lots.
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(150);
+            state.Wallet.Deposit(100);
             state.TryUnlockTile(FrontierTestWorld.FirstTile);
             var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
@@ -216,8 +217,8 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
-            state.TryUnlockTile(FrontierTestWorld.FirstTile); // spends all 100; wallet is now 0
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
+            state.TryUnlockTile(FrontierTestWorld.FirstTile); // spends the whole unlock cost; wallet is now 0
             var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
             var built = state.TryBuildHouse(lot.HouseId);
