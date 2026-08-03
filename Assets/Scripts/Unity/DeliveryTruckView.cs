@@ -1,13 +1,18 @@
 using System;
+using Doggiehood.Core.World;
 using UnityEngine;
 
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// The delivery truck (#30): drives in from the street edge, drops a
-    /// package cube at the house's front door, and drives away (the view
-    /// destroys itself off-screen). Tick is separated from Update so
-    /// EditMode tests can step the animation deterministically.
+    /// The delivery truck (#30, #538): drives in along the ROAD, stops at the
+    /// road point nearest the dog's front door to drop a package cube at that
+    /// door, and drives away along the same road (the view destroys itself
+    /// off-screen). It never leaves the roadway — the approach path comes from
+    /// <see cref="DeliveryTruckRoute"/> over the real road geometry, not a
+    /// bee-line across yards, and the truck stops short of the waiting dog
+    /// rather than driving into it. Tick is separated from Update so EditMode
+    /// tests can step the animation deterministically.
     /// </summary>
     public sealed class DeliveryTruckView : MonoBehaviour
     {
@@ -29,6 +34,7 @@ namespace Doggiehood.Unity
 
         private Phase phase = Phase.Idle;
         private Vector3 doorPosition;
+        private Vector3 stopPosition;
         private Vector3 exitPosition;
         private Action onDelivered;
 
@@ -46,15 +52,21 @@ namespace Doggiehood.Unity
 
         public void DeliverTo(Vector3 doorTarget, Action deliveredCallback)
         {
-            // Approach along the nearest street: enter at the world edge,
-            // stop at the dog's door. #471: doorTarget is already the dog's
-            // actual front-walkway node (WalkDogHome passes the exact point the
-            // dog sits at) — use it directly. The old * 0.35f / * 0.8f scaling
-            // was a leftover from when the caller passed a lot-center, and it
-            // dropped the package away from the sitting dog.
-            var entry = new Vector3(0f, TruckHeight, Mathf.Sign(doorTarget.z) * WorldBuilder.GroundExtent);
+            // #538: route the truck ALONG THE ROAD, not in a bee-line across
+            // the yard. DeliveryTruckRoute derives entry/stop/exit from the
+            // real road geometry: the truck enters at a road end, stops at the
+            // road point nearest the door (short of the waiting dog — it never
+            // drives onto the sidewalk, yard, or lot), and leaves by the far
+            // road end. #471: doorTarget is the dog's actual front-walkway node
+            // (WalkDogHome passes the exact point the dog sits at); the PACKAGE
+            // is still dropped there, but the TRUCK stays on the road.
+            var route = DeliveryTruckRoute.ToDoor(
+                NeighborhoodLayout.Roads, new GridPoint(doorTarget.x, doorTarget.z));
+
+            var entry = new Vector3(route.Entry.X, TruckHeight, route.Entry.Z);
             doorPosition = new Vector3(doorTarget.x, TruckHeight, doorTarget.z);
-            exitPosition = new Vector3(0f, TruckHeight, -entry.z);
+            stopPosition = new Vector3(route.Stop.X, TruckHeight, route.Stop.Z);
+            exitPosition = new Vector3(route.Exit.X, TruckHeight, route.Exit.Z);
             transform.position = entry;
             onDelivered = deliveredCallback;
             phase = Phase.DrivingIn;
@@ -72,8 +84,8 @@ namespace Doggiehood.Unity
             switch (phase)
             {
                 case Phase.DrivingIn:
-                    Drive(doorPosition, deltaTime);
-                    if (Vector3.Distance(transform.position, doorPosition) <= ArriveDistance)
+                    Drive(stopPosition, deltaTime);
+                    if (Vector3.Distance(transform.position, stopPosition) <= ArriveDistance)
                     {
                         DropPackage();
                         phase = Phase.DrivingOut;

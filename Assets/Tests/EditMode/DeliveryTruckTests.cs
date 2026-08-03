@@ -1,3 +1,4 @@
+using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
 using UnityEngine;
@@ -6,6 +7,62 @@ namespace Doggiehood.Unity.EditModeTests
 {
     public class DeliveryTruckTests
     {
+        [Test]
+        public void TruckStaysOnTheRoadway_ForItsEntireRoute_AndStopsShortOfTheDog()
+        {
+            // #538 invariant: a delivery truck never leaves the roadway, and it
+            // stops short of the dog waiting at the door instead of driving into
+            // it. Drive the animation and assert every position the truck holds
+            // is on a road, and it never overlaps the door.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var door = new Vector3(
+                    NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter);
+
+                truck.DeliverTo(door, () => { });
+
+                var clearance = WorldDimensions.RoadWidth / 2f
+                                + WorldDimensions.GrassVergeWidth
+                                + WorldDimensions.SidewalkWidth;
+                var closestToDoor = float.MaxValue;
+
+                for (var step = 0; step < 4000 && !truck.IsGone; step++)
+                {
+                    var pos = truck.transform.position;
+                    var point = new GridPoint(pos.x, pos.z);
+                    Assert.That(OnAnyRoad(point), Is.True,
+                        $"truck left the roadway at {point}");
+
+                    var flatDoor = new Vector3(door.x, pos.y, door.z);
+                    closestToDoor = Mathf.Min(closestToDoor, Vector3.Distance(pos, flatDoor));
+
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(closestToDoor, Is.GreaterThan(clearance),
+                    "truck must stop short of the waiting dog at the door, never overlapping it");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static bool OnAnyRoad(GridPoint point)
+        {
+            foreach (var road in NeighborhoodLayout.Roads)
+            {
+                if (road.Contains(point))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         [Test]
         public void TruckDrivesIn_Delivers_AndDrivesAwayAgain()
         {
