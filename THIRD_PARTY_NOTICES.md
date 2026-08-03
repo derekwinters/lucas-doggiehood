@@ -90,8 +90,13 @@ it yet.
 
 ## Car Kit (Kenney)
 
-- **Files:** `Assets/Art/Vehicles/CarKit/Resources/delivery.fbx`,
-  `Assets/Art/Vehicles/CarKit/Resources/colormap.png`
+- **Files:** the Car Kit **vehicle** models at
+  `Assets/Art/Vehicles/CarKit/Resources/*.fbx` (ambulance, delivery,
+  delivery-flat, firetruck, garbage-truck, hatchback-sports, the five karts,
+  police, race, race-future, sedan, sedan-sports, suv, suv-luxury, taxi,
+  tractor, tractor-police, tractor-shovel, truck, truck-flat, van) sharing
+  `Assets/Art/Vehicles/CarKit/Resources/colormap.png`. The kit's non-vehicle
+  parts and props (wheels, debris, cones, box) are intentionally not staged.
 - **Asset:** Car Kit (3.1)
 - **Author:** Kenney (www.kenney.nl)
 - **Source:** https://kenney.nl/assets/car-kit
@@ -104,6 +109,8 @@ it yet.
 > 'Kenney' or 'www.kenney.nl' (this is not a requirement)."
 
 No attribution is legally required under CC0, but Kenney is credited here
-as a courtesy. The `delivery` truck is the chosen model for the buy-gift
-delivery vehicle, replacing the graybox primitive cube in `DeliveryTruckView`.
-It is staged here; nothing wires it yet (see the follow-up wiring issue).
+as a courtesy. The `delivery` truck is the intended model for the buy-gift
+delivery vehicle (replacing the graybox primitive cube in `DeliveryTruckView`);
+the rest are staged for future use (e.g. parked/moving cars on the roads).
+These are staged only — nothing wires any of them yet; wiring is left to the
+development issues.
