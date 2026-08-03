@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding Reward Panel — Wireframe #374 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:66ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+
+  .viewer{overflow:auto;max-height:74vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:57%;height:90px;background:#9C9AA0;}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:250px;top:19%;} .h2{left:1520px;top:20%;background:#7FB2E6;}
+
+  /* dim scrim behind the panel — tapping it dismisses (same as the button) */
+  .scrim{position:absolute;inset:0;background:rgba(46,42,38,.42);}
+
+  /* centered celebration panel: RewardWidthPx 820, centered => left (1920-820)/2 = 550 */
+  .card{position:absolute;left:550px;top:330px;width:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);
+    padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;}
+
+  /* medal badge overlapping the top edge (MedalDiameterPx 176, MedalOverlapPx 88) */
+  .medal{position:absolute;top:-88px;left:50%;transform:translateX(-50%);width:176px;height:176px;border-radius:999px;background:var(--gold);
+    border:8px solid var(--ink);box-shadow:0 8px 0 var(--ink);display:flex;align-items:center;justify-content:center;z-index:2;}
+  .medal .star{font-size:92px;line-height:1;color:var(--ink);}
+
+  .headroom{height:96px;} /* MedalOverlapPx 88 + MedalTopGapPx 28 minus padding — reserves space under the medal */
+  .heading{font-size:60px;color:var(--ink);margin:0;line-height:1.05;}
+  .message{font-size:34px;color:var(--ink);margin:16px 0 0;line-height:1.35;max-width:32ch;}
+
+  /* single positive action — the coin payout IS the button ("+100 coins") */
+  .actions{margin-top:44px;}
+  .cc-btn{display:inline-flex;align-items:center;justify-content:center;gap:18px;min-width:320px;height:96px;padding:0 48px;border-radius:999px;
+    border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);background:var(--leaf);font-variant-numeric:tabular-nums;}
+  .cc-btn .btn-coin{width:56px;height:56px;border-radius:999px;background:var(--gold);border:5px solid var(--ink);position:relative;flex:0 0 auto;}
+  .cc-btn .btn-coin i{position:absolute;inset:9px;border-radius:999px;border:3px solid rgba(46,42,38,.35);}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:96px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  .steps{margin-top:30px;}
+  .steps h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;}
+  .sgrid{display:grid;grid-template-columns:1fr;gap:10px;}
+  .srow{background:var(--stage);border:1px solid var(--hair);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:16px;font-size:14px;}
+  .srow .n{width:26px;height:26px;border-radius:999px;background:var(--ink);color:var(--bg-2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 auto;}
+  .srow .t b{color:var(--text);} .srow .t{color:var(--muted);}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #374 · Onboarding Reward Panel · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Onboarding reward panel</h1>
+  <p class="lede">A <b>bespoke celebration panel</b> raised each time the player completes an onboarding step
+    (finish the first quest, upgrade a house, expand the map, build a house). It calls out the coin payout that
+    today lands silently — a single big <b>star medal</b>, a big <b>“You did it!”</b>, the accomplishment line, and
+    one friendly button that <b>is</b> the reward: <b>+100 coins</b>. One reusable panel for <b>every</b> onboarding
+    step (#374), not a dialog per flow.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. The message line + button amount are placeholders — the caller passes what was done and the reward (today +100). Deliberately NOT the neutral confirmation card.</p>
+
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet with a dimmed neighborhood behind a centered celebration panel: a single gold star medal, heading You did it, message You finished your first quest, and a +100 coins button">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="card">
+        <div class="medal"><span class="star rounded">★</span></div>
+        <div class="headroom"></div>
+        <h2 class="heading rounded">You did it!</h2>
+        <p class="message rounded">You finished your first quest!</p>
+        <div class="actions"><button class="cc-btn rounded"><span class="btn-coin"><i></i></span>+100 coins</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>RewardAnchor</td><td class="val">Center</td><td>panel position (over a dim scrim)</td></tr>
+        <tr><td>RewardWidthPx</td><td class="val">820</td><td>panel width</td></tr>
+        <tr><td>RewardPaddingPx</td><td class="val">56</td><td>panel inset</td></tr>
+        <tr><td>MedalDiameterPx</td><td class="val">176</td><td>medal badge</td></tr>
+        <tr><td>MedalOverlapPx</td><td class="val">88</td><td>medal rise above top edge</td></tr>
+        <tr><td>MedalOutlineThicknessPx</td><td class="val">8</td><td>medal ink ring</td></tr>
+        <tr><td>MedalTopGapPx</td><td class="val">28</td><td>medal → heading</td></tr>
+        <tr><td>HeadingFontSizePx</td><td class="val">60</td><td>“You did it!”</td></tr>
+        <tr><td>MessageFontSizePx</td><td class="val">34</td><td>dynamic accomplishment line</td></tr>
+        <tr><td>HeadingMessageGapPx</td><td class="val">16</td><td>heading → message</td></tr>
+        <tr><td>MessageActionMarginPx</td><td class="val">44</td><td>message → button</td></tr>
+        <tr><td>ActionMinWidthPx</td><td class="val">320</td><td>the single +100 coins pill</td></tr>
+        <tr><td>ButtonCoinDiameterPx</td><td class="val">56</td><td>gold coin token in the button</td></tr>
+        <tr><td>ButtonCoinGapPx</td><td class="val">18</td><td>coin → “+N coins” label</td></tr>
+        <tr><td>&nbsp;↳ panel chrome</td><td class="val">#173</td><td>outline 6 / radius 40 / shadow 12–14</td></tr>
+        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>+100 coins (96px, leaf)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Scrim</b> (dim; tapping dismisses) · <b>Medal</b> (single gold star, overlaps top) · <b>Heading</b> (fixed “You did it!”) · <b>Message</b> (dynamic, one line) · <b>+100 coins button</b> (single leaf pill with a gold coin token — the reward is the button).</p>
+      <p class="note"><b>One panel, reused for every step:</b> the caller passes the message + amount; heading and chrome are constant. Card grows vertically with the message. Always dismissible (button or scrim) — no soft-lock (#329). One button only: a reward is an acknowledgement, not a choice — and the button itself names the payout.</p>
+      <p class="note"><b>Payout stays in Core:</b> the panel shows the coins the reward-chain (#316) already deposited; it never moves coins. The currency chip updates on its own.</p>
+      <p class="note"><b>Accepted (Derek, /approve #374):</b> the brief one-tap modal celebration is the standard here (a bounded exception to onboarding’s otherwise non-blocking principle); reuse stays onboarding-only for now — whether this same panel later becomes the reward feedback for <i>every</i> completed quest is deferred to #372.</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <h2>Per-step message copy (accepted defaults — amount +100 each, from <code>OnboardingRewardChainNumbers.RewardPerStep</code>)</h2>
+    <div class="sgrid">
+      <div class="srow"><span class="n">1</span><span class="t"><b>First quest</b> — “You finished your first quest!”</span></div>
+      <div class="srow"><span class="n">2</span><span class="t"><b>Upgrade a house</b> — “You made a house even nicer!”</span></div>
+      <div class="srow"><span class="n">3</span><span class="t"><b>Expand the map</b> — “You opened up a brand-new street!”</span></div>
+      <div class="srow"><span class="n">4</span><span class="t"><b>Build a house</b> — “You built a brand-new house!”</span></div>
+    </div>
+  </div>
+
+  <footer>
+    Bespoke celebration panel on the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill button · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built panel against them.
+    <br><span class="status">Approved — Derek, 2026-07-30 (/approve #374)</span>
+  </footer>
+</div>
+</body>
+</html>
