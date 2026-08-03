@@ -183,9 +183,10 @@ namespace Doggiehood.Unity.EditModeTests
             state.Quests.DeliverPackage(quest);
             Assert.That(dog.WantsToWander, Is.True);
 
-            // The dog is now standing at its home node (front door). Capture
-            // that position BEFORE resuming so we can prove the fresh target is
-            // a real one-hop wander step from where it actually stands.
+            // The dog is now standing on its OWN front-door node (the walkway's
+            // lot-side endpoint). Capture that position BEFORE resuming so we can
+            // prove the fresh target is a real one-hop wander step from where it
+            // actually stands.
             var homePosition = view.transform.position;
 
             // Resume the wander in the view — it must recompute, not resume stale.
@@ -203,22 +204,32 @@ namespace Doggiehood.Unity.EditModeTests
             // resumed the cached target from clear across the map, many hops
             // away and reached by cutting straight off the network).
             //
-            // NB: a plain distance-to-NearestWalkableNode check is the WRONG
-            // invariant here — after delivery the dog stands at its own front
-            // door, and per #430 a resident dog may step onto its own front-door
-            // node via its FrontWalkway edge. Front-door nodes are deliberately
-            // excluded from NearestWalkableNode (WalkNetwork), so that legitimate
-            // on-network pick sits one walkway-length (~4.75u) from the nearest
-            // *walkable* node even though it is genuinely connected by a real
-            // edge. The edge-adjacency check below is offset-agnostic and still
-            // fails a cross-map beeline.
+            // Anchor the one-hop check on the dog's ACTUAL current node — its
+            // own front-door node (walkway.A) — NOT on NearestWalkableNode.
+            // After delivery the dog stands at that front door, and per #517 a
+            // resident dog at its own door returns straight back DOWN its walkway,
+            // so the one legal on-network move is the sidewalk attach point
+            // (walkway.B). NearestWalkableNode deliberately excludes front-door
+            // nodes (WalkNetwork), so it would resolve to the attach point itself
+            // and read the true target as ZERO hops rather than one — the wrong
+            // anchor. The front-door node has exactly one edge (its walkway), so
+            // the edge-adjacency check below is offset-agnostic and still fails a
+            // cross-map beeline.
             var network = state.WalkNetwork;
-            var homeNode = network.NearestWalkableNode(new GridPoint(homePosition.x, homePosition.z));
-            var oneHopTargets = network.EdgesFrom(homeNode).Select(e => e.Other(homeNode)).ToList();
+            Assert.That(network.TryGetFrontWalkway(dog.HouseId, out var walkway), Is.True,
+                "the resident dog's house must have a front walkway");
+            Assert.That(
+                Vector2.Distance(new Vector2(walkway.A.X, walkway.A.Z),
+                    new Vector2(homePosition.x, homePosition.z)),
+                Is.LessThan(0.01f),
+                "precondition: after delivery the dog stands on its own front-door node");
+
+            var doorNode = walkway.A;
+            var oneHopTargets = network.EdgesFrom(doorNode).Select(e => e.Other(doorNode)).ToList();
             var freshIsOneHop = oneHopTargets.Any(p =>
                 Vector2.Distance(new Vector2(p.X, p.Z), new Vector2(freshTarget.x, freshTarget.z)) < 0.01f);
             Assert.That(freshIsOneHop, Is.True,
-                "the resumed wander target must be one walk-network edge-hop from the dog's current node, "
+                "the resumed wander target must be one walk-network edge-hop from the dog's current (front-door) node, "
                 + "not a stale cross-map point reached by beelining off the network");
 
             // And the stale pre-quest target is emphatically NOT one such hop —
