@@ -90,12 +90,12 @@ it yet.
 
 ## Car Kit (Kenney)
 
-- **Files:** the Car Kit **vehicle** models at
-  `Assets/Art/Vehicles/CarKit/Resources/*.fbx` (ambulance, delivery,
-  delivery-flat, firetruck, garbage-truck, hatchback-sports, the five karts,
-  police, race, race-future, sedan, sedan-sports, suv, suv-luxury, taxi,
-  tractor, tractor-police, tractor-shovel, truck, truck-flat, van) sharing
-  `Assets/Art/Vehicles/CarKit/Resources/colormap.png`. The kit's non-vehicle
+- **Files:** the Car Kit **standard road vehicle** models at
+  `Assets/Art/Vehicles/CarKit/Resources/*.fbx` (delivery, delivery-flat,
+  hatchback-sports, sedan, sedan-sports, suv, suv-luxury, taxi, truck,
+  truck-flat, van) sharing
+  `Assets/Art/Vehicles/CarKit/Resources/colormap.png`. Specialty vehicles
+  (emergency/service, race cars, karts, tractors) and the kit's non-vehicle
   parts and props (wheels, debris, cones, box) are intentionally not staged.
 - **Asset:** Car Kit (3.1)
 - **Author:** Kenney (www.kenney.nl)
