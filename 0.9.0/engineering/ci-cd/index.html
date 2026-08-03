@@ -1499,6 +1499,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-suites-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test suites (tests)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-site-build-publish" class="md-nav__link">
     <span class="md-ellipsis">
       Docs site build &amp; publish
@@ -1733,6 +1742,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-suites-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test suites (tests)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-site-build-publish" class="md-nav__link">
     <span class="md-ellipsis">
       Docs site build &amp; publish
@@ -1803,6 +1821,12 @@
 <p>A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>)</p>
 <h2 id="geometrytuning-literal-check">Geometry/tuning literal check<a class="headerlink" href="#geometrytuning-literal-check" title="Permanent link">&para;</a></h2>
 <p><strong><code>geometry-lint.yml</code></strong> enforces the <a href="../tech-stack/#geometry-layout-and-tuning-values-are-named-variables">named-values rule</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>): on any PR touching <code>Assets/**</code> (or the check itself), it runs <code>.github/scripts/check_geometry_literals.py</code>, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against <code>.github/scripts/geometry_literals_baseline.txt</code> so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with <code>--update-baseline</code>.</p>
+<h2 id="test-suites-tests">Test suites (<code>tests</code>)<a class="headerlink" href="#test-suites-tests" title="Permanent link">&para;</a></h2>
+<p><strong><code>ci-tests.yml</code></strong> runs the two suites from <a href="../testing/">Testing strategy</a>: a <strong>Core NUnit</strong> job (plain <code>dotnet test</code>, no Unity) and a headless <strong>Unity EditMode</strong> job via <code>game-ci/unity-test-runner</code>. It's path-gated to <code>Assets/**</code>, <code>Packages/**</code>, <code>ProjectSettings/**</code>, <code>CoreTests/**</code>, and the EditMode-gate files. The EditMode job still fails outright when the <code>UNITY_LICENSE</code> secret is missing, so a required check can't go green without the suite actually running (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/163">#163</a>).</p>
+<div class="admonition note">
+<p class="admonition-title">EditMode verdict comes from the results XML, not the runner's exit code (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/534">#534</a>)</p>
+<p><code>game-ci/unity-test-runner</code> occasionally returns a nonzero docker exit code during editor <strong>teardown</strong> — license return / batch-mode shutdown — <em>after</em> a fully green run: the NUnit results XML is written and every test-case reads <code>result="Passed"</code>, yet the step is marked failed (it flaked four runs straight on #534, and re-running doesn't help because the flake is in the teardown, not the tests). So the runner step is <code>continue-on-error</code>, and <strong><code>.github/scripts/verify_editmode_results.py</code></strong> re-derives the real verdict from the results XML: it passes only when the suite ran (a <code>&lt;test-run&gt;</code> document exists with <code>total &gt; 0</code>) and no test failed, and it forgives <em>only</em> the teardown exit code. A genuine test failure, a run that died before producing results (the earlier flake mode), or a missing results file still fails the job — the #163 invariant is preserved. The gate's stdlib-only unit tests run in the same job before it's trusted (same posture as the geometry-lint check).</p>
+</div>
 <h2 id="docs-site-build-publish">Docs site build &amp; publish<a class="headerlink" href="#docs-site-build-publish" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>docs-test.yml</code></strong>: runs its <code>build</code> job on <strong>every</strong> PR (no path filter) so it can report a status on code-only PRs too, backing the <a href="../agent-workflow/">docs-reconciliation rule</a>:<ul>

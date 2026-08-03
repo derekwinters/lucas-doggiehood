@@ -1750,7 +1750,7 @@
 <ol>
 <li>Write the EditMode test first, before the implementation exists — the red phase is the test referencing a type or member that doesn't exist yet (a compile error).</li>
 <li>Implement the minimum to satisfy it.</li>
-<li>CI runs the EditMode suite headlessly (<code>-batchmode -nographics</code>) on the PR and is the authoritative green.</li>
+<li>CI runs the EditMode suite headlessly (<code>-batchmode -nographics</code>) on the PR and is the authoritative green. The green is derived from the NUnit results XML (suite ran + every test passed), not the runner's raw exit code, so a <code>game-ci</code> teardown-only flake doesn't mask a passing suite — see <a href="../ci-cd/#test-suites-tests">CI/CD</a>.</li>
 </ol>
 <p>This is the expected, documented workflow — <strong>not</strong> a deviation. Agent PRs should not list "EditMode tests were not executed locally" in their <code>## Deviations and Decisions</code> section; it's only reportable if CI itself fails or the test-first ordering wasn't followed.</p>
 
