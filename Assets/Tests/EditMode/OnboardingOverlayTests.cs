@@ -326,7 +326,11 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the upgrade step");
             Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.UpgradeHousePrompt));
 
-            Assert.That(state.TryUpgradeHouse(state.Houses[0].Id), Is.True);
+            // #469: the Upgrade step is scoped to the first-quest dog's own
+            // house, so upgrade THAT house (targetDog.HouseId) — not a hardcoded
+            // Houses[0], which the #543 trickle no longer guarantees is the
+            // onboarding dog's house.
+            Assert.That(state.TryUpgradeHouse(targetDog.HouseId), Is.True);
             Assert.That(overlay.ShouldDraw, Is.True, "coach stays up for the expand step");
             Assert.That(overlay.MessageText, Is.EqualTo(OnboardingCoach.ExpandMapPrompt));
 
@@ -418,7 +422,9 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.FixUpAHomeTitle),
                 "upgrade phase");
 
-            state.TryUpgradeHouse(state.Houses[0].Id);
+            // #469: upgrade the first-quest dog's own house (the only one the
+            // Upgrade step allows), not a hardcoded Houses[0].
+            state.TryUpgradeHouse(targetDog.HouseId);
             Assert.That(overlay.PhaseTitleText, Is.EqualTo(OnboardingCoach.GrowTheNeighborhoodTitle),
                 "expand phase");
 
