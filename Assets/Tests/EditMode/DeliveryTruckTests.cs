@@ -18,6 +18,14 @@ namespace Doggiehood.Unity.EditModeTests
             Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
         }
 
+        [TearDown]
+        public void ResetFallbackSeam()
+        {
+            // #547: the graybox-fallback seam is static; never leave it forced
+            // on for the next test (which expects the real model to load).
+            DeliveryTruckView.ForcePrimitiveFallback = false;
+        }
+
         [Test]
         public void TruckStaysOnTheRoadway_ForItsEntireRoute_AndStopsShortOfTheDog()
         {
@@ -54,6 +62,91 @@ namespace Doggiehood.Unity.EditModeTests
 
                 Assert.That(closestToDoor, Is.GreaterThan(clearance),
                     "truck must stop short of the waiting dog at the door, never overlapping it");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void DeliveryModelResource_Resolves()
+        {
+            // #547: the swap depends on the staged Car Kit "delivery" model
+            // loading by name (Assets/Art/Vehicles/CarKit/Resources/delivery.fbx),
+            // exactly like the road/house kit models. Guard that the asset is
+            // present and loadable so the model path — not the fallback — is the
+            // one that renders in the neighborhood.
+            var model = Resources.Load<GameObject>("delivery");
+            Assert.That(model, Is.Not.Null,
+                "Resources.Load<GameObject>(\"delivery\") must resolve the staged Car Kit model");
+        }
+
+        [Test]
+        public void Spawn_RendersTheKitModel_NotAPrimitiveCube()
+        {
+            // #547: Spawn must instantiate the staged "delivery" model under the
+            // truck root, not build a graybox primitive cube.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                var model = truck.transform.Find("Model");
+                Assert.That(model, Is.Not.Null, "the truck must carry the kit model as a 'Model' child");
+                Assert.That(truck.transform.Find("Graybox"), Is.Null,
+                    "no graybox fallback should be built when the model loads");
+                Assert.That(truck.GetComponent<MeshFilter>(), Is.Null,
+                    "the truck root must not itself be a primitive cube");
+                Assert.That(model.GetComponentInChildren<Renderer>(), Is.Not.Null,
+                    "the kit model must contribute a renderer");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void SpawnedModel_IsUniformlyScaledForTheNeighborhood()
+        {
+            // #547: the truck reads at a believable size next to the houses — a
+            // single uniform kit scale, mirroring HouseKitScale's discipline.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var model = truck.transform.Find("Model");
+                Assert.That(model, Is.Not.Null);
+
+                Assert.That(model.localScale,
+                    Is.EqualTo(Vector3.one * DeliveryTruckView.ModelScale),
+                    "the kit model must be uniformly scaled by DeliveryTruckView.ModelScale");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Spawn_FallsBackToGrayboxCube_WhenModelCannotLoad()
+        {
+            // #547: same fallback discipline the road/house kit loaders use — when
+            // the model can't load, spawn the original graybox cube at its
+            // pre-#547 (1.4, 1.4, 2.6) footprint so the truck is never invisible.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                DeliveryTruckView.ForcePrimitiveFallback = true;
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                var graybox = truck.transform.Find("Graybox");
+                Assert.That(graybox, Is.Not.Null, "the graybox fallback cube must spawn when the model can't load");
+                Assert.That(truck.transform.Find("Model"), Is.Null, "no kit model should be built on the fallback path");
+                Assert.That(graybox.GetComponent<MeshFilter>(), Is.Not.Null, "the fallback must be a primitive cube");
+                Assert.That(graybox.localScale, Is.EqualTo(DeliveryTruckView.FallbackScale),
+                    "the fallback keeps the pre-#547 graybox footprint");
             }
             finally
             {
