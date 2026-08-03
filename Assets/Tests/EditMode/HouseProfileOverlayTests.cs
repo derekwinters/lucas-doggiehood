@@ -62,6 +62,39 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Open_RegistersWithTheSharedModalGate_Close_Unregisters()
+        {
+            // #544: an open profile blocks taps on world objects behind its
+            // scrim; closing it releases the block.
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the profile opens");
+
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open house profile registers with the shared modal gate");
+
+            overlay.Close();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "closing the house profile unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void ScrimTap_StillCloses_WhileTheModalGateBlocks()
+        {
+            // #544 regression guard: the scrim still dismisses; only world
+            // pass-through is suppressed.
+            overlay.Open(HouseAt(2, false), new List<Dog> { ResidentDog("Biscuit", Breed.FrenchBulldog) });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            overlay.ScrimRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(overlay.IsOpen, Is.False,
+                "a scrim tap still closes the profile");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "and leaves no modal registered afterwards");
+        }
+
+        [Test]
         public void LayoutConstants_MatchTheApprovedWireframe()
         {
             Assert.That(HouseProfileOverlay.ProfileWidthPx, Is.EqualTo(900f));

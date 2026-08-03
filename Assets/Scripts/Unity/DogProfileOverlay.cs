@@ -190,6 +190,9 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(true);
             }
+
+            // #544: this modal now blocks world taps behind its scrim.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(this);
         }
 
         /// <summary>Hides the profile.</summary>
@@ -200,6 +203,9 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(false);
             }
+
+            // #544: closed profile no longer blocks world taps.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
         }
 
         /// <summary>Home button (#165): closes the profile and requests a
@@ -469,6 +475,9 @@ namespace Doggiehood.Unity
 
         private void OnDestroy()
         {
+            // #544: a destroyed overlay is never "open" — release the modal
+            // block so it can't leak past teardown / scene unload.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
             ReleaseSnapshots();
             if (portraitCamera != null)
             {

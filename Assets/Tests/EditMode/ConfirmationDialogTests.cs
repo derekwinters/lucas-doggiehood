@@ -48,6 +48,41 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Open_RegistersWithTheSharedModalGate_Close_Unregisters()
+        {
+            // #544: while open, the dialog blocks world taps behind its scrim;
+            // once closed (via No/scrim → Cancel), it stops blocking.
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the dialog opens");
+
+            dialog.Open("Title", "Body", () => { });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open confirmation dialog registers with the shared modal gate");
+
+            dialog.Cancel();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "cancelling the dialog unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void ScrimTap_StillDismisses_WhileTheModalGateBlocks()
+        {
+            // #544 regression guard: blocking world pass-through must NOT break
+            // the intended scrim-dismiss — the scrim's own Button.onClick still
+            // runs through UGUI. Tapping the scrim cancels and leaves no modal
+            // registered.
+            dialog.Open("Title", "Body", () => { });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            dialog.ScrimRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(dialog.IsOpen, Is.False,
+                "a scrim tap still dismisses the dialog");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "and leaves no modal registered afterwards");
+        }
+
+        [Test]
         public void LayoutConstants_MatchTheApprovedWireframe()
         {
             Assert.That(ConfirmationDialog.DialogWidthPx, Is.EqualTo(760f));

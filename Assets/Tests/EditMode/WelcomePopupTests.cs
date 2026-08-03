@@ -56,6 +56,38 @@ namespace Doggiehood.Unity.EditModeTests
             UnityEngine.Object.DestroyImmediate(canvasHost);
         }
 
+        [Test]
+        public void Show_RegistersWithTheSharedModalGate_Dismiss_Unregisters()
+        {
+            // #544: an open welcome pop-up blocks world taps behind its scrim.
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the pop-up shows");
+
+            popup.Show(SingleMessage(), () => { });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open welcome pop-up registers with the shared modal gate");
+
+            popup.Dismiss();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "dismissing the pop-up unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void ScrimTap_StillDismisses_WhileTheModalGateBlocks()
+        {
+            // #544 regression guard: the scrim still dismisses; only world
+            // pass-through is suppressed.
+            popup.Show(SingleMessage(), () => { });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            popup.ScrimRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(popup.IsOpen, Is.False,
+                "a scrim tap still dismisses the pop-up");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "and leaves no modal registered afterwards");
+        }
+
         // --- Layout constants come verbatim from the approved wireframe ---
 
         [Test]

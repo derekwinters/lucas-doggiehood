@@ -167,6 +167,9 @@ namespace Doggiehood.Unity
 
             LayoutCard(message.ShowsMemberChips);
             content.SetActive(true);
+
+            // #544: this modal now blocks world taps behind its scrim.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(this);
         }
 
         /// <summary>Button: dismisses AND pans the camera to the new house — so
@@ -188,6 +191,16 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(false);
             }
+
+            // #544: dismissed pop-up no longer blocks world taps.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
+        }
+
+        private void OnDestroy()
+        {
+            // #544: a destroyed pop-up is never "open" — release the modal block
+            // so it can't leak past teardown / scene unload.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
         }
 
         // ---------------------------------------------------------------
