@@ -83,7 +83,8 @@ namespace Doggiehood.Core.Tests.Expansion
 
             foreach (var indicator in ExpansionIndicator.ResolveAll(state))
             {
-                var expected = ExpansionIndicatorPlacement.Resolve(state.Map, indicator.Coordinate);
+                var expected = ExpansionIndicatorPlacement.Resolve(
+                    state.Map, indicator.Coordinate, state.TargetMap.GetTileAt(indicator.Coordinate));
                 Assert.That(indicator.State.Position.X, Is.EqualTo(expected.X));
                 Assert.That(indicator.State.Position.Z, Is.EqualTo(expected.Z));
             }

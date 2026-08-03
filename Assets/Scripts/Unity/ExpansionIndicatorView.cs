@@ -130,7 +130,8 @@ namespace Doggiehood.Unity
 
             spriteRenderer.enabled = true;
             SetColliderEnabled(true);
-            var position = ExpansionIndicatorPlacement.Resolve(state.Map, coordinate);
+            var position = ExpansionIndicatorPlacement.Resolve(
+                state.Map, coordinate, state.TargetMap.GetTileAt(coordinate));
             transform.position = new Vector3(position.X, HoverHeight, position.Z);
             WorldMarkerBillboard.Face(transform, ResolveCameraRig());
             spriteRenderer.sprite = IsAffordable() ? affordableSprite : lockedSprite;

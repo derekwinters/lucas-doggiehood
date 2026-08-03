@@ -51,7 +51,8 @@ namespace Doggiehood.Core.Expansion
             var entries = new List<ExpansionIndicatorEntry>();
             foreach (var coordinate in state.UnlockableFrontier())
             {
-                var position = ExpansionIndicatorPlacement.Resolve(state.Map, coordinate);
+                var position = ExpansionIndicatorPlacement.Resolve(
+                    state.Map, coordinate, state.TargetMap.GetTileAt(coordinate));
                 entries.Add(new ExpansionIndicatorEntry(
                     coordinate, new ExpansionIndicatorState(position, affordable)));
             }
