@@ -25,6 +25,42 @@ namespace Doggiehood.Unity
         private const float TruckHeight = 0.7f;
         private const float PackageHeight = 0.3f;
 
+        // #547: the truck body is the staged Kenney Car Kit "delivery" model,
+        // loaded by name like every other kit model (road/house/fence/tree).
+        private const string ModelResourceName = "delivery";
+
+        // Uniform kit scale, mirroring WorldBuilder.HouseKitScale's discipline
+        // (#145): one fixed number so the truck reads at a believable size next
+        // to the house kit rather than per-axis stretching. First-pass value —
+        // the exact figure is confirmed on-device against the houses (the issue
+        // flags the kit pivot/scale as needing a visual check).
+        public const float ModelScale = 3f;
+
+        // The Kenney kit models carry ground-level (base) pivots — the road and
+        // house loaders place them straight at the surface (WorldBuilder). The
+        // truck ROOT rides at TruckHeight (DeliverTo), so the model child is
+        // lowered by that much to seat its wheels on the ground.
+        private const float ModelGroundOffsetY = -TruckHeight;
+
+        // Drive() aims the root's +Z down the travel direction each tick; this
+        // yaw aligns the model's front with that +Z. Confirmed on-device (a kit
+        // model authored facing the opposite local axis would drive tail-first —
+        // a one-constant correction, e.g. 180f).
+        private const float ModelForwardYawOffsetDegrees = 0f;
+
+        // The pre-#547 graybox footprint, kept for the fallback path so the
+        // truck is never invisible when the model can't load.
+        public static readonly Vector3 FallbackScale = new Vector3(1.4f, 1.4f, 2.6f);
+
+        /// <summary>
+        /// #547: test seam mirroring <see cref="WorldBuilder.ForcePrimitiveFallback"/>
+        /// — forces <see cref="Spawn"/> down the graybox-cube branch (the same
+        /// branch a null <c>Resources.Load</c> takes) so EditMode can exercise
+        /// the fallback without removing the staged asset. Left <c>false</c> in
+        /// normal play.
+        /// </summary>
+        public static bool ForcePrimitiveFallback { get; set; }
+
         private enum Phase
         {
             Idle,
@@ -43,11 +79,37 @@ namespace Doggiehood.Unity
 
         public static DeliveryTruckView Spawn(Transform parent)
         {
-            var truck = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            truck.name = "DeliveryTruck";
+            // The moving root carries the view + the drive rotation; the visible
+            // body (kit model, or graybox fallback) hangs off it as a child so
+            // Drive()'s LookRotation aims the whole truck without touching the
+            // model's own seat/scale/yaw. Scope note (#547): only the spawned
+            // body changes here — DeliverTo/Tick/Drive are untouched.
+            var truck = new GameObject("DeliveryTruck");
             truck.transform.SetParent(parent);
-            truck.transform.localScale = new Vector3(1.4f, 1.4f, 2.6f);
-            return truck.AddComponent<DeliveryTruckView>();
+            var view = truck.AddComponent<DeliveryTruckView>();
+
+            var model = ForcePrimitiveFallback ? null : Resources.Load<GameObject>(ModelResourceName);
+            if (model != null)
+            {
+                var visual = Instantiate(model, truck.transform);
+                visual.name = "Model";
+                visual.transform.localPosition = new Vector3(0f, ModelGroundOffsetY, 0f);
+                visual.transform.localRotation = Quaternion.Euler(0f, ModelForwardYawOffsetDegrees, 0f);
+                visual.transform.localScale = Vector3.one * ModelScale;
+            }
+            else
+            {
+                // Graybox fallback (only reached when the kit model can't load):
+                // the original primitive cube, centred on the root so its base
+                // still sits on the ground at the pre-#547 footprint.
+                var graybox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                graybox.name = "Graybox";
+                graybox.transform.SetParent(truck.transform);
+                graybox.transform.localPosition = Vector3.zero;
+                graybox.transform.localScale = FallbackScale;
+            }
+
+            return view;
         }
 
         public void DeliverTo(Vector3 doorTarget, Action deliveredCallback)
