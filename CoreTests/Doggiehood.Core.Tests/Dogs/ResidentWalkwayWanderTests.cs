@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -62,6 +63,56 @@ namespace Doggiehood.Core.Tests.Dogs
                 var wander = new WanderBehavior(seed, MovementProfile.Base, network, residentHouseId: otherHouseId);
                 Assert.That(wander.NextTarget(walkway.B), Is.Not.EqualTo(walkway.A),
                     $"seed {seed}: a non-resident stepped onto another house's front walkway");
+            }
+        }
+
+        [Test]
+        public void ResidentDog_AtItsOwnDoor_ReturnsDownTheWalkway_NotAcrossTheYard()
+        {
+            // #517: standing at its OWN front-door node (the walkway's lot-side
+            // endpoint, whose only edge is the walkway back to the sidewalk), a
+            // resident dog must return DOWN that walkway to the attach point —
+            // not beeline to the nearest sidewalk node across the yard.
+            var (network, walkway, houseId) = BuiltZoneHouse();
+
+            // Precondition (the #517 trigger): the door node is a
+            // front-walkway-only node, so the general walkable set deliberately
+            // excludes it — NearestWalkableNode(door) can never be the door, and
+            // instead snaps to a straight-line-nearest sidewalk/crosswalk node.
+            // The fix must therefore NOT rely on NearestWalkableNode here.
+            Assert.That(network.NearestWalkableNode(walkway.A), Is.Not.EqualTo(walkway.A),
+                "sanity: the door node is excluded from the walkable set (the #517 trigger)");
+
+            for (var seed = 0; seed < SeedSweep; seed++)
+            {
+                var wander = new WanderBehavior(seed, MovementProfile.Base, network, residentHouseId: houseId);
+                Assert.That(wander.NextTarget(walkway.A), Is.EqualTo(walkway.B),
+                    $"seed {seed}: a resident dog at its own door must walk back down the walkway "
+                    + "to the sidewalk attach point (B), not across the yard");
+            }
+        }
+
+        [Test]
+        public void ResidentDog_OneHopPastItsDoor_ContinuesOnNetworkFromTheAttachPoint()
+        {
+            // #517 regression: after returning down the walkway to the attach
+            // point, ordinary wander resumes — the very next hop is a real
+            // network neighbor of the attach node, never an off-network beeline.
+            var (network, walkway, houseId) = BuiltZoneHouse();
+            var attachNeighbors = network.EdgesFrom(walkway.B)
+                .Select(e => e.Other(walkway.B))
+                .ToHashSet();
+
+            for (var seed = 0; seed < SeedSweep; seed++)
+            {
+                var wander = new WanderBehavior(seed, MovementProfile.Base, network, residentHouseId: houseId);
+                Assert.That(wander.NextTarget(walkway.A), Is.EqualTo(walkway.B),
+                    $"seed {seed}: precondition — the dog first walks door -> attach");
+
+                var next = wander.NextTarget(walkway.B);
+                Assert.That(attachNeighbors, Does.Contain(next),
+                    $"seed {seed}: from the attach point the dog must continue to a real network "
+                    + "neighbor, staying on the sidewalk/crosswalk/walkway graph");
             }
         }
 

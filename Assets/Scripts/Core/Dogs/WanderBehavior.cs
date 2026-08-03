@@ -86,7 +86,7 @@ namespace Doggiehood.Core.Dogs
         public GridPoint NextTarget(GridPoint current, float continueWeight, float deviateWeight)
         {
             var network = networkProvider();
-            var node = network.NearestWalkableNode(current);
+            var node = ResolveCurrentNode(current, network);
             var candidates = network.EdgesFrom(node)
                 .Where(e => IsWalkable(e, network))
                 .ToList();
@@ -97,6 +97,31 @@ namespace Doggiehood.Core.Dogs
 
             previousNode = node;
             return next;
+        }
+
+        /// <summary>
+        /// #517: resolve the dog's current network node for this hop. A
+        /// resident dog standing at its OWN front-door node — the walkway's
+        /// lot-side endpoint (<c>mine.A</c>), a walkway-only node the general
+        /// walkable set deliberately excludes (#430) — must resolve to that
+        /// door node, so its sole candidate edge is the walkway back down to
+        /// the sidewalk attach point and it returns the way it came. Every
+        /// other position (and every non-resident dog, which is barred from
+        /// the walkway at all) falls through to the unchanged
+        /// <see cref="WalkNetwork.NearestWalkableNode"/>, which would otherwise
+        /// snap a dog at its door to the straight-line-nearest sidewalk node
+        /// across the yard and beeline it off-network.
+        /// </summary>
+        private GridPoint ResolveCurrentNode(GridPoint current, WalkNetwork network)
+        {
+            if (residentHouseId != NoResidentHouseId
+                && network.TryGetFrontWalkway(residentHouseId, out var mine)
+                && current.Equals(mine.A))
+            {
+                return mine.A;
+            }
+
+            return network.NearestWalkableNode(current);
         }
 
         /// <summary>#430: which edges general wander may take from a node.
