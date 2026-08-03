@@ -13,8 +13,11 @@ namespace Doggiehood.Core.Quests
     /// in the quest engine or the Unity layer.
     ///
     /// <para><b>Cadence</b> (<see cref="ShouldRefresh"/>): every
-    /// <see cref="EconomyNumbers.RefreshInterval"/> (8h), measured against a
-    /// persisted UTC timestamp. This is a boundary <em>check</em>, not a
+    /// <see cref="EconomyNumbers.RefreshInterval"/> (hourly, #543), measured
+    /// against a persisted UTC timestamp. Each hour a fractional amount
+    /// (<see cref="PerHourRate"/>, driven by <see cref="AdvanceAccumulator"/>)
+    /// trickles in, replacing the old 8h all-or-nothing batch. This is a
+    /// boundary <em>check</em>, not a
     /// timer/countdown/expiry — nothing is ever removed and no quest can fail,
     /// so it stays inside the "no timer or fail condition anywhere" constraint
     /// (economy.md #28). UTC-only, so a device-timezone change can neither
@@ -64,6 +67,38 @@ namespace Doggiehood.Core.Quests
             }
 
             return raw;
+        }
+
+        /// <summary>#543: the per-hour quest trickle rate — the population-scaled
+        /// <see cref="TargetActiveCount"/> spread over
+        /// <see cref="EconomyNumbers.PacingWindowHours"/>
+        /// (<c>target / window</c>). So target 6 over a 6h window is 1.0/hr,
+        /// 12 → 2.0/hr, 3 → 0.5/hr, 4 → ~0.667/hr. This is a fractional rate;
+        /// <see cref="AdvanceAccumulator"/> turns it into whole quests per hour
+        /// without ever creating a fractional quest.</summary>
+        public double PerHourRate(GameState state)
+        {
+            return TargetActiveCount(state) / (double)EconomyNumbers.PacingWindowHours;
+        }
+
+        /// <summary>#543: one hourly step of the error-diffusion (Bresenham-style)
+        /// accumulator. Adds <see cref="PerHourRate"/> to
+        /// <paramref name="accumulator"/>, returns the whole quests to add this
+        /// hour (<c>floor</c> of the sum — 0 on a quiet hour is expected and
+        /// fine), and hands back the leftover fraction (&lt; 1) in
+        /// <paramref name="remainingAccumulator"/> to carry to the next hour. The
+        /// long-run whole-quest rate equals <see cref="PerHourRate"/>, so a
+        /// 0.5/hr target adds one quest every other hour and a 0.667/hr target
+        /// adds two every three hours — never a fractional quest. Pure: no state
+        /// is read or written here, so the caller
+        /// (<see cref="QuestManager.StartNewDay"/>) owns persisting the
+        /// remainder.</summary>
+        public int AdvanceAccumulator(double accumulator, GameState state, out double remainingAccumulator)
+        {
+            var advanced = accumulator + PerHourRate(state);
+            var whole = (int)Math.Floor(advanced);
+            remainingAccumulator = advanced - whole;
+            return whole;
         }
 
         /// <summary>#317: the population-gated purchasable subject pool for a

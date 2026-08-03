@@ -38,7 +38,7 @@ namespace Doggiehood.Unity
             // in Core (QuestManager.EnsureQuestsForLaunch): pre-chain it seeds
             // the one tutorial quest, mid-chain (the guided upgrade/expand/build
             // reward-chain steps) it stays suppressed, and post-chain it runs
-            // the recurring 8h #310 refresh (DateTime.UtcNow — never
+            // the recurring hourly #310/#543 refresh (DateTime.UtcNow — never
             // device-local). No pacing logic lives in this MonoBehaviour.
             state.Quests.EnsureQuestsForLaunch(System.DateTime.UtcNow, new System.Random());
 

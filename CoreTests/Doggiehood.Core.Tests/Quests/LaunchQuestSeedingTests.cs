@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -58,15 +59,21 @@ namespace Doggiehood.Core.Tests.Quests
             state.TryBuildHouse(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId);
             Assert.That(state.RewardChain.IsComplete, Is.True);
 
-            // The build step already released the first rotation; a later launch
-            // under the 8h boundary is a no-op, and past it refreshes again.
-            var activeAfterRelease = state.Quests.ActiveQuests.Count();
-            Assert.That(activeAfterRelease, Is.InRange(2, 4));
+            // #543: the build step released the recurring rotation, which now
+            // trickles quests in hourly rather than a 2-4 batch. Drive a full
+            // pacing window of hourly launches (LastRotationUtc starts null, so
+            // the first fires immediately, each subsequent one an hour later) and
+            // confirm the rotation is active and fills up to the population
+            // target.
+            var target = new QuestPacingPolicy().TargetActiveCount(state);
+            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            {
+                state.Quests.EnsureQuestsForLaunch(
+                    NowUtc + TimeSpan.FromHours(hour), new Random(hour));
+            }
 
-            state.Quests.EnsureQuestsForLaunch(NowUtc, new Random(1));
-            // #310 boundary: LastRotationUtc is still null right after the build
-            // release, so this launch tops up toward the target once more.
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.InRange(2, 12));
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                "the post-chain recurring rotation trickles up to the target");
         }
     }
 }

@@ -12,18 +12,28 @@ namespace Doggiehood.Core.Economy
         /// <summary>Flat payout per completed quest, regardless of type.</summary>
         public const int QuestPayout = 10;
 
-        /// <summary>#310: how long between quest-rotation refreshes. The
+        /// <summary>#310/#543: how long between quest-rotation refreshes. The
         /// refresh is a boundary <em>check</em> (never a countdown/expiry —
         /// quests never expire, economy.md #28), computed against a persisted
-        /// UTC timestamp so it is immune to device-timezone changes. 8h gives
-        /// a few gentle refreshes across a day without flooding a repeat
-        /// opener. Tunable placeholder per #62/#161.</summary>
+        /// UTC timestamp so it is immune to device-timezone changes. #543 moves
+        /// this to <b>hourly</b> so quests trickle in each hour rather than
+        /// arriving in one 8h all-or-nothing batch; the per-hour amount is the
+        /// target spread over <see cref="PacingWindowHours"/>. Tunable
+        /// placeholder per #62/#161.</summary>
         public static readonly TimeSpan RefreshInterval = TimeSpan.FromHours(RefreshIntervalHours);
 
         /// <summary>The <see cref="RefreshInterval"/> span in whole hours,
         /// named separately so the number itself is a discoverable constant
-        /// (#161) rather than buried inside the TimeSpan expression.</summary>
-        public const int RefreshIntervalHours = 8;
+        /// (#161) rather than buried inside the TimeSpan expression. #543: 1h.</summary>
+        public const int RefreshIntervalHours = 1;
+
+        /// <summary>#543: the window (in hours) the population-scaled active-quest
+        /// target is spread over, giving the per-hour trickle rate
+        /// <c>target / PacingWindowHours</c> (see
+        /// <see cref="Doggiehood.Core.Quests.QuestPacingPolicy.PerHourRate"/>).
+        /// A named, tunable constant per #161: at 6h a target of 6 trickles one
+        /// quest per hour, 12 → two per hour, 3 → one every other hour.</summary>
+        public const int PacingWindowHours = 6;
 
         /// <summary>#310: divisor of the population-scaled concurrent-quest
         /// cap — roughly one active quest per this many dogs. See
@@ -38,13 +48,5 @@ namespace Doggiehood.Core.Economy
         /// is the real flood-control dial for playtest tuning — drop it first
         /// if a mid-game map feels busy.</summary>
         public const int TargetActiveCeiling = 12;
-
-        /// <summary>#26/#310: fewest dogs a single refresh batch tops up in
-        /// one go (before the aggregate cap and free-dog count clamp it).</summary>
-        public const int RotationBatchMin = 2;
-
-        /// <summary>#26/#310: most dogs a single refresh batch tops up in one
-        /// go (before the aggregate cap and free-dog count clamp it).</summary>
-        public const int RotationBatchMax = 4;
     }
 }

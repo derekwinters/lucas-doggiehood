@@ -413,6 +413,16 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void RefreshQuests_ForcesAQuestRotation_ViaTheCoreSeam()
         {
+            // #543: quests trickle in hourly (target/6 per hour), so top the
+            // roster up to a 1.0/hr population (18 dogs -> target 6) to make a
+            // single forced tick add a whole quest deterministically.
+            for (var i = state.Dogs.Count; i < 18; i++)
+            {
+                state.AddDog(new Doggiehood.Core.Dogs.Dog(
+                    $"extra-{i}", Doggiehood.Core.Dogs.Breed.GermanShepherd,
+                    Doggiehood.Core.Dogs.Personality.Brave, 1, false));
+            }
+
             Assert.That(state.LastRotationUtc, Is.Null, "precondition: no rotation has happened yet");
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "precondition: no active quests yet");
 
@@ -423,7 +433,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
                 "tapping the action forces a new-quest top-up through QuestManager.ForceRefresh (#457)");
             Assert.That(state.LastRotationUtc, Is.Not.Null,
-                "the forced refresh records its instant, restarting the 8h window");
+                "the forced refresh records its instant, restarting the hourly window");
             Assert.That(state.LastRotationUtc.Value, Is.InRange(before, after),
                 "it passes DateTime.UtcNow to the Core seam exactly once");
         }

@@ -212,9 +212,14 @@ namespace Doggiehood.Core.Tests.Decorations
                     dog.SetHappinessForFlavor(happiness);
                 }
 
-                state.Quests.StartNewDay(new System.Random(7));
+                // #543: quests trickle in hourly, so drive a full pacing window
+                // of boundaries to fill the neighborhood up to its target.
+                for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+                {
+                    state.Quests.StartNewDay(new System.Random(7 + hour));
+                }
 
-                Assert.That(state.Quests.ActiveQuests.Count(), Is.InRange(2, 4));
+                Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0));
                 var quest = state.Quests.GiveQuestTo(
                     state.Dogs.First(d => !d.HasActiveQuest), QuestType.LostItem, new System.Random(3));
                 state.Quests.Accept(quest);

@@ -22,13 +22,19 @@ namespace Doggiehood.Core.Tests.Quests
         public void ExposesActiveQuestsAcrossAllDogs()
         {
             // #23: QuestManager is the one view over active quests.
+            // #543: quests trickle in hourly, so a full pacing window of
+            // boundaries fills the neighborhood up to its population target.
             var state = NewState();
 
             Assert.That(state.Quests.ActiveQuests, Is.Empty);
 
-            state.Quests.StartNewDay(new System.Random(1));
+            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            {
+                state.Quests.StartNewDay(new System.Random(1 + hour));
+            }
 
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.InRange(2, 4));
+            var target = new QuestPacingPolicy().TargetActiveCount(state);
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target));
         }
 
         [Test]
@@ -55,30 +61,48 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void BeginInitialQuests_AfterOnboarding_RunsTheNormalRotation()
         {
-            // #312: once onboarding is complete the seam is just the normal
-            // 2-4 daily rotation — no more single-lost-item suppression.
+            // #312/#543: once onboarding is complete the seam is just the normal
+            // hourly trickle rotation — no more single-lost-item suppression. A
+            // 2.0/hr population (100 dogs) adds the per-hour trickle amount (2),
+            // distinguishing the rotation from the pre-onboarding single seed.
             for (var seed = 0; seed < 10; seed++)
             {
                 var state = NewState();
+                for (var i = state.Dogs.Count; i < 100; i++)
+                {
+                    state.AddDog(new Dog($"extra-{i}", Breed.GermanShepherd, Personality.Brave, 1, false));
+                }
+
                 state.MarkOnboardingComplete();
 
                 state.Quests.BeginInitialQuests(new System.Random(seed));
 
-                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.InRange(2, 4), $"seed {seed}");
+                // perHour = 12/6 = 2, so one trickle tick assigns exactly 2 dogs.
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.EqualTo(2), $"seed {seed}");
             }
         }
 
         [Test]
-        public void NewDay_AssignsQuestsToTwoToFourDogs()
+        public void NewDay_TricklesQuestsUpTowardTheTarget()
         {
-            // #26: daily rotation of a few active quests.
+            // #26/#543: the rotation trickles quests in hourly (target/6 per
+            // hour) rather than a 2-4 batch; over a full pacing window it fills
+            // the neighborhood up to its population target, and no single hour
+            // ever adds more than one quest at the 0.5/hr floor rate.
             for (var seed = 0; seed < 10; seed++)
             {
                 var state = NewState();
-                state.Quests.StartNewDay(new System.Random(seed));
+                var target = new QuestPacingPolicy().TargetActiveCount(state);
 
-                var dogsWithQuests = state.Dogs.Count(d => d.HasActiveQuest);
-                Assert.That(dogsWithQuests, Is.InRange(2, 4), $"seed {seed}");
+                for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+                {
+                    var before = state.Dogs.Count(d => d.HasActiveQuest);
+                    state.Quests.StartNewDay(new System.Random(seed * 100 + hour));
+                    var added = state.Dogs.Count(d => d.HasActiveQuest) - before;
+                    Assert.That(added, Is.LessThanOrEqualTo(1), $"seed {seed}: never a burst at 0.5/hr");
+                }
+
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.EqualTo(target), $"seed {seed}");
             }
         }
 
@@ -87,8 +111,13 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // #26 precedence rule: a dog holding an uncompleted quest keeps
             // it; the rotation only assigns to quest-free dogs.
+            // #543: fill the neighborhood over a pacing window first, since a
+            // single hourly tick may trickle in nothing.
             var state = NewState();
-            state.Quests.StartNewDay(new System.Random(1));
+            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            {
+                state.Quests.StartNewDay(new System.Random(1 + hour));
+            }
 
             var held = state.Quests.ActiveQuests.First();
             var holder = held.DogName;

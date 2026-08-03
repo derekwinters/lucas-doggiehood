@@ -130,6 +130,15 @@ namespace Doggiehood.Core.World
                     .Append('\n');
             }
 
+            // #543: the persisted fractional quest-pacing accumulator (the
+            // leftover fraction of a quest carried between hourly trickle
+            // refreshes). Round-tripped like the move-in pity counter so cadence
+            // survives a relaunch; a legacy save with no line loads at the 0.0
+            // default (round-trip "R" preserves the exact double).
+            builder.Append("questPacingAcc=")
+                .Append(state.QuestPacingAccumulator.ToString("R", CultureInfo.InvariantCulture))
+                .Append('\n');
+
             foreach (var item in state.PlacedItems)
             {
                 builder.Append("placed=")
@@ -224,6 +233,14 @@ namespace Doggiehood.Core.World
                 {
                     state.RecordRotationUtc(DateTime.Parse(
                         value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                }
+                else if (key == "questPacingAcc")
+                {
+                    // #543: restore the fractional trickle accumulator so the
+                    // hourly cadence is not reset on relaunch. Absence (a
+                    // pre-#543 save) leaves CreateNew's 0.0 default in place.
+                    state.RestoreQuestPacingAccumulator(
+                        double.Parse(value, CultureInfo.InvariantCulture));
                 }
                 else if (key == "tile")
                 {

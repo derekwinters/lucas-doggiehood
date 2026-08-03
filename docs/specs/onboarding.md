@@ -10,7 +10,7 @@ Because this is a kids' game, the two **movement** steps also *show* the gesture
 
 ## First-launch quest seeding ([#312](https://github.com/derekwinters/lucas-doggiehood/issues/312))
 
-On the very first launch the world seeds **exactly one** dog with a single easy **lost-item** quest, and the normal 2-4 daily [rotation](quests/economy.md#core-loop) is **suppressed until onboarding completes**. This guarantees the tutorial has one and only one gentle tap-to-find target — the `OnboardingSequence` resolves that seeded dog as its `TargetDog`, so step 4 ("complete a quest") is always the low-friction lost-item tap rather than, say, a purchase or pest-control errand competing for attention.
+On the very first launch the world seeds **exactly one** dog with a single easy **lost-item** quest, and the normal hourly-trickle [rotation](quests/economy.md#core-loop) is **suppressed until onboarding completes**. This guarantees the tutorial has one and only one gentle tap-to-find target — the `OnboardingSequence` resolves that seeded dog as its `TargetDog`, so step 4 ("complete a quest") is always the low-friction lost-item tap rather than, say, a purchase or pest-control errand competing for attention.
 
 The branch lives in Core (`QuestManager.BeginInitialQuests(rng)`): with onboarding incomplete it seeds the one lost-item quest and returns; once onboarding is complete it is just the normal `StartNewDay` rotation. The thin Unity layer (`WorldBootstrap`) calls the seam behind its existing "no active quests" guard — no game logic in the `MonoBehaviour`.
 
