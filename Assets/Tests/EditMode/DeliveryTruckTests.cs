@@ -7,6 +7,17 @@ namespace Doggiehood.Unity.EditModeTests
 {
     public class DeliveryTruckTests
     {
+        [SetUp]
+        public void ResetModalGate()
+        {
+            // #544: RouteTap short-circuits while any modal is registered on the
+            // process-global gate. Restore the production modal seam and clear
+            // the shared gate so a modal a prior test opened can't leave the gate
+            // blocking and swallow this fixture's package tap.
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+        }
+
         [Test]
         public void TruckStaysOnTheRoadway_ForItsEntireRoute_AndStopsShortOfTheDog()
         {

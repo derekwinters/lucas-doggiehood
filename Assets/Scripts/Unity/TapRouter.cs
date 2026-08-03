@@ -47,6 +47,23 @@ namespace Doggiehood.Unity
         public static System.Func<int?, bool> IsPointerOverUi = DefaultIsPointerOverUi;
 
         /// <summary>
+        /// "Is a center-anchored modal open?" — the #544 modal guard. Unlike
+        /// <see cref="IsPointerOverUi"/> (which reads the EventSystem's
+        /// last-processed pointer and can miss a fast touch tap-release over a
+        /// scrim), this is a deterministic, frame-timing-independent check
+        /// backed by the shared <see cref="ModalInputGate"/>: every
+        /// center-anchored overlay (dog/house profile, confirmation dialog,
+        /// welcome pop-up, onboarding reward) registers on open and unregisters
+        /// on close. Overridable so EditMode tests can drive it deterministically.
+        /// </summary>
+        public static System.Func<bool> IsModalOpen = DefaultIsModalOpen;
+
+        /// <summary>Production modal check: reflects the shared
+        /// <see cref="ModalInputGate"/>, so a modal opened anywhere blocks world
+        /// taps everywhere.</summary>
+        public static bool DefaultIsModalOpen() => ModalInputGate.Shared.IsBlocking;
+
+        /// <summary>
         /// Production pointer-over-UI check. Null <paramref name="pointerId"/>
         /// is the mouse (parameterless overload); a value is a touch fingerId
         /// (the <c>IsPointerOverGameObject(int)</c> overload). Null-safe: with
@@ -67,9 +84,25 @@ namespace Doggiehood.Unity
 
         public static bool RouteTap(Camera camera, Vector2 screenPosition, int? pointerId = null)
         {
+            // #544: a center-anchored modal (profile / dialog / welcome /
+            // onboarding reward) over a dim scrim consumes every tap on its
+            // panel AND its scrim. This deterministic check runs first because
+            // the #422 IsPointerOverUi guard below reads the EventSystem's
+            // last-processed pointer, which can miss a fast touch tap-release
+            // over the scrim and leak the tap to the world behind it. The
+            // scrim's own Button.onClick still fires through UGUI, so a panel
+            // that dismisses on scrim tap keeps doing so — only the world
+            // pass-through is suppressed.
+            if (IsModalOpen())
+            {
+                return false;
+            }
+
             // #422: a tap absorbed by UI (a modal UGUI overlay or the IMGUI HUD
             // gear) must never reach the world behind it. Evaluated at tap
-            // release — the same moment the world routing below fires.
+            // release — the same moment the world routing below fires. Kept as a
+            // belt-and-suspenders guard alongside the modal check above, and it
+            // still covers the not-yet-migrated IMGUI gear path.
             if (IsPointerOverUi(pointerId))
             {
                 return false;

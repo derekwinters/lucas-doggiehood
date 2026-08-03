@@ -141,6 +141,9 @@ namespace Doggiehood.Unity
             LayoutYesButtonContent(cost.HasValue);
 
             content.SetActive(true);
+
+            // #544: this modal now blocks world taps behind its scrim.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(this);
         }
 
         /// <summary>Yes: runs the caller's confirm callback, then closes. The
@@ -167,6 +170,16 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(false);
             }
+
+            // #544: closed dialog no longer blocks world taps.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
+        }
+
+        private void OnDestroy()
+        {
+            // #544: a destroyed dialog is never "open" — release the modal block
+            // so it can't leak past teardown / scene unload.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
         }
 
         // ---------------------------------------------------------------

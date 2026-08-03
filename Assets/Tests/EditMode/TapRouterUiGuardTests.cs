@@ -50,6 +50,16 @@ namespace Doggiehood.Unity.EditModeTests
             // each test so a prior test's override can't leak.
             TapRouter.IsPointerOverUi = TapRouter.DefaultIsPointerOverUi;
 
+            // #544: the modal-open seam is also process-global. Pin it to "no
+            // modal" here so these #422 EventSystem-guard tests stay independent
+            // of the shared ModalInputGate; the modal-specific tests below set
+            // it explicitly. Also clear the shared gate itself, so the one test
+            // that restores the production DefaultIsModalOpen seam
+            // (DefaultIsModalOpen_TracksTheSharedModalInputGate) reads a clean
+            // registry rather than a modal a prior test leaked.
+            TapRouter.IsModalOpen = () => false;
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             rigObject = new GameObject("rig-under-test", typeof(Camera));
             cam = rigObject.GetComponent<Camera>();
             rig = rigObject.AddComponent<CameraRig>();
@@ -74,6 +84,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void TearDown()
         {
             TapRouter.IsPointerOverUi = TapRouter.DefaultIsPointerOverUi;
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
 
             cam.targetTexture = null;
             Object.DestroyImmediate(texture);
@@ -138,6 +149,58 @@ namespace Doggiehood.Unity.EditModeTests
                 "the touch release threads its fingerId into the pointer-over-UI check");
             Assert.That(seen[1], Is.Null,
                 "the mouse release leaves the pointerId null (parameterless overload)");
+        }
+
+        [Test]
+        public void ModalOpen_AbsorbsTheTap_EvenWhenPointerOverUiReportsFalse()
+        {
+            // #544 core: the actual fix. Simulate the touch tap-release gap
+            // where EventSystem.IsPointerOverGameObject(fingerId) reports false
+            // even though the finger is over an open profile's scrim. With a
+            // modal registered open, the world object behind it must NOT fire —
+            // this guard is independent of the EventSystem pointer timing.
+            TapRouter.IsPointerOverUi = _ => false;
+            TapRouter.IsModalOpen = () => true;
+
+            rig.HandleTap(TargetScreenPoint());
+
+            Assert.That(target.TapCount, Is.EqualTo(0),
+                "with a modal open the tap is swallowed before the world raycast, regardless of the pointer-over-UI signal");
+        }
+
+        [Test]
+        public void ModalClosed_LeavesWorldRoutingIntact()
+        {
+            // The modal guard must not dead the world when nothing is open.
+            TapRouter.IsPointerOverUi = _ => false;
+            TapRouter.IsModalOpen = () => false;
+
+            rig.HandleTap(TargetScreenPoint());
+
+            Assert.That(target.TapCount, Is.EqualTo(1),
+                "with no modal open, a world tap still reaches its IInteractable");
+        }
+
+        [Test]
+        public void DefaultIsModalOpen_TracksTheSharedModalInputGate()
+        {
+            // The production default reads the shared gate, so a panel that
+            // registers anywhere blocks world taps everywhere.
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            var token = new object();
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(token);
+            try
+            {
+                Assert.That(TapRouter.IsModalOpen(), Is.True,
+                    "the default modal seam reflects a registered modal on the shared gate");
+            }
+            finally
+            {
+                Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(token);
+            }
+
+            Assert.That(TapRouter.IsModalOpen(), Is.False,
+                "once unregistered, the default modal seam reports no modal");
         }
 
         [Test]

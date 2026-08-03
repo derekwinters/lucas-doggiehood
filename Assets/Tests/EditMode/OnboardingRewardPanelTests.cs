@@ -33,6 +33,11 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreatePanel()
         {
+            // #544: the modal-input gate is a process-global singleton; clear it
+            // so a registration leaked by an earlier test can't make this
+            // panel's gate read as already blocking before it shows.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             // #291: the labels bind a bundled UI font via Resources.Load; force
             // its import so a fresh CI Library resolves it before the build.
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
@@ -50,6 +55,38 @@ namespace Doggiehood.Unity.EditModeTests
         public void Cleanup()
         {
             UnityEngine.Object.DestroyImmediate(canvasHost);
+        }
+
+        [Test]
+        public void Show_RegistersWithTheSharedModalGate_Dismiss_Unregisters()
+        {
+            // #544: an open reward celebration blocks world taps behind its scrim.
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the panel shows");
+
+            panel.Show("You reached 3 dogs!", 100);
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open onboarding reward panel registers with the shared modal gate");
+
+            panel.Dismiss();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "dismissing the panel unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void ScrimTap_StillDismisses_WhileTheModalGateBlocks()
+        {
+            // #544 regression guard: the scrim still dismisses; only world
+            // pass-through is suppressed.
+            panel.Show("You reached 3 dogs!", 100);
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            panel.ScrimRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(panel.IsOpen, Is.False,
+                "a scrim tap still dismisses the panel");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "and leaves no modal registered afterwards");
         }
 
         // --- Layout constants come verbatim from the approved wireframe ---

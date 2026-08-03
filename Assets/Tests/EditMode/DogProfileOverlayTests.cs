@@ -26,6 +26,11 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreateOverlay()
         {
+            // #544: the modal-input gate is a process-global singleton; clear it
+            // so a registration leaked by an earlier test can't make this
+            // overlay's gate read as already blocking before it opens.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             // #291: labels bind a bundled UI font via Resources.Load; force-import
             // it so a fresh CI Library resolves it before the overlay is built
             // (docs/engineering/unity-serialization.md §4).
@@ -44,6 +49,39 @@ namespace Doggiehood.Unity.EditModeTests
         public void Cleanup()
         {
             Object.DestroyImmediate(canvasHost);
+        }
+
+        [Test]
+        public void Open_RegistersWithTheSharedModalGate_Close_Unregisters()
+        {
+            // #544: an open profile blocks taps on world objects behind its
+            // scrim; closing it releases the block.
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the profile opens");
+
+            overlay.Open(SampleDog());
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open dog profile registers with the shared modal gate");
+
+            overlay.Close();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "closing the dog profile unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void ScrimTap_StillCloses_WhileTheModalGateBlocks()
+        {
+            // #544 regression guard: the scrim still dismisses (its Button.onClick
+            // → Close runs through UGUI); only world pass-through is suppressed.
+            overlay.Open(SampleDog());
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            overlay.ScrimRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(overlay.IsOpen, Is.False,
+                "a scrim tap still closes the profile");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "and leaves no modal registered afterwards");
         }
 
         private static Dog SampleDog()

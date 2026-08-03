@@ -127,6 +127,9 @@ namespace Doggiehood.Unity
 
             LayoutCard();
             content.SetActive(true);
+
+            // #544: this modal now blocks world taps behind its scrim.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(this);
         }
 
         /// <summary>Button or scrim tap: dismisses the celebration. A reward is an
@@ -138,6 +141,16 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(false);
             }
+
+            // #544: dismissed panel no longer blocks world taps.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
+        }
+
+        private void OnDestroy()
+        {
+            // #544: a destroyed panel is never "open" — release the modal block
+            // so it can't leak past teardown / scene unload.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
         }
 
         // ---------------------------------------------------------------
