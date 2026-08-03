@@ -218,6 +218,51 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
+        public void GroundExtentForMap_OutrunsTheCameraMaxZoomFramingInEveryDirection()
+        {
+            // #536: at max zoom-out the camera frames MaxZoom (an orthographic
+            // half-height) around its focus point, and that focus point can be
+            // panned anywhere within the pan Bounds. The ground plane must reach
+            // at least that far in every direction from the map centre, or the
+            // uncovered near edge shows the flat blue clear colour as a mid-screen
+            // seam. The ground extent is derived from the same map path the
+            // camera's Bounds/MaxZoom come from, so the two can't drift apart.
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+            var camera = NewController();
+            camera.RecomputeBoundsFromMap(map);
+
+            var ground = CameraController.GroundExtentForMap(map);
+
+            // Worst case: the focus panned to a Bounds edge, then MaxZoom of view
+            // beyond it. Ground must still cover that on every side.
+            Assert.That(ground.MinX, Is.LessThanOrEqualTo(camera.Bounds.MinX - camera.MaxZoom + 0.001f),
+                "grass outruns the camera's west reach at max zoom-out");
+            Assert.That(ground.MaxX, Is.GreaterThanOrEqualTo(camera.Bounds.MaxX + camera.MaxZoom - 0.001f),
+                "grass outruns the camera's east reach at max zoom-out");
+            Assert.That(ground.MinZ, Is.LessThanOrEqualTo(camera.Bounds.MinZ - camera.MaxZoom + 0.001f),
+                "grass outruns the camera's south reach at max zoom-out");
+            Assert.That(ground.MaxZ, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
+                "grass outruns the camera's north reach at max zoom-out");
+        }
+
+        [Test]
+        public void GroundExtentForMap_StaysCentredOnTheMapAndGrowsWithIt()
+        {
+            var small = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            var big = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            big.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+
+            var smallGround = CameraController.GroundExtentForMap(small);
+            var bigGround = CameraController.GroundExtentForMap(big);
+
+            Assert.That(smallGround.CenterX, Is.EqualTo(MapExtent.Covering(small).CenterX).Within(0.001f));
+            Assert.That(smallGround.CenterZ, Is.EqualTo(MapExtent.Covering(small).CenterZ).Within(0.001f));
+            Assert.That(bigGround.Width, Is.GreaterThan(smallGround.Width),
+                "a bigger map (bigger MaxZoom) grows the ground the camera can see");
+        }
+
+        [Test]
         public void ZoomBy_ChangesTheZoomLevel()
         {
             var camera = NewController();

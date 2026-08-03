@@ -541,14 +541,80 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(ground.childCount, Is.EqualTo(0), "still a flat plane, not a tiled grid");
             Assert.That(ground.GetComponent<MeshFilter>().sharedMesh.name, Does.Contain("Plane"));
 
-            var extent = MapExtent.Covering(state.Map);
+            // #536: the plane now covers the camera's max-zoom-out reach, which
+            // pads beyond the bare tile coverage, so it still reaches under the
+            // northern zone's lots (and then some).
+            var groundExtent = Doggiehood.Core.Cameras.CameraController.GroundExtentForMap(state.Map);
             var halfDepth = ground.localScale.z * 10f / 2f; // a Unity Plane is 10m at scale 1
             var northReach = ground.position.z + halfDepth;
             var northLotZ = FrontierEditModeWorld.FirstTileLots().Max(lot => lot.Position.Z);
             Assert.That(northReach, Is.GreaterThanOrEqualTo(northLotZ),
                 "grass now reaches under the northern zone's lots");
-            Assert.That(northReach, Is.EqualTo(extent.MaxZ).Within(0.001f),
-                "the plane covers exactly the grown map extent");
+            Assert.That(northReach, Is.EqualTo(groundExtent.MaxZ).Within(0.001f),
+                "the plane covers exactly the camera-reach ground extent");
+        }
+
+        [Test]
+        public void BuildGround_ReachesTheCameraMaxZoomOutFraming_LeavingNoBlueSeam()
+        {
+            // #536: the reported regression — at max zoom-out only the top half
+            // of the screen showed grass, with the flat blue clear colour below a
+            // mid-screen seam. Root cause: the ground was sized to the raw tile
+            // coverage while CameraController's pan bounds + MaxZoom grew past it
+            // (#510/#524). The plane must now reach at least the camera's farthest
+            // reach — a bounds edge plus MaxZoom of view — in every direction.
+            Object.DestroyImmediate(root);
+            state = GameState.CreateNew();
+            root = WorldBuilder.Build(state);
+
+            var ground = root.transform.Find(WorldBuilder.GroundName);
+            Assert.That(ground, Is.Not.Null);
+
+            var camera = Doggiehood.Core.Cameras.CameraController.ForStartingNeighborhood();
+            camera.RecomputeBoundsFromMap(state.Map);
+
+            var halfWidth = ground.localScale.x * 10f / 2f;
+            var halfDepth = ground.localScale.z * 10f / 2f;
+            var westReach = ground.position.x - halfWidth;
+            var eastReach = ground.position.x + halfWidth;
+            var southReach = ground.position.z - halfDepth;
+            var northReach = ground.position.z + halfDepth;
+
+            Assert.That(westReach, Is.LessThanOrEqualTo(camera.Bounds.MinX - camera.MaxZoom + 0.001f),
+                "grass covers the camera's west reach at max zoom-out");
+            Assert.That(eastReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxX + camera.MaxZoom - 0.001f),
+                "grass covers the camera's east reach at max zoom-out");
+            Assert.That(southReach, Is.LessThanOrEqualTo(camera.Bounds.MinZ - camera.MaxZoom + 0.001f),
+                "grass covers the camera's south reach at max zoom-out");
+            Assert.That(northReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
+                "grass covers the camera's north reach at max zoom-out");
+        }
+
+        [Test]
+        public void ResizeGroundToMap_KeepsGrassAheadOfTheGrownMaxZoom_AfterAnUnlock()
+        {
+            // #536: the zone-unlock path (ExpansionUnlockDirector -> ResizeGroundToMap)
+            // must keep the ground's reach >= the camera's recomputed MaxZoom after
+            // an unlock grows the map — mirroring CameraController's own
+            // RecomputeBoundsFromMap_GrowsTheMaxZoomOutAsTheMapGrows guarantee, but
+            // for the Unity-side ground plane, so a freshly unlocked zone is never
+            // framed against the blue seam.
+            Object.DestroyImmediate(root);
+            var unlocked = WithFirstZoneUnlocked();
+            root = WorldBuilder.Build(GameState.CreateNew());
+
+            WorldBuilder.ResizeGroundToMap(root.transform, unlocked.Map);
+
+            var ground = root.transform.Find(WorldBuilder.GroundName);
+            Assert.That(ground, Is.Not.Null);
+
+            var camera = Doggiehood.Core.Cameras.CameraController.ForStartingNeighborhood();
+            camera.RecomputeBoundsFromMap(unlocked.Map);
+
+            var halfDepth = ground.localScale.z * 10f / 2f;
+            var northReach = ground.position.z + halfDepth;
+            Assert.That(northReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
+                "after the unlock, grass still outruns the grown max zoom-out");
         }
 
         [Test]
