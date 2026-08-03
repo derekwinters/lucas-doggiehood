@@ -460,6 +460,18 @@ namespace Doggiehood.Core.World
             return Houses.All(house => house.Id != houseId);
         }
 
+        /// <summary>#540: how many houses the PLAYER has built — the total
+        /// <see cref="Houses"/> minus the 4 starting houses seeded at
+        /// <see cref="CreateNew"/> (<see cref="NeighborhoodLayout.HouseLots"/>).
+        /// This is the count the house-build cost curve
+        /// (<see cref="Expansion.HouseBuildNumbers.Cost"/>) scales on, so the
+        /// first player build is at the base and the 4 starting houses never
+        /// inflate it.</summary>
+        public int PlayerBuiltHouseCount
+        {
+            get { return houses.Count - NeighborhoodLayout.HouseLots.Count; }
+        }
+
         /// <summary>
         /// Builds a house on <paramref name="houseId"/>'s lot (#57): charges
         /// <see cref="Expansion.HouseBuildNumbers.Cost"/> from <see cref="Wallet"/>
@@ -482,7 +494,7 @@ namespace Doggiehood.Core.World
                 return false;
             }
 
-            if (!Wallet.TrySpend(Expansion.HouseBuildNumbers.Cost))
+            if (!Wallet.TrySpend(Expansion.HouseBuildNumbers.Cost(PlayerBuiltHouseCount)))
             {
                 return false;
             }

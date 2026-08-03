@@ -41,7 +41,7 @@ namespace Doggiehood.Unity.EditModeTests
             // simultaneous locks to tell apart (the #453 multi-lock case).
             state = FrontierEditModeWorld.WithTargetMap();
             state.RestoreRewardChainStep(OnboardingRewardStep.Done);
-            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count) + HouseBuildNumbers.Cost); // one unlock + one build
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count) + HouseBuildNumbers.BaseCost); // one unlock + one build
 
             worldRoot = new GameObject("world-root");
 

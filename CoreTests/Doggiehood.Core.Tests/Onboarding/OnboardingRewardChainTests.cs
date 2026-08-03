@@ -100,8 +100,9 @@ namespace Doggiehood.Core.Tests.Onboarding
         public void SelfFunding_EachStepsRewardCoversTheNextStepsCost_AcrossAllFourSteps()
         {
             // The player starts with nothing; the chain funds itself end-to-end:
-            // 100 bonus >= 100 upgrade; upgrade reward >= 100 expand; expand
-            // reward >= 50 build; the player ends with a small cushion.
+            // 100 bonus >= 100 upgrade; upgrade reward >= 50 expand (#540: the
+            // first tile is now only 50); expand reward >= 50 build; the player
+            // ends with a (now larger) cushion.
             var state = GameState.CreateNew();
             state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
@@ -120,24 +121,29 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.ExpandMap));
 
-            // Step 3: expand the map (first zone, cost 100) — funded by step 2.
+            // Step 3: expand the map (first tile, #540 cost 50) — funded by step 2.
             Assert.That(state.Wallet.CanAfford(TileUnlock.Cost(state.Map.Tiles.Count)), Is.True,
-                "the upgrade reward covers the 100 expand");
+                "the upgrade reward covers the 50 expand");
             Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True);
-            Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
+            Assert.That(state.Wallet.Coins,
+                Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep
+                    + (OnboardingRewardChainNumbers.RewardPerStep - TileUnlock.Cost(1))),
+                "step 2's balance plus step 3's reward, minus the cheaper 50 expand");
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.BuildHouse));
 
-            // Step 4: build a house on the newly unlocked lot (cost 50).
+            // Step 4: build a house on the newly unlocked lot (base cost 50).
             var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
-            Assert.That(state.Wallet.CanAfford(HouseBuildNumbers.Cost), Is.True,
+            Assert.That(state.Wallet.CanAfford(HouseBuildNumbers.BaseCost), Is.True,
                 "the expand reward covers the 50 build");
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.RewardChain.IsComplete, Is.True);
             Assert.That(state.Wallet.Coins,
-                Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep - HouseBuildNumbers.Cost
-                    + OnboardingRewardChainNumbers.RewardPerStep),
-                "the player ends the chain with a small cushion");
+                Is.EqualTo(4 * OnboardingRewardChainNumbers.RewardPerStep
+                    - HouseUpgradeNumbers.CostToLevel2
+                    - TileUnlock.Cost(1)
+                    - HouseBuildNumbers.BaseCost),
+                "the player ends the chain with a small cushion (larger now the first tile is 50)");
         }
 
         [Test]
