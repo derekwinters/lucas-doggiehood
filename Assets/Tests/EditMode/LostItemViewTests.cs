@@ -183,7 +183,11 @@ namespace Doggiehood.Unity.EditModeTests
             }
         }
 
-        // ---- #521: the red "finder glow" on the lost item ----------------
+        // ---- #521/#535: the red "finder glow" on the lost item -----------
+        // #535: Derek's revised design is a flat red GROUND RING only. The item
+        // keeps its own mesh, size and colour — no engulfing halo, no size
+        // pulse, no orbiting sparkle (in playtest those read as the item, and
+        // the lost puppy, ballooning into "a big red ball").
 
         private const string GlowRootName = "FinderGlow";
         private const string HaloName = "Halo";
@@ -223,43 +227,67 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void FinderGlow_HaloIsTheRedPaletteColour()
+        public void FinderGlow_GroundRingIsTheRedPaletteColour()
         {
             // Derek's decision: the glow is RED, sourced from the named
             // Palette.LostItemGlowHex constant (#521/#161).
             var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
-            var halo = Glow(view).Find(HaloName);
-            Assert.That(halo, Is.Not.Null);
+            var ring = Glow(view).Find(GroundRingName);
+            Assert.That(ring, Is.Not.Null);
 
             var expected = CoreColors.FromHex(Palette.LostItemGlowHex);
-            var actual = halo.GetComponent<Renderer>().sharedMaterial.color;
+            var actual = ring.GetComponent<Renderer>().sharedMaterial.color;
             Assert.That(actual.r, Is.EqualTo(expected.r).Within(0.01f));
             Assert.That(actual.g, Is.EqualTo(expected.g).Within(0.01f));
             Assert.That(actual.b, Is.EqualTo(expected.b).Within(0.01f));
         }
 
         [Test]
-        public void FinderGlow_HaloUsesTheNamedScaleConstant()
+        public void FinderGlow_GroundRingUsesTheNamedScaleConstants()
         {
-            // #161: the halo size is the named Core constant, not an inline
-            // literal. Before any pulse tick it sits at exactly HaloScale.
+            // #161/#535: the ring size is the named Core constants, not inline
+            // literals — flat (thin) on the ground, wide across the surface.
             var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
-            var halo = Glow(view).Find(HaloName);
+            var ring = Glow(view).Find(GroundRingName);
 
-            Assert.That(halo.localScale.x, Is.EqualTo(LostItemGlow.HaloScale).Within(0.0001f));
-            Assert.That(halo.localScale.y, Is.EqualTo(LostItemGlow.HaloScale).Within(0.0001f));
-            Assert.That(halo.localScale.z, Is.EqualTo(LostItemGlow.HaloScale).Within(0.0001f));
+            Assert.That(ring.localScale.x, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
+            Assert.That(ring.localScale.z, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
+            Assert.That(ring.localScale.y, Is.EqualTo(LostItemGlow.GroundRingThickness).Within(0.0001f));
         }
 
         [Test]
-        public void FinderGlow_HasAGroundContactRingAndASparkle()
+        public void FinderGlow_IsAGroundRingOnly_WithNoHaloOrSparkle()
         {
-            // The effect is halo + ground contact ring + subtle sparkle (#521).
+            // #535: the revised design is the flat ground ring ONLY — the
+            // engulfing halo and the orbiting sparkle are gone, so nothing
+            // balloons over or circles the item.
             var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
             var glow = Glow(view);
 
-            Assert.That(glow.Find(GroundRingName), Is.Not.Null, "the glow needs a ground contact ring");
-            Assert.That(glow.Find(SparkleName), Is.Not.Null, "the glow needs a sparkle");
+            Assert.That(glow.Find(GroundRingName), Is.Not.Null, "the glow keeps its ground ring");
+            Assert.That(glow.Find(HaloName), Is.Null, "the engulfing halo is dropped (#535)");
+            Assert.That(glow.Find(SparkleName), Is.Null, "the orbiting sparkle is dropped (#535)");
+        }
+
+        [Test]
+        public void FinderGlow_LeavesTheItemAtItsNormalSizeAndColour()
+        {
+            // #535 core fix: the item itself is untouched — it renders at its
+            // own graybox scale and its own material colour, NOT scaled up or
+            // recoloured the finder-glow red.
+            var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
+
+            Assert.That(view.transform.localScale, Is.EqualTo(Vector3.one * LostItemView.SphereScale),
+                "the lost item keeps its own size — the glow never scales it");
+
+            var itemColour = view.GetComponent<Renderer>().sharedMaterial.color;
+            var glowRed = CoreColors.FromHex(Palette.LostItemGlowHex);
+            Assert.That(
+                Mathf.Abs(itemColour.r - glowRed.r) > 0.05f
+                || Mathf.Abs(itemColour.g - glowRed.g) > 0.05f
+                || Mathf.Abs(itemColour.b - glowRed.b) > 0.05f,
+                Is.True,
+                "the item is not recoloured the finder-glow red — its own colour is preserved");
         }
 
         [Test]
@@ -275,36 +303,6 @@ namespace Doggiehood.Unity.EditModeTests
                 "the finder glow must carry no colliders");
             Assert.That(glow.GetComponentsInChildren<IInteractable>(true), Is.Empty,
                 "the finder glow must not be interactable");
-        }
-
-        [Test]
-        public void FinderGlow_PulsesTheHalo_OverTime()
-        {
-            // The halo breathes via the deterministic Core pulse curve. Driving
-            // TickGlow to the half-period peak scales the halo to
-            // HaloScale x PulseScaleMax (EditMode can't run the Play Update).
-            var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
-            var halo = Glow(view).Find(HaloName);
-
-            view.TickGlow(LostItemGlow.PulsePeriodSeconds / 2f);
-
-            var expected = LostItemGlow.HaloScale * LostItemGlow.PulseScaleMax;
-            Assert.That(halo.localScale.x, Is.EqualTo(expected).Within(0.001f),
-                "the halo peaks at HaloScale x PulseScaleMax half-way through the pulse");
-        }
-
-        [Test]
-        public void FinderGlow_SparkleOrbits_OverTime()
-        {
-            // The sparkle drifts around the item on the Core orbit curve.
-            var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
-            var sparkle = Glow(view).Find(SparkleName);
-            var before = sparkle.localPosition;
-
-            view.TickGlow(0.5f);
-
-            Assert.That(Vector3.Distance(sparkle.localPosition, before), Is.GreaterThan(0.0001f),
-                "the sparkle should move as it orbits the item");
         }
 
         [Test]
@@ -327,8 +325,8 @@ namespace Doggiehood.Unity.EditModeTests
         public void FinderGlow_DoesNotInflateTheForgivingTapZone()
         {
             // The glow's child renderers must not expand the #311 padded tap
-            // zone — a tap well outside the item but within the glow halo must
-            // NOT register, so the glow stays purely decorative.
+            // zone — a tap well outside the item but within the glow's ground
+            // ring must NOT register, so the glow stays purely decorative.
             var quest = LostItemQuest("ball");
             var view = LostItemView.Spawn(state, quest, parent.transform);
             view.transform.position = new Vector3(500f, 0f, 500f);
@@ -346,10 +344,10 @@ namespace Doggiehood.Unity.EditModeTests
                 cam.transform.LookAt(item.center);
                 Physics.SyncTransforms();
 
-                // A point inside the glow halo but well outside the small item
-                // and its 32px padding: if the glow renderers were counted, this
-                // would be inside the padded zone and collect; excluded, it must
-                // miss.
+                // A point over the glow's ground ring but well outside the small
+                // item and its 32px padding: if the glow renderers were counted,
+                // this would be inside the padded zone and collect; excluded, it
+                // must miss.
                 var inGlowOffItem = item.center + new Vector3(item.extents.x + 0.5f, 0f, 0f);
                 var screen = cam.WorldToScreenPoint(inGlowOffItem);
                 var handled = view.TryHandleLostItemTap(cam, new Vector2(screen.x, screen.y));

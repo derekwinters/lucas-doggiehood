@@ -6,10 +6,14 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.Quests
 {
     /// <summary>
-    /// #521: the red "finder glow" on a lost quest item. These cover the
-    /// Unity-independent pieces — the "should the glow show?" predicate over
-    /// quest state and the deterministic pulse curve — so the tuning lives in
-    /// Core with plain NUnit and the Unity view is a thin apply-seam.
+    /// #521/#535: the red "finder glow" on a lost quest item. Derek's revised
+    /// design (#535) is a flat red GROUND RING only — the item keeps its own
+    /// mesh, size and colour, with just a ring on the surface beneath it. These
+    /// cover the Unity-independent pieces: the "should the glow show?" predicate
+    /// over quest state and the ground-ring tuning, so the tuning lives in Core
+    /// with plain NUnit and the Unity view is a thin apply-seam. The earlier
+    /// engulfing halo, the size pulse and the orbiting sparkle (which read as
+    /// the item itself ballooning and turning red) are gone.
     /// </summary>
     public class LostItemGlowTests
     {
@@ -56,60 +60,48 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void PulseScale_StartsAtTheMinimum()
+        public void GroundRingTuningConstants_ArePositive()
         {
-            Assert.That(LostItemGlow.PulseScaleAt(0f),
-                Is.EqualTo(LostItemGlow.PulseScaleMin).Within(0.0001f));
-        }
-
-        [Test]
-        public void PulseScale_PeaksAtTheMaximumHalfwayThroughThePeriod()
-        {
-            Assert.That(LostItemGlow.PulseScaleAt(LostItemGlow.PulsePeriodSeconds / 2f),
-                Is.EqualTo(LostItemGlow.PulseScaleMax).Within(0.0001f));
-        }
-
-        [Test]
-        public void PulseScale_IsPeriodicOverThePulsePeriod()
-        {
-            const float sample = 0.37f;
-
-            Assert.That(LostItemGlow.PulseScaleAt(sample),
-                Is.EqualTo(LostItemGlow.PulseScaleAt(sample + LostItemGlow.PulsePeriodSeconds)).Within(0.0001f));
-        }
-
-        [Test]
-        public void PulseScale_StaysWithinTheMinMaxBand()
-        {
-            for (var t = 0f; t <= LostItemGlow.PulsePeriodSeconds; t += 0.05f)
-            {
-                var scale = LostItemGlow.PulseScaleAt(t);
-                Assert.That(scale, Is.GreaterThanOrEqualTo(LostItemGlow.PulseScaleMin - 0.0001f));
-                Assert.That(scale, Is.LessThanOrEqualTo(LostItemGlow.PulseScaleMax + 0.0001f));
-            }
-        }
-
-        [Test]
-        public void SparkleAngle_AdvancesLinearlyWithTime()
-        {
-            Assert.That(LostItemGlow.SparkleAngleAt(0f), Is.EqualTo(0f).Within(0.0001f));
-            Assert.That(LostItemGlow.SparkleAngleAt(1f),
-                Is.EqualTo(LostItemGlow.SparkleOrbitDegreesPerSecond).Within(0.0001f));
-        }
-
-        [Test]
-        public void TuningConstants_ArePositive()
-        {
-            // #161: every glow dimension/timing is a named, sane constant.
-            Assert.That(LostItemGlow.HaloScale, Is.GreaterThan(0f));
-            Assert.That(LostItemGlow.PulsePeriodSeconds, Is.GreaterThan(0f));
-            Assert.That(LostItemGlow.PulseScaleMax, Is.GreaterThan(LostItemGlow.PulseScaleMin));
+            // #161/#535: the glow is now a single flat ground ring — its
+            // dimensions are named, sane constants.
             Assert.That(LostItemGlow.GroundRingScale, Is.GreaterThan(0f));
             Assert.That(LostItemGlow.GroundRingHeight, Is.GreaterThan(0f));
             Assert.That(LostItemGlow.GroundRingThickness, Is.GreaterThan(0f));
-            Assert.That(LostItemGlow.SparkleScale, Is.GreaterThan(0f));
-            Assert.That(LostItemGlow.SparkleOrbitRadius, Is.GreaterThan(0f));
-            Assert.That(LostItemGlow.SparkleOrbitDegreesPerSecond, Is.GreaterThan(0f));
+        }
+
+        // ---- #535: no more halo / size pulse / sparkle -------------------
+        // The revised design preserves the item's own mesh, size and colour,
+        // so Core no longer exposes any size-pulse or halo/sparkle tuning. If
+        // any of these come back, the item can balloon/recolour again — pin
+        // their absence.
+
+        [Test]
+        public void NoSizePulseApi_SoTheItemNeverScales()
+        {
+            Assert.That(typeof(LostItemGlow).GetMethod("PulseScaleAt"), Is.Null,
+                "the item must not pulse in size any more (#535)");
+            Assert.That(typeof(LostItemGlow).GetField("PulseScaleMin"), Is.Null);
+            Assert.That(typeof(LostItemGlow).GetField("PulseScaleMax"), Is.Null);
+            Assert.That(typeof(LostItemGlow).GetField("PulsePeriodSeconds"), Is.Null);
+        }
+
+        [Test]
+        public void NoHaloTuning_SoNothingEngulfsTheItem()
+        {
+            Assert.That(typeof(LostItemGlow).GetField("HaloScale"), Is.Null,
+                "the engulfing red halo is dropped (#535)");
+            Assert.That(typeof(LostItemGlow).GetField("HaloHeight"), Is.Null);
+        }
+
+        [Test]
+        public void NoSparkleTuning_SoNothingOrbitsTheItem()
+        {
+            Assert.That(typeof(LostItemGlow).GetMethod("SparkleAngleAt"), Is.Null,
+                "the orbiting sparkle is dropped (#535)");
+            Assert.That(typeof(LostItemGlow).GetField("SparkleScale"), Is.Null);
+            Assert.That(typeof(LostItemGlow).GetField("SparkleOrbitRadius"), Is.Null);
+            Assert.That(typeof(LostItemGlow).GetField("SparkleHeight"), Is.Null);
+            Assert.That(typeof(LostItemGlow).GetField("SparkleOrbitDegreesPerSecond"), Is.Null);
         }
     }
 }
