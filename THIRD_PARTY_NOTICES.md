@@ -87,3 +87,30 @@ as a courtesy. The `locked` icon is the chosen map-expansion indicator —
 the marker that signals an unexplored/expandable zone (issue #178). It is
 staged here for the v0.4 neighborhood expansion; nothing wires
 it yet.
+
+## Car Kit (Kenney)
+
+- **Files:** the Car Kit **standard road vehicle** models at
+  `Assets/Art/Vehicles/CarKit/Resources/*.fbx` (delivery, delivery-flat,
+  hatchback-sports, sedan, sedan-sports, suv, suv-luxury, taxi, truck,
+  truck-flat, van) sharing
+  `Assets/Art/Vehicles/CarKit/Resources/colormap.png`. Specialty vehicles
+  (emergency/service, race cars, karts, tractors) and the kit's non-vehicle
+  parts and props (wheels, debris, cones, box) are intentionally not staged.
+- **Asset:** Car Kit (3.1)
+- **Author:** Kenney (www.kenney.nl)
+- **Source:** https://kenney.nl/assets/car-kit
+- **License:** CC0 1.0 Universal (Public Domain Dedication) —
+  https://creativecommons.org/publicdomain/zero/1.0/
+
+> "Car Kit (3.1), Created/distributed by Kenney (www.kenney.nl),
+> License: (Creative Commons Zero, CC0). You can use this content for
+> personal, educational, and commercial purposes. Support by crediting
+> 'Kenney' or 'www.kenney.nl' (this is not a requirement)."
+
+No attribution is legally required under CC0, but Kenney is credited here
+as a courtesy. The `delivery` truck is the intended model for the buy-gift
+delivery vehicle (replacing the graybox primitive cube in `DeliveryTruckView`);
+the rest are staged for future use (e.g. parked/moving cars on the roads).
+These are staged only — nothing wires any of them yet; wiring is left to the
+development issues.
