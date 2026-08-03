@@ -53,8 +53,12 @@ namespace Doggiehood.Unity.EditModeTests
             // #544: the modal-open seam is also process-global. Pin it to "no
             // modal" here so these #422 EventSystem-guard tests stay independent
             // of the shared ModalInputGate; the modal-specific tests below set
-            // it explicitly.
+            // it explicitly. Also clear the shared gate itself, so the one test
+            // that restores the production DefaultIsModalOpen seam
+            // (DefaultIsModalOpen_TracksTheSharedModalInputGate) reads a clean
+            // registry rather than a modal a prior test leaked.
             TapRouter.IsModalOpen = () => false;
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
 
             rigObject = new GameObject("rig-under-test", typeof(Camera));
             cam = rigObject.GetComponent<Camera>();

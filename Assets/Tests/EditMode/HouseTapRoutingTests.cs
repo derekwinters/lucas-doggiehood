@@ -40,6 +40,13 @@ namespace Doggiehood.Unity.EditModeTests
             // production default so a prior test's override can't leak in and
             // swallow our world tap.
             TapRouter.IsPointerOverUi = TapRouter.DefaultIsPointerOverUi;
+
+            // #544: the modal seam and its shared gate are also process-global.
+            // RouteTap short-circuits while a modal is registered, so restore
+            // the production seam and clear the gate — otherwise a profile a
+            // prior test opened swallows this fixture's house tap.
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
         }
 
         [TearDown]

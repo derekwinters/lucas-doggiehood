@@ -70,5 +70,16 @@ namespace Doggiehood.Core.Cameras
 
             openModals.Remove(token);
         }
+
+        /// <summary>Releases every registration in one call, so the gate stops
+        /// blocking. Use on a hard reset boundary — scene unload, or test
+        /// isolation between EditMode tests that share the process-global
+        /// <see cref="Shared"/> singleton — so a modal registration can never
+        /// leak past that boundary and leave world taps dead for the next
+        /// scene/test.</summary>
+        public void Clear()
+        {
+            openModals.Clear();
+        }
     }
 }

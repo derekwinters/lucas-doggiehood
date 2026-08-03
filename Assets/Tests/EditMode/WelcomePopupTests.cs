@@ -39,6 +39,11 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreatePopup()
         {
+            // #544: the modal-input gate is a process-global singleton; clear it
+            // so a registration leaked by an earlier test can't make this
+            // pop-up's gate read as already blocking before it shows.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
 
             canvasHost = new GameObject("ui-canvas", typeof(Canvas));

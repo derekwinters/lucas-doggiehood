@@ -21,6 +21,13 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void BuildWorldWithDogs()
         {
+            // #544: RouteTap short-circuits while any modal is registered on the
+            // process-global gate. Restore the production modal seam and clear
+            // the shared gate so a profile a prior test opened can't leave the
+            // gate blocking and swallow this fixture's world taps.
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            ModalInputGate.Shared.Clear();
+
             state = GameState.CreateNew();
             worldRoot = WorldBuilder.Build(state);
             DogSpawner.SpawnDogs(state, worldRoot.transform);

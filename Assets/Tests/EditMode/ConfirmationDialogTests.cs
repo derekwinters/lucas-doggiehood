@@ -28,6 +28,11 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreateDialog()
         {
+            // #544: the modal-input gate is a process-global singleton; clear it
+            // so a registration leaked by an earlier test can't make this
+            // dialog's gate read as already blocking before it opens.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             // #291: the labels bind a bundled UI font via Resources.Load; force
             // its import so a fresh CI Library resolves it before the build.
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);

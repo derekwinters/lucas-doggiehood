@@ -116,6 +116,32 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
+        public void Clear_ReleasesEveryRegistration_InOneCall()
+        {
+            // #544 follow-up: a deterministic reset for the process-global
+            // Shared gate. On scene unload (and in test isolation) any modal
+            // that was open must be released in one call so the gate can never
+            // be left stuck blocking world taps for the next scene/test.
+            var gate = new ModalInputGate();
+            gate.Register(new object());
+            gate.Register(new object());
+
+            gate.Clear();
+
+            Assert.That(gate.IsBlocking, Is.False,
+                "Clear releases every registration so the gate stops blocking");
+        }
+
+        [Test]
+        public void Clear_OnAnEmptyGate_IsANoOp()
+        {
+            var gate = new ModalInputGate();
+
+            Assert.DoesNotThrow(() => gate.Clear());
+            Assert.That(gate.IsBlocking, Is.False);
+        }
+
+        [Test]
         public void Shared_IsAStableSingleton()
         {
             Assert.That(ModalInputGate.Shared, Is.Not.Null);
