@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -29,28 +30,44 @@ namespace Doggiehood.Core.Tests.Quests
             return new QuestPacingPolicy().TargetActiveCount(state);
         }
 
+        /// <summary>A state topped up to <paramref name="dogCount"/> dogs so the
+        /// population-scaled target (and hence the #543 per-hour rate) can be
+        /// exercised above the floor.</summary>
+        private static GameState StateWithDogs(int dogCount)
+        {
+            var state = GameState.CreateNew();
+            for (var i = state.Dogs.Count; i < dogCount; i++)
+            {
+                state.AddDog(new Dog($"extra-{i}", Breed.GermanShepherd, Personality.Brave, 1, false));
+            }
+
+            return state;
+        }
+
         [Test]
         public void MaybeStartNewDay_RefreshesOnBoundary_AndRecordsTimestamp()
         {
-            var state = GameState.CreateNew();
+            // 18 dogs -> target 6 -> 1.0/hr, so a single hourly boundary adds a
+            // whole quest (the #543 rate at target 6 is exactly one per hour).
+            var state = StateWithDogs(18);
 
             state.Quests.MaybeStartNewDay(T0, new Random(1));
 
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0), "a first refresh adds quests");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0), "a 1.0/hr refresh adds a quest");
             Assert.That(state.LastRotationUtc, Is.EqualTo(T0), "the refresh records its UTC instant");
         }
 
         [Test]
         public void MaybeStartNewDay_UnderInterval_IsNoOp()
         {
-            var state = GameState.CreateNew();
+            var state = StateWithDogs(18); // 1.0/hr so the first boundary adds a quest
             state.Quests.MaybeStartNewDay(T0, new Random(1));
             var countAfterFirst = state.Quests.ActiveQuests.Count();
 
-            state.Quests.MaybeStartNewDay(T0 + TimeSpan.FromHours(1), new Random(2));
+            state.Quests.MaybeStartNewDay(T0 + TimeSpan.FromMinutes(30), new Random(2));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(countAfterFirst),
-                "a call under the 8h interval must not add quests");
+                "a call under the 1h interval must not add quests");
             Assert.That(state.LastRotationUtc, Is.EqualTo(T0), "an under-interval no-op leaves the timestamp alone");
         }
 
@@ -106,20 +123,22 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void MissedTime_PerformsExactlyOneTopUp_RegardlessOfElapsedIntervals()
         {
-            // Away 8h vs away 4 days must land in the same place: one top-up to
-            // the cap, no per-interval catch-up flood.
-            var away8h = GameState.CreateNew();
-            var away4d = GameState.CreateNew();
-            away8h.RecordRotationUtc(T0 - EconomyNumbers.RefreshInterval);
+            // #543: away 1h vs away 4 days must land in the same place: one
+            // hourly top-up (add ceil(perHour) at most), no per-hour catch-up
+            // flood. 100 dogs -> 2.0/hr, so a single boundary adds 2, and 4 days
+            // of missed hours must NOT bank ~192 quests.
+            var away1h = StateWithDogs(100);
+            var away4d = StateWithDogs(100);
+            away1h.RecordRotationUtc(T0 - EconomyNumbers.RefreshInterval);
             away4d.RecordRotationUtc(T0 - TimeSpan.FromDays(4));
 
-            away8h.Quests.MaybeStartNewDay(T0, new Random(9));
+            away1h.Quests.MaybeStartNewDay(T0, new Random(9));
             away4d.Quests.MaybeStartNewDay(T0, new Random(9));
 
-            Assert.That(away8h.Quests.ActiveQuests.Count(), Is.LessThanOrEqualTo(Target(away8h)),
+            Assert.That(away1h.Quests.ActiveQuests.Count(), Is.LessThanOrEqualTo(Target(away1h)),
                 "one top-up never exceeds the cap");
-            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(away8h.Quests.ActiveQuests.Count()),
-                "the count added is independent of how long the player was away");
+            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(away1h.Quests.ActiveQuests.Count()),
+                "the count added is independent of how long the player was away — no catch-up flood");
             Assert.That(away4d.LastRotationUtc, Is.EqualTo(T0), "the timestamp resets to now, not per missed interval");
         }
 
@@ -128,8 +147,10 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // Soft-lock guard: 0 coins + every active quest costs coins to
             // accept is a dead end. Two paid quests already active; the single
-            // top-up slot is forced to a free type.
-            var state = GameState.CreateNew();
+            // top-up slot is forced to a free type. 18 dogs -> 1.0/hr so the
+            // boundary actually adds a quest (#543 — a quiet hour that adds
+            // nothing has no slot to force).
+            var state = StateWithDogs(18);
             state.Quests.GiveQuestTo(state.Dogs[0], QuestType.BuyGift, new Random(1));
             state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(2));
             Assert.That(state.Quests.ActiveQuests.All(q => !IsFree(q.Type)), Is.True,
@@ -173,8 +194,8 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(loaded.LastRotationUtc, Is.EqualTo(instant), "the exact UTC instant survives save/load");
             Assert.That(loaded.LastRotationUtc.Value.Kind, Is.EqualTo(DateTimeKind.Utc), "and stays UTC");
-            Assert.That(new QuestPacingPolicy().ShouldRefresh(instant + TimeSpan.FromHours(1), loaded), Is.False,
-                "so the 8h boundary still holds after a reload");
+            Assert.That(new QuestPacingPolicy().ShouldRefresh(instant + TimeSpan.FromMinutes(30), loaded), Is.False,
+                "so the 1h boundary still holds after a reload");
         }
 
         [Test]
@@ -190,12 +211,12 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void ForceRefresh_TopsUp_EvenWhenTheCadenceGateWouldBlock()
         {
-            // A rotation just happened, so ShouldRefresh is false under the 8h
+            // A rotation just happened, so ShouldRefresh is false under the 1h
             // window — yet the forced refresh must add quests anyway (skip the
-            // timer).
-            var state = GameState.CreateNew();
+            // timer). 18 dogs -> 1.0/hr so a single forced tick adds a quest.
+            var state = StateWithDogs(18);
             state.RecordRotationUtc(T0);
-            var justAfter = T0 + TimeSpan.FromHours(1);
+            var justAfter = T0 + TimeSpan.FromMinutes(30);
             Assert.That(new QuestPacingPolicy().ShouldRefresh(justAfter, state), Is.False,
                 "precondition: the natural cadence gate would block a refresh here");
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "precondition: no active quests yet");
@@ -211,14 +232,14 @@ namespace Doggiehood.Core.Tests.Quests
         {
             var state = GameState.CreateNew();
             state.RecordRotationUtc(T0);
-            var forcedAt = T0 + TimeSpan.FromHours(1);
+            var forcedAt = T0 + TimeSpan.FromMinutes(30);
 
             state.Quests.ForceRefresh(forcedAt, new Random(1));
 
             Assert.That(state.LastRotationUtc, Is.EqualTo(forcedAt),
                 "the forced refresh records its instant, same as a natural rotation");
-            Assert.That(new QuestPacingPolicy().ShouldRefresh(forcedAt + TimeSpan.FromHours(1), state), Is.False,
-                "so the 8h window restarts from the forced refresh");
+            Assert.That(new QuestPacingPolicy().ShouldRefresh(forcedAt + TimeSpan.FromMinutes(30), state), Is.False,
+                "so the 1h window restarts from the forced refresh");
         }
 
         [Test]

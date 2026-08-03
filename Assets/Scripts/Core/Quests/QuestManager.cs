@@ -94,7 +94,7 @@ namespace Doggiehood.Core.Quests
 
         /// <summary>#312: first-launch quest seeding. Until onboarding
         /// completes, exactly one quest-free dog is seeded with a single easy
-        /// <see cref="QuestType.LostItem"/> quest and the 2-4 daily rotation
+        /// <see cref="QuestType.LostItem"/> quest and the hourly trickle rotation
         /// is suppressed, so the tutorial has one gentle tap-to-find target
         /// and nothing else competes. Once onboarding is complete this is just
         /// the normal <see cref="StartNewDay"/> rotation. RNG is injectable
@@ -122,7 +122,7 @@ namespace Doggiehood.Core.Quests
         /// MonoBehaviour. Pre-chain (still on the first guided step, with no
         /// active quests) seeds the one tutorial quest; mid-chain (the guided
         /// upgrade/expand/build steps) stays suppressed; post-chain runs the
-        /// #310 recurring 8h refresh. <paramref name="nowUtc"/> is a UTC instant
+        /// #310/#543 recurring hourly trickle refresh. <paramref name="nowUtc"/> is a UTC instant
         /// (<c>DateTime.UtcNow</c> in production).</summary>
         public void EnsureQuestsForLaunch(DateTime nowUtc, Random rng)
         {
@@ -153,14 +153,15 @@ namespace Doggiehood.Core.Quests
             StartNewDay(moveInRng);
         }
 
-        /// <summary>#310: the recurring refresh boundary. Asks
-        /// <see cref="QuestPacingPolicy.ShouldRefresh"/> whether the 8h UTC
+        /// <summary>#310/#543: the recurring refresh boundary. Asks
+        /// <see cref="QuestPacingPolicy.ShouldRefresh"/> whether the hourly UTC
         /// cadence has been crossed and, if so, runs one <see cref="StartNewDay"/>
-        /// top-up and records the instant. Purely a boundary <em>check</em> —
-        /// nothing is removed and no quest can fail (economy.md #28). Elapsed
-        /// time only decides <em>whether</em> to refresh, never <em>how many</em>
-        /// to add: away 8h or 4 days is one top-up to the cap, no per-interval
-        /// catch-up. <paramref name="nowUtc"/> is a UTC instant
+        /// trickle top-up and records the instant. Purely a boundary
+        /// <em>check</em> — nothing is removed and no quest can fail (economy.md
+        /// #28). Elapsed time only decides <em>whether</em> to refresh, never
+        /// <em>how many</em> to add: away 1 hour or 4 days is one top-up (the
+        /// accumulator advances a single hour's worth, never per missed hour), so
+        /// there is no catch-up flood. <paramref name="nowUtc"/> is a UTC instant
         /// (<c>DateTime.UtcNow</c> in production).</summary>
         public void MaybeStartNewDay(DateTime nowUtc, Random rng)
         {
@@ -178,8 +179,8 @@ namespace Doggiehood.Core.Quests
         /// <see cref="MaybeStartNewDay"/>, but <em>unconditionally</em> — skipping
         /// the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence gate — so a
         /// tester can trigger the new-quest randomization without waiting out the
-        /// 8h timer. Recording <paramref name="nowUtc"/> also restarts that 8h
-        /// window, so a forced refresh matches a natural one exactly except for
+        /// hourly timer. Recording <paramref name="nowUtc"/> also restarts that
+        /// hourly window, so a forced refresh matches a natural one exactly except for
         /// <em>when</em> it is allowed to fire. Still purely additive (headroom-
         /// bounded, never removing or failing a quest — economy.md #28).
         /// <paramref name="nowUtc"/> is a UTC instant (<c>DateTime.UtcNow</c> in
@@ -190,21 +191,32 @@ namespace Doggiehood.Core.Quests
             state.RecordRotationUtc(nowUtc);
         }
 
-        /// <summary>Daily rotation (#26, #310): tops up toward the pacing
-        /// policy's population-scaled <see cref="QuestPacingPolicy.TargetActiveCount"/>
-        /// — adds <c>min(batch, target − activeCount, freeDogs)</c>, floored at
-        /// 0, so once the neighborhood already holds the target number of
-        /// uncompleted quests a rotation adds nothing. Dogs holding an
-        /// uncompleted quest are never overwritten. Enforces the
-        /// always-one-free-quest invariant (#310): if the top-up would leave an
-        /// all-paid active set, one added quest is forced to a free type.</summary>
+        /// <summary>Hourly trickle top-up (#26, #310, #543): tops up toward the
+        /// pacing policy's population-scaled
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/> by the per-hour
+        /// error-diffusion amount — adds <c>min(wholeThisHour, target −
+        /// activeCount, freeDogs)</c>, floored at 0, where
+        /// <c>wholeThisHour = floor(accumulator + perHourRate)</c>
+        /// (<see cref="QuestPacingPolicy.AdvanceAccumulator"/>). The leftover
+        /// fraction is persisted on <see cref="GameState"/> <em>immediately</em> —
+        /// regardless of the downstream headroom/free-dog clamp — so fractional
+        /// progress is never lost and a quiet hour at the cap can never bank a
+        /// flood. Once the neighborhood already holds the target number of
+        /// uncompleted quests a top-up adds nothing. Dogs holding an uncompleted
+        /// quest are never overwritten. Enforces the always-one-free-quest
+        /// invariant (#310): if the top-up would leave an all-paid active set,
+        /// one added quest is forced to a free type.</summary>
         public void StartNewDay(Random rng)
         {
             var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
-            var batch = EconomyNumbers.RotationBatchMin
-                + rng.Next(EconomyNumbers.RotationBatchMax - EconomyNumbers.RotationBatchMin + 1);
+            var wholeThisHour = pacing.AdvanceAccumulator(
+                state.QuestPacingAccumulator, state, out var remainder);
+            // Persist the carried fraction up front so it survives even when the
+            // clamp below reduces the actual add (the accumulator never banks a
+            // flood — the remainder is always < 1).
+            state.RecordQuestPacingAccumulator(remainder);
             var headroom = pacing.TargetActiveCount(state) - ActiveQuests.Count();
-            var toAdd = Math.Max(0, Math.Min(batch, Math.Min(headroom, freeDogs.Count)));
+            var toAdd = Math.Max(0, Math.Min(wholeThisHour, Math.Min(headroom, freeDogs.Count)));
 
             // Decide every (dog, type) up front so the free-quest invariant can
             // inspect the whole would-be active set before any quest is created.

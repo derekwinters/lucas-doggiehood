@@ -11,7 +11,15 @@ namespace Doggiehood.Core.Tests.Onboarding
         private static GameState StateWithQuests()
         {
             var state = GameState.CreateNew();
-            state.Quests.StartNewDay(new System.Random(1));
+            // #543: a single rotation now trickles in a fraction of the target
+            // per hour (8 dogs -> 0.5/hr), so drive a full pacing window of
+            // hourly boundaries to fill the neighborhood up to its target and
+            // have active quests to target in onboarding.
+            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            {
+                state.Quests.StartNewDay(new System.Random(1 + hour));
+            }
+
             return state;
         }
 

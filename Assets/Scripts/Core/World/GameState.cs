@@ -751,7 +751,7 @@ namespace Doggiehood.Core.World
 
         /// <summary>#310: UTC instant of the most recent quest-rotation
         /// refresh, or null until the first refresh runs. Persists in the save
-        /// (like <see cref="OnboardingComplete"/>) so the 8h refresh cadence
+        /// (like <see cref="OnboardingComplete"/>) so the hourly refresh cadence
         /// (<see cref="Quests.QuestPacingPolicy.ShouldRefresh"/>) holds across
         /// sessions. Stored as UTC so it is unaffected by device-timezone
         /// changes.</summary>
@@ -763,6 +763,34 @@ namespace Doggiehood.Core.World
         public void RecordRotationUtc(DateTime nowUtc)
         {
             LastRotationUtc = nowUtc;
+        }
+
+        /// <summary>#543: the persisted fractional quest-pacing accumulator — the
+        /// leftover fraction of a quest carried between hourly refreshes by the
+        /// error-diffusion trickle
+        /// (<see cref="Quests.QuestPacingPolicy.AdvanceAccumulator"/>). Persisted
+        /// through <see cref="SaveCodec"/> (like the move-in pity counter) so the
+        /// trickle cadence survives a relaunch instead of snapping back to a
+        /// whole-hour boundary; always in <c>[0, 1)</c>. A legacy save with no
+        /// accumulator line loads this at its <see cref="CreateNew"/> default of
+        /// 0.0, so no migration is needed.</summary>
+        public double QuestPacingAccumulator { get; private set; }
+
+        /// <summary>#543: records the leftover fraction to carry to the next
+        /// hourly refresh. Called by <see cref="Quests.QuestManager.StartNewDay"/>
+        /// every boundary — regardless of downstream headroom/free-dog clamping —
+        /// so fractional progress is never lost.</summary>
+        public void RecordQuestPacingAccumulator(double remainder)
+        {
+            QuestPacingAccumulator = remainder;
+        }
+
+        /// <summary>#543: restores the persisted trickle accumulator on load (the
+        /// parallel of <see cref="RestoreMoveInState"/>); a legacy save with no
+        /// accumulator line simply keeps the 0.0 default.</summary>
+        public void RestoreQuestPacingAccumulator(double accumulator)
+        {
+            QuestPacingAccumulator = accumulator;
         }
     }
 }

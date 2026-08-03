@@ -94,7 +94,7 @@ namespace Doggiehood.Unity
         // #457: the Debug-tab "Refresh quests now" action — a one-shot pill styled
         // like Add coins. ASCII-only glyph for the same bundled-font reason.
         private const string RefreshQuestsRowLabelText = "Refresh quests now";
-        private const string RefreshQuestsRowSubtitleText = "Force new-quest randomization, skip the 8h timer (#457)";
+        private const string RefreshQuestsRowSubtitleText = "Force new-quest randomization, skip the hourly timer (#457)";
         private const string RefreshQuestsGlyph = "Go";
 
         /// <summary>#291: the bundled UI font, loaded from a Resources folder so
@@ -257,7 +257,7 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>#457: the Debug-tab "Refresh quests now" action — forces the
-        /// new-quest randomization immediately, skipping the 8h refresh timer, so
+        /// new-quest randomization immediately, skipping the hourly refresh timer, so
         /// quest content can be tested without waiting. Thin wiring: the decision
         /// lives in Core (<see cref="Doggiehood.Core.Quests.QuestManager.ForceRefresh"/>),
         /// which runs the same top-up + timestamp-record as a natural rotation but
@@ -563,7 +563,7 @@ namespace Doggiehood.Unity
         /// pill), stacked one row below Add coins via the existing
         /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> constants
         /// (#161 — no new named layout values). Wired to the Core forced-refresh
-        /// seam so the 8h timer can be skipped for playtesting.</summary>
+        /// seam so the hourly timer can be skipped for playtesting.</summary>
         private void BuildRefreshQuestsRow(RectTransform parent)
         {
             refreshQuestsRowRect = CreateDebugRow(parent, "RefreshQuestsRow", order: 2);

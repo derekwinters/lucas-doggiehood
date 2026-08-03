@@ -3,6 +3,7 @@ using System.Linq;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.Onboarding;
+using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
@@ -163,8 +164,22 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.RewardChain.IsComplete, Is.True);
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.InRange(2, 4),
-                "the normal rotation is released exactly when the chain completes at build");
+
+            // #543: the rotation is released at build, but quests now trickle in
+            // hourly rather than a 2-4 batch — so drive a full pacing window of
+            // hourly boundaries and confirm they fill up to the population target
+            // (mid-chain no boundary ever added a quest — see the step asserts
+            // above).
+            var releasedNow = new System.DateTime(2026, 8, 3, 0, 0, 0, System.DateTimeKind.Utc);
+            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            {
+                state.Quests.MaybeStartNewDay(
+                    releasedNow + System.TimeSpan.FromHours(hour), new System.Random(hour));
+            }
+
+            var target = new QuestPacingPolicy().TargetActiveCount(state);
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                "the normal rotation is released at build and trickles up to the target");
         }
 
         [Test]
