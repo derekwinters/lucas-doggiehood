@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.9.0...v0.10.0) (2026-08-03)
+
+
+### Features
+
+* add red finder glow to lost quest items ([#521](https://github.com/derekwinters/lucas-doggiehood/issues/521)) ([#530](https://github.com/derekwinters/lucas-doggiehood/issues/530)) ([c88f7af](https://github.com/derekwinters/lucas-doggiehood/commit/c88f7af41e10217436525ea21f9bcc1eee5a6a2a))
+* announce move-ins with the Welcome pop-up ([#528](https://github.com/derekwinters/lucas-doggiehood/issues/528)) ([b1ed96d](https://github.com/derekwinters/lucas-doggiehood/commit/b1ed96d49b16700463db5e13e85f49cd3c8145bf))
+* grow the camera max zoom-out with the map extent ([#524](https://github.com/derekwinters/lucas-doggiehood/issues/524)) ([9cbd3fa](https://github.com/derekwinters/lucas-doggiehood/commit/9cbd3fa284bef44f66de8b92e711f9b40297b5ba))
+* replace generated house tints with curated 20-color palette ([#519](https://github.com/derekwinters/lucas-doggiehood/issues/519)) ([#531](https://github.com/derekwinters/lucas-doggiehood/issues/531)) ([eac306d](https://github.com/derekwinters/lucas-doggiehood/commit/eac306dea5c97c707ae0c04b351456e2e0b0fedd))
+
+
+### Bug Fixes
+
+* correct cul-de-sac round-end yaw for the FBX-import mirror ([#514](https://github.com/derekwinters/lucas-doggiehood/issues/514)) ([#525](https://github.com/derekwinters/lucas-doggiehood/issues/525)) ([2667644](https://github.com/derekwinters/lucas-doggiehood/commit/266764431c74c8e04028cd62054ff51e6819528d))
+* correct road-bend turn yaws for the FBX-import mirror ([#515](https://github.com/derekwinters/lucas-doggiehood/issues/515)) ([#526](https://github.com/derekwinters/lucas-doggiehood/issues/526)) ([2eafb9c](https://github.com/derekwinters/lucas-doggiehood/commit/2eafb9c1b67bd6dbbecf3f42d524ead398d15ba8))
+* hide lost item on the quest dog's own home tile ([#529](https://github.com/derekwinters/lucas-doggiehood/issues/529)) ([960568d](https://github.com/derekwinters/lucas-doggiehood/commit/960568d5893f86cc0533727950da1d04dceb03f0))
+* key expansion lock indicators to road connectivity, not grid-adjacency ([#533](https://github.com/derekwinters/lucas-doggiehood/issues/533)) ([9bbd23e](https://github.com/derekwinters/lucas-doggiehood/commit/9bbd23ef56fed6c4bc8dcc639744cf1725d318fb))
+* remove unbuildable OpposingTurns tile from the live map ([#516](https://github.com/derekwinters/lucas-doggiehood/issues/516)) ([#527](https://github.com/derekwinters/lucas-doggiehood/issues/527)) ([bb42868](https://github.com/derekwinters/lucas-doggiehood/commit/bb4286813557533858445c5419ba51ba7cf92f14))
+* rename Adventurous/Exploring personality to single-word Adventurous ([#532](https://github.com/derekwinters/lucas-doggiehood/issues/532)) ([09a269f](https://github.com/derekwinters/lucas-doggiehood/commit/09a269fad87d8fa607c848b7c8eebb945c2129b4))
+* render Tee/turn/cul-de-sac road meshes and derive crosswalks per tile ([#512](https://github.com/derekwinters/lucas-doggiehood/issues/512)) ([621d64c](https://github.com/derekwinters/lucas-doggiehood/commit/621d64ca8831e9f1370a6c87fe0dacd012ea8ac2))
+* resident dog at its own door returns down the walkway, not across the yard ([#534](https://github.com/derekwinters/lucas-doggiehood/issues/534)) ([51cb0c2](https://github.com/derekwinters/lucas-doggiehood/commit/51cb0c2a550f745edf97f30f28d415232302124b)), closes [#517](https://github.com/derekwinters/lucas-doggiehood/issues/517)
+* suppress onboarding coach bar while a centered modal panel is open ([#522](https://github.com/derekwinters/lucas-doggiehood/issues/522)) ([9eced1a](https://github.com/derekwinters/lucas-doggiehood/commit/9eced1a069749e47105150ff0a1d01d3aa2eab34))
+
 ## [0.9.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.8.0...v0.9.0) (2026-08-01)
 
 
