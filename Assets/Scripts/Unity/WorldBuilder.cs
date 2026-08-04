@@ -1708,6 +1708,10 @@ namespace Doggiehood.Unity
         {
             var sun = new GameObject(SunName);
             sun.transform.SetParent(parent);
+            // #560: place the Sun well above ground level rather than leaving
+            // it at the parent's default origin (map centre, on the grass),
+            // where a halo/flare/gizmo could render a visible hotspot.
+            sun.transform.position = new Vector3(0f, LightingPreset.SunHeight, 0f);
             sun.transform.rotation = Quaternion.Euler(LightingPreset.SunPitchDegrees, LightingPreset.SunYawDegrees, 0f);
 
             var light = sun.AddComponent<Light>();
@@ -1715,6 +1719,11 @@ namespace Doggiehood.Unity
             light.intensity = LightingPreset.SunIntensity;
             light.color = CoreColors.FromHex(LightingPreset.SunColorHex);
             light.shadows = LightShadows.Hard;
+            // #560: pin "no visible light object" explicitly instead of
+            // relying on component defaults. (A freshly AddComponent'd Light
+            // defaults its Draw Halo flag off, so no halo renders; the
+            // above-ground position is the actual root-cause fix.)
+            light.flare = null;
         }
 
         private static void ApplyAmbientLighting()
