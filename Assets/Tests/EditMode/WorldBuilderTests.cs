@@ -985,6 +985,25 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void SunHasNoVisibleLightObject_AndSitsWellAboveGround()
+        {
+            // #560: the Sun's transform was left at the parent's default
+            // origin (ground level, map centre), where a halo/flare/gizmo can
+            // render a visible bright hotspot on the grass. It must be lifted
+            // to LightingPreset.SunHeight, and the halo/flare must be pinned
+            // off so "no visible light object" is a checked contract, not a
+            // reliance on component defaults.
+            var sun = root.GetComponentsInChildren<Light>().Single();
+
+            Assert.That(sun.drawHalo, Is.False, "Sun must not draw a halo (#560).");
+            Assert.That(sun.flare, Is.Null, "Sun must not carry a lens flare (#560).");
+            Assert.That(sun.transform.position.y,
+                Is.EqualTo(LightingPreset.SunHeight).Within(0.001f),
+                "Sun must sit at LightingPreset.SunHeight, not ground-level origin (#560).");
+            Assert.That(sun.transform.position.y, Is.Not.EqualTo(0f));
+        }
+
+        [Test]
         public void AmbientLighting_IsTheFlatDaytimeAmbient()
         {
             Assert.That(RenderSettings.ambientMode, Is.EqualTo(AmbientMode.Flat));

@@ -19,6 +19,17 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void SunHeight_IsDefinedWellAboveGroundLevel()
+        {
+            // #560: the Sun's transform was left at world origin (ground
+            // level, map centre), where a halo/flare/gizmo can render a
+            // visible hotspot on the grass. WorldBuilder must lift it to a
+            // defined, positive height instead of the parent's default
+            // origin, so the constant it consumes has to exist and be > 0.
+            Assert.That(LightingPreset.SunHeight, Is.GreaterThan(0f));
+        }
+
+        [Test]
         public void CoreContainsNoTimeOfDayOrWeatherTypes()
         {
             // Guard (#39): day/night + weather are explicitly future ideas
