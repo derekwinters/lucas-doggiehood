@@ -74,7 +74,7 @@ The HUD coin indicator — a coin token plus the live balance. Sits in a screen 
 
 *Status: **implemented** in the HUD ([#296](https://github.com/derekwinters/lucas-doggiehood/issues/296)) — `Assets/Scripts/Unity/HudOverlay.cs` draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning). Sized to match the Settings gear beside it ([#440](https://github.com/derekwinters/lucas-doggiehood/issues/440)): the chip height equals `GearButtonSizePx` (88) and the interior is scaled ×1.375 to fill the taller pill.*
 
-**Regions:** coin token (left) · balance number (right, tabular figures), inside a cream pill.
+**Regions:** coin token (left) · balance number (right, tabular figures) · **floating delta label** (transient, appears below the chip on a balance change), inside a cream pill.
 
 | Constant | Value | Region |
 |---|---|---|
@@ -83,6 +83,13 @@ The HUD coin indicator — a coin token plus the live balance. Sits in a screen 
 | `PaddingLeftPx` | 14 | coin inset |
 | `PaddingRightPx` | 36 | number inset |
 | `FontSizePx` | 46 | balance (tabular) |
+| `DeltaFontSizePx` | 32 | delta label text |
+| `DeltaOffsetYPx` | 12 | gap: chip bottom edge → delta label start |
+| `DeltaRiseDistancePx` | 48 | total rise distance before the label is discarded |
+| `DeltaRiseDurationSec` | 0.9 | delta rise + fade duration |
+| `CountUpDurationSec` | 0.5 | balance-number count-up (tween) duration |
+
+**Balance-change animation ([#542](https://github.com/derekwinters/lucas-doggiehood/issues/542)).** On a `Wallet.Coins` change the chip spawns a **delta label** showing the signed amount — `+123` in **Leaf** (the palette's positive/confirm role) on a gain, `−45` in **Coral** (primary/spend) on a spend — starting `DeltaOffsetYPx` below the chip and centred under it. It rises `DeltaRiseDistancePx` while fading linearly to transparent over `DeltaRiseDurationSec`, then is discarded (no new colors are introduced — the delta reuses the shared palette). Independently, the displayed balance **counts up** from its prior displayed value to the new live `Wallet.Coins` value over `CountUpDurationSec` rather than snapping; a second change before the count-up finishes just re-targets it toward the newer value (from wherever it currently reads) rather than queuing. Each change spawns its own delta-label instance — there is no stacking/queue model for the label (unlike the [reward toast](toast.md), [#541](https://github.com/derekwinters/lucas-doggiehood/issues/541), which carries the *message*; this chip carries only the *running-total* motion). Purely decorative: it does not register with `ModalInputGate` and never blocks a tap. The count-up + rise/fade math is Unity-independent (`Doggiehood.Core.Economy.CoinChipAnimation`, plain-NUnit tested); `HudOverlay` only reads it each frame and paints it.
 
 ### Speech-bubble indicator (`SpeechBubbleIndicator`)
 

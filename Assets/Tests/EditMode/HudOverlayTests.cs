@@ -222,6 +222,107 @@ namespace Doggiehood.Unity.EditModeTests
                 "the hub hole is smaller than the gear body");
         }
 
+        [Test]
+        public void CoinsChanged_OnAGain_SpawnsALeafDeltaLabel()
+        {
+            // #542: a deposit spawns a floating "+N" delta, role Gain, painted
+            // Leaf green (the palette's positive/confirm role).
+            var overlay = host.AddComponent<HudOverlay>();
+            var state = GameState.CreateNew();
+            overlay.Init(state);
+
+            state.Wallet.Deposit(100);
+
+            Assert.That(overlay.CurrentDelta, Is.Not.Null, "a gain spawns a delta label");
+            Assert.That(overlay.CurrentDelta.Role, Is.EqualTo(CoinDeltaRole.Gain));
+            Assert.That(overlay.CurrentDelta.DeltaText, Is.EqualTo("+100"));
+            AssertHex(HudOverlay.DeltaColor(CoinDeltaRole.Gain), 0x58, 0xC0, 0x6A, "Leaf gain");
+        }
+
+        [Test]
+        public void CoinsChanged_OnASpend_SpawnsACoralDeltaLabel()
+        {
+            // #542: a spend spawns a floating "−N" delta, role Spend, painted
+            // Coral red (the palette's primary/spend role).
+            var overlay = host.AddComponent<HudOverlay>();
+            var state = GameState.CreateNew();
+            overlay.Init(state);
+            state.Wallet.Deposit(200);
+
+            Assert.That(state.Wallet.TrySpend(50), Is.True);
+
+            Assert.That(overlay.CurrentDelta, Is.Not.Null);
+            Assert.That(overlay.CurrentDelta.Role, Is.EqualTo(CoinDeltaRole.Spend));
+            Assert.That(overlay.CurrentDelta.DeltaText, Is.EqualTo("−50"));
+            AssertHex(HudOverlay.DeltaColor(CoinDeltaRole.Spend), 0xFF, 0x7A, 0x5C, "Coral spend");
+        }
+
+        [Test]
+        public void DeltaLabel_SitsDeltaOffsetYBelowTheChip_AndCentredUnderIt()
+        {
+            // #542: at the start of the rise (offset 0) the delta label begins
+            // DeltaOffsetYPx below the chip's bottom edge, horizontally centred
+            // under the chip.
+            var full = new Rect(0f, 0f, 1920f, 1200f);
+            var width = HudOverlay.ComputeChipWidth("128");
+            var chip = HudOverlay.ComputeChipRect(1920f, 1200f, full, width);
+
+            var label = HudOverlay.ComputeDeltaLabelRect(chip, 0f);
+
+            Assert.That(label.yMin, Is.EqualTo(chip.yMax + HudOverlay.DeltaOffsetYPx),
+                "delta label starts DeltaOffsetYPx below the chip");
+            Assert.That(label.center.x, Is.EqualTo(chip.center.x),
+                "delta label is centred under the chip");
+        }
+
+        [Test]
+        public void DeltaLabel_RisesUpwardAsItsOffsetGrows()
+        {
+            // #542: the label rises (moves up — decreasing y in IMGUI's top-left
+            // origin) as its rise offset grows toward DeltaRiseDistancePx.
+            var full = new Rect(0f, 0f, 1920f, 1200f);
+            var width = HudOverlay.ComputeChipWidth("128");
+            var chip = HudOverlay.ComputeChipRect(1920f, 1200f, full, width);
+
+            var start = HudOverlay.ComputeDeltaLabelRect(chip, 0f);
+            var risen = HudOverlay.ComputeDeltaLabelRect(chip, CoinChipAnimation.DeltaRiseDistancePx);
+
+            Assert.That(risen.yMin, Is.LessThan(start.yMin), "the label moves up as it rises");
+            Assert.That(start.yMin - risen.yMin, Is.EqualTo(CoinChipAnimation.DeltaRiseDistancePx),
+                "it rises exactly the full rise distance");
+        }
+
+        [Test]
+        public void CountUp_InFlight_ShowsTheTweenedValue_NotTheRawLiveCoins()
+        {
+            // #542: while the count-up tween runs, the chip shows the tweened
+            // value — not the raw live Wallet.Coins, which has already jumped to
+            // the new total.
+            var overlay = host.AddComponent<HudOverlay>();
+            var state = GameState.CreateNew();
+            overlay.Init(state);
+
+            state.Wallet.Deposit(100);
+
+            Assert.That(overlay.Label, Is.EqualTo("100"), "the raw live wallet already reads the new total");
+            Assert.That(overlay.DisplayedLabel(0f), Is.EqualTo("0"), "the tween starts at the old value");
+            Assert.That(overlay.DisplayedLabel(CoinChipAnimation.CountUpDurationSec / 2f), Is.EqualTo("50"),
+                "half-way through, half-way counted up");
+            Assert.That(overlay.DisplayedLabel(CoinChipAnimation.CountUpDurationSec), Is.EqualTo("100"),
+                "the tween reaches the new total at CountUpDurationSec");
+        }
+
+        [Test]
+        public void DeltaAnimationConstants_MatchTheApprovedWireframeValues()
+        {
+            // #542 approved proposal (shared-components.md CurrencyChip table).
+            Assert.That(HudOverlay.DeltaFontSizePx, Is.EqualTo(32), "delta label font size");
+            Assert.That(HudOverlay.DeltaOffsetYPx, Is.EqualTo(12f), "gap: chip bottom -> delta label");
+            Assert.That(CoinChipAnimation.DeltaRiseDistancePx, Is.EqualTo(48f), "rise distance");
+            Assert.That(CoinChipAnimation.DeltaRiseDurationSec, Is.EqualTo(0.9f), "rise + fade duration");
+            Assert.That(CoinChipAnimation.CountUpDurationSec, Is.EqualTo(0.5f), "count-up duration");
+        }
+
         private static void AssertHex(Color color, byte r, byte g, byte b, string what)
         {
             var c32 = (Color32)color;

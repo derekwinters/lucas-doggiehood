@@ -13,10 +13,21 @@ namespace Doggiehood.Core.Economy
     {
         public int Coins { get; private set; }
 
+        /// <summary>#542: raised on every <em>visible</em> balance change,
+        /// carrying the signed delta (positive on a deposit, negative on a
+        /// spend). The HUD chip subscribes to spawn the floating "+N"/"−N"
+        /// delta label and drive the count-up tween. A rejected spend and a
+        /// zero-valued change raise nothing — there is nothing to animate.</summary>
+        public event Action<int> CoinsChanged;
+
         public void Deposit(int amount)
         {
             RequirePositive(amount);
             Coins += amount;
+            if (amount != 0)
+            {
+                CoinsChanged?.Invoke(amount);
+            }
         }
 
         public bool TrySpend(int amount)
@@ -28,6 +39,11 @@ namespace Doggiehood.Core.Economy
             }
 
             Coins -= amount;
+            if (amount != 0)
+            {
+                CoinsChanged?.Invoke(-amount);
+            }
+
             return true;
         }
 
