@@ -1,3 +1,4 @@
+using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -37,6 +38,18 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(euler.y, Is.EqualTo(rig.Controller.Yaw).Within(0.01f));
             Assert.That(cam.orthographic, Is.EqualTo(CameraRigConfig.Orthographic));
             Assert.That(cam.orthographicSize, Is.EqualTo(rig.Controller.Zoom).Within(0.001f));
+        }
+
+        [Test]
+        public void ClearsToGrass_AsTheVoidBackstop()
+        {
+            // #558: the main game camera clears to a solid grass-green colour
+            // (the same #7ED957 the ground plane is painted), so any area beyond
+            // the mesh edge at extreme pan+zoom-out reads as continuous grass
+            // rather than the blue void seam — a pixel-level backstop that can't
+            // under-cover. Mirrors PortraitCamera's SolidColor pattern.
+            Assert.That(cam.clearFlags, Is.EqualTo(CameraClearFlags.SolidColor));
+            Assert.That(cam.backgroundColor, Is.EqualTo(CoreColors.FromHex(Palette.GrassHex)));
         }
 
         [Test]

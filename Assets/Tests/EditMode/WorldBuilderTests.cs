@@ -541,9 +541,9 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(ground.childCount, Is.EqualTo(0), "still a flat plane, not a tiled grid");
             Assert.That(ground.GetComponent<MeshFilter>().sharedMesh.name, Does.Contain("Plane"));
 
-            // #536: the plane now covers the camera's max-zoom-out reach, which
-            // pads beyond the bare tile coverage, so it still reaches under the
-            // northern zone's lots (and then some).
+            // #558: the plane covers the map footprint plus a constant margin
+            // (GroundExtentForMap), which still reaches under the northern zone's
+            // lots — the margin comfortably clears them.
             var groundExtent = Doggiehood.Core.Cameras.CameraController.GroundExtentForMap(state.Map);
             var halfDepth = ground.localScale.z * 10f / 2f; // a Unity Plane is 10m at scale 1
             var northReach = ground.position.z + halfDepth;
@@ -551,18 +551,19 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(northReach, Is.GreaterThanOrEqualTo(northLotZ),
                 "grass now reaches under the northern zone's lots");
             Assert.That(northReach, Is.EqualTo(groundExtent.MaxZ).Within(0.001f),
-                "the plane covers exactly the camera-reach ground extent");
+                "the plane covers exactly the margin-padded ground extent");
         }
 
         [Test]
-        public void BuildGround_ReachesTheCameraMaxZoomOutFraming_LeavingNoBlueSeam()
+        public void BuildGround_TracksTheMapFootprintPlusMargin_NotTheCameraReach()
         {
-            // #536: the reported regression — at max zoom-out only the top half
-            // of the screen showed grass, with the flat blue clear colour below a
-            // mid-screen seam. Root cause: the ground was sized to the raw tile
-            // coverage while CameraController's pan bounds + MaxZoom grew past it
-            // (#510/#524). The plane must now reach at least the camera's farthest
-            // reach — a bounds edge plus MaxZoom of view — in every direction.
+            // #558: the plane is sized to the map's own tile footprint plus a
+            // modest constant margin (GroundExtentForMap = MapExtent.Covering +
+            // BoundsMargin), NOT the camera's max-zoom-out reach as #536 did —
+            // that reach ballooned with the map and dwarfed the neighborhood.
+            // The "never show void" guarantee now lives in the grass-coloured
+            // camera clear colour, so the mesh can stay proportionate. Assert the
+            // built plane matches the margin-only extent exactly on every axis.
             Object.DestroyImmediate(root);
             state = GameState.CreateNew();
             root = WorldBuilder.Build(state);
@@ -570,35 +571,16 @@ namespace Doggiehood.Unity.EditModeTests
             var ground = root.transform.Find(WorldBuilder.GroundName);
             Assert.That(ground, Is.Not.Null);
 
-            var camera = Doggiehood.Core.Cameras.CameraController.ForStartingNeighborhood();
-            camera.RecomputeBoundsFromMap(state.Map);
-
-            var halfWidth = ground.localScale.x * 10f / 2f;
-            var halfDepth = ground.localScale.z * 10f / 2f;
-            var westReach = ground.position.x - halfWidth;
-            var eastReach = ground.position.x + halfWidth;
-            var southReach = ground.position.z - halfDepth;
-            var northReach = ground.position.z + halfDepth;
-
-            Assert.That(westReach, Is.LessThanOrEqualTo(camera.Bounds.MinX - camera.MaxZoom + 0.001f),
-                "grass covers the camera's west reach at max zoom-out");
-            Assert.That(eastReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxX + camera.MaxZoom - 0.001f),
-                "grass covers the camera's east reach at max zoom-out");
-            Assert.That(southReach, Is.LessThanOrEqualTo(camera.Bounds.MinZ - camera.MaxZoom + 0.001f),
-                "grass covers the camera's south reach at max zoom-out");
-            Assert.That(northReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
-                "grass covers the camera's north reach at max zoom-out");
+            AssertGroundMatchesMarginExtent(ground, state.Map);
         }
 
         [Test]
-        public void ResizeGroundToMap_KeepsGrassAheadOfTheGrownMaxZoom_AfterAnUnlock()
+        public void ResizeGroundToMap_TracksTheGrownFootprintPlusMargin_AfterAnUnlock()
         {
-            // #536: the zone-unlock path (ExpansionUnlockDirector -> ResizeGroundToMap)
-            // must keep the ground's reach >= the camera's recomputed MaxZoom after
-            // an unlock grows the map — mirroring CameraController's own
-            // RecomputeBoundsFromMap_GrowsTheMaxZoomOutAsTheMapGrows guarantee, but
-            // for the Unity-side ground plane, so a freshly unlocked zone is never
-            // framed against the blue seam.
+            // #558: the zone-unlock path (ExpansionUnlockDirector -> ResizeGroundToMap)
+            // resizes the plane to the grown map's footprint plus the same
+            // constant margin — a genuinely multi-tile map — decoupled from the
+            // camera's grown MaxZoom. Exercises the resize path (not just Build).
             Object.DestroyImmediate(root);
             var unlocked = WithFirstZoneUnlocked();
             root = WorldBuilder.Build(GameState.CreateNew());
@@ -607,14 +589,25 @@ namespace Doggiehood.Unity.EditModeTests
 
             var ground = root.transform.Find(WorldBuilder.GroundName);
             Assert.That(ground, Is.Not.Null);
+            Assert.That(unlocked.Map.Tiles.Count(), Is.GreaterThan(1), "sanity: a multi-tile map");
 
-            var camera = Doggiehood.Core.Cameras.CameraController.ForStartingNeighborhood();
-            camera.RecomputeBoundsFromMap(unlocked.Map);
+            AssertGroundMatchesMarginExtent(ground, unlocked.Map);
+        }
 
+        /// <summary>Asserts the built ground plane's transform (scale + position)
+        /// reproduces the margin-only <see cref="Doggiehood.Core.Cameras.CameraController.GroundExtentForMap"/>
+        /// for <paramref name="map"/> on every axis. A Unity Plane is 10m across
+        /// at scale 1, so half-span = localScale * 10 / 2.</summary>
+        private static void AssertGroundMatchesMarginExtent(Transform ground, TileMap map)
+        {
+            var extent = Doggiehood.Core.Cameras.CameraController.GroundExtentForMap(map);
+            var halfWidth = ground.localScale.x * 10f / 2f;
             var halfDepth = ground.localScale.z * 10f / 2f;
-            var northReach = ground.position.z + halfDepth;
-            Assert.That(northReach, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
-                "after the unlock, grass still outruns the grown max zoom-out");
+
+            Assert.That(ground.position.x - halfWidth, Is.EqualTo(extent.MinX).Within(0.001f), "west edge");
+            Assert.That(ground.position.x + halfWidth, Is.EqualTo(extent.MaxX).Within(0.001f), "east edge");
+            Assert.That(ground.position.z - halfDepth, Is.EqualTo(extent.MinZ).Within(0.001f), "south edge");
+            Assert.That(ground.position.z + halfDepth, Is.EqualTo(extent.MaxZ).Within(0.001f), "north edge");
         }
 
         [Test]
