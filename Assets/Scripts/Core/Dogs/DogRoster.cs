@@ -18,7 +18,7 @@ namespace Doggiehood.Core.Dogs
                 new Dog("Sunny", Breed.GoldenRetriever, Personality.Excited, 2, true),
                 new Dog("Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false),
                 new Dog("Duke", Breed.Labrador, Personality.Brave, 4, false),
-                new Dog("Scout", Breed.Beagle, Personality.Adventurous, 4, false),
+                new Dog("Scout", Breed.Beagle, Personality.Adventurous, 4, true),
                 new Dog("Waffles", Breed.Frenchton, Personality.Shy, 4, false),
             };
         }

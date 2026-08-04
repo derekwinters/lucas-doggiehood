@@ -21,7 +21,7 @@ namespace Doggiehood.Core.Tests.Dogs
             AssertDog(dogs, "Sunny", Breed.GoldenRetriever, Personality.Excited, 2, true);
             AssertDog(dogs, "Pepper", Breed.Chihuahua, Personality.Grumpy, 3, false);
             AssertDog(dogs, "Duke", Breed.Labrador, Personality.Brave, 4, false);
-            AssertDog(dogs, "Scout", Breed.Beagle, Personality.Adventurous, 4, false);
+            AssertDog(dogs, "Scout", Breed.Beagle, Personality.Adventurous, 4, true);
             AssertDog(dogs, "Waffles", Breed.Frenchton, Personality.Shy, 4, false);
         }
 
@@ -51,11 +51,11 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [Test]
-        public void OnlyNalaAndSunny_ArePuppies()
+        public void NalaSunnyAndScout_ArePuppies()
         {
             var puppies = DogRoster.CreateStartingDogs().Where(d => d.IsPuppy).Select(d => d.Name);
 
-            Assert.That(puppies, Is.EquivalentTo(new[] { "Nala", "Sunny" }));
+            Assert.That(puppies, Is.EquivalentTo(new[] { "Nala", "Sunny", "Scout" }));
         }
 
         [Test]

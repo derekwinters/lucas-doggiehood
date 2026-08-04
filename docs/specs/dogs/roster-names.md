@@ -15,9 +15,9 @@ Breed pool used for the starting cast: German Shepherd, Golden Retriever, Labrad
 | 2 — Parent + puppy | Bailey | Golden Retriever | Adventurous |
 | 2 — Parent + puppy | Sunny (puppy) | Golden Retriever | Excited |
 | 3 — Single dog | Pepper | Chihuahua | Grumpy |
-| 4 — Multi-dog (3) | Duke | Labrador | Brave |
-| 4 — Multi-dog (3) | Scout | Beagle | Adventurous |
-| 4 — Multi-dog (3) | Waffles | Frenchton | Shy |
+| 4 — Multi-dog (3: 2 adults + 1 puppy) | Duke | Labrador | Brave |
+| 4 — Multi-dog (3: 2 adults + 1 puppy) | Scout (puppy) | Beagle | Adventurous |
+| 4 — Multi-dog (3: 2 adults + 1 puppy) | Waffles | Frenchton | Shy |
 
 French Bulldog and Puggle are unused in the starting roster — reserved for the first expansion zone (v0.4, see [Neighborhood Expansion](../expansion.md)).
 
