@@ -1,7 +1,9 @@
 # Onboarding reward panel
 
-*Wireframe issue: [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374). Implements/covers: `OnboardingRewardPanel`. Approved: Derek, 2026-07-30 ([`/approve` on #374](https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403)) — authoritative layout contract.*
+*Wireframe issue: [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374). Implements/covers: `OnboardingRewardPanel`. Approved: Derek, 2026-07-30 ([`/approve` on #374](https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403)).*
 *Mockup: [mockups/onboarding-reward.html](mockups/onboarding-reward.html).*
+
+> **Superseded by the [toast notification](toast.md) ([#562](https://github.com/derekwinters/lucas-doggiehood/issues/562), approved Derek 2026-08-04).** The onboarding reward-chain's per-step completion feedback **no longer uses this modal panel** — it now surfaces as a non-modal top-left [toast](toast.md). This **reverses the [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374) decision** that made the panel "a deliberate, bounded exception to onboarding's otherwise no-blocking-modal principle": that exception is withdrawn, so onboarding no longer raises any blocking modal on a reward-chain step. The per-step accomplishment copy carries over **verbatim** to the toast (with each step's `+100 coins` folded into the toast's one line — see [toast.md → Per-toast copy](toast.md#per-toast-copy-the-two-triggers)). This page is retained for history; the panel has no live consumer. The rest of the page below describes the retired modal design.
 
 ## Purpose
 

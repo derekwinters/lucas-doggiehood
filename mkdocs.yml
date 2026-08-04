@@ -76,6 +76,7 @@ nav:
           - Settings menu: specs/ui/settings.md
           - Onboarding reward panel: specs/ui/onboarding-reward.md
           - Welcome pop-up: specs/ui/welcome-popup.md
+          - Toast notification: specs/ui/toast.md
           - Mockups: specs/ui/mockups/index.md
       - Decorations: specs/decorations.md
       - Neighborhood Expansion (Post-MVP): specs/expansion.md
