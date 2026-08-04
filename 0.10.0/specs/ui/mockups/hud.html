@@ -58,6 +58,11 @@
   }
   .coin{width:60px;height:60px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
 
+  /* reserved TOP-LEFT toast lane (#562) — mirrors the chip's top-right reservation.
+     HudToastLaneTopMarginPx 32, HudToastLaneLeftMarginPx 36, ToastHeightPx 88, ToastMaxWidthPx 640. */
+  .toast-lane{position:absolute;top:32px;left:36px;width:640px;height:88px;border:3px dashed color-mix(in srgb,var(--guide) 55%, transparent);border-radius:999px;pointer-events:none;z-index:3;}
+  .toast-lane-label{position:absolute;top:130px;left:36px;font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--guide);background:color-mix(in srgb,var(--bg) 70%, transparent);padding:2px 12px;border-radius:9px;}
+
   .info{margin-top:30px;display:grid;grid-template-columns:1.25fr 1fr;gap:32px;align-items:start;}
   @media (max-width:640px){ .info{grid-template-columns:1fr;} }
   .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
@@ -88,6 +93,7 @@
       <div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div><div class="house h3"></div>
       <div class="safe"></div><div class="safe-label">safe area</div>
+      <div class="toast-lane"></div><div class="toast-lane-label rounded">reserved toast lane (#562)</div>
       <div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div>
     </div>
   </div>
@@ -99,12 +105,16 @@
         <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
         <tr><td>HudChipAnchor</td><td class="val">TopRight</td><td>corner the chip pins to</td></tr>
         <tr><td>HudEdgeMarginPx</td><td class="val">36</td><td>legacy chip inset — superseded by #440 (chip now shares the gear's centreline)</td></tr>
+        <tr><td>HudToastLaneAnchor</td><td class="val">TopLeft</td><td>reserved toast lane corner — mirrors the chip (#562)</td></tr>
+        <tr><td>HudToastLaneTopMarginPx</td><td class="val">32</td><td>toast lane top inset (shares the chip/gear row)</td></tr>
+        <tr><td>HudToastLaneLeftMarginPx</td><td class="val">36</td><td>toast lane left inset (safe-area edge)</td></tr>
         <tr><td>&nbsp;↳ CurrencyChip.HeightPx</td><td class="val">88</td><td>the chip, matches the gear (a #173 constant)</td></tr>
         <tr><td>&nbsp;↳ CurrencyChip.CoinDiameterPx</td><td class="val">60</td><td>coin token (#173)</td></tr>
       </table>
       <div style="margin-top:20px">
         <h2>Regions</h2>
         <span class="pill">Currency chip — top-right</span>
+        <span class="pill">Toast lane — top-left (reserved, #562)</span>
         <span class="pill">(reserved) future HUD elements</span>
       </div>
     </div>

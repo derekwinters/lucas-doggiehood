@@ -1202,6 +1202,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Toast notification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../mockups/" class="md-nav__link">
         
   
@@ -1722,8 +1743,11 @@
 
 
 <h1 id="onboarding-reward-panel">Onboarding reward panel<a class="headerlink" href="#onboarding-reward-panel" title="Permanent link">&para;</a></h1>
-<p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>. Implements/covers: <code>OnboardingRewardPanel</code>. Approved: Derek, 2026-07-30 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403"><code>/approve</code> on #374</a>) — authoritative layout contract.</em>
+<p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>. Implements/covers: <code>OnboardingRewardPanel</code>. Approved: Derek, 2026-07-30 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374#issuecomment-5125178403"><code>/approve</code> on #374</a>).</em>
 <em>Mockup: <a href="../mockups/onboarding-reward.html">mockups/onboarding-reward.html</a>.</em></p>
+<blockquote>
+<p><strong>Superseded by the <a href="../toast/">toast notification</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/562">#562</a>, approved Derek 2026-08-04).</strong> The onboarding reward-chain's per-step completion feedback <strong>no longer uses this modal panel</strong> — it now surfaces as a non-modal top-left <a href="../toast/">toast</a>. This <strong>reverses the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a> decision</strong> that made the panel "a deliberate, bounded exception to onboarding's otherwise no-blocking-modal principle": that exception is withdrawn, so onboarding no longer raises any blocking modal on a reward-chain step. The per-step accomplishment copy carries over <strong>verbatim</strong> to the toast (with each step's <code>+100 coins</code> folded into the toast's one line — see <a href="../toast/#per-toast-copy-the-two-triggers">toast.md → Per-toast copy</a>). This page is retained for history; the panel has no live consumer. The rest of the page below describes the retired modal design.</p>
+</blockquote>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>A single, <strong>reusable celebration panel</strong> shown each time the player completes a step of the first-run onboarding reward-chain (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/316">#316</a>) — finish the first quest, upgrade a house, expand the map, build a house. It tells a young player, unmistakably, <em>"you did that, and here's your reward,"</em> calling out the coin payout that today lands silently. It is the <strong>standard</strong> onboarding reward surface: one panel, parameterized by copy + amount, raised after every onboarding step rather than a bespoke dialog per flow (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>; consumer <a href="https://github.com/derekwinters/lucas-doggiehood/issues/372">#372</a>). Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
 <p>Deliberately a <strong>bespoke celebration panel</strong>, not a reuse of the neutral <a href="../confirmation-dialog/">Confirmation dialog</a> (Derek, 2026-07-29): it reads as a <em>reward</em> — a single big star medal, a big "You did it!" heading, and one button that <strong>is</strong> the payout (<strong>"+100 coins"</strong>) — while still sitting on the shared Candy Cottage baseline and reusing the shared pill button.</p>
