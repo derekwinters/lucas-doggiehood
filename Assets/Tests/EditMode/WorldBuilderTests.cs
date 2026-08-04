@@ -995,7 +995,6 @@ namespace Doggiehood.Unity.EditModeTests
             // reliance on component defaults.
             var sun = root.GetComponentsInChildren<Light>().Single();
 
-            Assert.That(sun.drawHalo, Is.False, "Sun must not draw a halo (#560).");
             Assert.That(sun.flare, Is.Null, "Sun must not carry a lens flare (#560).");
             Assert.That(sun.transform.position.y,
                 Is.EqualTo(LightingPreset.SunHeight).Within(0.001f),

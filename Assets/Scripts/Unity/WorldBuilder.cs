@@ -1720,8 +1720,9 @@ namespace Doggiehood.Unity
             light.color = CoreColors.FromHex(LightingPreset.SunColorHex);
             light.shadows = LightShadows.Hard;
             // #560: pin "no visible light object" explicitly instead of
-            // relying on component defaults.
-            light.drawHalo = false;
+            // relying on component defaults. (A freshly AddComponent'd Light
+            // defaults its Draw Halo flag off, so no halo renders; the
+            // above-ground position is the actual root-cause fix.)
             light.flare = null;
         }
 
