@@ -218,32 +218,54 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
-        public void GroundExtentForMap_OutrunsTheCameraMaxZoomFramingInEveryDirection()
+        public void GroundExtentForMap_PadsTheTileCoveringByTheBoundsMargin()
         {
-            // #536: at max zoom-out the camera frames MaxZoom (an orthographic
-            // half-height) around its focus point, and that focus point can be
-            // panned anywhere within the pan Bounds. The ground plane must reach
-            // at least that far in every direction from the map centre, or the
-            // uncovered near edge shows the flat blue clear colour as a mid-screen
-            // seam. The ground extent is derived from the same map path the
-            // camera's Bounds/MaxZoom come from, so the two can't drift apart.
+            // #558: the ground mesh tracks the map's own tile footprint plus a
+            // modest, constant BoundsMargin on every side — the same margin the
+            // pan Bounds use — decoupled from the camera's MaxZoom (which #536
+            // padded by, and which balloons as the map grows). So it is exactly
+            // MapExtent.Covering padded by BoundsMargin per side, no more.
             var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
             map.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
-            var camera = NewController();
-            camera.RecomputeBoundsFromMap(map);
 
+            var covering = MapExtent.Covering(map);
             var ground = CameraController.GroundExtentForMap(map);
 
-            // Worst case: the focus panned to a Bounds edge, then MaxZoom of view
-            // beyond it. Ground must still cover that on every side.
-            Assert.That(ground.MinX, Is.LessThanOrEqualTo(camera.Bounds.MinX - camera.MaxZoom + 0.001f),
-                "grass outruns the camera's west reach at max zoom-out");
-            Assert.That(ground.MaxX, Is.GreaterThanOrEqualTo(camera.Bounds.MaxX + camera.MaxZoom - 0.001f),
-                "grass outruns the camera's east reach at max zoom-out");
-            Assert.That(ground.MinZ, Is.LessThanOrEqualTo(camera.Bounds.MinZ - camera.MaxZoom + 0.001f),
-                "grass outruns the camera's south reach at max zoom-out");
-            Assert.That(ground.MaxZ, Is.GreaterThanOrEqualTo(camera.Bounds.MaxZ + camera.MaxZoom - 0.001f),
-                "grass outruns the camera's north reach at max zoom-out");
+            Assert.That(ground.MinX, Is.EqualTo(covering.MinX - CameraController.BoundsMargin).Within(0.001f),
+                "west edge is the tile coverage minus one BoundsMargin");
+            Assert.That(ground.MaxX, Is.EqualTo(covering.MaxX + CameraController.BoundsMargin).Within(0.001f),
+                "east edge is the tile coverage plus one BoundsMargin");
+            Assert.That(ground.MinZ, Is.EqualTo(covering.MinZ - CameraController.BoundsMargin).Within(0.001f),
+                "south edge is the tile coverage minus one BoundsMargin");
+            Assert.That(ground.MaxZ, Is.EqualTo(covering.MaxZ + CameraController.BoundsMargin).Within(0.001f),
+                "north edge is the tile coverage plus one BoundsMargin");
+        }
+
+        [Test]
+        public void GroundExtentForMap_MarginStaysConstant_WhileMaxZoomGrowsWithTheMap()
+        {
+            // #558: ground extent no longer scales with MaxZoom. The pad beyond
+            // the tile coverage stays a constant 2 x BoundsMargin per axis
+            // regardless of map size, even though MaxZoom keeps growing with the
+            // map — that decoupling is the whole point of the fix.
+            var small = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            var big = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            big.Place(FrontierTestWorld.FirstTile, FrontierTestWorld.FirstTileType);
+
+            var smallPad = CameraController.GroundExtentForMap(small).Width - MapExtent.Covering(small).Width;
+            var bigPad = CameraController.GroundExtentForMap(big).Width - MapExtent.Covering(big).Width;
+
+            Assert.That(smallPad, Is.EqualTo(2f * CameraController.BoundsMargin).Within(0.001f));
+            Assert.That(bigPad, Is.EqualTo(2f * CameraController.BoundsMargin).Within(0.001f),
+                "the ground pad stays a constant margin regardless of map size");
+
+            // Meanwhile MaxZoom still grows with the map (unchanged by #558).
+            var smallCam = NewController();
+            smallCam.RecomputeBoundsFromMap(small);
+            var bigCam = NewController();
+            bigCam.RecomputeBoundsFromMap(big);
+            Assert.That(bigCam.MaxZoom, Is.GreaterThan(smallCam.MaxZoom),
+                "MaxZoom still grows with the map even though the ground pad does not");
         }
 
         [Test]
@@ -258,8 +280,11 @@ namespace Doggiehood.Core.Tests.Cameras
 
             Assert.That(smallGround.CenterX, Is.EqualTo(MapExtent.Covering(small).CenterX).Within(0.001f));
             Assert.That(smallGround.CenterZ, Is.EqualTo(MapExtent.Covering(small).CenterZ).Within(0.001f));
-            Assert.That(bigGround.Width, Is.GreaterThan(smallGround.Width),
-                "a bigger map (bigger MaxZoom) grows the ground the camera can see");
+            // The extra north tile grows the map's footprint along Z, so — now
+            // that ground tracks the footprint rather than a uniform MaxZoom
+            // radius — the plane grows along that same axis with it.
+            Assert.That(bigGround.Depth, Is.GreaterThan(smallGround.Depth),
+                "a bigger map footprint grows the ground plane with it");
         }
 
         [Test]

@@ -411,13 +411,14 @@ namespace Doggiehood.Unity
 
         private static void ApplyGroundExtent(Transform ground, TileMap map)
         {
-            // #536: size the grass to the camera's max-zoom-out reach, not the
-            // bare tile coverage (MapExtent.Covering). CameraController grows its
-            // pan bounds and MaxZoom with the live map (#510/#524), so a ground
-            // sized only to the tiles left the near edge uncovered at the new,
-            // larger zoom-out — the flat blue clear colour showed through as a
-            // mid-screen seam. GroundExtentForMap pads from the same source so
-            // grass always outruns what the camera can frame.
+            // #558: size the grass to the map's own tile footprint plus a modest
+            // constant margin (GroundExtentForMap = MapExtent.Covering +
+            // BoundsMargin), not the camera's max-zoom-out reach as #536 did —
+            // that reach balloons with the map (#510/#524), so the plane dwarfed
+            // the neighborhood and grew ~2m of green per 1m of map. The "never
+            // expose the void" guarantee #536 protected now lives in the
+            // grass-coloured camera clear colour (CameraRig backstop), so the
+            // mesh can track the footprint and stay proportionate at every size.
             var extent = CameraController.GroundExtentForMap(map);
             // A default Unity Plane is GroundPlaneMeshSize x GroundPlaneMeshSize
             // meters at scale 1, so the span-to-scale divisor is that mesh size.

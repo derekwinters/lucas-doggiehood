@@ -20,8 +20,10 @@ namespace Doggiehood.Core.Cameras
         /// <summary>Breathing room (meters) added around the map's tile
         /// coverage when deriving the pan bounds (#20, #373), so the player
         /// can pan a little past the outermost tiles rather than being pinned
-        /// exactly to their edges.</summary>
-        private const float BoundsMargin = 12f;
+        /// exactly to their edges. Since #558 the ground mesh pads by this same
+        /// constant margin too (see <see cref="GroundExtentForMap"/>), so it is
+        /// public for the tests that pin that shared contract.</summary>
+        public const float BoundsMargin = 12f;
 
         /// <summary>Extra orthographic half-height (meters) added beyond the
         /// map's tile coverage when deriving <see cref="MaxZoom"/> (#510), so
@@ -84,22 +86,23 @@ namespace Doggiehood.Core.Cameras
         }
 
         /// <summary>The world-space extent the ground plane must cover for a
-        /// given <paramref name="map"/> so the grass always outruns the farthest
-        /// the camera can see at max zoom-out (#536). It is the pan
-        /// <see cref="BoundsForMap"/> padded on every side by
-        /// <see cref="MaxZoomForBounds"/> — the orthographic half-height at the
-        /// far zoom-out — so even with the focus panned to a bounds edge the
-        /// view (±MaxZoom) still lands on grass, never the flat clear colour.
-        /// Sharing the same <see cref="BoundsForMap"/>/<see cref="MaxZoomForBounds"/>
-        /// the live camera derives its reach from keeps ground coverage and
-        /// camera reach from drifting apart on a future max-zoom change.</summary>
+        /// given <paramref name="map"/>: the map's own tile coverage
+        /// (<see cref="MapExtent.Covering"/>) padded on every side by the
+        /// constant <see cref="BoundsMargin"/> — the same modest margin the pan
+        /// <see cref="BoundsForMap"/> use (#558). This deliberately does NOT pad
+        /// by the camera's <see cref="MaxZoom"/> reach (as #536 did): that reach
+        /// balloons with the map, which made the grass plane dwarf the
+        /// neighborhood and grow ~2m of green for every 1m the map grew. The
+        /// "never expose the void" guarantee #536 protected now lives in a
+        /// grass-coloured camera clear colour (the Unity CameraRig backstop),
+        /// not in over-growing this mesh — so the ground can track the footprint
+        /// plus a fixed margin and stay proportionate at every map size.</summary>
         public static MapExtent GroundExtentForMap(TileMap map)
         {
-            var bounds = BoundsForMap(map);
-            float radius = MaxZoomForBounds(bounds);
+            var extent = MapExtent.Covering(map);
             return new MapExtent(
-                bounds.MinX - radius, bounds.MaxX + radius,
-                bounds.MinZ - radius, bounds.MaxZ + radius);
+                extent.MinX - BoundsMargin, extent.MaxX + BoundsMargin,
+                extent.MinZ - BoundsMargin, extent.MaxZ + BoundsMargin);
         }
 
         private static WorldBounds BoundsForMap(TileMap map)

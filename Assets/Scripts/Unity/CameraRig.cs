@@ -1,3 +1,4 @@
+using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
 using UnityEngine;
 
@@ -16,6 +17,12 @@ namespace Doggiehood.Unity
     public sealed class CameraRig : MonoBehaviour
     {
         private const float TapMaxDragPixels = 12f;
+
+        /// <summary>Void backstop clear colour (#558): the same grass green the
+        /// ground plane is painted (<see cref="Palette.GrassHex"/>), so any area
+        /// beyond the mesh edge reads as continuous grass rather than the default
+        /// blue seam. Mirrors <see cref="PortraitCamera"/>'s SolidColor pattern.</summary>
+        private static readonly Color GrassBackgroundColor = CoreColors.FromHex(Palette.GrassHex);
 
         private Camera cachedCamera;
         private Vector3 lastPointerPosition;
@@ -36,6 +43,16 @@ namespace Doggiehood.Unity
         {
             cachedCamera = GetComponent<Camera>();
             cachedCamera.orthographic = CameraRigConfig.Orthographic;
+
+            // #558: clear to grass, not the default blue, as the void backstop.
+            // The ground mesh now tracks the map footprint plus a modest margin
+            // (CameraController.GroundExtentForMap) rather than the camera's
+            // ballooning max-zoom reach, so anything the mesh doesn't cover at an
+            // extreme pan+zoom-out lands on this grass-green clear colour and
+            // reads as continuous grass instead of a seam. Mirrors PortraitCamera.
+            cachedCamera.clearFlags = CameraClearFlags.SolidColor;
+            cachedCamera.backgroundColor = GrassBackgroundColor;
+
             ApplyControllerState();
         }
 
