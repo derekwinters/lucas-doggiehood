@@ -54,14 +54,32 @@ namespace Doggiehood.Core.Tests.World
             WorldDimensions.CrosswalkWidth,
             WorldDimensions.CulDeSacBulbRadius,
             WorldDimensions.OpposingTurnArchRadius,
+            WorldDimensions.RoadBendCornerRadius,
         };
 
         // Matches "float SomeName = 6f" / "float SomeName = 1.5f" style
         // field-declaration initializers, wherever they sit on the line
         // (const/readonly/access modifiers, if present, come before
-        // "float" and aren't required by the pattern).
+        // "float" and aren't required by the pattern). Group 1 is the field
+        // name, group 2 the literal value.
         private static readonly Regex FloatFieldDeclaration =
-            new Regex(@"float\s+\w+\s*=\s*(\d+(?:\.\d+)?)f\b", RegexOptions.Compiled);
+            new Regex(@"float\s+(\w+)\s*=\s*(\d+(?:\.\d+)?)f\b", RegexOptions.Compiled);
+
+        // Known coincidental collisions: an in-folder constant whose value
+        // happens to equal a locked dimension but is semantically unrelated, so
+        // it isn't a duplicate of a WorldDimensions value. This is the same
+        // class of false positive the class doc describes for out-of-folder
+        // constants (CameraController.MinZoom = 6f, WanderBehavior.StepLength =
+        // 3f), except these live in the World folder and so can't be excluded by
+        // scope. Each entry is "<file>: <fieldName>".
+        //
+        // - FenceTiling.Scale (5f): the uniform fence-piece render scale (#129),
+        //   coincidentally equal to RoadBendCornerRadius (5m, #581) — a fence
+        //   scale, not a road-bend radius.
+        private static readonly HashSet<string> AllowedCollisions = new HashSet<string>
+        {
+            "FenceTiling.cs: Scale",
+        };
 
         private static string GetCoreWorldSourceDirectory([CallerFilePath] string thisFilePath = null)
         {
@@ -92,7 +110,13 @@ namespace Doggiehood.Core.Tests.World
 
                 foreach (Match match in FloatFieldDeclaration.Matches(sourceText))
                 {
-                    var declaredValue = float.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                    var fieldName = match.Groups[1].Value;
+                    var declaredValue = float.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+
+                    if (AllowedCollisions.Contains($"{Path.GetFileName(file)}: {fieldName}"))
+                    {
+                        continue;
+                    }
 
                     if (LockedValues.Any(locked => Math.Abs(locked - declaredValue) < 0.0001f))
                     {

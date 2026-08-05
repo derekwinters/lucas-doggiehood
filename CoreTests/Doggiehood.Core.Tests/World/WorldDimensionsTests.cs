@@ -28,5 +28,20 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(WorldDimensions.CulDeSacBulbRadius, Is.EqualTo(9f));
             Assert.That(WorldDimensions.OpposingTurnArchRadius, Is.EqualTo(15f));
         }
+
+        [Test]
+        public void RoadBendCornerRadius_IsMeasuredFromTheRoadBendKitMesh()
+        {
+            // #581: the plain Turn*/road-bend corner radius, measured directly
+            // from the shared Kenney road-bend FBX the same way
+            // SidewalkSurfaceHeight (0.2m) was measured from road-straight.fbx.
+            // The bend's road centerline traces a quarter-circle whose raw FBX
+            // radius is 50 units (midline of the inner 20-raw and outer 80-raw
+            // asphalt-edge arcs, all concentric about the tile-mesh corner). The
+            // same raw->world chain that turns the 2-raw curb into 0.2m — cm->m
+            // FBX import (/100) then WorldBuilder.RoadTileScale (x10), i.e.
+            // raw x 0.1 — gives 50 raw -> 5.0m.
+            Assert.That(WorldDimensions.RoadBendCornerRadius, Is.EqualTo(5f));
+        }
     }
 }
