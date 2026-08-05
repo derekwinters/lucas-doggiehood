@@ -1,6 +1,5 @@
 using System;
 using Doggiehood.Core.Onboarding;
-using Doggiehood.Core.World;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -266,38 +265,11 @@ namespace Doggiehood.Unity.EditModeTests
                 Throws.InstanceOf<ArgumentOutOfRangeException>());
         }
 
-        // --- Wiring: the panel reacts to the Core reward event, mapped copy ---
-
-        [Test]
-        public void Director_ShowsThePanelOnAStepPayout_WithMappedCopyAndPayout()
-        {
-            var state = GameState.CreateNew();
-            var director = overlayHost.AddComponent<OnboardingRewardDirector>();
-            director.Init(state, panel);
-
-            // First quest completes -> the reward chain pays step 1 and fires the
-            // Core reward event the director listens for.
-            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
-
-            Assert.That(panel.IsOpen, Is.True, "the celebration pops on a step payout");
-            Assert.That(panel.MessageLabel.text, Is.EqualTo("You finished your first quest!"),
-                "the director maps the step to its approved copy");
-            Assert.That(panel.ActionLabel.text, Is.EqualTo("+100 coins"),
-                "the button names the coins the chain just deposited");
-        }
-
-        [Test]
-        public void Director_DoesNotMoveCoins_TheChainAlreadyDidThePayout()
-        {
-            var state = GameState.CreateNew();
-            var director = overlayHost.AddComponent<OnboardingRewardDirector>();
-            director.Init(state, panel);
-
-            state.GrantOnboardingCompletionReward(state.Houses[0].Id);
-
-            Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep),
-                "the panel shows the amount Core granted and never deposits on its own");
-        }
+        // #541: the OnboardingRewardDirector no longer drives this panel — the
+        // reward-chain step feedback moved onto the non-modal toast
+        // (CompletionToastDirectorTests). This panel is retained for history
+        // (onboarding-reward.md) with no live consumer; the layout/dismiss/copy
+        // tests above still validate the retired design.
 
         private static void AssertColor(Color actual, Color expected, string what)
         {

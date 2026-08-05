@@ -5,6 +5,16 @@ using UnityEngine;
 
 namespace Doggiehood.Unity
 {
+    /// <summary>The two HUD corners the persistent HUD pins to (hud.md): the
+    /// currency chip/gear reserve <see cref="TopRight"/>, and the non-modal toast
+    /// lane (#562) reserves <see cref="TopLeft"/> — mirrored reservations in
+    /// opposite corners.</summary>
+    public enum HudCorner
+    {
+        TopLeft,
+        TopRight,
+    }
+
     /// <summary>
     /// Persistent HUD (#159): the currency chip in the top-right, with the
     /// Settings gear (#219) owning the very corner and the chip nudged just
@@ -49,6 +59,18 @@ namespace Doggiehood.Unity
         // --- HUD placement (hud.md #174) ---
         public const float HudEdgeMarginPx = 36f;  // inset from the safe-area top to the chip
         public const float ChipGearGapPx = 16f;    // gap between the chip's right edge and the gear
+
+        // --- Reserved toast lane (hud.md #562 / toast.md) ---
+        // The top-left corner is reserved for the single non-modal toast
+        // notification, mirroring the top-right CurrencyChip reservation in the
+        // opposite corner. HudOverlay only reserves the lane — nothing else
+        // renders top-left; the toast itself is drawn by ToastView, whose own size
+        // constants (ToastHeightPx / ToastMaxWidthPx) this reservation reads. The
+        // lane margins match the toast's own ToastLaneTopMarginPx / LeftMarginPx.
+        public const HudCorner HudChipAnchor = HudCorner.TopRight;
+        public const HudCorner HudToastLaneAnchor = HudCorner.TopLeft;
+        public const float HudToastLaneTopMarginPx = 32f;
+        public const float HudToastLaneLeftMarginPx = 36f;
 
         // --- Fixed Candy Cottage palette (shared-components.md) ---
         public static readonly Color InkColor = new Color32(0x2E, 0x2A, 0x26, 0xFF);
@@ -233,6 +255,21 @@ namespace Doggiehood.Unity
             var digits = label == null ? 0 : label.Length;
             return 2f * OutlineThicknessPx + PaddingLeftPx + CoinDiameterPx + IconGapPx
                 + digits * DigitAdvancePx + PaddingRightPx;
+        }
+
+        /// <summary>The reserved top-left toast lane rect (hud.md #562): a corner
+        /// rect at the lane margins, sized to the toast's full reserved footprint
+        /// (<see cref="ToastView.ToastMaxWidthPx"/> × <see cref="ToastView.ToastHeightPx"/>).
+        /// Nothing else in the HUD renders here — <see cref="ToastView"/> owns it.
+        /// IMGUI top-left origin, mirroring <see cref="ComputeGearRect"/> in the
+        /// opposite corner.</summary>
+        public static Rect ComputeToastLaneRect()
+        {
+            return new Rect(
+                HudToastLaneLeftMarginPx,
+                HudToastLaneTopMarginPx,
+                ToastView.ToastMaxWidthPx,
+                ToastView.ToastHeightPx);
         }
 
         /// <summary>The currency chip rect. Its right edge sits inboard-left of

@@ -63,6 +63,18 @@ namespace Doggiehood.Core.Quests
         /// so every one is covered.</summary>
         public event Action<IReadOnlyList<Dog>> MoveInOccurred;
 
+        /// <summary>#541: raised from the single <see cref="Complete"/> funnel
+        /// exactly once each time a quest completes — carrying the just-completed
+        /// <see cref="Quest"/> and the flat payout deposited
+        /// (<see cref="EconomyNumbers.QuestPayout"/>). Every completion path
+        /// (delivery, lost-item find, spray) routes through <see cref="Complete"/>,
+        /// so every one is covered. The thin Unity layer subscribes to raise the
+        /// completion toast ("Quest complete! +N coins"); Core still owns the
+        /// payout and never re-pays. No copy is carried here (engine-free Core):
+        /// the event names only the quest + amount, and the Unity layer owns the
+        /// message assembly.</summary>
+        public event Action<Quest, int> QuestCompleted;
+
         private readonly GameState state;
         private readonly Random moveInRng;
         private readonly QuestPacingPolicy pacing = new QuestPacingPolicy();
@@ -500,6 +512,7 @@ namespace Doggiehood.Core.Quests
             quest.Status = QuestStatus.Completed;
             FindDog(quest).ClearQuest();
             state.Wallet.Deposit(EconomyNumbers.QuestPayout);
+            QuestCompleted?.Invoke(quest, EconomyNumbers.QuestPayout);
             var household = state.HandleQuestCompleted(moveInRng);
             if (household.Count > 0)
             {
