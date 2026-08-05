@@ -69,7 +69,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(ToastView.ToastLaneTopMarginPx, Is.EqualTo(32f));
             Assert.That(ToastView.ToastLaneLeftMarginPx, Is.EqualTo(36f));
             Assert.That(ToastView.ToastHeightPx, Is.EqualTo(88f));
-            Assert.That(ToastView.ToastMaxWidthPx, Is.EqualTo(640f));
+            Assert.That(ToastView.ToastMaxWidthPx, Is.EqualTo(1080f));
             Assert.That(ToastView.ToastCoinDiameterPx, Is.EqualTo(60f));
             Assert.That(ToastView.ToastPaddingLeftPx, Is.EqualTo(14f));
             Assert.That(ToastView.ToastPaddingRightPx, Is.EqualTo(28f));

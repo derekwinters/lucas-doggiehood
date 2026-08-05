@@ -27,7 +27,7 @@ namespace Doggiehood.Unity
         public const float ToastLaneTopMarginPx = 32f;   // shares the chip/gear row
         public const float ToastLaneLeftMarginPx = 36f;  // safe-area left edge
         public const float ToastHeightPx = 88f;          // matches CurrencyChip.HeightPx (#173)
-        public const float ToastMaxWidthPx = 640f;       // reserved lane width cap
+        public const float ToastMaxWidthPx = 1080f;      // reserved lane width cap (#578: fits the longest approved line on one line)
         public const float ToastCoinDiameterPx = 60f;    // matches CurrencyChip.CoinDiameterPx (#173)
         public const float ToastPaddingLeftPx = 14f;     // coin inset (matches CurrencyChip)
         public const float ToastPaddingRightPx = 28f;    // message inset
@@ -222,6 +222,22 @@ namespace Doggiehood.Unity
             return Mathf.Min(content, ToastMaxWidthPx);
         }
 
+        /// <summary>The message's text rect inside a pill: inset on the left past
+        /// the outline, the coin inset, the coin token, and the icon gap; on the
+        /// right past the outline and the message inset. Derived purely from the
+        /// (already width-capped) pill, so it is always contained within the pill's
+        /// own bounds — combined with the label style's
+        /// <see cref="TextClipping.Clip"/>, a message wider than the capped pill is
+        /// clipped at the edge, never bleeding past it or wrapping to a second line
+        /// (#578).</summary>
+        public static Rect ComputeTextRect(Rect pill)
+        {
+            var textX = pill.x + OutlineThicknessPx + ToastPaddingLeftPx
+                + ToastCoinDiameterPx + ToastIconGapPx;
+            var textRight = pill.xMax - OutlineThicknessPx - ToastPaddingRightPx;
+            return new Rect(textX, pill.y, Mathf.Max(0f, textRight - textX), pill.height);
+        }
+
         /// <summary>Horizontal slide offset (px) for the current phase: the toast
         /// starts one full lane-width to the left and slides to rest during
         /// slide-in, and reverses during slide-out. Zero while holding.</summary>
@@ -307,13 +323,16 @@ namespace Doggiehood.Unity
                 new Rect(coinX + CoinOutlineThicknessPx, coinY + CoinOutlineThicknessPx, inner, inner),
                 GoldColor);
 
-            var textX = coinX + ToastCoinDiameterPx + ToastIconGapPx;
-            var textRight = rect.xMax - OutlineThicknessPx - ToastPaddingRightPx;
-            var textRect = new Rect(textX, rect.y, Mathf.Max(0f, textRight - textX), rect.height);
-            GUI.Label(textRect, message, style);
+            GUI.Label(ComputeTextRect(rect), message, style);
         }
 
-        private static GUIStyle LabelStyle()
+        /// <summary>The bold single-line message style. <see cref="wordWrap"/> is
+        /// off and <see cref="clipping"/> is <see cref="TextClipping.Clip"/> so the
+        /// line never wraps to a second row and any message still exceeding the
+        /// (widened) budget is clipped at the pill edge rather than bleeding past it
+        /// (#578). Public so the fit/clip guards can measure it with the real font
+        /// metrics.</summary>
+        public static GUIStyle LabelStyle()
         {
             if (labelStyle == null)
             {
@@ -323,6 +342,8 @@ namespace Doggiehood.Unity
                     fontSize = ToastFontSizePx,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleLeft,
+                    wordWrap = false,
+                    clipping = TextClipping.Clip,
                 };
                 labelStyle.normal.textColor = InkColor;
             }
