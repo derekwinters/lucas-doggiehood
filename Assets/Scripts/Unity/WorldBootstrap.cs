@@ -104,16 +104,18 @@ namespace Doggiehood.Unity
             gameObject.AddComponent<ExpansionUnlockDirector>()
                 .Init(state, root.transform, confirmationDialog, expansionDirector);
 
-            // Onboarding reward celebration (#372): the standard reusable panel
-            // (docs/specs/ui/onboarding-reward.md) pops "You did it! +100 coins"
-            // each time a reward-chain step (#316) pays out, calling out the
-            // payout that today lands silently. The director subscribes to the
-            // Core reward event and shows the panel with the approved per-step
-            // copy; Core still owns the deposit (the panel moves no coins). It
-            // stays silent for a returning player, whose chain is already
-            // complete, so it is safe to wire unconditionally.
-            var rewardPanel = BuildOnboardingRewardPanel(canvas);
-            gameObject.AddComponent<OnboardingRewardDirector>().Init(state, rewardPanel);
+            // Completion toasts (#541): the non-modal top-left toast lane
+            // (docs/specs/ui/toast.md) celebrates two — and only two — triggers,
+            // each enqueued onto one shared single-slot queue and rendered one at a
+            // time by the ToastView. This reverses the #374 modal reward panel: the
+            // onboarding reward-chain step feedback now surfaces as a toast, never a
+            // blocking modal. Core owns both payouts (the toasts move no coins), and
+            // both directors stay silent when their event never fires (a returning
+            // player's completed chain never re-pays).
+            var toastQueue = new Doggiehood.Core.Ui.ToastQueue<ToastRequest>();
+            gameObject.AddComponent<ToastView>().Init(toastQueue);
+            gameObject.AddComponent<OnboardingRewardDirector>().Init(state, toastQueue);
+            gameObject.AddComponent<QuestCompletionDirector>().Init(state, toastQueue);
 
             // Move-in welcome (#518): the approved "Welcome to the
             // neighborhood!" pop-up (docs/specs/ui/welcome-popup.md) pops a beat
@@ -223,21 +225,6 @@ namespace Doggiehood.Unity
             var dialog = dialogObject.AddComponent<ConfirmationDialog>();
             dialog.Init();
             return dialog;
-        }
-
-        /// <summary>
-        /// Builds the reusable onboarding reward celebration panel (#372) under
-        /// the shared canvas, starting closed. The reward director raises it on
-        /// each reward-chain step payout with the step's approved copy + the
-        /// deposited amount; the panel is pure presentation and moves no coins.
-        /// </summary>
-        private OnboardingRewardPanel BuildOnboardingRewardPanel(GameObject canvas)
-        {
-            var panelObject = new GameObject("OnboardingRewardPanel");
-            panelObject.transform.SetParent(canvas.transform, false);
-            var panel = panelObject.AddComponent<OnboardingRewardPanel>();
-            panel.Init();
-            return panel;
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 
 *Wireframe issue: [#562](https://github.com/derekwinters/lucas-doggiehood/issues/562). Implements/covers: `ToastNotification`. Approved: Derek, 2026-08-04 ([`/approve` on #562](https://github.com/derekwinters/lucas-doggiehood/issues/562#issuecomment-5185675524)) — authoritative layout contract.*
 *Mockup: [mockups/toast.html](mockups/toast.html).*
+*Status: **implemented** ([#541](https://github.com/derekwinters/lucas-doggiehood/issues/541)) — the engine-free single-slot `Doggiehood.Core.Ui.ToastQueue<T>` sequences requests; `Assets/Scripts/Unity/ToastView.cs` renders the current slot in the reserved top-left lane (IMGUI HUD element, mirroring the currency chip); and the two directors (`QuestCompletionDirector` off `QuestManager.QuestCompleted`, `OnboardingRewardDirector` off `OnboardingRewardChain.RewardGranted`) assemble copy (`ToastCopy`) and enqueue. Wired in `WorldBootstrap`.*
 
 ## Purpose
 
