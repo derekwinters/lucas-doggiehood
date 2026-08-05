@@ -55,6 +55,27 @@ namespace Doggiehood.Core.World
         public const float CulDeSacBulbRadius = 9f;
 
         /// <summary>
+        /// The corner radius of a plain <c>Turn*</c>/<c>road-bend</c> tile's
+        /// road centerline (#581): the walk network curves a bend's sidewalks
+        /// concentrically about this radius instead of cutting a straight chord
+        /// through the tile centre.
+        ///
+        /// Measured directly from the shared road-bend tile mesh
+        /// (Assets/Art/Roads/CityKitRoads/Resources/road-bend.fbx) the same way
+        /// <see cref="SidewalkSurfaceHeight"/> was measured from
+        /// road-straight.fbx. The bend's asphalt is bounded by two concentric
+        /// quarter-circle arcs about the tile-mesh corner — an inner edge at raw
+        /// radius 20 and an outer edge at raw radius 80 (the same 60-raw road
+        /// width the straight tile has) — so the road centerline traces the
+        /// midline arc at raw radius 50. The same raw-to-world chain that turns
+        /// the mesh's 2-raw curb into 0.2m — Unity's default cm-to-m FBX import
+        /// (/100) then WorldBuilder.RoadTileScale (x10), i.e. raw x 0.1 — gives
+        /// 50 raw -> 5.0m. The arc is tangent to each straight arm's centerline
+        /// 5m out from the junction centre.
+        /// </summary>
+        public const float RoadBendCornerRadius = 5f;
+
+        /// <summary>
         /// Opposing-turn arch radius (a quarter-circle radius for the two
         /// arches in an <c>OpposingTurnsNS</c>/<c>OpposingTurnsEW</c> tile).
         /// </summary>
