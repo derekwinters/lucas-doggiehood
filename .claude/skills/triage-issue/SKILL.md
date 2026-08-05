@@ -67,6 +67,39 @@ so leaving `ai-triage` on re-selects the issue for triage every morning
 (`select_triage.py`'s eligibility is just open + `ai-triage`) and leaves the
 dashboard's one-slice-per-issue mapping ambiguous (#265, #394).
 
+**Invariant: post the analysis comment FIRST, then set the state label (#582).**
+The hand-off is two separate, non-transactional GitHub writes — the analysis
+comment (`add_issue_comment`) and the label move (`issue_write` setting the
+hand-back state + removing `ai-triage`) — and nothing wraps them in a
+transaction, so a session interruption between them leaves a half-hand-off.
+**Always do the comment write first and the label write second.** Ordered this
+way, the only partial-failure shape possible is *comment-posted-but-label-not-set*
+— the label-set-but-comment-missing shape (#569, "looks triaged, no plan for
+Derek to `/approve` against") becomes **structurally impossible**, because the
+label write can never run before the comment exists. The residual
+comment-without-label shape is the safe one: it is caught and requeued/flagged by
+the reconcile sweep (`pipeline-reconcile` rules `requeue_triage` /
+`flag_orphaned_analysis`, #582) rather than sitting invisibly with a state label
+and no plan.
+
+**Re-fire idempotency — repair a partial write, don't repost (#582).** Before
+drafting a *new* analysis, check whether this issue is a re-fire landing on a
+prior run's partial write: it already carries a triage-authored analysis comment
+(the same signature the reconcile sweep recognizes — a `## Build checklist`
+heading or a `❓ Needs from Derek/Lucas:` marker) posted **at or after the most
+recent re-admission signal** (the latest `ai-triage` add, or the owner's latest
+`/revise` / `/redo`), yet **no hand-back state label is set yet**
+(`pending-approval` / `needs-clarification`). If so, this is a partial write from
+an earlier run that posted the comment but never completed the label move — do
+**not** repost a duplicate analysis. **Repair it: apply only the missing label
+move** (set the hand-back state you'd have set, remove `ai-triage`, in the one
+`issue_write`). The deterministic detection is
+`triage-issue/triage_repair.py::is_partial_write_repair(labels, analysis_times,
+readmit_time)` (unit-tested in `tests/test_triage_repair.py`), with
+`analysis_comment_times(comments)` selecting the analysis comments by signature.
+An analysis that *predates* the re-admission is stale (e.g. superseded by a later
+`/redo`) and must be re-triaged fresh, not repaired.
+
 Read the issue, its comments (including any `/revise` notes or `/propose`
 from Derek), and the `/docs` pages it relates to. Then route:
 
