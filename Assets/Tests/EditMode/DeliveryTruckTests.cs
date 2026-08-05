@@ -16,6 +16,9 @@ namespace Doggiehood.Unity.EditModeTests
             // blocking and swallow this fixture's package tap.
             TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
             Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+            // #546: the truck yields at crosswalks via a process-global gate;
+            // clear it so a stray claim can't stall the truck's route mid-test.
+            RoadCrossingGate.Shared.Clear();
         }
 
         [TearDown]

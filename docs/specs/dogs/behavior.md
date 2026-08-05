@@ -25,6 +25,15 @@ When a dog's "buy me X" request is accepted, the dog walks home at a medium spee
 
 During this scripted walk home the dog **turns to face the direction it is walking before each step** — the same turn-then-move feel as ordinary wander — rather than sliding home backwards. While the delivery is in flight (walking home *and* sitting waiting for the truck) the dog does **not** free-roam wander: the scripted walk owns its movement, so wander and the walk-home leg never fight over the dog's position ([#470](https://github.com/derekwinters/lucas-doggiehood/issues/470)).
 
+### Yielding at road crossings
+
+A vehicle and a dog never occupy the same point on a crosswalk — collisions are resolved by yielding, never by driving through ([#546](https://github.com/derekwinters/lucas-doggiehood/issues/546)). Right-of-way is **first-come**: the first occupant to arrive at a given crosswalk claims it exclusively, and whichever arrives **second waits** at its own boundary until the first has fully crossed and released it.
+
+- A **dog** arrives when its wander step's next hop is that `Crosswalk` edge, stepping off the curb. If a vehicle already holds the crosswalk, the dog **holds at its curb node** and does not advance, re-checking each frame until the claim releases, then crosses.
+- A **vehicle** arrives when its drive position reaches the near edge of that crosswalk's road span. If a dog already holds it, the vehicle **pauses at the near edge** rather than driving through, resuming once the dog clears the far edge.
+
+This is a **generic** rule, not a truck-only hack: it is keyed per crosswalk segment and shared by every current and future vehicle, so it also generalizes for free to a vehicle that eventually turns across an intersection (each crosswalk span it drives over is one independent claim). The mechanism lives in Core (`RoadCrossingGate` — a first-come claim/release gate on each crosswalk `WalkEdge` — with `RoadCrossingTraversal` driving the vehicle side in along-road coordinates); the thin Unity views (`DogView`, `DeliveryTruckView`) only convert positions and move. The minimal pairwise vehicle↔dog check per crosswalk is the whole scope; dog-vs-dog queuing over a shared crosswalk is explicitly out of scope (dogs already don't block each other), and no vehicle turns today. See the delivery-truck note in [Quest Content](../quests/quest-content.md) and the [walk network](../world/sidewalks.md).
+
 ## Population
 
 Across the 4 starting houses: most houses have a parent dog + puppy, some houses have just one dog, and some have 2-3 dogs. This variety sets up quests like "lost my puppy" naturally. ([#34](https://github.com/derekwinters/lucas-doggiehood/issues/34)) See [Dog Roster & Names](roster-names.md) for the actual starting cast.
@@ -66,3 +75,4 @@ No separate animation is needed for: conversation start (the speech bubble appea
 - [ ] Only dogs are interactable in the world — no other animal/person NPCs
 - [ ] Rest, sit, idle/wander, and window-watching poses are all implemented
 - [ ] Dog walks home and sits after accepting a "buy me X" quest, until the delivery truck arrives
+- [ ] A vehicle and a dog never occupy the same point on a crosswalk — first-come right-of-way: the second to arrive yields (a dog waits at its curb, a vehicle pauses at the crosswalk's near edge) until the first crosses and releases it (#546)

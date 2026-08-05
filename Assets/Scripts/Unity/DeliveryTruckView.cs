@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Doggiehood.Core.World;
 using UnityEngine;
 
@@ -74,6 +75,14 @@ namespace Doggiehood.Unity
         private Vector3 exitPosition;
         private Action onDelivered;
 
+        // #546: right-of-way as the truck drives its road. The traversal claims
+        // each crosswalk the truck reaches (so a dog that arrives second waits)
+        // and reports how far the truck may advance without entering a crosswalk a
+        // dog already holds. crossingRoad is the single road the whole route runs
+        // along, used to convert the truck's position to along-road coordinates.
+        private RoadCrossingTraversal crossing;
+        private Road crossingRoad;
+
         public bool HasDelivered { get; private set; }
         public bool IsGone { get; private set; }
 
@@ -125,6 +134,15 @@ namespace Doggiehood.Unity
             var route = DeliveryTruckRoute.ToDoor(
                 NeighborhoodLayout.Roads, new GridPoint(doorTarget.x, doorTarget.z));
 
+            // #546: the whole entry -> stop -> exit route lies on one road's
+            // centerline. Resolve that road and set up the crossing traversal so
+            // the truck yields to dogs already on a crosswalk it drives over.
+            crossingRoad = NeighborhoodLayout.Roads.First(
+                r => r.Contains(route.Entry) && r.Contains(route.Exit));
+            crossing = new RoadCrossingTraversal(
+                RoadCrossingGate.Shared, this, crossingRoad, NeighborhoodLayout.WalkNetwork,
+                crossingRoad.AlongAxis(route.Entry), crossingRoad.AlongAxis(route.Exit));
+
             var entry = new Vector3(route.Entry.X, TruckHeight, route.Entry.Z);
             doorPosition = new Vector3(doorTarget.x, TruckHeight, doorTarget.z);
             stopPosition = new Vector3(route.Stop.X, TruckHeight, route.Stop.Z);
@@ -146,7 +164,7 @@ namespace Doggiehood.Unity
             switch (phase)
             {
                 case Phase.DrivingIn:
-                    Drive(stopPosition, deltaTime);
+                    Drive(ClampToCrossing(stopPosition), deltaTime);
                     if (Vector3.Distance(transform.position, stopPosition) <= ArriveDistance)
                     {
                         DropPackage();
@@ -155,11 +173,12 @@ namespace Doggiehood.Unity
 
                     break;
                 case Phase.DrivingOut:
-                    Drive(exitPosition, deltaTime);
+                    Drive(ClampToCrossing(exitPosition), deltaTime);
                     if (Vector3.Distance(transform.position, exitPosition) <= ArriveDistance)
                     {
                         IsGone = true;
                         phase = Phase.Idle;
+                        crossing?.ReleaseAll();
                         if (Application.isPlaying)
                         {
                             Destroy(gameObject);
@@ -172,6 +191,32 @@ namespace Doggiehood.Unity
 
                     break;
             }
+        }
+
+        /// <summary>#546: clamps this tick's drive target so the truck never
+        /// enters a crosswalk it may not (one a dog holds, or one it hasn't yet
+        /// reached the boundary of to claim). The traversal works in along-road
+        /// coordinates; convert to/from the road centerline here. The clamp keeps
+        /// the target's Y so the truck stays at its ride height.</summary>
+        private Vector3 ClampToCrossing(Vector3 target)
+        {
+            if (crossing == null)
+            {
+                return target;
+            }
+
+            var currentAlong = crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
+            var targetAlong = crossingRoad.AlongAxis(new GridPoint(target.x, target.z));
+            var allowedAlong = crossing.Advance(currentAlong, targetAlong);
+            var point = crossingRoad.PointAt(allowedAlong, 0f);
+            return new Vector3(point.X, target.y, point.Z);
+        }
+
+        private void OnDestroy()
+        {
+            // #546: never leave a crosswalk claimed if the truck is torn down
+            // mid-route (it normally releases each as it passes).
+            crossing?.ReleaseAll();
         }
 
         private void Drive(Vector3 target, float deltaTime)
