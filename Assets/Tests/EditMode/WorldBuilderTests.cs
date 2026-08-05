@@ -286,10 +286,23 @@ namespace Doggiehood.Unity.EditModeTests
             // 0.2m tap-pad into a low raised graybox "foundation" slab that
             // reads as "a house goes here" — still a single primitive box
             // painted the marker color, its base flush on the ground plane.
-            var lot = FrontierEditModeWorld.FirstTileLots()[0];
+            //
+            // #569: build the marker through the network-aware overload for a zone
+            // lot whose REAL (network-resolved) facing is along X, and assert the
+            // slab is sized/centred on the NETWORK footprint — NOT the single-arg
+            // Z-fallback footprint the old singleton path produced. This is the
+            // assertion that would have caught the marker rendering the right size
+            // but transposed against the house that will be built on it.
+            var zoneLot = new HouseLot(
+                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, 20f));
+            var network = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, new[] { zoneLot });
+            Assert.That(HousePlacement.FrontFacing(zoneLot, network).X, Is.Not.EqualTo(0f),
+                "precondition: the network faces this zone lot along X, so its footprint swaps axes");
+
             var container = new GameObject("EmptyLotSlabTestContainer");
 
-            var marker = WorldBuilder.BuildEmptyLot(container.transform, lot);
+            var marker = WorldBuilder.BuildEmptyLot(container.transform, zoneLot, network);
 
             // A raised slab, thicker than the old flat 0.2m pad.
             Assert.That(marker.transform.localScale.y,
@@ -297,12 +310,9 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(WorldBuilder.EmptyLotFoundationSlabHeight, Is.GreaterThan(0.2f),
                 "a foundation slab reads as raised, thicker than the old flat pad");
 
-            // #434 (reversing the #300 option-3 fixed-marker decision): the slab
-            // is now sized to the predetermined house's L1 mesh footprint
-            // (HousePlacement.HouseFootprint — zone-safe since #414), so the
-            // empty lot reads as the plot of the house that will stand on it,
-            // not a bare 3m box.
-            var footprint = HousePlacement.HouseFootprint(lot);
+            // #434/#569: sized + centred on the NETWORK-aware footprint (the
+            // house's real orientation), zone-safe since #414.
+            var footprint = HousePlacement.HouseFootprint(zoneLot, network);
             Assert.That(marker.transform.localScale.x,
                 Is.EqualTo(footprint.Width).Within(0.001f));
             Assert.That(marker.transform.localScale.z,
@@ -311,6 +321,13 @@ namespace Doggiehood.Unity.EditModeTests
                 Is.EqualTo(footprint.Center.X).Within(0.001f), "the slab centres on the house footprint");
             Assert.That(marker.transform.position.z,
                 Is.EqualTo(footprint.Center.Z).Within(0.001f));
+
+            // #569 regression guard: the network footprint is transposed from the
+            // single-arg Z-fallback one, so this assertion fails if the marker ever
+            // regresses to the singleton path (the bug this issue fixes).
+            var singletonFootprint = HousePlacement.HouseFootprint(zoneLot);
+            Assert.That(footprint.Width, Is.Not.EqualTo(singletonFootprint.Width).Within(0.001f),
+                "the network footprint differs from the singleton one — the marker must use the network one");
 
             // Base sits on the ground plane (bottom at y = 0).
             var bottom = marker.transform.position.y - marker.transform.localScale.y / 2f;
@@ -379,6 +396,11 @@ namespace Doggiehood.Unity.EditModeTests
             // #434: the foundation-slab sizing (HousePlacement.HouseFootprint)
             // holds through the full BuildEmptyLots loop, not only the single-lot
             // BuildEmptyLot helper.
+            // #569: BuildEmptyLots now threads the live map-spanning network, so the
+            // slab is sized to the NETWORK-aware footprint (the house's real
+            // street-ward facing) rather than the single-arg Z-fallback. This zone
+            // lot's real facing is along X, so the two diverge — asserting the
+            // network footprint here is what the full-build path must now match.
             var state = GameState.CreateNew();
             state.Wallet.Deposit(100);
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
@@ -388,7 +410,11 @@ namespace Doggiehood.Unity.EditModeTests
             root = WorldBuilder.Build(state);
 
             var lot = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
-            var footprint = HousePlacement.HouseFootprint(lot);
+            var footprint = HousePlacement.HouseFootprint(lot, state.WalkNetwork);
+            Assert.That(HousePlacement.PredeterminedFrontFacing(lot, state.WalkNetwork).X, Is.Not.EqualTo(0f),
+                "precondition: this frontier lot's real facing is along X, so the network footprint swaps axes");
+            Assert.That(footprint.Width, Is.Not.EqualTo(HousePlacement.HouseFootprint(lot).Width).Within(0.001f),
+                "the network footprint diverges from the single-arg one — the full-build slab must use the network one");
             var slab = root.transform.Find(WorldBuilder.EmptyLotNamePrefix + lot.HouseId);
 
             Assert.That(slab, Is.Not.Null);
