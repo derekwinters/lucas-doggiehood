@@ -747,6 +747,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#green-space-tile-539" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tile (#539)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
     <span class="md-ellipsis">
       Tile codes — connectivity as a single source
@@ -1745,6 +1754,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#green-space-tile-539" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tile (#539)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
     <span class="md-ellipsis">
       Tile codes — connectivity as a single source
@@ -1812,7 +1830,7 @@
 <p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (multi-tile grid/placement system, implemented), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (map-shape question, resolved 2026-07-14 — see <a href="../../expansion/#map-shape">Neighborhood Expansion</a>)</em></p>
 <div class="admonition note">
 <p class="admonition-title">Status: implemented in Core (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>)</p>
-<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (17 values), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges and, for the OpposingTurns types, arcs), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 16 non-<code>FourWay</code> types). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
+<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (18 values — the 17 road tiles plus the roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges and, for the OpposingTurns types, arcs), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 16 lot-bearing types — every type except <code>FourWay</code> and <code>GreenSpace</code>). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
 </div>
 <h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
 <p>These 7 measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) as the geometric basis every tile type below will eventually be built from.</p>
@@ -1858,7 +1876,7 @@
 <p>The world is an integer tile grid addressed as <strong><code>(x, y)</code></strong> — <code>x</code> runs east/west, <code>y</code> runs north/south. In Core these map to <code>TileCoordinate.Col</code> (<code>x</code>) and <code>TileCoordinate.Row</code> (<code>y</code>); world-space is derived by <code>TileGeometry</code> (<code>Col → +X</code>, <code>Row → +Z</code>). The starting <code>FourWay</code> intersection is the origin <strong><code>(0, 0)</code></strong>; the tile directly north of it is <strong><code>(0, 1)</code></strong>, directly east is <strong><code>(1, 0)</code></strong>.</p>
 <p>A tile's identity is its integer <code>(x, y)</code>; a type name's compass suffix (e.g. <code>CulDeSacEast</code>) describes <em>which edge carries the road</em>, <strong>not</strong> where the tile sits on the map. Position comes from the coordinate, connectivity from the type/code below — keeping the two separate avoids the "is that northwest or is that an east-facing cul-de-sac?" confusion.</p>
 <h2 id="the-17-tile-types">The 17 tile types<a class="headerlink" href="#the-17-tile-types" title="Permanent link">&para;</a></h2>
-<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the other 16 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>).</p>
+<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the next 16 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). An 18th roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) is listed at the end of the table below and detailed in <a href="#green-space-tile-539">its own subsection</a>.</p>
 <p>The <strong>Code</strong> column is the compact authoring token (see <a href="#tile-codes-connectivity-as-a-single-source">Tile codes</a> below); it encodes the same road edges as the "Road edges" column.</p>
 <table>
 <thead>
@@ -1972,8 +1990,17 @@
 <td>N,E,S,W</td>
 <td><code>⬯</code> the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other</td>
 </tr>
+<tr>
+<td><code>GreenSpace</code></td>
+<td><code>----.</code></td>
+<td><em>(none)</em></td>
+<td><code>▦</code> a roadless full-tile park/open-grass tile — see <a href="#green-space-tile-539">Green-space tile</a> below</td>
+</tr>
 </tbody>
 </table>
+<h3 id="green-space-tile-539">Green-space tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)<a class="headerlink" href="#green-space-tile-539" title="Permanent link">&para;</a></h3>
+<p><code>GreenSpace</code> is the 18th type: a full grid tile the same size and shape as the other 17, but carrying <strong>no road on any edge</strong> (empty <code>RoadEdges</code>, no arcs) and <strong>no buildable lot</strong> (<code>TileLotCatalog.LotsFor(GreenSpace)</code> = zero lots — no houses, ever). It is authored into the target map (<code>docs/tools/map-data.json</code>) exactly like any other type — <code>{x, y, type: "GreenSpace"}</code> — and its empty road-edge set means it validates through <code>TileMap.CanPlace</code> only against neighbours whose shared edge is <em>also</em> roadless.</p>
+<p>Distinct from <strong>unbuilt-quadrant green space</strong> (the open-grass fill <em>inside</em> a placed road tile, described under <a href="#property-lots-per-tile">Property lots per tile</a> — a static property of a tile's own type). This <code>GreenSpace</code> <em>tile type</em> turns an entire tile on, and unlike the paid, road-connected <a href="../../expansion/#green-space-tiles-auto-activated">expansion frontier</a> it <strong>auto-activates for free</strong> — no coin cost, no lock icon — the moment 2+ of its 4 edges border an already-activated tile (a placed road tile <em>or</em> an already-activated green space), cascading unbounded to a fixpoint. Because it carries no road it can never satisfy <code>TileMap.HasRoadConnectionAt</code>, so it is structurally excluded from the frontier and never shows a lock icon. See <a href="../../expansion/#green-space-tiles-auto-activated">Neighborhood Expansion → Green-space tiles</a> for the activation/persistence detail.</p>
 <h3 id="tile-codes-connectivity-as-a-single-source">Tile codes — connectivity as a single source<a class="headerlink" href="#tile-codes-connectivity-as-a-single-source" title="Permanent link">&para;</a></h3>
 <p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag — <code>.</code> for an ordinary single junction or dead-end, and <code>\</code> / <code>/</code> for the two <code>OpposingTurns</code> tiles, where the slash marks the wall between the tile's two disconnected arcs: <code>\</code> separates {N,E} from {S,W} (so the arcs are NE + SW = <code>OpposingTurnsNS</code>), <code>/</code> separates {N,W} from {S,E} (NW + SE = <code>OpposingTurnsEW</code>).</p>
 <p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
@@ -2021,6 +2048,12 @@
 <td>—</td>
 </tr>
 <tr>
+<td><code>GreenSpace</code></td>
+<td><em>(none — no road art)</em></td>
+<td>n/a</td>
+<td>a roadless park tile: no centre mesh, no arms, no crosswalks. Its only visible effect is the grass ground plane growing to cover it (<code>WorldBuilder.ResizeGroundToMap</code>); the road-art and lot-building passes iterate the player-unlocked road tiles, which never include a green space, so it no-ops gracefully (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)</td>
+</tr>
+<tr>
 <td><code>OpposingTurnsNS/EW</code></td>
 <td><em>(none — not kit-renderable)</em></td>
 <td>n/a</td>
@@ -2031,11 +2064,12 @@
 <p>Crosswalks are baked into the 4-way/Tee meshes, so the kit path needs no separate crossing tiles; the primitive graybox fallback derives one crosswalk patch per intersection arm from <code>TileCrosswalkGeometry</code> instead — see <a href="../sidewalks/#the-crosswalk-box">Sidewalks &amp; Walk Network</a>.</p>
 <h2 id="property-lots-per-tile">Property lots per tile<a class="headerlink" href="#property-lots-per-tile" title="Permanent link">&para;</a></h2>
 <p><em>Design decisions 2026-07-30 / 2026-07-31 (Derek &amp; Lucas), captured from the <a href="../../../tools/">Map Builder</a>. The Core lot rules below are implemented in <code>TileLotCatalog.LotsFor</code>; each bend's curved/cupped corner is exposed via <code>TileLotCatalog.TryGetCuppedCorner</code>, and a cul-de-sac's dropped bulb-side (tree) quadrants via <code>TileLotCatalog.TreeQuadrantsFor</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>, refined by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/385">#385</a>).</em></p>
-<p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see <a href="../../expansion/">Neighborhood Expansion</a>):</p>
+<p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and unbuilt quadrants become green space (parks/water in the open areas are future content, see <a href="../../expansion/">Neighborhood Expansion</a>). This <em>unbuilt-quadrant</em> green space is a static property of a road tile's own type — distinct from the whole-tile <a href="#green-space-tile-539"><code>GreenSpace</code> tile type</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), which turns an entire tile on:</p>
 <ul>
 <li><strong>Twin bends (<code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code>): no lots.</strong> Their two arcs leave no clean buildable quadrant.</li>
 <li><strong>Bends (<code>Turn*</code>): two lots — drop the small corner the curve cups AND its diagonal opposite.</strong> The cupped corner is the bend's own corner (<code>TurnNE</code> drops NE, <code>TurnSW</code> drops SW, etc.); the corner diagonally opposite it borders neither roaded edge, so it can never face a road and is dropped too. The two kept lots each border a straight roaded edge square-on: <code>TurnNE</code>→NW,SE · <code>TurnNW</code>→NE,SW · <code>TurnSE</code>→NE,SW · <code>TurnSW</code>→NW,SE. A bend renders as a <strong>curved corner</strong>, not two straight bands meeting at a right angle.</li>
 <li><strong>Cul-de-sacs (<code>CulDeSac*</code>): two lots — keep the two quadrants adjacent to the single roaded edge.</strong> <code>CulDeSacNorth</code>→NE,NW · <code>CulDeSacSouth</code>→SE,SW · <code>CulDeSacEast</code>→NE,SE · <code>CulDeSacWest</code>→NW,SW. The two bulb-side quadrants become <strong>open space with trees</strong> (reusing the #170 tree environment art, rendered by <code>WorldBuilder</code>). The two <strong>kept</strong> quadrants get houses, so their procedural <a href="../world/#yard-landscaping">yard landscaping</a> must exclude the tile's road: the kept quadrant faces the tile's single road arm, and a lot on this non-origin tile is only trimmed against that road once the yard clip is made <strong>tile-aware</strong> — <code>LotBounds.RoadsFor(lot, tileType)</code> converts the tile's <code>TileRoadGeometry</code> arm to a <code>Road</code> alongside the origin's streets (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/455">#455</a>, after a playtest showed yard trees landing in the first unlocked cul-de-sac's street).</li>
+<li><strong>Green-space tile (<code>GreenSpace</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>): no lots</strong> — a park/open-grass tile that never holds a house (<code>TileLotCatalog.LotsFor(GreenSpace)</code> returns an empty set). Not to be confused with the unbuilt-quadrant green space <em>inside</em> a road tile above; see <a href="#green-space-tile-539">Green-space tile</a>.</li>
 <li><strong>All other types</strong> (<code>FourWay</code>, <code>Straight*</code>, <code>Tee*</code>): all four quadrant lots.</li>
 </ul>
 <p><strong>House facing — settled (2026-07-31, Derek): remove, no rotation.</strong> On bends and cul-de-sacs the road curves, so a corner house can't always face it square-on. Rather than rotate houses to fan around a curve, the lots that can't face a road square-on are simply <strong>removed</strong> (they become green space, or open space with trees for cul-de-sacs) — which is exactly why bends and cul-de-sacs keep only two lots above. Every remaining lot already borders a straight roaded edge square-on, so no house ever carries a facing/rotation value.</p>

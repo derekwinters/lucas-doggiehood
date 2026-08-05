@@ -1256,6 +1256,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Map shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tiles-auto-activated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tiles (auto-activated)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1748,6 +1763,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Map shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tiles-auto-activated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tiles (auto-activated)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1864,6 +1894,19 @@
 <p><strong>First zone:</strong> a single cul-de-sac directly north of the starting intersection. The confirmed layout (2026-07-29, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/360">#360</a>): from the starting <code>FourWay</code> at grid (0,0), a single <code>CulDeSacSouth</code> tile at (0,1) — its road enters from the south edge (meeting the origin <code>FourWay</code>'s north road) and ends in a bulb pointing north, so the whole zone sits due north with no dangling roads. This <strong>supersedes</strong> the earlier two-tile northwest layout (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>: <code>TurnSW</code> at (0,1) + <code>CulDeSacEast</code> at (−1,1), which ran north then turned west into the bulb) — the single north tile also lines up straight under the expansion lock indicator, which already hovers due north of the origin.</p>
 <p>The tile-grid placement/adjacency system this all sits on is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, the milestone's geometric prerequisite.</p>
 <p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>) — the authored target map is loadable in Core.</strong> The full neighborhood Derek &amp; Lucas authored in the <a href="../../tools/">Map Builder</a> (84 tiles, committed as design data at <code>docs/tools/map-data.json</code>, shaped <code>{name, tiles:[{x,y,type}]}</code> with <code>x→Col</code>, <code>y→Row</code> and origin <code>FourWay</code> at (0,0)) parses into a validated Core <code>TileMap</code> via <code>Doggiehood.Core.World.MapDefinition.Parse</code> + <code>MapLoader.Load</code>, exposed as the neighborhood's <strong>target/full</strong> layout. Placement is self-ordered — the file lists tiles in authoring order, not adjacency order, so the loader seeds the origin then repeatedly places any pending tile that already has a placed neighbour (through #109's <code>TileMap.CanPlace</code>/<code>Place</code>) until nothing more can be placed; a tile that fails adjacency is reported in <code>MapLoadResult.RejectedCoordinates</code>, never thrown. <code>MapLoadResult.CurvedCorners</code> gives, per bend (<code>Turn*</code>) tile, the <code>Quadrant</code> corner that renders curved (data only — no rendering yet). This is Option A of #383: the loader produces the target map as Core data; <strong>the live playable world stays incremental</strong> (seeded <code>FourWay</code>, grown one tile at a time). The target map is now the reference the <strong>player-choice frontier</strong> unlock (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/295">#295</a>) reads: <code>GameState.SetTargetMap</code> supplies it, and <code>Doggiehood.Core.Expansion.TileFrontier.Compute(placed, target)</code> derives the unlockable coordinates from it — see the <a href="#pricing">#295 note under Pricing</a>.</p>
+<h3 id="green-space-tiles-auto-activated">Green-space tiles (auto-activated)<a class="headerlink" href="#green-space-tiles-auto-activated" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Decision (2026-08-05, Derek, <code>/approve</code>d on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) — green spaces are free auto-activations, not paid frontier unlocks.</strong> A "green-space tile" is the new 18th <a href="../world/tile-catalog/#green-space-tile-539"><code>TileType.GreenSpace</code></a>: a full grid tile authored into the target map (<code>docs/tools/map-data.json</code>) like any other type, but carrying <strong>no road and no lots</strong>. It is <strong>not</strong> part of the paid, road-connected frontier above — instead it <strong>auto-activates for free</strong> (no coin cost, no lock icon) the instant <strong>2 or more of its 4 edges</strong> border an already-activated tile, where "activated" means any tile currently on the live <code>Map</code> — a placed road tile <em>or</em> an already-activated green space. Activation <strong>cascades unbounded to a fixpoint</strong>: one freshly activated green space can give an adjacent green space its second bordering edge, and the whole connected blob turns on in a single pass (Derek's "if that cascades into a bunch of green space that's okay, as long as it's always the 2-tile touching rule").</p>
+</blockquote>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>).</strong> Built as pure Core logic, deliberately separate from <code>TileFrontier</code>/<code>TryUnlockTile</code>:</p>
+<ul>
+<li><strong>Eligibility</strong> — <code>Doggiehood.Core.Expansion.GreenSpaceActivation.Compute(placed, target)</code> returns every target <code>GreenSpace</code> coordinate not yet placed whose count of edges bordering a <code>placed.HasTileAt</code> neighbour is ≥ 2 (same shape as <code>TileFrontier.Compute</code>, but keyed on the 2-edge rule instead of a road connection).</li>
+<li><strong>Activation pass</strong> — <code>GameState</code> runs a pass that loops <code>GreenSpaceActivation.Compute</code> + <code>TileMap.Place</code> to a <strong>fixpoint</strong> (not a single hop), invoked after a successful <code>TryUnlockTile</code> (a road placement can newly qualify green neighbours) and once inside <code>SetTargetMap</code> (the single "after target-map/save restore" hook). Green spaces are placed straight onto <code>Map</code> <strong>without</strong> being recorded in <code>UnlockedTiles</code>: they are not player unlocks, carry no lots, and — see persistence — are re-derived rather than persisted.</li>
+<li><strong>Free / no cost curve inflation</strong> — no <code>Wallet</code> interaction at all. The road-unlock cost curve scales on <code>RoadTileCount</code> (non-<code>GreenSpace</code> tiles on <code>Map</code>) rather than raw <code>Map.Tiles.Count</code>, so the free green spaces that also grow <code>Map.Tiles</code> never inflate the price of the next road unlock. With no green space placed this equals <code>Map.Tiles.Count</code>, so pre-#539 pricing is unchanged.</li>
+<li><strong>Frontier exclusion (no lock icon)</strong> — a <code>GreenSpace</code> tile carries zero road edges, so it can never satisfy <code>TileMap.HasRoadConnectionAt</code> and is structurally excluded from <code>TileFrontier</code>/<code>UnlockableFrontier()</code>; a regression test pins that it never appears there even when bordering 2+ placed tiles.</li>
+<li><strong>Persistence — pure replay, no new save format.</strong> Activation is a pure function of the already-persisted placed <strong>road</strong> tiles, so nothing green is written to the save (no <code>green=</code> line; green coordinates are absent from the <code>tile=</code> set). On load the existing <code>tile=</code> road lines replay onto <code>Map</code>, then the <code>SetTargetMap</code> activation pass re-derives exactly the same green-space membership.</li>
+<li><strong>Unity</strong> — a placed <code>GreenSpace</code> tile needs no new rendering: <code>WorldBuilder</code>'s road-art/lot/tree passes iterate <code>UnlockedTiles</code> (which never includes a green space), so they no-op for it, while <code>ResizeGroundToMap</code> grows the grass ground plane to cover it because it sizes from the whole <code>Map</code>.</li>
+</ul>
 <h2 id="pricing">Pricing<a class="headerlink" href="#pricing" title="Permanent link">&para;</a></h2>
 <p><em>Decisions 2026-07-14 (Derek, in conversation). All values are named, tunable constants in Core — expect adjustment during playtesting; see also <a href="../quests/economy/#numbers-placeholder-expect-tuning">Quest &amp; Economy</a>.</em></p>
 <table>
