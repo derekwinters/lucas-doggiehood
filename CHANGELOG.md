@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.11.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.10.0...v0.11.0) (2026-08-05)
+
+
+### Features
+
+* animate the currency chip with a count-up and floating +/- coin delta ([#567](https://github.com/derekwinters/lucas-doggiehood/issues/567)) ([0901b0c](https://github.com/derekwinters/lucas-doggiehood/commit/0901b0c37fdbc219cecc0a91348cff19a1297487))
+* auto-activate green-space tiles on the 2-edge rule ([#573](https://github.com/derekwinters/lucas-doggiehood/issues/573)) ([49a71d0](https://github.com/derekwinters/lucas-doggiehood/commit/49a71d0d7ed1999938bf846d9fbbb5cefcac9c5f)), closes [#539](https://github.com/derekwinters/lucas-doggiehood/issues/539)
+* make Scout a puppy in the starting roster ([#565](https://github.com/derekwinters/lucas-doggiehood/issues/565)) ([29f618c](https://github.com/derekwinters/lucas-doggiehood/commit/29f618c6c3014fca26d97e8f70a49ce006e34632)), closes [#561](https://github.com/derekwinters/lucas-doggiehood/issues/561)
+* rebalance expansion/build costs — cheaper base plus scaling functions ([#553](https://github.com/derekwinters/lucas-doggiehood/issues/553)) ([ba8e3a1](https://github.com/derekwinters/lucas-doggiehood/commit/ba8e3a17f2910a7ced3ef30bf44b8e8ef57597d9))
+* render the delivery truck with the staged Car Kit model instead of a graybox cube ([#556](https://github.com/derekwinters/lucas-doggiehood/issues/556)) ([b7a3d34](https://github.com/derekwinters/lucas-doggiehood/commit/b7a3d347582c8526e3343ff3dee6098acdbbf6f0))
+* surface quest & onboarding completions as non-modal toasts ([#575](https://github.com/derekwinters/lucas-doggiehood/issues/575)) ([467d41f](https://github.com/derekwinters/lucas-doggiehood/commit/467d41fd1bfb88fc937033597b75ef9d006f8260)), closes [#541](https://github.com/derekwinters/lucas-doggiehood/issues/541)
+* trickle quests in hourly via a fractional accumulator instead of an 8-hour batch ([#554](https://github.com/derekwinters/lucas-doggiehood/issues/554)) ([0a34f9f](https://github.com/derekwinters/lucas-doggiehood/commit/0a34f9fcbb1c274be3f00189d142f865d2aea0d3))
+
+
+### Bug Fixes
+
+* align the scene camera's serialized clear color to the grass void backstop ([#572](https://github.com/derekwinters/lucas-doggiehood/issues/572)) ([453738f](https://github.com/derekwinters/lucas-doggiehood/commit/453738fba5f2cfdb79268c380fce576cc31e7a8b))
+* anchor expansion lock icons to the frontier tile's road edge, never a grass edge ([#551](https://github.com/derekwinters/lucas-doggiehood/issues/551)) ([bedc1d6](https://github.com/derekwinters/lucas-doggiehood/commit/bedc1d69cd28ff6ff1c5e56c935118217d880d2f))
+* block taps from passing through profile panels to world objects behind them ([#555](https://github.com/derekwinters/lucas-doggiehood/issues/555)) ([a15d6a2](https://github.com/derekwinters/lucas-doggiehood/commit/a15d6a27e3e938fe2001b1e8dd2e4dd2d50eeb68))
+* decouple greenspace size from camera max-zoom and backstop the void with a grass clear color ([#563](https://github.com/derekwinters/lucas-doggiehood/issues/563)) ([aafdc87](https://github.com/derekwinters/lucas-doggiehood/commit/aafdc876d296c74020962686a0e141ad9121176a)), closes [#558](https://github.com/derekwinters/lucas-doggiehood/issues/558)
+* place the Sun above ground and pin its halo/flare off ([#564](https://github.com/derekwinters/lucas-doggiehood/issues/564)) ([6d46d47](https://github.com/derekwinters/lucas-doggiehood/commit/6d46d47547d40b0acb3b95e188a8da4fd5bb98cb)), closes [#560](https://github.com/derekwinters/lucas-doggiehood/issues/560)
+* reduce lost-item finder glow to a ground ring, preserving the item's size and colour ([#549](https://github.com/derekwinters/lucas-doggiehood/issues/549)) ([1a1997b](https://github.com/derekwinters/lucas-doggiehood/commit/1a1997b924fc3819339ee69cef30a136543fe381))
+* render the full viewport at max zoom-out (remove the mid-screen blue seam) ([#550](https://github.com/derekwinters/lucas-doggiehood/issues/550)) ([e01eae7](https://github.com/derekwinters/lucas-doggiehood/commit/e01eae79014869f38a2e1452f2e802846079d8ab))
+* route the delivery truck along the road to the door instead of driving across yards ([#552](https://github.com/derekwinters/lucas-doggiehood/issues/552)) ([509a6ef](https://github.com/derekwinters/lucas-doggiehood/commit/509a6ef323b5fe6511efc07fff9ec462ccfac533))
+
 ## [0.10.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.9.0...v0.10.0) (2026-08-03)
 
 
