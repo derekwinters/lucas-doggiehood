@@ -150,6 +150,50 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
+        /// The ground surface height (world Y) directly beneath an arbitrary
+        /// POINT (#580) — the single-position companion to
+        /// <see cref="GroundHeight(GridPoint, GridPoint)"/>, which only answers
+        /// for a hop between two adjacent nodes. Used to sit the lost-item
+        /// finder ring on the surface the hidden item actually rests on, the
+        /// same tile-aware treatment dogs already get, instead of a flat
+        /// ground-plane assumption that buried the ring under the raised road
+        /// asset. Returns <see cref="WorldDimensions.SidewalkSurfaceHeight"/>
+        /// when the point lies on the raised paved band of a Sidewalk or
+        /// FrontWalkway edge (the Kenney kit's curb+sidewalk band, which reads
+        /// in-game as "the road" since the kit paves it with no grass verge),
+        /// and <see cref="WorldDimensions.RoadSurfaceHeight"/> everywhere else —
+        /// the flat road lane, a Crosswalk (painted flat onto the road), and
+        /// grass/open lot all sit on that base plane. A point is "on" a band
+        /// when it falls within that edge's rectangular footprint: its clamped
+        /// perpendicular distance to the edge segment is within the edge's
+        /// half <see cref="WalkEdge.Width"/>.
+        /// </summary>
+        public float SurfaceHeightAt(GridPoint point)
+        {
+            foreach (var edge in edges)
+            {
+                // Crosswalks are painted flat onto the road (road level), which
+                // is the default anyway — only the raised Sidewalk/FrontWalkway
+                // bands lift the surface, so only they need testing.
+                if (edge.Kind == WalkEdgeKind.Crosswalk)
+                {
+                    continue;
+                }
+
+                var foot = ProjectOntoSegment(point, edge.A, edge.B);
+                var dx = point.X - foot.X;
+                var dz = point.Z - foot.Z;
+                var halfWidth = edge.Width / 2f;
+                if (dx * dx + dz * dz <= halfWidth * halfWidth)
+                {
+                    return WorldDimensions.SidewalkSurfaceHeight;
+                }
+            }
+
+            return WorldDimensions.RoadSurfaceHeight;
+        }
+
+        /// <summary>
         /// The house's front walkway edge (#128): A is the front-door node
         /// on the lot, B is the sidewalk attach point. The lot's ONLY
         /// connection to the rest of the network.

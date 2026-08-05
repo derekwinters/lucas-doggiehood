@@ -183,15 +183,22 @@ namespace Doggiehood.Unity
             glowRoot.SetParent(transform, worldPositionStays: false);
             // Neutralise the item root's own scale (e.g. the sphere fallback
             // sits at SphereScale) so the ring dimensions are absolute world
-            // units, consistent across every item model. Also drop the glow
-            // container to ground level so the contact ring sits on the surface
-            // no matter the item root's Y (sphere floats at SphereGroundHeight,
-            // the puppy is grounded).
+            // units, consistent across every item model.
             var rootScale = transform.localScale;
             glowRoot.localScale = new Vector3(
                 Invert(rootScale.x), Invert(rootScale.y), Invert(rootScale.z));
+            // #580: drop the glow container to the surface the item ACTUALLY
+            // rests on — the same tile-aware height dogs get — not a flat
+            // world Y = 0. On grass that surface IS RoadSurfaceHeight (0), so
+            // this reduces to the prior ground-plane drag (on-grass unchanged,
+            // #549); on the kit's raised curb+sidewalk band (which reads
+            // in-game as "the road") it lifts to SidewalkSurfaceHeight so the
+            // contact ring floats on top of that band's mesh instead of being
+            // occluded beneath it. Positioning-only: the ring's scale/colour
+            // are untouched (#535/#549).
+            var surfaceHeight = state.WalkNetwork.SurfaceHeightAt(quest.HiddenItemPosition.Value);
             glowRoot.localPosition = new Vector3(
-                0f, -transform.position.y * Invert(rootScale.y), 0f);
+                0f, (surfaceHeight - transform.position.y) * Invert(rootScale.y), 0f);
 
             BuildGlowPart(
                 glowRoot, GroundRingName, PrimitiveType.Cylinder, glowColor,
