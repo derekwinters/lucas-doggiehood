@@ -566,15 +566,29 @@ dashboard for Derek):
 | - | - | - |
 | **Closed + stale label** | `closed` issue still carrying any pipeline-state label (`ai-triage`, `pending-approval`, `needs-clarification`, `ready-for-work`, `in-progress`) | **auto-fix** — strip those labels (the `Closes #N` label-leak seen on #211); runs on every sweep (event or cron) |
 | **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries; **cron-only** ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319) — see below) |
+| **Triaged, no plan** (`requeue_triage`) | open, `pending-approval`/`needs-clarification`, but **no** triage-authored analysis comment (a `## Build checklist` heading or `❓ Needs from Derek/Lucas:` marker, `reconcile.has_analysis_signature`) — the #569 half of the non-atomic hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **auto-fix** — strip the state label, re-add `ai-triage` so the issue re-enters triage and gets a plan; **cron-only** (same event-path caution as `requeue`) |
+| **Plan, no state** (`flag_orphaned_analysis`) | open, carries a triage analysis comment but **none** of the pipeline-state labels — the residual #570-shape after the comment-then-label ordering fix ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **flag** — the intended hand-back state (`pending-approval` vs `needs-clarification`) is ambiguous from the comment alone, so it is surfaced, not auto-restored |
 | **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
 | **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line **and** no native GitHub relationship for that number ([#248](https://github.com/derekwinters/lucas-doggiehood/issues/248), [#321](https://github.com/derekwinters/lucas-doggiehood/issues/321), detected by `reconcile.prose_deps_in` with native refs from `reconcile.native_blocked_by`) | **flag** |
 
-The two auto-fixes are safe and unambiguous; everything about *closing* an issue
-is either ambiguous or already owned by [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)
+The auto-fixes (`strip_labels`, `requeue`, `requeue_triage`) are safe and
+unambiguous; everything about *closing* an issue is either ambiguous or already
+owned by [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)
 (auto-close-on-merge), so it is flagged, never applied. The sweep **never closes
 an issue.** An open `in-progress` issue that is already on `main` classifies as
 merged-but-open, never as a stall — that guard stops the #109 re-pick loop.
+
+The non-atomic triage hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582))
+is addressed in two additive layers: `triage-issue/SKILL.md` fixes the write
+**ordering** (post the analysis comment first, then set the state label), which
+makes the #569 shape — a state label with no plan — structurally impossible
+going forward; and these two reconcile rules are the safety net that heals a
+label-with-no-plan that still slips through (`requeue_triage`, auto-fix) and
+flags the residual plan-with-no-state-label (`flag_orphaned_analysis`). A re-fire
+of triage repairs a prior partial write (applies just the missing label move)
+rather than reposting a duplicate analysis, detected deterministically by
+`triage-issue/triage_repair.py`.
 
 **`requeue` is gated to the cron backstop only**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319);
@@ -590,7 +604,12 @@ open PR, not yet on `main` — and requeuing it right then would re-arm the
 is unaffected: it only ever acts on an *already-closed* issue, so it can't
 fire early. A genuine stall has no triggering event anyway (nothing happens
 when a build silently drops its commits), so nothing is lost by leaving
-`requeue` for the low-frequency cron pass; the follow-up `issues: [closed]`
+`requeue` for the low-frequency cron pass. `requeue_triage` ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582))
+is gated the same way and for the same class of reason — on a `labeled` event
+the just-set `pending-approval` can momentarily precede the analysis comment's
+visibility, so requeuing it there would churn a healthy triage; the genuine
+#569-shape stall it targets has no triggering event either. The follow-up
+`issues: [closed]`
 event, once GitHub finishes the auto-close, is the authoritative cleanup for
 anything the merge event saw mid-flight.
 
