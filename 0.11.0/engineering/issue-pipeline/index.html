@@ -2646,6 +2646,16 @@ dashboard for Derek):</p>
 <td><strong>auto-fix</strong> — requeue <code>in-progress</code> → <code>ready-for-work</code> so the builder retries; <strong>cron-only</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a> — see below)</td>
 </tr>
 <tr>
+<td><strong>Triaged, no plan</strong> (<code>requeue_triage</code>)</td>
+<td>open, <code>pending-approval</code>/<code>needs-clarification</code>, but <strong>no</strong> triage-authored analysis comment (a <code>## Build checklist</code> heading or <code>❓ Needs from Derek/Lucas:</code> marker, <code>reconcile.has_analysis_signature</code>) — the #569 half of the non-atomic hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
+<td><strong>auto-fix</strong> — strip the state label, re-add <code>ai-triage</code> so the issue re-enters triage and gets a plan; <strong>cron-only</strong> (same event-path caution as <code>requeue</code>)</td>
+</tr>
+<tr>
+<td><strong>Plan, no state</strong> (<code>flag_orphaned_analysis</code>)</td>
+<td>open, carries a triage analysis comment but <strong>none</strong> of the pipeline-state labels — the residual #570-shape after the comment-then-label ordering fix (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
+<td><strong>flag</strong> — the intended hand-back state (<code>pending-approval</code> vs <code>needs-clarification</code>) is ambiguous from the comment alone, so it is surfaced, not auto-restored</td>
+</tr>
+<tr>
 <td><strong>Merged-but-open</strong> (incl. bundled squash)</td>
 <td>open, work is on <code>main</code></td>
 <td><strong>flag</strong> — surface in the dashboard "⚠️ Reconcile" section, <em>not</em> auto-closed</td>
@@ -2662,11 +2672,22 @@ dashboard for Derek):</p>
 </tr>
 </tbody>
 </table>
-<p>The two auto-fixes are safe and unambiguous; everything about <em>closing</em> an issue
-is either ambiguous or already owned by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/211">#211</a>
+<p>The auto-fixes (<code>strip_labels</code>, <code>requeue</code>, <code>requeue_triage</code>) are safe and
+unambiguous; everything about <em>closing</em> an issue is either ambiguous or already
+owned by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/211">#211</a>
 (auto-close-on-merge), so it is flagged, never applied. The sweep <strong>never closes
 an issue.</strong> An open <code>in-progress</code> issue that is already on <code>main</code> classifies as
 merged-but-open, never as a stall — that guard stops the #109 re-pick loop.</p>
+<p>The non-atomic triage hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)
+is addressed in two additive layers: <code>triage-issue/SKILL.md</code> fixes the write
+<strong>ordering</strong> (post the analysis comment first, then set the state label), which
+makes the #569 shape — a state label with no plan — structurally impossible
+going forward; and these two reconcile rules are the safety net that heals a
+label-with-no-plan that still slips through (<code>requeue_triage</code>, auto-fix) and
+flags the residual plan-with-no-state-label (<code>flag_orphaned_analysis</code>). A re-fire
+of triage repairs a prior partial write (applies just the missing label move)
+rather than reposting a duplicate analysis, detected deterministically by
+<code>triage-issue/triage_repair.py</code>.</p>
 <p><strong><code>requeue</code> is gated to the cron backstop only</strong>
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>;
 <code>reconcile.process(data, events_only=True)</code> on the event path omits it
@@ -2681,7 +2702,12 @@ open PR, not yet on <code>main</code> — and requeuing it right then would re-a
 <p>is unaffected: it only ever acts on an <em>already-closed</em> issue, so it can't
 fire early. A genuine stall has no triggering event anyway (nothing happens
 when a build silently drops its commits), so nothing is lost by leaving
-<code>requeue</code> for the low-frequency cron pass; the follow-up <code>issues: [closed]</code>
+<code>requeue</code> for the low-frequency cron pass. <code>requeue_triage</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)
+is gated the same way and for the same class of reason — on a <code>labeled</code> event
+the just-set <code>pending-approval</code> can momentarily precede the analysis comment's
+visibility, so requeuing it there would churn a healthy triage; the genuine</p>
+<h1 id="569-shape-stall-it-targets-has-no-triggering-event-either-the-follow-up">569-shape stall it targets has no triggering event either. The follow-up<a class="headerlink" href="#569-shape-stall-it-targets-has-no-triggering-event-either-the-follow-up" title="Permanent link">&para;</a></h1>
+<p><code>issues: [closed]</code>
 event, once GitHub finishes the auto-close, is the authoritative cleanup for
 anything the merge event saw mid-flight.</p>
 <p><strong>Done-ness is decided by a merged commit <em>body</em> <em>closing-keyword</em> reference
