@@ -1,4 +1,5 @@
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.Ui;
 using NUnit.Framework;
 using UnityEngine;
@@ -19,6 +20,18 @@ namespace Doggiehood.Unity.EditModeTests
     public class ToastViewTests
     {
         private const float Eps = 0.001f;
+
+        // The fixed chrome the pill spends before any text (#578): outline both
+        // sides + coin inset + coin + icon gap + message inset. The text budget is
+        // whatever is left of the pill width after this. Mirrors ComputeToastWidth.
+        private static readonly float ChromeOverheadPx =
+            2f * ToastView.OutlineThicknessPx + ToastView.ToastPaddingLeftPx
+            + ToastView.ToastCoinDiameterPx + ToastView.ToastIconGapPx
+            + ToastView.ToastPaddingRightPx;
+
+        // A small cushion so the fit assertion is not knife-edge on a tiny
+        // font-metric difference — the line must fit comfortably, not to the pixel.
+        private const float FitSafetyMarginPx = 16f;
 
         private GameObject host;
         private ToastQueue<ToastRequest> queue;
@@ -56,7 +69,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(ToastView.ToastLaneTopMarginPx, Is.EqualTo(32f));
             Assert.That(ToastView.ToastLaneLeftMarginPx, Is.EqualTo(36f));
             Assert.That(ToastView.ToastHeightPx, Is.EqualTo(88f));
-            Assert.That(ToastView.ToastMaxWidthPx, Is.EqualTo(640f));
+            Assert.That(ToastView.ToastMaxWidthPx, Is.EqualTo(1080f));
             Assert.That(ToastView.ToastCoinDiameterPx, Is.EqualTo(60f));
             Assert.That(ToastView.ToastPaddingLeftPx, Is.EqualTo(14f));
             Assert.That(ToastView.ToastPaddingRightPx, Is.EqualTo(28f));
@@ -146,6 +159,85 @@ namespace Doggiehood.Unity.EditModeTests
 
             // Mirrors the currency chip's reservation in the opposite corner.
             Assert.That(HudOverlay.HudChipAnchor, Is.EqualTo(HudCorner.TopRight));
+        }
+
+        // Every currently-approved toast line (#578): the quest template plus the
+        // four onboarding step lines, built through the real copy assembly.
+        private static string[] ApprovedToastMessages()
+        {
+            return new[]
+            {
+                ToastCopy.QuestComplete(10),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.FirstQuest, 100),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.UpgradeHouse, 100),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.ExpandMap, 100),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.BuildHouse, 100),
+            };
+        }
+
+        [Test]
+        public void EveryApprovedToastLine_FitsOnOneLineWithinTheContentBudget()
+        {
+            // #578: at the shipped 640px cap the longest approved line ("You opened
+            // up a brand-new street! +100 coins") overflowed the pill; this measures
+            // every line with the real bold DejaVu Sans metrics and requires each to
+            // fit inside the pill's text budget on a single line. Red at 640, green
+            // once ToastMaxWidthPx is widened.
+            var style = ToastView.LabelStyle();
+            var textBudget = ToastView.ToastMaxWidthPx - ChromeOverheadPx;
+            foreach (var message in ApprovedToastMessages())
+            {
+                var textWidth = style.CalcSize(new GUIContent(message)).x;
+                Assert.That(
+                    textWidth,
+                    Is.LessThanOrEqualTo(textBudget - FitSafetyMarginPx),
+                    $"'{message}' must fit on one line within the toast content budget " +
+                    $"(measured {textWidth:0}px vs budget {textBudget:0}px)");
+            }
+        }
+
+        [Test]
+        public void LabelStyle_IsSingleLineAndClipsAtThePillEdge()
+        {
+            // #578 fail-safe: the label never wraps to a second row and any message
+            // that still exceeds the (widened) budget is clipped at the pill edge
+            // rather than bleeding past it.
+            var style = ToastView.LabelStyle();
+            Assert.That(style.wordWrap, Is.False, "single line — never wraps");
+            Assert.That(
+                style.clipping,
+                Is.EqualTo(TextClipping.Clip),
+                "over-budget text is clipped at the pill edge, never bleeds past it");
+        }
+
+        [Test]
+        public void OverWidthMessage_TextRectStaysWithinThePillBounds_SoTheClipHolds()
+        {
+            // #578: even a string far wider than any budget must not produce a text
+            // rect that reaches past the pill — the pill caps at ToastMaxWidthPx and
+            // the text rect is derived from that capped pill, so combined with the
+            // Clip style the label can never bleed past the pill's edge.
+            var huge = new string('W', 400);
+            var style = ToastView.LabelStyle();
+            var textWidth = style.CalcSize(new GUIContent(huge)).x;
+            Assert.That(
+                textWidth,
+                Is.GreaterThan(ToastView.ToastMaxWidthPx),
+                "sanity: the test string must actually exceed the pill width");
+
+            var pill = ToastView.ComputeToastRect(ToastView.ComputeToastWidth(textWidth));
+            Assert.That(
+                pill.width,
+                Is.EqualTo(ToastView.ToastMaxWidthPx),
+                "an over-width message caps the pill at the reserved width");
+
+            var textRect = ToastView.ComputeTextRect(pill);
+            Assert.That(textRect.x, Is.GreaterThanOrEqualTo(pill.x), "left edge inside the pill");
+            Assert.That(textRect.xMax, Is.LessThanOrEqualTo(pill.xMax), "right edge inside the pill");
+            Assert.That(
+                textRect.width,
+                Is.LessThanOrEqualTo(pill.width),
+                "the text rect never exceeds the pill's own bounds");
         }
     }
 }
