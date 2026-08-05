@@ -137,6 +137,18 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>#568: clears the shared <see cref="ModalInputGate"/>'s
+        /// this-frame close latch at end of frame. Unity guarantees every
+        /// <c>LateUpdate</c> runs only after all <c>Update</c>s (including the
+        /// EventSystem's UI dispatch and this rig's own tap routing) have
+        /// completed for the frame — so a modal that a tap dismissed this frame
+        /// keeps blocking that same tap's world raycast, but the latch is always
+        /// clear before the next frame's unrelated tap is checked.</summary>
+        private void LateUpdate()
+        {
+            ModalInputGate.Shared.EndFrame();
+        }
+
         private void PollPinch()
         {
             var a = Input.GetTouch(0);

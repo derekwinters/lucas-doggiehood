@@ -31,6 +31,12 @@ namespace Doggiehood.Unity.EditModeTests
         [SetUp]
         public void CreatePresenter()
         {
+            // #568: the conversation panel now registers with the process-global
+            // ModalInputGate on open; clear it so a registration a prior test
+            // left open (a test that opens without closing) can't leak into this
+            // one or another gate-reading EditMode test.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+
             state = GameState.CreateNew();
             host = new GameObject("conversation-presenter-host");
             presenter = host.AddComponent<ConversationPresenter>();
@@ -41,6 +47,47 @@ namespace Doggiehood.Unity.EditModeTests
         public void Cleanup()
         {
             Object.DestroyImmediate(host);
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
+        }
+
+        [Test]
+        public void TryOpen_RegistersWithTheSharedModalGate_Close_Unregisters()
+        {
+            // #568: the bottom-center conversation panel has no full-screen scrim,
+            // so the #422 IsPointerOverUi guard only ever covered its own button/
+            // panel rects — a tap just outside them leaked to the world. It now
+            // registers with the shared gate on open and unregisters on close,
+            // matching the center-anchored overlays, so the world raycast is
+            // blocked while it's up.
+            var dog = state.Dogs.First();
+            state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "no modal is registered before the conversation opens");
+
+            Assert.That(presenter.TryOpen(dog), Is.True);
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "an open conversation registers with the shared modal gate");
+
+            presenter.Close();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "closing the conversation unregisters it from the shared modal gate");
+        }
+
+        [Test]
+        public void DecliningTheConversation_UnregistersFromTheSharedModalGate()
+        {
+            // #568: "Not now" closes the panel, so it must release the gate too —
+            // the same dismiss path any close flows through.
+            var dog = state.Dogs.First();
+            state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            presenter.TryOpen(dog);
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            presenter.DeclineCurrent();
+
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "declining the conversation unregisters it from the shared modal gate");
         }
 
         [Test]
