@@ -1833,7 +1833,7 @@
 <p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (18 values — the 17 road tiles plus the roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges and, for the OpposingTurns types, arcs), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 16 lot-bearing types — every type except <code>FourWay</code> and <code>GreenSpace</code>). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
 </div>
 <h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
-<p>These 7 measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>) as the geometric basis every tile type below will eventually be built from.</p>
+<p>These measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>; the road-bend corner radius added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>) as the geometric basis every tile type below will eventually be built from.</p>
 <table>
 <thead>
 <tr>
@@ -1869,6 +1869,10 @@
 <tr>
 <td>Opposing-turn arch radius</td>
 <td>quarter-circle, 15m (peak of arch reaches ~15m from tile center)</td>
+</tr>
+<tr>
+<td>Road-bend corner radius</td>
+<td>5m — the plain <code>Turn*</code>/<code>road-bend</code> road centerline's corner-arc radius, measured from the shared <code>road-bend</code> kit FBX (raw radius 50 at the raw×0.1 world scale, midline of the inner 20-raw and outer 80-raw asphalt-edge arcs). The walk network curves a bend's sidewalks concentrically about it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>); see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a></td>
 </tr>
 </tbody>
 </table>
