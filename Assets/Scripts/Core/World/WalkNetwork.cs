@@ -57,6 +57,32 @@ namespace Doggiehood.Core.World
     }
 
     /// <summary>
+    /// A cul-de-sac's bulb-side turnaround to curve (#581): the dead-end
+    /// <see cref="Stub"/> road and which of its ends carries the bulb. The
+    /// walk network joins the stub's two sidewalk arms around the bulb with a
+    /// curved turnaround of radius <see cref="WorldDimensions.CulDeSacBulbRadius"/>
+    /// instead of leaving them as two dead-ends. Supplied by
+    /// <see cref="MapWalkNetwork"/>, which knows a tile is a cul-de-sac — a
+    /// dead-end bulb can't be told from a road running to the map frontier by
+    /// road geometry alone.
+    /// </summary>
+    public readonly struct CulDeSacTurnaround
+    {
+        public Road Stub { get; }
+
+        /// <summary>True when the bulb (dead-end) is at the stub's positive-along
+        /// end (<see cref="Road.HalfLength"/>), false when it's at the negative
+        /// end — the connecting road edge is the opposite end.</summary>
+        public bool BulbAtPositiveEnd { get; }
+
+        public CulDeSacTurnaround(Road stub, bool bulbAtPositiveEnd)
+        {
+            Stub = stub;
+            BulbAtPositiveEnd = bulbAtPositiveEnd;
+        }
+    }
+
+    /// <summary>
     /// The walkable graph of the neighborhood (#106): sidewalks on both
     /// sides of every road, crosswalks connecting those sidewalks wherever
     /// a road needs to be crossed, and front walkways (#128) connecting
@@ -394,6 +420,23 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static WalkNetwork BuildFrom(IReadOnlyList<Road> roads, IReadOnlyList<HouseLot> houseLots)
         {
+            return BuildFrom(roads, houseLots, Array.Empty<CulDeSacTurnaround>());
+        }
+
+        /// <summary>
+        /// #581 overload: as <see cref="BuildFrom(IReadOnlyList{Road}, IReadOnlyList{HouseLot})"/>,
+        /// plus a set of cul-de-sac bulb turnarounds to curve. Plain <c>Turn*</c>
+        /// bends are detected geometrically from the roads themselves (two
+        /// perpendicular stubs meeting endpoint-to-endpoint) and curved
+        /// automatically; a cul-de-sac's dead-end can't be told apart from a
+        /// road running to the map frontier by geometry alone, so the caller
+        /// (<see cref="MapWalkNetwork"/>, which knows the tile is a cul-de-sac)
+        /// passes those explicitly. <see cref="NeighborhoodLayout"/>'s starting
+        /// intersection has neither, so it uses the two-argument overload.
+        /// </summary>
+        public static WalkNetwork BuildFrom(IReadOnlyList<Road> roads, IReadOnlyList<HouseLot> houseLots,
+            IReadOnlyList<CulDeSacTurnaround> culDeSacTurnarounds)
+        {
             var edges = new List<WalkEdge>();
 
             foreach (var road in roads)
@@ -401,6 +444,13 @@ namespace Doggiehood.Core.World
                 var crossings = FindCrossings(road, roads);
                 BuildSidewalkArms(road, crossings, edges);
                 BuildCrosswalks(road, crossings, edges);
+            }
+
+            BuildBendArcs(roads, edges);
+
+            foreach (var turnaround in culDeSacTurnarounds)
+            {
+                BuildCulDeSacTurnaround(turnaround, edges);
             }
 
             var frontWalkways = new Dictionary<int, WalkEdge>();
@@ -520,10 +570,18 @@ namespace Doggiehood.Core.World
             public readonly float Along;
             public readonly Road Other;
 
-            public Crossing(float along, Road other)
+            /// <summary>#581: true when this is a plain <c>Turn*</c> bend — two
+            /// perpendicular stub roads meeting only at their shared endpoint
+            /// (the crossing sits at the END of BOTH roads) rather than a real
+            /// intersection (where the crossing is interior to at least one
+            /// road). A bend curves; a real crossing gets the crosswalk box.</summary>
+            public readonly bool IsBend;
+
+            public Crossing(float along, Road other, bool isBend)
             {
                 Along = along;
                 Other = other;
+                IsBend = isBend;
             }
         }
 
@@ -552,7 +610,12 @@ namespace Doggiehood.Core.World
 
                 if (Math.Abs(along) <= road.HalfLength + Epsilon && Math.Abs(alongOnOther) <= other.HalfLength + Epsilon)
                 {
-                    crossings.Add(new Crossing(along, other));
+                    // A bend: the crossing is at the END of both roads (two
+                    // perpendicular stubs touching endpoint-to-endpoint). A real
+                    // crossing is interior to at least one of them.
+                    var isBend = Math.Abs(Math.Abs(along) - road.HalfLength) < Epsilon
+                        && Math.Abs(Math.Abs(alongOnOther) - other.HalfLength) < Epsilon;
+                    crossings.Add(new Crossing(along, other, isBend));
                 }
             }
 
@@ -572,7 +635,13 @@ namespace Doggiehood.Core.World
                 var boundaries = new List<float> { -road.HalfLength };
                 foreach (var crossing in crossings)
                 {
-                    var mag = SidewalkOffsetMagnitude(crossing.Other);
+                    // A bend clips the arm back to the corner-arc tangent point
+                    // (RoadBendCornerRadius from the shared endpoint), where the
+                    // inserted arc takes over (#581); a real crossing clips back
+                    // by the crossing road's sidewalk half-width, as before.
+                    var mag = crossing.IsBend
+                        ? WorldDimensions.RoadBendCornerRadius
+                        : SidewalkOffsetMagnitude(crossing.Other);
                     boundaries.Add(crossing.Along - mag);
                     boundaries.Add(crossing.Along + mag);
                 }
@@ -602,6 +671,13 @@ namespace Doggiehood.Core.World
 
             foreach (var crossing in crossings)
             {
+                // A plain Turn* bend is not a real crossing — it curves instead
+                // of getting a straight crosswalk box (#581).
+                if (crossing.IsBend)
+                {
+                    continue;
+                }
+
                 var mag = SidewalkOffsetMagnitude(crossing.Other);
 
                 foreach (var sign in new[] { 1f, -1f })
@@ -612,6 +688,153 @@ namespace Doggiehood.Core.World
                     edges.Add(new WalkEdge(a, b, WalkEdgeKind.Crosswalk, WorldDimensions.CrosswalkWidth));
                 }
             }
+        }
+
+        /// <summary>The largest angular step (radians) between two consecutive
+        /// waypoints on an inserted corner/turnaround arc (#581): a smaller step
+        /// makes the polyline hug the true arc more closely. 30 degrees.</summary>
+        private static readonly float ArcMaxSegmentRadians = (float)(Math.PI / 6.0);
+
+        /// <summary>Minimum straight hops any inserted arc is split into (#581),
+        /// so even a very short arc still reads as a curve, not a single chord.</summary>
+        private const int MinArcSegments = 2;
+
+        /// <summary>
+        /// Curves every plain <c>Turn*</c> bend in <paramref name="roads"/>
+        /// (#581): two perpendicular stub roads meeting endpoint-to-endpoint.
+        /// Each bend's two sidewalk arms (already clipped
+        /// <see cref="WorldDimensions.RoadBendCornerRadius"/> back from the
+        /// shared corner by <see cref="BuildSidewalkArms"/>) are joined by two
+        /// quarter-circle arcs — inner and outer — concentric with the road's
+        /// own corner arc, so <see cref="FindPath"/> traces the curve instead of
+        /// the old straight box-corner chord. Each bend is processed once, from
+        /// its north-south stub (a bend's two stubs always have opposite
+        /// orientations).
+        /// </summary>
+        private static void BuildBendArcs(IReadOnlyList<Road> roads, List<WalkEdge> edges)
+        {
+            foreach (var road in roads)
+            {
+                if (road.Orientation != StreetOrientation.NorthSouth)
+                {
+                    continue;
+                }
+
+                foreach (var crossing in FindCrossings(road, roads))
+                {
+                    if (crossing.IsBend)
+                    {
+                        BuildBendArc(road, crossing.Along, crossing.Other, edges);
+                    }
+                }
+            }
+        }
+
+        private static void BuildBendArc(Road nsRoad, float alongNs, Road ewRoad, List<WalkEdge> edges)
+        {
+            var r = WorldDimensions.RoadBendCornerRadius;
+            var offset = SidewalkOffsetMagnitude(nsRoad);
+
+            // The shared corner endpoint (the tile centre) and the interior
+            // directions each stub runs from it.
+            var p = nsRoad.PointAt(alongNs, 0f);
+            var alongEw = ewRoad.AlongAxis(p);
+            var dirNsZ = -Math.Sign(alongNs);
+            var dirEwX = -Math.Sign(alongEw);
+
+            // The corner arc's centre: R along each interior direction from the
+            // corner (into the quadrant the two arms point into) — the same
+            // centre the rendered road-bend arc has.
+            var center = new GridPoint(p.X + r * dirEwX, p.Z + r * dirNsZ);
+
+            // Where each arm was clipped: R from the corner, toward the interior.
+            var clipNs = alongNs - Math.Sign(alongNs) * r;
+            var clipEw = alongEw - Math.Sign(alongEw) * r;
+
+            // The inner sidewalk of each stub is the one offset toward the arc
+            // centre; the outer is the opposite. NS sidewalks offset along X,
+            // EW along Z.
+            var innerNsOffset = center.X > p.X ? offset : -offset;
+            var innerEwOffset = center.Z > p.Z ? offset : -offset;
+
+            AddArc(edges,
+                nsRoad.PointAt(clipNs, innerNsOffset),
+                ewRoad.PointAt(clipEw, innerEwOffset),
+                center, r - offset);
+
+            AddArc(edges,
+                nsRoad.PointAt(clipNs, -innerNsOffset),
+                ewRoad.PointAt(clipEw, -innerEwOffset),
+                center, r + offset);
+        }
+
+        /// <summary>
+        /// Curves a cul-de-sac's bulb-side turnaround (#581): joins the dead-end
+        /// stub's two sidewalk arm ends with an arc of radius
+        /// <see cref="WorldDimensions.CulDeSacBulbRadius"/> that bulges around
+        /// the closed bulb, so a dog can loop from one side to the other instead
+        /// of dead-ending. The arc's endpoints are the stub's existing bulb-end
+        /// sidewalk nodes, so no node is left dangling.
+        /// </summary>
+        private static void BuildCulDeSacTurnaround(CulDeSacTurnaround turnaround, List<WalkEdge> edges)
+        {
+            var stub = turnaround.Stub;
+            var rBulb = WorldDimensions.CulDeSacBulbRadius;
+            var offset = SidewalkOffsetMagnitude(stub);
+
+            var bulbAlong = turnaround.BulbAtPositiveEnd ? stub.HalfLength : -stub.HalfLength;
+            var closedSign = turnaround.BulbAtPositiveEnd ? 1f : -1f;
+
+            var endA = stub.PointAt(bulbAlong, offset);
+            var endB = stub.PointAt(bulbAlong, -offset);
+
+            // The bulb-end sidewalk nodes sit `offset` apart across the road; the
+            // arc centre lies `back` down the OPEN side of that chord so the arc
+            // of radius rBulb bulges toward the closed (dead) side.
+            var pb = stub.PointAt(bulbAlong, 0f);
+            var back = (float)Math.Sqrt(rBulb * rBulb - offset * offset);
+            var center = stub.Orientation == StreetOrientation.NorthSouth
+                ? new GridPoint(pb.X, pb.Z - closedSign * back)
+                : new GridPoint(pb.X - closedSign * back, pb.Z);
+
+            AddArc(edges, endA, endB, center, rBulb);
+        }
+
+        /// <summary>
+        /// Adds the sidewalk waypoint hops of one inserted arc (#581): from
+        /// <paramref name="endA"/> to <paramref name="endB"/> along the minor
+        /// arc of the circle centred at <paramref name="center"/> with the given
+        /// <paramref name="radius"/>. The two endpoints are used verbatim (they
+        /// are existing arm nodes) so the arc stays welded to the arms; only the
+        /// interior waypoints are generated on the circle.
+        /// </summary>
+        private static void AddArc(List<WalkEdge> edges, GridPoint endA, GridPoint endB, GridPoint center, float radius)
+        {
+            var angleA = (float)Math.Atan2(endA.Z - center.Z, endA.X - center.X);
+            var angleB = (float)Math.Atan2(endB.Z - center.Z, endB.X - center.X);
+
+            // Sweep the short way around — the minor arc, which by construction
+            // bulges to the correct side for every #581 corner and turnaround.
+            var sweep = angleB - angleA;
+            var twoPi = (float)(2 * Math.PI);
+            while (sweep > Math.PI) sweep -= twoPi;
+            while (sweep < -Math.PI) sweep += twoPi;
+
+            var segments = Math.Max(MinArcSegments,
+                (int)Math.Ceiling(Math.Abs(sweep) / ArcMaxSegmentRadians));
+
+            var previous = endA;
+            for (var i = 1; i < segments; i++)
+            {
+                var angle = angleA + sweep * (i / (float)segments);
+                var waypoint = new GridPoint(
+                    center.X + radius * (float)Math.Cos(angle),
+                    center.Z + radius * (float)Math.Sin(angle));
+                edges.Add(new WalkEdge(previous, waypoint, WalkEdgeKind.Sidewalk, WorldDimensions.SidewalkWidth));
+                previous = waypoint;
+            }
+
+            edges.Add(new WalkEdge(previous, endB, WalkEdgeKind.Sidewalk, WorldDimensions.SidewalkWidth));
         }
 
         /// <summary>

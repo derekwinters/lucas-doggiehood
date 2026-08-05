@@ -65,7 +65,48 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static WalkNetwork BuildFrom(TileMap map, IReadOnlyList<HouseLot> builtLots)
         {
-            return WalkNetwork.BuildFrom(RoadsFrom(map), builtLots);
+            return WalkNetwork.BuildFrom(RoadsFrom(map), builtLots, TurnaroundsFrom(map));
+        }
+
+        /// <summary>
+        /// Every cul-de-sac bulb turnaround the tiles in <paramref name="map"/>
+        /// carry (#581): one per single-road-edge tile (a <c>CulDeSac*</c>),
+        /// whose lone stub dead-ends at the tile centre. A cul-de-sac's closed
+        /// bulb can't be told from a road running to the map frontier by road
+        /// geometry alone, so <see cref="WalkNetwork"/> is told which stubs to
+        /// curve here, where the tile type is known. Plain <c>Turn*</c> bends
+        /// (two road edges, two stubs) are detected geometrically by
+        /// <see cref="WalkNetwork"/> itself and are not listed here.
+        /// </summary>
+        public static IReadOnlyList<CulDeSacTurnaround> TurnaroundsFrom(TileMap map)
+        {
+            var turnarounds = new List<CulDeSacTurnaround>();
+
+            foreach (var tile in map.Tiles)
+            {
+                var definition = TileCatalog.Get(tile.Value);
+                if (definition.RoadEdges.Count != 1)
+                {
+                    continue;
+                }
+
+                var center = TileGeometry.CenterOf(tile.Key);
+                var edge = System.Linq.Enumerable.Single(definition.RoadEdges);
+                var orientation = edge == TileEdge.North || edge == TileEdge.South
+                    ? StreetOrientation.NorthSouth
+                    : StreetOrientation.EastWest;
+                var stub = new Road(orientation, StubCenter(tile.Key, center, edge), StubHalfLength);
+
+                // The bulb (dead-end) is the tile-centre end of the stub; the
+                // connecting road edge is the opposite end. Which along-end that
+                // is depends on which side the road edge sits.
+                var bulbAlong = orientation == StreetOrientation.NorthSouth
+                    ? center.Z - stub.Center.Z
+                    : center.X - stub.Center.X;
+                turnarounds.Add(new CulDeSacTurnaround(stub, bulbAlong > 0f));
+            }
+
+            return turnarounds;
         }
 
         private static void AddAxisRoad(List<Road> roads, TileTypeDefinition definition,
