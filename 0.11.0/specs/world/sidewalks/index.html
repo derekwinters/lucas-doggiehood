@@ -1924,7 +1924,17 @@ the road height — rather than from either endpoint node alone, since a
 box-corner node (where a crosswalk meets its sidewalks) carries edges of
 both kinds and only the edge actually being crossed disambiguates them.
 <code>DogView</code>'s wander step and <code>DogSpawner</code>'s sidewalk spawn point both
-consume this Core query instead of hardcoding Y.</p>
+consume this Core query instead of hardcoding Y. A companion
+<code>WalkNetwork.SurfaceHeightAt(point)</code> answers the same road-vs-sidewalk
+question for a single arbitrary <strong>point</strong> rather than a graph hop — it
+returns <code>SidewalkSurfaceHeight</code> when the point falls on a Sidewalk or
+FrontWalkway edge's paved-band footprint (within half that edge's width of
+the segment) and <code>RoadSurfaceHeight</code> everywhere else (flat road lane,
+crosswalk, grass). The lost-item <strong>finder ring</strong> consumes it so the ring
+sits on the surface the hidden item actually rests on: on the kit's raised
+curb+sidewalk band it was previously fixed at the flat ground plane and
+rendered buried under that raised mesh, so on-road items showed no
+indicator (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/580">#580</a>).</p>
 <h2 id="walking-home-routes-over-the-network">Walking home routes over the network<a class="headerlink" href="#walking-home-routes-over-the-network" title="Permanent link">&para;</a></h2>
 <p>Walking home after accepting a "buy me X" quest (<a href="../../quests/quest-content/">Quest Content</a>) used to move in a straight line, ignoring streets entirely. Core now computes the actual route with <code>WalkNetwork.FindPath</code> from the dog's current position to its house's <strong>front door</strong>, ending via that lot's front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a> — the dog arrives at the actual door, which also feeds future quest arrivals); the Unity layer (<code>QuestDirector</code>) only consumes the returned waypoint list and walks it frame by frame (<code>Vector3.MoveTowards</code> hop to hop) — the Core/Unity split stays intact, per <a href="../../../engineering/testing/">Testing Strategy</a>. Dogs also spawn at their walkway's sidewalk attach point (<code>DogSpawner</code>), staggered along the sidewalk so housemates don't overlap.</p>
 <h2 id="walkway-visuals">Walkway visuals<a class="headerlink" href="#walkway-visuals" title="Permanent link">&para;</a></h2>
