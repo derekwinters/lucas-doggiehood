@@ -187,8 +187,9 @@ namespace Doggiehood.Unity.EditModeTests
             // The production default reads the shared gate, so a panel that
             // registers anywhere blocks world taps everywhere.
             TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            var gate = Doggiehood.Core.Cameras.ModalInputGate.Shared;
             var token = new object();
-            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(token);
+            gate.Register(token);
             try
             {
                 Assert.That(TapRouter.IsModalOpen(), Is.True,
@@ -196,11 +197,18 @@ namespace Doggiehood.Unity.EditModeTests
             }
             finally
             {
-                Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(token);
+                gate.Unregister(token);
             }
 
+            // #568: Unregister latches ClosedThisFrame, so the seam keeps
+            // blocking for the rest of this frame (that closing tap can't leak).
+            // End the frame — as CameraRig.LateUpdate does — to isolate this test
+            // to the live-registration tracking; the latch behaviour itself is
+            // covered by DefaultIsModalOpen_ReflectsTheSharedGatesClosedThisFrameLatch.
+            gate.EndFrame();
+
             Assert.That(TapRouter.IsModalOpen(), Is.False,
-                "once unregistered, the default modal seam reports no modal");
+                "once unregistered and the frame has ended, the default modal seam reports no modal");
         }
 
         [Test]
