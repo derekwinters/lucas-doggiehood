@@ -7,7 +7,7 @@
 
 ## Standard dimensions
 
-These 7 measurements are locked in Core (`WorldDimensions`, [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105)) as the geometric basis every tile type below will eventually be built from.
+These measurements are locked in Core (`WorldDimensions`, [#105](https://github.com/derekwinters/lucas-doggiehood/issues/105); the road-bend corner radius added by [#581](https://github.com/derekwinters/lucas-doggiehood/issues/581)) as the geometric basis every tile type below will eventually be built from.
 
 | Standard | Value |
 |---|---|
@@ -18,6 +18,7 @@ These 7 measurements are locked in Core (`WorldDimensions`, [#105](https://githu
 | Crosswalk width | 3m |
 | Cul-de-sac bulb radius | 9m |
 | Opposing-turn arch radius | quarter-circle, 15m (peak of arch reaches ~15m from tile center) |
+| Road-bend corner radius | 5m — the plain `Turn*`/`road-bend` road centerline's corner-arc radius, measured from the shared `road-bend` kit FBX (raw radius 50 at the raw×0.1 world scale, midline of the inner 20-raw and outer 80-raw asphalt-edge arcs). The walk network curves a bend's sidewalks concentrically about it ([#581](https://github.com/derekwinters/lucas-doggiehood/issues/581)); see [Sidewalks & Walk Network](sidewalks.md) |
 
 ## Grid coordinates
 
