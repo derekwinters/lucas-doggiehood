@@ -4,6 +4,7 @@ using System.Reflection;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Onboarding;
+using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -131,9 +132,9 @@ namespace Doggiehood.Unity.EditModeTests
             var smallHouse = SyntheticHouse(1f, new Vector3(100f, 0f, 100f));
             var bigHouse = SyntheticHouse(8f, new Vector3(140f, 0f, 140f));
 
-            var smallRing = OnboardingHouseHighlightView.Spawn(101, smallHouse, worldRoot.transform)
+            var smallRing = OnboardingHouseHighlightView.Spawn(101, smallHouse.transform, worldRoot.transform)
                 .GetComponentInChildren<Renderer>();
-            var bigRing = OnboardingHouseHighlightView.Spawn(102, bigHouse, worldRoot.transform)
+            var bigRing = OnboardingHouseHighlightView.Spawn(102, bigHouse.transform, worldRoot.transform)
                 .GetComponentInChildren<Renderer>();
 
             var smallFootprint = smallRing.bounds.size.x;
