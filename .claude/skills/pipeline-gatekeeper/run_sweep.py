@@ -188,6 +188,23 @@ def main(argv):
             repo, token, f["number"],
             remove=["in-progress"], add=["ready-for-work"])
         sys.stderr.write("#%d requeue -> ready-for-work\n" % f["number"])
+    # Non-atomic triage hand-off, #569 shape (#582): a hand-back state label
+    # set with no analysis comment -> strip the state label, re-add `ai-triage`
+    # so the issue re-enters triage and gets a plan. Cron-only, gated by
+    # `events_only` inside `reconcile.process` (empty on the event path).
+    for f in findings["requeue_triage"]:
+        current_labels = labels_by_issue.get(f["number"], [])
+        changed = _replace_labels(
+            repo, token, f["number"],
+            remove=[f["from"]], add=[f["to"]])
+        labels_changed |= changed
+        # Re-adding `ai-triage` fires the analysis Routine (#378), so the
+        # re-queued issue is re-triaged immediately rather than waiting.
+        new_labels = [l for l in current_labels if l != f["from"]] + [f["to"]]
+        if apply_actions.fires_triage(current_labels, new_labels):
+            fire_routine.fire(f["number"], repo)
+        sys.stderr.write("#%d requeue_triage %s -> %s\n"
+                          % (f["number"], f["from"], f["to"]))
     # flag_* findings are read-only — surfaced by the dashboard, never acted
     # on here (see pipeline-reconcile's non-negotiable: the sweep never
     # closes an issue).

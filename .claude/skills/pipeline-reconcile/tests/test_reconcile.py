@@ -42,6 +42,7 @@ def issue(number, **kw):
         "is_dashboard": False,
         "has_open_pr": False,
         "prose_deps": [],
+        "has_analysis_comment": False,
     }
     d.update(kw)
     return d
@@ -424,8 +425,9 @@ class TestExclusionsAndHealth(unittest.TestCase):
             issue(2, labels=["ready-for-work"], milestone="v0.4"),
             issue(3, labels=["in-progress"], has_open_pr=True),
         ]))
-        for key in ("strip_labels", "requeue", "flag_done",
-                    "flag_orphaned_ready", "flag_prose_dep"):
+        for key in ("strip_labels", "requeue", "requeue_triage", "flag_done",
+                    "flag_orphaned_ready", "flag_prose_dep",
+                    "flag_orphaned_analysis"):
             self.assertEqual(out[key], [], key)
 
     def test_findings_sorted_by_number(self):
@@ -469,6 +471,149 @@ class TestMergeBlockers(unittest.TestCase):
     def test_accepts_sets_and_strings(self):
         # Numbers may arrive as a set (native fetch) or numeric strings.
         self.assertEqual(reconcile.merge_blockers({"57"}, ["109"]), [57, 109])
+
+
+class TestAnalysisSignature(unittest.TestCase):
+    """`has_analysis_signature(text)` (issue #582): recognize a triage-authored
+    analysis comment the same way `_closing_refs_in` recognizes closing refs — a
+    `## Build checklist` heading (any level) OR the `❓ Needs from Derek/Lucas:`
+    marker, the two hand-back shapes `triage-issue/SKILL.md` defines. Pure
+    text-in / bool-out; no GitHub access.
+    """
+
+    def test_build_checklist_heading_matches(self):
+        self.assertTrue(reconcile.has_analysis_signature("## Build checklist"))
+
+    def test_build_checklist_heading_level_tolerant(self):
+        self.assertTrue(reconcile.has_analysis_signature("### Build checklist"))
+        self.assertTrue(reconcile.has_analysis_signature("# Build checklist"))
+
+    def test_build_checklist_case_insensitive(self):
+        self.assertTrue(reconcile.has_analysis_signature("## build checklist"))
+
+    def test_needs_marker_matches(self):
+        self.assertTrue(reconcile.has_analysis_signature(
+            "❓ Needs from Derek/Lucas: which layout should the panel use?"))
+
+    def test_full_analysis_body_matches(self):
+        body = ("## Diagnosis\n\nRoot cause is X.\n\n## Fix approach\n\n"
+                "Do Y.\n\n## Build checklist\n\n- [ ] Core test: ...\n")
+        self.assertTrue(reconcile.has_analysis_signature(body))
+
+    def test_plain_comment_does_not_match(self):
+        for text in ["/approve", "Your move: `/park`",
+                     "I built a checklist for this", "Build checklist",
+                     "See the checklist above", "LGTM"]:
+            self.assertFalse(reconcile.has_analysis_signature(text), text)
+
+    def test_empty_and_none(self):
+        self.assertFalse(reconcile.has_analysis_signature(""))
+        self.assertFalse(reconcile.has_analysis_signature(None))
+
+
+class TestTriageHandoffDrift(unittest.TestCase):
+    """Non-atomic triage hand-off drift (issue #582). Rule (a): an open issue in
+    `pending-approval`/`needs-clarification` with NO analysis comment (the #569
+    shape) auto-requeues to `ai-triage`. Rule (b): an open issue carrying an
+    analysis comment but NO pipeline-state label (the residual #570 shape) is
+    FLAGGED, not auto-fixed (intended hand-back state is ambiguous).
+    """
+
+    # --- rule (a): label-without-analysis -> requeue_triage (auto-fix) -----
+    def test_pending_approval_without_analysis_requeues_to_triage(self):
+        out = run(payload([
+            issue(569, labels=["pending-approval"], has_analysis_comment=False),
+        ]))
+        self.assertEqual(numbers(out["requeue_triage"]), [569])
+        self.assertEqual(out["requeue_triage"][0]["from"], "pending-approval")
+        self.assertEqual(out["requeue_triage"][0]["to"], "ai-triage")
+
+    def test_needs_clarification_without_analysis_requeues_to_triage(self):
+        out = run(payload([
+            issue(569, labels=["needs-clarification"],
+                  has_analysis_comment=False),
+        ]))
+        self.assertEqual(numbers(out["requeue_triage"]), [569])
+        self.assertEqual(out["requeue_triage"][0]["from"], "needs-clarification")
+
+    def test_pending_approval_with_analysis_not_requeued(self):
+        # Healthy triaged issue: has both its analysis comment and its state
+        # label -> neither new rule fires.
+        out = run(payload([
+            issue(569, labels=["pending-approval"], has_analysis_comment=True),
+        ]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(out["flag_orphaned_analysis"], [])
+
+    def test_ai_triage_without_analysis_not_requeued(self):
+        # An issue still in `ai-triage` (awaiting triage) with no analysis yet
+        # is the normal pre-triage state, NOT drift.
+        out = run(payload([
+            issue(569, labels=["ai-triage"], has_analysis_comment=False),
+        ]))
+        self.assertEqual(out["requeue_triage"], [])
+
+    def test_requeue_triage_is_cron_only(self):
+        # Same event-path caution as `requeue` (#319): the auto-fix is withheld
+        # on the event-triggered sweep and only emitted by the cron backstop.
+        pending = payload([
+            issue(569, labels=["pending-approval"], has_analysis_comment=False)])
+        self.assertEqual(
+            reconcile.process(pending, events_only=True)["requeue_triage"], [])
+        self.assertEqual(
+            numbers(reconcile.process(pending, events_only=False)["requeue_triage"]),
+            [569])
+
+    # --- rule (b): analysis-without-label -> flag_orphaned_analysis --------
+    def test_analysis_without_state_label_flags(self):
+        out = run(payload([
+            issue(570, labels=["type:bug", "area:ai"],
+                  has_analysis_comment=True),
+        ]))
+        self.assertEqual(numbers(out["flag_orphaned_analysis"]), [570])
+        # Flag only — never auto-fixed (ambiguous which hand-back state).
+        self.assertEqual(out["requeue_triage"], [])
+
+    def test_analysis_with_state_label_not_flagged(self):
+        for state in ("pending-approval", "needs-clarification",
+                      "ready-for-work", "in-progress", "ai-triage"):
+            out = run(payload([
+                issue(570, labels=[state], has_analysis_comment=True)]))
+            self.assertEqual(out["flag_orphaned_analysis"], [], state)
+
+    def test_no_analysis_no_state_label_not_flagged(self):
+        out = run(payload([
+            issue(570, labels=["type:bug"], has_analysis_comment=False)]))
+        self.assertEqual(out["flag_orphaned_analysis"], [])
+
+    def test_flag_orphaned_analysis_fires_in_events_only_mode(self):
+        # Flags are read-only and unaffected by events_only (like flag_done).
+        out = reconcile.process(payload([
+            issue(570, labels=["type:bug"], has_analysis_comment=True)]),
+            events_only=True)
+        self.assertEqual(numbers(out["flag_orphaned_analysis"]), [570])
+
+    def test_closed_issue_with_analysis_no_new_findings(self):
+        # A closed issue is handled by strip_labels only; the new open-issue
+        # rules never fire on it.
+        out = run(payload([
+            issue(570, state="closed", labels=["pending-approval"],
+                  has_analysis_comment=False)]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(out["flag_orphaned_analysis"], [])
+        self.assertEqual(numbers(out["strip_labels"]), [570])
+
+    def test_healthy_triaged_issue_triggers_neither_rule(self):
+        # Regression: an issue correctly holding BOTH its analysis comment and
+        # its state label triggers neither new rule (mirrors the healthy-board
+        # test for the existing rules).
+        out = run(payload([
+            issue(568, labels=["pending-approval"], has_analysis_comment=True),
+            issue(571, labels=["ready-for-work"], has_analysis_comment=True,
+                  milestone="v0.12"),
+        ]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(out["flag_orphaned_analysis"], [])
 
 
 if __name__ == "__main__":
