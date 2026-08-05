@@ -63,6 +63,20 @@ namespace Doggiehood.Core.World
         private const float Epsilon = 0.0001f;
 
         /// <summary>
+        /// The signed distance of <paramref name="point"/> along this road's own
+        /// axis from <see cref="Center"/> (Z for a north-south road, X for
+        /// east-west) — the inverse of <see cref="PointAt"/>'s alongAxis
+        /// argument. Used by vehicle right-of-way (#546) to place crosswalks and
+        /// the driving position on a common along-road number line.
+        /// </summary>
+        public float AlongAxis(GridPoint point)
+        {
+            return Orientation == StreetOrientation.NorthSouth
+                ? point.Z - Center.Z
+                : point.X - Center.X;
+        }
+
+        /// <summary>
         /// A world point on this road's line: <paramref name="alongAxis"/>
         /// is the signed distance from <see cref="Center"/> along the
         /// road's own axis (Z for a north-south road, X for east-west);

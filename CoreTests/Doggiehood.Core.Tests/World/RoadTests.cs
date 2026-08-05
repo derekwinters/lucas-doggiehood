@@ -74,5 +74,25 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(point.X, Is.GreaterThan(road.Width / 2f + WorldDimensions.GrassVergeWidth),
                 "sidewalk centerline must sit beyond the road edge and verge setback (0.75m since the 2026-07-13 midpoint decision)");
         }
+
+        [Test]
+        public void AlongAxis_IsTheSignedDistanceAlongTheRoadAxis_TheInverseOfPointAt()
+        {
+            // #546: the delivery truck reasons about crosswalk positions in
+            // along-road coordinates. AlongAxis recovers the along-coordinate of
+            // a world point — the inverse of PointAt's alongAxis argument — for a
+            // road not centered at the origin, on each orientation.
+            var nsRoad = new Road(StreetOrientation.NorthSouth, new GridPoint(3f, 5f), 30f);
+            Assert.That(nsRoad.AlongAxis(new GridPoint(99f, 12f)), Is.EqualTo(7f).Within(0.0001f),
+                "north-south: along-axis is the Z distance from the road centre, ignoring X");
+
+            var ewRoad = new Road(StreetOrientation.EastWest, new GridPoint(3f, 5f), 30f);
+            Assert.That(ewRoad.AlongAxis(new GridPoint(10f, 99f)), Is.EqualTo(7f).Within(0.0001f),
+                "east-west: along-axis is the X distance from the road centre, ignoring Z");
+
+            Assert.That(nsRoad.PointAt(nsRoad.AlongAxis(new GridPoint(3f, 12f)), 0f),
+                Is.EqualTo(new GridPoint(3f, 12f)),
+                "PointAt(AlongAxis(p), 0) round-trips a centerline point");
+        }
     }
 }
