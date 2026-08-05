@@ -53,10 +53,13 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Types_CoversAllSixteenNonFourWayTypes()
+        public void Types_CoversEveryLottedType_ExcludingFourWayAndGreenSpace()
         {
+            // #539: GreenSpace joins FourWay as a type with no per-quadrant
+            // catalog lots, so it is excluded from Types too — leaving the same
+            // 16 road tiles that carry buildable lot slots.
             var expected = ((TileType[])Enum.GetValues(typeof(TileType)))
-                .Where(t => t != TileType.FourWay)
+                .Where(t => t != TileType.FourWay && t != TileType.GreenSpace)
                 .ToList();
 
             Assert.That(expected.Count, Is.EqualTo(16));

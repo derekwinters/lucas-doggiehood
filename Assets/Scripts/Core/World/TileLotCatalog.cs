@@ -31,8 +31,12 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class TileLotCatalog
     {
-        private static readonly IReadOnlyList<TileType> NonFourWayTypes = ((TileType[])Enum.GetValues(typeof(TileType)))
-            .Where(type => type != TileType.FourWay)
+        // #539: the two types with no per-quadrant catalog lot slots — FourWay
+        // (its lots live in NeighborhoodLayout) and GreenSpace (a house-free
+        // tile that never holds a lot). Both are excluded from Types; LotsFor
+        // still handles GreenSpace by returning an empty set (FourWay throws).
+        private static readonly IReadOnlyList<TileType> LottedTypes = ((TileType[])Enum.GetValues(typeof(TileType)))
+            .Where(type => type != TileType.FourWay && type != TileType.GreenSpace)
             .ToList();
 
         // The "cupped" corner each bend drops (and renders curved): the
@@ -75,7 +79,7 @@ namespace Doggiehood.Core.World
 
         public static IReadOnlyCollection<TileType> Types
         {
-            get { return NonFourWayTypes; }
+            get { return LottedTypes; }
         }
 
         /// <summary>The quadrant lot slots for <paramref name="type"/>, as
@@ -93,7 +97,8 @@ namespace Doggiehood.Core.World
                     "FourWay's lots are defined by NeighborhoodLayout, not TileLotCatalog.", nameof(type));
             }
 
-            if (TwinBends.Contains(type))
+            // #539: a green-space tile never holds a house — no lot slots.
+            if (type == TileType.GreenSpace || TwinBends.Contains(type))
             {
                 return new Dictionary<Quadrant, GridPoint>();
             }

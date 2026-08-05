@@ -102,6 +102,30 @@ namespace Doggiehood.Core.World
         /// the starting FourWay intersection until zones are unlocked (#56).</summary>
         public TileMap Map { get; }
 
+        /// <summary>#539: the count of non-green-space tiles on <see cref="Map"/>
+        /// (the origin FourWay plus every player-unlocked road tile). The
+        /// road-unlock cost curve (<see cref="Expansion.TileUnlock.Cost"/>) scales
+        /// on this rather than raw <c>Map.Tiles.Count</c> so the free auto-placed
+        /// green spaces — which also live in <c>Map.Tiles</c> — never inflate the
+        /// price of the next road unlock. With no green space placed this equals
+        /// <c>Map.Tiles.Count</c>, so pre-#539 behavior is unchanged.</summary>
+        private int RoadTileCount
+        {
+            get
+            {
+                var count = 0;
+                foreach (var entry in Map.Tiles)
+                {
+                    if (entry.Value != TileType.GreenSpace)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
         /// <summary>#295: the full authored target neighborhood
         /// (<c>docs/tools/map-data.json</c>, loaded via #383's
         /// <see cref="MapLoader"/>) against which the player-choice frontier is
@@ -113,10 +137,61 @@ namespace Doggiehood.Core.World
 
         /// <summary>#295: supplies the authored target map used to compute the
         /// unlock frontier. The thin Unity layer loads the authored map data
-        /// and calls this once at bootstrap.</summary>
+        /// and calls this once at bootstrap. #539: this is also the single
+        /// "after target-map/save restore" hook where the green-space activation
+        /// pass first runs — a loaded game's replayed <c>tile=</c> road lines are
+        /// already on <see cref="Map"/> by now, so re-running the pass here
+        /// reproduces every green space they qualify (pure replay, no save
+        /// line).</summary>
         public void SetTargetMap(TileMap targetMap)
         {
             TargetMap = targetMap;
+            ActivateGreenSpaces();
+        }
+
+        /// <summary>#539: runs the green-space auto-activation pass to a fixpoint
+        /// — repeatedly placing every target <see cref="TileType.GreenSpace"/>
+        /// coordinate that <see cref="Expansion.GreenSpaceActivation.Compute"/>
+        /// now finds eligible (2+ edges bordering a placed tile) until no more
+        /// qualify. Looping (not single-hop) is what lets one freshly activated
+        /// green space make an adjacent one newly eligible in the same call. Free
+        /// — no <see cref="Wallet"/> interaction — and green spaces are placed
+        /// straight onto <see cref="Map"/> WITHOUT being recorded in
+        /// <see cref="UnlockedTiles"/>: they are not player unlocks, carry no
+        /// lots, are re-derived on load rather than persisted, and must not
+        /// inflate the road-unlock cost curve. A no-op when no target map is
+        /// supplied.</summary>
+        private void ActivateGreenSpaces()
+        {
+            if (TargetMap == null)
+            {
+                return;
+            }
+
+            var placedAny = false;
+            bool placedThisPass;
+            do
+            {
+                placedThisPass = false;
+                foreach (var coordinate in Expansion.GreenSpaceActivation.Compute(Map, TargetMap))
+                {
+                    // Compute keys purely on the 2-edge rule; guard with CanPlace
+                    // so a hypothetical road/no-road authoring mismatch is skipped
+                    // rather than thrown (a valid authored map never trips this).
+                    if (Map.CanPlace(coordinate, TileType.GreenSpace))
+                    {
+                        Map.Place(coordinate, TileType.GreenSpace);
+                        placedThisPass = true;
+                        placedAny = true;
+                    }
+                }
+            }
+            while (placedThisPass);
+
+            if (placedAny)
+            {
+                InvalidateWalkNetwork();
+            }
         }
 
         // #398: the live sidewalk+crosswalk+front-walkway network, derived
@@ -320,7 +395,7 @@ namespace Doggiehood.Core.World
                 return false;
             }
 
-            if (!Wallet.TrySpend(Expansion.TileUnlock.Cost(Map.Tiles.Count)))
+            if (!Wallet.TrySpend(Expansion.TileUnlock.Cost(RoadTileCount)))
             {
                 return false;
             }
@@ -330,6 +405,9 @@ namespace Doggiehood.Core.World
             AssignFrontierLotVariants(coordinate);
             InvalidateWalkNetwork();
             AdvanceRewardChain(OnboardingRewardStep.ExpandMap);
+            // #539: a road placement can newly qualify green-space neighbors —
+            // run the free activation pass to its fixpoint after the unlock.
+            ActivateGreenSpaces();
             return true;
         }
 
