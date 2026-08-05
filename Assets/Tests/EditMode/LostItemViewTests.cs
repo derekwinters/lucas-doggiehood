@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -37,9 +38,26 @@ namespace Doggiehood.Unity.EditModeTests
 
         private static Quest LostItemQuest(string itemName)
         {
+            return LostItemQuestAt(itemName, new GridPoint(3f, -4f));
+        }
+
+        private static Quest LostItemQuestAt(string itemName, GridPoint position)
+        {
             return new Quest(
                 1, QuestType.LostItem, "Zeus", itemName,
-                Array.Empty<string>(), new GridPoint(3f, -4f), null, null);
+                Array.Empty<string>(), position, null, null);
+        }
+
+        /// <summary>#580: a hidden-item point sitting squarely on a raised
+        /// sidewalk band (the kit's curb+sidewalk band, which reads in-game as
+        /// "the road" since the kit paves it) — the midpoint of a real Sidewalk
+        /// edge in the state's own walk network, so the production
+        /// <see cref="WalkNetwork.SurfaceHeightAt"/> lookup resolves it to the
+        /// raised surface by construction.</summary>
+        private static GridPoint OnRaisedBand(GameState state)
+        {
+            var band = state.WalkNetwork.Edges.First(e => e.Kind == WalkEdgeKind.Sidewalk);
+            return new GridPoint((band.A.X + band.B.X) / 2f, (band.A.Z + band.B.Z) / 2f);
         }
 
         [Test]
@@ -361,6 +379,75 @@ namespace Doggiehood.Unity.EditModeTests
                 UnityEngine.Object.DestroyImmediate(texture);
                 UnityEngine.Object.DestroyImmediate(camGo);
             }
+        }
+
+        // ---- #580: the finder ring must track the surface the item rests on -
+        // On grass (RoadSurfaceHeight = 0) the flat ring read fine, but the
+        // raised paved band sits SidewalkSurfaceHeight above that plane, so a
+        // ring fixed at the ground plane rendered buried under the band's mesh.
+        // The ring's Y — and ONLY its Y — now follows the item's actual surface.
+
+        private const float RingHeightTolerance = 0.001f;
+
+        [Test]
+        public void FinderGlow_OnARaisedBand_LiftsTheGroundRingToThatSurface_NotTheFlatGroundPlane()
+        {
+            // The item sits on the raised paved band, so the ring must float
+            // just above THAT surface (SidewalkSurfaceHeight + GroundRingHeight),
+            // not at the flat pre-fix ground-plane height where the raised road
+            // mesh occluded it.
+            var view = LostItemView.Spawn(state, LostItemQuestAt("ball", OnRaisedBand(state)), parent.transform);
+            var ring = Glow(view).Find(GroundRingName);
+
+            var expected = WorldDimensions.SidewalkSurfaceHeight + LostItemGlow.GroundRingHeight;
+            Assert.That(ring.position.y, Is.EqualTo(expected).Within(RingHeightTolerance),
+                "the ring floats just above the raised band the item rests on");
+            Assert.That(ring.position.y,
+                Is.GreaterThan(WorldDimensions.RoadSurfaceHeight + LostItemGlow.GroundRingHeight + RingHeightTolerance),
+                "and clearly above the flat pre-fix ground-plane placement, so it is no longer occluded");
+        }
+
+        [Test]
+        public void FinderGlow_OnGrass_KeepsTheGroundRingAtTheFlatSurface_Unchanged()
+        {
+            // #549 regression guard: away from any raised band, the ring keeps
+            // its original flat placement (RoadSurfaceHeight + GroundRingHeight).
+            // The fix only lifts the ring where the surface is actually raised.
+            var view = LostItemView.Spawn(state, LostItemQuestAt("ball", new GridPoint(500f, 500f)), parent.transform);
+            var ring = Glow(view).Find(GroundRingName);
+
+            var expected = WorldDimensions.RoadSurfaceHeight + LostItemGlow.GroundRingHeight;
+            Assert.That(ring.position.y, Is.EqualTo(expected).Within(RingHeightTolerance),
+                "on-grass ring placement is unchanged from #549");
+        }
+
+        [Test]
+        public void FinderGlow_RingScaleAndColour_AreUnchangedAcrossSurfaces()
+        {
+            // #580 is positioning-ONLY: only the ring's Y changes with the
+            // surface. Its scale (GroundRingScale/GroundRingThickness) and
+            // colour (Palette.LostItemGlowHex) must be identical on a raised
+            // band and on grass (#535/#549 must not regress).
+            var bandRing = Glow(LostItemView.Spawn(
+                state, LostItemQuestAt("ball", OnRaisedBand(state)), parent.transform)).Find(GroundRingName);
+            var grassRing = Glow(LostItemView.Spawn(
+                state, LostItemQuestAt("ball", new GridPoint(500f, 500f)), parent.transform)).Find(GroundRingName);
+
+            Assert.That(bandRing.localScale, Is.EqualTo(grassRing.localScale),
+                "the ring is the same size on every surface");
+            Assert.That(bandRing.localScale.x, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
+            Assert.That(bandRing.localScale.y, Is.EqualTo(LostItemGlow.GroundRingThickness).Within(0.0001f));
+            Assert.That(bandRing.localScale.z, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
+
+            var expected = CoreColors.FromHex(Palette.LostItemGlowHex);
+            var bandColour = bandRing.GetComponent<Renderer>().sharedMaterial.color;
+            var grassColour = grassRing.GetComponent<Renderer>().sharedMaterial.color;
+            Assert.That(bandColour.r, Is.EqualTo(grassColour.r).Within(0.001f));
+            Assert.That(bandColour.g, Is.EqualTo(grassColour.g).Within(0.001f));
+            Assert.That(bandColour.b, Is.EqualTo(grassColour.b).Within(0.001f));
+            Assert.That(bandColour.r, Is.EqualTo(expected.r).Within(0.01f));
+            Assert.That(bandColour.g, Is.EqualTo(expected.g).Within(0.01f));
+            Assert.That(bandColour.b, Is.EqualTo(expected.b).Within(0.01f));
         }
 
         private static Bounds CombinedRendererBounds(Transform root)

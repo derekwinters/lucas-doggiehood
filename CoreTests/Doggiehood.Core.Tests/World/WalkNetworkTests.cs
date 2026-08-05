@@ -460,5 +460,54 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(network.GroundHeight(farAway, farAway),
                 Is.EqualTo(WorldDimensions.RoadSurfaceHeight));
         }
+
+        [Test]
+        public void SurfaceHeightAt_OnASidewalkBand_IsTheSidewalkSurfaceHeight()
+        {
+            // #580: the lost-item finder ring needs the SAME tile-aware surface
+            // height dogs get from GroundHeight, but for a single hidden-item
+            // POINT rather than a graph hop. A point sitting on a raised
+            // sidewalk band must resolve to the sidewalk's raised surface, so
+            // the ring floats on top of that band's mesh instead of being
+            // buried inside/under it (the road-occlusion playtest repro).
+            var network = BuildStartingNetwork();
+            var sidewalkEdge = network.Edges.First(e => e.Kind == WalkEdgeKind.Sidewalk);
+            var onBand = new GridPoint(
+                (sidewalkEdge.A.X + sidewalkEdge.B.X) / 2f,
+                (sidewalkEdge.A.Z + sidewalkEdge.B.Z) / 2f);
+
+            Assert.That(network.SurfaceHeightAt(onBand),
+                Is.EqualTo(WorldDimensions.SidewalkSurfaceHeight));
+        }
+
+        [Test]
+        public void SurfaceHeightAt_OnTheRoadSurface_IsTheRoadSurfaceHeight()
+        {
+            // A crosswalk's midpoint is the road centerline between the two
+            // facing sidewalks — flat road surface, not the raised band — so it
+            // stays at road level, matching GroundHeight's Crosswalk ->
+            // RoadSurfaceHeight rule.
+            var network = BuildStartingNetwork();
+            var crosswalkEdge = network.Edges.First(e => e.Kind == WalkEdgeKind.Crosswalk);
+            var onRoad = new GridPoint(
+                (crosswalkEdge.A.X + crosswalkEdge.B.X) / 2f,
+                (crosswalkEdge.A.Z + crosswalkEdge.B.Z) / 2f);
+
+            Assert.That(network.SurfaceHeightAt(onRoad),
+                Is.EqualTo(WorldDimensions.RoadSurfaceHeight));
+        }
+
+        [Test]
+        public void SurfaceHeightAt_OffEveryPavedBand_FallsBackToTheRoadSurfaceHeight()
+        {
+            // Grass / open lot away from every sidewalk band sits on the base
+            // ground plane at road level, so an on-grass item's ring keeps its
+            // pre-existing flat placement (#549 on-grass regression guard).
+            var network = BuildStartingNetwork();
+            var farAway = new GridPoint(9999f, 9999f);
+
+            Assert.That(network.SurfaceHeightAt(farAway),
+                Is.EqualTo(WorldDimensions.RoadSurfaceHeight));
+        }
     }
 }

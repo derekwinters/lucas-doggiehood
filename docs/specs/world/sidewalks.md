@@ -76,7 +76,17 @@ the road height — rather than from either endpoint node alone, since a
 box-corner node (where a crosswalk meets its sidewalks) carries edges of
 both kinds and only the edge actually being crossed disambiguates them.
 `DogView`'s wander step and `DogSpawner`'s sidewalk spawn point both
-consume this Core query instead of hardcoding Y.
+consume this Core query instead of hardcoding Y. A companion
+`WalkNetwork.SurfaceHeightAt(point)` answers the same road-vs-sidewalk
+question for a single arbitrary **point** rather than a graph hop — it
+returns `SidewalkSurfaceHeight` when the point falls on a Sidewalk or
+FrontWalkway edge's paved-band footprint (within half that edge's width of
+the segment) and `RoadSurfaceHeight` everywhere else (flat road lane,
+crosswalk, grass). The lost-item **finder ring** consumes it so the ring
+sits on the surface the hidden item actually rests on: on the kit's raised
+curb+sidewalk band it was previously fixed at the flat ground plane and
+rendered buried under that raised mesh, so on-road items showed no
+indicator ([#580](https://github.com/derekwinters/lucas-doggiehood/issues/580)).
 
 ## Walking home routes over the network
 
