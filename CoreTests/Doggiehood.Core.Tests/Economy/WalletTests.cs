@@ -50,6 +50,63 @@ namespace Doggiehood.Core.Tests.Economy
         }
 
         [Test]
+        public void Deposit_RaisesCoinsChanged_WithThePositiveDelta()
+        {
+            // #542: the HUD chip animation needs to know a change happened and
+            // by how much, to spawn the floating "+N" delta and drive the tween.
+            var wallet = new Wallet();
+            int? seen = null;
+            wallet.CoinsChanged += delta => seen = delta;
+
+            wallet.Deposit(100);
+
+            Assert.That(seen, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void TrySpend_RaisesCoinsChanged_WithTheNegativeDelta()
+        {
+            // #542: a spend animates a red "−N" — the event carries the signed
+            // (negative) change.
+            var wallet = new Wallet();
+            wallet.Deposit(100);
+            int? seen = null;
+            wallet.CoinsChanged += delta => seen = delta;
+
+            Assert.That(wallet.TrySpend(50), Is.True);
+            Assert.That(seen, Is.EqualTo(-50));
+        }
+
+        [Test]
+        public void TrySpend_Rejected_RaisesNothing()
+        {
+            // #542: a rejected spend leaves the balance untouched, so there is
+            // nothing to animate — no event.
+            var wallet = new Wallet();
+            wallet.Deposit(20);
+            var raised = 0;
+            wallet.CoinsChanged += _ => raised++;
+
+            Assert.That(wallet.TrySpend(30), Is.False);
+            Assert.That(raised, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ZeroValuedChange_RaisesNothing()
+        {
+            // A degenerate zero deposit/spend is not a visible change — no delta
+            // label should be spawned, so no event fires.
+            var wallet = new Wallet();
+            var raised = 0;
+            wallet.CoinsChanged += _ => raised++;
+
+            wallet.Deposit(0);
+            wallet.TrySpend(0);
+
+            Assert.That(raised, Is.EqualTo(0));
+        }
+
+        [Test]
         public void CanAfford_TrueOnlyWhenBalanceCoversTheAmount()
         {
             // #186: lets the UI query affordability (e.g. to grey out a buy

@@ -54,6 +54,20 @@ namespace Doggiehood.Unity
         public static readonly Color InkColor = new Color32(0x2E, 0x2A, 0x26, 0xFF);
         public static readonly Color CreamColor = new Color32(0xFF, 0xF3, 0xD9, 0xFF);
         public static readonly Color GoldColor = new Color32(0xFF, 0xC2, 0x3C, 0xFF);
+        // #542: the floating coin-delta label reuses the shared palette's role
+        // colors — Leaf (positive/confirm) for a gain, Coral (primary/spend)
+        // for a spend — no new colors introduced.
+        public static readonly Color LeafColor = new Color32(0x58, 0xC0, 0x6A, 0xFF);
+        public static readonly Color CoralColor = new Color32(0xFF, 0x7A, 0x5C, 0xFF);
+
+        // --- Floating coin-delta label (#542, shared-components.md CurrencyChip) ---
+        // The rise distance / rise+fade duration / count-up duration are pure
+        // animation math and live on the Core CoinChipAnimation type; these two
+        // are the label's render layout (font size, and the gap from the chip's
+        // bottom edge to where the label starts). Named constants, no inline
+        // literals (#161).
+        public const int DeltaFontSizePx = 32;
+        public const float DeltaOffsetYPx = 12f;
 
         /// <summary>#291: the bundled UI font, loaded from Resources so it ships
         /// in the Android build — never an editor-only built-in font, which
@@ -85,8 +99,17 @@ namespace Doggiehood.Unity
         // the same white-AA-circle routine established here in #296, extracted
         // so the onboarding coach bar draws identical chrome without duplication.
         private static GUIStyle labelStyle;
+        private static GUIStyle deltaLabelStyle;
 
         private GameState state;
+
+        // #542: the currently-playing balance-change animation (null when the
+        // chip is at rest), plus the elapsed seconds driving it. Set by the
+        // wallet-change handler; ticked in Update; read by OnGUI to draw the
+        // count-up value and the floating delta label.
+        private Wallet subscribedWallet;
+        private CoinChipAnimation animation;
+        private float animElapsedSec;
 
         /// <summary>Raised when the HUD gear is tapped — the bootstrap wires
         /// this to open the Settings panel (#219).</summary>
@@ -94,7 +117,58 @@ namespace Doggiehood.Unity
 
         public void Init(GameState state)
         {
+            if (subscribedWallet != null)
+            {
+                subscribedWallet.CoinsChanged -= OnCoinsChanged;
+            }
+
             this.state = state;
+            subscribedWallet = state == null ? null : state.Wallet;
+            if (subscribedWallet != null)
+            {
+                subscribedWallet.CoinsChanged += OnCoinsChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (subscribedWallet != null)
+            {
+                subscribedWallet.CoinsChanged -= OnCoinsChanged;
+                subscribedWallet = null;
+            }
+        }
+
+        /// <summary>The active balance-change animation, or <c>null</c> when the
+        /// chip is at rest. #542 — exposed so the wiring can be asserted.</summary>
+        public CoinChipAnimation CurrentDelta => animation;
+
+        /// <summary>#542: on a wallet change, start a fresh animation counting
+        /// from whatever balance is currently displayed (so a change mid-tween
+        /// re-targets rather than snapping) to the new live total, and spawn the
+        /// floating delta label for the signed change.</summary>
+        private void OnCoinsChanged(int delta)
+        {
+            var newBalance = state.Wallet.Coins;
+            var currentDisplayed = animation == null
+                ? newBalance - delta
+                : animation.DisplayedBalance(animElapsedSec);
+            animation = new CoinChipAnimation(currentDisplayed, newBalance, delta);
+            animElapsedSec = 0f;
+        }
+
+        private void Update()
+        {
+            if (animation == null)
+            {
+                return;
+            }
+
+            animElapsedSec += Time.unscaledDeltaTime;
+            if (animation.IsFinished(animElapsedSec))
+            {
+                animation = null;
+            }
         }
 
         /// <summary>The chip's current balance, straight off the live wallet
@@ -102,6 +176,41 @@ namespace Doggiehood.Unity
         public string Label
         {
             get { return state == null ? string.Empty : CurrencyChip.Label(state.Wallet.Coins); }
+        }
+
+        /// <summary>#542: the balance to paint on the chip at
+        /// <paramref name="elapsedSec"/> into the current animation — the
+        /// count-up tween value while a change is in flight, otherwise the raw
+        /// live balance. This is what the chip draws, so the number counts up
+        /// instead of snapping to the new total.</summary>
+        public string DisplayedLabel(float elapsedSec)
+        {
+            if (state == null)
+            {
+                return string.Empty;
+            }
+
+            return animation == null
+                ? CurrencyChip.Label(state.Wallet.Coins)
+                : CurrencyChip.Label(animation.DisplayedBalance(elapsedSec));
+        }
+
+        /// <summary>#542: the fixed palette color for a delta role — Leaf for a
+        /// gain, Coral for a spend (shared-components.md role-tint mapping).</summary>
+        public static Color DeltaColor(CoinDeltaRole role)
+        {
+            return role == CoinDeltaRole.Gain ? LeafColor : CoralColor;
+        }
+
+        /// <summary>#542: the floating delta label's rect for a given rise
+        /// offset. It starts <c>DeltaOffsetYPx</c> below the chip's bottom edge,
+        /// centred horizontally under the chip, and rises (moves up — decreasing
+        /// y in IMGUI's top-left origin) by <paramref name="riseOffsetPx"/> as
+        /// the animation plays.</summary>
+        public static Rect ComputeDeltaLabelRect(Rect chip, float riseOffsetPx)
+        {
+            var y = chip.yMax + DeltaOffsetYPx - riseOffsetPx;
+            return new Rect(chip.x, y, chip.width, DeltaFontSizePx);
         }
 
         /// <summary>The Settings gear rect: the top-right corner of the HUD,
@@ -157,10 +266,11 @@ namespace Doggiehood.Unity
                 return;
             }
 
-            var label = Label;
+            var label = DisplayedLabel(animElapsedSec);
             var width = ComputeChipWidth(label);
             var chip = ComputeChipRect(Screen.width, Screen.height, Screen.safeArea, width);
             DrawChip(chip, label);
+            DrawDelta(chip);
 
             var gear = ComputeGearRect(Screen.width, Screen.height);
             DrawGear(gear);
@@ -249,6 +359,43 @@ namespace Doggiehood.Unity
             var numRight = chip.xMax - OutlineThicknessPx - PaddingRightPx;
             var numRect = new Rect(numX, chip.y, Mathf.Max(0f, numRight - numX), chip.height);
             GUI.Label(numRect, label, LabelStyle());
+        }
+
+        /// <summary>#542: draws the transient floating delta label below the
+        /// chip when a balance-change animation is playing — the signed "+N"/"−N"
+        /// in its role color, rising and fading per the Core animation state.
+        /// Purely decorative: no hit target, never blocks a tap.</summary>
+        private void DrawDelta(Rect chip)
+        {
+            if (animation == null)
+            {
+                return;
+            }
+
+            var rect = ComputeDeltaLabelRect(chip, animation.RiseOffsetPx(animElapsedSec));
+            var style = DeltaLabelStyle();
+            style.normal.textColor = DeltaColor(animation.Role);
+
+            var previous = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, animation.Alpha(animElapsedSec));
+            GUI.Label(rect, animation.DeltaText, style);
+            GUI.color = previous;
+        }
+
+        private static GUIStyle DeltaLabelStyle()
+        {
+            if (deltaLabelStyle == null)
+            {
+                deltaLabelStyle = new GUIStyle
+                {
+                    font = Resources.Load<Font>(LabelFontResource),
+                    fontSize = DeltaFontSizePx,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                };
+            }
+
+            return deltaLabelStyle;
         }
 
         private static GUIStyle LabelStyle()
