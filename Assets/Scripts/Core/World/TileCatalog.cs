@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace Doggiehood.Core.World
 {
     /// <summary>
-    /// The tile-type catalog (#105 design, built by #109): all 17 types
+    /// The tile-type catalog (#105 design, built by #109): all 18 types
     /// from docs/specs/world/tile-catalog.md and the road edges/arcs each
-    /// one declares.
+    /// one declares — the 17 road tiles plus the roadless #539 GreenSpace.
     /// </summary>
     public static class TileCatalog
     {
@@ -79,6 +79,12 @@ namespace Doggiehood.Core.World
                 new TileTypeDefinition(TileType.OpposingTurnsEW,
                     new[] { TileEdge.North, TileEdge.East, TileEdge.South, TileEdge.West },
                     opposingTurnsEwArcs),
+                // #539: the green-space tile carries no road on any edge (and
+                // no arcs). Its empty road-edge set is what makes it place
+                // through TileMap.CanPlace only against no-road neighbor edges,
+                // and what keeps it out of the road-connection frontier forever.
+                new TileTypeDefinition(TileType.GreenSpace,
+                    System.Array.Empty<TileEdge>()),
             };
 
             var definitions = new Dictionary<TileType, TileTypeDefinition>();

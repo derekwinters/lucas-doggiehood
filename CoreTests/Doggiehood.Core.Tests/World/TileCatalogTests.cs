@@ -7,7 +7,8 @@ namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
     /// #109: the tile-type catalog as data — docs/specs/world/tile-catalog.md's
-    /// 17 types, each declaring which edges carry a road.
+    /// types, each declaring which edges carry a road. #539 added the 18th type
+    /// (the roadless GreenSpace).
     /// </summary>
     public class TileCatalogTests
     {
@@ -16,7 +17,7 @@ namespace Doggiehood.Core.Tests.World
         {
             var allEnumValues = (TileType[])Enum.GetValues(typeof(TileType));
 
-            Assert.That(allEnumValues.Length, Is.EqualTo(17));
+            Assert.That(allEnumValues.Length, Is.EqualTo(18));
             CollectionAssert.AreEquivalent(allEnumValues, TileCatalog.Types);
         }
 
