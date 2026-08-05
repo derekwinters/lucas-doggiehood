@@ -9,15 +9,23 @@ namespace Doggiehood.Unity
     /// pass-through: hit-testing here, decisions in the entity's handler.
     ///
     /// #422: an open dialog/menu is modal — a tap that lands on UI must never
-    /// also reach a world IInteractable behind it. UGUI overlays (the
-    /// ConfirmationDialog / house + dog profiles / the migrated conversation
-    /// panel, each with a full-screen raycast-blocking scrim) are caught by
-    /// <see cref="IsPointerOverUi"/> (EventSystem.IsPointerOverGameObject); the
-    /// still-IMGUI HUD gear is caught by a screen-space rect check
-    /// (<see cref="GearTapZone"/> + HudOverlay.ComputeGearRect) — interim
-    /// scaffolding until #370 moves the gear onto the UGUI canvas. Both guards
-    /// run first, so even the bubble/lost-item screen-space checks below are
-    /// skipped for a tap over UI.
+    /// also reach a world IInteractable behind it. The scrim-backed UGUI overlays
+    /// (the ConfirmationDialog / house + dog profiles, each with a full-screen
+    /// raycast-blocking scrim) are caught by <see cref="IsPointerOverUi"/>
+    /// (EventSystem.IsPointerOverGameObject); the still-IMGUI HUD gear is caught
+    /// by a screen-space rect check (<see cref="GearTapZone"/> +
+    /// HudOverlay.ComputeGearRect) — interim scaffolding until #370 moves the gear
+    /// onto the UGUI canvas. Both guards run first, so even the bubble/lost-item
+    /// screen-space checks below are skipped for a tap over UI.
+    ///
+    /// #544/#568: the primary modal guard is the deterministic
+    /// <see cref="IsModalOpen"/> check (backed by the shared
+    /// <see cref="ModalInputGate"/>), which does not depend on the EventSystem's
+    /// last-processed pointer. Every center-anchored overlay — and, since #568,
+    /// the bottom-center conversation panel (which has no scrim, so
+    /// IsPointerOverUi only ever covered its own button/panel rects) — registers
+    /// on open and unregisters on close, so a modal open anywhere blocks the
+    /// world raycast everywhere.
     ///
     /// #169: dog speech bubbles get a screen-space padded check
     /// (DogView.TryHandleBubbleTap) ahead of the physics raycast below.
@@ -60,8 +68,15 @@ namespace Doggiehood.Unity
 
         /// <summary>Production modal check: reflects the shared
         /// <see cref="ModalInputGate"/>, so a modal opened anywhere blocks world
-        /// taps everywhere.</summary>
-        public static bool DefaultIsModalOpen() => ModalInputGate.Shared.IsBlocking;
+        /// taps everywhere. #568: also blocks while
+        /// <see cref="ModalInputGate.ClosedThisFrame"/> is latched, so the same
+        /// tap that dismissed a modal this frame can't leak through and fire the
+        /// world object underneath — regardless of whether the modal's
+        /// <c>Unregister</c> ran before or after this tap was routed within the
+        /// frame. The latch is cleared by <c>CameraRig.LateUpdate</c> at end of
+        /// frame, so the next frame's genuinely new tap routes normally.</summary>
+        public static bool DefaultIsModalOpen() =>
+            ModalInputGate.Shared.IsBlocking || ModalInputGate.Shared.ClosedThisFrame;
 
         /// <summary>
         /// Production pointer-over-UI check. Null <paramref name="pointerId"/>

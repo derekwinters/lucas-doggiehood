@@ -329,6 +329,12 @@ namespace Doggiehood.Unity
             {
                 content.SetActive(false);
             }
+
+            // #568: a closed conversation no longer blocks world taps. The gate's
+            // ClosedThisFrame latch (cleared in CameraRig.LateUpdate) keeps the
+            // dismissing tap consumed for the rest of this frame, so it can't fall
+            // through to the object underneath.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);
         }
 
         // ---------------------------------------------------------------
@@ -337,6 +343,17 @@ namespace Doggiehood.Unity
 
         private void ShowView()
         {
+            // #568: the conversation panel is modal for world taps too. Unlike
+            // the center-anchored overlays it has no full-screen scrim, so the
+            // #422 IsPointerOverUi guard only ever covered its own button/panel
+            // rects — a tap just outside them leaked to the world. Registering
+            // with the shared gate on open (and unregistering in Close) blocks
+            // the world raycast while it's up, matching DogProfileOverlay /
+            // HouseProfileOverlay / ConfirmationDialog / WelcomePopup /
+            // OnboardingRewardPanel. Registered before the view null-guard so the
+            // gate is driven even in logic-only tests with no view attached.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(this);
+
             if (content == null)
             {
                 return;

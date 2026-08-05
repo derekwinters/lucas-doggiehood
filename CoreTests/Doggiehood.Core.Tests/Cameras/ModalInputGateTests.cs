@@ -142,6 +142,126 @@ namespace Doggiehood.Core.Tests.Cameras
         }
 
         [Test]
+        public void NewGate_ClosedThisFrame_IsFalse()
+        {
+            var gate = new ModalInputGate();
+
+            Assert.That(gate.ClosedThisFrame, Is.False,
+                "a fresh gate has closed nothing this frame");
+        }
+
+        [Test]
+        public void Unregister_OfARegisteredToken_LatchesClosedThisFrame()
+        {
+            // #568: the same tap that dismisses a modal must not leak to the
+            // world. Unregistering a still-open modal latches ClosedThisFrame so
+            // the world-tap guard keeps blocking for the rest of this frame,
+            // regardless of Update() ordering between the EventSystem and the
+            // camera rig.
+            var gate = new ModalInputGate();
+            var token = new object();
+            gate.Register(token);
+
+            gate.Unregister(token);
+
+            Assert.That(gate.ClosedThisFrame, Is.True,
+                "unregistering a still-registered modal latches that a modal closed this frame");
+        }
+
+        [Test]
+        public void Unregister_OfAnUnknownToken_DoesNotLatchClosedThisFrame()
+        {
+            var gate = new ModalInputGate();
+
+            gate.Unregister(new object());
+
+            Assert.That(gate.ClosedThisFrame, Is.False,
+                "a no-op unregister of a token that was never registered must not latch the close");
+        }
+
+        [Test]
+        public void Unregister_OfAnAlreadyRemovedToken_DoesNotLatchClosedThisFrame()
+        {
+            var gate = new ModalInputGate();
+            var token = new object();
+            gate.Register(token);
+            gate.Unregister(token);
+            gate.EndFrame(); // clear the latch from the real close above
+
+            gate.Unregister(token); // second unregister removes nothing
+
+            Assert.That(gate.ClosedThisFrame, Is.False,
+                "re-unregistering an already-removed token removes nothing, so it must not re-latch the close");
+        }
+
+        [Test]
+        public void Unregister_OfANullToken_DoesNotLatchClosedThisFrame()
+        {
+            var gate = new ModalInputGate();
+
+            gate.Unregister(null);
+
+            Assert.That(gate.ClosedThisFrame, Is.False,
+                "a null token is not a real modal, so unregistering it must not latch a close");
+        }
+
+        [Test]
+        public void EndFrame_ClearsClosedThisFrame_AndLeavesIsBlockingUntouched()
+        {
+            var gate = new ModalInputGate();
+            var closing = new object();
+            var stillOpen = new object();
+            gate.Register(closing);
+            gate.Register(stillOpen);
+            gate.Unregister(closing);
+
+            Assert.That(gate.ClosedThisFrame, Is.True);
+
+            gate.EndFrame();
+
+            Assert.That(gate.ClosedThisFrame, Is.False,
+                "EndFrame clears the this-frame close latch");
+            Assert.That(gate.IsBlocking, Is.True,
+                "EndFrame must not touch IsBlocking — a modal still registered open keeps blocking");
+        }
+
+        [Test]
+        public void EndFrame_DoesNotAffectIsBlocking_OnAnEmptyGate()
+        {
+            var gate = new ModalInputGate();
+
+            gate.EndFrame();
+
+            Assert.That(gate.IsBlocking, Is.False,
+                "IsBlocking still purely reflects the open-token count after EndFrame");
+        }
+
+        [Test]
+        public void CloseDuringAFrame_KeepsBlockingTheTap_UntilEndFrame()
+        {
+            // #568 regression, reproduced deterministically: a modal unregistered
+            // earlier in the same frame (during the EventSystem's UI dispatch)
+            // must still block this frame's world tap. The combined signal the
+            // tap router reads (IsBlocking || ClosedThisFrame) stays true until
+            // EndFrame() runs at end of frame (CameraRig.LateUpdate).
+            var gate = new ModalInputGate();
+            var token = new object();
+            gate.Register(token);
+
+            gate.Unregister(token);
+
+            Assert.That(gate.IsBlocking, Is.False,
+                "the live open-token count is zero once the modal unregistered");
+            Assert.That(gate.IsBlocking || gate.ClosedThisFrame, Is.True,
+                "but the combined tap-blocking signal stays true this frame, so the closing tap can't leak to the world");
+
+            gate.EndFrame();
+
+            Assert.That(gate.IsBlocking || gate.ClosedThisFrame, Is.False,
+                "after end of frame the latch clears, so a genuinely new tap next frame routes to the world");
+        }
+
+        [Test]
         public void Shared_IsAStableSingleton()
         {
             Assert.That(ModalInputGate.Shared, Is.Not.Null);

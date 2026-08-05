@@ -178,6 +178,17 @@ namespace Doggiehood.Unity.EditModeTests
         /// regression rig (#148).</summary>
         private static bool RouteTapAtHouse(HouseView houseView, Vector3 isolatedPosition)
         {
+            // #568: this models a physical world tap, which in production occurs
+            // in its own frame — the prior frame's CameraRig.LateUpdate has
+            // already run ModalInputGate.Shared.EndFrame(), clearing the
+            // this-frame close latch a preceding UI close (e.g. the build
+            // confirmation dialog's Yes button, which unregisters and latches
+            // ClosedThisFrame) would otherwise leave set. The EditMode rig has no
+            // frame loop, so end the frame here to model that boundary; without
+            // it the latch would (correctly, for the closing tap) suppress this
+            // genuinely separate house tap.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.EndFrame();
+
             houseView.transform.position = isolatedPosition;
 
             var camGo = new GameObject("tap-cam", typeof(Camera));

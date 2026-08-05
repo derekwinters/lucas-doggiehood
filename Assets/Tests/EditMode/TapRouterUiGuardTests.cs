@@ -187,8 +187,9 @@ namespace Doggiehood.Unity.EditModeTests
             // The production default reads the shared gate, so a panel that
             // registers anywhere blocks world taps everywhere.
             TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            var gate = Doggiehood.Core.Cameras.ModalInputGate.Shared;
             var token = new object();
-            Doggiehood.Core.Cameras.ModalInputGate.Shared.Register(token);
+            gate.Register(token);
             try
             {
                 Assert.That(TapRouter.IsModalOpen(), Is.True,
@@ -196,11 +197,73 @@ namespace Doggiehood.Unity.EditModeTests
             }
             finally
             {
-                Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(token);
+                gate.Unregister(token);
             }
 
+            // #568: Unregister latches ClosedThisFrame, so the seam keeps
+            // blocking for the rest of this frame (that closing tap can't leak).
+            // End the frame — as CameraRig.LateUpdate does — to isolate this test
+            // to the live-registration tracking; the latch behaviour itself is
+            // covered by DefaultIsModalOpen_ReflectsTheSharedGatesClosedThisFrameLatch.
+            gate.EndFrame();
+
             Assert.That(TapRouter.IsModalOpen(), Is.False,
-                "once unregistered, the default modal seam reports no modal");
+                "once unregistered and the frame has ended, the default modal seam reports no modal");
+        }
+
+        [Test]
+        public void DefaultIsModalOpen_ReflectsTheSharedGatesClosedThisFrameLatch()
+        {
+            // #568: the production default also blocks while the shared gate's
+            // ClosedThisFrame latch is set — so a modal that unregistered earlier
+            // in this same frame still blocks this frame's tap, regardless of the
+            // Update() ordering between the EventSystem and the camera rig. The
+            // latch is cleared by CameraRig.LateUpdate (EndFrame) at end of frame.
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            var gate = Doggiehood.Core.Cameras.ModalInputGate.Shared;
+            var token = new object();
+            gate.Register(token);
+            gate.Unregister(token);
+
+            Assert.That(gate.IsBlocking, Is.False,
+                "the modal already unregistered, so the live open-token count is zero");
+            Assert.That(TapRouter.IsModalOpen(), Is.True,
+                "but the default modal seam still reports a modal this frame via the ClosedThisFrame latch");
+
+            gate.EndFrame();
+
+            Assert.That(TapRouter.IsModalOpen(), Is.False,
+                "once the frame ends and the latch clears, the seam reports no modal");
+        }
+
+        [Test]
+        public void UnregisteringAModalMidTap_DoesNotLeakTheClosingTapToTheWorld_UntilEndFrame()
+        {
+            // #568 core regression, matches the reported symptom: the same tap
+            // that dismisses a panel must not also fire the world object under it.
+            // Register a modal, then Unregister it (as a panel's Close does,
+            // synchronously during the tap's UI dispatch) and immediately route
+            // that very tap over a world IInteractable — with no EndFrame in
+            // between. The tap must be swallowed, not fall through to OnTapped.
+            TapRouter.IsPointerOverUi = _ => false;
+            TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
+            var gate = Doggiehood.Core.Cameras.ModalInputGate.Shared;
+            var token = new object();
+            gate.Register(token);
+            gate.Unregister(token);
+
+            rig.HandleTap(TargetScreenPoint());
+
+            Assert.That(target.TapCount, Is.EqualTo(0),
+                "the tap that dismissed the modal this frame must not leak through to the world object underneath");
+
+            // End of frame (CameraRig.LateUpdate → EndFrame) clears the latch, so
+            // a genuinely new, separate tap next frame does reach the interactable.
+            gate.EndFrame();
+            rig.HandleTap(TargetScreenPoint());
+
+            Assert.That(target.TapCount, Is.EqualTo(1),
+                "after the frame ends, a second separate tap over the same object fires it — the latch doesn't stick");
         }
 
         [Test]
