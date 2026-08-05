@@ -1994,7 +1994,7 @@
 <h3 id="currency-chip-currencychip">Currency chip (<code>CurrencyChip</code>)<a class="headerlink" href="#currency-chip-currencychip" title="Permanent link">&para;</a></h3>
 <p>The HUD coin indicator — a coin token plus the live balance. Sits in a screen corner (its anchor is fixed in the HUD wireframe, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/174">#174</a>).</p>
 <p><em>Status: </em><em>implemented</em><em> in the HUD (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>) — <code>Assets/Scripts/Unity/HudOverlay.cs</code> draws the cream pill, Ink outline, hard drop-shadow, and gold coin token to the constants below; the balance is the bare tabular number (the coin token supplies the "coins" meaning). Sized to match the Settings gear beside it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/440">#440</a>): the chip height equals <code>GearButtonSizePx</code> (88) and the interior is scaled ×1.375 to fill the taller pill.</em></p>
-<p><strong>Regions:</strong> coin token (left) · balance number (right, tabular figures), inside a cream pill.</p>
+<p><strong>Regions:</strong> coin token (left) · balance number (right, tabular figures) · <strong>floating delta label</strong> (transient, appears below the chip on a balance change), inside a cream pill.</p>
 <table>
 <thead>
 <tr>
@@ -2029,8 +2029,34 @@
 <td>46</td>
 <td>balance (tabular)</td>
 </tr>
+<tr>
+<td><code>DeltaFontSizePx</code></td>
+<td>32</td>
+<td>delta label text</td>
+</tr>
+<tr>
+<td><code>DeltaOffsetYPx</code></td>
+<td>12</td>
+<td>gap: chip bottom edge → delta label start</td>
+</tr>
+<tr>
+<td><code>DeltaRiseDistancePx</code></td>
+<td>48</td>
+<td>total rise distance before the label is discarded</td>
+</tr>
+<tr>
+<td><code>DeltaRiseDurationSec</code></td>
+<td>0.9</td>
+<td>delta rise + fade duration</td>
+</tr>
+<tr>
+<td><code>CountUpDurationSec</code></td>
+<td>0.5</td>
+<td>balance-number count-up (tween) duration</td>
+</tr>
 </tbody>
 </table>
+<p><strong>Balance-change animation (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/542">#542</a>).</strong> On a <code>Wallet.Coins</code> change the chip spawns a <strong>delta label</strong> showing the signed amount — <code>+123</code> in <strong>Leaf</strong> (the palette's positive/confirm role) on a gain, <code>−45</code> in <strong>Coral</strong> (primary/spend) on a spend — starting <code>DeltaOffsetYPx</code> below the chip and centred under it. It rises <code>DeltaRiseDistancePx</code> while fading linearly to transparent over <code>DeltaRiseDurationSec</code>, then is discarded (no new colors are introduced — the delta reuses the shared palette). Independently, the displayed balance <strong>counts up</strong> from its prior displayed value to the new live <code>Wallet.Coins</code> value over <code>CountUpDurationSec</code> rather than snapping; a second change before the count-up finishes just re-targets it toward the newer value (from wherever it currently reads) rather than queuing. Each change spawns its own delta-label instance — there is no stacking/queue model for the label (unlike the <a href="../toast/">reward toast</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/541">#541</a>, which carries the <em>message</em>; this chip carries only the <em>running-total</em> motion). Purely decorative: it does not register with <code>ModalInputGate</code> and never blocks a tap. The count-up + rise/fade math is Unity-independent (<code>Doggiehood.Core.Economy.CoinChipAnimation</code>, plain-NUnit tested); <code>HudOverlay</code> only reads it each frame and paints it.</p>
 <h3 id="speech-bubble-indicator-speechbubbleindicator">Speech-bubble indicator (<code>SpeechBubbleIndicator</code>)<a class="headerlink" href="#speech-bubble-indicator-speechbubbleindicator" title="Permanent link">&para;</a></h3>
 <p>Floats over a dog that has something to say; tapping it opens the conversation. Bobs gently to draw the eye (motion only — the layout is the static bubble + tail).</p>
 <p><strong>Regions:</strong> round bubble body · downward tail (pointer) · three "…" dots inside.</p>

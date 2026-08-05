@@ -79,6 +79,23 @@
   }
   .coin{width:60px;height:60px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
 
+  /* #542: transient floating coin-delta label below the chip + count-up.
+     Positioned/sized from the CurrencyChip constants (DeltaOffsetYPx 12,
+     DeltaFontSizePx 32); rises DeltaRiseDistancePx (48) while fading over
+     DeltaRiseDurationSec (0.9s). Colors reuse the palette — Leaf gain / Coral
+     spend. */
+  .cc-chipwrap{position:relative;display:inline-block;}
+  .cc-delta{
+    position:absolute;left:50%;top:100%;margin-top:12px;
+    transform:translate(-50%,0);opacity:0;white-space:nowrap;
+    font-size:32px;font-weight:800;
+  }
+  .cc-delta.gain{color:var(--leaf);}
+  .cc-delta.spend{color:var(--coral);}
+  .cc-delta.rise{animation:coindelta .9s ease-out forwards;}
+  @keyframes coindelta{0%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-48px);}}
+  @media (prefers-reduced-motion: reduce){ .cc-delta{animation:none;} }
+
   .cc-bubble{
     position:relative;width:104px;height:104px;border-radius:999px;
     background:var(--bubble);border:var(--outline) solid var(--ink);box-shadow:0 var(--shadow) 0 var(--ink);
@@ -170,12 +187,13 @@
 
   <!-- Currency chip -->
   <div class="card">
-    <div class="stage"><div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div></div>
+    <div class="stage"><div class="cc-chipwrap"><div class="cc-chip rounded"><span class="coin rounded">◎</span><span id="cc-bal">128</span></div><span id="cc-delta" class="cc-delta rounded"></span></div></div>
     <div class="info">
       <div>
         <h3 class="rounded">Currency chip</h3>
         <div class="cname">CurrencyChip</div>
         <p>The HUD coin readout — deliberately small, a quiet corner element (see HUD #174), not a button.</p>
+        <p class="region-note"><b>Balance change (#542):</b> on any <code>Wallet.Coins</code> change a signed <b>delta label</b> — <b>+N</b> in Leaf on a gain, <b>−N</b> in Coral on a spend — appears <code>DeltaOffsetYPx</code> below the chip, centred under it, and rises <code>DeltaRiseDistancePx</code> while fading over <code>DeltaRiseDurationSec</code>; independently the balance number <b>counts up</b> from its prior value to the new total over <code>CountUpDurationSec</code> instead of snapping. Purely decorative — it never blocks a tap. (The loop above is a browser preview aid; Unity draws it procedurally on IMGUI.)</p>
       </div>
       <div>
         <table>
@@ -185,6 +203,11 @@
           <tr><td>PaddingLeftPx</td><td class="val">14</td><td>coin inset</td></tr>
           <tr><td>PaddingRightPx</td><td class="val">36</td><td>number inset</td></tr>
           <tr><td>FontSizePx</td><td class="val">46</td><td>balance (tabular)</td></tr>
+          <tr><td>DeltaFontSizePx</td><td class="val">32</td><td>delta label text</td></tr>
+          <tr><td>DeltaOffsetYPx</td><td class="val">12</td><td>chip bottom → delta label</td></tr>
+          <tr><td>DeltaRiseDistancePx</td><td class="val">48</td><td>delta label rise</td></tr>
+          <tr><td>DeltaRiseDurationSec</td><td class="val">0.9</td><td>delta rise + fade</td></tr>
+          <tr><td>CountUpDurationSec</td><td class="val">0.5</td><td>balance count-up</td></tr>
         </table>
       </div>
     </div>
@@ -248,5 +271,31 @@
     <br><span class="status">Approved (Derek, 2026-07-23) — re-based to the 1920×1200 tablet reference (#173)</span>
   </footer>
 </div>
+<script>
+  /* #542 CurrencyChip preview aid: loops an alternating gain/spend so the
+     floating delta (rise + fade) and the balance count-up are visible while
+     reviewing. Plays no role in the spec — Unity draws this procedurally on
+     IMGUI, not HTML/CSS. Honors prefers-reduced-motion. */
+  (function(){
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var balEl = document.getElementById('cc-bal'), dEl = document.getElementById('cc-delta');
+    if (!balEl || !dEl) return;
+    var bal = 128, cycle = [ {d:100, cls:'gain'}, {d:-50, cls:'spend'} ], i = 0;
+    function run(){
+      var step = cycle[i % cycle.length]; i++;
+      var from = bal, to = bal + step.d; bal = to;
+      dEl.textContent = (step.d > 0 ? '+' : '−') + Math.abs(step.d);
+      dEl.className = 'cc-delta rounded ' + step.cls + ' rise';
+      void dEl.offsetWidth; /* restart the CSS rise animation */
+      var start = performance.now(), dur = 500; /* CountUpDurationSec */
+      requestAnimationFrame(function tick(t){
+        var p = Math.min(1, (t - start) / dur);
+        balEl.textContent = Math.round(from + (to - from) * p);
+        if (p < 1) requestAnimationFrame(tick); else setTimeout(run, 1500);
+      });
+    }
+    run();
+  })();
+</script>
 </body>
 </html>
