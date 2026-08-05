@@ -1784,7 +1784,7 @@
 </tr>
 <tr>
 <td>Message</td>
-<td>One short dynamic line: the accomplishment + payout, one sentence, sized so it never wraps at these constants</td>
+<td>One short dynamic line: the accomplishment + payout, one sentence. The pill grows to the measured text width up to <code>ToastMaxWidthPx</code>; the line <strong>never wraps and never grows height</strong> (<code>wordWrap</code> off), and any message that would still exceed the cap is <strong>clipped at the pill edge</strong> (<code>clipping = Clip</code>) as a fail-safe rather than bleeding past it. <code>ToastMaxWidthPx</code> is sized so every currently-approved line fits on one line at <code>ToastFontSizePx</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a>)</td>
 <td>Reuses the Candy Cottage baseline (cream pill, thick outline, hard shadow) from <a href="../shared-components/">Shared UI Components</a></td>
 </tr>
 <tr>
@@ -1826,8 +1826,8 @@
 </tr>
 <tr>
 <td><code>ToastMaxWidthPx</code></td>
-<td><code>640</code></td>
-<td>Reserved lane width — caps how far a toast reaches toward center screen</td>
+<td><code>1080</code></td>
+<td>Reserved lane width — caps how far a toast reaches toward center screen; widened from 640 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a>) so the longest approved line fits on one line at <code>ToastFontSizePx</code></td>
 </tr>
 <tr>
 <td><code>ToastCoinDiameterPx</code></td>
@@ -1909,7 +1909,7 @@
 </tr>
 </tbody>
 </table>
-<p>The four onboarding lines carry over <strong>verbatim</strong> from the retired <a href="../onboarding-reward/">onboarding reward panel</a>'s accepted per-step copy (<code>/approve</code> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) — only the surface changes, not the words; the panel's separate <strong>"+N coins"</strong> button label folds into the one toast line. The onboarding amount is <code>OnboardingRewardChainNumbers.RewardPerStep</code> (100 today); the quest amount is the flat quest payout (10 today). Keep every line to one short sentence so it never wraps within <code>ToastMaxWidthPx</code>.</p>
+<p>The four onboarding lines carry over <strong>verbatim</strong> from the retired <a href="../onboarding-reward/">onboarding reward panel</a>'s accepted per-step copy (<code>/approve</code> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) — only the surface changes, not the words; the panel's separate <strong>"+N coins"</strong> button label folds into the one toast line. The onboarding amount is <code>OnboardingRewardChainNumbers.RewardPerStep</code> (100 today); the quest amount is the flat quest payout (10 today). Keep every line to one short sentence that fits on a single line within <code>ToastMaxWidthPx</code> at <code>ToastFontSizePx</code> — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider <code>+N</code> payout) that would overflow fails loudly instead of clipping the reward amount (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a>).</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Not modal.</strong> Unlike every centered panel in <a href="../shared-components/#modal-overlays-block-world-input">shared components</a>, the toast never registers with <code>ModalInputGate</code> and carries no backdrop — it is a HUD element like the currency chip, just tappable. World taps outside the reserved lane are unaffected; a tap <em>on</em> the toast only dismisses it and does not fall through to the world.</li>
