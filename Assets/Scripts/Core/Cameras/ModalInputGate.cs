@@ -45,6 +45,24 @@ namespace Doggiehood.Core.Cameras
         /// world.</summary>
         public bool IsBlocking => openModals.Count > 0;
 
+        /// <summary>
+        /// #568: latched true when a still-open modal <see cref="Unregister"/>ed
+        /// during the current frame, and cleared by <see cref="EndFrame"/> at end
+        /// of frame. Closes a same-frame tap-through race: a modal's
+        /// <c>Unregister</c> runs synchronously while the EventSystem dispatches
+        /// the very tap that dismissed it, and <c>EventSystem.Update()</c> has no
+        /// defined order relative to the camera rig's <c>Update()</c> that routes
+        /// world taps. Without this latch, if the EventSystem ran first
+        /// <see cref="IsBlocking"/> would already read <c>false</c> for that same
+        /// tap, so it would fall through and fire whatever world object sat under
+        /// the panel — the reported "one tap closes the panel AND opens the thing
+        /// underneath" bug. The world-tap router blocks on
+        /// <c>IsBlocking || ClosedThisFrame</c>, so the closing tap stays consumed
+        /// for the rest of the frame regardless of Update() ordering, and the
+        /// latch is always clear before the next frame's unrelated tap.
+        /// </summary>
+        public bool ClosedThisFrame { get; private set; }
+
         /// <summary>Marks <paramref name="token"/>'s modal as open. Idempotent:
         /// registering the same token twice still needs only one
         /// <see cref="Unregister"/>. A null token is ignored.</summary>
@@ -68,7 +86,25 @@ namespace Doggiehood.Core.Cameras
                 return;
             }
 
-            openModals.Remove(token);
+            // #568: only latch when we actually removed a still-registered modal
+            // — a no-op unregister of an unknown/already-removed token must not
+            // block world taps for a frame in which no modal was open.
+            if (openModals.Remove(token))
+            {
+                ClosedThisFrame = true;
+            }
+        }
+
+        /// <summary>#568: clears the <see cref="ClosedThisFrame"/> latch at end
+        /// of frame. Called from <c>CameraRig.LateUpdate</c>, which Unity runs
+        /// only after every <c>Update()</c> (including the EventSystem's) has
+        /// completed — so the latch can never be cleared before this frame's tap
+        /// has been routed, but is always clear before the next frame's unrelated
+        /// tap is checked. Leaves <see cref="IsBlocking"/> untouched: it still
+        /// purely reflects the live open-token count.</summary>
+        public void EndFrame()
+        {
+            ClosedThisFrame = false;
         }
 
         /// <summary>Releases every registration in one call, so the gate stops
@@ -80,6 +116,11 @@ namespace Doggiehood.Core.Cameras
         public void Clear()
         {
             openModals.Clear();
+
+            // #568: a hard reset also drops the this-frame close latch, so a
+            // modal that closed just before the boundary can't leave world taps
+            // dead for the next scene/test.
+            ClosedThisFrame = false;
         }
     }
 }
