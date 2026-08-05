@@ -15,7 +15,7 @@ Deliberately **not** a centered modal. It replaces the modal-per-step [onboardin
 | Region | Contains | Shared component |
 |---|---|---|
 | Coin token | A leading gold coin, reusing the [`CurrencyChip`](shared-components.md#currency-chip-currencychip) coin-token treatment — both triggers pay flat coins, so one icon covers both | [CurrencyChip](shared-components.md#currency-chip-currencychip) coin token |
-| Message | One short dynamic line: the accomplishment + payout, one sentence, sized so it never wraps at these constants | Reuses the Candy Cottage baseline (cream pill, thick outline, hard shadow) from [Shared UI Components](shared-components.md) |
+| Message | One short dynamic line: the accomplishment + payout, one sentence. The pill grows to the measured text width up to `ToastMaxWidthPx`; the line **never wraps and never grows height** (`wordWrap` off), and any message that would still exceed the cap is **clipped at the pill edge** (`clipping = Clip`) as a fail-safe rather than bleeding past it. `ToastMaxWidthPx` is sized so every currently-approved line fits on one line at `ToastFontSizePx` ([#578](https://github.com/derekwinters/lucas-doggiehood/issues/578)) | Reuses the Candy Cottage baseline (cream pill, thick outline, hard shadow) from [Shared UI Components](shared-components.md) |
 | *(no scrim, no button)* | The toast is the whole surface — no backdrop and no dedicated button; a tap anywhere on it dismisses early | — |
 
 ## Anchors & layout constants
@@ -26,7 +26,7 @@ Deliberately **not** a centered modal. It replaces the modal-per-step [onboardin
 | `ToastLaneTopMarginPx` | `32` | Lane top inset — matches the chip/gear row so both corners share one HUD band |
 | `ToastLaneLeftMarginPx` | `36` | Lane left inset (safe-area edge) |
 | `ToastHeightPx` | `88` | Toast height — matches [`CurrencyChip.HeightPx`](shared-components.md#currency-chip-currencychip) (#173) |
-| `ToastMaxWidthPx` | `640` | Reserved lane width — caps how far a toast reaches toward center screen |
+| `ToastMaxWidthPx` | `1080` | Reserved lane width — caps how far a toast reaches toward center screen; widened from 640 ([#578](https://github.com/derekwinters/lucas-doggiehood/issues/578)) so the longest approved line fits on one line at `ToastFontSizePx` |
 | `ToastCoinDiameterPx` | `60` | Coin token — matches [`CurrencyChip.CoinDiameterPx`](shared-components.md#currency-chip-currencychip) (#173) |
 | `ToastPaddingLeftPx` | `14` | Coin inset — matches [`CurrencyChip`](shared-components.md#currency-chip-currencychip) (#173) |
 | `ToastPaddingRightPx` | `28` | Message inset |
@@ -51,7 +51,7 @@ Both triggers render one line: the accomplishment sentence followed by the flat 
 | **Onboarding — expand the map** | *"You opened up a brand-new street! +100 coins"* |
 | **Onboarding — build a house** | *"You built a brand-new house! +100 coins"* |
 
-The four onboarding lines carry over **verbatim** from the retired [onboarding reward panel](onboarding-reward.md)'s accepted per-step copy (`/approve` [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) — only the surface changes, not the words; the panel's separate **"+N coins"** button label folds into the one toast line. The onboarding amount is `OnboardingRewardChainNumbers.RewardPerStep` (100 today); the quest amount is the flat quest payout (10 today). Keep every line to one short sentence so it never wraps within `ToastMaxWidthPx`.
+The four onboarding lines carry over **verbatim** from the retired [onboarding reward panel](onboarding-reward.md)'s accepted per-step copy (`/approve` [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) — only the surface changes, not the words; the panel's separate **"+N coins"** button label folds into the one toast line. The onboarding amount is `OnboardingRewardChainNumbers.RewardPerStep` (100 today); the quest amount is the flat quest payout (10 today). Keep every line to one short sentence that fits on a single line within `ToastMaxWidthPx` at `ToastFontSizePx` — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider `+N` payout) that would overflow fails loudly instead of clipping the reward amount ([#578](https://github.com/derekwinters/lucas-doggiehood/issues/578)).
 
 ## Notes
 
