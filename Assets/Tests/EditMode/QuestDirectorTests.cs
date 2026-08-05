@@ -30,6 +30,9 @@ namespace Doggiehood.Unity.EditModeTests
             // blocking and swallow this fixture's world/lost-item taps.
             TapRouter.IsModalOpen = TapRouter.DefaultIsModalOpen;
             ModalInputGate.Shared.Clear();
+            // #546: dogs and the truck claim crosswalks on a process-global gate;
+            // clear it so a claim a prior test left can't block this fixture.
+            RoadCrossingGate.Shared.Clear();
 
             state = GameState.CreateNew();
             worldRoot = WorldBuilder.Build(state);

@@ -77,6 +77,15 @@ namespace Doggiehood.Unity
         private bool hasTarget;
         private bool usingImportedModel;
 
+        // #546: the walk-network edge of the wander hop currently in flight, and
+        // whether it crosses a road. A dog stepping onto a Crosswalk edge must
+        // first claim it on the shared RoadCrossingGate; if a vehicle already
+        // holds it the dog waits at its curb node until it releases, and once the
+        // dog reaches the far curb it releases its own claim.
+        private WalkEdge hopEdge;
+        private bool hopIsCrosswalk;
+        private bool holdingCrossingClaim;
+
         // #470: the last wander-reset token observed from Core. When the dog's
         // Dog.WanderResetToken advances (it bumps on every hand-back to the
         // street, e.g. after a quest delivery), the cached wander target is
@@ -427,8 +436,22 @@ namespace Doggiehood.Unity
 
             if (!hasTarget)
             {
-                currentTarget = SelectWanderTarget(transform.position);
-                hasTarget = true;
+                var next = wander.NextTarget(new GridPoint(transform.position.x, transform.position.z));
+                BeginWanderHop(next);
+            }
+
+            // #546: yield at the curb. A hop across a crosswalk may only proceed
+            // once this dog claims that crosswalk on the shared gate; while a
+            // vehicle holds it the dog stays put at its curb node (no advance) and
+            // retries on later frames.
+            if (hopIsCrosswalk && !holdingCrossingClaim)
+            {
+                if (!RoadCrossingGate.Shared.TryEnter(hopEdge, this))
+                {
+                    return false;
+                }
+
+                holdingCrossingClaim = true;
             }
 
             var step = profile.Speed * deltaTime;
@@ -440,8 +463,72 @@ namespace Doggiehood.Unity
                 return true;
             }
 
-            hasTarget = false;
+            ArriveAtWanderTarget();
             return false;
+        }
+
+        /// <summary>
+        /// #546: begins a wander hop toward network node <paramref name="toNode"/>
+        /// from the dog's current node, resolving the connecting walk edge so a
+        /// crosswalk hop can be gated at the curb. Production picks
+        /// <paramref name="toNode"/> from <see cref="WanderBehavior"/>; exposed
+        /// publicly so an EditMode test can drive a deterministic hop across a
+        /// specific crosswalk (the random wander can't be steered onto one).
+        /// </summary>
+        public void BeginWanderHop(GridPoint toNode)
+        {
+            var network = networkProvider();
+            var fromNode = network.NearestWalkableNode(
+                new GridPoint(transform.position.x, transform.position.z));
+            hopEdge = ResolveHopEdge(network, fromNode, toNode, out hopIsCrosswalk);
+            var groundY = network.GroundHeight(fromNode, toNode);
+            currentTarget = new Vector3(toNode.X, groundY, toNode.Z);
+            hasTarget = true;
+            holdingCrossingClaim = false;
+        }
+
+        /// <summary>#546: the dog reached its target node — drop the target and,
+        /// if this hop crossed a road, release the crosswalk claim so the next
+        /// waiting occupant may enter.</summary>
+        private void ArriveAtWanderTarget()
+        {
+            hasTarget = false;
+            AbandonCrossing();
+        }
+
+        /// <summary>#546: releases any crosswalk claim this dog holds and clears
+        /// the in-flight crosswalk state, so a claim never leaks when the hop
+        /// completes, when the scripted quest walk / rest approach takes over, or
+        /// on a wander reset.</summary>
+        private void AbandonCrossing()
+        {
+            if (holdingCrossingClaim)
+            {
+                RoadCrossingGate.Shared.Exit(hopEdge, this);
+                holdingCrossingClaim = false;
+            }
+
+            hopIsCrosswalk = false;
+        }
+
+        /// <summary>#546: the walk edge joining <paramref name="fromNode"/> to
+        /// <paramref name="toNode"/>, and whether it is a crosswalk. Returns a
+        /// default edge (and false) when the two aren't directly joined — e.g. a
+        /// stuck dog whose next node is itself — in which case no gating applies.</summary>
+        private static WalkEdge ResolveHopEdge(
+            WalkNetwork network, GridPoint fromNode, GridPoint toNode, out bool isCrosswalk)
+        {
+            foreach (var edge in network.EdgesFrom(fromNode))
+            {
+                if (edge.Other(fromNode).Equals(toNode))
+                {
+                    isCrosswalk = edge.Kind == WalkEdgeKind.Crosswalk;
+                    return edge;
+                }
+            }
+
+            isCrosswalk = false;
+            return default;
         }
 
         /// <summary>#470: drops the cached wander target if Core has advanced
@@ -453,6 +540,7 @@ namespace Doggiehood.Unity
             if (Dog.WanderResetToken != lastWanderToken)
             {
                 hasTarget = false;
+                AbandonCrossing();
                 lastWanderToken = Dog.WanderResetToken;
             }
         }
@@ -466,6 +554,7 @@ namespace Doggiehood.Unity
         {
             hasTarget = false;
             currentTarget = Vector3.zero;
+            AbandonCrossing();
         }
 
         /// <summary>#470: one scripted-walk step toward a route waypoint —
@@ -521,6 +610,7 @@ namespace Doggiehood.Unity
         {
             restApproach = approach;
             hasTarget = false;
+            AbandonCrossing();
         }
 
         /// <summary>Advances the active rest approach one frame: Core moves the
@@ -592,6 +682,9 @@ namespace Doggiehood.Unity
 
         private void OnDestroy()
         {
+            // #546: never leave a crosswalk claimed when the dog is torn down.
+            AbandonCrossing();
+
             // Leaked PlayableGraphs spam errors on domain reload/exit.
             if (playableGraph.IsValid())
             {
