@@ -155,14 +155,25 @@ namespace Doggiehood.Core.Quests
             // completes at the build step and releases it.
         }
 
-        /// <summary>#316: releases the onboarding reward-chain rotation
-        /// suppression by seeding the first normal rotation exactly once, when
-        /// the 4-step chain completes at the build step. The handoff point to
-        /// #310 recurring pacing; uses the manager's own RNG since the build
-        /// entry point has no caller-supplied one.</summary>
+        /// <summary>#316/#579: releases the onboarding reward-chain rotation
+        /// suppression by seeding the first batch exactly once, when the 4-step
+        /// chain completes at the build step. Unlike the recurring hourly
+        /// trickle, this seeds an IMMEDIATE batch up to
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/> — skipping the
+        /// per-hour accumulator throttle for this one release event — so the
+        /// player finishes onboarding to a populated board (2-3 ready dogs) and
+        /// never an empty one that trickles up "over the following hours" (#579).
+        /// The headroom cap, free-dog cap, and always-one-free-quest invariant
+        /// still apply, so the seed can't exceed the target, double-book a dog,
+        /// or leave an all-paid set. The pacing accumulator and
+        /// <see cref="GameState.LastRotationUtc"/> are left untouched here, so the
+        /// next hourly boundary continues the normal #310/#543 trickle cleanly
+        /// from the now-populated set (headroom is already met, so it adds
+        /// nothing extra). Uses the manager's own RNG since the build entry point
+        /// has no caller-supplied one.</summary>
         public void ReleaseInitialRotation()
         {
-            StartNewDay(moveInRng);
+            SeedBatch(pacing.TargetActiveCount(state), moveInRng);
         }
 
         /// <summary>#310/#543: the recurring refresh boundary. Asks
@@ -220,15 +231,34 @@ namespace Doggiehood.Core.Quests
         /// one added quest is forced to a free type.</summary>
         public void StartNewDay(Random rng)
         {
-            var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
             var wholeThisHour = pacing.AdvanceAccumulator(
                 state.QuestPacingAccumulator, state, out var remainder);
             // Persist the carried fraction up front so it survives even when the
             // clamp below reduces the actual add (the accumulator never banks a
             // flood — the remainder is always < 1).
             state.RecordQuestPacingAccumulator(remainder);
+            SeedBatch(wholeThisHour, rng);
+        }
+
+        /// <summary>#579: the shared batch-assignment step behind both the
+        /// recurring hourly trickle (<see cref="StartNewDay"/>, which requests the
+        /// accumulator's <c>wholeThisHour</c>) and the one-time onboarding release
+        /// (<see cref="ReleaseInitialRotation"/>, which requests
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/> directly). Adds up to
+        /// <c>min(requested, target − activeCount, freeDogs)</c> quests, floored at
+        /// 0: the population/headroom cap and free-dog cap are enforced here — not
+        /// in the caller — so no path can exceed the target or double-book a dog.
+        /// Dogs holding an uncompleted quest are never overwritten. Enforces the
+        /// always-one-free-quest invariant (#310): if the batch would leave an
+        /// all-paid active set, one added quest is forced to a free type. Owns no
+        /// pacing state (no accumulator advance, no rotation-clock stamp) — the
+        /// callers own that — so the release can seed without disturbing the
+        /// recurring trickle's handoff.</summary>
+        private void SeedBatch(int requested, Random rng)
+        {
+            var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
             var headroom = pacing.TargetActiveCount(state) - ActiveQuests.Count();
-            var toAdd = Math.Max(0, Math.Min(wholeThisHour, Math.Min(headroom, freeDogs.Count)));
+            var toAdd = Math.Max(0, Math.Min(requested, Math.Min(headroom, freeDogs.Count)));
 
             // Decide every (dog, type) up front so the free-quest invariant can
             // inspect the whole would-be active set before any quest is created.

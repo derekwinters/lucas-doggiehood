@@ -107,6 +107,100 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void ReleaseInitialRotation_SeedsToTarget_NeverExceedingTargetOrFreeDogs()
+        {
+            // #579: the onboarding-completion release seeds an immediate batch up
+            // to TargetActiveCount in one shot (skipping the hourly-trickle
+            // throttle), but still honors the population/headroom cap and the
+            // free-dog cap — min(target, target - active, freeDogs) — as dog
+            // population and pre-existing active quests vary. It never exceeds the
+            // target and never assigns more than the available free dogs.
+            var pacing = new QuestPacingPolicy();
+            for (var dogCount = 4; dogCount <= 40; dogCount += 6)
+            {
+                for (var preExisting = 0; preExisting <= 3; preExisting++)
+                {
+                    for (var seed = 0; seed < 8; seed++)
+                    {
+                        var state = NewState();
+                        for (var i = state.Dogs.Count; i < dogCount; i++)
+                        {
+                            state.AddDog(new Dog($"extra-{i}", Breed.GermanShepherd,
+                                Personality.Brave, 1, false));
+                        }
+
+                        var manager = new QuestManager(state, new System.Random(seed));
+                        var freeDogs = state.Dogs.Where(d => !d.HasActiveQuest).ToList();
+                        var seededExisting = Math.Min(preExisting, freeDogs.Count);
+                        for (var i = 0; i < seededExisting; i++)
+                        {
+                            manager.GiveQuestTo(freeDogs[i], QuestType.LostItem, new System.Random(seed));
+                        }
+
+                        var target = pacing.TargetActiveCount(state);
+                        var freeBefore = state.Dogs.Count(d => !d.HasActiveQuest);
+                        var activeBefore = manager.ActiveQuests.Count();
+
+                        manager.ReleaseInitialRotation();
+
+                        var activeAfter = manager.ActiveQuests.Count();
+                        var added = activeAfter - activeBefore;
+                        Assert.That(activeAfter, Is.LessThanOrEqualTo(target),
+                            $"dogs {dogCount}, pre {preExisting}, seed {seed}: seed exceeded target");
+                        Assert.That(added, Is.LessThanOrEqualTo(freeBefore),
+                            $"dogs {dogCount}, pre {preExisting}, seed {seed}: seed exceeded free-dog count");
+                        Assert.That(added, Is.EqualTo(Math.Min(target - activeBefore, freeBefore)),
+                            $"dogs {dogCount}, pre {preExisting}, seed {seed}: seed fills exactly to the cap");
+                        Assert.That(manager.ActiveQuests.Select(q => q.DogName).Distinct().Count(),
+                            Is.EqualTo(activeAfter),
+                            $"dogs {dogCount}, pre {preExisting}, seed {seed}: no dog double-booked");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ReleaseInitialRotation_OnACoinStarvedSave_NeverSeedsAnAllPaidSet()
+        {
+            // #579: the immediate release seed still enforces the always-one-free-
+            // quest guarantee (#310) — a brand-new save at 0 coins must never be
+            // released into an all-paid (BuyGift-only) active set, or the player
+            // is soft-locked with nothing affordable to do.
+            for (var seed = 0; seed < 50; seed++)
+            {
+                var state = NewState();
+                Assert.That(state.Wallet.Coins, Is.EqualTo(0), $"seed {seed}: coin-starved save");
+
+                var manager = new QuestManager(state, new System.Random(seed));
+                manager.ReleaseInitialRotation();
+
+                var active = manager.ActiveQuests.ToList();
+                Assert.That(active, Is.Not.Empty, $"seed {seed}: release seeds a non-empty board");
+                Assert.That(active.Any(q => q.Type == QuestType.LostItem
+                    || q.Type == QuestType.PestControl), Is.True,
+                    $"seed {seed}: the released seed always includes a free quest");
+            }
+        }
+
+        [Test]
+        public void ReleaseInitialRotation_LeavesTheAccumulatorAndRotationClockUntouched()
+        {
+            // #579: the release itself skips the accumulator throttle and does not
+            // stamp the rotation clock — that stays with the recurring #543 path
+            // (StartNewDay / MaybeStartNewDay), so the very next hourly boundary
+            // continues the normal trickle cleanly from the now-populated set.
+            var state = NewState();
+            var manager = new QuestManager(state, new System.Random(1));
+
+            manager.ReleaseInitialRotation();
+
+            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0d),
+                "the release does not advance the pacing accumulator");
+            Assert.That(state.LastRotationUtc, Is.Null,
+                "the release does not stamp the rotation clock");
+        }
+
+        [Test]
         public void NewDay_NeverOverwritesAnUncompletedQuest()
         {
             // #26 precedence rule: a dog holding an uncompleted quest keeps

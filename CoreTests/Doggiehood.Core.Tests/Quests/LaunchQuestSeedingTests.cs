@@ -49,31 +49,63 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void PostChain_RunsTheRecurringRotation()
+        public void PostChain_ImmediatelySeedsTheInitialBatch_ToTargetOnDistinctDogs()
         {
+            // #579: the moment the reward chain completes at the build step, the
+            // rotation is RELEASED with an immediate seed to the population
+            // target — not left empty to trickle up "over the following hours".
+            // No hour elapses and no further EnsureQuestsForLaunch call happens.
+            for (var seed = 0; seed < 10; seed++)
+            {
+                var state = GameState.CreateNew();
+                state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
+                state.GrantOnboardingCompletionReward(state.Houses[0].Id);
+                state.TryUpgradeHouse(state.Houses[0].Id);
+                state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);
+                state.TryBuildHouse(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId);
+                Assert.That(state.RewardChain.IsComplete, Is.True, $"seed {seed}");
+
+                var target = new QuestPacingPolicy().TargetActiveCount(state);
+                var active = state.Quests.ActiveQuests.ToList();
+                Assert.That(active.Count, Is.EqualTo(target),
+                    $"seed {seed}: release seeds exactly the population target, not an empty board");
+                Assert.That(active.Select(q => q.DogName).Distinct().Count(),
+                    Is.EqualTo(active.Count), $"seed {seed}: every seeded quest is on a distinct dog");
+            }
+        }
+
+        [Test]
+        public void PostChain_NextHourlyLaunch_AddsNothingFurther_WithACleanHandoff()
+        {
+            // #579: after the immediate release seed hits the target, the next
+            // hourly EnsureQuestsForLaunch (the recurring #543 trickle) adds
+            // nothing — headroom is already met — and records a clean
+            // LastRotationUtc handoff into the recurring rotation. No double-seed.
             var state = GameState.CreateNew();
             state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             state.GrantOnboardingCompletionReward(state.Houses[0].Id);
             state.TryUpgradeHouse(state.Houses[0].Id);
             state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile);
             state.TryBuildHouse(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstLotId);
-            Assert.That(state.RewardChain.IsComplete, Is.True);
-
-            // #543: the build step released the recurring rotation, which now
-            // trickles quests in hourly rather than a 2-4 batch. Drive a full
-            // pacing window of hourly launches (LastRotationUtc starts null, so
-            // the first fires immediately, each subsequent one an hour later) and
-            // confirm the rotation is active and fills up to the population
-            // target.
             var target = new QuestPacingPolicy().TargetActiveCount(state);
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                "release already seeded the board to target");
+            Assert.That(state.LastRotationUtc, Is.Null,
+                "the release itself does not stamp the rotation clock");
+
+            // Drive a full pacing window of subsequent hourly launches; the
+            // recurring rotation continues from the seeded state without ever
+            // exceeding the target (no double-seeding).
             for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
             {
                 state.Quests.EnsureQuestsForLaunch(
                     NowUtc + TimeSpan.FromHours(hour), new Random(hour));
+                Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                    $"hour {hour}: recurring rotation never exceeds the already-met target");
             }
 
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
-                "the post-chain recurring rotation trickles up to the target");
+            Assert.That(state.LastRotationUtc, Is.Not.Null,
+                "the recurring rotation records its boundary once released");
         }
     }
 }
