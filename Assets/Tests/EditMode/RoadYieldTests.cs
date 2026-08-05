@@ -39,6 +39,11 @@ namespace Doggiehood.Unity.EditModeTests
             return NeighborhoodLayout.Roads.First(r => r.Orientation == StreetOrientation.NorthSouth);
         }
 
+        private static bool ReachedFarCurb(Vector3 dogPosition, GridPoint farCurb)
+        {
+            return new Vector2(dogPosition.x - farCurb.X, dogPosition.z - farCurb.Z).magnitude < 0.2f;
+        }
+
         private static WalkEdge NorthCrosswalk()
         {
             // The north-south road's crosswalk on the +Z side of the origin,
@@ -188,13 +193,37 @@ namespace Doggiehood.Unity.EditModeTests
                     view.TickWander(0.05f);
 
                     var dogPos = dogGo.transform.position;
-                    var truckPos = truck.transform.position;
-                    var flat = new Vector2(truckPos.x - dogPos.x, truckPos.z - dogPos.z);
-                    Assert.That(flat.magnitude, Is.GreaterThan(1.0f),
-                        $"vehicle and dog occupied the same crosswalk span at step {step}");
 
-                    var toFarCurb = new Vector2(dogPos.x - crosswalk.B.X, dogPos.z - crosswalk.B.Z);
-                    if (toFarCurb.magnitude < 0.2f)
+                    // The truck destroys its GameObject the instant it departs
+                    // (IsGone); once gone there is no vehicle left to share a point
+                    // with, so only assert the separation invariant while the truck
+                    // still exists — reading its transform afterwards would hit a
+                    // destroyed object.
+                    if (!truck.IsGone)
+                    {
+                        var truckPos = truck.transform.position;
+                        var flat = new Vector2(truckPos.x - dogPos.x, truckPos.z - dogPos.z);
+                        Assert.That(flat.magnitude, Is.GreaterThan(1.0f),
+                            $"vehicle and dog occupied the same crosswalk span at step {step}");
+                    }
+
+                    if (ReachedFarCurb(dogPos, crosswalk.B))
+                    {
+                        dogReachedFarCurb = true;
+                    }
+                }
+
+                Assert.That(truck.IsGone, Is.True,
+                    "the truck must actually finish its route (no deadlock)");
+
+                // The truck may depart before the dog has finished crossing; keep
+                // ticking the dog until it reaches the far curb, proving it was
+                // never permanently blocked (no deadlock). Bounded, so a genuine
+                // stall still fails.
+                for (var step = 0; step < 2000 && !dogReachedFarCurb; step++)
+                {
+                    view.TickWander(0.05f);
+                    if (ReachedFarCurb(dogGo.transform.position, crosswalk.B))
                     {
                         dogReachedFarCurb = true;
                     }
@@ -202,8 +231,6 @@ namespace Doggiehood.Unity.EditModeTests
 
                 Assert.That(dogReachedFarCurb, Is.True,
                     "the dog must actually complete its crossing (no deadlock)");
-                Assert.That(truck.IsGone, Is.True,
-                    "the truck must actually finish its route (no deadlock)");
             }
             finally
             {
