@@ -34,6 +34,17 @@ namespace Doggiehood.Unity
             var director = gameObject.AddComponent<QuestDirector>();
             director.Init(state, root.transform, upgradeDirector);
 
+            // #571: mark the onboarding "fix up a home" target house with the
+            // existing red ground-ring highlight (#535) while the reward chain
+            // waits on its upgrade step, so it's obvious which house to tap and
+            // upgrade. Purely feedback attached to that house; the show/target
+            // decision is Core's (OnboardingHouseHighlight), and — unlike the #506
+            // coach bar — it is NOT suppressed while a centered profile panel is
+            // open, filling exactly that gap. Harmless outside onboarding (Core
+            // reports no target), so it is wired unconditionally.
+            gameObject.AddComponent<OnboardingHouseHighlightDirector>()
+                .Init(state, root.transform);
+
             // Quest pacing (#310 / #312 / #316). The whole phase decision lives
             // in Core (QuestManager.EnsureQuestsForLaunch): pre-chain it seeds
             // the one tutorial quest, mid-chain (the guided upgrade/expand/build
