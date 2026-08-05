@@ -527,6 +527,25 @@ firing a transient failure on the `opened` run
 [CI/CD](ci-cd.md#docs-site-build-publish). A PR that reconciles docs needs no
 label — the gate passes on the docs change.
 
+### Serial delegated delivery (`milestone-orchestration`)
+
+`pipeline-dev` is the **nightly, autonomous** builder — it opens one PR per
+issue and stops, leaving review and merge to Derek. When Derek instead **hands
+off more than one issue at once** ("build #57, #58 and #59", "work through the
+rest of v0.4"), the `milestone-orchestration` skill runs the standing flow so it
+never has to be re-instructed: one issue at a time, each on **its own clean
+branch cut fresh from the latest `main`**, built by `doggiehood-dev`, opened as
+its own PR, waited on with `ci-watch` until every check is green, then
+**merged** — and only then does the next issue begin. Merged, not "PR opened,"
+is the gate between issues, so each new branch already contains all prior
+delivered work and the run is conflict-free by construction. The per-issue build
+(strict TDD, one-branch/one-PR, `skip-docs`, `Closes #N`, squash-merge → one
+Conventional Commit) is identical to `pipeline-dev`'s; the difference is that
+this skill drives each issue **through merge** and gates the next on it. A build
+or CI failure **halts the whole run** at that issue (later issues may depend on
+it) rather than skipping ahead. It is Derek-invoked only — it merges to `main`
+and is not part of any scheduled routine.
+
 ### Reconciliation (`pipeline-reconcile`)
 
 Nothing guarantees an issue stays inside the label state machine, and two
@@ -696,6 +715,11 @@ Each stage is a self-contained skill directory under `.claude/skills/`:
   driven in production by `.github/workflows/dashboard.yml`.
 - `pipeline-dev/` — `SKILL.md` + `select_queue.py` (eligibility + topological
   ordering) + tests.
+- `milestone-orchestration/` — `SKILL.md` only (model-driven serial
+  orchestration; no deterministic script — the "which issues" set comes from
+  Derek's handoff, and the loop reuses `ci-watch` + the `doggiehood-dev` agent).
+  The Derek-invoked counterpart to `pipeline-dev` that drives each issue through
+  **merge**, one at a time.
 - `pipeline-reconcile/` — `SKILL.md` + `reconcile.py` (drift detection +
   auto-fix/flag classification, with the `events_only` cron-only `requeue`
   gate — #319) + tests; run by `gatekeeper-sweep.yml` and surfaced by the
