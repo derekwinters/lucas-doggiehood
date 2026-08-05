@@ -916,7 +916,12 @@ namespace Doggiehood.Unity
                 {
                     if (state.IsLotBuildable(lot.HouseId))
                     {
-                        BuildEmptyLot(parent, lot);
+                        // #569: thread the live map-spanning network so the
+                        // foundation slab orients to the house's real street-ward
+                        // facing (which can be along X), matching the orientation
+                        // the eventual build resolves — the same network the yard
+                        // trees below already take (#461).
+                        BuildEmptyLot(parent, lot, state.WalkNetwork);
                         // #434: an unlocked-but-unbuilt lot also renders the
                         // predetermined house's yard trees, so the plot reads as
                         // a real home-to-be. The trees are deterministic per lot
@@ -950,8 +955,46 @@ namespace Doggiehood.Unity
         /// </summary>
         public static GameObject BuildEmptyLot(Transform parent, HouseLot lot)
         {
-            var footprint = HousePlacement.HouseFootprint(lot);
+            // The starting-tile singleton path: kept for the pinned EditMode call
+            // sites that build a marker in isolation. The live render sites use the
+            // network-aware overload below so a zone lot's slab orients to its REAL
+            // street-ward facing (#569).
+            return BuildEmptyLotMarker(parent, lot, HousePlacement.HouseFootprint(lot));
+        }
 
+        /// <summary>
+        /// #569: <see cref="BuildEmptyLot(Transform, HouseLot)"/> against an
+        /// explicit map-spanning walk network (mirroring the
+        /// <see cref="BuildHouse(Transform, House, HouseLot, WalkNetwork)"/> family).
+        /// A zone lot's real street-ward facing (which can be along X, not just Z)
+        /// lives only in the live <see cref="GameState.WalkNetwork"/> — the
+        /// starting-tile singleton has no walkway edge for it, so the single-arg
+        /// footprint falls back to the crude Z-sign guess and the foundation slab
+        /// renders the right SIZE but transposed relative to the house that will be
+        /// built there. Resolving the footprint from the passed network (via
+        /// <see cref="HousePlacement.HouseFootprint(HouseLot, WalkNetwork, int)"/> —
+        /// the same #461 fix the pre-baked yard trees already took) orients the
+        /// slab to the house's actual facing. The live render sites
+        /// (<see cref="BuildEmptyLots"/>, <see cref="RenderUnlockedTile"/>) pass
+        /// <see cref="GameState.WalkNetwork"/>, the same network they thread into
+        /// <see cref="BuildYardLandscaping"/> right beside this call.
+        /// </summary>
+        public static GameObject BuildEmptyLot(Transform parent, HouseLot lot, WalkNetwork network)
+        {
+            return BuildEmptyLotMarker(
+                parent, lot, HousePlacement.HouseFootprint(lot, network, HouseLevelModelTable.MinLevel));
+        }
+
+        /// <summary>
+        /// Shared marker construction for both <see cref="BuildEmptyLot"/>
+        /// overloads: a low raised graybox "foundation" cube (#300 (B)) sized and
+        /// centred on the already-resolved <paramref name="footprint"/>, its base
+        /// flush on the ground plane, carrying the EmptyLotView tap target. The
+        /// only difference between the overloads is which network resolved the
+        /// footprint (#569), so the primitive/scale/paint/wiring lives here once.
+        /// </summary>
+        private static GameObject BuildEmptyLotMarker(Transform parent, HouseLot lot, LotRect footprint)
+        {
             var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             marker.name = EmptyLotNamePrefix + lot.HouseId;
             marker.transform.SetParent(parent);
@@ -1005,7 +1048,10 @@ namespace Doggiehood.Unity
             {
                 if (state.IsLotBuildable(lot.HouseId))
                 {
-                    BuildEmptyLot(root, lot);
+                    // #569: orient the foundation slab to the real street-ward
+                    // facing via the live network, not the Z-sign fallback —
+                    // matching the yard trees below (#461).
+                    BuildEmptyLot(root, lot, state.WalkNetwork);
                     // #434: pre-place the lot's yard trees at unlock too, so a
                     // freshly unlocked tile's empty lots show trees + foundation
                     // — matching the initial-build path (BuildEmptyLots).
