@@ -39,17 +39,27 @@ Input schema (stdin):
 
 Output schema (stdout):
   {
-    "strip_labels":         [{"number": 211, "labels": ["in-progress"]}],
-    "requeue":              [{"number": 109, "from": "in-progress",
-                             "to": "ready-for-work"}],
-    "flag_done":            [{"number": 56, "reason": "..."}],
-    "flag_orphaned_ready":  [{"number": 300}],
-    "flag_prose_dep":       [{"number": 178, "refs": [109]}]
+    "strip_labels":            [{"number": 211, "labels": ["in-progress"]}],
+    "requeue":                 [{"number": 109, "from": "in-progress",
+                                "to": "ready-for-work"}],
+    "requeue_triage":          [{"number": 569, "from": "pending-approval",
+                                "to": "ai-triage"}],
+    "flag_done":               [{"number": 56, "reason": "..."}],
+    "flag_orphaned_ready":     [{"number": 300}],
+    "flag_prose_dep":          [{"number": 178, "refs": [109]}],
+    "flag_orphaned_analysis":  [{"number": 570}]
   }
 
-``strip_labels`` and ``requeue`` are the auto-fixes (applied by the
-gatekeeper); the three ``flag_*`` lists are surfaced read-only on the
-dashboard. Every list is sorted by issue number.
+``strip_labels``, ``requeue`` and ``requeue_triage`` are the auto-fixes
+(applied by the gatekeeper); the four ``flag_*`` lists are surfaced read-only
+on the dashboard. Every list is sorted by issue number.
+
+``requeue_triage`` / ``flag_orphaned_analysis`` catch the non-atomic reactive-
+triage hand-off (#582): the hand-off posts the analysis comment and sets the
+hand-back state label as two separate writes, so a partial failure can leave a
+state label with no analysis (``requeue_triage`` re-queues it to ``ai-triage``)
+or an analysis with no state label (``flag_orphaned_analysis`` flags it — the
+intended state is ambiguous). ``has_analysis_comment`` per issue drives both.
 """
 
 import json
@@ -75,6 +85,36 @@ PIPELINE_STATE_LABELS = [
 
 FLAG_DONE_REASON = "work landed on main (merged commit body / deliverables) but issue still open"
 
+# The two hand-back state labels a triage run sets on Derek (`triage-issue/
+# SKILL.md`). The non-atomic-hand-off rules (#582) turn on whether one of these
+# is present, independent of `ai-triage` (the pre-triage state) and the
+# post-approval `ready-for-work`/`in-progress` states.
+TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
+
+# A triage-authored analysis comment identifies itself with one of the two
+# hand-back shapes `triage-issue/SKILL.md` defines: a `## Build checklist`
+# heading (the bug / spec-feature / `/propose` routes) or the `❓ Needs from
+# Derek/Lucas:` marker (the needs-clarification route). Recognized the same way
+# `_closing_refs_in` recognizes closing keywords — a fixed textual signature,
+# not a semantic read. Used by `fetch_state` to populate `has_analysis_comment`.
+_ANALYSIS_HEADING_RE = re.compile(r"(?im)^[ \t]*#{1,6}[ \t]+build checklist[ \t]*$")
+_NEEDS_CLARIFICATION_MARKER = "❓ Needs from Derek/Lucas:"
+
+
+def has_analysis_signature(text):
+    """True iff ``text`` carries a triage-authored analysis signature.
+
+    The signature is a ``## Build checklist`` heading (any heading level,
+    case-insensitive) OR the literal ``❓ Needs from Derek/Lucas:`` marker — the
+    two hand-back comment shapes ``triage-issue/SKILL.md`` produces. A plain
+    comment that merely mentions the word "checklist" in prose does not match;
+    the heading form is required.
+    """
+    text = text or ""
+    if _NEEDS_CLARIFICATION_MARKER in text:
+        return True
+    return bool(_ANALYSIS_HEADING_RE.search(text))
+
 
 def _is_done(number, body_refs, deliverables):
     if number in body_refs:
@@ -90,7 +130,12 @@ def process(data, events_only=False):
     backstop ONLY — pass ``True`` from the event-triggered sweep
     (``issues: [closed, labeled]`` / ``pull_request: [closed]``) and it is
     omitted entirely; ``strip_labels`` and every ``flag_*`` are unaffected in
-    either mode. This exists because ``pull_request: [closed]`` fires before
+    either mode. ``requeue_triage`` (#582) is gated the same way and for the
+    same class of reason: on a ``labeled`` event the just-set ``pending-approval``
+    can momentarily precede the analysis comment's visibility, so requeuing it
+    on the event path would churn a healthy triage; the cron backstop heals the
+    genuine #569-shape stall (which has no triggering event anyway). This exists
+    because ``pull_request: [closed]`` fires before
     GitHub finishes auto-closing a ``Closes #N`` issue and before the merge is
     reliably visible on ``main`` — in that instant a just-merged `in-progress`
     issue can transiently look like a stalled one, and requeuing it right then
@@ -102,9 +147,11 @@ def process(data, events_only=False):
 
     strip_labels = []
     requeue = []
+    requeue_triage = []
     flag_done = []
     flag_orphaned_ready = []
     flag_prose_dep = []
+    flag_orphaned_analysis = []
 
     for issue in data.get("issues", []):
         # Excluded throughout the pipeline: epics, the dashboard issue, parked.
@@ -141,6 +188,31 @@ def process(data, events_only=False):
             requeue.append({"number": number, "from": "in-progress",
                             "to": "ready-for-work"})
 
+        # --- non-atomic triage hand-off drift (issue #582) -----------------
+        # The reactive-triage hand-off does two non-transactional writes: post
+        # the analysis comment and set the hand-back state label (removing
+        # `ai-triage`). A partial failure leaves one of two drift shapes, and
+        # neither self-heals under the rules above.
+        has_analysis = issue.get("has_analysis_comment", False)
+        handback = [l for l in TRIAGE_HANDBACK_LABELS if l in labels]
+        if handback and not has_analysis and not events_only:
+            # Rule (a) — the #569 shape: a hand-back state label is set but no
+            # analysis comment was ever posted, so there is no plan for Derek to
+            # `/approve`. Auto-fix: strip the state label, re-add `ai-triage`,
+            # so the issue re-enters the triage queue and actually gets a plan.
+            # Cron-only, like `requeue`: on the event path a just-set
+            # `pending-approval` can momentarily precede the analysis comment's
+            # visibility, and requeuing it there would churn a healthy triage.
+            requeue_triage.append({"number": number, "from": handback[0],
+                                   "to": "ai-triage"})
+        if has_analysis and not any(l in labels for l in PIPELINE_STATE_LABELS):
+            # Rule (b) — the residual #570 shape: a full analysis comment exists
+            # but no pipeline-state label at all, so the issue is invisible to
+            # the approval queue and the dashboard. FLAG, not auto-fix — which
+            # hand-back state was intended (`pending-approval` vs
+            # `needs-clarification`) is ambiguous from the comment shape alone.
+            flag_orphaned_analysis.append({"number": number})
+
         # Stretch flags (independent of the above).
         if "ready-for-work" in labels and not issue.get("milestone"):
             flag_orphaned_ready.append({"number": number})
@@ -152,9 +224,11 @@ def process(data, events_only=False):
     return {
         "strip_labels": sorted(strip_labels, key=by_num),
         "requeue": sorted(requeue, key=by_num),
+        "requeue_triage": sorted(requeue_triage, key=by_num),
         "flag_done": sorted(flag_done, key=by_num),
         "flag_orphaned_ready": sorted(flag_orphaned_ready, key=by_num),
         "flag_prose_dep": sorted(flag_prose_dep, key=by_num),
+        "flag_orphaned_analysis": sorted(flag_orphaned_analysis, key=by_num),
     }
 
 
@@ -280,6 +354,25 @@ def native_blocked_by(repo, number, token):
     return {i["number"] for i in items if isinstance(i, dict) and "number" in i}
 
 
+def _issue_has_analysis_comment(repo, number, token):
+    """True iff issue ``#number`` carries a triage-authored analysis comment.
+
+    Pages the issue's comments (``GET /repos/{repo}/issues/{n}/comments``, the
+    same paginated fetch pattern the rest of this layer uses) and tests each
+    body against ``has_analysis_signature``. I/O only, not exercised by the unit
+    tests (same split as the rest of this fetch layer — the signature match
+    itself is unit-tested via ``has_analysis_signature``). Any HTTP error
+    degrades safely to ``False`` so the sweep does not crash on a comment fetch.
+    """
+    try:
+        comments = _paginate(
+            "/repos/%s/issues/%d/comments" % (repo, number), token)
+    except urllib.error.HTTPError:
+        return False
+    return any(has_analysis_signature(c.get("body")) for c in comments
+               if isinstance(c, dict))
+
+
 def prose_deps_in(body, native_refs=()):
     """Issue numbers referenced as a dependency **only in prose** in ``body``.
 
@@ -353,6 +446,12 @@ def fetch_state(repo, token):
         # them avoids needless API calls.
         native_refs = (native_blocked_by(repo, i["number"], token)
                        if i["state"] == "open" else set())
+        # `has_analysis_comment` (#582) needs one paginated comment fetch per
+        # OPEN issue — same cost class as the per-issue `native_blocked_by`
+        # call above, and the triage-hand-off rules only fire on open issues, so
+        # closed ones are skipped.
+        has_analysis = (_issue_has_analysis_comment(repo, i["number"], token)
+                        if i["state"] == "open" else False)
         issues.append({
             "number": i["number"],
             "state": i["state"],
@@ -363,6 +462,7 @@ def fetch_state(repo, token):
             "has_open_pr": i["number"] in open_pr_refs,
             "prose_deps": prose_deps_in(i.get("body") or "",
                                         native_refs=native_refs),
+            "has_analysis_comment": has_analysis,
         })
 
     return {
