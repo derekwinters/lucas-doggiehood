@@ -317,6 +317,44 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void HouseFootprint_NetworkOverload_SwapsWidthAndDepthOntoX_WhileTheSingletonKeepsTheZFallback()
+        {
+            // #569: the empty-lot foundation marker is sized straight from
+            // HousePlacement's footprint. For a zone lot whose REAL
+            // (network-resolved) facing is along X, the network-aware overload
+            // swaps the model's width/depth onto the X axis, but the single-arg
+            // overload — which resolves facing via the starting-tile singleton and
+            // falls back to the crude Z-sign guess for a zone lot — does NOT swap.
+            // So the two footprints are a clean transpose for this lot: the same
+            // two numbers (hence "right size" in the playtest report) rotated 90°.
+            // This is what forces the marker onto the network-aware path (the same
+            // #461 fix yard trees already took) — without it the slab renders the
+            // right size but the wrong orientation relative to its house.
+            var zoneLot = new HouseLot(
+                HouseVariantAssignment.FirstZoneHouseId, Quadrant.NorthEast,
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, 20f));
+
+            var network = WalkNetwork.BuildFrom(NeighborhoodLayout.Roads, new[] { zoneLot });
+
+            Assert.That(HousePlacement.FrontFacing(zoneLot, network).X, Is.Not.EqualTo(0f),
+                "sanity: the network-resolved facing is along X for this lot");
+            Assert.That(HousePlacement.FrontFacing(zoneLot).X, Is.EqualTo(0f),
+                "sanity: the single-arg (singleton) facing falls back to the Z axis");
+
+            var networkFootprint = HousePlacement.HouseFootprint(zoneLot, network);
+            var singletonFootprint = HousePlacement.HouseFootprint(zoneLot);
+
+            // Same two numbers, transposed: the network footprint's width is the
+            // singleton's depth and vice versa.
+            Assert.That(networkFootprint.Width, Is.Not.EqualTo(singletonFootprint.Width).Within(0.001f),
+                "the network-aware footprint is oriented differently from the singleton one");
+            Assert.That(networkFootprint.Width, Is.EqualTo(singletonFootprint.Depth).Within(0.001f),
+                "the network overload swaps width onto X; the singleton keeps it on Z");
+            Assert.That(networkFootprint.Depth, Is.EqualTo(singletonFootprint.Width).Within(0.001f),
+                "the two footprints are a clean transpose of each other");
+        }
+
+        [Test]
         public void PredeterminedFrontFacing_AtUnlock_MatchesTheActualBuiltFacing_AndDiffersFromTheZSignGuess()
         {
             // #461: a zone lot's trees are pre-baked at UNLOCK time, before its
