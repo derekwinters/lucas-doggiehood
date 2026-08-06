@@ -19,6 +19,13 @@ namespace Doggiehood.Core.Tests.World
 
         private const float Tolerance = 0.01f;
 
+        /// <summary>#598: the largest world-space chord an inserted arc segment
+        /// may span. A large-radius arc (the 9m cul-de-sac bulb) subdivided by a
+        /// fixed angular step got only ~3 long chords and read as an octagon;
+        /// the fix caps each chord to this length so the polyline hugs the arc.
+        /// Derived from the same locked art dimensions — one sidewalk width.</summary>
+        private const float MaxArcChord = WorldDimensions.SidewalkWidth;
+
         /// <summary>The sidewalk centerline's perpendicular offset from the road
         /// centerline — the same magnitude the sidewalk arms sit at.</summary>
         private static float SidewalkOffset()
@@ -170,6 +177,87 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(path.Skip(1).Take(path.Count - 2)
                     .Any(n => Math.Abs(Distance(n, arcCenter) - rBulb) < Tolerance),
                 Is.True, "the turnaround route must ride the bulb-radius arc");
+        }
+
+        /// <summary>The largest chord between consecutive nodes of the ordered
+        /// polyline <paramref name="path"/> that both lie on the circle
+        /// (<paramref name="center"/>, <paramref name="radius"/>) — i.e. the
+        /// coarsest hop the inserted arc takes. Straight arm hops (endpoints off
+        /// the circle) are excluded so only the curved portion is measured.</summary>
+        private static float MaxArcChord_OnPath(IReadOnlyList<GridPoint> path, GridPoint center, float radius)
+        {
+            var max = 0f;
+            for (var i = 0; i + 1 < path.Count; i++)
+            {
+                var onA = Math.Abs(Distance(path[i], center) - radius) < Tolerance;
+                var onB = Math.Abs(Distance(path[i + 1], center) - radius) < Tolerance;
+                if (onA && onB)
+                {
+                    max = Math.Max(max, Distance(path[i], path[i + 1]));
+                }
+            }
+
+            return max;
+        }
+
+        [Test]
+        public void CulDeSac_TurnaroundSubdividesFinely_NoChordReadsAsAnOctagonEdge()
+        {
+            // #598 playtest: the 9m cul-de-sac bulb turnaround was subdivided by a
+            // fixed 30 angular step, so its ~64 sweep became only 3 long (~3.3m)
+            // chords — an octagon, not an arch. Every turnaround chord must now be
+            // capped to a small world-space length so the polyline hugs the bulb.
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            map.Place(new TileCoordinate(0, 1), TileType.CulDeSacSouth);
+            var network = MapWalkNetwork.BuildFrom(map, NoLots);
+
+            var offset = SidewalkOffset();
+            var rBulb = WorldDimensions.CulDeSacBulbRadius;
+            var bulb = TileGeometry.CenterOf(new TileCoordinate(0, 1));
+            var back = (float)Math.Sqrt(rBulb * rBulb - offset * offset);
+            var arcCenter = new GridPoint(bulb.X, bulb.Z - back);
+
+            // The turnaround route from one bulb arm end to the other rides the
+            // bulb arc; every hop along it must stay under the chord cap.
+            var path = network.FindPath(new GridPoint(offset, bulb.Z), new GridPoint(-offset, bulb.Z));
+            var maxChord = MaxArcChord_OnPath(path, arcCenter, rBulb);
+
+            Assert.That(maxChord, Is.GreaterThan(0f),
+                "the turnaround route must ride the bulb arc");
+            Assert.That(maxChord, Is.LessThanOrEqualTo(MaxArcChord + Tolerance),
+                $"no cul-de-sac turnaround chord may exceed {MaxArcChord}m (was {maxChord}m — octagon)");
+
+            // Regression: the turnaround stays welded to the existing arm ends and
+            // the whole network stays one connected graph.
+            Assert.That(network.Nodes.Any(n => Math.Abs(n.X - offset) < Tolerance && Math.Abs(n.Z - bulb.Z) < Tolerance),
+                Is.True, "the +side bulb arm end must still exist (welded)");
+            Assert.That(network.Nodes.Any(n => Math.Abs(n.X + offset) < Tolerance && Math.Abs(n.Z - bulb.Z) < Tolerance),
+                Is.True, "the -side bulb arm end must still exist (welded)");
+            Assert.That(network.IsFullyConnected(), Is.True,
+                "the finely subdivided turnaround must keep the network connected");
+        }
+
+        [Test]
+        public void Bend_OuterArcSubdividesFinely_SameChordCapAsTheTurnaround()
+        {
+            // The same AddArc feeds Turn* bend arcs (outer radius R+offset =
+            // 9.75m). The chord cap must hold there too — verify the outer bend
+            // arc's hops are all under the cap, not the old ~5m 30-step chords.
+            var bend = BuildTile(TileType.TurnNE);
+            var r = WorldDimensions.RoadBendCornerRadius;
+            var offset = SidewalkOffset();
+            var center = new GridPoint(r, r);
+            var half = WorldDimensions.TileSize / 2f;
+
+            var start = new GridPoint(-offset, half);
+            var goal = new GridPoint(half, -offset);
+            var path = bend.FindPath(start, goal);
+            var maxChord = MaxArcChord_OnPath(path, center, r + offset);
+
+            Assert.That(maxChord, Is.GreaterThan(0f),
+                "the bend route must ride the outer corner arc");
+            Assert.That(maxChord, Is.LessThanOrEqualTo(MaxArcChord + Tolerance),
+                $"no bend arc chord may exceed {MaxArcChord}m (was {maxChord}m)");
         }
 
         [Test]
