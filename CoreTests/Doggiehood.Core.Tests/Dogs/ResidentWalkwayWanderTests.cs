@@ -93,6 +93,39 @@ namespace Doggiehood.Core.Tests.Dogs
         }
 
         [Test]
+        public void ResidentDog_OnTheLotSideOfItsOwnWalkway_ReturnsToTheAttach_NotAcrossTheYard()
+        {
+            // #597 (regression of #517): the door-return must fire for a resident
+            // dog anywhere on the LOT SIDE of its own walkway — not only when it
+            // sits *exactly* on the door node. A dog that has walked up to its
+            // door stops a hair short of, or just past, the node, so the exact-
+            // node match (#517) missed it and it snapped to the nearest sidewalk
+            // node and beelined diagonally across the yard to a point off to the
+            // side. From any point on the door-side half of the walkway (and just
+            // past the door), the next target must be the walkway attach point,
+            // retracing the walkway.
+            var (network, walkway, houseId) = BuiltZoneHouse();
+
+            // Points on the door-side half of the walkway (t measured from the
+            // attach B toward the door A) and just past the door onto the lot.
+            foreach (var t in new[] { 0.6f, 0.75f, 0.9f, 1f, 1.2f })
+            {
+                var lotSide = new GridPoint(
+                    walkway.B.X + (walkway.A.X - walkway.B.X) * t,
+                    walkway.B.Z + (walkway.A.Z - walkway.B.Z) * t);
+
+                for (var seed = 0; seed < SeedSweep; seed++)
+                {
+                    var wander = new WanderBehavior(seed, MovementProfile.Base, network, residentHouseId: houseId);
+                    Assert.That(wander.NextTarget(lotSide), Is.EqualTo(walkway.B),
+                        $"t={t}, seed {seed}: a resident dog on the lot side of its own walkway must "
+                        + "return to the sidewalk attach point (B), retracing the walkway — never "
+                        + "cut across the yard to another sidewalk node");
+                }
+            }
+        }
+
+        [Test]
         public void ResidentDog_OneHopPastItsDoor_ContinuesOnNetworkFromTheAttachPoint()
         {
             // #517 regression: after returning down the walkway to the attach

@@ -28,6 +28,19 @@ namespace Doggiehood.Core.Dogs
         /// 0 can never match a walkway's owning house.</summary>
         public const int NoResidentHouseId = 0;
 
+        /// <summary>#597: how far along its own walkway (0 at the sidewalk attach,
+        /// 1 at the door) a resident dog must be before it counts as "on the lot
+        /// side" and retraces the walkway. 0.5 is the walkway's midpoint, so the
+        /// door-side half triggers the retrace while the sidewalk-side half falls
+        /// through to ordinary wander.</summary>
+        private const float LotSideEntryFraction = 0.5f;
+
+        /// <summary>#597: how far PAST the door (in walkway-length units) still
+        /// counts as at the door — a dog stops a hair short of or just past the
+        /// door node, so a small overshoot onto the lot must still retrace rather
+        /// than beeline across the yard.</summary>
+        private const float LotSideOvershootFraction = 1.5f;
+
         private readonly Random random;
         private readonly MovementProfile profile;
         private readonly Func<WalkNetwork> networkProvider;
@@ -100,28 +113,73 @@ namespace Doggiehood.Core.Dogs
         }
 
         /// <summary>
-        /// #517: resolve the dog's current network node for this hop. A
-        /// resident dog standing at its OWN front-door node — the walkway's
-        /// lot-side endpoint (<c>mine.A</c>), a walkway-only node the general
-        /// walkable set deliberately excludes (#430) — must resolve to that
-        /// door node, so its sole candidate edge is the walkway back down to
-        /// the sidewalk attach point and it returns the way it came. Every
-        /// other position (and every non-resident dog, which is barred from
-        /// the walkway at all) falls through to the unchanged
+        /// #517/#597: resolve the dog's current network node for this hop. A
+        /// resident dog on the LOT SIDE of its OWN walkway — at, near, or a
+        /// hair past its front door (the walkway's lot-side endpoint
+        /// <c>mine.A</c>, a walkway-only node the general walkable set
+        /// deliberately excludes, #430) — must resolve to that door node, so
+        /// its sole candidate edge is the walkway back down to the sidewalk
+        /// attach point and it returns the way it came. Every other position
+        /// (and every non-resident dog, which is barred from the walkway at
+        /// all) falls through to the unchanged
         /// <see cref="WalkNetwork.NearestWalkableNode"/>, which would otherwise
-        /// snap a dog at its door to the straight-line-nearest sidewalk node
+        /// snap a dog near its door to the straight-line-nearest sidewalk node
         /// across the yard and beeline it off-network.
+        ///
+        /// #517 only matched the door node EXACTLY; a dog stops a hair short of
+        /// or just past the node, so #597 saw the exact match miss and the dog
+        /// cut diagonally across the lawn. This now fires for the whole
+        /// door-side half of the dog's own walkway (plus a small overshoot),
+        /// detected geometrically against the walkway segment so no other
+        /// sidewalk node can trigger it.
         /// </summary>
         private GridPoint ResolveCurrentNode(GridPoint current, WalkNetwork network)
         {
             if (residentHouseId != NoResidentHouseId
                 && network.TryGetFrontWalkway(residentHouseId, out var mine)
-                && current.Equals(mine.A))
+                && IsOnLotSideOfOwnWalkway(current, mine))
             {
                 return mine.A;
             }
 
             return network.NearestWalkableNode(current);
+        }
+
+        /// <summary>#597: true when <paramref name="current"/> lies on the lot
+        /// (door) side of the dog's own <paramref name="walkway"/> — its
+        /// perpendicular projection onto the attach→door line is on the
+        /// door-side half (past <see cref="LotSideEntryFraction"/>, up to a
+        /// small overshoot past the door) AND it sits within the walkway's own
+        /// lateral footprint. The lateral (perpendicular) bound is what keeps a
+        /// distant sidewalk node — which can be straight-line closer to a door
+        /// than that door's own attach point — from ever triggering the
+        /// retrace: such a node is far to the SIDE of the narrow walkway
+        /// segment.</summary>
+        private static bool IsOnLotSideOfOwnWalkway(GridPoint current, WalkEdge walkway)
+        {
+            var alongX = walkway.A.X - walkway.B.X; // attach (B) -> door (A)
+            var alongZ = walkway.A.Z - walkway.B.Z;
+            var lengthSquared = alongX * alongX + alongZ * alongZ;
+            if (lengthSquared <= float.Epsilon)
+            {
+                return current.Equals(walkway.A);
+            }
+
+            // Parameter along the walkway line: 0 at the attach, 1 at the door.
+            var t = ((current.X - walkway.B.X) * alongX + (current.Z - walkway.B.Z) * alongZ) / lengthSquared;
+            if (t < LotSideEntryFraction || t > LotSideOvershootFraction)
+            {
+                return false;
+            }
+
+            // Perpendicular distance from the walkway line, in the same
+            // length-squared units, must be within half the walkway's width.
+            var footX = walkway.B.X + t * alongX;
+            var footZ = walkway.B.Z + t * alongZ;
+            var lateralSquared = (current.X - footX) * (current.X - footX)
+                + (current.Z - footZ) * (current.Z - footZ);
+            var halfWidth = walkway.Width * 0.5f;
+            return lateralSquared <= halfWidth * halfWidth;
         }
 
         /// <summary>#430: which edges general wander may take from a node.
