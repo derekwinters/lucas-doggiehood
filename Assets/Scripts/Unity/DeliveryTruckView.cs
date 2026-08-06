@@ -88,8 +88,42 @@ namespace Doggiehood.Unity
         private RoadCrossingTraversal crossing;
         private Road crossingRoad;
 
+        // #600: 1-D car-following on the current leg's road. The crosswalk gate
+        // above arbitrates only the crosswalk claim, so this is what keeps the
+        // truck one car length behind whatever truck is ahead of it on the
+        // segment. Created per leg (each leg is one road) with that leg's travel
+        // direction; the immediate leader's along-coordinate is supplied by the
+        // owning QuestDirector each tick (null on an open road).
+        private CarFollowing following;
+        private float legTravelSign = 1f;
+
         public bool HasDelivered { get; private set; }
         public bool IsGone { get; private set; }
+
+        /// <summary>#600: true while the truck is driving a road leg — i.e. it
+        /// participates in car-following and can be a leader/follower this tick.
+        /// False before <see cref="DeliverTo"/>, once <see cref="IsGone"/>, or on
+        /// a leg with no resolved road (e.g. a turnaround maneuver waypoint).</summary>
+        public bool IsDriving => routeActive && !IsGone && crossingRoad != null;
+
+        /// <summary>#600: a value key identifying the physical road this truck is
+        /// currently on — equal across the separate <see cref="Road"/> instances
+        /// two trucks derive for the same segment, so the owner can group
+        /// same-segment trucks. Null when not on a resolved road leg.</summary>
+        public object CurrentSegmentKey => crossingRoad == null
+            ? null
+            : (object)(crossingRoad.Orientation, crossingRoad.Center.X, crossingRoad.Center.Z, crossingRoad.HalfLength);
+
+        /// <summary>#600: +1 or -1, the direction this truck drives along its
+        /// current leg's road axis (matching <see cref="CurrentAlong"/>).</summary>
+        public float TravelSign => legTravelSign;
+
+        /// <summary>#600: this truck's position on its current leg's road, in the
+        /// road's own along-coordinate — the common number line on which the
+        /// owner compares trucks to find each follower's immediate leader.</summary>
+        public float CurrentAlong => crossingRoad == null
+            ? 0f
+            : crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
 
         public static DeliveryTruckView Spawn(Transform parent)
         {
@@ -171,14 +205,22 @@ namespace Doggiehood.Unity
             BeginLeg();
         }
 
-        private void Update()
+        /// <summary>Advances the drive along the waypoint path with no truck
+        /// ahead (open road) — kept for callers/tests driving a single truck.
+        /// #600: at runtime the owning <see cref="QuestDirector"/> drives every
+        /// truck through the leader-aware overload instead, so the view no longer
+        /// self-ticks in Update.</summary>
+        public void Tick(float deltaTime)
         {
-            Tick(Time.deltaTime);
+            Tick(deltaTime, null);
         }
 
-        /// <summary>Advances the drive along the waypoint path; called by Update
-        /// at runtime and directly by EditMode tests.</summary>
-        public void Tick(float deltaTime)
+        /// <summary>#600: advances the drive one tick, held behind the immediate
+        /// leader on this leg's road when <paramref name="leaderAlong"/> is set
+        /// (its along-coordinate on the same road), or unobstructed by following
+        /// when null. Called by <see cref="QuestDirector"/> at runtime and
+        /// directly by EditMode tests.</summary>
+        public void Tick(float deltaTime, float? leaderAlong)
         {
             if (!routeActive)
             {
@@ -192,7 +234,7 @@ namespace Doggiehood.Unity
             }
 
             var target = waypoints[targetIndex];
-            Drive(ClampToCrossing(target), deltaTime);
+            Drive(ClampToLeader(ClampToCrossing(target), leaderAlong, deltaTime), deltaTime);
 
             if (Vector3.Distance(transform.position, target) > ArriveDistance)
             {
@@ -244,6 +286,7 @@ namespace Doggiehood.Unity
         {
             crossing = null;
             crossingRoad = null;
+            following = null;
             if (targetIndex <= 0 || targetIndex >= waypoints.Count)
             {
                 return;
@@ -257,10 +300,15 @@ namespace Doggiehood.Unity
                 return;
             }
 
+            var entryAlong = crossingRoad.AlongAxis(new GridPoint(from.x, from.z));
+            var exitAlong = crossingRoad.AlongAxis(new GridPoint(to.x, to.z));
+            legTravelSign = exitAlong - entryAlong < 0f ? -1f : 1f;
+
             crossing = new RoadCrossingTraversal(
-                RoadCrossingGate.Shared, this, crossingRoad, network,
-                crossingRoad.AlongAxis(new GridPoint(from.x, from.z)),
-                crossingRoad.AlongAxis(new GridPoint(to.x, to.z)));
+                RoadCrossingGate.Shared, this, crossingRoad, network, entryAlong, exitAlong);
+
+            // #600: a fresh follower for this leg's road and travel direction.
+            following = new CarFollowing(legTravelSign);
         }
 
         /// <summary>The road a leg runs along: the one whose centerline contains
@@ -313,6 +361,28 @@ namespace Doggiehood.Unity
             var currentAlong = crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
             var targetAlong = crossingRoad.AlongAxis(new GridPoint(target.x, target.z));
             var allowedAlong = crossing.Advance(currentAlong, targetAlong);
+            var point = crossingRoad.PointAt(allowedAlong, 0f);
+            return new Vector3(point.X, target.y, point.Z);
+        }
+
+        /// <summary>#600: clamps this tick's drive target so the truck never
+        /// advances closer than one car length behind the truck ahead of it on
+        /// this leg's road (<paramref name="leaderAlong"/>, or null on an open
+        /// road), and holds for a second after a stopped leader begins to move.
+        /// The decision lives in Core (<see cref="CarFollowing"/>); this only
+        /// converts positions to/from the current leg's along-road coordinate.
+        /// Applied on top of <see cref="ClampToCrossing"/>, so the truck obeys
+        /// whichever of the two limits (body gap, crosswalk claim) is nearer.</summary>
+        private Vector3 ClampToLeader(Vector3 target, float? leaderAlong, float deltaTime)
+        {
+            if (following == null || crossingRoad == null)
+            {
+                return target;
+            }
+
+            var currentAlong = crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
+            var targetAlong = crossingRoad.AlongAxis(new GridPoint(target.x, target.z));
+            var allowedAlong = following.Advance(currentAlong, targetAlong, leaderAlong, deltaTime);
             var point = crossingRoad.PointAt(allowedAlong, 0f);
             return new Vector3(point.X, target.y, point.Z);
         }

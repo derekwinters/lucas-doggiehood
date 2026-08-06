@@ -35,6 +35,12 @@ namespace Doggiehood.Unity
         private readonly Dictionary<int, List<Vector3>> homeRoutes = new Dictionary<int, List<Vector3>>();
         private readonly Dictionary<int, int> homeRouteProgress = new Dictionary<int, int>();
 
+        // #600: the set of delivery trucks currently on the road. The director
+        // owns their tick (the views no longer self-tick) so that, each frame, a
+        // follower can see the truck ahead of it on its segment and hold one car
+        // length back — car-following the crosswalk gate alone can't provide.
+        private readonly List<DeliveryTruckView> activeTrucks = new List<DeliveryTruckView>();
+
         // HouseViews whose Tapped is already wired to the spray path — so a
         // re-wire after #407 rebuilds one on upgrade never double-subscribes an
         // existing view (the same idempotency ExpansionDirector.WireLots uses).
@@ -269,6 +275,48 @@ namespace Doggiehood.Unity
                     WalkDogHome(quest, deltaTime);
                 }
             }
+
+            TickTrucks(deltaTime);
+        }
+
+        /// <summary>#600: advances every active delivery truck, holding each one
+        /// car length behind its immediate leader on its road segment. The set is
+        /// snapshotted first so every follower's leader is resolved from the same
+        /// start-of-tick positions regardless of advance order; leader selection
+        /// and the following clamp are pure Core
+        /// (<see cref="RoadTraffic"/> / <see cref="CarFollowing"/>). Finished
+        /// trucks (destroyed views) are pruned each tick.</summary>
+        private void TickTrucks(float deltaTime)
+        {
+            activeTrucks.RemoveAll(t => t == null || t.IsGone);
+
+            var snapshot = new List<(object Segment, float TravelSign, float Along)>();
+            foreach (var truck in activeTrucks)
+            {
+                if (truck.IsDriving)
+                {
+                    snapshot.Add((truck.CurrentSegmentKey, truck.TravelSign, truck.CurrentAlong));
+                }
+            }
+
+            // ToList so a truck that finishes and destroys itself mid-loop can't
+            // disturb the iteration.
+            foreach (var truck in activeTrucks.ToList())
+            {
+                if (truck == null)
+                {
+                    continue;
+                }
+
+                float? leaderAlong = null;
+                if (truck.IsDriving)
+                {
+                    leaderAlong = RoadTraffic.ImmediateLeaderAlong(
+                        truck.CurrentSegmentKey, truck.TravelSign, truck.CurrentAlong, snapshot);
+                }
+
+                truck.Tick(deltaTime, leaderAlong);
+            }
         }
 
         private void WalkDogHome(Quest quest, float deltaTime)
@@ -310,7 +358,13 @@ namespace Doggiehood.Unity
             homeRouteProgress.Remove(quest.Id);
 
             State.Quests.NotifyDogArrivedHome(quest);
-            DeliveryTruckView.Spawn(worldRoot).DeliverTo(target, State.Map, State.WalkNetwork, () =>
+
+            // #600: register the truck in the director-owned set so it is ticked
+            // with awareness of any truck ahead of it (car-following), rather than
+            // self-ticking blind to the others.
+            var truck = DeliveryTruckView.Spawn(worldRoot);
+            activeTrucks.Add(truck);
+            truck.DeliverTo(target, State.Map, State.WalkNetwork, () =>
             {
                 State.Quests.DeliverPackage(quest);
                 RefreshDecorations();
