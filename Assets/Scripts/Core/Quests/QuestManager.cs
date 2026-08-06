@@ -333,7 +333,13 @@ namespace Doggiehood.Core.Quests
                     // (keyed off dog.HouseId), so it is always findable near
                     // that dog's house at any map size — not in a fixed
                     // origin-centered square that drifts off a bigger map.
-                    hidden = GenerateHiddenItemPosition(rng, state.GetHouseLot(dog.HouseId));
+                    var lostLot = state.GetHouseLot(dog.HouseId);
+                    // #606: resolve the lot's live tile type from the map so the
+                    // road-corridor exclusion is tile-aware (#455) — a zone lot
+                    // borders its own tile's road, not only the origin streets.
+                    var lostTileType = state.Map.GetTileAt(
+                        LotBounds.NearestTileCoordinate(lostLot.Position));
+                    hidden = GenerateHiddenItemPosition(rng, lostLot, lostTileType);
                     break;
                 case QuestType.BuyGift:
                     // #317: the purchasable subject pool is population-gated
@@ -564,14 +570,28 @@ namespace Doggiehood.Core.Quests
         /// dog's tile rather than behind its house. Only the lot's own
         /// footprint needs checking: a lot's quadrant bounds tile the map with
         /// no overlap into any neighbouring lot, so no other house's footprint
-        /// can intrude on the sampled region. Deterministic per
-        /// <paramref name="rng"/>: the draw count is bounded and the last
-        /// candidate is returned if the (practically unreachable) attempt
-        /// budget is exhausted, so the result stays within the lot's bounds
-        /// and reproducible per seed.</summary>
-        private static GridPoint GenerateHiddenItemPosition(Random rng, HouseLot lot)
+        /// can intrude on the sampled region.
+        ///
+        /// #606: the raw quadrant bounds tile the whole tile with no gap, so a
+        /// FourWay quadrant's two inner edges sit ON the road centerlines —
+        /// nothing kept a candidate off the paved road, verge, or sidewalk, and
+        /// a lost item (incl. the lost puppy, #335) could land in the road,
+        /// straight in the on-road delivery truck's path (#538). The sample
+        /// region is now the quadrant bounds with the street corridor cleared
+        /// (<see cref="LotBounds.ClearRoadCorridors"/> against the lot's own
+        /// tile roads, <see cref="LotBounds.RoadsFor"/> — the same road-cleared
+        /// region yard landscaping samples, #244/#455), so every candidate —
+        /// including the bounded-attempt fallback — is road-clear.
+        ///
+        /// Deterministic per <paramref name="rng"/>: the draw count is bounded
+        /// and the last candidate is returned if the (practically unreachable)
+        /// attempt budget is exhausted, so the result stays within the cleared
+        /// region and reproducible per seed.</summary>
+        private static GridPoint GenerateHiddenItemPosition(
+            Random rng, HouseLot lot, TileType tileType)
         {
-            var bounds = LotBounds.QuadrantBounds(lot);
+            var bounds = LotBounds.ClearRoadCorridors(
+                LotBounds.QuadrantBounds(lot), LotBounds.RoadsFor(lot, tileType));
             var footprint = HousePlacement.HouseFootprint(lot);
             var candidate = default(GridPoint);
             for (var attempt = 0; attempt < MaxHiddenItemPlacementAttempts; attempt++)

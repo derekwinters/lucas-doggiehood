@@ -691,6 +691,95 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void LostItem_HiddenPositionClearsTheStreetCorridor_OnTheOriginTile()
+        {
+            // #606: a lost item (incl. the lost puppy) must never spawn in the
+            // road corridor — the paved road, grass verge, or sidewalk — or it
+            // collides with the on-road delivery truck (#538). Each origin lot
+            // is one FourWay quadrant bordering TWO roads (X=0 and Z=0); the
+            // sampled position must clear the StreetCorridorInset (road
+            // half-width + verge + sidewalk) of every road bordering the lot,
+            // across all quadrants and many seeds.
+            var state = NewState();
+            foreach (var dog in state.Dogs)
+            {
+                var lot = state.GetHouseLot(dog.HouseId);
+                var roads = RoadsBorderingLot(state, lot);
+                for (var seed = 0; seed < 200; seed++)
+                {
+                    var pos = state.Quests
+                        .GiveQuestTo(dog, QuestType.LostItem, new Random(seed))
+                        .HiddenItemPosition.Value;
+                    AssertClearsStreetCorridor(pos, roads, dog.HouseId, seed);
+                }
+            }
+        }
+
+        [Test]
+        public void LostItem_HiddenPositionClearsTheStreetCorridor_OnAZoneTile()
+        {
+            // #606/#455: the road-corridor exclusion must be tile-aware — a
+            // zone lot borders its OWN tile's road (the cul-de-sac arm), not
+            // only the origin FourWay streets. The lost item on a freshly
+            // unlocked frontier lot must clear that tile's street corridor too.
+            var state = Doggiehood.Core.Tests.World.FrontierTestWorld.WithFirstTileUnlocked();
+            var lot = state.LotsForUnlockedTile(
+                Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
+            var dog = new Dog("Rover", Breed.Beagle, Personality.Brave, lot.HouseId, isPuppy: false);
+            var roads = RoadsBorderingLot(state, lot);
+
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var pos = state.Quests
+                    .GiveQuestTo(dog, QuestType.LostItem, new Random(seed))
+                    .HiddenItemPosition.Value;
+                AssertClearsStreetCorridor(pos, roads, dog.HouseId, seed);
+            }
+        }
+
+        private static IReadOnlyList<Road> RoadsBorderingLot(GameState state, HouseLot lot)
+        {
+            var tileType = state.Map.GetTileAt(LotBounds.NearestTileCoordinate(lot.Position));
+            return LotBounds.RoadsFor(lot, tileType);
+        }
+
+        private static void AssertClearsStreetCorridor(
+            GridPoint pos, IReadOnlyList<Road> roads, int houseId, int seed)
+        {
+            foreach (var road in roads)
+            {
+                if (road.Orientation == StreetOrientation.NorthSouth)
+                {
+                    // Centerline at constant X, running along Z over its extent.
+                    if (pos.Z < road.Center.Z - road.HalfLength
+                        || pos.Z > road.Center.Z + road.HalfLength)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(Math.Abs(pos.X - road.Center.X),
+                        Is.GreaterThanOrEqualTo(LotBounds.StreetCorridorInset),
+                        $"house {houseId} (seed {seed}): {pos} sits in the "
+                        + "north-south road's street corridor");
+                }
+                else
+                {
+                    // Centerline at constant Z, running along X over its extent.
+                    if (pos.X < road.Center.X - road.HalfLength
+                        || pos.X > road.Center.X + road.HalfLength)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(Math.Abs(pos.Z - road.Center.Z),
+                        Is.GreaterThanOrEqualTo(LotBounds.StreetCorridorInset),
+                        $"house {houseId} (seed {seed}): {pos} sits in the "
+                        + "east-west road's street corridor");
+                }
+            }
+        }
+
+        [Test]
         public void LostItem_HiddenPositionIsDeterministicPerSeed()
         {
             // #290: placement stays deterministic per quest/seed even with
