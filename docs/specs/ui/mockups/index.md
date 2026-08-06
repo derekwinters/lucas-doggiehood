@@ -18,3 +18,4 @@ This folder is populated as wireframes are approved (epic #171).
 - [Onboarding reward panel](onboarding-reward.html) — the bespoke celebration panel raised on completing each onboarding step ([#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)).
 - [Welcome pop-up](welcome-popup.html) — the modal celebration panel raised when a new dog or household moves into a vacant house ([#439](https://github.com/derekwinters/lucas-doggiehood/issues/439)).
 - [Toast notification](toast.html) — the non-modal top-left toast for quest-completion and onboarding reward-chain step completion ([#562](https://github.com/derekwinters/lucas-doggiehood/issues/562)).
+- [Debug tuning menu](debug-tuning-menu.html) — the dev-build-only utilitarian overlay of grouped balance sliders over the Core `TuningConfig` ([#621](https://github.com/derekwinters/lucas-doggiehood/issues/621)).

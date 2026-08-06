@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debug tuning menu — Wireframe #621 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE;
+    /* utilitarian dev-tool palette (deliberately NOT Candy Cottage) */
+    --dev-panel:#FAFAF7; --dev-line:#B9B4A8; --dev-line-strong:#6D675C; --dev-head:#33302B; --dev-head-tx:#F4F1EA;
+    --dev-row:#FFFFFF; --dev-track:#D9D4C7; --dev-fill:#5B7DB1; --dev-knob:#33302B; --dev-btn:#E7E2D6; --dev-tx:#33302B; --dev-sub:#8C8578;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --guide:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --guide:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .mono{font-family:ui-monospace,"SFMono-Regular","JetBrains Mono","Consolas",monospace;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:70ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+
+  .viewer{overflow:auto;max-height:80vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);padding:14px;
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .caption{font-family:ui-monospace,monospace;font-size:12px;color:var(--accent);font-weight:700;margin:6px 4px 8px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;margin-bottom:6px;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:57%;height:90px;background:#9C9AA0;}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:240px;top:20%;} .h2{left:1520px;top:19%;background:#7FB2E6;}
+
+  /* dim scrim behind the Settings panel */
+  .scrim{position:absolute;inset:0;background:rgba(46,42,38,.46);}
+  /* second scrim: the tuning overlay dims Settings too (layers OVER it) */
+  .scrim2{position:absolute;inset:0;background:rgba(30,28,25,.40);}
+
+  /* --- Settings panel behind (Candy Cottage — shown dimmed, for context) --- */
+  .settings{position:absolute;left:260px;top:190px;width:1400px;height:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 12px 0 var(--ink);padding:48px;display:flex;flex-direction:column;}
+  .settings .ptitle{font-size:52px;color:var(--ink);margin:0 0 30px;line-height:1;}
+  .settings .pbody{display:flex;gap:40px;flex:1;min-height:0;}
+  .settings .rail{width:360px;flex:0 0 auto;display:flex;flex-direction:column;gap:16px;}
+  .settings .tab{height:96px;border-radius:24px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;gap:18px;padding:0 28px;font-size:36px;color:var(--ink);background:var(--cream);}
+  .settings .tab.active{background:var(--coral);}
+  .settings .pane{flex:1;background:var(--stage);border:5px solid var(--ink);border-radius:28px;padding:36px;overflow:hidden;}
+  .settings .drow{display:flex;align-items:center;height:96px;padding:0 30px;background:var(--panel);border:5px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink);margin-bottom:20px;}
+  .settings .drow .dl{font-size:34px;color:var(--ink);}
+  .settings .drow .grow{flex:1;}
+  .settings .action{display:inline-flex;align-items:center;height:72px;padding:0 34px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);background:var(--gold);font-size:30px;color:var(--ink);}
+  .settings .action.tune{background:var(--sky);}
+
+  /* --- The tuning panel: UTILITARIAN, NOT Candy Cottage --- */
+  .tpanel{position:absolute;left:360px;top:140px;width:1200px;height:920px;background:var(--dev-panel);border:2px solid var(--dev-line-strong);border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;padding:0;}
+  .thead{height:88px;flex:0 0 auto;background:var(--dev-head);color:var(--dev-head-tx);display:flex;align-items:center;gap:20px;padding:0 24px;}
+  .thead .ttitle{font-size:40px;font-weight:700;letter-spacing:.02em;}
+  .thead .devtag{font-size:20px;padding:4px 12px;border:1px solid var(--dev-head-tx);border-radius:6px;letter-spacing:.14em;opacity:.85;}
+  .thead .grow{flex:1;}
+  .btn{height:56px;display:inline-flex;align-items:center;justify-content:center;padding:0 22px;border:1px solid var(--dev-line-strong);border-radius:8px;background:var(--dev-btn);color:var(--dev-tx);font-size:26px;cursor:default;}
+  .thead .resetall{width:220px;background:#C6553C;color:#fff;border-color:#8f3a27;}
+  .thead .xclose{width:56px;height:56px;padding:0;font-size:30px;background:#4a453e;color:var(--dev-head-tx);border-color:#2b2823;}
+
+  .tbody{flex:1;min-height:0;overflow-y:scroll;padding:24px 24px 24px 32px;}
+  /* visible utilitarian scrollbar */
+  .tbody::-webkit-scrollbar{width:12px;}
+  .tbody::-webkit-scrollbar-thumb{background:var(--dev-line);border-radius:6px;}
+  .tbody::-webkit-scrollbar-track{background:transparent;}
+
+  .group{margin-bottom:28px;}
+  .group:last-child{margin-bottom:0;}
+  .ghead{height:64px;display:flex;align-items:center;gap:16px;border-bottom:2px solid var(--dev-line-strong);margin-bottom:12px;}
+  .ghead .gname{font-size:32px;font-weight:700;color:var(--dev-head);}
+  .ghead .grow{flex:1;}
+  .ghead .greset{width:150px;height:48px;font-size:22px;}
+
+  .crow{height:96px;background:var(--dev-row);border:1px solid var(--dev-line);border-radius:8px;padding:0 24px;margin-bottom:12px;display:flex;flex-direction:column;justify-content:center;gap:8px;}
+  .crow:last-child{margin-bottom:0;}
+  .clab{display:flex;align-items:baseline;gap:12px;}
+  .clab .cl{font-size:28px;color:var(--dev-tx);}
+  .clab .grow{flex:1;}
+  .clab .cv{font-size:30px;color:var(--dev-fill);font-weight:700;font-variant-numeric:tabular-nums;}
+  .clab .cvu{font-size:20px;color:var(--dev-sub);margin-left:4px;}
+  .slider{position:relative;height:40px;display:flex;align-items:center;}
+  .track{position:absolute;left:0;right:0;height:12px;border-radius:6px;background:var(--dev-track);}
+  .fill{position:absolute;left:0;height:12px;border-radius:6px;background:var(--dev-fill);}
+  .knob{position:absolute;width:40px;height:40px;border-radius:50%;background:var(--dev-knob);border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transform:translateX(-50%);}
+
+  /* annotation callouts */
+  .cel{position:absolute;display:flex;align-items:center;gap:10px;font-family:ui-monospace,monospace;font-size:22px;color:#fff;}
+  .cel .num{width:40px;height:40px;border-radius:999px;background:var(--accent);border:4px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;}
+  .cel .txt{background:rgba(46,42,38,.92);border:2px solid var(--accent);border-radius:10px;padding:6px 12px;}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:80px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  .q{font-size:13px;color:var(--text);margin:10px 0 0;padding:10px 14px;background:color-mix(in srgb,var(--gold) 16%,transparent);border-left:4px solid var(--gold);border-radius:0 8px 8px 0;}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #621 · Tablet · Landscape · 1920×1200 · DEV TOOL</p>
+  <h1 class="rounded">Debug tuning menu</h1>
+  <p class="lede">A <b>dev-build-only</b> overlay exposing the Core <b>TuningConfig</b> (#620) balance values as labeled sliders,
+    grouped into <b>Pacing</b>, <b>Economy</b>, <b>Expansion</b> and <b>Move-in</b>, so Derek can tune pacing live on-device.
+    Reached from a new <b>"Tune balance…"</b> row in the Settings Debug tab; it layers as a centered modal <b>over</b> the
+    open Settings panel. Styling is <b>deliberately utilitarian — NOT the Candy Cottage art treatment</b> — because it's a
+    developer instrument, and it <b>must never appear in a release build</b>.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two states: (1) the Debug-tab entry row, (2) the tuning panel open. Values are representative placeholders from TuningConfig (#620).</p>
+
+  <div class="viewer">
+    <div class="caption">STATE 1 — the entry point: a "Tune balance…" action row in the Settings Debug tab (dev builds only)</div>
+    <div class="screen" role="img" aria-label="Settings panel, Debug tab active. Debug rows include Show backyard fences, Add coins, Refresh quests now, and a new Tune balance action row that opens the tuning menu. Dev builds only.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="settings">
+        <h2 class="ptitle rounded">Settings</h2>
+        <div class="pbody">
+          <div class="rail">
+            <div class="tab rounded">ℹ️ About</div>
+            <div class="tab active rounded">🐞 Debug 🔓</div>
+          </div>
+          <div class="pane">
+            <div class="drow"><div class="dl rounded">Show backyard fences</div><div class="grow"></div><div class="action" style="background:#D8D2C6;border-radius:999px;width:104px;padding:0;"></div></div>
+            <div class="drow"><div class="dl rounded">Add coins</div><div class="grow"></div><div class="action rounded">+100</div></div>
+            <div class="drow"><div class="dl rounded">Refresh quests now</div><div class="grow"></div><div class="action rounded">Refresh</div></div>
+            <div class="drow"><div class="dl rounded">Tune balance…</div><div class="grow"></div><div class="action tune rounded">Open ▸</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cel" style="left:1000px;top:772px;"><span class="num">1</span><span class="txt">new dev-only row → opens the tuning panel</span></div>
+    </div>
+
+    <div class="caption">STATE 2 — tuning panel open: utilitarian, scrollable, four groups + per-group and global reset</div>
+    <div class="screen" role="img" aria-label="The tuning panel, centered and layered over the dimmed Settings panel. A dark header reads Balance Tuning DEV with a Reset all button and a close X. Below, a scrollable list of grouped sliders: Pacing, Economy, Expansion, Move-in, each group with its own Reset button and each control row showing a label, live value, and a slider.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="settings">
+        <h2 class="ptitle rounded">Settings</h2>
+        <div class="pbody">
+          <div class="rail">
+            <div class="tab rounded">ℹ️ About</div>
+            <div class="tab active rounded">🐞 Debug 🔓</div>
+          </div>
+          <div class="pane"></div>
+        </div>
+      </div>
+      <div class="scrim2"></div>
+
+      <div class="tpanel">
+        <div class="thead">
+          <span class="ttitle mono">Balance Tuning</span>
+          <span class="devtag mono">DEV</span>
+          <span class="grow"></span>
+          <span class="btn resetall">Reset all</span>
+          <span class="btn xclose">✕</span>
+        </div>
+        <div class="tbody">
+
+          <!-- PACING -->
+          <div class="group">
+            <div class="ghead"><span class="gname mono">Pacing</span><span class="grow"></span><span class="btn greset">Reset</span></div>
+            <div class="crow"><div class="clab"><span class="cl">Quest min target (floor)</span><span class="grow"></span><span class="cv">5</span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:57%;"></div><div class="knob" style="left:57%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Quest max target (ceiling)</span><span class="grow"></span><span class="cv">12</span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:43%;"></div><div class="knob" style="left:43%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Pacing window</span><span class="grow"></span><span class="cv">4<span class="cvu">h</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:27%;"></div><div class="knob" style="left:27%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Refresh interval</span><span class="grow"></span><span class="cv">60<span class="cvu">min</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:27%;"></div><div class="knob" style="left:27%;"></div></div></div>
+          </div>
+
+          <!-- ECONOMY -->
+          <div class="group">
+            <div class="ghead"><span class="gname mono">Economy</span><span class="grow"></span><span class="btn greset">Reset</span></div>
+            <div class="crow"><div class="clab"><span class="cl">Quest reward</span><span class="grow"></span><span class="cv">20<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:33%;"></div><div class="knob" style="left:33%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Paid-quest markup</span><span class="grow"></span><span class="cv">1.5<span class="cvu">×</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:25%;"></div><div class="knob" style="left:25%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Cost-tier 1 gate</span><span class="grow"></span><span class="cv">100<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:20%;"></div><div class="knob" style="left:20%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Cost-tier 2 gate</span><span class="grow"></span><span class="cv">300<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:30%;"></div><div class="knob" style="left:30%;"></div></div></div>
+          </div>
+
+          <!-- EXPANSION -->
+          <div class="group">
+            <div class="ghead"><span class="gname mono">Expansion</span><span class="grow"></span><span class="btn greset">Reset</span></div>
+            <div class="crow"><div class="clab"><span class="cl">Tile unlock — base</span><span class="grow"></span><span class="cv">50<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:25%;"></div><div class="knob" style="left:25%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Tile unlock — step</span><span class="grow"></span><span class="cv">10<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:20%;"></div><div class="knob" style="left:20%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">House build — base</span><span class="grow"></span><span class="cv">50<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:25%;"></div><div class="knob" style="left:25%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">House build — step</span><span class="grow"></span><span class="cv">5<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:10%;"></div><div class="knob" style="left:10%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Upgrade cost — base</span><span class="grow"></span><span class="cv">100<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:20%;"></div><div class="knob" style="left:20%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Upgrade cost — step</span><span class="grow"></span><span class="cv">100<span class="cvu">coins</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:20%;"></div><div class="knob" style="left:20%;"></div></div></div>
+          </div>
+
+          <!-- MOVE-IN -->
+          <div class="group">
+            <div class="ghead"><span class="gname mono">Move-in</span><span class="grow"></span><span class="btn greset">Reset</span></div>
+            <div class="crow"><div class="clab"><span class="cl">Early rate</span><span class="grow"></span><span class="cv">12<span class="cvu">%</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:60%;"></div><div class="knob" style="left:60%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Late rate</span><span class="grow"></span><span class="cv">3<span class="cvu">%</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:15%;"></div><div class="knob" style="left:15%;"></div></div></div>
+            <div class="crow"><div class="clab"><span class="cl">Population span</span><span class="grow"></span><span class="cv">40<span class="cvu">dogs</span></span></div>
+              <div class="slider"><div class="track"></div><div class="fill" style="width:40%;"></div><div class="knob" style="left:40%;"></div></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="cel" style="left:1080px;top:150px;"><span class="num">2</span><span class="txt">global Reset all + close ✕ (header pinned)</span></div>
+      <div class="cel" style="left:1080px;top:315px;"><span class="num">3</span><span class="txt">per-group Reset</span></div>
+      <div class="cel" style="left:1080px;top:470px;"><span class="num">4</span><span class="txt">label + live value + utilitarian slider</span></div>
+      <div class="cel" style="left:230px;top:980px;"><span class="num">5</span><span class="txt">one scrollable column — 4 groups, ~17 sliders</span></div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>TuningPanelAnchor</td><td class="val">Center</td><td>panel (over scrim, above Settings)</td></tr>
+        <tr><td>TuningPanelWidthPx</td><td class="val">1200</td><td>panel width</td></tr>
+        <tr><td>TuningPanelHeightPx</td><td class="val">920</td><td>panel height (body scrolls)</td></tr>
+        <tr><td>TuningPanelPaddingPx</td><td class="val">32</td><td>panel inset</td></tr>
+        <tr><td>TuningPanelRadiusPx</td><td class="val">16</td><td>panel corners (squarer than Candy 40)</td></tr>
+        <tr><td>TuningPanelOutlinePx</td><td class="val">2</td><td>panel outline (thin, not shared 6)</td></tr>
+        <tr><td>HeaderHeightPx</td><td class="val">88</td><td>pinned header bar</td></tr>
+        <tr><td>HeaderTitleFontPx</td><td class="val">40</td><td>header title</td></tr>
+        <tr><td>HeaderGapPx</td><td class="val">24</td><td>header → scroll body</td></tr>
+        <tr><td>CloseButtonSizePx</td><td class="val">56</td><td>close ✕ (header right)</td></tr>
+        <tr><td>ResetAllButtonWidthPx</td><td class="val">220</td><td>global Reset all</td></tr>
+        <tr><td>ResetButtonHeightPx</td><td class="val">56</td><td>reset-all / group reset height</td></tr>
+        <tr><td>ScrollBodyPaddingRightPx</td><td class="val">24</td><td>content → scrollbar inset</td></tr>
+        <tr><td>ScrollbarWidthPx</td><td class="val">12</td><td>vertical scrollbar</td></tr>
+        <tr><td>GroupGapPx</td><td class="val">28</td><td>between groups</td></tr>
+        <tr><td>GroupHeaderHeightPx</td><td class="val">64</td><td>group-header row</td></tr>
+        <tr><td>GroupHeaderFontPx</td><td class="val">32</td><td>group name</td></tr>
+        <tr><td>GroupResetButtonWidthPx</td><td class="val">150</td><td>per-group Reset</td></tr>
+        <tr><td>ControlRowHeightPx</td><td class="val">96</td><td>each slider row</td></tr>
+        <tr><td>ControlRowGapPx</td><td class="val">12</td><td>between control rows</td></tr>
+        <tr><td>ControlRowPaddingXPx</td><td class="val">24</td><td>control-row inset</td></tr>
+        <tr><td>ControlLabelFontPx</td><td class="val">28</td><td>control label</td></tr>
+        <tr><td>ControlValueFontPx</td><td class="val">30</td><td>live value (tabular)</td></tr>
+        <tr><td>SliderTrackHeightPx</td><td class="val">12</td><td>slider track</td></tr>
+        <tr><td>SliderTrackRadiusPx</td><td class="val">6</td><td>slider track corners</td></tr>
+        <tr><td>SliderKnobPx</td><td class="val">40</td><td>slider knob (drag target)</td></tr>
+        <tr><td>SliderLabelValueGapPx</td><td class="val">8</td><td>label/value → track</td></tr>
+        <tr><td>EntryRowHeightPx</td><td class="val">96</td><td>"Tune balance…" Debug row (= DebugRowHeightPx)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Entry row</b> ("Tune balance…", Settings Debug tab — dev builds only) · <b>Scrim</b> (dims Settings, modal) · <b>Header</b> (title + Reset all + ✕, pinned) · <b>Scroll body</b> (4 groups) · <b>Group</b> (name + Reset + control rows) · <b>Control row</b> (label + live value + slider).</p>
+      <p class="note"><b>Groups &amp; tunables</b> (from TuningConfig #620): <b>Pacing</b> — min target, max target, window, refresh · <b>Economy</b> — reward, paid markup, cost-tier gates ×2 · <b>Expansion</b> — tile/house/upgrade each base + step (2 sliders) · <b>Move-in</b> — early rate, late rate, population span.</p>
+      <p class="note"><b>base + step = two sliders.</b> A linear <code>base + step×n</code> tunable is two adjacent rows (base, step), matching the #620 field shape.</p>
+      <h2 style="margin-top:22px;">Design decisions</h2>
+      <p class="q"><b>① Entry point (Option A — Derek, 2026-08-06):</b> a new <b>"Tune balance…"</b> action row in the existing Settings <b>Debug tab</b> — keeps the #219 "debug affordances live in the Debug tab" standard, adds a new "row opens a sub-panel" pattern.</p>
+      <p class="q"><b>② Panel vs Settings:</b> the tuning panel <b>layers over</b> the still-open Settings panel as a centered modal (per the shared modal-overlay convention), it does not replace it; ✕ or scrim tap returns to the Debug tab.</p>
+      <p class="q"><b>③ Reset:</b> both a <b>global Reset all</b> (header) and a <b>per-group Reset</b> — reset = re-seed from a fresh TuningConfig (#620).</p>
+      <p class="q"><b>④ Dev-build-only:</b> the entry row (and overlay) is compiled/shown <b>only in development builds</b> and <b>never</b> appears in a release build — a release-excluding gate on top of the existing 10-tap Debug unlock.</p>
+      <p class="q"><b>⑤ Style:</b> <b>deliberately NOT Candy Cottage</b> — flat panel, thin outline, plain track/knob sliders, mono value readouts. It's a dev tool; the exemption is intentional.</p>
+    </div>
+  </div>
+
+  <footer>
+    Opens from a dev-only "Tune balance…" row in the Settings Debug tab (#219/settings.md) · a view over the Core <a href="#">TuningConfig (#620)</a> · reference resolution 1920×1200 · constants born here (#161), asserted by EditMode tests when #622 implements it. Utilitarian by design — no Candy Cottage chrome.
+    <br><span class="status">Proposed (#621) — pending Derek approval</span>
+  </footer>
+</div>
+</body>
+</html>
