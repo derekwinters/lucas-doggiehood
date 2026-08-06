@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Expansion;
@@ -21,16 +22,19 @@ namespace Doggiehood.Unity
     /// quest-resolution feedback that triggered the move-in (welcome-popup.md
     /// "Timing"). Thin wiring only — it holds no game rules: Core has already
     /// added the household and flipped the house occupied; this only presents it.
-    /// The one non-presentational behavior is the camera pan — <b>Say hi!</b>
-    /// flies the camera to the new house via the Core
-    /// <see cref="Doggiehood.Core.Cameras.CameraController.FocusOn"/>; the scrim
-    /// tap dismisses without panning.</para>
+    /// The non-presentational behaviors both hang off <b>Say hi!</b>: it flies the
+    /// camera to the new house via the Core
+    /// <see cref="Doggiehood.Core.Cameras.CameraController.FocusOn"/> AND opens
+    /// that house's profile (#604, via the injected
+    /// <c>openHouseProfile</c> callback) so the resident dog(s) are one tap away;
+    /// the scrim tap dismisses without panning or opening anything.</para>
     /// </summary>
     public sealed class WelcomePopupDirector : MonoBehaviour
     {
         private GameState state;
         private WelcomePopup popup;
         private Transform worldRoot;
+        private Action<int> openHouseProfile;
 
         private WelcomeMessage pendingMessage;
         private int pendingHouseId;
@@ -41,11 +45,17 @@ namespace Doggiehood.Unity
         /// not yet popped.</summary>
         public bool HasPendingWelcome => hasPending;
 
-        public void Init(GameState state, WelcomePopup popup, Transform worldRoot)
+        /// <summary>Wires the director. <paramref name="openHouseProfile"/> (#604)
+        /// opens the house profile modal for a given house id — the same resolve
+        /// a house tap uses (<c>WorldBootstrap.OpenHouseProfile</c>) — so
+        /// <b>Say hi!</b> takes the player to meet the new neighbour, not just
+        /// pan to their roof.</summary>
+        public void Init(GameState state, WelcomePopup popup, Transform worldRoot, Action<int> openHouseProfile)
         {
             this.state = state;
             this.popup = popup;
             this.worldRoot = worldRoot;
+            this.openHouseProfile = openHouseProfile;
 
             state.Quests.MoveInOccurred += OnMoveInOccurred;
         }
@@ -97,7 +107,17 @@ namespace Doggiehood.Unity
 
             hasPending = false;
             var houseId = pendingHouseId;
-            popup.Show(pendingMessage, () => FlyCameraToHouse(houseId));
+            // #604: "Say hi!" pans to the new house AND opens its profile (so the
+            // resident dog(s) are one tap away). The welcome unregisters from the
+            // modal gate on Dismiss and the profile registers on Open within this
+            // same synchronous callback, so exactly one modal stays registered
+            // and no world tap leaks in between. The scrim path (Dismiss) is
+            // untouched — it opens nothing.
+            popup.Show(pendingMessage, () =>
+            {
+                FlyCameraToHouse(houseId);
+                openHouseProfile?.Invoke(houseId);
+            });
         }
 
         /// <summary>Recentres the camera on the moved-in house: resolves its
