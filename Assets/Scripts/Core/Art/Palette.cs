@@ -135,5 +135,46 @@ namespace Doggiehood.Core.Art
 
             return HouseTints[index];
         }
+
+        /// <summary>
+        /// The #601 delivery-truck car-color spread (Derek, 2026-08-05): a
+        /// small CURATED table of real-world standard car colors — white,
+        /// black, silver, gray, red, dark blue, dark green — deliberately NOT
+        /// the broad decorative 20-tint <see cref="HouseTints"/> table houses
+        /// use. A truck picks one at spawn via <see cref="CarColorAssignment"/>
+        /// and it is applied as a material color-multiply over the kit model
+        /// (the same <c>WorldBuilder.ApplyPaletteTint</c> technique the houses
+        /// use), so the values are chosen to read as their named colours over
+        /// the model's light base. Ordering is index-stable: entry <c>i</c> is
+        /// the colour for car-color index <c>i</c>.
+        /// </summary>
+        private static readonly string[] CarColors =
+        {
+            "#EDEDED", // white
+            "#2B2B2B", // black
+            "#C4C8CC", // silver
+            "#83878C", // gray
+            "#B32424", // red
+            "#23366B", // dark blue
+            "#235939", // dark green
+        };
+
+        /// <summary>
+        /// The #601 standard car color at <paramref name="index"/> (0-based, in
+        /// 0..<see cref="CarColorAssignment.CarColorCount"/>-1), looked up from
+        /// the curated <see cref="CarColors"/> table. Trucks are transient, so
+        /// this is applied per-spawn (no persisted index the way houses store
+        /// their tint), as a material color-multiply over the truck model.
+        /// </summary>
+        public static string CarColorHex(int index)
+        {
+            if (index < 0 || index >= CarColorAssignment.CarColorCount)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(index), index, $"Car color index must be 0..{CarColorAssignment.CarColorCount - 1}.");
+            }
+
+            return CarColors[index];
+        }
     }
 }
