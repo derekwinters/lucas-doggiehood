@@ -427,6 +427,21 @@ namespace Doggiehood.Unity
             ActiveCarColorIndices.Remove(CarColorIndex);
         }
 
+        /// <summary>#601 test seam: the per-spawn car-color pick keeps process-
+        /// static state (the seed counter and the in-use color set) because the
+        /// "distinct from active" rule spans every live truck. In play that set
+        /// drains as each truck's <see cref="OnDestroy"/> runs, but EditMode
+        /// fixtures share the process and don't reliably fire OnDestroy on
+        /// <c>DestroyImmediate</c>, so trucks from earlier tests can leave colors
+        /// reserved and fill the set — degrading the distinctness guarantee for a
+        /// later test. A fixture resets this between cases so the in-use set can't
+        /// bleed across tests.</summary>
+        public static void ResetSpawnColorStateForTests()
+        {
+            nextSpawnSeed = 0;
+            ActiveCarColorIndices.Clear();
+        }
+
         /// <summary>#601: applies the chosen standard car color as a material
         /// color-multiply over the truck model's renderers — the exact
         /// <c>WorldBuilder.ApplyPaletteTint</c> technique the houses use (clone

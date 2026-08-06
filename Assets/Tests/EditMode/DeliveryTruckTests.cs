@@ -35,6 +35,13 @@ namespace Doggiehood.Unity.EditModeTests
             // #546: the truck yields at crosswalks via a process-global gate;
             // clear it so a stray claim can't stall the truck's route mid-test.
             RoadCrossingGate.Shared.Clear();
+            // #601: the per-spawn car-color pick keeps a process-static in-use
+            // color set. EditMode doesn't reliably fire OnDestroy on
+            // DestroyImmediate, so trucks from earlier tests can leave colors
+            // reserved and fill the set — collapsing the "distinct from active"
+            // guarantee that TwoConcurrentTrucks_GetDistinctCarColors relies on.
+            // Reset it so each case starts from an empty pool.
+            DeliveryTruckView.ResetSpawnColorStateForTests();
         }
 
         [TearDown]
