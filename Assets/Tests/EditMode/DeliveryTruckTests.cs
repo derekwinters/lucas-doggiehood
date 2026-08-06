@@ -7,6 +7,21 @@ namespace Doggiehood.Unity.EditModeTests
 {
     public class DeliveryTruckTests
     {
+        // #599: the truck now routes over the LIVE map. These fixtures run on the
+        // starting FourWay origin tile, whose derived roads match the classic
+        // NeighborhoodLayout.Roads geometry, and its walk network (for crosswalk
+        // yielding). Delivering to a lot door still enters off-map and stays on
+        // the roadway, exactly as the on-device starting neighborhood does.
+        private static TileMap OriginMap()
+        {
+            return new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+        }
+
+        private static WalkNetwork OriginNetwork()
+        {
+            return NeighborhoodLayout.WalkNetwork;
+        }
+
         [SetUp]
         public void ResetModalGate()
         {
@@ -43,7 +58,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var door = new Vector3(
                     NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter);
 
-                truck.DeliverTo(door, () => { });
+                truck.DeliverTo(door, OriginMap(), OriginNetwork(), () => { });
 
                 var clearance = WorldDimensions.RoadWidth / 2f
                                 + WorldDimensions.GrassVergeWidth
@@ -181,7 +196,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var delivered = 0;
                 var housePosition = new Vector3(14f, 0f, 14f);
 
-                truck.DeliverTo(housePosition, () => delivered++);
+                truck.DeliverTo(housePosition, OriginMap(), OriginNetwork(), () => delivered++);
 
                 var reachedHouse = false;
                 for (var step = 0; step < 2000 && !truck.IsGone; step++)
@@ -218,7 +233,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var truck = DeliveryTruckView.Spawn(root.transform);
                 var doorTarget = new Vector3(14f, 0f, 14f);
 
-                truck.DeliverTo(doorTarget, () => { });
+                truck.DeliverTo(doorTarget, OriginMap(), OriginNetwork(), () => { });
 
                 for (var step = 0; step < 2000 && !truck.HasDelivered; step++)
                 {
@@ -249,7 +264,7 @@ namespace Doggiehood.Unity.EditModeTests
             try
             {
                 var truck = DeliveryTruckView.Spawn(root.transform);
-                truck.DeliverTo(new Vector3(14f, 0f, 14f), () => { });
+                truck.DeliverTo(new Vector3(14f, 0f, 14f), OriginMap(), OriginNetwork(), () => { });
 
                 for (var step = 0; step < 2000 && !truck.HasDelivered; step++)
                 {
@@ -293,7 +308,7 @@ namespace Doggiehood.Unity.EditModeTests
             try
             {
                 var truck = DeliveryTruckView.Spawn(root.transform);
-                truck.DeliverTo(new Vector3(14f, 0f, 14f), () => { });
+                truck.DeliverTo(new Vector3(14f, 0f, 14f), OriginMap(), OriginNetwork(), () => { });
 
                 for (var step = 0; step < 2000 && !truck.HasDelivered; step++)
                 {

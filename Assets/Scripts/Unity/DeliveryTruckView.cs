@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using Doggiehood.Core.World;
 using UnityEngine;
 
@@ -19,6 +19,11 @@ namespace Doggiehood.Unity
     {
         private const float Speed = 8f;
         private const float ArriveDistance = 0.2f;
+
+        // A route leg is axis-aligned on a road centerline; this tolerance
+        // decides which axis (N-S vs E-W) a leg runs along when matching it to
+        // the road it lies on (#161: no bare geometry literals in method bodies).
+        private const float LegAxisEpsilon = 0.01f;
 
         // Fixed vertical offsets (unrelated to the #471 door-position bug):
         // the truck body rides at TruckHeight; the dropped package rests at
@@ -62,24 +67,24 @@ namespace Doggiehood.Unity
         /// </summary>
         public static bool ForcePrimitiveFallback { get; set; }
 
-        private enum Phase
-        {
-            Idle,
-            DrivingIn,
-            DrivingOut,
-        }
-
-        private Phase phase = Phase.Idle;
+        // #599: the truck now drives a multi-segment waypoint path over the LIVE
+        // road network (in from an off-map opening, out by another), so the route
+        // is a list of centerline waypoints rather than a single road's ends.
+        private readonly List<Vector3> waypoints = new List<Vector3>();
+        private int stopIndex;
+        private int targetIndex;
+        private bool routeActive;
+        private IReadOnlyList<Road> roads;
+        private WalkNetwork network;
         private Vector3 doorPosition;
-        private Vector3 stopPosition;
-        private Vector3 exitPosition;
         private Action onDelivered;
 
-        // #546: right-of-way as the truck drives its road. The traversal claims
-        // each crosswalk the truck reaches (so a dog that arrives second waits)
-        // and reports how far the truck may advance without entering a crosswalk a
-        // dog already holds. crossingRoad is the single road the whole route runs
-        // along, used to convert the truck's position to along-road coordinates.
+        // #546: right-of-way as the truck drives. Each route leg lies on one road
+        // centerline; the per-leg traversal claims each crosswalk the truck
+        // reaches (so a dog that arrives second waits) and reports how far the
+        // truck may advance without entering a crosswalk a dog already holds.
+        // crossingRoad is the current leg's road, used to convert the truck's
+        // position to along-road coordinates.
         private RoadCrossingTraversal crossing;
         private Road crossingRoad;
 
@@ -121,35 +126,49 @@ namespace Doggiehood.Unity
             return view;
         }
 
-        public void DeliverTo(Vector3 doorTarget, Action deliveredCallback)
+        public void DeliverTo(Vector3 doorTarget, TileMap map, WalkNetwork walkNetwork, Action deliveredCallback)
         {
-            // #538: route the truck ALONG THE ROAD, not in a bee-line across
-            // the yard. DeliveryTruckRoute derives entry/stop/exit from the
-            // real road geometry: the truck enters at a road end, stops at the
-            // road point nearest the door (short of the waiting dog — it never
-            // drives onto the sidewalk, yard, or lot), and leaves by the far
-            // road end. #471: doorTarget is the dog's actual front-walkway node
-            // (WalkDogHome passes the exact point the dog sits at); the PACKAGE
-            // is still dropped there, but the TRUCK stays on the road.
-            var route = DeliveryTruckRoute.ToDoor(
-                NeighborhoodLayout.Roads, new GridPoint(doorTarget.x, doorTarget.z));
+            // #599: route the truck IN from an off-map opening, over the LIVE
+            // multi-tile road network, to the road point nearest the door, then
+            // OUT by a different opening (or a retrace on a spur/cul-de-sac).
+            // DeliveryTruckRoute derives the whole waypoint path from the real
+            // map geometry — the truck never leaves the roadway. #471: doorTarget
+            // is the dog's actual front-walkway node (WalkDogHome passes the exact
+            // point the dog sits at); the PACKAGE is dropped there, the TRUCK
+            // stays on the road.
+            roads = MapWalkNetwork.RoadsFrom(map);
+            network = walkNetwork;
+            var route = DeliveryTruckRoute.ToDoor(map, new GridPoint(doorTarget.x, doorTarget.z));
 
-            // #546: the whole entry -> stop -> exit route lies on one road's
-            // centerline. Resolve that road and set up the crossing traversal so
-            // the truck yields to dogs already on a crosswalk it drives over.
-            crossingRoad = NeighborhoodLayout.Roads.First(
-                r => r.Contains(route.Entry) && r.Contains(route.Exit));
-            crossing = new RoadCrossingTraversal(
-                RoadCrossingGate.Shared, this, crossingRoad, NeighborhoodLayout.WalkNetwork,
-                crossingRoad.AlongAxis(route.Entry), crossingRoad.AlongAxis(route.Exit));
+            waypoints.Clear();
+            foreach (var point in route.Inbound)
+            {
+                waypoints.Add(new Vector3(point.X, TruckHeight, point.Z));
+            }
 
-            var entry = new Vector3(route.Entry.X, TruckHeight, route.Entry.Z);
+            // Outbound[0] is the stop, already the last inbound waypoint — skip it.
+            for (var i = 1; i < route.Outbound.Count; i++)
+            {
+                var point = route.Outbound[i];
+                waypoints.Add(new Vector3(point.X, TruckHeight, point.Z));
+            }
+
+            stopIndex = route.Inbound.Count - 1;
             doorPosition = new Vector3(doorTarget.x, TruckHeight, doorTarget.z);
-            stopPosition = new Vector3(route.Stop.X, TruckHeight, route.Stop.Z);
-            exitPosition = new Vector3(route.Exit.X, TruckHeight, route.Exit.Z);
-            transform.position = entry;
             onDelivered = deliveredCallback;
-            phase = Phase.DrivingIn;
+
+            transform.position = waypoints[0];
+            targetIndex = 1;
+            routeActive = true;
+
+            // Degenerate case: the door's nearest road point is the entry opening
+            // itself, so the truck starts already at its stop.
+            if (stopIndex == 0 && !HasDelivered)
+            {
+                DropPackage();
+            }
+
+            BeginLeg();
         }
 
         private void Update()
@@ -157,50 +176,136 @@ namespace Doggiehood.Unity
             Tick(Time.deltaTime);
         }
 
-        /// <summary>Advances the drive; called by Update at runtime and
-        /// directly by EditMode tests.</summary>
+        /// <summary>Advances the drive along the waypoint path; called by Update
+        /// at runtime and directly by EditMode tests.</summary>
         public void Tick(float deltaTime)
         {
-            switch (phase)
+            if (!routeActive)
             {
-                case Phase.DrivingIn:
-                    Drive(ClampToCrossing(stopPosition), deltaTime);
-                    if (Vector3.Distance(transform.position, stopPosition) <= ArriveDistance)
-                    {
-                        DropPackage();
-                        phase = Phase.DrivingOut;
-                    }
-
-                    break;
-                case Phase.DrivingOut:
-                    Drive(ClampToCrossing(exitPosition), deltaTime);
-                    if (Vector3.Distance(transform.position, exitPosition) <= ArriveDistance)
-                    {
-                        IsGone = true;
-                        phase = Phase.Idle;
-                        crossing?.ReleaseAll();
-                        if (Application.isPlaying)
-                        {
-                            Destroy(gameObject);
-                        }
-                        else
-                        {
-                            DestroyImmediate(gameObject);
-                        }
-                    }
-
-                    break;
+                return;
             }
+
+            if (targetIndex >= waypoints.Count)
+            {
+                Finish();
+                return;
+            }
+
+            var target = waypoints[targetIndex];
+            Drive(ClampToCrossing(target), deltaTime);
+
+            if (Vector3.Distance(transform.position, target) > ArriveDistance)
+            {
+                return;
+            }
+
+            // Snap exactly onto the waypoint on arrival, drop at the stop, and
+            // advance to the next leg (releasing the finished leg's claims).
+            transform.position = target;
+            if (targetIndex == stopIndex && !HasDelivered)
+            {
+                DropPackage();
+            }
+
+            crossing?.ReleaseAll();
+            targetIndex++;
+            if (targetIndex >= waypoints.Count)
+            {
+                Finish();
+                return;
+            }
+
+            BeginLeg();
+        }
+
+        /// <summary>The truck has reached its exit opening: tear the view down
+        /// off-screen, releasing any crosswalk claim it still holds.</summary>
+        private void Finish()
+        {
+            IsGone = true;
+            routeActive = false;
+            crossing?.ReleaseAll();
+            if (Application.isPlaying)
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                DestroyImmediate(gameObject);
+            }
+        }
+
+        /// <summary>#546/#599: sets up the crosswalk-yield traversal for the leg
+        /// the truck is about to drive (from the previous waypoint to the target),
+        /// bound to that leg's road on the LIVE network. Each leg is axis-aligned
+        /// on one road centerline, so crosswalks are met in a single fixed order —
+        /// exactly what RoadCrossingTraversal expects, now applied per-segment.</summary>
+        private void BeginLeg()
+        {
+            crossing = null;
+            crossingRoad = null;
+            if (targetIndex <= 0 || targetIndex >= waypoints.Count)
+            {
+                return;
+            }
+
+            var from = waypoints[targetIndex - 1];
+            var to = waypoints[targetIndex];
+            crossingRoad = ResolveLegRoad(from, to);
+            if (crossingRoad == null || network == null)
+            {
+                return;
+            }
+
+            crossing = new RoadCrossingTraversal(
+                RoadCrossingGate.Shared, this, crossingRoad, network,
+                crossingRoad.AlongAxis(new GridPoint(from.x, from.z)),
+                crossingRoad.AlongAxis(new GridPoint(to.x, to.z)));
+        }
+
+        /// <summary>The road a leg runs along: the one whose centerline contains
+        /// both endpoints and whose orientation matches the leg's axis.</summary>
+        private Road ResolveLegRoad(Vector3 from, Vector3 to)
+        {
+            if (roads == null)
+            {
+                return null;
+            }
+
+            var a = new GridPoint(from.x, from.z);
+            var b = new GridPoint(to.x, to.z);
+            var runsNorthSouth = Mathf.Abs(from.x - to.x) < LegAxisEpsilon;
+            var runsEastWest = Mathf.Abs(from.z - to.z) < LegAxisEpsilon;
+
+            foreach (var road in roads)
+            {
+                if (!road.Contains(a) || !road.Contains(b))
+                {
+                    continue;
+                }
+
+                if (runsNorthSouth && road.Orientation == StreetOrientation.NorthSouth)
+                {
+                    return road;
+                }
+
+                if (runsEastWest && road.Orientation == StreetOrientation.EastWest)
+                {
+                    return road;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>#546: clamps this tick's drive target so the truck never
         /// enters a crosswalk it may not (one a dog holds, or one it hasn't yet
         /// reached the boundary of to claim). The traversal works in along-road
-        /// coordinates; convert to/from the road centerline here. The clamp keeps
-        /// the target's Y so the truck stays at its ride height.</summary>
+        /// coordinates; convert to/from the current leg's road centerline here.
+        /// The clamp keeps the target's Y so the truck stays at its ride height.</summary>
         private Vector3 ClampToCrossing(Vector3 target)
         {
-            if (crossing == null)
+            if (crossing == null || crossingRoad == null)
             {
                 return target;
             }
