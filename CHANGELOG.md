@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.12.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.11.0...v0.12.0) (2026-08-06)
+
+
+### Features
+
+* add milestone-ops skill for milestone list/close/reopen via REST ([#590](https://github.com/derekwinters/lucas-doggiehood/issues/590)) ([6fa3734](https://github.com/derekwinters/lucas-doggiehood/commit/6fa3734f986093269bd436a480964e1bc8d74830))
+* add milestone-orchestration skill for serial delegated delivery ([#584](https://github.com/derekwinters/lucas-doggiehood/issues/584)) ([768f81f](https://github.com/derekwinters/lucas-doggiehood/commit/768f81f870d95342f2a8b62df9a37647f43db6e3))
+* add release-flow skill for the release-please merge flow ([#591](https://github.com/derekwinters/lucas-doggiehood/issues/591)) ([4c7a53c](https://github.com/derekwinters/lucas-doggiehood/commit/4c7a53c8861ec75393a1a352b38a7989cb097c4e))
+* car-following for concurrent delivery trucks (no collisions) ([97c4006](https://github.com/derekwinters/lucas-doggiehood/commit/97c40063c570ee60b97ed3af9f8c04918d48bb95))
+* curve the walk network at Turn* bends and cul-de-sac turnarounds ([#595](https://github.com/derekwinters/lucas-doggiehood/issues/595)) ([f619cdf](https://github.com/derekwinters/lucas-doggiehood/commit/f619cdf880f4dc9b6c4c8979d45af7124d24f44f))
+* give delivery trucks curated standard car colors ([#613](https://github.com/derekwinters/lucas-doggiehood/issues/613)) ([7bfb09f](https://github.com/derekwinters/lucas-doggiehood/commit/7bfb09f5ebfb45ca4a26b30f21880da745f0aa0d)), closes [#601](https://github.com/derekwinters/lucas-doggiehood/issues/601)
+* highlight the onboarding upgrade-target house with the red ring ([#589](https://github.com/derekwinters/lucas-doggiehood/issues/589)) ([f1577cf](https://github.com/derekwinters/lucas-doggiehood/commit/f1577cf1cf5d356b35d107653b05307637a577cd))
+* route delivery trucks off-map over the live neighborhood road network ([0e99198](https://github.com/derekwinters/lucas-doggiehood/commit/0e9919888ef1f77fa2c2944a5c79824373634571))
+* yield dogs and the delivery truck at crosswalks ([#586](https://github.com/derekwinters/lucas-doggiehood/issues/586)) ([24bd4f7](https://github.com/derekwinters/lucas-doggiehood/commit/24bd4f781216d1e0ce380ee4bf155095d1382f86))
+
+
+### Bug Fixes
+
+* block the closing tap from leaking to the world under a dismissed panel ([#587](https://github.com/derekwinters/lucas-doggiehood/issues/587)) ([7fcdab6](https://github.com/derekwinters/lucas-doggiehood/commit/7fcdab61b10c76eea9235aaff35d072053b87f81))
+* contain completion toast text within the pill ([#592](https://github.com/derekwinters/lucas-doggiehood/issues/592)) ([2a63b52](https://github.com/derekwinters/lucas-doggiehood/commit/2a63b527dd1adbaf2165720813116e6d582a9acf))
+* detect non-atomic triage hand-off drift and make the hand-off idempotent ([#596](https://github.com/derekwinters/lucas-doggiehood/issues/596)) ([10379da](https://github.com/derekwinters/lucas-doggiehood/commit/10379da58ff567fa4740e2acdd118395a66aacbe))
+* orient empty-lot foundation slab to the lot's real facing ([#588](https://github.com/derekwinters/lucas-doggiehood/issues/588)) ([9f6c25b](https://github.com/derekwinters/lucas-doggiehood/commit/9f6c25b980b11936ab772fb41a3ad445b31afea9))
+* resident dog retraces its walkway from anywhere on the door side, not only the exact door node ([#597](https://github.com/derekwinters/lucas-doggiehood/issues/597)) ([c79db16](https://github.com/derekwinters/lucas-doggiehood/commit/c79db16b28d8f049574752c74b9325cce0f8565d))
+* seed an immediate quest batch when onboarding releases the rotation ([#593](https://github.com/derekwinters/lucas-doggiehood/issues/593)) ([54eab7c](https://github.com/derekwinters/lucas-doggiehood/commit/54eab7cf83254fe83d376d8616e25f4ab059af01))
+* sit lost-item finder ring on the item's actual surface height ([#594](https://github.com/derekwinters/lucas-doggiehood/issues/594)) ([47ed99c](https://github.com/derekwinters/lucas-doggiehood/commit/47ed99c7617f5772bbf68ff9c1635741a24bc6e6))
+* subdivide cul-de-sac and bend arcs by chord length so they read smooth ([c6658bc](https://github.com/derekwinters/lucas-doggiehood/commit/c6658bc3eb915ca91558fcd2506740637d4b6f69))
+
 ## [0.11.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.10.0...v0.11.0) (2026-08-05)
 
 
