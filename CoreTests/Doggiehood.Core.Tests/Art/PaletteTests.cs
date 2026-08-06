@@ -106,6 +106,55 @@ namespace Doggiehood.Core.Tests.Art
             }
         }
 
+        // #601 (Derek, 2026-08-05): delivery trucks carry a small CURATED
+        // standard car-color spread — real-world car colors, NOT the broad
+        // decorative 20-tint house table — applied per-spawn as a material
+        // color-multiply. Pin every index to its approved colour.
+        private static readonly string[] ApprovedCarColors =
+        {
+            "#EDEDED", // white
+            "#2B2B2B", // black
+            "#C4C8CC", // silver
+            "#83878C", // gray
+            "#B32424", // red
+            "#23366B", // dark blue
+            "#235939", // dark green
+        };
+
+        [Test]
+        public void CarColorPalette_IsTheCuratedStandardCarSpread()
+        {
+            Assert.That(ApprovedCarColors.Length, Is.EqualTo(CarColorAssignment.CarColorCount),
+                "the curated car palette has exactly CarColorCount entries");
+
+            for (var i = 0; i < CarColorAssignment.CarColorCount; i++)
+            {
+                Assert.That(Palette.CarColorHex(i), Is.EqualTo(ApprovedCarColors[i]),
+                    $"car color {i} is the approved standard car colour");
+            }
+        }
+
+        [Test]
+        public void CarColorPalette_EntriesAreAllValidAndDistinct()
+        {
+            var colors = new string[CarColorAssignment.CarColorCount];
+            for (var i = 0; i < CarColorAssignment.CarColorCount; i++)
+            {
+                colors[i] = Palette.CarColorHex(i);
+                Assert.That(() => ColorRgb.Parse(colors[i]), Throws.Nothing, $"car color {i} is a valid hex");
+            }
+
+            Assert.That(colors, Is.Unique, "every curated car color is a distinct colour");
+        }
+
+        [Test]
+        public void CarColorHex_ThrowsForAnIndexOutOfRange()
+        {
+            Assert.That(() => Palette.CarColorHex(-1), Throws.InstanceOf<System.ArgumentOutOfRangeException>());
+            Assert.That(() => Palette.CarColorHex(CarColorAssignment.CarColorCount),
+                Throws.InstanceOf<System.ArgumentOutOfRangeException>());
+        }
+
         [Test]
         public void YardLandscapingFallback_IsAValidColor_DistinctFromTheGrassGround()
         {

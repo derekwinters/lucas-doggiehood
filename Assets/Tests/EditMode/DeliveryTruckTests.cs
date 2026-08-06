@@ -1,3 +1,4 @@
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -34,6 +35,13 @@ namespace Doggiehood.Unity.EditModeTests
             // #546: the truck yields at crosswalks via a process-global gate;
             // clear it so a stray claim can't stall the truck's route mid-test.
             RoadCrossingGate.Shared.Clear();
+            // #601: the per-spawn car-color pick keeps a process-static in-use
+            // color set. EditMode doesn't reliably fire OnDestroy on
+            // DestroyImmediate, so trucks from earlier tests can leave colors
+            // reserved and fill the set — collapsing the "distinct from active"
+            // guarantee that TwoConcurrentTrucks_GetDistinctCarColors relies on.
+            // Reset it so each case starts from an empty pool.
+            DeliveryTruckView.ResetSpawnColorStateForTests();
         }
 
         [TearDown]
@@ -118,6 +126,59 @@ namespace Doggiehood.Unity.EditModeTests
                     "the truck root must not itself be a primitive cube");
                 Assert.That(model.GetComponentInChildren<Renderer>(), Is.Not.Null,
                     "the kit model must contribute a renderer");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Spawn_TintsTheModelWithAStandardCarColor()
+        {
+            // #601: a spawned truck picks one of the curated standard car colors
+            // (Palette.CarColorHex) and applies it as a material color-multiply
+            // over the kit model's renderers — the same ApplyPaletteTint path the
+            // houses use — so trucks aren't all identical.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var model = truck.transform.Find("Model");
+                Assert.That(model, Is.Not.Null);
+
+                Assert.That(truck.CarColorHex, Is.EqualTo(Palette.CarColorHex(truck.CarColorIndex)),
+                    "the exposed hex matches the assigned car-color index");
+
+                var expected = CoreColors.FromHex(truck.CarColorHex);
+                var renderers = model.GetComponentsInChildren<Renderer>();
+                Assert.That(renderers, Is.Not.Empty, "the kit model contributes renderers to tint");
+                foreach (var renderer in renderers)
+                {
+                    Assert.That(renderer.sharedMaterial.color, Is.EqualTo(expected),
+                        "each model renderer carries the assigned car color as a material multiply");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TwoConcurrentTrucks_GetDistinctCarColors()
+        {
+            // #601 (optional rule): while both trucks are on the road at once,
+            // the second draws a color distinct from the first's so they don't
+            // look identical.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var first = DeliveryTruckView.Spawn(root.transform);
+                var second = DeliveryTruckView.Spawn(root.transform);
+
+                Assert.That(second.CarColorHex, Is.Not.EqualTo(first.CarColorHex),
+                    "two concurrent trucks pick distinct car colors");
             }
             finally
             {

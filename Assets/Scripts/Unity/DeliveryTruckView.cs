@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using UnityEngine;
 
@@ -66,6 +67,25 @@ namespace Doggiehood.Unity
         /// normal play.
         /// </summary>
         public static bool ForcePrimitiveFallback { get; set; }
+
+        // #601: per-spawn car color. Trucks are transient and unsaved, so the
+        // color is NOT a persisted per-id assignment like the houses' tint — it
+        // is picked at spawn from an incrementing spawn seed (deterministic in
+        // Core so it's testable), avoiding the colors currently on the road so
+        // two concurrent trucks differ. The seed counter and the in-use color
+        // set are process-static because the "distinct from active" rule spans
+        // all live trucks; the set is maintained across the spawn/OnDestroy
+        // lifetime of each view.
+        private static int nextSpawnSeed;
+        private static readonly HashSet<int> ActiveCarColorIndices = new HashSet<int>();
+
+        /// <summary>#601: the curated standard-car-color index this truck drew
+        /// at spawn (0..<see cref="CarColorAssignment.CarColorCount"/>-1).</summary>
+        public int CarColorIndex { get; private set; }
+
+        /// <summary>#601: the hex of this truck's assigned standard car color —
+        /// <see cref="Palette.CarColorHex"/> at <see cref="CarColorIndex"/>.</summary>
+        public string CarColorHex => Palette.CarColorHex(CarColorIndex);
 
         // #599: the truck now drives a multi-segment waypoint path over the LIVE
         // road network (in from an off-map opening, out by another), so the route
@@ -136,6 +156,13 @@ namespace Doggiehood.Unity
             truck.transform.SetParent(parent);
             var view = truck.AddComponent<DeliveryTruckView>();
 
+            // #601: draw this truck's standard car color at spawn, avoiding the
+            // colors already on the road so concurrent trucks differ. Reserved
+            // in ActiveCarColorIndices for the truck's lifetime (released in
+            // OnDestroy). Decision lives in Core; this only supplies the seed.
+            view.CarColorIndex = CarColorAssignment.IndexFor(nextSpawnSeed++, ActiveCarColorIndices);
+            ActiveCarColorIndices.Add(view.CarColorIndex);
+
             var model = ForcePrimitiveFallback ? null : Resources.Load<GameObject>(ModelResourceName);
             if (model != null)
             {
@@ -144,6 +171,7 @@ namespace Doggiehood.Unity
                 visual.transform.localPosition = new Vector3(0f, ModelGroundOffsetY, 0f);
                 visual.transform.localRotation = Quaternion.Euler(0f, ModelForwardYawOffsetDegrees, 0f);
                 visual.transform.localScale = Vector3.one * ModelScale;
+                ApplyCarColor(visual, view.CarColorHex);
             }
             else
             {
@@ -392,6 +420,43 @@ namespace Doggiehood.Unity
             // #546: never leave a crosswalk claimed if the truck is torn down
             // mid-route (it normally releases each as it passes).
             crossing?.ReleaseAll();
+
+            // #601: release this truck's car color back to the pool so a later
+            // spawn can reuse it (the "distinct from active" rule only avoids
+            // colors still on the road).
+            ActiveCarColorIndices.Remove(CarColorIndex);
+        }
+
+        /// <summary>#601 test seam: the per-spawn car-color pick keeps process-
+        /// static state (the seed counter and the in-use color set) because the
+        /// "distinct from active" rule spans every live truck. In play that set
+        /// drains as each truck's <see cref="OnDestroy"/> runs, but EditMode
+        /// fixtures share the process and don't reliably fire OnDestroy on
+        /// <c>DestroyImmediate</c>, so trucks from earlier tests can leave colors
+        /// reserved and fill the set — degrading the distinctness guarantee for a
+        /// later test. A fixture resets this between cases so the in-use set can't
+        /// bleed across tests.</summary>
+        public static void ResetSpawnColorStateForTests()
+        {
+            nextSpawnSeed = 0;
+            ActiveCarColorIndices.Clear();
+        }
+
+        /// <summary>#601: applies the chosen standard car color as a material
+        /// color-multiply over the truck model's renderers — the exact
+        /// <c>WorldBuilder.ApplyPaletteTint</c> technique the houses use (clone
+        /// each renderer's <c>sharedMaterial</c> and set its <c>.color</c>), so
+        /// the kit model's light base reads as the assigned color.</summary>
+        private static void ApplyCarColor(GameObject visual, string colorHex)
+        {
+            foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
+            {
+                var material = renderer.sharedMaterial != null
+                    ? new Material(renderer.sharedMaterial)
+                    : new Material(Shader.Find("Standard"));
+                material.color = CoreColors.FromHex(colorHex);
+                renderer.sharedMaterial = material;
+            }
         }
 
         private void Drive(Vector3 target, float deltaTime)
