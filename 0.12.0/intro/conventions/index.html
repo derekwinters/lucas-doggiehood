@@ -1869,43 +1869,12 @@
 <p>Each milestone's <strong>title is a version</strong> (<code>v0.4</code>, <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, …) and its <strong>description carries the scope</strong> — what that version adds, expands, or polishes. Pick a milestone by matching an issue against the milestone's scope <em>description</em>, read live, rather than a memorized phase list.</p>
 <p>These version numbers are <strong>planning labels, not release numbers.</strong> The shipped app version lives in <a href="../../engineering/versioning/"><code>/VERSION</code></a> and is computed by release-please from Conventional Commits; a milestone titled <code>v0.4</code> is a <em>target scope</em>, and the actual version that ships when its work lands may differ. The two are deliberately decoupled.</p>
 <p>Milestones are <strong>forward-looking planning buckets.</strong> A version that has already shipped lives as a git tag / GitHub release, not a milestone — so there is no <code>v0.3</code> milestone once v0.3 is out; any remaining open work simply moves to the next planning milestone.</p>
-<p>The current planning milestones:</p>
-<table>
-<thead>
-<tr>
-<th>Milestone</th>
-<th>Scope</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>v0.4</code></td>
-<td><strong>Closed to new issues (frozen 2026-07-24).</strong> All mainline functionality, in graybox — decorations, happiness, neighborhood expansion, remaining core systems. Get the whole game <em>working</em>; art stays rough. Remaining already-approved v0.4 work finishes here; new issues no longer land in v0.4.</td>
-</tr>
-<tr>
-<td><code>v0.5</code></td>
-<td>Post-v0.4 <strong>playtest fixes &amp; polish</strong> — bugs and rough edges surfaced while playtesting the v0.4 graybox. Active target for new playtest-fix intake; larger new features wait for a later milestone.</td>
-</tr>
-<tr>
-<td><code>v0.6</code></td>
-<td><strong>First real-art / de-graybox pass.</strong> Replace the graybox placeholders with real art — both the Candy Cottage UI chrome (HUD, dialogue panel, onboarding, settings; visual direction from <a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>) <em>and</em> the world/house visuals — so the working v0.4 graybox starts to look like the real game. Larger art/UI work that outgrows v0.5's playtest-fix scope lands here.</td>
-</tr>
-<tr>
-<td><code>v1.0</code></td>
-<td>First complete release: the last group of changes required to call it v1 — final art polish, onboarding, and integration on top of v0.6's real-art pass.</td>
-</tr>
-<tr>
-<td><code>v1.1</code></td>
-<td>Improvements, changes, and playtest fixes made after v1.</td>
-</tr>
-<tr>
-<td><code>v2.0</code></td>
-<td>Major redesigns and large expansions.</td>
-</tr>
-</tbody>
-</table>
-<p>Between the named milestones we spin up further version milestones (<code>v0.7</code>, <code>v0.8</code>, …) as we need them — each with its own focus (polish, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
-<p><strong>Closing a milestone to new work.</strong> When a version is done taking new issues, <em>freeze</em> it: mark its row here <strong>and its GitHub milestone <code>description</code></strong> as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions (<a href="../../engineering/issue-pipeline/">pipeline-analysis</a>), so freezing one and activating the next is what reroutes new intake — <strong>existing approved issues in the frozen milestone stay put and finish</strong>, only new issues are redirected. <code>/focus</code> still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner <code>/approve</code> or <code>/milestone</code> can still place an issue anywhere.)</p>
+<p><strong>Read the current milestones live — this page deliberately does not list them.</strong> The milestone set turns over constantly (versions ship and close, new ones spin up), so any table baked in here goes stale fast and mis-routes work — enumerate them and you <em>will</em> be matching against a snapshot months out of date. To see the live milestones and their scopes, use the <a href="https://github.com/derekwinters/lucas-doggiehood/tree/main/.claude/skills/milestone-ops"><code>milestone-ops</code></a> skill:</p>
+<div class="highlight"><pre><span></span><code>python3 .claude/skills/milestone-ops/milestone_ops.py list
+</code></pre></div>
+<p>That lists every milestone with its state and open/closed counts; fetch the milestones REST endpoint (<code>GET /repos/derekwinters/lucas-doggiehood/milestones?state=open</code>) when you also need each one's scope <code>description</code>. Match an issue against the live scope <em>description</em>, never a memorized ladder.</p>
+<p>New version milestones (<code>v0.13</code>, <code>v0.14</code>, …) are spun up as needed — each with its own focus (new functionality, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.</p>
+<p><strong>Closing a milestone to new work.</strong> When a version is done taking new issues, <em>freeze</em> it: mark its GitHub milestone <code>description</code> as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions (<a href="../../engineering/issue-pipeline/">pipeline-analysis</a>), so freezing one and activating the next is what reroutes new intake — <strong>existing approved issues in the frozen milestone stay put and finish</strong>, only new issues are redirected. <code>/focus</code> still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner <code>/approve</code> or <code>/milestone</code> can still place an issue anywhere.)</p>
 <p>Two <strong>non-version</strong> milestones sit alongside these:</p>
 <ul>
 <li><strong><code>Direct Involvement Needed</code></strong> — tasks no agent can complete (asset creation, on-device checks, unanswered questions). Not a version; excluded from version ordering.</li>
