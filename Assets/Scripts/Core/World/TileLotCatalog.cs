@@ -5,9 +5,11 @@ using System.Linq;
 namespace Doggiehood.Core.World
 {
     /// <summary>
-    /// Per-type property-lot slots for the 16 non-<see cref="TileType.FourWay"/>
-    /// tile types (#109), following the "Property lots per tile" rules
-    /// settled in <c>docs/specs/world/tile-catalog.md</c> (#383, refined by
+    /// Per-type property-lot slots for the 17 lotted tile types (#109) — every
+    /// type except the house-free <see cref="TileType.GreenSpace"/>, including
+    /// the full-intersection <see cref="TileType.FourWay"/> (#607) — following
+    /// the "Property lots per tile" rules settled in
+    /// <c>docs/specs/world/tile-catalog.md</c> (#383, refined by
     /// #385). House facing is settled as "remove" (no rotation): every kept
     /// lot borders a straight roaded edge square-on, and lots that can't are
     /// dropped:
@@ -31,12 +33,14 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class TileLotCatalog
     {
-        // #539: the two types with no per-quadrant catalog lot slots — FourWay
-        // (its lots live in NeighborhoodLayout) and GreenSpace (a house-free
-        // tile that never holds a lot). Both are excluded from Types; LotsFor
-        // still handles GreenSpace by returning an empty set (FourWay throws).
+        // #539/#607: GreenSpace is the only type with no per-quadrant catalog
+        // lot slots — a house-free park tile that never holds a lot — so it is
+        // the only type excluded from Types (LotsFor still handles it by
+        // returning an empty set). FourWay is a full intersection carrying all
+        // four quadrant lots wherever it appears (#607); the origin FourWay's
+        // seeded lots are guarded in GameState, not by excluding FourWay here.
         private static readonly IReadOnlyList<TileType> LottedTypes = ((TileType[])Enum.GetValues(typeof(TileType)))
-            .Where(type => type != TileType.FourWay && type != TileType.GreenSpace)
+            .Where(type => type != TileType.GreenSpace)
             .ToList();
 
         // The "cupped" corner each bend drops (and renders curved): the
@@ -86,17 +90,12 @@ namespace Doggiehood.Core.World
         /// offsets in meters from the tile's center. Twin bends return an
         /// empty set; bends drop their cupped corner and its diagonal opposite
         /// (2 slots); cul-de-sacs keep the two quadrants adjacent to the roaded
-        /// edge (2 slots); every other type returns all 4. Throws for
-        /// <see cref="TileType.FourWay"/> - its lots are already defined by
-        /// <see cref="NeighborhoodLayout"/>, not this catalog.</summary>
+        /// edge (2 slots); every other type — including the full-intersection
+        /// <see cref="TileType.FourWay"/> (#607) — returns all 4. The origin
+        /// FourWay's seeded lots (<see cref="NeighborhoodLayout"/>) are guarded
+        /// in <see cref="GameState.LotsForUnlockedTile"/>, not here.</summary>
         public static IReadOnlyDictionary<Quadrant, GridPoint> LotsFor(TileType type)
         {
-            if (type == TileType.FourWay)
-            {
-                throw new ArgumentException(
-                    "FourWay's lots are defined by NeighborhoodLayout, not TileLotCatalog.", nameof(type));
-            }
-
             // #539: a green-space tile never holds a house — no lot slots.
             if (type == TileType.GreenSpace || TwinBends.Contains(type))
             {

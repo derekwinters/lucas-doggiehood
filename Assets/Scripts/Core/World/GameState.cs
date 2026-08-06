@@ -799,8 +799,10 @@ namespace Doggiehood.Core.World
         /// <see cref="FrontierHouseId.For"/> id. The tile type is read from the
         /// live <see cref="Map"/> (the coordinate is already placed), so this
         /// needs no <see cref="TargetMap"/> on hand. A coordinate that isn't
-        /// placed, or a <see cref="TileType.FourWay"/> (whose lots belong to the
-        /// starting layout, not the per-type catalog), yields none. The Unity
+        /// placed yields none, as does the ORIGIN <see cref="TileType.FourWay"/>
+        /// (whose four lots belong to the starting layout, not the per-type
+        /// catalog — #607); a non-origin FourWay is a full intersection and
+        /// yields its four quadrant lots like every other lotted tile. The Unity
         /// world-build reads this to render a frontier tile's empty lots, its
         /// roads, and its pre-baked trees — the frontier replacement for the
         /// retired per-zone <c>Zone.Lots</c>.
@@ -814,7 +816,13 @@ namespace Doggiehood.Core.World
             }
 
             var type = Map.GetTileAt(coordinate);
-            if (type == TileType.FourWay)
+            // #607: the ORIGIN FourWay's four lots are seeded from
+            // NeighborhoodLayout (ids 1-4), so it must not also emit
+            // catalog lots — that would collide with the seeded origin
+            // houses. Every OTHER FourWay is a full intersection whose four
+            // quadrants are buildable, served generically below like every
+            // other lotted tile.
+            if (type == TileType.FourWay && coordinate.Equals(StartingIntersectionCoordinate))
             {
                 return lots;
             }
