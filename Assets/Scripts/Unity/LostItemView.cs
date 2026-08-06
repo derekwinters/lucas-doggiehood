@@ -170,9 +170,12 @@ namespace Doggiehood.Unity
         /// ball (#535). Pure decoration: the ring is collider-free and
         /// non-interactable, so TapRouter's raycast passes through to the item
         /// beneath and tap-to-collect (<see cref="LostItemTapZone"/>) is
-        /// untouched. A graybox first pass built from a Unity primitive; all
-        /// sizes are the named <see cref="LostItemGlow"/> constants (#161) and
-        /// the colour is the named <c>Palette.LostItemGlowHex</c>.
+        /// untouched. #602: the ring is a hollow RING OUTLINE (a generated
+        /// annulus mesh via <see cref="GroundRingMesh"/>), not a filled disc, so
+        /// it frames the item and leaves the ground inside it uncovered. A
+        /// graybox first pass; all sizes are the named
+        /// <see cref="LostItemGlow"/> constants (#161) and the colour is the
+        /// named <c>Palette.LostItemGlowHex</c>.
         /// </summary>
         private void AttachFinderGlow()
         {
@@ -200,26 +203,35 @@ namespace Doggiehood.Unity
             glowRoot.localPosition = new Vector3(
                 0f, (surfaceHeight - transform.position.y) * Invert(rootScale.y), 0f);
 
-            BuildGlowPart(
-                glowRoot, GroundRingName, PrimitiveType.Cylinder, glowColor,
+            BuildGlowRing(
+                glowRoot, GroundRingName, glowColor,
                 new Vector3(0f, LostItemGlow.GroundRingHeight, 0f),
                 new Vector3(LostItemGlow.GroundRingScale, LostItemGlow.GroundRingThickness, LostItemGlow.GroundRingScale));
         }
 
-        /// <summary>Builds one glow child primitive, strips its collider (the
-        /// glow is non-interactive) and paints it with a translucent clone of
-        /// the glow colour.</summary>
-        private static GameObject BuildGlowPart(
-            Transform parent, string name, PrimitiveType shape, Color color,
+        /// <summary>#602: builds the ground ring as a flat HOLLOW annulus mesh
+        /// (via the shared <see cref="GroundRingMesh"/>) rather than a solid
+        /// <c>Cylinder</c> primitive, so the highlight reads as a red ring
+        /// OUTLINE framing the item instead of a filled disc painted over it —
+        /// the item and the ground inside the ring stay uncovered. The unit-ring
+        /// mesh keeps the same diameter-valued <paramref name="localScale"/>
+        /// semantics the disc used (outer edge = <c>GroundRingScale</c>), so
+        /// placement and footprint are unchanged; only the middle opens up. A
+        /// bare mesh object never gets an auto collider the way
+        /// <c>CreatePrimitive</c> does, so the ring is collider-free by
+        /// construction; the strip below stays a no-op safety net preserving the
+        /// non-interactive guarantee. Painted with a translucent clone of the
+        /// glow colour so it blends over the surface.</summary>
+        private static GameObject BuildGlowRing(
+            Transform parent, string name, Color color,
             Vector3 localPosition, Vector3 localScale)
         {
-            var part = GameObject.CreatePrimitive(shape);
-            part.name = name;
+            var part = new GameObject(name);
+            part.AddComponent<MeshFilter>().sharedMesh = GroundRingMesh.BuildAnnulus();
+            part.AddComponent<MeshRenderer>();
 
-            // Non-interactive: primitives ship a collider; remove it so the
-            // glow never intercepts a tap meant for the item. Mode-aware like
-            // Collect (#157) — DestroyImmediate so EditMode tests see it gone
-            // at once, Destroy under Play.
+            // Safety net: a MeshFilter object carries no collider, but strip any
+            // mode-aware (#157) so the glow can never intercept a tap.
             var collider = part.GetComponent<Collider>();
             if (collider != null)
             {

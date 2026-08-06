@@ -61,8 +61,16 @@ namespace Doggiehood.Unity
 
             var glowColor = CoreColors.FromHex(Doggiehood.Core.Art.Palette.LostItemGlowHex);
 
-            var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            ring.name = RingName;
+            // #602: a flat HOLLOW annulus mesh (shared with the finder glow via
+            // GroundRingMesh), not a solid Cylinder primitive — so the highlight
+            // is a red ring OUTLINE framing the house rather than a filled disc
+            // painted over the ground inside it. The unit-ring mesh keeps the
+            // same footprint-valued localScale the disc used, so the ring's
+            // outer edge still tracks the house's own bounds; only the middle
+            // opens up.
+            var ring = new GameObject(RingName);
+            ring.AddComponent<MeshFilter>().sharedMesh = GroundRingMesh.BuildAnnulus();
+            ring.AddComponent<MeshRenderer>();
             ring.transform.SetParent(root.transform, worldPositionStays: false);
             ring.transform.localPosition = new Vector3(0f, LostItemGlow.GroundRingHeight, 0f);
             ring.transform.localScale = new Vector3(footprint, LostItemGlow.GroundRingThickness, footprint);

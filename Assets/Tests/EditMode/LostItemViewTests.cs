@@ -261,16 +261,54 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void FinderGlow_GroundRingUsesTheNamedScaleConstants()
+        public void FinderGlow_GroundRingIsAHollowAnnulus_NotAFilledDisc()
         {
-            // #161/#535: the ring size is the named Core constants, not inline
-            // literals — flat (thin) on the ground, wide across the surface.
+            // #602: the finder glow is a ring OUTLINE, not a filled disc — its
+            // mesh must have a genuine hole in the middle (no geometry inside
+            // the inner radius) so the item and the ground it rests on stay
+            // uncovered. This replaces the old disc-scale assertion (a solid
+            // Cylinder primitive can't be hollow, so the shape is a generated
+            // annulus mesh now).
             var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
             var ring = Glow(view).Find(GroundRingName);
 
-            Assert.That(ring.localScale.x, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
-            Assert.That(ring.localScale.z, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.0001f));
-            Assert.That(ring.localScale.y, Is.EqualTo(LostItemGlow.GroundRingThickness).Within(0.0001f));
+            var mesh = ring.GetComponent<MeshFilter>().sharedMesh;
+            Assert.That(mesh, Is.Not.Null, "the ring renders from a generated annulus mesh");
+
+            var minRadius = float.MaxValue;
+            var maxRadius = 0f;
+            foreach (var v in mesh.vertices)
+            {
+                var r = Mathf.Sqrt((v.x * v.x) + (v.z * v.z));
+                minRadius = Mathf.Min(minRadius, r);
+                maxRadius = Mathf.Max(maxRadius, r);
+                Assert.That(Mathf.Abs(v.y), Is.LessThan(0.001f),
+                    "the ring is flat — every vertex lies in the XZ plane");
+            }
+
+            Assert.That(minRadius, Is.GreaterThan(0.001f),
+                "a genuine hole in the middle — no geometry at the center, so it reads as a ring, not a disc");
+
+            var expectedFraction = LostItemGlow.GroundRingInnerScale / LostItemGlow.GroundRingScale;
+            Assert.That(minRadius / maxRadius, Is.EqualTo(expectedFraction).Within(0.02f),
+                "the hole is sized to the named inner/outer ratio (#161/#602)");
+        }
+
+        [Test]
+        public void FinderGlow_GroundRingOuterEdge_StillMatchesTheNamedScaleConstant()
+        {
+            // #602 regression: opening a hole must NOT shrink the ring's
+            // footprint — its OUTER edge still spans LostItemGlow.GroundRingScale
+            // (the pre-#602 disc's diameter), so the ring frames the same area
+            // the disc used to cover. Named constants, not inline literals
+            // (#161).
+            var view = LostItemView.Spawn(state, LostItemQuest("ball"), parent.transform);
+            var ring = Glow(view).Find(GroundRingName);
+
+            var bounds = ring.GetComponent<Renderer>().bounds;
+            Assert.That(bounds.size.x, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.02f),
+                "the ring's outer diameter is unchanged from the pre-#602 disc");
+            Assert.That(bounds.size.z, Is.EqualTo(LostItemGlow.GroundRingScale).Within(0.02f));
         }
 
         [Test]
