@@ -699,6 +699,16 @@ namespace Doggiehood.Core.World
         /// so even a very short arc still reads as a curve, not a single chord.</summary>
         private const int MinArcSegments = 2;
 
+        /// <summary>The largest world-space chord an inserted arc segment may
+        /// span (#598). Subdividing by <see cref="ArcMaxSegmentRadians"/> alone
+        /// is radius-blind: the 9m cul-de-sac bulb's ~64 sweep became only 3 long
+        /// (~3.3m) chords and read as an angular octagon, not a smooth arch. Also
+        /// capping the chord length forces a large-radius arc into many short
+        /// hops so it hugs the true curve. Derived from the locked art dimensions
+        /// (one <see cref="WorldDimensions.SidewalkWidth"/>) so path and art stay
+        /// consistent, like every other #581/#598 corner dimension.</summary>
+        private static readonly float ArcMaxSegmentLength = WorldDimensions.SidewalkWidth;
+
         /// <summary>
         /// Curves every plain <c>Turn*</c> bend in <paramref name="roads"/>
         /// (#581): two perpendicular stub roads meeting endpoint-to-endpoint.
@@ -820,8 +830,15 @@ namespace Doggiehood.Core.World
             while (sweep > Math.PI) sweep -= twoPi;
             while (sweep < -Math.PI) sweep += twoPi;
 
-            var segments = Math.Max(MinArcSegments,
-                (int)Math.Ceiling(Math.Abs(sweep) / ArcMaxSegmentRadians));
+            // Subdivide finely enough that BOTH the angular step and the
+            // world-space chord stay bounded (#598): the arc-length cap keeps a
+            // large-radius arc (the 9m cul-de-sac bulb) from collapsing into a
+            // few long chords, since an arc segment's chord never exceeds its
+            // arc length. Take whichever demands more hops.
+            var arcLength = Math.Abs(sweep) * radius;
+            var segments = Math.Max(MinArcSegments, Math.Max(
+                (int)Math.Ceiling(Math.Abs(sweep) / ArcMaxSegmentRadians),
+                (int)Math.Ceiling(arcLength / ArcMaxSegmentLength)));
 
             var previous = endA;
             for (var i = 1; i < segments; i++)
