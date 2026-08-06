@@ -69,6 +69,19 @@ namespace Doggiehood.Core.Tests.Quests
             Assert.That(LostItemGlow.GroundRingThickness, Is.GreaterThan(0f));
         }
 
+        [Test]
+        public void GroundRingInnerScale_IsPositive_AndOpensAHoleInsideTheOuterEdge()
+        {
+            // #602: the highlight is a hollow RING, not a filled disc — the hole
+            // is a named constant (#161), the inner diameter of the annulus.
+            // Positive so there is a real ring band, and strictly less than the
+            // outer GroundRingScale so the ring is genuinely hollow.
+            Assert.That(LostItemGlow.GroundRingInnerScale, Is.GreaterThan(0f),
+                "the ring has a real, positive inner radius (a hole, not a point)");
+            Assert.That(LostItemGlow.GroundRingInnerScale, Is.LessThan(LostItemGlow.GroundRingScale),
+                "the hole is inside the outer edge, so the shape is an annulus, not a disc");
+        }
+
         // ---- #535: no more halo / size pulse / sparkle -------------------
         // The revised design preserves the item's own mesh, size and colour,
         // so Core no longer exposes any size-pulse or halo/sparkle tuning. If

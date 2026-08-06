@@ -158,6 +158,35 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Ring_IsAHollowAnnulus_NotAFilledDisc()
+        {
+            // #602: the onboarding house highlight is the same red ring OUTLINE
+            // as the finder glow — its mesh has a genuine hole so it frames the
+            // house without painting a disc over the ground inside it. Sharing
+            // the annulus mesh keeps both highlights visually consistent.
+            var house = SyntheticHouse(4f, new Vector3(120f, 0f, 120f));
+            var mesh = OnboardingHouseHighlightView.Spawn(103, house.transform, worldRoot.transform)
+                .GetComponentInChildren<MeshFilter>().sharedMesh;
+
+            Assert.That(mesh, Is.Not.Null, "the highlight renders from a generated annulus mesh");
+
+            var minRadius = float.MaxValue;
+            var maxRadius = 0f;
+            foreach (var v in mesh.vertices)
+            {
+                var r = Mathf.Sqrt((v.x * v.x) + (v.z * v.z));
+                minRadius = Mathf.Min(minRadius, r);
+                maxRadius = Mathf.Max(maxRadius, r);
+            }
+
+            Assert.That(minRadius, Is.GreaterThan(0.001f),
+                "a genuine hole in the middle — a ring, not a disc");
+            var expectedFraction = LostItemGlow.GroundRingInnerScale / LostItemGlow.GroundRingScale;
+            Assert.That(minRadius / maxRadius, Is.EqualTo(expectedFraction).Within(0.02f),
+                "the hole matches the shared finder-glow inner/outer ratio, so both highlights stay consistent");
+        }
+
+        [Test]
         public void Highlight_AttachesToExactlyTheTargetHouse_AndTearsDownWhenTheChainAdvancesPastUpgrade()
         {
             var target = ReachUpgradeStep();

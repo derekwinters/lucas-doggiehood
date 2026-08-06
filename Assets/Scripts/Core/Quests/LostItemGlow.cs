@@ -20,8 +20,19 @@ namespace Doggiehood.Core.Quests
     {
         /// <summary>Diameter of the flat ground contact ring, relative to the
         /// item — wide enough to read as a pool of light on the surface under
-        /// the item, without engulfing the item itself.</summary>
+        /// the item, without engulfing the item itself. This is the ring's
+        /// OUTER edge.</summary>
         public const float GroundRingScale = 2.2f;
+
+        /// <summary>#602: inner diameter of the hollow ring — the size of the
+        /// hole opened in the middle so the highlight reads as a ring OUTLINE
+        /// framing the object rather than a filled disc painted over it. The
+        /// object and the ground inside this radius stay uncovered. Sits
+        /// strictly inside <see cref="GroundRingScale"/>; the same
+        /// inner/outer ratio (this ÷ <see cref="GroundRingScale"/>) drives the
+        /// onboarding house highlight's hole too, so both rings stay visually
+        /// consistent (#571).</summary>
+        public const float GroundRingInnerScale = 1.6f;
 
         /// <summary>How high off the ground the flat ring floats — just enough
         /// to avoid z-fighting with the surface, not enough to read as
