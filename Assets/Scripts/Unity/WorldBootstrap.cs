@@ -133,10 +133,15 @@ namespace Doggiehood.Unity
             // after a household moves into a vacant house, off the same Core
             // MoveInOccurred event QuestDirector uses to spawn the new dogs — so
             // the player is told a move-in happened and where. Its "Say hi!"
-            // button pans the camera to the new house; the director only
-            // presents the Core-composed copy (WelcomeMessage) and moves no state.
+            // button pans the camera to the new house AND opens that house's
+            // profile (#604) — reusing the same OpenHouseProfile resolve a house
+            // tap uses, so the resident dog(s) are one tap away — while the
+            // director only presents the Core-composed copy (WelcomeMessage) and
+            // moves no state.
             var welcomePopup = BuildWelcomePopup(canvas);
-            gameObject.AddComponent<WelcomePopupDirector>().Init(state, welcomePopup, root.transform);
+            gameObject.AddComponent<WelcomePopupDirector>().Init(
+                state, welcomePopup, root.transform,
+                houseId => OpenHouseProfile(houseProfile, state, houseId));
 
             // Persistent HUD (#159): the currency chip now wears the full Candy
             // Cottage chrome (#65/#296) — cream pill, Ink outline, hard shadow,

@@ -17,7 +17,8 @@ namespace Doggiehood.Unity.EditModeTests
     /// <see cref="WelcomePopup.WelcomePopupDelaySeconds"/> beat after the move-in
     /// so it never stacks on the quest-resolution feedback that triggered it. The
     /// copy is the Core-composed <see cref="WelcomeMessage"/>; "Say hi!" pans the
-    /// camera to the new house, the scrim tap dismisses without panning.
+    /// camera to the new house AND opens that house's profile (#604), the scrim
+    /// tap dismisses without panning or opening anything.
     /// </summary>
     public class WelcomePopupDirectorTests
     {
@@ -30,6 +31,7 @@ namespace Doggiehood.Unity.EditModeTests
         private GameObject cameraHost;
         private int vacantHouseId;
         private WelcomePopup popup;
+        private HouseProfileOverlay houseProfile;
         private WelcomePopupDirector director;
         private CameraRig rig;
 
@@ -37,6 +39,11 @@ namespace Doggiehood.Unity.EditModeTests
         public void SetUp()
         {
             WorldBuilder.ForcePrimitiveFallback = false;
+
+            // #544: the modal-input gate is a process-global singleton; clear it
+            // so a registration leaked by an earlier test can't skew the
+            // welcome→profile hand-off assertions below.
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.Clear();
 
             state = GameState.CreateNew();
             state.Wallet.Deposit(100_000);
@@ -55,6 +62,15 @@ namespace Doggiehood.Unity.EditModeTests
             popup = popupHost.AddComponent<WelcomePopup>();
             popup.Init();
 
+            // #604: "Say hi!" now also opens the new house's profile, so the
+            // director needs the overlay (built here the same way the shared
+            // canvas hosts it in WorldBootstrap) and a callback that resolves
+            // the Core house + residents — the same resolve WorldBootstrap uses.
+            var houseProfileHost = new GameObject("house-profile-overlay");
+            houseProfileHost.transform.SetParent(canvasHost.transform, false);
+            houseProfile = houseProfileHost.AddComponent<HouseProfileOverlay>();
+            houseProfile.Init();
+
             // A camera rig whose pan bounds cover the unlocked map, so a
             // FocusOn on the frontier house lands exactly rather than clamping.
             cameraHost = new GameObject("camera", typeof(Camera));
@@ -64,7 +80,17 @@ namespace Doggiehood.Unity.EditModeTests
 
             director = new GameObject("welcome-director").AddComponent<WelcomePopupDirector>();
             director.transform.SetParent(worldRoot.transform);
-            director.Init(state, popup, worldRoot.transform);
+            director.Init(state, popup, worldRoot.transform, OpenHouseProfile);
+        }
+
+        /// <summary>Mirrors <c>WorldBootstrap.OpenHouseProfile</c>: resolves the
+        /// Core house + its residents from live state and opens the overlay, the
+        /// same resolve a house tap uses.</summary>
+        private void OpenHouseProfile(int houseId)
+        {
+            var house = state.Houses.Single(h => h.Id == houseId);
+            var residents = state.Dogs.Where(d => d.HouseId == houseId).ToList();
+            houseProfile.Open(house, residents);
         }
 
         [TearDown]
@@ -162,6 +188,52 @@ namespace Doggiehood.Unity.EditModeTests
                 "the scrim tap does NOT move the camera (X)");
             Assert.That(rig.Controller.Position.Z, Is.EqualTo(before.Z),
                 "the scrim tap does NOT move the camera (Z)");
+        }
+
+        [Test]
+        public void SayHi_OpensTheHouseProfileForTheNewHouse()
+        {
+            TriggerMoveIn();
+            director.Tick(WelcomePopup.WelcomePopupDelaySeconds);
+
+            popup.ActionButton.onClick.Invoke();
+
+            Assert.That(houseProfile.IsOpen, Is.True,
+                "Say hi! opens the moved-in house's profile so its residents are one tap away");
+            Assert.That(houseProfile.CurrentHouse.Id, Is.EqualTo(vacantHouseId),
+                "the profile opened is the house the household moved into");
+        }
+
+        [Test]
+        public void ScrimTap_DoesNotOpenTheHouseProfile()
+        {
+            TriggerMoveIn();
+            director.Tick(WelcomePopup.WelcomePopupDelaySeconds);
+
+            popup.ScrimRect.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+
+            Assert.That(houseProfile.IsOpen, Is.False,
+                "only the positive Say hi! action opens the profile — a scrim dismiss opens nothing");
+        }
+
+        [Test]
+        public void SayHi_LeavesExactlyOneModalRegistered()
+        {
+            TriggerMoveIn();
+            director.Tick(WelcomePopup.WelcomePopupDelaySeconds);
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "the welcome pop-up blocks world taps while it is open");
+
+            popup.ActionButton.onClick.Invoke();
+
+            // #604: the welcome unregisters on Dismiss and the profile registers
+            // on Open within the same synchronous Say hi! call, so the gate never
+            // dips to unblocked — exactly one modal (the profile) stays registered
+            // and no world tap can leak in between.
+            Assert.That(popup.IsOpen, Is.False, "the welcome closed");
+            Assert.That(houseProfile.IsOpen, Is.True, "the profile opened");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
+                "a modal stays registered across the welcome→profile hand-off");
         }
     }
 }

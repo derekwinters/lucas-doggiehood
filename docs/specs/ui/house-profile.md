@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Tapping a **house** opens its profile ([#208](https://github.com/derekwinters/lucas-doggiehood/issues/208)) — the mirror of the [dog profile](dog-profile.md) ([#177](https://github.com/derekwinters/lucas-doggiehood/issues/177)). A centered card over a dimmed scene shows the house's **level** (1–4), the **resident dog(s)** as tappable links to their own profiles, and an **entry point to the house-upgrade action** ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59)). Content scope is option B, settled by Derek on [#208](https://github.com/derekwinters/lucas-doggiehood/issues/208) (2026-07-25). Reference resolution is 1920×1200 per [Overview](index.md).
+Tapping a **house** opens its profile ([#208](https://github.com/derekwinters/lucas-doggiehood/issues/208)) — the mirror of the [dog profile](dog-profile.md) ([#177](https://github.com/derekwinters/lucas-doggiehood/issues/177)). A centered card over a dimmed scene shows the house's **level** (1–4), the **resident dog(s)** as tappable links to their own profiles, and an **entry point to the house-upgrade action** ([#59](https://github.com/derekwinters/lucas-doggiehood/issues/59)). A house tap is the primary entry point; the **[move-in welcome pop-up](welcome-popup.md)**'s **"Say hi!"** button is a second one — it opens this same profile for the freshly moved-in house ([#604](https://github.com/derekwinters/lucas-doggiehood/issues/604)). Content scope is option B, settled by Derek on [#208](https://github.com/derekwinters/lucas-doggiehood/issues/208) (2026-07-25). Reference resolution is 1920×1200 per [Overview](index.md).
 
 ## Regions
 
