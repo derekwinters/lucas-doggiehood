@@ -310,7 +310,7 @@ namespace Doggiehood.Unity
             homeRouteProgress.Remove(quest.Id);
 
             State.Quests.NotifyDogArrivedHome(quest);
-            DeliveryTruckView.Spawn(worldRoot).DeliverTo(target, () =>
+            DeliveryTruckView.Spawn(worldRoot).DeliverTo(target, State.Map, State.WalkNetwork, () =>
             {
                 State.Quests.DeliverPackage(quest);
                 RefreshDecorations();

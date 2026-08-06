@@ -1,121 +1,163 @@
 using System.Collections.Generic;
+using System.Linq;
 using Doggiehood.Core.World;
 using NUnit.Framework;
 
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #538: the delivery truck must derive its approach path from the real
-    /// road geometry and stay on the roadway for its ENTIRE route — entry,
-    /// the stop where it drops the package, and exit are all on a road. It
-    /// stops at the road point nearest the dog's front door (never driving
-    /// onto the sidewalk, yard, or lot) and stops short of the waiting dog,
-    /// so it never overlaps it. The package is still placed AT the door by
-    /// the Unity layer; the truck itself does not go there.
+    /// #599: the delivery truck enters off-map at the open road edge nearest the
+    /// destination door and routes IN over the live multi-tile road network to
+    /// the road point nearest the door, drops the package, then routes OUT by a
+    /// different opening when one is reachable — retracing the way it came only
+    /// on a spur / cul-de-sac. It never leaves the roadway: every waypoint lies
+    /// on a live road centerline (#538 invariant preserved).
     /// </summary>
     public class DeliveryTruckRouteTests
     {
-        // A door on the NE lot's street frontage: off the road, out past the
-        // verge/sidewalk/front walkway, exactly where a waiting dog sits.
+        private const float Half = WorldDimensions.TileSize / 2f;
+
+        // A door on the NE lot's street frontage — off the road, out past the
+        // verge/sidewalk, where a waiting dog sits.
         private static readonly GridPoint NeDoor =
             new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, NeighborhoodLayout.LotDistanceFromCenter);
 
-        [Test]
-        public void EntryStopAndExit_AreAllOnARoad()
+        private static TileMap FourWay()
         {
-            var route = DeliveryTruckRoute.ToDoor(NeighborhoodLayout.Roads, NeDoor);
-
-            Assert.That(AnyRoadContains(route.Entry), Is.True, "entry point must be on a road");
-            Assert.That(AnyRoadContains(route.Stop), Is.True, "stop point must be on a road");
-            Assert.That(AnyRoadContains(route.Exit), Is.True, "exit point must be on a road");
+            return new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
         }
 
         [Test]
-        public void EveryPointAlongTheWholeRoute_StaysOnTheRoadway()
+        public void Route_EntersFromTheOffMapOpeningNearestTheDoor()
         {
-            // The invariant: a delivery truck never leaves the roadway. Sample
-            // the full driven path (entry -> stop -> exit) densely and assert
-            // every sample lands on a road surface.
-            var route = DeliveryTruckRoute.ToDoor(NeighborhoodLayout.Roads, NeDoor);
+            var map = FourWay();
+            var door = new GridPoint(40f, 6f); // clearly east
 
-            AssertLegOnRoad(route.Entry, route.Stop);
-            AssertLegOnRoad(route.Stop, route.Exit);
+            var route = DeliveryTruckRoute.ToDoor(map, door);
+
+            var expected = RoadOpenings.Nearest(RoadOpenings.Detect(map), door);
+            Assert.That(route.Entry.X, Is.EqualTo(expected.Point.X).Within(0.001f));
+            Assert.That(route.Entry.Z, Is.EqualTo(expected.Point.Z).Within(0.001f));
         }
 
         [Test]
-        public void Stop_IsTheNearestRoadPointToTheDoor()
+        public void Route_StopIsTheNearestRoadPointToTheDoor()
         {
-            var route = DeliveryTruckRoute.ToDoor(NeighborhoodLayout.Roads, NeDoor);
+            var map = FourWay();
+            var route = DeliveryTruckRoute.ToDoor(map, NeDoor);
 
-            // No road point is closer to the door than the chosen stop.
             var nearest = float.MaxValue;
-            foreach (var road in NeighborhoodLayout.Roads)
+            foreach (var road in MapWalkNetwork.RoadsFrom(map))
             {
                 for (var along = -road.HalfLength; along <= road.HalfLength; along += 0.1f)
                 {
-                    var p = road.PointAt(along, 0f);
-                    nearest = Mathf.MinF(nearest, Distance(p, NeDoor));
+                    nearest = System.Math.Min(nearest, Distance(road.PointAt(along, 0f), NeDoor));
                 }
             }
 
-            Assert.That(Distance(route.Stop, NeDoor), Is.EqualTo(nearest).Within(0.15f),
-                "the truck must stop at the road point nearest the door");
+            Assert.That(Distance(route.Stop, NeDoor), Is.EqualTo(nearest).Within(0.15f));
         }
 
         [Test]
-        public void Stop_StopsShortOfTheDog_NoOverlap()
+        public void Route_WholeDrivenPath_StaysOnTheRoadway()
         {
-            // The dog waits at the door; the truck stops on the road well
-            // before it. Clearance must exceed the road half-width plus the
-            // verge + sidewalk band the door sits beyond.
-            var route = DeliveryTruckRoute.ToDoor(NeighborhoodLayout.Roads, NeDoor);
+            var map = FourWay();
+            var route = DeliveryTruckRoute.ToDoor(map, NeDoor);
+            var roads = MapWalkNetwork.RoadsFrom(map);
 
+            AssertPathOnRoads(route.Inbound, roads);
+            AssertPathOnRoads(route.Outbound, roads);
+        }
+
+        [Test]
+        public void Route_StopsShortOfTheWaitingDog_NoOverlap()
+        {
+            var route = DeliveryTruckRoute.ToDoor(FourWay(), NeDoor);
             var clearance = WorldDimensions.RoadWidth / 2f
                             + WorldDimensions.GrassVergeWidth
                             + WorldDimensions.SidewalkWidth;
 
-            Assert.That(Distance(route.Stop, NeDoor), Is.GreaterThan(clearance),
-                "the truck must stop short of the waiting dog at the door, not overlap it");
+            Assert.That(Distance(route.Stop, NeDoor), Is.GreaterThan(clearance));
         }
 
-        private static void AssertLegOnRoad(GridPoint from, GridPoint to)
+        [Test]
+        public void Route_AcrossTwoTiles_SpansBothTilesOnTheCenterline()
         {
-            const int samples = 200;
-            for (var i = 0; i <= samples; i++)
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.StraightNS);
+            map.Place(new TileCoordinate(0, 1), TileType.StraightNS);
+
+            // A door near the northern tile: entry is the north opening, exit the
+            // south — so the full route crosses the shared boundary between tiles.
+            var route = DeliveryTruckRoute.ToDoor(map, new GridPoint(5f, 45f));
+
+            var all = route.Inbound.Concat(route.Outbound).ToList();
+            Assert.That(all.All(p => System.Math.Abs(p.X) < 0.001f), Is.True, "stays on x=0 centerline");
+            Assert.That(all.Any(p => System.Math.Abs(p.Z - Half) < 0.001f), Is.True,
+                "passes through the shared tile boundary node (0, +Half)");
+            Assert.That(all.Any(p => p.Z > WorldDimensions.TileSize), Is.True, "reaches the north tile");
+            Assert.That(all.Any(p => p.Z < 0f), Is.True, "reaches the south tile");
+        }
+
+        [Test]
+        public void Route_ExitsByADifferentOpening_WhenOneIsReachable()
+        {
+            // Single StraightNS: two openings (N and S). Enter by the nearer,
+            // leave by the other — no retrace.
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.StraightNS);
+            var door = new GridPoint(10f, 20f); // nearer the north opening
+
+            var route = DeliveryTruckRoute.ToDoor(map, door);
+
+            Assert.That(route.IsTurnaround, Is.False);
+            Assert.That(route.Entry.Z, Is.EqualTo(Half).Within(0.001f), "entered from the north opening");
+            Assert.That(route.Exit.Z, Is.EqualTo(-Half).Within(0.001f), "exited by the different south opening");
+        }
+
+        [Test]
+        public void Route_Retraces_WhenTheEntryIsTheOnlyReachableOpening()
+        {
+            // A cul-de-sac tile has exactly one off-map opening — the truck must
+            // turn around and retrace its inbound path back out.
+            var map = new TileMap(new TileCoordinate(0, 0), TileType.CulDeSacNorth);
+
+            var route = DeliveryTruckRoute.ToDoor(map, new GridPoint(8f, 0f));
+
+            Assert.That(route.IsTurnaround, Is.True);
+            Assert.That(route.Exit.X, Is.EqualTo(route.Entry.X).Within(0.001f));
+            Assert.That(route.Exit.Z, Is.EqualTo(route.Entry.Z).Within(0.001f));
+
+            // Outbound is the inbound reversed (in-place reorient, v1).
+            var reversedInbound = route.Inbound.Reverse().ToList();
+            Assert.That(route.Outbound.Count, Is.EqualTo(reversedInbound.Count));
+            for (var i = 0; i < reversedInbound.Count; i++)
             {
-                var t = i / (float)samples;
-                var p = new GridPoint(from.X + (to.X - from.X) * t, from.Z + (to.Z - from.Z) * t);
-                Assert.That(AnyRoadContains(p), Is.True,
-                    $"route sample at t={t} left the roadway: {p}");
+                Assert.That(route.Outbound[i].X, Is.EqualTo(reversedInbound[i].X).Within(0.001f));
+                Assert.That(route.Outbound[i].Z, Is.EqualTo(reversedInbound[i].Z).Within(0.001f));
             }
         }
 
-        private static bool AnyRoadContains(GridPoint point)
+        private static void AssertPathOnRoads(IReadOnlyList<GridPoint> path, IReadOnlyList<Road> roads)
         {
-            foreach (var road in NeighborhoodLayout.Roads)
+            const int samples = 60;
+            for (var seg = 0; seg < path.Count - 1; seg++)
             {
-                if (road.Contains(point))
+                var from = path[seg];
+                var to = path[seg + 1];
+                for (var i = 0; i <= samples; i++)
                 {
-                    return true;
+                    var t = i / (float)samples;
+                    var p = new GridPoint(from.X + (to.X - from.X) * t, from.Z + (to.Z - from.Z) * t);
+                    Assert.That(roads.Any(r => r.Contains(p)), Is.True,
+                        $"route sample {p} left the roadway");
                 }
             }
-
-            return false;
         }
 
         private static float Distance(GridPoint a, GridPoint b)
         {
             var dx = a.X - b.X;
             var dz = a.Z - b.Z;
-            return (float)System.Math.Sqrt(dx * dx + dz * dz);
-        }
-
-        private static class Mathf
-        {
-            public static float MinF(float a, float b)
-            {
-                return a < b ? a : b;
-            }
+            return (float)System.Math.Sqrt((dx * dx) + (dz * dz));
         }
     }
 }

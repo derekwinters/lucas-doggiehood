@@ -39,6 +39,14 @@ namespace Doggiehood.Unity.EditModeTests
             return NeighborhoodLayout.Roads.First(r => r.Orientation == StreetOrientation.NorthSouth);
         }
 
+        // #599: the truck routes over the LIVE map. The starting FourWay origin
+        // tile derives the same road geometry as the classic NeighborhoodLayout,
+        // so its NS road carries the same north crosswalk these tests exercise.
+        private static TileMap OriginMap()
+        {
+            return new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+        }
+
         private static bool ReachedFarCurb(Vector3 dogPosition, GridPoint farCurb)
         {
             return new Vector2(dogPosition.x - farCurb.X, dogPosition.z - farCurb.Z).magnitude < 0.2f;
@@ -123,11 +131,11 @@ namespace Doggiehood.Unity.EditModeTests
             try
             {
                 var truck = DeliveryTruckView.Spawn(root.transform);
-                // Deliver to the NE door: the route runs down the north-south road,
-                // crossing the north crosswalk on the way out.
+                // Deliver to the NE door: the route drives down the north-south
+                // road, crossing the north crosswalk on the way out.
                 truck.DeliverTo(new Vector3(
                     NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter),
-                    () => { });
+                    OriginMap(), NeighborhoodLayout.WalkNetwork, () => { });
 
                 // Near edge on the +Z approach side of the +4.75 crosswalk band.
                 var nearEdgeZ = 4.75f + HalfCrosswalk; // 6.25
@@ -184,7 +192,7 @@ namespace Doggiehood.Unity.EditModeTests
                 var truck = DeliveryTruckView.Spawn(root.transform);
                 truck.DeliverTo(new Vector3(
                     NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter),
-                    () => { });
+                    OriginMap(), NeighborhoodLayout.WalkNetwork, () => { });
 
                 var dogReachedFarCurb = false;
                 for (var step = 0; step < 6000 && !truck.IsGone; step++)
