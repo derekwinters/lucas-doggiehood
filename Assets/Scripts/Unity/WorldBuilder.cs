@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -142,6 +143,21 @@ namespace Doggiehood.Unity
         /// without the Unity Editor. Not part of normal gameplay state.
         /// </summary>
         public static bool ForceFencesVisible { get; set; }
+
+        /// <summary>
+        /// Diagnostic seam (#611) driven by the Settings ▸ Debug tab's "Show
+        /// debug element colors" toggle. When true, the base ground plane is
+        /// painted the loud <see cref="DebugElementColors.GroundDebugHex"/> and
+        /// the camera void backstop clears to
+        /// <see cref="DebugElementColors.BackstopDebugHex"/> (read in
+        /// <see cref="CameraRig.ApplyConfiguration"/>) instead of the matched
+        /// <see cref="Palette.GrassHex"/> — so a playtester can tell which element
+        /// the bottom-of-screen "border" actually is. Off (default) restores
+        /// today's byte-identical matched grass. The colour decision itself lives
+        /// in Core (<see cref="DebugElementColors"/>); this is only the runtime
+        /// on/off flag. Not part of normal gameplay state and resets each session.
+        /// </summary>
+        public static bool ShowDebugElementColors { get; set; }
 
         /// <summary>
         /// Uniform scale for the 1x1-unit City Kit Roads tiles: at x10 a
@@ -389,7 +405,28 @@ namespace Doggiehood.Unity
             ground.name = GroundName;
             ground.transform.SetParent(parent);
             ApplyGroundExtent(ground.transform, map);
-            Paint(ground, Palette.GrassHex);
+            // #611: the ground colour is a pure Core decision — the matched
+            // Palette.GrassHex normally, or the loud debug colour when the Debug
+            // tab's diagnostic toggle is on.
+            Paint(ground, DebugElementColors.GroundHex(ShowDebugElementColors));
+        }
+
+        /// <summary>
+        /// Repaints the already-built base grass plane for the current
+        /// <see cref="ShowDebugElementColors"/> flag (#611) — the live, on-device
+        /// analogue of <see cref="RebuildFences"/>: flipping the Debug-tab toggle
+        /// swaps the ground colour without a full world reload. A defensive no-op
+        /// if no <see cref="GroundName"/> plane is present.
+        /// </summary>
+        public static void RepaintGround(Transform root)
+        {
+            var ground = root.Find(GroundName);
+            if (ground == null)
+            {
+                return;
+            }
+
+            Paint(ground.gameObject, DebugElementColors.GroundHex(ShowDebugElementColors));
         }
 
         /// <summary>

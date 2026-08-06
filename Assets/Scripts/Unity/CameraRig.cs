@@ -1,5 +1,6 @@
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Debugging;
 using UnityEngine;
 
 namespace Doggiehood.Unity
@@ -21,8 +22,16 @@ namespace Doggiehood.Unity
         /// <summary>Void backstop clear colour (#558): the same grass green the
         /// ground plane is painted (<see cref="Palette.GrassHex"/>), so any area
         /// beyond the mesh edge reads as continuous grass rather than the default
-        /// blue seam. Mirrors <see cref="PortraitCamera"/>'s SolidColor pattern.</summary>
-        private static readonly Color GrassBackgroundColor = CoreColors.FromHex(Palette.GrassHex);
+        /// blue seam. Mirrors <see cref="PortraitCamera"/>'s SolidColor pattern.
+        /// #611: when the Debug tab's diagnostic toggle
+        /// (<see cref="WorldBuilder.ShowDebugElementColors"/>) is on, this becomes
+        /// the loud <see cref="DebugElementColors.BackstopDebugHex"/> instead — the
+        /// same Core colour decision the ground plane uses — so the backstop is
+        /// visually distinct from the ground and the "border" element is
+        /// identifiable.</summary>
+        private static Color BackstopColor()
+            => CoreColors.FromHex(
+                DebugElementColors.BackstopHex(WorldBuilder.ShowDebugElementColors));
 
         private Camera cachedCamera;
         private Vector3 lastPointerPosition;
@@ -51,7 +60,7 @@ namespace Doggiehood.Unity
             // extreme pan+zoom-out lands on this grass-green clear colour and
             // reads as continuous grass instead of a seam. Mirrors PortraitCamera.
             cachedCamera.clearFlags = CameraClearFlags.SolidColor;
-            cachedCamera.backgroundColor = GrassBackgroundColor;
+            cachedCamera.backgroundColor = BackstopColor();
 
             ApplyControllerState();
         }

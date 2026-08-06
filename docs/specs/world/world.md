@@ -67,6 +67,8 @@ The fill is **not new code** — it is exactly the ground the [#373](https://git
 
 So every placed tile, and the open cells around and between the road tiles, sit on `Palette.GrassHex` grass instead of blank space, all the way to (and past) the authored map's frontier — and the camera's own background is that same grass, so nothing off the frontier ever reads as void. There is no per-cell surface authoring and no water surface: the whole open-space area is the one grass plane.
 
+> **Diagnostic toggle (2026-08-06, on [#611](https://github.com/derekwinters/lucas-doggiehood/issues/611)):** because the ground plane (lit) and the void backstop (unlit camera clear) both paint `Palette.GrassHex`, a zoom-out "border" seam has been hard to attribute to one or the other. The Settings ▸ Debug tab carries a **Show debug element colors** switch that paints the ground plane and the camera backstop two loudly-different, obviously-fake debug colours (magenta ground vs. cyan backstop, from the Core `DebugElementColors` seam) so which element is on screen is unambiguous. It is a **diagnostic-only dev toggle, not a shipped visual** — **off by default**, reset each session like the rest of the Debug tab, driving `WorldBuilder.ShowDebugElementColors`; when off, the ground and backstop are byte-identical to the matched grass above. See [Settings → Debug pane](../ui/settings.md).
+
 **Scope guardrails for this issue (so a reviewer doesn't look for more):**
 
 - **No water surface.** There is no `water` cell type, no per-cell surface field in `docs/tools/map-data.json`, and no water rendering. Whether water is authored per cell or placed by a positional rule (e.g. a map border ring) is a decision left to a future issue.

@@ -27,6 +27,7 @@ namespace Doggiehood.Unity.EditModeTests
         private SettingsPanel panel;
         private GameState state;
         private bool forceFencesAtStart;
+        private bool showDebugColorsAtStart;
 
         [SetUp]
         public void CreatePanel()
@@ -38,6 +39,8 @@ namespace Doggiehood.Unity.EditModeTests
 
             forceFencesAtStart = WorldBuilder.ForceFencesVisible;
             WorldBuilder.ForceFencesVisible = false;
+            showDebugColorsAtStart = WorldBuilder.ShowDebugElementColors;
+            WorldBuilder.ShowDebugElementColors = false;
 
             canvasHost = new GameObject("ui-canvas", typeof(Canvas));
             canvasHost.AddComponent<UiCanvas>().Configure();
@@ -54,6 +57,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void Cleanup()
         {
             WorldBuilder.ForceFencesVisible = forceFencesAtStart;
+            WorldBuilder.ShowDebugElementColors = showDebugColorsAtStart;
             Object.DestroyImmediate(canvasHost);
         }
 
@@ -436,6 +440,76 @@ namespace Doggiehood.Unity.EditModeTests
                 "the forced refresh records its instant, restarting the hourly window");
             Assert.That(state.LastRotationUtc.Value, Is.InRange(before, after),
                 "it passes DateTime.UtcNow to the Core seam exactly once");
+        }
+
+        // --- #611: Debug-tab "Show debug element colors" toggle ---
+
+        [Test]
+        public void DebugPane_RendersADebugColorsRow_BelowTheRefreshQuestsRow()
+        {
+            // #611: the fourth Debug-tab row, stacked one row-and-gap below the
+            // Refresh quests row using the existing DebugRowHeightPx/DebugRowGapPx
+            // constants — no invented layout values.
+            Assert.That(panel.DebugColorsRowRect, Is.Not.Null,
+                "the Debug pane lists a Show debug element colors toggle row (#611)");
+            Assert.That(panel.DebugColorsRowRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugRowHeightPx),
+                "the row reuses the approved debug-row height — no new constant");
+            Assert.That(panel.DebugColorsRowRect.anchoredPosition.y,
+                Is.EqualTo(-3f * (SettingsPanel.DebugRowHeightPx + SettingsPanel.DebugRowGapPx)),
+                "it stacks three rows-and-gaps below the fence toggle, inventing no new layout");
+        }
+
+        [Test]
+        public void DebugColorsToggle_IsRegistered_InTheDebugToggleRegistry()
+        {
+            Assert.That(panel.Toggles.Contains(SettingsPanel.DebugColorsToggleKey), Is.True,
+                "the toggle plugs into the shared Core DebugToggleRegistry (#219), like the fence switch");
+        }
+
+        [Test]
+        public void DebugColorsToggleTrack_IsTheWireframeSize()
+        {
+            Assert.That(panel.DebugColorsToggleRect.sizeDelta.x, Is.EqualTo(SettingsPanel.ToggleTrackWidthPx));
+            Assert.That(panel.DebugColorsToggleRect.sizeDelta.y, Is.EqualTo(SettingsPanel.ToggleTrackHeightPx));
+        }
+
+        [Test]
+        public void DebugColorsToggle_DrivesWorldBuilderShowDebugElementColors()
+        {
+            UnlockDebug();
+
+            Assert.That(WorldBuilder.ShowDebugElementColors, Is.False);
+
+            panel.ToggleDebugColors();
+            Assert.That(panel.DebugColorsToggleOn, Is.True);
+            Assert.That(WorldBuilder.ShowDebugElementColors, Is.True,
+                "flipping the toggle drives the WorldBuilder.ShowDebugElementColors seam (#611)");
+
+            panel.ToggleDebugColors();
+            Assert.That(panel.DebugColorsToggleOn, Is.False);
+            Assert.That(WorldBuilder.ShowDebugElementColors, Is.False);
+        }
+
+        [Test]
+        public void DebugColorsToggle_RequestsARefresh_SoTheColorSwapIsLive()
+        {
+            UnlockDebug();
+            var refreshes = 0;
+            panel.DebugColorsRefresh = () => refreshes++;
+
+            panel.ToggleDebugColors();
+
+            Assert.That(refreshes, Is.EqualTo(1),
+                "the live build must repaint the ground and reconfigure the camera so the colours actually swap");
+        }
+
+        [Test]
+        public void DebugColorsRow_IsGatedBehindTheDebugUnlock_LikeTheOtherRows()
+        {
+            Assert.That(panel.DebugColorsRowRect.parent, Is.EqualTo(panel.RefreshQuestsRowRect.parent),
+                "the debug-colors row shares the Debug pane, so it is gated identically");
+            Assert.That(panel.DebugColorsRowRect.gameObject.activeInHierarchy, Is.False,
+                "it stays hidden until the Debug tab is unlocked, like the existing rows");
         }
 
         // --- #298: Candy Cottage chrome restyle (shared-components.md via CandyChromeUgui) ---
