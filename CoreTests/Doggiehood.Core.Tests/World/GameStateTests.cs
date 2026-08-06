@@ -141,6 +141,81 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void LotsForUnlockedTile_NonOriginFourWay_YieldsFourBuildableQuadrantLots()
+        {
+            // #607: a non-origin FourWay is a full intersection — all four
+            // quadrants border a straight roaded edge square-on, so it carries
+            // one buildable lot per quadrant, the same treatment every other
+            // lotted tile gets. (It previously came in with zero lots.)
+            var fourWayCoordinate = new TileCoordinate(1, 0);
+            var state = GameState.CreateNew();
+            // Adjacent to the origin FourWay (roads agree on the shared edge),
+            // placed straight onto the map via the restore path — no target map
+            // or wallet needed to exercise the lot generation.
+            state.RestoreUnlockedTile(fourWayCoordinate, TileType.FourWay);
+
+            var lots = state.LotsForUnlockedTile(fourWayCoordinate);
+
+            Assert.That(lots.Count, Is.EqualTo(4));
+            var center = TileGeometry.CenterOf(fourWayCoordinate);
+            float d = NeighborhoodLayout.LotDistanceFromCenter;
+            var expected = new System.Collections.Generic.Dictionary<Quadrant, GridPoint>
+            {
+                { Quadrant.NorthEast, new GridPoint(center.X + d, center.Z + d) },
+                { Quadrant.NorthWest, new GridPoint(center.X - d, center.Z + d) },
+                { Quadrant.SouthEast, new GridPoint(center.X + d, center.Z - d) },
+                { Quadrant.SouthWest, new GridPoint(center.X - d, center.Z - d) },
+            };
+            CollectionAssert.AreEquivalent(expected.Keys, lots.Select(lot => lot.Quadrant));
+            foreach (var lot in lots)
+            {
+                Assert.That(lot.HouseId, Is.EqualTo(FrontierHouseId.For(fourWayCoordinate, lot.Quadrant)),
+                    "each lot carries the stable position-derived frontier id");
+                Assert.That(lot.Position.X, Is.EqualTo(expected[lot.Quadrant].X));
+                Assert.That(lot.Position.Z, Is.EqualTo(expected[lot.Quadrant].Z));
+                Assert.That(state.IsLotBuildable(lot.HouseId), Is.True,
+                    "a freshly unlocked FourWay's lots are all buildable");
+            }
+        }
+
+        [Test]
+        public void LotsForUnlockedTile_OriginFourWay_YieldsNoCatalogLots()
+        {
+            // #607: the origin FourWay's four lots live in NeighborhoodLayout
+            // (ids 1-4, seeded at CreateNew). LotsForUnlockedTile must NOT also
+            // emit catalog lots for the origin coordinate — that would collide
+            // with / double-count the seeded origin houses.
+            var state = GameState.CreateNew();
+
+            Assert.That(state.LotsForUnlockedTile(new TileCoordinate(0, 0)), Is.Empty);
+        }
+
+        [Test]
+        public void OriginFourWay_HouseLots_AreUnchanged_ByTheFrontierFourWayFix()
+        {
+            // #607 regression guard: the seeded origin lots keep their exact
+            // NeighborhoodLayout ids/quadrants/positions (byte-identical before
+            // and after the FourWay lot fix).
+            var lots = NeighborhoodLayout.HouseLots;
+            float d = NeighborhoodLayout.LotDistanceFromCenter;
+
+            Assert.That(lots.Count, Is.EqualTo(4));
+            Assert.That(lots.Select(lot => lot.HouseId), Is.EqualTo(new[] { 1, 2, 3, 4 }));
+            void AssertLot(int id, Quadrant quadrant, float x, float z)
+            {
+                var lot = lots.Single(candidate => candidate.HouseId == id);
+                Assert.That(lot.Quadrant, Is.EqualTo(quadrant));
+                Assert.That(lot.Position.X, Is.EqualTo(x));
+                Assert.That(lot.Position.Z, Is.EqualTo(z));
+            }
+
+            AssertLot(1, Quadrant.NorthEast, d, d);
+            AssertLot(2, Quadrant.NorthWest, -d, d);
+            AssertLot(3, Quadrant.SouthEast, d, -d);
+            AssertLot(4, Quadrant.SouthWest, -d, -d);
+        }
+
+        [Test]
         public void TryUnlockTile_Fails_WhenTheCoordinateIsAlreadyPlaced()
         {
             var state = GameState.CreateNew();

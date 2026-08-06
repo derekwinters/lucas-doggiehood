@@ -6,9 +6,10 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #385: per-type property-lot definitions for the 16 non-FourWay tile
-    /// types, following the "Property lots per tile" rules settled in
-    /// docs/specs/world/tile-catalog.md. House facing is settled as "remove"
+    /// #385/#607: per-type property-lot definitions for the 17 lotted tile
+    /// types (every type except the house-free GreenSpace, including the
+    /// full-intersection FourWay), following the "Property lots per tile" rules
+    /// settled in docs/specs/world/tile-catalog.md. House facing is settled as "remove"
     /// (no rotation): every kept lot borders a straight roaded edge square-on,
     /// and the lots that can't are dropped:
     /// <list type="bullet">
@@ -53,27 +54,26 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void Types_CoversEveryLottedType_ExcludingFourWayAndGreenSpace()
+        public void Types_CoversEveryLottedType_ExcludingGreenSpace()
         {
-            // #539: GreenSpace joins FourWay as a type with no per-quadrant
-            // catalog lots, so it is excluded from Types too — leaving the same
-            // 16 road tiles that carry buildable lot slots.
+            // #539: GreenSpace is the only type with no per-quadrant catalog
+            // lots, so it is the only one excluded from Types. #607: FourWay is
+            // a full intersection with all four quadrant lots (wherever it
+            // appears, not just at the origin), so it joins the lotted types
+            // here — the origin's seeded lots are guarded by GameState, not by
+            // excluding FourWay from the catalog.
             var expected = ((TileType[])Enum.GetValues(typeof(TileType)))
-                .Where(t => t != TileType.FourWay && t != TileType.GreenSpace)
+                .Where(t => t != TileType.GreenSpace)
                 .ToList();
 
-            Assert.That(expected.Count, Is.EqualTo(16));
+            Assert.That(expected.Count, Is.EqualTo(17));
             CollectionAssert.AreEquivalent(expected, TileLotCatalog.Types);
         }
 
-        [Test]
-        public void FourWay_IsNotDefinedHere_ItAlreadyHasNeighborhoodLayout()
-        {
-            Assert.Throws<ArgumentException>(() => TileLotCatalog.LotsFor(TileType.FourWay));
-        }
-
-        // Every type that keeps all four quadrant lots: the straight-road
-        // families (no curve, so every quadrant faces a road square-on).
+        // Every type that keeps all four quadrant lots: the full intersection
+        // (#607) and the straight-road families (no curve, so every quadrant
+        // faces a road square-on).
+        [TestCase(TileType.FourWay)]
         [TestCase(TileType.StraightNS)]
         [TestCase(TileType.StraightEW)]
         [TestCase(TileType.TeeNorth)]

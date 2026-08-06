@@ -39,8 +39,9 @@ namespace Doggiehood.Core.World
         /// <summary>
         /// This tile's property-lot slots (<see cref="TileLotCatalog"/>) in
         /// world-space meters: each type's local offsets shifted by the
-        /// tile's own <see cref="CenterOf"/>. Not valid for
-        /// <see cref="TileType.FourWay"/> - see <see cref="TileLotCatalog.LotsFor"/>.
+        /// tile's own <see cref="CenterOf"/>. A FourWay yields all four
+        /// quadrant slots (#607); the origin FourWay's seeded lots are guarded
+        /// in <see cref="GameState.LotsForUnlockedTile"/>, not here.
         /// </summary>
         public static IReadOnlyList<GridPoint> LotWorldPositionsFor(TileType type, TileCoordinate coordinate)
         {
