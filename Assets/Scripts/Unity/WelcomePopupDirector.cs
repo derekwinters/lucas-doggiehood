@@ -137,7 +137,7 @@ namespace Doggiehood.Unity
                 }
             }
 
-            var rig = Object.FindFirstObjectByType<CameraRig>();
+            var rig = UnityEngine.Object.FindFirstObjectByType<CameraRig>();
             if (house == null || rig == null)
             {
                 return;
