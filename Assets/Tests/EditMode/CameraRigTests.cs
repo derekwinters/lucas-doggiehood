@@ -1,5 +1,6 @@
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Debugging;
 using Doggiehood.Unity;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,10 +12,17 @@ namespace Doggiehood.Unity.EditModeTests
         private GameObject rigObject;
         private CameraRig rig;
         private Camera cam;
+        private bool showDebugAtStart;
 
         [SetUp]
         public void CreateRig()
         {
+            // #611: the diagnostic debug-colour flag is a static; pin it off so
+            // the backstop-colour assertions are deterministic regardless of test
+            // order, then restore whatever it was in teardown.
+            showDebugAtStart = WorldBuilder.ShowDebugElementColors;
+            WorldBuilder.ShowDebugElementColors = false;
+
             rigObject = new GameObject("rig-under-test", typeof(Camera));
             cam = rigObject.GetComponent<Camera>();
             rig = rigObject.AddComponent<CameraRig>();
@@ -24,6 +32,7 @@ namespace Doggiehood.Unity.EditModeTests
         [TearDown]
         public void DestroyRig()
         {
+            WorldBuilder.ShowDebugElementColors = showDebugAtStart;
             Object.DestroyImmediate(rigObject);
         }
 
@@ -50,6 +59,25 @@ namespace Doggiehood.Unity.EditModeTests
             // under-cover. Mirrors PortraitCamera's SolidColor pattern.
             Assert.That(cam.clearFlags, Is.EqualTo(CameraClearFlags.SolidColor));
             Assert.That(cam.backgroundColor, Is.EqualTo(CoreColors.FromHex(Palette.GrassHex)));
+        }
+
+        [Test]
+        public void ClearsToTheDebugBackstopColor_WhenDebugElementColorsOn()
+        {
+            // #611: when the diagnostic toggle is on, the camera clears to the
+            // loud, obviously-fake debug backstop colour instead of grass — so the
+            // area beyond the mesh edge (the bottom "border") is visually distinct
+            // from the ground plane, revealing which element it actually is. Still
+            // a SolidColor clear; only the colour changes.
+            WorldBuilder.ShowDebugElementColors = true;
+            rig.ApplyConfiguration();
+
+            Assert.That(cam.clearFlags, Is.EqualTo(CameraClearFlags.SolidColor));
+            Assert.That(cam.backgroundColor,
+                Is.EqualTo(CoreColors.FromHex(DebugElementColors.BackstopHex(true))));
+            Assert.That(cam.backgroundColor,
+                Is.Not.EqualTo(CoreColors.FromHex(Palette.GrassHex)),
+                "the backstop is no longer the matched grass green");
         }
 
         [Test]

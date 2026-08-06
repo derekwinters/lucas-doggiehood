@@ -224,6 +224,18 @@ namespace Doggiehood.Unity
             var settings = panelObject.AddComponent<SettingsPanel>();
             settings.Init(state, Application.version);
             settings.WorldRebuild = () => WorldBuilder.RebuildFences(worldRoot, state);
+            // #611: the debug-colors toggle repaints the ground plane and
+            // reconfigures the camera backstop live, so the loud debug colours
+            // swap in/out on-device without a restart.
+            settings.DebugColorsRefresh = () =>
+            {
+                WorldBuilder.RepaintGround(worldRoot);
+                var rig = UnityEngine.Object.FindFirstObjectByType<CameraRig>();
+                if (rig != null)
+                {
+                    rig.ApplyConfiguration();
+                }
+            };
             return settings;
         }
 

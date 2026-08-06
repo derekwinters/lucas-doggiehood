@@ -96,6 +96,10 @@ namespace Doggiehood.Unity
         private const string RefreshQuestsRowLabelText = "Refresh quests now";
         private const string RefreshQuestsRowSubtitleText = "Force new-quest randomization, skip the hourly timer (#457)";
         private const string RefreshQuestsGlyph = "Go";
+        // #611: the fourth Debug-tab row — a toggle (like the fence switch) that
+        // paints the ground and camera backstop in loud, distinct debug colours.
+        private const string DebugColorsRowLabelText = "Show debug element colors";
+        private const string DebugColorsRowSubtitleText = "Paint ground vs. backstop distinctly to find the seam (#611)";
 
         /// <summary>#291: the bundled UI font, loaded from a Resources folder so
         /// it ships in the Android build. Runtime-built UGUI cannot rely on
@@ -107,6 +111,11 @@ namespace Doggiehood.Unity
         /// <summary>Debug-toggle registry key for the first on-device toggle,
         /// the show/hide backyard fences switch (#152).</summary>
         public const string FenceToggleKey = "show-backyard-fences";
+
+        /// <summary>Debug-toggle registry key for the #611 diagnostic switch that
+        /// paints the ground plane and camera backstop in loud, distinct debug
+        /// colours so the bottom-of-screen "border" element is identifiable.</summary>
+        public const string DebugColorsToggleKey = "show-debug-element-colors";
 
         // --- Palette (#298: the shared Candy Cottage palette, one source) ---
         // Every solid fill maps to a named CandyChromeUgui palette color
@@ -147,11 +156,22 @@ namespace Doggiehood.Unity
         private RectTransform addCoinsButtonRect;
         private RectTransform refreshQuestsRowRect;
         private RectTransform refreshQuestsButtonRect;
+        private RectTransform debugColorsRowRect;
+        private Image debugColorsToggleImage;
+        private RectTransform debugColorsToggleRect;
+        private RectTransform debugColorsKnobRect;
         private Text versionLabel;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
         /// actually rebuilds the world (fences show/hide on a live build).</summary>
         public Action WorldRebuild { get; set; }
+
+        /// <summary>#611: refresh hook the bootstrap wires so a debug-colors-toggle
+        /// flip repaints the ground plane and reconfigures the camera backstop on
+        /// the live build, so the colour swap is visible on-device without a
+        /// restart (the analogue of <see cref="WorldRebuild"/> for the fence
+        /// toggle).</summary>
+        public Action DebugColorsRefresh { get; set; }
 
         public RectTransform PanelRect => panelRect;
         public RectTransform ScrimRect => scrimRect;
@@ -165,6 +185,9 @@ namespace Doggiehood.Unity
         public RectTransform AddCoinsButtonRect => addCoinsButtonRect;
         public RectTransform RefreshQuestsRowRect => refreshQuestsRowRect;
         public RectTransform RefreshQuestsButtonRect => refreshQuestsButtonRect;
+        public RectTransform DebugColorsRowRect => debugColorsRowRect;
+        public RectTransform DebugColorsToggleRect => debugColorsToggleRect;
+        public RectTransform DebugColorsKnobRect => debugColorsKnobRect;
         public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
 
@@ -176,6 +199,9 @@ namespace Doggiehood.Unity
 
         /// <summary>Live state of the fence debug toggle.</summary>
         public bool FenceToggleOn => toggles != null && toggles.IsOn(FenceToggleKey);
+
+        /// <summary>Live state of the #611 debug-element-colors toggle.</summary>
+        public bool DebugColorsToggleOn => toggles != null && toggles.IsOn(DebugColorsToggleKey);
 
         /// <summary>The engine-free unlock gesture (fresh per session, #219).</summary>
         public DebugUnlockGesture Gesture => gesture;
@@ -201,6 +227,7 @@ namespace Doggiehood.Unity
             gesture = new DebugUnlockGesture();
             toggles = new DebugToggleRegistry();
             toggles.Register(FenceToggleKey, WorldBuilder.ForceFencesVisible);
+            toggles.Register(DebugColorsToggleKey, WorldBuilder.ShowDebugElementColors);
             toggles.Changed += OnToggleChanged;
 
             Build(version);
@@ -244,6 +271,13 @@ namespace Doggiehood.Unity
             toggles.Toggle(FenceToggleKey);
         }
 
+        /// <summary>#611: flips the debug-element-colors toggle (drives the
+        /// ground/backstop debug-colour seam).</summary>
+        public void ToggleDebugColors()
+        {
+            toggles.Toggle(DebugColorsToggleKey);
+        }
+
         /// <summary>#286: the Debug-tab "Add coins" action — grants
         /// <see cref="DebugAddCoinsAmount"/> coins to the live wallet so
         /// neighborhood expansion can be tested without grinding quests. A
@@ -271,14 +305,23 @@ namespace Doggiehood.Unity
 
         private void OnToggleChanged(string key, bool value)
         {
-            if (key != FenceToggleKey)
+            if (key == FenceToggleKey)
             {
+                WorldBuilder.ForceFencesVisible = value;
+                SyncFenceToggleVisual(value);
+                WorldRebuild?.Invoke();
                 return;
             }
 
-            WorldBuilder.ForceFencesVisible = value;
-            SyncFenceToggleVisual(value);
-            WorldRebuild?.Invoke();
+            if (key == DebugColorsToggleKey)
+            {
+                // #611: drive the ground/backstop debug-colour seam, sync the
+                // switch visual, and repaint+reconfigure live so the swap shows
+                // on-device without a restart.
+                WorldBuilder.ShowDebugElementColors = value;
+                SyncToggleVisual(debugColorsToggleImage, debugColorsKnobRect, value);
+                DebugColorsRefresh?.Invoke();
+            }
         }
 
         private void RevealDebugTab()
@@ -471,6 +514,7 @@ namespace Doggiehood.Unity
             BuildFenceRow(debugPaneRect);
             BuildAddCoinsRow(debugPaneRect);
             BuildRefreshQuestsRow(debugPaneRect);
+            BuildDebugColorsRow(debugPaneRect);
             debugPaneRect.gameObject.SetActive(false);
         }
 
@@ -591,18 +635,67 @@ namespace Doggiehood.Unity
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(RefreshQuests);
         }
 
+        /// <summary>#611: the fourth Debug-tab row — a "Show debug element colors"
+        /// switch built exactly like <see cref="BuildFenceRow"/> (same
+        /// <see cref="ToggleTrackWidthPx"/>/<see cref="ToggleTrackHeightPx"/> track
+        /// and knob), stacked one row below Refresh quests via the existing
+        /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> constants
+        /// (#161 — no new named layout values). Wired to the diagnostic seam so
+        /// the ground and camera backstop paint in loud, distinct debug colours.</summary>
+        private void BuildDebugColorsRow(RectTransform parent)
+        {
+            debugColorsRowRect = CreateDebugRow(parent, "DebugColorsRow", order: 3);
+
+            var label = CreateLabel("Label", debugColorsRowRect, DebugColorsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
+            label.rectTransform.offsetMin = new Vector2(TabRadiusPx, label.rectTransform.offsetMin.y);
+
+            var subtitle = CreateLabel("Subtitle", debugColorsRowRect, DebugColorsRowSubtitleText, DebugRowSubtitleFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(subtitle.rectTransform, DebugRowLabelFontSizePx * 1.4f, DebugRowSubtitleFontSizePx * 1.3f);
+            subtitle.rectTransform.offsetMin = new Vector2(TabRadiusPx, subtitle.rectTransform.offsetMin.y);
+
+            debugColorsToggleImage = CreateImage("Toggle", debugColorsRowRect, ToggleOffColor);
+            debugColorsToggleRect = debugColorsToggleImage.rectTransform;
+            debugColorsToggleRect.anchorMin = new Vector2(1f, 0.5f);
+            debugColorsToggleRect.anchorMax = new Vector2(1f, 0.5f);
+            debugColorsToggleRect.pivot = new Vector2(1f, 0.5f);
+            debugColorsToggleRect.sizeDelta = new Vector2(ToggleTrackWidthPx, ToggleTrackHeightPx);
+            debugColorsToggleRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            // Switch track: same Candy Cottage pill styling as the fence switch (#298).
+            CandyChromeUgui.ApplyPill(debugColorsToggleImage, ToggleOffColor, ToggleTrackHeightPx, withShadow: false);
+
+            var knobImage = CreateImage("Knob", debugColorsToggleRect, KnobColor);
+            debugColorsKnobRect = knobImage.rectTransform;
+            debugColorsKnobRect.sizeDelta = new Vector2(ToggleKnobPx, ToggleKnobPx);
+            debugColorsKnobRect.anchorMin = new Vector2(0f, 0.5f);
+            debugColorsKnobRect.anchorMax = new Vector2(0f, 0.5f);
+            debugColorsKnobRect.pivot = new Vector2(0f, 0.5f);
+            CandyChromeUgui.ApplyPill(knobImage, KnobColor, ToggleKnobPx, withShadow: false);
+
+            debugColorsToggleImage.gameObject.AddComponent<Button>().onClick.AddListener(ToggleDebugColors);
+            SyncToggleVisual(debugColorsToggleImage, debugColorsKnobRect, DebugColorsToggleOn);
+        }
+
         private void SyncFenceToggleVisual(bool on)
         {
-            if (fenceToggleImage == null || fenceKnobRect == null)
+            SyncToggleVisual(fenceToggleImage, fenceKnobRect, on);
+        }
+
+        /// <summary>Drives one switch's on/off visual — the track's Leaf/Disabled
+        /// fill and the knob's left/right slide. Shared by the fence toggle and
+        /// the #611 debug-colors toggle so both switches behave identically.</summary>
+        private static void SyncToggleVisual(Image track, RectTransform knob, bool on)
+        {
+            if (track == null || knob == null)
             {
                 return;
             }
 
-            fenceToggleImage.color = on ? ToggleOnColor : ToggleOffColor;
-            fenceKnobRect.anchorMin = new Vector2(on ? 1f : 0f, 0.5f);
-            fenceKnobRect.anchorMax = fenceKnobRect.anchorMin;
-            fenceKnobRect.pivot = new Vector2(on ? 1f : 0f, 0.5f);
-            fenceKnobRect.anchoredPosition = new Vector2(on ? -KnobInsetPx : KnobInsetPx, 0f);
+            track.color = on ? ToggleOnColor : ToggleOffColor;
+            knob.anchorMin = new Vector2(on ? 1f : 0f, 0.5f);
+            knob.anchorMax = knob.anchorMin;
+            knob.pivot = new Vector2(on ? 1f : 0f, 0.5f);
+            knob.anchoredPosition = new Vector2(on ? -KnobInsetPx : KnobInsetPx, 0f);
         }
 
         // --- small UGUI helpers ---

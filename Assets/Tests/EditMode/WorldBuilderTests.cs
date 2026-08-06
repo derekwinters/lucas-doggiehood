@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Art;
+using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.Onboarding;
@@ -85,6 +86,84 @@ namespace Doggiehood.Unity.EditModeTests
             finally
             {
                 WorldBuilder.ForceFencesVisible = original;
+            }
+        }
+
+        [Test]
+        public void BuildGround_UsesTheMatchedGrassColor_WhenDebugElementColorsOff()
+        {
+            // #611 regression: with the diagnostic toggle off (default), the
+            // ground stays the exact matched Palette.GrassHex — byte-identical to
+            // today, so normal play is untouched.
+            var original = WorldBuilder.ShowDebugElementColors;
+            try
+            {
+                WorldBuilder.ShowDebugElementColors = false;
+                WorldBuilder.RepaintGround(root.transform);
+
+                var ground = root.transform.Find(WorldBuilder.GroundName);
+                Assert.That(ground.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.EqualTo(CoreColors.FromHex(Palette.GrassHex)),
+                    "debug off keeps the matched grass green");
+            }
+            finally
+            {
+                WorldBuilder.ShowDebugElementColors = original;
+            }
+        }
+
+        [Test]
+        public void BuildGround_UsesTheDebugGroundColor_WhenDebugElementColorsOn()
+        {
+            // #611: with the diagnostic toggle on, the ground plane is painted the
+            // loud, obviously-fake debug ground colour (not grass green), so a
+            // playtester can tell it apart from the camera backstop.
+            var original = WorldBuilder.ShowDebugElementColors;
+            try
+            {
+                WorldBuilder.ShowDebugElementColors = true;
+                Object.DestroyImmediate(root);
+                root = WorldBuilder.Build(state);
+
+                var ground = root.transform.Find(WorldBuilder.GroundName);
+                Assert.That(ground.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.EqualTo(CoreColors.FromHex(DebugElementColors.GroundDebugHex)),
+                    "debug on paints the ground the debug ground colour");
+                Assert.That(ground.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.Not.EqualTo(CoreColors.FromHex(Palette.GrassHex)),
+                    "and it is no longer the matched grass green");
+            }
+            finally
+            {
+                WorldBuilder.ShowDebugElementColors = original;
+            }
+        }
+
+        [Test]
+        public void RepaintGround_SwapsTheGroundColorLive_WithoutAFullRebuild()
+        {
+            // #611: flipping the toggle on-device must repaint the existing ground
+            // plane live (no restart), mirroring RebuildFences.
+            var original = WorldBuilder.ShowDebugElementColors;
+            try
+            {
+                var ground = root.transform.Find(WorldBuilder.GroundName);
+
+                WorldBuilder.ShowDebugElementColors = true;
+                WorldBuilder.RepaintGround(root.transform);
+                Assert.That(ground.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.EqualTo(CoreColors.FromHex(DebugElementColors.GroundDebugHex)),
+                    "the live repaint swaps to the debug ground colour");
+
+                WorldBuilder.ShowDebugElementColors = false;
+                WorldBuilder.RepaintGround(root.transform);
+                Assert.That(ground.GetComponent<Renderer>().sharedMaterial.color,
+                    Is.EqualTo(CoreColors.FromHex(Palette.GrassHex)),
+                    "and back to the matched grass green when toggled off");
+            }
+            finally
+            {
+                WorldBuilder.ShowDebugElementColors = original;
             }
         }
 
