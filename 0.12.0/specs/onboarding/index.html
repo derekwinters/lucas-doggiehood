@@ -1,0 +1,1840 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Design contract and engineering docs for Doggiehood">
+      
+      
+      
+      
+        <link rel="prev" href="../audio/">
+      
+      
+        <link rel="next" href="../product-scope/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Onboarding - Doggiehood Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#onboarding" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Doggiehood Docs" class="md-header__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Doggiehood Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Onboarding
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../intro/vision/" class="md-tabs__link">
+          
+  
+  Introduction
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  Design & Architecture Specs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../engineering/tech-stack/" class="md-tabs__link">
+          
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tools/" class="md-tabs__link">
+          
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Doggiehood Docs" class="md-nav__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Doggiehood Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/vision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vision
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/how-to-play/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Play
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Design & Architecture Specs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Design & Architecture Specs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    World
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            World
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/world/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World & Neighborhood
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/camera-controls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Camera, Navigation & Controls
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/art-style/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Art & UI Style
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/sidewalks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sidewalks & Walk Network
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/tile-catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tile Catalog (Design Reference)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Dogs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Dogs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dogs/behavior/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Behavior
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dogs/roster-names/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Roster & Names
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Conversation & Quests
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Conversation & Quests
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/conversation-system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation System
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/economy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest & Economy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/quest-content/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest Content
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    UI Wireframes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            UI Wireframes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/shared-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shared UI Components
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/hud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HUD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/conversation-panel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation Panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/onboarding-overlay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding Overlay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/dog-profile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Profile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Settings menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/onboarding-reward/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding reward panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/welcome-popup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcome pop-up
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Toast notification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/mockups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mockups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decorations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Decorations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expansion/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Neighborhood Expansion (Post-MVP)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audio
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Onboarding
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#first-launch-quest-seeding-312" class="md-nav__link">
+    <span class="md-ellipsis">
+      First-launch quest seeding (#312)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#onboarding-reward-chain-316" class="md-nav__link">
+    <span class="md-ellipsis">
+      Onboarding reward-chain (#316)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-gated-speech-bubble-self-heal-329" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-gated speech bubble &amp; self-heal (#329)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../product-scope/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Product Scope & Constraints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../future-ideas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Future Ideas
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Engineering
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/tech-stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tech Stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/ui-design-process/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UI Design Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning & Releases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/ci-cd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/agent-workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Map Builder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/unity-serialization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hand-Authoring Unity Serialized Assets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#first-launch-quest-seeding-312" class="md-nav__link">
+    <span class="md-ellipsis">
+      First-launch quest seeding (#312)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#onboarding-reward-chain-316" class="md-nav__link">
+    <span class="md-ellipsis">
+      Onboarding reward-chain (#316)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-gated-speech-bubble-self-heal-329" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-gated speech bubble &amp; self-heal (#329)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/specs/onboarding.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="onboarding">Onboarding<a class="headerlink" href="#onboarding" title="Permanent link">&para;</a></h1>
+<p><em>Epic: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/18">#18</a></em></p>
+<p>The first time the game is opened, the first dog with a speech bubble walks the player through panning/zooming, tapping the speech bubble, and completing one simple quest — teaching the core loop naturally, without a separate tutorial screen. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/44">#44</a>)</p>
+<p>The guidance is presented as a slim <strong>bottom-center coach prompt</strong> (not a top banner) that is layered over live gameplay, never blocks input, advances itself through the four steps as the player performs each real action, and auto-dismisses once the first quest is complete. Its layout — regions, anchors, and named size/margin constants — is the approved wireframe in <a href="../ui/onboarding-overlay/">UI Wireframes → Onboarding overlay</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/176">#176</a>). The old graybox top-banner rendering in <code>OnboardingOverlay</code> has been replaced by that bottom-center coach prompt, and the prompt now correctly advances on the real pan/zoom/tap interactions and dismisses after the first quest completes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/207">#207</a>).</p>
+<p>Because this is a kids' game, the two <strong>movement</strong> steps also <em>show</em> the gesture: an animated looping directional-arrow coach layers over the map during the <strong>Pan</strong> step (arrows cycling left→right, right→left, up→down, down→up) and the <strong>Zoom</strong> step (a symmetric pair spreading apart to zoom in, closing together to zoom out), then hides the instant the real pan/zoom is registered. The <code>TapBubble</code>/<code>CompleteQuest</code> steps are unchanged. The beat sequencer is engine-free Core (<code>GestureCoach</code>); the thin <code>OnboardingOverlay</code> computes each arrow's screen offset and draws it. See <a href="../ui/onboarding-overlay/#gesture-arrow-coach-330">Onboarding overlay → Gesture-arrow coach</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330">#330</a>).</p>
+<h2 id="first-launch-quest-seeding-312">First-launch quest seeding (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/312">#312</a>)<a class="headerlink" href="#first-launch-quest-seeding-312" title="Permanent link">&para;</a></h2>
+<p>On the very first launch the world seeds <strong>exactly one</strong> dog with a single easy <strong>lost-item</strong> quest, and the normal hourly-trickle <a href="../quests/economy/#core-loop">rotation</a> is <strong>suppressed until onboarding completes</strong>. This guarantees the tutorial has one and only one gentle tap-to-find target — the <code>OnboardingSequence</code> resolves that seeded dog as its <code>TargetDog</code>, so step 4 ("complete a quest") is always the low-friction lost-item tap rather than, say, a purchase or pest-control errand competing for attention.</p>
+<p>The branch lives in Core (<code>QuestManager.BeginInitialQuests(rng)</code>): with onboarding incomplete it seeds the one lost-item quest and returns; once onboarding is complete it is just the normal <code>StartNewDay</code> rotation. The thin Unity layer (<code>WorldBootstrap</code>) calls the seam behind its existing "no active quests" guard — no game logic in the <code>MonoBehaviour</code>.</p>
+<p>When onboarding finishes, its <code>Done</code> transition now grants <strong>step 1 of the <a href="#onboarding-reward-chain-316">onboarding reward-chain</a></strong> (a 100-coin completion bonus) rather than starting the daily rotation. The normal rotation stays suppressed across the rest of the guided chain and is released only when the chain completes at its final (build) step — at which point the release seeds an <strong>immediate batch</strong> to the population target (2-3 ready dogs), and the recurring hourly rotation (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a>) then continues from that seeded set (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/579">#579</a>). (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/316">#316</a>)</p>
+<h2 id="onboarding-reward-chain-316">Onboarding reward-chain (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/316">#316</a>)<a class="headerlink" href="#onboarding-reward-chain-316" title="Permanent link">&para;</a></h2>
+<p><em>Design settled with Derek, review session 2026-07-28.</em></p>
+<p>Immediately after the first-quest tutorial, a <strong>one-time, first-run scripted reward-chain</strong> walks a new player through every core early mechanic and seeds enough coins that they never stall. It is a fixed four-step sequence — <strong>not</strong> the random rotation — that fires each step <strong>exactly once, in guaranteed order</strong>, paying a flat <strong>100 coins</strong> per step (<code>OnboardingRewardChainNumbers.RewardPerStep</code>) by reusing the quest reward-payout path (a wallet deposit):</p>
+<ol>
+<li><strong>Complete the first quest</strong> (samples the quest loop) → 100 bonus. Core entry: <code>GameState.GrantOnboardingCompletionReward</code>, fired by <code>OnboardingSequence</code> when the guided quest completes.</li>
+<li><strong>Upgrade a house</strong> (L1 → L2, cost 100) → 100. Core entry: <code>GameState.TryUpgradeHouse</code>. <strong>Scoped to the first-quest dog's house</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/469">#469</a>): the step advances only when <em>that</em> house is upgraded. When the first quest completes, <code>OnboardingSequence.Complete</code> hands the target dog's <code>HouseId</code> to <code>GameState.GrantOnboardingCompletionReward</code>, which records it on <code>GameState</code> (persisted via <code>SaveCodec</code> alongside <code>rewardChain=</code>, so it survives a reload mid-chain). While the chain waits on this step, <code>TryUpgradeHouse</code> is a no-op (no charge, no level change) for any other house — this is what stops the self-funding ladder below from soft-locking when the sole 100 coins would otherwise be spent on a house that doesn't advance the chain. The restriction lifts the instant the chain moves past <code>UpgradeHouse</code>, so ordinary post-onboarding upgrading of any house is unaffected. The Unity house profile surfaces it through the <em>existing</em> disabled-Upgrade-button affordance (a non-target house greys out exactly like an unaffordable one, via <code>GameState.IsHouseUpgradeEligible</code>) — no new UI.</li>
+<li><strong>Expand the map</strong> (first zone, cost 100) → 100. Core entry: <code>GameState.TryUnlockNextZone</code>; the player-facing lock-icon trigger lands with <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/344">#344</a>.</li>
+<li><strong>Build a house</strong> on the newly unlocked lot (cost 50) → 100. Core entry: <code>GameState.TryBuildHouse</code>.</li>
+</ol>
+<p><strong>Self-funding ladder.</strong> The 100 bonus covers the 100 upgrade; the upgrade reward covers the 100 expand; the expand reward covers the 50 build; and because the build costs only 50, the player ends the chain with a small cushion. The costs are the shipped v0.4 sink prices — see <a href="../expansion/#pricing">Neighborhood Expansion → pricing</a> and <a href="../quests/economy/#numbers-placeholder-expect-tuning">Economy → Numbers</a>.</p>
+<p><strong>Ordering and one-time guarantee.</strong> The chain (<code>OnboardingRewardChain</code>, engine-free Core) tracks the step it is waiting on. A tracked action taken out of turn — or repeated after it already paid — neither pays nor advances; the chain simply keeps waiting on its current step. Progress round-trips through the save (<code>SaveCodec</code>), so the chain resumes where it left off and is never restarted or re-paid on reload; a pre-#316 save that had already finished onboarding is treated as a completed chain.</p>
+<p><strong>Rotation handoff (#312 → #310, seeded release #579).</strong> The normal quest rotation stays suppressed while the chain is in progress and is released <strong>exactly when step 4 (build) completes</strong> — no rotation is seeded mid-chain. The release is an <strong>immediate batch seed</strong>, not a single hourly tick: <code>ReleaseInitialRotation</code> requests the full <code>TargetActiveCount</code> in one shot (skipping the per-hour accumulator throttle for this one event), so the player finishes onboarding to a populated board of 2-3 ready dogs on distinct houses rather than an empty board that would trickle up from zero over the following hours (at the starting 0.5/hr rate the first hourly tick adds <code>floor(0.5)</code> = 0 — the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/579">#579</a> halt). The headroom cap, free-dog cap, and ≥1-free-quest guarantee still apply to the seed; the accumulator and rotation clock are left untouched, so the recurring #310/#543 pacing then continues the normal hourly trickle cleanly from that seeded set. The single Core decision <code>QuestManager.EnsureQuestsForLaunch</code> applies this at every launch (pre-chain seed → mid-chain suppression → post-chain refresh), so the thin Unity bootstrap carries no pacing logic.</p>
+<p><strong>Guided by the same coach bar (#371).</strong> The one standard onboarding <a href="../ui/onboarding-overlay/#standard-onboarding-coverage-374">coach bar</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) guides each reward-chain step, not just the first quest: after the first quest it re-shows for <strong>upgrade a house → expand the map → build a house</strong>, advancing as each real action completes on <code>RewardChain</code>, then dismisses for good when the chain completes. The coach bar names the current onboarding <strong>phase</strong> with a top-left gold <a href="../ui/onboarding-overlay/#phase-title-region">phase-title tab</a> — "Learn the ropes" through the tutorial, then "Fix up a home" / "Grow the neighborhood" / "Build a house" for the three reward-chain phases — swapping once per phase, not per step; it carries no step-count indicator (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/435">#435</a>). The per-step prompt copy, the per-phase title lookup, and the "keep showing until the chain completes" dismissal gate are engine-free Core (<code>OnboardingCoach</code>); the coach-bar layout is the approved wireframe.</p>
+<p><strong>Target-house highlight on the upgrade step (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/571">#571</a>).</strong> While the chain waits on <strong>step 2 (upgrade a house)</strong>, the target house — the first-quest dog's house, above — is marked with the <em>existing</em> red ground-ring highlight (the reduced lost-item finder glow, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/535">#535</a>) so it is obvious which house to tap and upgrade. This reuses the game's established red target-highlight vocabulary rather than inventing a new cue, and it fills the exact gap left by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/506">#506</a>: the coach bar is suppressed while a centered profile panel is open, so the "tap this house, then Upgrade…" reminder vanishes precisely when the house profile is open — the persistent ring keeps the "this one" cue visible before the panel opens and, unlike the bottom coach bar, does not collide with the centered panel (so it is deliberately <strong>not</strong> gated by the coach-bar suppression). The show/target decision is engine-free Core (<code>OnboardingHouseHighlight</code>, reading only <code>RewardChain.CurrentStep</code> and the recorded <code>GameState.OnboardingUpgradeTargetHouseId</code> — no new state); the thin Unity view (<code>OnboardingHouseHighlightDirector</code>/<code>OnboardingHouseHighlightView</code>) attaches the flat, non-pulsing, collider-free ring to <em>exactly</em> the target house and tears it down the instant the chain advances past <code>UpgradeHouse</code> (the house is upgraded, or a reload already past it). The ring's footprint is sized from the target house's own renderer bounds (like the bug-swarm marker), not the fixed lost-item ring scale, so it reads correctly under any house variant/level.</p>
+<p><strong>Celebrated by a toast (#562, supersedes the #372/#374 modal panel).</strong> Each step's payout is no longer silent: when a reward-chain step actually pays out, a non-modal <a href="../ui/toast/">toast notification</a> slides into the reserved top-left HUD lane — a cream pill with a gold coin token and a single line carrying the per-step accomplishment plus the payout (e.g. <strong>"You finished your first quest! +100 coins"</strong>) — then clears itself on a short auto-timeout or the moment it is tapped (always dismissible, cf. <a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>). This <strong>reverses</strong> the earlier decision (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) to celebrate each step with the modal <a href="../ui/onboarding-reward/">onboarding reward panel</a> — that "brief blocking-modal celebration beat" exception is withdrawn, so onboarding now raises <strong>no</strong> blocking modal on a reward-chain step; the celebration is a lightweight HUD toast that never interrupts play. The per-step copy is unchanged, carried over verbatim onto the toast. The plumbing keeps the Core/Unity split: <code>OnboardingRewardChain</code> raises a <code>RewardGranted</code> event carrying only the just-completed step + amount (no copy in Core), and the thin Unity layer maps the step to its approved message and shows the toast. The payout itself is unchanged — the toast is pure presentation over the existing <code>Wallet.Deposit</code>, and the currency chip updates on its own; a reloaded chain never re-pays nor re-celebrates.</p>
+<h2 id="step-gated-speech-bubble-self-heal-329">Step-gated speech bubble &amp; self-heal (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>)<a class="headerlink" href="#step-gated-speech-bubble-self-heal-329" title="Permanent link">&para;</a></h2>
+<p>The four steps run in order — <code>Pan → Zoom → TapBubble → CompleteQuest → Done</code> — and the "tap the speech bubble" action is gated to its own step so each step is the obvious next thing to do:</p>
+<ul>
+<li><strong>The target dog's speech bubble is hidden until the <code>TapBubble</code> step.</strong> While onboarding is running, the seeded dog's bubble does not appear (and cannot be tapped) during <code>Pan</code>/<code>Zoom</code>; it becomes visible and tappable for the first time exactly when the flow reaches <code>TapBubble</code>. The gating decision lives in Core (<code>OnboardingSequence.ShouldSuppressBubble</code>); the thin Unity layer (<code>DogView</code> via <code>OnboardingOverlay.SuppressesBubbleFor</code>) just consults it. Only the target dog is gated — other dogs are unaffected (and during the single-seeded onboarding, #312, there are none). Once onboarding is complete, bubbles follow their normal <code>HasActiveQuest</code> binding.</li>
+<li><strong>The <code>TapBubble</code> step self-heals if the interaction already happened.</strong> Should the conversation somehow have been opened early (or the quest already accepted/resolved before the step), the sequence does not strand. <code>OnboardingSequence</code> remembers that the target dog's conversation was opened even if it fired before <code>TapBubble</code>, and on entering <code>TapBubble</code> — or on any overlay poll (<code>OnboardingSequence.Reconcile</code>) — it auto-advances when the conversation was already opened or the target dog's quest is no longer <code>Available</code>, cascading on through <code>CompleteQuest</code>/<code>Done</code> when the quest is already fully resolved. This closes the soft-lock where an early bubble tap left the coach bar pinned on <code>TapBubble</code> forever.</li>
+<li><strong>The conversation dialog is always dismissible.</strong> The "Not now" decline (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/185">#185</a>) stays reachable in every onboarding state, so no path leaves the dialog stuck open.</li>
+</ul>
+<h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] First-launch state is tracked (so onboarding only runs once)</li>
+<li>[ ] Guided prompts cover: panning, zooming, tapping a speech bubble, and completing a quest through to reward</li>
+<li>[ ] Onboarding uses the real game systems (an actual dog, actual quest, actual reward) rather than a separate scripted tutorial scene</li>
+<li>[ ] No blocking modal tutorial screen — guidance is layered over live gameplay</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.top", "content.action.edit", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>

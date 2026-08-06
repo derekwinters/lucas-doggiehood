@@ -1,0 +1,2095 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Design contract and engineering docs for Doggiehood">
+      
+      
+      
+      
+        <link rel="prev" href="../decorations/">
+      
+      
+        <link rel="next" href="../audio/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Neighborhood Expansion (Post-MVP) - Doggiehood Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#neighborhood-expansion" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Doggiehood Docs" class="md-header__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Doggiehood Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Neighborhood Expansion (Post-MVP)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../intro/vision/" class="md-tabs__link">
+          
+  
+  Introduction
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  Design & Architecture Specs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../engineering/tech-stack/" class="md-tabs__link">
+          
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tools/" class="md-tabs__link">
+          
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Doggiehood Docs" class="md-nav__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Doggiehood Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/vision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vision
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/how-to-play/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Play
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Design & Architecture Specs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Design & Architecture Specs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    World
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            World
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/world/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World & Neighborhood
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/camera-controls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Camera, Navigation & Controls
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/art-style/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Art & UI Style
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/sidewalks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sidewalks & Walk Network
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/tile-catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tile Catalog (Design Reference)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Dogs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Dogs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dogs/behavior/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Behavior
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dogs/roster-names/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Roster & Names
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Conversation & Quests
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Conversation & Quests
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/conversation-system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation System
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/economy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest & Economy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quests/quest-content/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest Content
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    UI Wireframes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            UI Wireframes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/shared-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shared UI Components
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/hud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HUD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/conversation-panel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation Panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/onboarding-overlay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding Overlay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/dog-profile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Profile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Settings menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/onboarding-reward/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding reward panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/welcome-popup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcome pop-up
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Toast notification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/mockups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mockups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decorations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Decorations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Neighborhood Expansion (Post-MVP)
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Neighborhood Expansion (Post-MVP)
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      The loop
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      Map shape
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Map shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tiles-auto-activated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tiles (auto-activated)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pricing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pricing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frontier-tile-lots-and-house-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frontier-tile lots and house ids
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#move-in-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Move-in system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#house-leveling" class="md-nav__link">
+    <span class="md-ellipsis">
+      House leveling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expansion-indicator-discoverability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expansion indicator (discoverability)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vacant-house-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vacant house rendering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist-for-when-v04-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist (for when v0.4 starts)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audio
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../onboarding/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../product-scope/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Product Scope & Constraints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../future-ideas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Future Ideas
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Engineering
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/tech-stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tech Stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/ui-design-process/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UI Design Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning & Releases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/ci-cd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/agent-workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Map Builder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../engineering/unity-serialization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hand-Authoring Unity Serialized Assets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      The loop
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      Map shape
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Map shape">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tiles-auto-activated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tiles (auto-activated)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pricing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pricing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frontier-tile-lots-and-house-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frontier-tile lots and house ids
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#move-in-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Move-in system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#house-leveling" class="md-nav__link">
+    <span class="md-ellipsis">
+      House leveling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expansion-indicator-discoverability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expansion indicator (discoverability)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vacant-house-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vacant house rendering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-checklist-for-when-v04-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build checklist (for when v0.4 starts)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/specs/expansion.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="neighborhood-expansion">Neighborhood Expansion<a class="headerlink" href="#neighborhood-expansion" title="Permanent link">&para;</a></h1>
+<p><em>Epic: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/55">#55</a></em></p>
+<div class="admonition note">
+<p class="admonition-title">v0.4</p>
+<p>This entire system is fully designed and is now slated for <strong>v0.4</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/88">#88</a>) — no longer deferred. The neighborhood still starts with just the 4 houses (see <a href="../world/world/">World &amp; Neighborhood</a>); nothing on this page gets built before <code>v0.4</code> starts.</p>
+</div>
+<h2 id="the-loop">The loop<a class="headerlink" href="#the-loop" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Unlock a zone</strong>: the player pays a currency cost to unlock a new zone/area of the map. Newly unlocked zones start with no houses at all — just empty land. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>)</li>
+<li><strong>Build houses</strong>: the player spends currency to construct individual houses within an unlocked zone. Houses don't appear automatically — building each one is its own purchase. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/57">#57</a>)</li>
+<li><strong>Vacancy</strong>: a freshly built house is empty and renders greyscaled until a dog eventually moves in. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>)</li>
+<li><strong>Occupancy over time</strong>: new dogs arrive and move into empty houses gradually over time, rather than all at once. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>) See <a href="#move-in-system">Move-in system</a> below for the full mechanism, and <a href="../dogs/roster-names/">Dog Roster &amp; Names</a> for how names and breeds are drawn.</li>
+<li><strong>House leveling</strong>: every house starts at level 1 and can be upgraded up to level 4. Upgrading makes the house visually bigger/nicer and increases how many decorations its yard can hold. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>)</li>
+</ol>
+<h2 id="map-shape">Map shape<a class="headerlink" href="#map-shape" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Decision (2026-07-31, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/295">#295</a>) — player-choice single-tile frontier, superseding the sequential-zone model below.</strong> The unlock unit is a <strong>single tile, not a hand-grouped zone</strong>, and <strong>the order is the player's choice</strong>. Any placed tile's open road edge that borders a tile <strong>defined in the full authored target map</strong> (<code>docs/tools/map-data.json</code>, #383) and not yet placed is an unlockable <strong>frontier</strong> coordinate — shown with a lock icon the player can tap to unlock if they can afford it. The frontier is derived <strong>algorithmically</strong> from (placed map) vs (target map) using #109 edge-adjacency — a candidate must both place validly (<code>TileMap.CanPlace</code>) <strong>and</strong> carry a real road connection into the network (<code>TileMap.HasRoadConnectionAt</code> — at least one shared edge with a road on both sides, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/507">added #507</a>), so no manual grouping/carving is authored and no lock icon appears on a tile with no road leading into it. <strong>Onboarding gate:</strong> before the onboarding reward-chain's step-3 "expand the map" completes, only that one scripted tile is unlockable; after it completes, every current frontier tile is simultaneously unlockable, in any order. This <strong>supersedes</strong> the "unlock authored zones in sequence" model described in the 2026-07-14 decision immediately below and its <code>ZoneCatalog</code>-list implementation. <strong>The multi-lock indicator rework (one lock per open connection point) shipped in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>, which also RETIRED the legacy sequential path outright</strong> — <code>ZoneCatalog</code>, <code>Zone</code>/<code>ZoneTilePlacement</code>, <code>TryUnlockNextZone</code>, <code>ZoneUnlock</code>/<code>ZoneUnlockNumbers</code>/<code>ZoneUnlockOffer</code>, <code>RestoreUnlockedZoneCount</code>, and the single-marker indicator (<code>ExpansionIndicator.Resolve(state)</code>, <code>ExpansionIndicatorPlacement.Resolve(map, zone)</code>) are all deleted. Frontier tiles now cover the same ground: the Unity layer supplies the authored target map at runtime (<code>MapDataLoader</code> loads <code>Assets/Resources/Data/map-data.json</code> and calls <code>SetTargetMap</code> at bootstrap), each frontier tile's lots get stable house ids from a pure <code>FrontierHouseId.For(coordinate, quadrant)</code> function, and <code>ExpansionUnlockDirector</code> maintains one lock indicator per unlockable frontier coordinate. Old saves are <strong>not</strong> carried across this change (a legacy <code>zones=N</code> line is simply no longer understood); the onboarding single-tile gate (only (0,1) unlockable until the "expand the map" step completes) is unchanged.</p>
+<p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a>) — superseded for unlock <em>unit/order</em> by the 2026-07-31 decision above; still current that expansion is authored, not procedural.</strong> the map is <strong>hand-picked expansion with no fixed end</strong> — tiles are authored and added over time, and procedural generation stays out of scope (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). The authored tiles come from the <a href="../world/tile-catalog/">tile catalog</a> (60m grid), pre-authored by Derek and Lucas; the player never freely places arbitrary tiles — they only unlock tiles the authored target map already defines. Early tiles use only <strong>cul-de-sac, straight, tee, and turn</strong> tiles — more variety (including the OpposingTurns/park-island tiles, whose arch-loop question stays deferred on #109) comes later. <em>(Original wording: a zone was a hand-authored group of tiles unlocked in sequence; the 2026-07-31 decision replaced the group with a single tile and the sequence with player choice.)</em></p>
+</blockquote>
+<p><strong>First zone:</strong> a single cul-de-sac directly north of the starting intersection. The confirmed layout (2026-07-29, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/360">#360</a>): from the starting <code>FourWay</code> at grid (0,0), a single <code>CulDeSacSouth</code> tile at (0,1) — its road enters from the south edge (meeting the origin <code>FourWay</code>'s north road) and ends in a bulb pointing north, so the whole zone sits due north with no dangling roads. This <strong>supersedes</strong> the earlier two-tile northwest layout (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>: <code>TurnSW</code> at (0,1) + <code>CulDeSacEast</code> at (−1,1), which ran north then turned west into the bulb) — the single north tile also lines up straight under the expansion lock indicator, which already hovers due north of the origin.</p>
+<p>The tile-grid placement/adjacency system this all sits on is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, the milestone's geometric prerequisite.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>) — the authored target map is loadable in Core.</strong> The full neighborhood Derek &amp; Lucas authored in the <a href="../../tools/">Map Builder</a> (84 tiles, committed as design data at <code>docs/tools/map-data.json</code>, shaped <code>{name, tiles:[{x,y,type}]}</code> with <code>x→Col</code>, <code>y→Row</code> and origin <code>FourWay</code> at (0,0)) parses into a validated Core <code>TileMap</code> via <code>Doggiehood.Core.World.MapDefinition.Parse</code> + <code>MapLoader.Load</code>, exposed as the neighborhood's <strong>target/full</strong> layout. Placement is self-ordered — the file lists tiles in authoring order, not adjacency order, so the loader seeds the origin then repeatedly places any pending tile that already has a placed neighbour (through #109's <code>TileMap.CanPlace</code>/<code>Place</code>) until nothing more can be placed; a tile that fails adjacency is reported in <code>MapLoadResult.RejectedCoordinates</code>, never thrown. <code>MapLoadResult.CurvedCorners</code> gives, per bend (<code>Turn*</code>) tile, the <code>Quadrant</code> corner that renders curved (data only — no rendering yet). This is Option A of #383: the loader produces the target map as Core data; <strong>the live playable world stays incremental</strong> (seeded <code>FourWay</code>, grown one tile at a time). The target map is now the reference the <strong>player-choice frontier</strong> unlock (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/295">#295</a>) reads: <code>GameState.SetTargetMap</code> supplies it, and <code>Doggiehood.Core.Expansion.TileFrontier.Compute(placed, target)</code> derives the unlockable coordinates from it — see the <a href="#pricing">#295 note under Pricing</a>.</p>
+<h3 id="green-space-tiles-auto-activated">Green-space tiles (auto-activated)<a class="headerlink" href="#green-space-tiles-auto-activated" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Decision (2026-08-05, Derek, <code>/approve</code>d on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) — green spaces are free auto-activations, not paid frontier unlocks.</strong> A "green-space tile" is the new 18th <a href="../world/tile-catalog/#green-space-tile-539"><code>TileType.GreenSpace</code></a>: a full grid tile authored into the target map (<code>docs/tools/map-data.json</code>) like any other type, but carrying <strong>no road and no lots</strong>. It is <strong>not</strong> part of the paid, road-connected frontier above — instead it <strong>auto-activates for free</strong> (no coin cost, no lock icon) the instant <strong>2 or more of its 4 edges</strong> border an already-activated tile, where "activated" means any tile currently on the live <code>Map</code> — a placed road tile <em>or</em> an already-activated green space. Activation <strong>cascades unbounded to a fixpoint</strong>: one freshly activated green space can give an adjacent green space its second bordering edge, and the whole connected blob turns on in a single pass (Derek's "if that cascades into a bunch of green space that's okay, as long as it's always the 2-tile touching rule").</p>
+</blockquote>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>).</strong> Built as pure Core logic, deliberately separate from <code>TileFrontier</code>/<code>TryUnlockTile</code>:</p>
+<ul>
+<li><strong>Eligibility</strong> — <code>Doggiehood.Core.Expansion.GreenSpaceActivation.Compute(placed, target)</code> returns every target <code>GreenSpace</code> coordinate not yet placed whose count of edges bordering a <code>placed.HasTileAt</code> neighbour is ≥ 2 (same shape as <code>TileFrontier.Compute</code>, but keyed on the 2-edge rule instead of a road connection).</li>
+<li><strong>Activation pass</strong> — <code>GameState</code> runs a pass that loops <code>GreenSpaceActivation.Compute</code> + <code>TileMap.Place</code> to a <strong>fixpoint</strong> (not a single hop), invoked after a successful <code>TryUnlockTile</code> (a road placement can newly qualify green neighbours) and once inside <code>SetTargetMap</code> (the single "after target-map/save restore" hook). Green spaces are placed straight onto <code>Map</code> <strong>without</strong> being recorded in <code>UnlockedTiles</code>: they are not player unlocks, carry no lots, and — see persistence — are re-derived rather than persisted.</li>
+<li><strong>Free / no cost curve inflation</strong> — no <code>Wallet</code> interaction at all. The road-unlock cost curve scales on <code>RoadTileCount</code> (non-<code>GreenSpace</code> tiles on <code>Map</code>) rather than raw <code>Map.Tiles.Count</code>, so the free green spaces that also grow <code>Map.Tiles</code> never inflate the price of the next road unlock. With no green space placed this equals <code>Map.Tiles.Count</code>, so pre-#539 pricing is unchanged.</li>
+<li><strong>Frontier exclusion (no lock icon)</strong> — a <code>GreenSpace</code> tile carries zero road edges, so it can never satisfy <code>TileMap.HasRoadConnectionAt</code> and is structurally excluded from <code>TileFrontier</code>/<code>UnlockableFrontier()</code>; a regression test pins that it never appears there even when bordering 2+ placed tiles.</li>
+<li><strong>Persistence — pure replay, no new save format.</strong> Activation is a pure function of the already-persisted placed <strong>road</strong> tiles, so nothing green is written to the save (no <code>green=</code> line; green coordinates are absent from the <code>tile=</code> set). On load the existing <code>tile=</code> road lines replay onto <code>Map</code>, then the <code>SetTargetMap</code> activation pass re-derives exactly the same green-space membership.</li>
+<li><strong>Unity</strong> — a placed <code>GreenSpace</code> tile needs no new rendering: <code>WorldBuilder</code>'s road-art/lot/tree passes iterate <code>UnlockedTiles</code> (which never includes a green space), so they no-op for it, while <code>ResizeGroundToMap</code> grows the grass ground plane to cover it because it sizes from the whole <code>Map</code>.</li>
+</ul>
+<h2 id="pricing">Pricing<a class="headerlink" href="#pricing" title="Permanent link">&para;</a></h2>
+<p><em>Decisions 2026-07-14 (Derek, in conversation). All values are named, tunable constants in Core — expect adjustment during playtesting; see also <a href="../quests/economy/#numbers-placeholder-expect-tuning">Quest &amp; Economy</a>.</em></p>
+<table>
+<thead>
+<tr>
+<th>Purchase</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tile unlock (frontier)</td>
+<td><strong>50-coin base + 10 per already-unlocked tile</strong> (#295, rebalanced #540): <code>TileUnlockNumbers.BaseCost</code> (50) <code>+ PerExistingTileStep</code> (10) <code>× player-unlocked tiles</code>, no cap — the first unlock matches a house build, then each rises by 10 (Derek's "+10 per existing tile"). The origin FourWay is excluded, so the first unlock is at the base. A single swappable balance function (<code>TileUnlock.Cost(placedTileCount)</code>). <em>Supersedes and (as of #453) fully replaces the earlier escalating zone-unlock formula (100, 200, 300, …); the <code>ZoneUnlock</code> path is deleted.</em></td>
+</tr>
+<tr>
+<td>Build a house</td>
+<td><strong>50-coin base + 5 per 4 houses built</strong> (#57, rebalanced #540): <code>HouseBuildNumbers.BaseCost</code> (50) <code>+ PerBatchStep</code> (5) <code>× floor(playerBuiltHouses / HousesPerStep)</code> (4), no cap — builds 1-4 at 50, 5-8 at 55, and so on. The 4 starting houses are excluded, so the first build is at the base. <code>HouseBuildNumbers.Cost(housesBuilt)</code>.</td>
+</tr>
+<tr>
+<td>House upgrade to L2 / L3 / L4</td>
+<td>100 / 200 / 400 coins (doubles per level)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Rebalance (2026-08-03, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/540">#540</a>) — cheaper starting expansion + gentle cost-scaling.</strong> Plain English: the <em>first</em> tile unlock now costs the same as a house (50, down from a flat 100), so the early game opens up a bit faster; after that, both sinks scale so growth still can't run away. Tile unlocks climb <strong>+10 per tile already unlocked</strong> and house builds climb <strong>+5 for every 4 houses built</strong>. Counts are <strong>player actions only</strong> — the origin FourWay and the 4 starting houses don't count, so the first unlock and first build are both at the 50 base. Neither curve is capped (flat-then-linear). Both live as named, tunable balance functions in Core (<code>TileUnlock.Cost</code> / <code>HouseBuildNumbers.Cost</code>) for one-place future tuning.</p>
+</blockquote>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/56">#56</a>) — HISTORICAL; the <code>Zone</code>/<code>ZoneCatalog</code> sequential-unlock machinery below was RETIRED by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>.</strong> It is superseded end-to-end by the player-choice frontier (<code>TryUnlockTile</code>, <code>FrontierHouseId</code>, <code>UnlockedTiles</code>) described in the #295 and #453 notes above; the classes named here (<code>Zone</code>, <code>ZoneCatalog</code>, <code>ZoneUnlock</code>, <code>TryUnlockNextZone</code>, <code>RestoreUnlockedZoneCount</code>) no longer exist. Kept for provenance: built as pure Core logic on top of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>'s tile grid — <code>Doggiehood.Core.World.Zone</code> (authored tile placements + the quadrant lots each tile carries, via <code>TileLotCatalog</code>/<code>TileGeometry</code>), <code>Doggiehood.Core.World.ZoneCatalog</code> (the authored zone list — only the first zone exists yet), and <code>Doggiehood.Core.Expansion.ZoneUnlock</code>/<code>ZoneUnlockNumbers</code> for the cost formula. <code>GameState</code> now owns a <code>TileMap</code> (<code>Map</code>, seeded with just the starting FourWay intersection) and <code>UnlockedZones</code>; <code>GameState.TryUnlockNextZone()</code> is the one entry point — it charges <code>Wallet</code> for the next zone in sequence, adds that zone's tiles to <code>Map</code> through #109's placement/adjacency validation, and returns false with no state change (no deduction, no tiles placed) if the balance can't cover it or every authored zone is already unlocked. Unlocking never creates <code>House</code> objects — <code>GameState.IsLotBuildable(houseId)</code> reports a zone's lots as buildable exactly because no <code>House</code> exists for that id yet, which is what house building (#57) checks. <strong>Persistence (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>):</strong> <code>Map</code>/<code>UnlockedZones</code> now round-trip through <code>SaveCodec</code> so an unlocked zone survives an app relaunch. Because zones are authored and deterministic (<code>ZoneCatalog</code>), the save stores only the unlocked <em>count</em> (<code>zones=N</code>); on load <code>GameState.RestoreUnlockedZoneCount</code> replays the first N authored zones onto <code>Map</code>/<code>UnlockedZones</code> without re-charging the wallet or re-advancing the reward chain (the parallel of <code>RestoreRewardChainStep</code>). A legacy save with no <code>zones</code> line loads as nothing unlocked.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/295">#295</a>) — the player-choice frontier unlock (supersedes the sequential zone unlock above).</strong> Built as pure Core logic: <code>Doggiehood.Core.Expansion.TileFrontier.Compute(placed, target)</code> returns every coordinate that (a) borders an already-placed tile, (b) exists in the authored target map, (c) isn't already placed, (d) would place validly (<code>TileMap.CanPlace</code> — its road/no-road edges agree with every placed neighbour), <strong>and (e) forms a real road connection into the network</strong> (<code>TileMap.HasRoadConnectionAt</code> — at least one shared edge carries a road on <em>both</em> sides). Requirement (e) is what makes the frontier precisely Derek's "a road with a connection point that has another tile defined": <code>CanPlace</code> alone (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/507">corrected #507</a>) is satisfied just as well by a no-road/no-road boundary, so keying the lock indicator to edge-agreement <em>without</em> (e) surfaced lock icons on tiles with no road leading into them. <code>CanPlace</code>'s broader edge-agreement semantics stay unchanged everywhere else (e.g. <code>MapLoader</code>'s authored-map placement replay), which legitimately relies on no-road/no-road edges agreeing. <code>GameState</code> gains the authored <code>TargetMap</code> (supplied by the Unity layer via <code>SetTargetMap</code>; not itself persisted — fixed design data re-supplied each launch), <code>UnlockedTiles</code> (the coordinates unlocked one-at-a-time), and <code>UnlockableFrontier()</code> (the frontier gated by onboarding: only the single scripted <code>OnboardingExpansionTile</code> — the authored first tile at (0,1) — until the reward-chain "expand the map" step completes, then the whole frontier at once). <code>GameState.TryUnlockTile(coordinate)</code> is the <strong>one entry point</strong> — it charges <code>Doggiehood.Core.Expansion.TileUnlock.Cost(placedTileCount)</code> (a single, named, swappable balance function — since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/540">#540</a> <code>TileUnlockNumbers.BaseCost</code> = 50 plus <code>PerExistingTileStep</code> = 10 per player-unlocked tile, the origin FourWay excluded so the first unlock is at the base; callers thread the live <code>Map.Tiles.Count</code>), places the chosen frontier tile through #109's validated <code>TileMap.Place</code>, and advances the onboarding "expand the map" step; it returns false with <strong>no state change</strong> (no deduction, no tile placed) when the coordinate isn't a currently-unlockable frontier tile or the balance can't cover the cost. <strong>Persistence:</strong> unlocked tiles round-trip through <code>SaveCodec</code> as the actual <strong>set of unlocked coordinates</strong> (<code>tile=col|row|type</code>, emitted in unlock order), superseding the sequential <code>zones=N</code> count for the frontier path; on load <code>GameState.RestoreUnlockedTile</code> replaces each onto <code>Map</code> without re-charging the wallet. <strong><a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a> wired the Unity layer to this frontier model (multiple simultaneous locks, one per open connection point) and deleted the legacy <code>zones=N</code>/<code>TryUnlockNextZone</code>/<code>ZoneCatalog</code> path</strong> — see the #453 note under <a href="#frontier-tile-lots-and-house-ids">Frontier-tile lots</a> and the map-shape decision above.</p>
+<h3 id="frontier-tile-lots-and-house-ids">Frontier-tile lots and house ids<a class="headerlink" href="#frontier-tile-lots-and-house-ids" title="Permanent link">&para;</a></h3>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>) — frontier tiles grow buildable lots.</strong> A player-unlocked frontier tile carries the quadrant lots its type defines (<code>TileLotCatalog.LotsFor</code>, already generic across the 16 non-<code>FourWay</code> types), positioned from the tile centre and given a <strong>stable, collision-free house id derived purely from <code>(coordinate, quadrant)</code></strong> via <code>Doggiehood.Core.World.FrontierHouseId.For</code> (zig-zag-encode <code>col</code>/<code>row</code>, Cantor-pair them, <code>* 4 + quadrantIndex</code>, plus a fixed base offset clear of the 4 starting ids). Because the id is a pure function of position — not a replayable counter — the mapping needs no extra persistence and survives player-chosen unlock order. <code>GameState.IsLotBuildable</code>/<code>GetHouseLot</code>/<code>TryBuildHouse</code> resolve a frontier tile's lots (via <code>GameState.LotsForUnlockedTile</code>) exactly as they already do for a starting lot, and <code>TryUnlockTile</code> rolls + persists each new lot's <code>HouseVariant</code> at unlock (the frontier equivalent of the retired <code>AssignZoneLotVariants</code>), so an empty frontier lot renders its predetermined ladder/tint and pre-baked yard trees immediately. Every frontier id is ≥ <code>HouseVariantAssignment.FirstZoneHouseId</code>, so it rolls a variant like any zone house did.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/57">#57</a>, rebalanced <a href="https://github.com/derekwinters/lucas-doggiehood/issues/540">#540</a>):</strong> <code>GameState.TryBuildHouse(houseId)</code> is the one entry point — it charges <code>Doggiehood.Core.Expansion.HouseBuildNumbers.Cost(GameState.PlayerBuiltHouseCount)</code> (50-coin base + 5 per 4 player-built houses; the 4 starting houses excluded, so the first build is at the base) from <code>Wallet</code> and adds a new <code>House</code> at <code>House.InitialLevel</code> (1) and vacant, returning false with no state change when the lot already has a house (<code>IsLotBuildable</code> false), the lot's zone hasn't been unlocked yet, or the balance can't cover the cost. <code>GameState.GetHouseLot(houseId)</code> resolves a house's lot across both the starting layout and any unlocked zone, for the Unity layer. On the Unity side, <code>WorldBuilder.BuildEmptyLots</code> renders one graybox marker (<code>EmptyLotView</code>) per buildable lot in every unlocked zone; <code>ExpansionDirector</code> wires each marker's tap to the reusable <a href="../ui/confirmation-dialog/">confirmation dialog</a> (<strong>Building a house first asks, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/406">#406</a></strong>): a tap resolves <code>Doggiehood.Core.Expansion.HouseBuildOffer.Resolve(state, houseId)</code> (null when the lot isn't buildable — a no-op that never opens the dialog) and raises the dialog with <em>"Build a house here?"</em> + the current scaled build cost (<code>HouseBuildOffer.Resolve</code> reads <code>HouseBuildNumbers.Cost(PlayerBuiltHouseCount)</code>, #540) on <strong>Yes</strong>; only <strong>Yes</strong> calls <code>TryBuildHouse</code>, and on success replaces the marker with the real house visual (<code>WorldBuilder.BuildHouse</code>) and saves — <strong>No</strong>/scrim cancels with no spend. <strong>A mid-game build now also renders the lot's yard and fence (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/405">#405</a>):</strong> after <code>BuildHouse</code>, <code>ExpansionDirector</code> calls the single-lot render helpers <code>WorldBuilder.BuildYardLandscaping(lot)</code> / <code>BuildFence(lot)</code> / <code>BuildWalkway(lot)</code> (extracted from the world-build loops), so a zone house gets its yard trees — and its fence when fences are visible — the same treatments a starting house gets at world-build time, instead of only its bare mesh. <strong>The full world-build and debug-toggle fence loops cover zone houses too (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/424">#424</a>):</strong> <code>WorldBuilder.BuildFences</code>/<code>RebuildFences</code> iterate <strong>every built house</strong> via <code>GameState.GetHouseLot</code> rather than the starting-only <code>NeighborhoodLayout.HouseLots</code>, so a zone house is fenced on a fresh world build and when the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a> debug toggle rebuilds fences — not only at the moment it is built. The fence still stays hidden by default (<code>HouseLot.HasFence</code> off); #424 only makes the geometry exist and build for every house. <strong>A zone house now also faces the street with a real front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/430">#430</a>) — the front-walkway/street-facing piece is no longer deferred.</strong> <code>GameState.WalkNetwork</code> admits a built zone house's lot (its filter widened to accept a house with an authored style <em>or</em> a rolled <code>HouseVariant</code>), so the lot grows a real front-walkway edge; the render path builds against that <strong>live</strong> network (<code>ExpansionDirector</code> and <code>WorldBuilder.Build</code> pass <code>state.WalkNetwork</code> into <code>BuildHouse</code>/<code>BuildWalkway</code>, calling the network-aware <code>HousePlacement.FrontFacing(lot, network)</code> overload) instead of the starting-tile-only <code>NeighborhoodLayout.WalkNetwork</code>, so the zone house renders facing its street with a tiled walkway to the door — a starting-house treatment — rather than the old Z-sign facing fallback / <code>BuildWalkway</code> no-op. <strong>A zone house's fence and yard trees now rotate with it too (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/461">#461</a>):</strong> #430 threaded the live-network facing into the house mesh and its walkway only, so the fence (via the debug toggle) and the pre-baked trees still used the pre-rotation Z-sign fallback and sat at the old orientation. <code>LotFence.GeometryFor(lot, state)</code> now reads <code>state.WalkNetwork</code> for the fence's facing/position, and the yard-tree pre-bake (<code>WorldBuilder.BuildEmptyLots</code>/<code>RenderUnlockedTile</code> → the <code>BuildYardLandscaping(lot, tileType, network)</code> overload) threads that same live network so a zone lot's trees orient to the house's real street-ward facing. Because trees are baked at unlock before any walkway edge exists (below), the tree/fence path resolves the <strong>predetermined</strong> facing by projecting the lot centre onto its nearest sidewalk (<code>HousePlacement.PredeterminedFrontFacing</code>/<code>PredeterminedPosition</code>), which on this axis-aligned map equals the walkway-derived facing the build later resolves — so the pre-placed trees stay correct and are never regenerated (a Core test locks predetermined == actual, protecting #434's no-regenerate assumption). Letting the lot into <code>WalkNetwork</code> also puts its walkway on the graph dogs path over; a resident-only wander gate keeps every <em>other</em> dog off it (see the <a href="../world/sidewalks/">walk network</a> and <a href="../dogs/behavior/">Dog Behavior</a> pages). Dogs entering the house / passing through to the backyard stays out of scope (a possible later follow-up). A stray tap no longer spends coins, so building now mirrors the zone-unlock spend (both go through the same <em>"are you sure?"</em> dialog); the currency HUD reflects a confirmed build automatically since it reads <code>Wallet.Coins</code> live every frame. (House <em>upgrade</em> stays deliberately confirmation-free — Derek's Option A, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/294">#294</a> — so building is confirmed while upgrading is a direct spend.) <strong>Empty-lot marker look (settled, #300 (B), Derek; revised by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/434">#434</a>):</strong> the marker is a low raised graybox <strong>"foundation" slab</strong> that reads as "a house goes here" — a single primitive box (<code>WorldBuilder.EmptyLotFoundationSlabHeight</code> tall, base flush on the ground plane, painted <code>Palette.EmptyLotMarkerHex</code>), no new kit asset. <strong>Its X/Z footprint is now sized to the predetermined house's level-1 mesh footprint and centred on it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/434">#434</a>), reversing the earlier #300 option-3 fixed-marker size (<code>WorldBuilder.EmptyLotMarkerFootprint</code>, now removed).</strong> <strong>The slab is oriented to the lot's real, network-resolved street-ward facing — not a fixed/default rotation (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/569">#569</a>).</strong> #434 sized the marker from the single-arg <code>HousePlacement.HouseFootprint(lot)</code>, which resolves facing via the starting-tile <code>NeighborhoodLayout.WalkNetwork</code> singleton and, for a zone lot with no walkway edge there, falls back to a Z-only guess — so whenever a lot's real facing is along X the slab's width/depth swapped onto the wrong axis (right size, transposed) relative to the house that gets built there (the same #461 bug class the yard trees already had). The empty-lot render sites (<code>WorldBuilder.BuildEmptyLots</code> on the initial build, <code>RenderUnlockedTile</code> on a mid-game unlock) now build the marker through the network-aware <code>WorldBuilder.BuildEmptyLot(parent, lot, state.WalkNetwork)</code> overload — resolving the footprint via <code>HousePlacement.HouseFootprint(lot, network)</code> (predetermined facing/position, the same live map-spanning network they already thread into <code>BuildYardLandscaping</code>) — so the foundation previews the house's actual facing. (A kept 2-arg <code>BuildEmptyLot(parent, lot)</code> overload retains the starting-network path for isolated call sites.) #300's reasoning — "an empty lot has no built house (no rolled model) to size a footprint from" — no longer holds: since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/414">#414</a> <code>HouseModelCatalog.ForHouse</code> is zone-aware (it resolves the rolled ladder's level-1 mesh instead of throwing for a zone lot id ≥ 5), and since #434 the variant is <em>rolled and persisted at unlock</em> (below), so an empty lot <strong>does</strong> know its future house. <strong>The lot also pre-places its yard trees at unlock (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/434">#434</a>):</strong> the empty-lot render sites (<code>WorldBuilder.BuildEmptyLots</code> on the initial build, <code>RenderUnlockedTile</code> on a mid-game unlock) call the deterministic <code>WorldBuilder.BuildYardLandscaping(lot)</code> too, so an empty lot shows trees + a house-sized foundation, not a bare box. Building the lot then swaps <strong>only</strong> the foundation slab for the house mesh — the already-rendered trees are left in place (<code>ExpansionDirector.ConfirmBuild</code> deliberately does not re-render them), so there are no duplicates. Houses built this way have no authored <code>HouseStyleTable</code> entry (that table only covers the starting 4). Their look is <strong>designed and implemented (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>, Derek 2026-07-28; timing moved earlier by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/434">#434</a>):</strong> each zone house <strong>rolls its own</strong> model ladder (one of five) and tint (one of a generated 20-color palette) via a deterministic seed on its house id (<code>Doggiehood.Core.Art.HouseVariantAssignment</code>), <strong>assigned when its tile unlocks (<code>GameState.TryUnlockTile</code>, stored in <code>GameState.AssignedLotVariants</code>) rather than lazily at build (#434)</strong>, and persisted (ladder id + tint index) through <code>SaveCodec</code> (a <code>lotvariant=</code> line for an assigned-but-unbuilt lot; a built lot's variant rides its <code>house=</code> line) so it survives relaunch and L1→L4 upgrades. <code>TryBuildHouse</code> reads that pre-assignment; a legacy save whose zone predates #434 has no persisted entry and falls back to the same deterministic <code>HouseVariantAssignment.ForHouse</code> roll — bit-identical, since the roll is a pure function of the house id. <code>WorldBuilder.BuildHouse</code> renders the rolled ladder's current-level mesh and multiplies the palette tint over it (<code>ApplyPaletteTint</code>); the graybox fallback is now reached only when the kit model can't load or a house carries no rolled variant. See <a href="../world/art-style/#house-architecture">Art Style → House architecture</a> for the full rule. The player-facing zone-unlock trigger ships in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a> — see <a href="#expansion-indicator-discoverability">Expansion indicator</a> below.</p>
+<h2 id="move-in-system">Move-in system<a class="headerlink" href="#move-in-system" title="Permanent link">&para;</a></h2>
+<p><em>Decision 2026-07-14 (Derek, in conversation), detailed on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>. All values named, tunable constants; RNG injectable for deterministic tests.</em></p>
+<ul>
+<li><strong>Trigger — quest-completion pity counter, shared:</strong> every completed quest rolls a single shared move-in chance: base <strong>5%</strong>, <strong>+5%</strong> per completed quest without a move-in, reset to base on success. One counter for the whole neighborhood; on success one vacant house is chosen at random (uniform). The counter only advances while at least one vacant house exists.</li>
+<li><strong>Households:</strong> roster-style mix from day one — <strong>70% single / 25% parent+puppy / 5% three-dog</strong>. Parent+puppy pairs share a breed; every dog gets its own personality, randomly drawn from the <a href="../dogs/behavior/">behavior</a> set.</li>
+<li><strong>Breeds:</strong> the reserved French Bulldog and Puggle are the first two move-ins; afterwards breeds are chosen by <strong>count-weighted randomness</strong> — each breed weighted inversely by how many currently live in the neighborhood, so variety self-adapts to the existing distribution.</li>
+<li><strong>Easter eggs:</strong> each move-in has a <strong>5%</strong> chance the household head is an <a href="../dogs/roster-names/#easter-egg-dogs">easter-egg dog</a> (fixed breed/coat, breed roll skipped); once used, an easter-egg name is permanently removed from the reserve — each appears exactly once.</li>
+<li><strong>Names</strong> come from the <a href="../dogs/roster-names/#general-name-pool-for-dogs-that-move-in-later">general name pool</a>, no duplicates among active dogs.</li>
+<li>New dogs <strong>join the daily quest rotation immediately</strong>.</li>
+<li><strong>Announcement:</strong> a move-in raises a <em>"Welcome to the neighborhood!"</em> celebration pop-up (one per household) — see the <a href="../ui/welcome-popup/">welcome pop-up wireframe</a> for the layout, its per-dog member-chip row, timing, and the "Say hi!" camera pan.</li>
+</ul>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>):</strong> the mechanism above is built as pure Core logic — <code>Doggiehood.Core.Expansion.MoveInSystem</code>, <code>VacantHouses</code>, and <code>BreedWeighting</code> — operating on an abstract set of vacant house ids plus the current dog roster, with no dependency on the #109/#56 tile-grid/zone geometry. <code>Doggiehood.Core.World.House</code> carries the vacancy flag itself (<code>IsVacant</code>, flipped by <code>MarkOccupied</code>); <code>Doggiehood.Core.Expansion.HouseOccupancy</code> bridges the two, deriving the current vacant set from live houses, running one <code>MoveInSystem</code> roll, and — only on success — occupying the filled house. <code>GameState.HandleQuestCompleted</code> calls this on every completed quest (<code>QuestManager.Complete</code>), so the trigger is fully wired. Since zone unlock (#56) and house building (#57) don't exist yet, every house in a real game is one of the 4 starting houses (already occupied at <code>GameState.CreateNew()</code>) — so this wiring has no vacant house to actually fill until #56/#57 land, but is exercised directly in the Core test suite. <strong>Persistence (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/437">#437</a>):</strong> <code>MoveInSystem</code>'s pity counter (quests-since-last-move-in, i.e. the accumulated move-in chance) and its consumed easter-egg / reserved-breed reserve now round-trip through <code>SaveCodec</code> — a single <code>moveIn=&lt;questsSinceLastMoveIn&gt;|&lt;remaining easter-egg names&gt;|&lt;remaining reserved breeds&gt;</code> line (breeds stored by name; a reserve segment is empty once exhausted). On load <code>GameState.RestoreMoveInState</code> rebuilds the system from those saved values without rolling any dice or firing a move-in (the parallel of <code>RestoreRewardChainStep</code>); a legacy save with no <code>moveIn=</code> line keeps <code>CreateNew</code>'s default fresh system (base 5% chance, 0 quests, full reserves). So move-in odds no longer reset to the base and a used easter-egg name never reappears across an app relaunch.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/436">#436</a>) — a move-in is reflected in-game the instant it happens.</strong> The Core mechanism above filled a vacant house but was <strong>invisible during play</strong>: <code>QuestManager.Complete</code> discarded <code>HandleQuestCompleted</code>'s returned household, so the Unity layer never learned a dog had moved in — no <code>DogView</code> appeared and the filled house stayed greyscaled until a full world rebuild. Core now surfaces the event: <code>QuestManager</code> raises <code>public event Action&lt;IReadOnlyList&lt;Dog&gt;&gt; MoveInOccurred</code> from the single <code>Complete</code> funnel, right after <code>HandleQuestCompleted</code>, <strong>only when the returned household is non-empty</strong> — so all three completion paths (delivery, lost-item find, spray) are covered for free. On the Unity side <code>QuestDirector</code> subscribes in <code>Init</code> and, on each move-in, (a) spawns a <code>DogView</code> for every new resident — bound to the filled <code>houseId</code>, tappable and wandering — through the extracted <code>DogSpawner.SpawnDog(state, parent, dog, indexAtHouse)</code> (the per-dog body of the build-time <code>SpawnDogs</code> loop, so the live and build paths share identical house-lookup/stagger/<code>DogView.Init</code> wiring) without touching or duplicating any existing <code>DogView</code>, and (b) drops the filled house's vacancy greyscale (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>) by calling <code>HouseUpgradeDirector.RefreshHouse(houseId)</code> — the same destroy-and-rebuild the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/407">#407</a> upgrade path uses, which re-derives the mesh from the same Core <code>House</code>/<code>HouseLot</code> and so <strong>preserves the house's rolled variant/tint</strong> while the now-occupied flag makes the rebuild pick the normal tint instead of the grey. <code>WorldBootstrap</code> builds the <code>HouseUpgradeDirector</code> up front (moved earlier than #407's original profile-overlay closure) so <code>QuestDirector.Init</code> can hold a reference to it; its rebuild-callback (tap re-wiring) is still configured in <code>BuildHouseProfileOverlay</code>, which runs before any quest can complete. No save-format change — <code>SaveStore</code>/<code>SaveCodec</code> already persist <code>Houses</code>/<code>Dogs</code>, so a live move-in already round-trips; this issue is purely the immediate on-screen reflection.</p>
+<h2 id="house-leveling">House leveling<a class="headerlink" href="#house-leveling" title="Permanent link">&para;</a></h2>
+<p>Levels 1–4. Decoration slots equal the house level (<strong>1/2/3/4</strong>); upgrade costs are in <a href="#pricing">Pricing</a> (100 / 200 / 400, doubling per step, capped at level 4).</p>
+<p><strong>Per-level visuals — model swap (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>, Derek 2026-07-25).</strong> Leveling a house up swaps its City Kit Suburban mesh for the next rung of a per-house ladder, so a home visibly grows as it is upgraded. Each ladder is <em>anchored on its Level-1 mesh</em> — the level-1 entry is exactly the as-built mesh <a href="../world/art-style/#house-architecture"><code>HouseStyleTable</code></a> assigns that house, so a level-1 house renders identically to today. The approved L1→L4 ladders:</p>
+<table>
+<thead>
+<tr>
+<th>House</th>
+<th>L1</th>
+<th>L2</th>
+<th>L3</th>
+<th>L4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>building-type-r</code></td>
+<td><code>building-type-c</code></td>
+<td><code>building-type-s</code></td>
+<td><code>building-type-b</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>building-type-h</code></td>
+<td><code>building-type-i</code></td>
+<td><code>building-type-g</code></td>
+<td><code>building-type-f</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>building-type-k</code></td>
+<td><code>building-type-l</code></td>
+<td><code>building-type-j</code></td>
+<td><code>building-type-d</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>building-type-q</code></td>
+<td><code>building-type-e</code></td>
+<td><code>building-type-u</code></td>
+<td><code>building-type-n</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>A 5th ladder for zone-built houses (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>).</strong> Houses the player builds on zone lots (id ≥ 5) don't have a fixed per-house ladder — they <strong>roll</strong> one of <em>five</em> ladders (the four starter ladders above plus a 5th, <code>HouseLevelModelTable</code> id key 5, size-ordered L1→L4 <code>building-type-o → building-type-p → building-type-a → building-type-m</code>) and one of a generated 20-color tint palette, seeded deterministically on the house id and persisted across upgrades. Leveling still swaps the mesh up the <em>rolled</em> ladder exactly as it does for a starter. The full rule (assignment, persistence, palette generation, color-multiply tint) is in <a href="../world/art-style/#house-architecture">Art Style → House architecture</a> and the <a href="#the-loop">#57 build note</a> above.</p>
+<p><strong>All four levels render their chosen kit mesh</strong> (v0.6 de-graybox pass, Derek's directive "I want the house models we chose at all levels, not graybox"). Every rung of every ladder now has a full <code>HouseModelCatalog</code> entry, so an upgraded house shows its real City Kit Suburban mesh — never the graybox placeholder. Houses render at one fixed uniform kit scale (<code>HousePlacement.KitScale</code>, no per-model normalization), so a bigger mesh renders bigger: the size growth is real, and every ladder mesh's footprint still fits the shared lot envelope the starters already occupy at that scale, so <strong>leveling never resizes or moves the <em>lot</em></strong> — its quadrant bounds and hand-picked centre are untouched. The <strong>house visual on that lot does re-align each level, though</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/454">#454</a>): a taller/deeper upgrade mesh has a different footprint depth, so its front-setback pivot, its <code>HousePlacement.HouseFootprint</code> rect, and the front walkway that meets its door are all resolved from the house's <strong>current level's</strong> model (<code>HouseModelCatalog.ForHouse(houseId, level)</code>, threaded through <code>HousePlacement.Position</code>/<code>PositionFor</code>/<code>HouseFootprint</code>), keeping the upgraded facade exactly <code>FrontSetback</code> from the sidewalk instead of drifting off the level-1 calibration. <code>HouseUpgradeDirector.RefreshHouse</code> re-aligns all three together — it rebuilds the mesh at the level-aware pivot and calls <code>WalkNetwork.RefreshFrontWalkway(lot, level)</code> so mesh, visible door, and walkway agree at the new level. (The earlier note that placement was resolved from the level-1 mesh regardless of level — the <code>ZoneHousePlacementLevel</code> shortcut — held only for the level-<em>blind</em> <code>HouseModelCatalog.ForHouse(houseId)</code> overload, still used where no level is in hand.) Core carries only mesh-name strings (<code>Doggiehood.Core.Art.HouseLevelModelTable</code>); the geometry lives in <code>HouseModelCatalog</code>. The <strong>only</strong> thing still deferred is the front-door anchor of each non-L1 ladder mesh (and the r/h/q L1 starters): those are provisional placeholders (centered on X, <code>z = −FootprintZ/4</code>, strictly inside the footprint) pending a gallery authoring pass — the models themselves are final, and the walkway re-aligns to whatever anchor each level's model carries (provisional or final). The graybox fallback still exists, but is now reached only when the kit model can't load or a house carries no resolvable ladder (a zone house with no rolled variant, or an unknown expansion id) — since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>, an ordinary zone-built house resolves its rolled ladder and renders a real kit mesh.</p>
+<p><strong>Decoration capacity = house level.</strong> A yard holds at most as many decorations as its level (1/2/3/4); a placement past capacity is rejected. See <a href="../decorations/#capacity-house-level">Decorations</a> for the cap and its grandfathering rule (yards that already held more than their level's cap when this shipped keep everything — the cap blocks new placements only).</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>):</strong> <code>GameState.TryUpgradeHouse(houseId)</code> is the one Core entry point — it charges <code>Doggiehood.Core.Expansion.HouseUpgradeNumbers.CostToReach</code> (100/200/400) from <code>Wallet</code> and raises the house's level (<code>House.RaiseLevel</code>), returning false with no state change when the house is unknown, already at <code>HouseUpgradeNumbers.MaxLevel</code> (4), or unaffordable. The decoration cap is <code>GameState.TryAddDecoration</code> (capacity = level); the raw <code>AddDecoration</code> stays uncapped so save-load and grandfathered data are never removed. The player-facing <strong>upgrade button</strong> ships on the <a href="../ui/house-profile/">house profile view</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/294">#294</a>): its footer <strong>Upgrade</strong> button calls <code>TryUpgradeHouse</code> directly on tap (Derek's Option A — no confirmation screen), shows the next step's cost, disables into a <em>Max level</em> state at the cap, and greys out when the live wallet can't afford the next step (<code>HouseProfile.CanAffordUpgrade</code>). <strong>The mesh-swap is a world re-render on the Unity side (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/407">#407</a>):</strong> <code>WorldBuilder.BuildHouse</code> picks the mesh by level <em>once</em>, at build time, so raising the level in Core does not by itself grow the already-built <code>HouseView</code> — a v0.6 playtest bug left the world house on its old mesh while only the profile panel advanced. On a successful <code>TryUpgradeHouse</code> the overlay's upgrade wiring now asks <code>HouseUpgradeDirector.RefreshHouse</code> to destroy the stale <code>HouseView</code> and rebuild it through <code>BuildHouse</code> at the new level (the mirror of how <code>ExpansionDirector</code> swaps an empty-lot marker for the real house on build), then re-wires the fresh view's taps to both the profile-open handler and <code>QuestDirector</code>'s spray path (via the idempotent <code>QuestDirector.WireHouses</code>) so a rebuilt house stays tappable. Rebuilding from the same Core <code>House</code>/<code>HouseLot</code> preserves a zone house's rolled ladder + palette tint (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>) and a vacant house's greyscale (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>). Because the live quest-delivery flow (<code>QuestManager.DeliverPackage</code>) still uses the uncapped <code>AddDecoration</code>, the capacity cap governs the new <code>TryAddDecoration</code> path only — how a decoration quest behaves against a full yard is a separate, undesigned decision left for when the decoration/upgrade UI is built.</p>
+<h2 id="expansion-indicator-discoverability">Expansion indicator (discoverability)<a class="headerlink" href="#expansion-indicator-discoverability" title="Permanent link">&para;</a></h2>
+<p>The neighborhood needs a visible signal that it <em>can</em> grow — a marker on the map for an unexplored/expandable zone, tinted so the player can tell at a glance whether they can afford to unlock it right now. <strong>Where the unlock action lives is now settled (Derek, 2026-07-28, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>): the lock icon itself is the affordance (Option A)</strong> — tapping an affordable (gold) lock raises the reusable <a href="../ui/confirmation-dialog/">confirmation dialog</a>, and Yes unlocks the zone. The remaining onboarding piece of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a> (how the player first learns coins unlock zones) stays a separate, open discoverability question; this section covers the indicator and its tap.</p>
+<blockquote>
+<p><strong>Decisions (Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a>):</strong> the indicator is a <strong>lock icon</strong> marking the locked/expandable zone (2026-07-16) — Kenney's <code>locked</code> Game Icon (CC0), staged at <code>Assets/Art/UI/ExpansionIndicator/Resources/locked.png</code>. It <strong>hovers just past the end of the road</strong> at the entrance to the next locked zone (2026-07-18: "The icon could be hovering just passed the end of the road"), with its position derived from the zone's authored tile layout (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>) rather than hand-placed. It tints <strong>gold when the wallet covers the next zone's unlock cost, grey/black otherwise</strong> (2026-07-18: "Grey or black lock icon if can't purchase. Gold icon if affordable."), updating live as the balance changes. Since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a> the tint also <strong>gates the tap</strong>: tapping a gold lock raises the confirmation dialog, a grey/black lock's tap is a no-op — what the tint promises is exactly what the tap does. The one remaining #178 question (onboarding the coins→zones concept) stays open.</p>
+</blockquote>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a>, reworked by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>, corrected by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/537">#537</a>):</strong> <code>Doggiehood.Core.Expansion.ExpansionIndicatorPlacement.Resolve(placed, frontierCoordinate, frontierType)</code> finds the frontier <strong>coordinate</strong>'s shared edge that actually carries a road into the placed <code>TileMap</code> — a road on <strong>both</strong> sides of the edge, the same <code>TileMap.HasRoadConnectionAt</code> predicate that gates the frontier, not merely any bordering edge — then returns that road edge's midpoint (<code>TileGeometry.EdgeMidpoint</code>) pushed <code>ExpansionIndicatorNumbers.HoverOffset</code> (one <code>WorldDimensions.RoadWidth</code>) further away from the map — "just past the end of the road". A lock therefore <strong>always anchors to an open road edge, never a grass/non-road neighbour edge</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/537">#537</a>, Derek: "Locks should always be on the edge of roads, nothing else"); the frontier tile's type comes from <code>GameState.TargetMap</code>. If no shared edge carries a road it throws — impossible for a real <code>TileFrontier</code>-sourced coordinate, which is already road-connection-gated. <code>Doggiehood.Core.Expansion.ExpansionIndicator.ResolveAll(state)</code> returns <strong>one <code>(TileCoordinate, ExpansionIndicatorState)</code> entry per coordinate in <code>GameState.UnlockableFrontier()</code></strong>, each priced/tinted via the #295 pricing path (<code>TileUnlock.Cost</code> vs the live wallet), NOT <code>ZoneUnlock</code>. On the Unity side, <code>ExpansionUnlockDirector</code> (via <code>WorldBuilder.SyncExpansionIndicators</code>) builds and maintains <strong>one <code>ExpansionIndicatorView</code> per unlockable frontier coordinate</strong> (spawn for a newly-open coordinate, destroy for one that got placed), each re-reading its own live state every frame — the same "never cache" contract the HUD currency chip uses for the wallet — and hiding itself once its coordinate leaves the frontier. This supersedes the retired single fixed marker (<code>ExpansionIndicator.Resolve(state)</code> / <code>ExpansionIndicatorPlacement.Resolve(map, zone)</code>), which is deleted. The staged icon is a literal black silhouette (RGB <code>(0,0,0)</code>, shape carried in alpha), which a standard multiply tint can never recolor (black × anything is still black); <code>Doggiehood.Unity.TintedIcon.Recolor</code> instead builds a new texture preserving the source alpha but replacing every pixel's RGB with the target tint (<code>Palette.ExpansionIndicatorAffordableHex</code> / <code>Palette.ExpansionIndicatorLockedHex</code>), and the view swaps between two precomputed sprites rather than re-tinting every frame. The icon's <code>.meta</code> pins <code>isReadable: 1</code> (Read/Write Enabled) so <code>GetPixels32</code> can read it at runtime, per <a href="../../engineering/unity-serialization/">Hand-Authoring Unity Serialized Assets</a>.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>, reworked by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>) — the tap-to-unlock trigger.</strong> The affordability/cost decision is Core: an indicator's <code>ExpansionIndicatorState</code> (from <code>ExpansionIndicator.ResolveAll</code>) carries the flat <code>TileUnlock.Cost</code> and whether the live wallet affords it, the source the dialog reads (the retired <code>ZoneUnlockOffer</code> is deleted). On the Unity side each per-coordinate <code>ExpansionIndicatorView</code> is tappable (<code>IInteractable</code> + a <code>BoxCollider</code> sized to the sprite, toggled off with the renderer so a hidden lock isn't tappable): tapping an affordable lock raises <code>UnlockRequested</code> <strong>with its own coordinate</strong>, gated by the same live affordability + frontier-membership that tints/shows it — a grey or stale lock's tap does nothing. <code>ExpansionUnlockDirector</code> wires that event to the reusable <code>ConfirmationDialog</code> (built to <a href="../ui/confirmation-dialog/">confirmation-dialog.md</a>, device-safe UGUI via <code>CandyChromeUgui</code>/bundled font, #298/#291) showing that tile's cost on <strong>Yes</strong>; <strong>Yes</strong> calls <code>GameState.TryUnlockTile(coordinate)</code>, then the newly unlocked tile is rendered as real neighborhood (<code>WorldBuilder.RenderUnlockedTile</code>; see the #373 note below), its empty-lot markers wired to the #57 build path via <code>ExpansionDirector.WireLots</code>, the lock set is reconciled (that coordinate's lock disappears; any newly-open frontier locks appear), and the world is saved — mirroring how #57 wires <code>EmptyLotView</code> → <code>TryBuildHouse</code>. The currency HUD reflects the spend automatically (it reads <code>Wallet.Coins</code> live).</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/373">#373</a>) — the unlocked zone renders as real neighborhood.</strong> A v0.6-playtest bug left a newly unlocked zone as bare lot markers floating over void — no grass, no roads — and the camera couldn't pan far enough to reach it. Both gaps are fixed by deriving the world's ground and roads from the live <code>GameState.Map</code> rather than the fixed starting geometry:</p>
+<ul>
+<li><strong>Ground</strong> — the base grass plane now covers the whole map extent (<code>Doggiehood.Core.World.MapExtent.Covering(map)</code>, a half-tile beyond the outermost tiles) instead of the fixed 30m starting pad; it stays the single flat <code>Palette.GrassHex</code> plane (#300 (A)), just grown and re-centred (<code>WorldBuilder.ResizeGroundToMap</code>). So every placed tile, including an unlocked zone's, has grass under it.</li>
+<li><strong>Roads</strong> — a tile's road surfaces are derived from its <code>TileCatalog</code> road edges (<code>Doggiehood.Core.World.TileRoadGeometry.SegmentsFor</code> — one straight arm from the tile centre to each road-carrying edge, the #109 geometry), so an unlocked <code>CulDeSacSouth</code> renders its south arm meeting the origin tile's road the same way any authored zone tile would, rather than depending on the hardcoded <code>NeighborhoodLayout.Roads</code>. The starting intersection keeps its existing polished kit-road corridor + crosswalk rendering; the tile-derived path renders the <em>additional</em> (unlocked) tiles' roads.</li>
+<li><strong>Camera</strong> — the pan bounds recompute from the live map extent on unlock (<code>CameraController.RecomputeBoundsFromMap</code>, Core), so <code>Pan</code>/<code>FocusOn</code> can reach the new zone. The initial bounds derive from the same map-based path (the seeded FourWay origin), so there is a single derivation.</li>
+</ul>
+<p>On a confirmed unlock <code>ExpansionUnlockDirector.ConfirmUnlock</code> calls <code>WorldBuilder.RenderUnlockedTile</code> (grow the ground, render the unlocked tile's roads, drop its empty-lot markers) and grows the live <code>CameraRig</code>'s bounds; the initial <code>WorldBuilder.Build</code> renders the same ground/roads for any tile a save had already unlocked (<code>RestoreUnlockedTile</code>). Camera auto-focus toward the revealed zone was left out of scope per triage — only that the player <em>can</em> pan there.</p>
+<p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/398">#398</a>) — dogs wander the unlocked tiles.</strong> Unlocking a zone doesn't just render it — dogs then explore it. The <a href="../world/sidewalks/">walk network</a> dogs wander is now derived from the live <code>GameState.Map</code> (<code>MapWalkNetwork</code>, spanning every road-bearing tile) instead of the starting-intersection-only <code>NeighborhoodLayout</code> cache, and <code>GameState.WalkNetwork</code> rebuilds after <code>TryUnlockTile()</code> succeeds. Dogs (<code>DogView</code>/<code>WanderBehavior</code>) bind to that live network via a provider (<code>() =&gt; state.WalkNetwork</code>), so already-spawned dogs wander onto the newly unlocked cul-de-sac's sidewalks without being re-spawned. A freshly unlocked zone's lots have no built house yet, so no front walkway attaches to them — but the tile's sidewalks/crosswalks still span it, since those come from the map's roads. (Once a house is <em>built</em> on a lot it does grow a front walkway, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/430">#430</a>.) Visually confirming this depends on the zone's roads/ground actually rendering (the #373 note above).</p>
+<h2 id="vacant-house-rendering">Vacant house rendering<a class="headerlink" href="#vacant-house-rendering" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Decision update (2026-07-16, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>):</strong> superseded the earlier "for sale sign in the yard" plan. Instead, <strong>the whole house mesh renders greyscaled (desaturated) while vacant</strong> and returns to its normal tinted color the moment a dog moves in. This needs no new art asset — it's a flat desaturated material color multiplied over the existing house mesh (the same technique already used for dog coat tinting), not a sign object placed in the yard. It removed the dependency on sourcing a "for sale" sign 3D asset, so <a href="https://github.com/derekwinters/lucas-doggiehood/issues/154">#154</a> is closed as no longer needed.</p>
+</blockquote>
+<p>Vacancy is Core state (<code>House.IsVacant</code>); the greyscale is purely its visual, with no logic of its own — <code>WorldBuilder</code> reads the flag at build time and picks the flat vacancy tint instead of the house's normal <code>HouseStyleTable</code> coloring, in both the City Kit model path and the graybox fallback.</p>
+<h2 id="build-checklist-for-when-v04-starts">Build checklist (for when <code>v0.4</code> starts)<a class="headerlink" href="#build-checklist-for-when-v04-starts" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Tile grid placement + adjacency validation exists (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> — build first)</li>
+<li>[x] Currency-gated <strong>player-choice frontier tile unlock</strong> — any placed tile's open road edge bordering an authored, not-yet-placed target-map tile is unlockable for a <strong>tunable per-tile cost</strong> (50-coin base + 10 per already-unlocked tile, #540); order is the player's choice, gated so only the scripted first tile (the cul-de-sac due north, (0,1)) unlocks until onboarding's "expand the map" step completes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/295">#295</a>, superseding the sequential zone-unlock model). The Unity multi-lock indicator rework — one lock per open connection point, each tapping through to <code>TryUnlockTile</code> for its own coordinate — shipped in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/453">#453</a>, which also retired the legacy sequential zone-unlock path (<code>ZoneCatalog</code>/<code>TryUnlockNextZone</code>/<code>ZoneUnlock</code>) and gave frontier tiles their own lots/house ids (<code>FrontierHouseId</code>); old saves are not carried across that change.</li>
+<li>[x] Currency-gated house building (50-coin base + 5 per 4 houses built, #540) places a level-1, vacant house on an empty lot in an unlocked zone</li>
+<li>[x] Zone-built houses render a real kit model — a deterministic rolled ladder (one of five) plus a generated-palette color-multiply tint (one of 20), assigned once at build and persisted (ladder id + tint index) across upgrades (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>) — instead of the graybox box</li>
+<li>[x] Newly built houses render greyscaled and return to their normal tinted color on move-in (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a> — Core state, wiring, and rendering already built, now reachable through house building (#57))</li>
+<li>[x] The map-expansion lock indicator hovers past the next locked zone's road-end entrance and tints gold/grey-black by affordability, updating live as the balance changes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a>, building on the icon staged by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/183">#183</a>)</li>
+<li>[x] Dogs wander onto an unlocked zone's tiles — the walk network derives from the live multi-tile <code>Map</code> and <code>GameState.WalkNetwork</code> rebuilds on unlock, so already-spawned dogs explore the new sidewalks without re-spawning (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/398">#398</a>)</li>
+<li>[x] The shared pity-counter move-in system (5% base, +5% per quest, reset on success) fills vacant houses per the household/breed/easter-egg rules above (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/54">#54</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a> Core mechanism; <strong>reflected in-game</strong> — the new dog spawns and the house drops its greyscale the moment a household moves in — via <code>QuestManager.MoveInOccurred</code> + <code>QuestDirector</code> wiring, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/436">#436</a>)</li>
+<li>[x] Houses support 4 discrete levels (upgrades 100/200/400) with decoration slots equal to level (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a> — Core upgrade path + capacity cap + model-swap ladders built, and every level renders its chosen kit mesh as of the v0.6 de-graybox pass; the player-facing Upgrade button ships on the <a href="../ui/house-profile/">house profile view</a> — direct-spend, next-cost, Max-level and affordability states (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/294">#294</a>) — and the non-L1 ladder meshes' door anchors remain provisional placeholders pending a gallery authoring pass)</li>
+<li>[ ] Every tuning value above is a named constant adjustable for playtesting</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.top", "content.action.edit", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>
