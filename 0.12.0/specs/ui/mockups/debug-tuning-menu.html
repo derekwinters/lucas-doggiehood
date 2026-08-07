@@ -116,16 +116,16 @@
 <div class="wrap">
   <p class="eyebrow">Doggiehood · UI Wireframe · Issue #621 · Tablet · Landscape · 1920×1200 · DEV TOOL</p>
   <h1 class="rounded">Debug tuning menu</h1>
-  <p class="lede">A <b>dev-build-only</b> overlay exposing the Core <b>TuningConfig</b> (#620) balance values as labeled sliders,
+  <p class="lede">A <b>debug-menu</b> overlay exposing the Core <b>TuningConfig</b> (#620) balance values as labeled sliders,
     grouped into <b>Pacing</b>, <b>Economy</b>, <b>Expansion</b> and <b>Move-in</b>, so Derek can tune pacing live on-device.
     Reached from a new <b>"Tune balance…"</b> row in the Settings Debug tab; it layers as a centered modal <b>over</b> the
     open Settings panel. Styling is <b>deliberately utilitarian — NOT the Candy Cottage art treatment</b> — because it's a
-    developer instrument, and it <b>must never appear in a release build</b>.</p>
+    developer instrument. It ships in <b>every</b> build and is reached <b>only through the existing 10-tap Debug unlock</b> (#219, corrected by #656).</p>
   <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two states: (1) the Debug-tab entry row, (2) the tuning panel open. Values are representative placeholders from TuningConfig (#620).</p>
 
   <div class="viewer">
-    <div class="caption">STATE 1 — the entry point: a "Tune balance…" action row in the Settings Debug tab (dev builds only)</div>
-    <div class="screen" role="img" aria-label="Settings panel, Debug tab active. Debug rows include Show backyard fences, Add coins, Refresh quests now, and a new Tune balance action row that opens the tuning menu. Dev builds only.">
+    <div class="caption">STATE 1 — the entry point: a "Tune balance…" action row in the Settings Debug tab (behind the 10-tap unlock)</div>
+    <div class="screen" role="img" aria-label="Settings panel, Debug tab active. Debug rows include Show backyard fences, Add coins, Refresh quests now, and a new Tune balance action row that opens the tuning menu. Reached only after the 10-tap Debug unlock.">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
       <div class="scrim"></div>
@@ -275,21 +275,21 @@
     </div>
     <div>
       <h2>Regions</h2>
-      <p class="note"><b>Entry row</b> ("Tune balance…", Settings Debug tab — dev builds only) · <b>Scrim</b> (dims Settings, modal) · <b>Header</b> (title + Reset all + ✕, pinned) · <b>Scroll body</b> (4 groups) · <b>Group</b> (name + Reset + control rows) · <b>Control row</b> (label + live value + slider).</p>
+      <p class="note"><b>Entry row</b> ("Tune balance…", Settings Debug tab — behind the 10-tap unlock) · <b>Scrim</b> (dims Settings, modal) · <b>Header</b> (title + Reset all + ✕, pinned) · <b>Scroll body</b> (4 groups) · <b>Group</b> (name + Reset + control rows) · <b>Control row</b> (label + live value + slider).</p>
       <p class="note"><b>Groups &amp; tunables</b> (from TuningConfig #620): <b>Pacing</b> — min target, max target, window, refresh · <b>Economy</b> — reward, paid markup, cost-tier gates ×2 · <b>Expansion</b> — tile/house/upgrade each base + step (2 sliders) · <b>Move-in</b> — early rate, late rate, population span.</p>
       <p class="note"><b>base + step = two sliders.</b> A linear <code>base + step×n</code> tunable is two adjacent rows (base, step), matching the #620 field shape.</p>
       <h2 style="margin-top:22px;">Design decisions</h2>
       <p class="q"><b>① Entry point (Option A — Derek, 2026-08-06):</b> a new <b>"Tune balance…"</b> action row in the existing Settings <b>Debug tab</b> — keeps the #219 "debug affordances live in the Debug tab" standard, adds a new "row opens a sub-panel" pattern.</p>
       <p class="q"><b>② Panel vs Settings:</b> the tuning panel <b>layers over</b> the still-open Settings panel as a centered modal (per the shared modal-overlay convention), it does not replace it; ✕ or scrim tap returns to the Debug tab.</p>
       <p class="q"><b>③ Reset:</b> both a <b>global Reset all</b> (header) and a <b>per-group Reset</b> — reset = re-seed from a fresh TuningConfig (#620).</p>
-      <p class="q"><b>④ Dev-build-only:</b> the entry row (and overlay) is compiled/shown <b>only in development builds</b> and <b>never</b> appears in a release build — a release-excluding gate on top of the existing 10-tap Debug unlock.</p>
+      <p class="q"><b>④ Gating (corrected — Derek, #656):</b> the entry row (and overlay) is built in <b>every</b> build and the existing <b>10-tap Debug unlock</b> (#219) is its <b>only</b> gate. This reverses the original dev-build-only rule: the debug menu stays in the game on purpose while the balance is being dialed in, and the <b>whole</b> debug menu is removed later in one deliberate pass.</p>
       <p class="q"><b>⑤ Style:</b> <b>deliberately NOT Candy Cottage</b> — flat panel, thin outline, plain track/knob sliders, mono value readouts. It's a dev tool; the exemption is intentional.</p>
     </div>
   </div>
 
   <footer>
-    Opens from a dev-only "Tune balance…" row in the Settings Debug tab (#219/settings.md) · a view over the Core <a href="#">TuningConfig (#620)</a> · reference resolution 1920×1200 · constants born here (#161), asserted by EditMode tests when #622 implements it. Utilitarian by design — no Candy Cottage chrome.
-    <br><span class="status">Proposed (#621) — pending Derek approval</span>
+    Opens from a "Tune balance…" row in the Settings Debug tab, behind the 10-tap unlock (#219/settings.md) · a view over the Core <a href="#">TuningConfig (#620)</a> · reference resolution 1920×1200 · constants born here (#161), asserted by EditMode tests when #622 implements it. Utilitarian by design — no Candy Cottage chrome.
+    <br><span class="status">Approved (#621, closed completed) · gating rule corrected by #656</span>
   </footer>
 </div>
 </body>
