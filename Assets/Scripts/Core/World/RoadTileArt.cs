@@ -29,8 +29,7 @@ namespace Doggiehood.Core.World
     /// mesh that renders at the tile centre (#508), replacing the old approach
     /// of composing straight pieces at a junction. Only the junction/terminus
     /// types have a dedicated centre mesh; a straight tile is just tiled
-    /// <c>road-straight</c> arms, and OpposingTurns is deferred (a follow-up
-    /// composes two bends), so both resolve nothing here.
+    /// <c>road-straight</c> arms, so it resolves nothing here.
     ///
     /// Each staged piece is authored in one fixed orientation, read empirically
     /// from the kit OBJ vertices:
@@ -97,16 +96,10 @@ namespace Doggiehood.Core.World
             { TileType.CulDeSacSouth, new RoadTilePiece(EndRoundKey, YawThreeQuarterCW, false) },
             { TileType.CulDeSacWest, new RoadTilePiece(EndRoundKey, YawNone, false) },
             { TileType.CulDeSacNorth, new RoadTilePiece(EndRoundKey, YawQuarterCW, false) },
-
-            // TODO(#508 follow-up): OpposingTurns compose two independent bends
-            // (a NE + SW arc, or NW + SE) — no single centre mesh, and no
-            // crossing, so no crosswalks. The authored map does place an
-            // OpposingTurnsNS today, so until this is wired it keeps rendering as
-            // plain tiled straight arms (its pre-#508 behaviour, unchanged).
         };
 
         /// <summary>The centre mesh for <paramref name="type"/>, or false when the
-        /// type has none (straight tiles and the deferred OpposingTurns).</summary>
+        /// type has none (straight tiles and the roadless GreenSpace).</summary>
         public static bool TryGetCenterPiece(TileType type, out RoadTilePiece piece)
         {
             return Pieces.TryGetValue(type, out piece);

@@ -6,14 +6,13 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #385/#607: per-type property-lot definitions for the 17 lotted tile
+    /// #385/#607: per-type property-lot definitions for the 15 lotted tile
     /// types (every type except the house-free GreenSpace, including the
     /// full-intersection FourWay), following the "Property lots per tile" rules
     /// settled in docs/specs/world/tile-catalog.md. House facing is settled as "remove"
     /// (no rotation): every kept lot borders a straight roaded edge square-on,
     /// and the lots that can't are dropped:
     /// <list type="bullet">
-    /// <item>Twin bends: 0 lots.</item>
     /// <item>Bends (Turn*): 2 lots - drop the cupped corner AND its diagonal
     /// opposite (which faces neither roaded edge).</item>
     /// <item>Cul-de-sacs (CulDeSac*): 2 lots - keep the two quadrants adjacent
@@ -80,7 +79,7 @@ namespace Doggiehood.Core.Tests.World
                 .Where(t => t != TileType.GreenSpace)
                 .ToList();
 
-            Assert.That(expected.Count, Is.EqualTo(17));
+            Assert.That(expected.Count, Is.EqualTo(15));
             CollectionAssert.AreEquivalent(expected, TileLotCatalog.Types);
         }
 
@@ -99,14 +98,6 @@ namespace Doggiehood.Core.Tests.World
             AssertLotsAreExactly(
                 type,
                 Quadrant.NorthEast, Quadrant.NorthWest, Quadrant.SouthEast, Quadrant.SouthWest);
-        }
-
-        // Twin bends leave no clean buildable quadrant, so they carry no lots.
-        [TestCase(TileType.OpposingTurnsNS)]
-        [TestCase(TileType.OpposingTurnsEW)]
-        public void TwinBends_HaveNoLots(TileType type)
-        {
-            Assert.That(TileLotCatalog.LotsFor(type), Is.Empty);
         }
 
         // #385: each bend keeps exactly two lots - dropping the cupped corner
@@ -202,17 +193,6 @@ namespace Doggiehood.Core.Tests.World
             AssertTreeQuadrantsAreExactly(type, treeA, treeB);
         }
 
-        // #614: twin bends carry no lots at all, so all four quadrants become
-        // open space with trees.
-        [TestCase(TileType.OpposingTurnsNS)]
-        [TestCase(TileType.OpposingTurnsEW)]
-        public void TreeQuadrantsFor_TwinBend_AreAllFourQuadrants(TileType type)
-        {
-            AssertTreeQuadrantsAreExactly(
-                type,
-                Quadrant.NorthEast, Quadrant.NorthWest, Quadrant.SouthEast, Quadrant.SouthWest);
-        }
-
         // #614: for every lotted type, the kept lots and the tree quadrants are
         // disjoint and together account for all four quadrants — derived from
         // one LotsFor source of truth so they can never disagree. (FourWay's
@@ -224,7 +204,6 @@ namespace Doggiehood.Core.Tests.World
         [TestCase(TileType.TurnNE)]
         [TestCase(TileType.TurnSW)]
         [TestCase(TileType.CulDeSacNorth)]
-        [TestCase(TileType.OpposingTurnsNS)]
         public void Lots_And_TreeQuadrants_PartitionAllFourQuadrants(TileType type)
         {
             var lots = TileLotCatalog.LotsFor(type).Keys;
@@ -251,7 +230,7 @@ namespace Doggiehood.Core.Tests.World
         [TestCase(TileType.StraightNS)]
         [TestCase(TileType.TeeNorth)]
         [TestCase(TileType.CulDeSacSouth)]
-        [TestCase(TileType.OpposingTurnsNS)]
+        [TestCase(TileType.GreenSpace)]
         public void TryGetCuppedCorner_IsFalseForNonBends(TileType type)
         {
             Assert.That(TileLotCatalog.TryGetCuppedCorner(type, out _), Is.False);

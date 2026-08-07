@@ -5,7 +5,7 @@ using System.Linq;
 namespace Doggiehood.Core.World
 {
     /// <summary>
-    /// Per-type property-lot slots for the 17 lotted tile types (#109) — every
+    /// Per-type property-lot slots for the 15 lotted tile types (#109) — every
     /// type except the house-free <see cref="TileType.GreenSpace"/>, including
     /// the full-intersection <see cref="TileType.FourWay"/> (#607) — following
     /// the "Property lots per tile" rules settled in
@@ -14,9 +14,6 @@ namespace Doggiehood.Core.World
     /// lot borders a straight roaded edge square-on, and lots that can't are
     /// dropped:
     /// <list type="bullet">
-    /// <item>Twin bends (<see cref="TileType.OpposingTurnsNS"/>/
-    /// <see cref="TileType.OpposingTurnsEW"/>): no lots - their two arcs
-    /// leave no clean buildable quadrant.</item>
     /// <item>Bends (<c>Turn*</c>): two lots - drop the small corner the curve
     /// cups (the bend's own corner) AND the corner diagonally opposite it,
     /// which borders neither roaded edge.</item>
@@ -78,26 +75,22 @@ namespace Doggiehood.Core.World
                 { Quadrant.SouthEast, Quadrant.NorthWest },
             };
 
-        private static readonly IReadOnlyCollection<TileType> TwinBends =
-            new[] { TileType.OpposingTurnsNS, TileType.OpposingTurnsEW };
-
         public static IReadOnlyCollection<TileType> Types
         {
             get { return LottedTypes; }
         }
 
         /// <summary>The quadrant lot slots for <paramref name="type"/>, as
-        /// offsets in meters from the tile's center. Twin bends return an
-        /// empty set; bends drop their cupped corner and its diagonal opposite
-        /// (2 slots); cul-de-sacs keep the two quadrants adjacent to the roaded
-        /// edge (2 slots); every other type — including the full-intersection
+        /// offsets in meters from the tile's center. Bends drop their cupped
+        /// corner and its diagonal opposite (2 slots); cul-de-sacs keep the two
+        /// quadrants adjacent to the roaded edge (2 slots); every other type — including the full-intersection
         /// <see cref="TileType.FourWay"/> (#607) — returns all 4. The origin
         /// FourWay's seeded lots (<see cref="NeighborhoodLayout"/>) are guarded
         /// in <see cref="GameState.LotsForUnlockedTile"/>, not here.</summary>
         public static IReadOnlyDictionary<Quadrant, GridPoint> LotsFor(TileType type)
         {
             // #539: a green-space tile never holds a house — no lot slots.
-            if (type == TileType.GreenSpace || TwinBends.Contains(type))
+            if (type == TileType.GreenSpace)
             {
                 return new Dictionary<Quadrant, GridPoint>();
             }
@@ -126,8 +119,8 @@ namespace Doggiehood.Core.World
         /// <see cref="LotsFor"/>" so trees and lots share one source of truth
         /// and can never disagree — cul-de-sacs keep their two bulb-side
         /// quadrants (#385), bends drop the cupped corner AND its diagonal
-        /// opposite, twin bends drop all four, and full-lot types
-        /// (<c>FourWay</c>/<c>Straight*</c>/<c>Tee*</c>) drop none. The
+        /// opposite, and full-lot types (<c>FourWay</c>/<c>Straight*</c>/
+        /// <c>Tee*</c>) drop none. The
         /// whole-tile <see cref="TileType.GreenSpace"/> park (#539) is the one
         /// exception: it holds no lots, so a naive "no lot ⇒ trees" rule would
         /// plant on all four of its quadrants, but it is a separate park tile

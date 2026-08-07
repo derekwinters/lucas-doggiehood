@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace Doggiehood.Core.World
 {
     /// <summary>
-    /// The tile-type catalog (#105 design, built by #109): all 18 types
-    /// from docs/specs/world/tile-catalog.md and the road edges/arcs each
-    /// one declares — the 17 road tiles plus the roadless #539 GreenSpace.
+    /// The tile-type catalog (#105 design, built by #109): all 16 types
+    /// from docs/specs/world/tile-catalog.md and the road edges each one
+    /// declares — the 15 road tiles plus the roadless #539 GreenSpace.
     /// </summary>
     public static class TileCatalog
     {
@@ -23,24 +23,6 @@ namespace Doggiehood.Core.World
 
         private static Dictionary<TileType, TileTypeDefinition> BuildDefinitions()
         {
-            // Resolved on #109 (Derek): "the two turns would not connect.
-            // Each arc would connect two adjacent sides only." So
-            // OpposingTurnsNS is a NE-corner arc plus an unrelated SW-corner
-            // arc (together bowing north and south, per the catalog doc);
-            // OpposingTurnsEW is that pairing's 90-degree rotation: a
-            // NW-corner arc plus an unrelated SE-corner arc (bowing west
-            // and east). Neither arc connects to the other.
-            var opposingTurnsNsArcs = new[]
-            {
-                new TileArc(TileEdge.North, TileEdge.East),
-                new TileArc(TileEdge.South, TileEdge.West),
-            };
-            var opposingTurnsEwArcs = new[]
-            {
-                new TileArc(TileEdge.North, TileEdge.West),
-                new TileArc(TileEdge.South, TileEdge.East),
-            };
-
             var all = new[]
             {
                 new TileTypeDefinition(TileType.FourWay,
@@ -73,14 +55,8 @@ namespace Doggiehood.Core.World
                     new[] { TileEdge.East }),
                 new TileTypeDefinition(TileType.CulDeSacWest,
                     new[] { TileEdge.West }),
-                new TileTypeDefinition(TileType.OpposingTurnsNS,
-                    new[] { TileEdge.North, TileEdge.East, TileEdge.South, TileEdge.West },
-                    opposingTurnsNsArcs),
-                new TileTypeDefinition(TileType.OpposingTurnsEW,
-                    new[] { TileEdge.North, TileEdge.East, TileEdge.South, TileEdge.West },
-                    opposingTurnsEwArcs),
-                // #539: the green-space tile carries no road on any edge (and
-                // no arcs). Its empty road-edge set is what makes it place
+                // #539: the green-space tile carries no road on any edge. Its
+                // empty road-edge set is what makes it place
                 // through TileMap.CanPlace only against no-road neighbor edges,
                 // and what keeps it out of the road-connection frontier forever.
                 new TileTypeDefinition(TileType.GreenSpace,
