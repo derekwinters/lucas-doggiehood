@@ -162,19 +162,35 @@ namespace Doggiehood.Unity.EditModeTests
             AssertBakedBandIsFlatAroundCorners(CandyChromeUgui.PanelRadiusPx);
         }
 
+        [Test]
+        public void RoundedSprite_BakedAlpha_MatchesTheCoreContourCoverage_OnEveryTexel()
+        {
+            // The exact companion to the ray-march test: every texel of the baked
+            // chrome texture — including the border-hugging near-axis arc texels
+            // the ray-march must exclude — equals the analytic contour coverage
+            // from RoundedRectContour. With the bake tied texel-exactly to the
+            // Core geometry, the Core proof that the inflate-by-W ink underlay is
+            // a constant-width band (PerpendicularBandWidth, corners included)
+            // transfers to the actually-baked chrome at ALL angles.
+            var w = CandyChromeUgui.OutlineThicknessPx;
+            AssertBakeMatchesAnalyticCoverage(PipRadiusPx);          // pip fill
+            AssertBakeMatchesAnalyticCoverage(PipRadiusPx + w);      // pip ink band
+            AssertBakeMatchesAnalyticCoverage(CandyChromeUgui.PanelRadiusPx);     // panel fill
+            AssertBakeMatchesAnalyticCoverage(CandyChromeUgui.PanelRadiusPx + w); // panel ink band
+        }
+
         private const float PipRadiusPx = 12f;
 
         // The ray-march band checker samples the ACTUAL 9-slice chrome textures,
         // whose straight edges reach the outer texture border (that is what lets a
-        // sliced sprite stretch). Rays close to an axis therefore run along — or,
-        // for a small-radius sprite, graze the corner arc within a sampling-step
-        // of — that border, where bilinear sampling of the border-clamped texture
-        // corrupts the finite-difference contour normal and inflates the measured
-        // width. Excluding a margin around each axis keeps the check on the clean,
-        // genuinely-curved span of every corner (a full ±~40° of arc is still
-        // asserted). A pip is only ~2px of straight strip, so the small-radius
-        // corner hugs the border and needs a wider margin than the panel does;
-        // this single margin clears it for both.
+        // sliced sprite stretch). Near an axis the contour sits on — or, for a
+        // small-radius sprite, grazes within a bilinear footprint of — that
+        // border, where clamped sampling corrupts the marched alpha, so those
+        // rays cannot cleanly measure the band (PR #642 measured 7.7384px on a
+        // provably 6px band there). The margin keeps the march on clean texels —
+        // a full ±~40° curved span of every corner is still asserted — and the
+        // near-axis region is not a blind spot: the per-texel bake-fidelity test
+        // above covers it exactly, without sampling at all.
         private const double CornerOffAxisMarginDeg = 24.0;
 
         private static void AssertBakedBandIsFlatAroundCorners(float radiusPx)
@@ -183,14 +199,26 @@ namespace Doggiehood.Unity.EditModeTests
             var fillTex = (Texture2D)CandyChromeUgui.RoundedSprite(radiusPx).texture;
             var inkTex = (Texture2D)CandyChromeUgui.RoundedSprite(radiusPx + w).texture;
 
+            // Texture2D.GetPixelBilinear places texel centres on the INTEGER
+            // coordinate grid (fx = u * width — no half-texel offset), so the
+            // world→UV mapping subtracts half a texel to keep world (0,0) on the
+            // baked shape's centre. Uncompensated, the sampled shape is displaced
+            // by (+0.5, +0.5)px — the misalignment behind PR #642's over-read
+            // (reproduced to 4 decimal places in RoundedRectContourTests).
             System.Func<double, double, double> fillAlpha = (x, y) =>
-                fillTex.GetPixelBilinear((float)(x / fillTex.width + 0.5), (float)(y / fillTex.height + 0.5)).a;
+                fillTex.GetPixelBilinear((float)((x - 0.5) / fillTex.width + 0.5), (float)((y - 0.5) / fillTex.height + 0.5)).a;
             System.Func<double, double, double> inkAlpha = (x, y) =>
-                inkTex.GetPixelBilinear((float)(x / inkTex.width + 0.5), (float)(y / inkTex.height + 0.5)).a;
+                inkTex.GetPixelBilinear((float)((x - 0.5) / inkTex.width + 0.5), (float)((y - 0.5) / inkTex.height + 0.5)).a;
 
             const int angleCount = 720;
             var maxMarch = radiusPx * 2.0 + w + 8.0;
-            var widths = RoundedRectContour.MeasureBandWidths(fillAlpha, inkAlpha, 0.0, 0.0, maxMarch, angleCount);
+
+            // March along the ANALYTIC contour normal (the test knows the baked
+            // geometry), not a finite-difference alpha gradient: the gradient
+            // collapses against the clamped border near a small sprite's
+            // strip-meet and sends the march obliquely across the band.
+            var widths = RoundedRectContour.MeasureBandWidths(fillAlpha, inkAlpha, 0.0, 0.0, maxMarch, angleCount,
+                fillTex.width / 2.0, fillTex.height / 2.0, radiusPx);
 
             for (var k = 0; k < angleCount; k++)
             {
@@ -199,11 +227,32 @@ namespace Doggiehood.Unity.EditModeTests
                 var offAxis = System.Math.Min(mod, 90.0 - mod);
                 if (offAxis < CornerOffAxisMarginDeg)
                 {
-                    continue; // near-axis: straight strip / arc-at-border, not a clean contour ray
+                    continue; // near-axis: straight strip / arc-at-border — covered per-texel instead
                 }
 
                 Assert.That(widths[k], Is.EqualTo((double)w).Within(1.0),
                     "baked Ink band is outside +/-1px at " + deg + " deg (radius " + radiusPx + ")");
+            }
+        }
+
+        private static void AssertBakeMatchesAnalyticCoverage(float radiusPx)
+        {
+            var tex = (Texture2D)CandyChromeUgui.RoundedSprite(radiusPx).texture;
+            var side = tex.width;
+            var half = side / 2.0;
+            var radius = Mathf.RoundToInt(radiusPx);
+            var pixels = tex.GetPixels32();
+
+            for (var y = 0; y < side; y++)
+            {
+                for (var x = 0; x < side; x++)
+                {
+                    var expected = 255.0 * RoundedRectContour.Coverage(
+                        x + 0.5 - half, y + 0.5 - half, half, half, radius);
+                    Assert.That((double)pixels[y * side + x].a, Is.EqualTo(expected).Within(1.0),
+                        "baked alpha diverges from the analytic contour coverage at texel ("
+                        + x + "," + y + ") for radius " + radiusPx);
+                }
             }
         }
 

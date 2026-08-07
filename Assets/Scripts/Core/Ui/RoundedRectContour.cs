@@ -44,6 +44,23 @@ namespace Doggiehood.Core.Ui
             return outside + inside - radius;
         }
 
+        /// <summary>Anti-aliased coverage of a texel centred at <c>(px, py)</c>
+        /// (shape-centre coordinates): the linear ramp
+        /// <c>clamp01(0.5 - SignedDistance)</c> — exactly what the chrome bake
+        /// writes per texel. Shared analytic expectation for the Unity per-texel
+        /// bake-fidelity test, which ties the actually-baked chrome alpha to this
+        /// geometry so the constant-band proof transfers to the bake.</summary>
+        public static double Coverage(double px, double py, double halfWidth, double halfHeight, double radius)
+        {
+            var c = AlphaThreshold - SignedDistance(px, py, halfWidth, halfHeight, radius);
+            if (c < 0.0)
+            {
+                return 0.0;
+            }
+
+            return c > 1.0 ? 1.0 : c;
+        }
+
         /// <summary>Radial distance from the shape centre along
         /// <paramref name="angleRadians"/> to the fill contour
         /// (<see cref="SignedDistance"/> == 0), found by bisection. The shape is
@@ -104,6 +121,81 @@ namespace Doggiehood.Core.Ui
             double centerX, double centerY, double maxMarchRadius, int angleCount)
         {
             if (fillAlpha == null) throw new ArgumentNullException(nameof(fillAlpha));
+
+            // Local outward normal from the fill-alpha gradient (alpha decreases
+            // outward, so the outward normal is -grad).
+            return MeasureBandWidthsAlongNormals(fillAlpha, inkAlpha, centerX, centerY, maxMarchRadius, angleCount,
+                (double px, double py, double ux, double uy, out double nx, out double ny) =>
+                {
+                    var gx = fillAlpha(px + GradientStepPx, py) - fillAlpha(px - GradientStepPx, py);
+                    var gy = fillAlpha(px, py + GradientStepPx) - fillAlpha(px, py - GradientStepPx);
+                    var glen = Math.Sqrt(gx * gx + gy * gy);
+                    if (glen < 1e-9)
+                    {
+                        nx = ux;
+                        ny = uy;
+                    }
+                    else
+                    {
+                        nx = -gx / glen;
+                        ny = -gy / glen;
+                    }
+                });
+        }
+
+        /// <summary>Geometry-aware variant of
+        /// <see cref="MeasureBandWidths(Func{double,double,double},Func{double,double,double},double,double,double,int)"/>:
+        /// marches from each measured fill-edge point along the <b>analytic</b>
+        /// outward normal of the known rounded-rect contour
+        /// (<paramref name="halfWidth"/>, <paramref name="halfHeight"/>,
+        /// <paramref name="radius"/>, centred at <c>(centerX, centerY)</c>)
+        /// instead of a finite-difference alpha gradient. The checker verifies a
+        /// shape whose intended geometry is known, so the march direction need
+        /// not be estimated from the sampled alpha — which goes wrong where a
+        /// small 9-slice bake's corner arc hugs the clamped texture border and
+        /// bilinear samples straddle it (the PR #642 over-read).</summary>
+        public static double[] MeasureBandWidths(
+            Func<double, double, double> fillAlpha,
+            Func<double, double, double> inkAlpha,
+            double centerX, double centerY, double maxMarchRadius, int angleCount,
+            double halfWidth, double halfHeight, double radius)
+        {
+            return MeasureBandWidthsAlongNormals(fillAlpha, inkAlpha, centerX, centerY, maxMarchRadius, angleCount,
+                (double px, double py, double ux, double uy, out double nx, out double ny) =>
+                {
+                    // Outward normal = normalized SDF gradient of the intended
+                    // contour, evaluated at the measured fill-edge point (the
+                    // normal field is smooth around the contour, so the sub-pixel
+                    // gap between measured and analytic edge is immaterial).
+                    var gx = SignedDistance(px - centerX + GradientStepPx, py - centerY, halfWidth, halfHeight, radius)
+                             - SignedDistance(px - centerX - GradientStepPx, py - centerY, halfWidth, halfHeight, radius);
+                    var gy = SignedDistance(px - centerX, py - centerY + GradientStepPx, halfWidth, halfHeight, radius)
+                             - SignedDistance(px - centerX, py - centerY - GradientStepPx, halfWidth, halfHeight, radius);
+                    var glen = Math.Sqrt(gx * gx + gy * gy);
+                    if (glen < 1e-9)
+                    {
+                        nx = ux;
+                        ny = uy;
+                    }
+                    else
+                    {
+                        nx = gx / glen;
+                        ny = gy / glen;
+                    }
+                });
+        }
+
+        // The outward march direction at a measured fill-edge point; (ux, uy) is
+        // the ray direction to fall back on where a gradient degenerates.
+        private delegate void OutwardNormal(double px, double py, double ux, double uy, out double nx, out double ny);
+
+        private static double[] MeasureBandWidthsAlongNormals(
+            Func<double, double, double> fillAlpha,
+            Func<double, double, double> inkAlpha,
+            double centerX, double centerY, double maxMarchRadius, int angleCount,
+            OutwardNormal outwardNormal)
+        {
+            if (fillAlpha == null) throw new ArgumentNullException(nameof(fillAlpha));
             if (inkAlpha == null) throw new ArgumentNullException(nameof(inkAlpha));
 
             var widths = new double[angleCount];
@@ -120,22 +212,7 @@ namespace Doggiehood.Core.Ui
                 var pFillX = centerX + rFill * ux;
                 var pFillY = centerY + rFill * uy;
 
-                // Local outward normal from the fill-alpha gradient (alpha decreases
-                // outward, so the outward normal is -grad).
-                var gx = fillAlpha(pFillX + GradientStepPx, pFillY) - fillAlpha(pFillX - GradientStepPx, pFillY);
-                var gy = fillAlpha(pFillX, pFillY + GradientStepPx) - fillAlpha(pFillX, pFillY - GradientStepPx);
-                var glen = Math.Sqrt(gx * gx + gy * gy);
-                double nx, ny;
-                if (glen < 1e-9)
-                {
-                    nx = ux;
-                    ny = uy;
-                }
-                else
-                {
-                    nx = -gx / glen;
-                    ny = -gy / glen;
-                }
+                outwardNormal(pFillX, pFillY, ux, uy, out var nx, out var ny);
 
                 // Perpendicular march from the fill edge to the ink outer edge.
                 widths[k] = BisectDistanceToLevel(pFillX, pFillY, nx, ny, 0.0, maxMarchRadius,
