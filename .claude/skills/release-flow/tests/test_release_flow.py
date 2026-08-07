@@ -55,17 +55,109 @@ class IsRegeneratedChangelogTests(unittest.TestCase):
             rf.missing_pr_numbers("* feat (#573)\n* fix (#575)", [573, 575]), [])
 
 
-# --- CI-trigger selection: close/reopen only, no workflow_dispatch ---------
+# --- CI-trigger selection: halt and ask, never close/reopen (#618) ---------
 
 class CiTriggerTests(unittest.TestCase):
-    def test_selects_close_reopen_unconditionally(self):
-        self.assertEqual(rf.choose_ci_trigger_action(), rf.CI_TRIGGER_CLOSE_REOPEN)
+    def test_selects_ask_user(self):
+        self.assertEqual(rf.choose_ci_trigger_action(), rf.CI_TRIGGER_ASK_USER)
 
-    def test_close_reopen_is_the_only_supported_action(self):
-        # There is deliberately no workflow_dispatch branch: none of the
-        # workflows that run against the release PR declare it (see SKILL.md).
-        self.assertNotEqual(rf.CI_TRIGGER_CLOSE_REOPEN, "workflow_dispatch")
-        self.assertEqual(rf.CI_TRIGGER_CLOSE_REOPEN, "close_reopen")
+
+class NoCloseReopenTests(unittest.TestCase):
+    """#618: the release PR's state must never be toggled. These are the
+    acceptance guards — they fail if close/reopen creeps back in."""
+
+    def test_close_then_reopen_helper_is_gone(self):
+        self.assertFalse(hasattr(rf, "close_then_reopen_pr"))
+
+    def test_no_close_reopen_action_constant(self):
+        self.assertFalse(hasattr(rf, "CI_TRIGGER_CLOSE_REOPEN"))
+
+    def test_choose_ci_trigger_action_never_returns_close_reopen(self):
+        self.assertNotEqual(rf.choose_ci_trigger_action(), "close_reopen")
+
+    def test_module_source_never_sets_pr_state(self):
+        # A PATCH of the PR's `state` field is the only way to close or reopen
+        # it, so the source must contain no such payload at all.
+        with open(rf.__file__) as handle:
+            source = handle.read()
+        self.assertNotIn('"state": "closed"', source)
+        self.assertNotIn('"state": "open"', source)
+
+
+# --- awaiting-approval runs (what the UI's "Approve and run" button releases) -
+
+def _run(name, conclusion="action_required", run_id=1):
+    return {"id": run_id, "name": name, "status": "completed",
+            "conclusion": conclusion}
+
+
+class RunsAwaitingApprovalTests(unittest.TestCase):
+    def test_selects_only_action_required_runs(self):
+        runs = [
+            _run("docs-test", run_id=11),
+            _run("pr-title-lint", run_id=12),
+            _run("sweep", conclusion="success", run_id=13),
+        ]
+        self.assertEqual([r["id"] for r in rf.runs_awaiting_approval(runs)],
+                         [11, 12])
+
+    def test_empty_when_nothing_is_parked(self):
+        self.assertEqual(
+            rf.runs_awaiting_approval([_run("docs-test", conclusion="success")]),
+            [])
+
+
+class RunUrlTests(unittest.TestCase):
+    def test_run_url_points_at_the_actions_run(self):
+        self.assertEqual(rf.run_url("o/r", 31148250028),
+                         "https://github.com/o/r/actions/runs/31148250028")
+
+
+# --- the halt prompt (pure text builder) ------------------------------------
+
+class CiPromptTests(unittest.TestCase):
+    def _prompt(self):
+        return rf.format_ci_prompt(
+            "o/r", 634,
+            [_run("docs-test", run_id=11), _run("pr-title-lint", run_id=12)])
+
+    def test_lists_each_awaiting_run_with_its_url(self):
+        prompt = self._prompt()
+        self.assertIn("docs-test", prompt)
+        self.assertIn(rf.run_url("o/r", 11), prompt)
+        self.assertIn("pr-title-lint", prompt)
+        self.assertIn(rf.run_url("o/r", 12), prompt)
+
+    def test_offers_both_documented_choices(self):
+        prompt = self._prompt()
+        self.assertIn("continue", prompt)
+        self.assertIn("skip", prompt)
+
+    def test_never_suggests_closing_or_reopening_the_pr(self):
+        self.assertNotIn("reopen", self._prompt().lower())
+
+    def test_points_at_the_pr_checks_when_nothing_is_parked(self):
+        prompt = rf.format_ci_prompt("o/r", 634, [])
+        self.assertIn("https://github.com/o/r/pull/634/checks", prompt)
+
+
+# --- parsing the user's answer ----------------------------------------------
+
+class ParseCiAnswerTests(unittest.TestCase):
+    def test_continue_words(self):
+        for text in ("continue", "  Continue  ", "c", "yes", "y", "approved"):
+            self.assertEqual(rf.parse_ci_answer(text), rf.CI_ANSWER_CONTINUE,
+                             msg=text)
+
+    def test_skip_words(self):
+        for text in ("skip", "SKIP", " s ", "override"):
+            self.assertEqual(rf.parse_ci_answer(text), rf.CI_ANSWER_SKIP,
+                             msg=text)
+
+    def test_anything_else_aborts(self):
+        for text in ("", None, "maybe", "quit", "n"):
+            self.assertEqual(rf.parse_ci_answer(text), rf.CI_ANSWER_ABORT,
+                             msg=repr(text))
 
 
 # --- check poll loop (reuses ci-watch's PASSED/FAILED/TIMEOUT shape) --------
