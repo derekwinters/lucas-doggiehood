@@ -101,10 +101,6 @@
   .tile-btn.sel:active { transform: scale(.97); }
   .tile-btn svg { width: 46px; height: 46px; display: block; }
   .tile-btn .nm { font-size: .64rem; color: var(--ink-soft); text-align: center; line-height: 1.15; }
-  /* #516: types the City Kit can't render as one tile — greyed out, not placeable. */
-  .tile-btn.unbuildable { opacity: .42; cursor: not-allowed; filter: grayscale(1); }
-  .tile-btn.unbuildable:hover { border-color: var(--panel-edge); }
-  .tile-btn .badge { font-size: .56rem; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .02em; }
   .fam-label { grid-column: 1 / -1; font-size: .74rem; font-weight: 600; color: var(--ink-soft); margin: 6px 0 -2px; }
 
   .modes { display: flex; gap: 8px; }
@@ -272,8 +268,7 @@ const TYPES = {
   StraightNS:     "NS--.", StraightEW: "--EW.",
   TurnNE:         "N-E-.", TurnNW: "N--W.", TurnSE: "-SE-.", TurnSW: "-S-W.",
   TeeNorth:       "N-EW.", TeeSouth: "-SEW.", TeeEast: "NSE-.", TeeWest: "NS-W.",
-  CulDeSacNorth:  "N---.", CulDeSacSouth: "-S--.", CulDeSacEast: "--E-.", CulDeSacWest: "---W.",
-  OpposingTurnsNS:"NSEW\\", OpposingTurnsEW: "NSEW/"
+  CulDeSacNorth:  "N---.", CulDeSacSouth: "-S--.", CulDeSacEast: "--E-.", CulDeSacWest: "---W."
 };
 const CODE_TO_TYPE = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [v, k]));
 
@@ -283,12 +278,14 @@ const PALETTE = [
   ["Straights", [["StraightNS", "Up–down"], ["StraightEW", "Left–right"]]],
   ["Bends",     [["TurnNE", "Bend NE"], ["TurnNW", "Bend NW"], ["TurnSE", "Bend SE"], ["TurnSW", "Bend SW"]]],
   ["T-junctions",[["TeeNorth", "Tee N"], ["TeeSouth", "Tee S"], ["TeeEast", "Tee E"], ["TeeWest", "Tee W"]]],
-  ["Dead ends", [["CulDeSacNorth", "End N"], ["CulDeSacSouth", "End S"], ["CulDeSacEast", "End E"], ["CulDeSacWest", "End W"]]],
-  ["Twin bends",[["OpposingTurnsNS", "Twin \\"], ["OpposingTurnsEW", "Twin /"]]]
+  ["Dead ends", [["CulDeSacNorth", "End N"], ["CulDeSacSouth", "End S"], ["CulDeSacEast", "End E"], ["CulDeSacWest", "End W"]]]
 ];
 
 function parseCode(code) {
-  return { N: code[0] !== "-", S: code[1] !== "-", E: code[2] !== "-", W: code[3] !== "-", tag: code[4] };
+  /* Slot 5 is the junction tag. It is "." for every current type — it only ever
+     distinguished the OpposingTurns twin bends' two disconnected arcs, removed
+     in #583 — but the slot stays so previously authored `code` values parse. */
+  return { N: code[0] !== "-", S: code[1] !== "-", E: code[2] !== "-", W: code[3] !== "-" };
 }
 
 /* ---- state ---- */
@@ -320,11 +317,7 @@ function tileMarkup(typeName, opts) {
     for (const [cx, cy] of houseCorners(typeName)) s += house(cx, cy);
   }
 
-  if (e.tag === "\\" || e.tag === "/") {
-    // twin disconnected corner arcs
-    const arcs = e.tag === "\\" ? [["N", "E"], ["S", "W"]] : [["N", "W"], ["S", "E"]];
-    for (const [a, b] of arcs) s += arc(a, b);
-  } else if (isTurn) {
+  if (isTurn) {
     // a bend is a curved corner, not two straight bands
     s += arc(roadEdges[0], roadEdges[1]);
   } else {
@@ -340,7 +333,6 @@ function tileMarkup(typeName, opts) {
 }
 
 /* which corner lots hold a house, per tile type (2026-07-30 lot rules):
-   - twin bends: none
    - bends: all but the small corner the curve cups (the bend's own corner)
    - everything else: all four
    NOTE: house *orientation* on bends & cul-de-sacs is an open design question
@@ -348,7 +340,6 @@ function tileMarkup(typeName, opts) {
 function houseCorners(typeName) {
   const e = parseCode(TYPES[typeName]);
   const C = { NE: [76, 24], NW: [24, 24], SE: [76, 76], SW: [24, 76] };
-  if (e.tag === "\\" || e.tag === "/") return [];
   const road = ["N", "S", "E", "W"].filter(d => e[d]);
   const isTurn = road.length === 2 && !(e.N && e.S) && !(e.E && e.W);
   if (isTurn) {
@@ -513,27 +504,22 @@ document.getElementById("map").addEventListener("click", e => {
 function miniSVG(typeName) {
   return `<svg viewBox="0 0 100 100">${tileMarkup(typeName, { houses: false })}</svg>`;
 }
-/* #516: OpposingTurns* ("Twin bends") have no single City Kit mesh — two
-   independent quarter-arcs in one tile can't be rendered, so they must not be
-   placed on the live map. The palette greys them out and blocks selection. */
-const UNBUILDABLE = new Set(["OpposingTurnsNS", "OpposingTurnsEW"]);
+/* #583: the greyed-out "not buildable" palette state existed only for the
+   OpposingTurns "twin bends" (#516), which are now removed from the catalog
+   outright — every remaining type is placeable, so nothing is blocked here. */
 function buildPalette() {
   const el = document.getElementById("palette");
   let html = "";
   for (const [fam, items] of PALETTE) {
     html += `<div class="fam-label">${fam}</div>`;
     for (const [type, nm] of items) {
-      const blocked = UNBUILDABLE.has(type);
-      const cls = "tile-btn" + (type === state.brush ? " sel" : "") + (blocked ? " unbuildable" : "");
-      const title = blocked ? `${type} — not kit-renderable (#516)` : `${type} (${TYPES[type]})`;
-      html += `<button class="${cls}" data-type="${type}" title="${title}"${blocked ? " disabled aria-disabled=\"true\"" : ""}>`
-        + miniSVG(type) + `<span class="nm">${nm}</span>`
-        + (blocked ? `<span class="badge">Not buildable</span>` : "") + `</button>`;
+      const cls = "tile-btn" + (type === state.brush ? " sel" : "");
+      html += `<button class="${cls}" data-type="${type}" title="${type} (${TYPES[type]})">`
+        + miniSVG(type) + `<span class="nm">${nm}</span></button>`;
     }
   }
   el.innerHTML = html;
   el.querySelectorAll(".tile-btn").forEach(b => b.addEventListener("click", () => {
-    if (UNBUILDABLE.has(b.dataset.type)) return;   // block placing an unrenderable type
     state.brush = b.dataset.type;
     if (state.mode !== "place") setMode("place");
     el.querySelectorAll(".tile-btn").forEach(x => x.classList.toggle("sel", x === b));

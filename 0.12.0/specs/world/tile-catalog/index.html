@@ -737,13 +737,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-17-tile-types" class="md-nav__link">
+  <a href="#the-15-tile-types" class="md-nav__link">
     <span class="md-ellipsis">
-      The 17 tile types
+      The 15 tile types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="The 17 tile types">
+    <nav class="md-nav" aria-label="The 15 tile types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -788,9 +788,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" class="md-nav__link">
+  <a href="#removed-the-opposing-turn-twin-bends-583" class="md-nav__link">
     <span class="md-ellipsis">
-      Resolved: opposing-turn arches do not join into a loop
+      Removed: the opposing-turn twin bends (#583)
     </span>
   </a>
   
@@ -1765,13 +1765,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-17-tile-types" class="md-nav__link">
+  <a href="#the-15-tile-types" class="md-nav__link">
     <span class="md-ellipsis">
-      The 17 tile types
+      The 15 tile types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="The 17 tile types">
+    <nav class="md-nav" aria-label="The 15 tile types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1816,9 +1816,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" class="md-nav__link">
+  <a href="#removed-the-opposing-turn-twin-bends-583" class="md-nav__link">
     <span class="md-ellipsis">
-      Resolved: opposing-turn arches do not join into a loop
+      Removed: the opposing-turn twin bends (#583)
     </span>
   </a>
   
@@ -1851,7 +1851,7 @@
 <p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (multi-tile grid/placement system, implemented), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (map-shape question, resolved 2026-07-14 — see <a href="../../expansion/#map-shape">Neighborhood Expansion</a>)</em></p>
 <div class="admonition note">
 <p class="admonition-title">Status: implemented in Core (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>)</p>
-<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (18 values — the 17 road tiles plus the roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges and, for the OpposingTurns types, arcs), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 16 lot-bearing types — every type except <code>FourWay</code> and <code>GreenSpace</code>). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
+<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (16 values — the 15 road tiles plus the roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>; the two <code>OpposingTurns</code> "twin bends" were removed outright by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 15 lot-bearing types — every type except the roadless <code>GreenSpace</code>). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
 </div>
 <h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
 <p>These measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>; the road-bend corner radius added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>) as the geometric basis every tile type below will eventually be built from.</p>
@@ -1888,10 +1888,6 @@
 <td>9m</td>
 </tr>
 <tr>
-<td>Opposing-turn arch radius</td>
-<td>quarter-circle, 15m (peak of arch reaches ~15m from tile center)</td>
-</tr>
-<tr>
 <td>Road-bend corner radius</td>
 <td>5m — the plain <code>Turn*</code>/<code>road-bend</code> road centerline's corner-arc radius, measured from the shared <code>road-bend</code> kit FBX (raw radius 50 at the raw×0.1 world scale, midline of the inner 20-raw and outer 80-raw asphalt-edge arcs). The walk network curves a bend's sidewalks concentrically about it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>); see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a></td>
 </tr>
@@ -1900,8 +1896,8 @@
 <h2 id="grid-coordinates">Grid coordinates<a class="headerlink" href="#grid-coordinates" title="Permanent link">&para;</a></h2>
 <p>The world is an integer tile grid addressed as <strong><code>(x, y)</code></strong> — <code>x</code> runs east/west, <code>y</code> runs north/south. In Core these map to <code>TileCoordinate.Col</code> (<code>x</code>) and <code>TileCoordinate.Row</code> (<code>y</code>); world-space is derived by <code>TileGeometry</code> (<code>Col → +X</code>, <code>Row → +Z</code>). The starting <code>FourWay</code> intersection is the origin <strong><code>(0, 0)</code></strong>; the tile directly north of it is <strong><code>(0, 1)</code></strong>, directly east is <strong><code>(1, 0)</code></strong>.</p>
 <p>A tile's identity is its integer <code>(x, y)</code>; a type name's compass suffix (e.g. <code>CulDeSacEast</code>) describes <em>which edge carries the road</em>, <strong>not</strong> where the tile sits on the map. Position comes from the coordinate, connectivity from the type/code below — keeping the two separate avoids the "is that northwest or is that an east-facing cul-de-sac?" confusion.</p>
-<h2 id="the-17-tile-types">The 17 tile types<a class="headerlink" href="#the-17-tile-types" title="Permanent link">&para;</a></h2>
-<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the next 16 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). An 18th roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) is listed at the end of the table below and detailed in <a href="#green-space-tile-539">its own subsection</a>.</p>
+<h2 id="the-15-tile-types">The 15 tile types<a class="headerlink" href="#the-15-tile-types" title="Permanent link">&para;</a></h2>
+<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the next 14 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). A 16th roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) is listed at the end of the table below and detailed in <a href="#green-space-tile-539">its own subsection</a>. Two further <code>OpposingTurns</code> "twin bend" types were part of this catalog until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a> removed them — see <a href="#removed-the-opposing-turn-twin-bends-583">Removed: the opposing-turn twin bends</a>.</p>
 <p>The <strong>Code</strong> column is the compact authoring token (see <a href="#tile-codes-connectivity-as-a-single-source">Tile codes</a> below); it encodes the same road edges as the "Road edges" column.</p>
 <table>
 <thead>
@@ -2004,18 +2000,6 @@
 <td><code>╸</code></td>
 </tr>
 <tr>
-<td><code>OpposingTurnsNS</code></td>
-<td><code>NSEW\</code></td>
-<td>N,E,S,W</td>
-<td><code>⬭</code> a NE-corner turn arc and an unrelated SW-corner turn arc — one bowing north(-east), one bowing south(-west) — enclosing a central island, <strong>not</strong> connected to each other</td>
-</tr>
-<tr>
-<td><code>OpposingTurnsEW</code></td>
-<td><code>NSEW/</code></td>
-<td>N,E,S,W</td>
-<td><code>⬯</code> the 90° rotation: a NW-corner turn arc and an unrelated SE-corner turn arc, bowing west and east respectively — also not connected to each other</td>
-</tr>
-<tr>
 <td><code>GreenSpace</code></td>
 <td><code>----.</code></td>
 <td><em>(none)</em></td>
@@ -2024,11 +2008,11 @@
 </tbody>
 </table>
 <h3 id="green-space-tile-539">Green-space tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)<a class="headerlink" href="#green-space-tile-539" title="Permanent link">&para;</a></h3>
-<p><code>GreenSpace</code> is the 18th type: a full grid tile the same size and shape as the other 17, but carrying <strong>no road on any edge</strong> (empty <code>RoadEdges</code>, no arcs) and <strong>no buildable lot</strong> (<code>TileLotCatalog.LotsFor(GreenSpace)</code> = zero lots — no houses, ever). It is authored into the target map (<code>docs/tools/map-data.json</code>) exactly like any other type — <code>{x, y, type: "GreenSpace"}</code> — and its empty road-edge set means it validates through <code>TileMap.CanPlace</code> only against neighbours whose shared edge is <em>also</em> roadless.</p>
+<p><code>GreenSpace</code> is the 16th type: a full grid tile the same size and shape as the other 15, but carrying <strong>no road on any edge</strong> (empty <code>RoadEdges</code>) and <strong>no buildable lot</strong> (<code>TileLotCatalog.LotsFor(GreenSpace)</code> = zero lots — no houses, ever). It is authored into the target map (<code>docs/tools/map-data.json</code>) exactly like any other type — <code>{x, y, type: "GreenSpace"}</code> — and its empty road-edge set means it validates through <code>TileMap.CanPlace</code> only against neighbours whose shared edge is <em>also</em> roadless.</p>
 <p>Distinct from <strong>unbuilt-quadrant green space</strong> (the open-grass fill <em>inside</em> a placed road tile, described under <a href="#property-lots-per-tile">Property lots per tile</a> — a static property of a tile's own type). This <code>GreenSpace</code> <em>tile type</em> turns an entire tile on, and unlike the paid, road-connected <a href="../../expansion/#green-space-tiles-auto-activated">expansion frontier</a> it <strong>auto-activates for free</strong> — no coin cost, no lock icon — the moment 2+ of its 4 edges border an already-activated tile (a placed road tile <em>or</em> an already-activated green space), cascading unbounded to a fixpoint. Because it carries no road it can never satisfy <code>TileMap.HasRoadConnectionAt</code>, so it is structurally excluded from the frontier and never shows a lock icon. See <a href="../../expansion/#green-space-tiles-auto-activated">Neighborhood Expansion → Green-space tiles</a> for the activation/persistence detail.</p>
 <h3 id="tile-codes-connectivity-as-a-single-source">Tile codes — connectivity as a single source<a class="headerlink" href="#tile-codes-connectivity-as-a-single-source" title="Permanent link">&para;</a></h3>
-<p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag — <code>.</code> for an ordinary single junction or dead-end, and <code>\</code> / <code>/</code> for the two <code>OpposingTurns</code> tiles, where the slash marks the wall between the tile's two disconnected arcs: <code>\</code> separates {N,E} from {S,W} (so the arcs are NE + SW = <code>OpposingTurnsNS</code>), <code>/</code> separates {N,W} from {S,E} (NW + SE = <code>OpposingTurnsEW</code>).</p>
-<p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency, only the tile's internal routing. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
+<p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag, <code>.</code> for every current type. The tag once distinguished the two <code>OpposingTurns</code> tiles' disconnected arcs (<code>\</code> / <code>/</code>); those types were removed in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>, so the slot now carries no information and is kept only so previously authored codes still parse.</p>
+<p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
 <p>Maps are drawn and validated with the <a href="../../../tools/">Map Builder</a> tool, which reads these codes.</p>
 <h3 id="road-tile-art-kit-meshes-per-type">Road tile art — kit meshes per type<a class="headerlink" href="#road-tile-art-kit-meshes-per-type" title="Permanent link">&para;</a></h3>
 <p>Each junction/terminus type renders a <strong>single Kenney City Kit Roads mesh at the tile centre</strong>, plus tiled <code>road-straight</code> arms reaching out to each road edge. <code>RoadTileArt</code> (Core) resolves the <code>TileType</code> → <code>(Resources key, yaw, bakes-crosswalks)</code> mapping; <code>WorldBuilder</code> places the mesh and yaws it so its <strong>imported</strong> orientation lines up with the tile's declared edges (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/508">#508</a>). The 0°-yaw orientation of each staged 1×1-unit piece (→10×10m at <code>RoadTileScale</code>) is the mesh as Unity <strong>imports</strong> it — which matters because Unity's FBX import applies a handedness (X-axis) mirror. That mirror is invisible on the symmetric pieces (4-way, straight) and on the E/W-symmetric Tee, but it flips the two chirally-asymmetric pieces: the cul-de-sac round end and the bend. #508 read the yaws from the un-imported kit OBJ/FBX source pose instead, so both of those shipped 180°/mirrored off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/514">#514</a> fixed the cul-de-sac; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/515">#515</a> the bend). The empirical mesh-geometry guard that pins each yaw against the real imported vertices lives in the EditMode <code>WorldKitArtTests</code> (it needs <code>UnityEngine.Mesh</code>); the Core <code>RoadTileArtTests</code> stays a pure data-table pin.</p>
@@ -2078,12 +2062,6 @@
 <td>n/a</td>
 <td>a roadless park tile: no centre mesh, no arms, no crosswalks. Its only visible effect is the grass ground plane growing to cover it (<code>WorldBuilder.ResizeGroundToMap</code>); the road-art and lot-building passes iterate the player-unlocked road tiles, which never include a green space, so it no-ops gracefully (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)</td>
 </tr>
-<tr>
-<td><code>OpposingTurnsNS/EW</code></td>
-<td><em>(none — not kit-renderable)</em></td>
-<td>n/a</td>
-<td>would need two independent bends composed in one tile with no central crossing; the <code>road-curve</code> family that could sweep a wide double-arc is a 2×2-unit piece that doesn't fit the single-tile grid, so there is no clean kit build. <strong>The live map no longer places one</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/516">#516</a> swapped the sole <code>OpposingTurnsNS</code> at <code>(6,-1)</code> to <code>FourWay</code>), and the <a href="../../../tools/">Map Builder</a> now greys these two "Twin bends" out as not-buildable so a future author can't place one back. The types stay <strong>defined</strong> in Core (still modeled, simply unused on the live map) rather than retired.</td>
-</tr>
 </tbody>
 </table>
 <p>Crosswalks are baked into the 4-way/Tee meshes, so the kit path needs no separate crossing tiles; the primitive graybox fallback derives one crosswalk patch per intersection arm from <code>TileCrosswalkGeometry</code> instead — see <a href="../sidewalks/#the-crosswalk-box">Sidewalks &amp; Walk Network</a>.</p>
@@ -2091,23 +2069,26 @@
 <p><em>Design decisions 2026-07-30 / 2026-07-31 (Derek &amp; Lucas), captured from the <a href="../../../tools/">Map Builder</a>. The Core lot rules below are implemented in <code>TileLotCatalog.LotsFor</code>; each bend's curved/cupped corner is exposed via <code>TileLotCatalog.TryGetCuppedCorner</code>, and every dropped (no-lot) quadrant's tree slots via <code>TileLotCatalog.TreeQuadrantsFor</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>, refined by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/385">#385</a> and generalized to all tile types by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>).</em></p>
 <p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and <strong>every quadrant with no kept house lot becomes open space with trees</strong> (reusing the #170 tree environment art; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>). The tree quadrants are derived as "the tile's four quadrants minus its <code>LotsFor</code> quadrants", so trees and lots share one source of truth and can never disagree — the sole exception is the whole-tile <a href="#green-space-tile-539"><code>GreenSpace</code> tile type</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), a separate park tile that stays bare (it has no lots, but a naive "no lot ⇒ trees" rule is explicitly <em>not</em> applied to it). This <em>unbuilt-quadrant</em> open space with trees is a static property of a road tile's own type — distinct from that whole-tile <code>GreenSpace</code>, which turns an entire tile on:</p>
 <ul>
-<li><strong>Twin bends (<code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code>): no lots.</strong> Their two arcs leave no clean buildable quadrant, so all four quadrants become <strong>open space with trees</strong>.</li>
 <li><strong>Bends (<code>Turn*</code>): two lots — drop the small corner the curve cups AND its diagonal opposite.</strong> The cupped corner is the bend's own corner (<code>TurnNE</code> drops NE, <code>TurnSW</code> drops SW, etc.); the corner diagonally opposite it borders neither roaded edge, so it can never face a road and is dropped too. The two kept lots each border a straight roaded edge square-on: <code>TurnNE</code>→NW,SE · <code>TurnNW</code>→NE,SW · <code>TurnSE</code>→NE,SW · <code>TurnSW</code>→NW,SE. Both <strong>dropped</strong> quadrants become <strong>open space with trees</strong>; the cupped corner's tree is kept clear of the bend's road arc via the tile-aware road clearance (<code>LotBounds.RoadsFor</code>/<code>ClearRoadCorridors</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/455">#455</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>) and is skipped rather than force-placed if the corner has no clean grass, while the diagonal-opposite quadrant (bordering no roaded edge) always keeps its tree. A bend renders as a <strong>curved corner</strong>, not two straight bands meeting at a right angle.</li>
 <li><strong>Cul-de-sacs (<code>CulDeSac*</code>): two lots — keep the two quadrants adjacent to the single roaded edge.</strong> <code>CulDeSacNorth</code>→NE,NW · <code>CulDeSacSouth</code>→SE,SW · <code>CulDeSacEast</code>→NE,SE · <code>CulDeSacWest</code>→NW,SW. The two bulb-side quadrants become <strong>open space with trees</strong> (reusing the #170 tree environment art, rendered by <code>WorldBuilder</code>). The two <strong>kept</strong> quadrants get houses, so their procedural <a href="../world/#yard-landscaping">yard landscaping</a> must exclude the tile's road: the kept quadrant faces the tile's single road arm, and a lot on this non-origin tile is only trimmed against that road once the yard clip is made <strong>tile-aware</strong> — <code>LotBounds.RoadsFor(lot, tileType)</code> converts the tile's <code>TileRoadGeometry</code> arm to a <code>Road</code> alongside the origin's streets (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/455">#455</a>, after a playtest showed yard trees landing in the first unlocked cul-de-sac's street).</li>
 <li><strong>Green-space tile (<code>GreenSpace</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>): no lots</strong> — a park/open-grass tile that never holds a house (<code>TileLotCatalog.LotsFor(GreenSpace)</code> returns an empty set). Not to be confused with the unbuilt-quadrant green space <em>inside</em> a road tile above; see <a href="#green-space-tile-539">Green-space tile</a>.</li>
 <li><strong>All other types</strong> (<code>FourWay</code>, <code>Straight*</code>, <code>Tee*</code>): all four quadrant lots. <strong>A <code>FourWay</code> is a full intersection — all four quadrants border a straight roaded edge square-on — so it carries one buildable lot per quadrant <em>wherever it appears on the map, not only at the origin</em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/607">#607</a>).</strong> <code>TileLotCatalog.LotsFor(FourWay)</code> returns the four quadrant slots like any other full-lot type; the <strong>origin</strong> FourWay is the one exception where those lots are <em>not</em> catalog-generated — its four houses are seeded from <code>NeighborhoodLayout.HouseLots</code> (ids 1–4), so <code>GameState.LotsForUnlockedTile</code> returns an empty set for the origin coordinate to avoid double-counting them, while every non-origin FourWay gets its four <code>TileLotCatalog</code> lots with stable <code>FrontierHouseId.For(coordinate, quadrant)</code> ids. (Before #607 a non-origin FourWay unlocked with <strong>zero</strong> lots — nowhere to build a house.)</li>
 </ul>
 <p><strong>House facing — settled (2026-07-31, Derek): remove, no rotation.</strong> On bends and cul-de-sacs the road curves, so a corner house can't always face it square-on. Rather than rotate houses to fan around a curve, the lots that can't face a road square-on are simply <strong>removed</strong> (they become open space with trees, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>) — which is exactly why bends and cul-de-sacs keep only two lots above. Every remaining lot already borders a straight roaded edge square-on, so no house ever carries a facing/rotation value.</p>
-<h2 id="resolved-opposing-turn-arches-do-not-join-into-a-loop">Resolved: opposing-turn arches do not join into a loop<a class="headerlink" href="#resolved-opposing-turn-arches-do-not-join-into-a-loop" title="Permanent link">&para;</a></h2>
-<p><em>Resolved 2026-07-18 by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>, overriding the earlier #105 "loop/island" framing below</em></p>
-<blockquote>
-<p>The two turns would not connect. Each arc would connect two adjacent sides only. There would be two distinct, unconnected arcs.</p>
-</blockquote>
-<p>So each arch in <code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code> is a <strong>turn</strong> in exactly the same sense as the <code>TurnNE</code>/<code>TurnNW</code>/<code>TurnSE</code>/<code>TurnSW</code> tiles above: it joins two <em>adjacent</em> (corner) edges, not the two <em>opposite</em> edges the original framing assumed. <code>OpposingTurnsNS</code> is a <code>TurnNE</code>-shaped arc plus an unconnected <code>TurnSW</code>-shaped arc; <code>OpposingTurnsEW</code> is that pairing's 90° rotation (<code>TurnNW</code> + <code>TurnSE</code>). Between them the two arcs touch all four edges, but there is no path from one arc into the other — no loop, no shared connection point — matching Core's <code>TileArc</code>/<code>TileTypeDefinition.EdgesConnectedVia</code> in <code>Doggiehood.Core.World</code> (built by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>), which scopes each edge's connection to its own arc only. The 15m <code>OpposingTurnArchRadius</code> (see <a href="#standard-dimensions">Standard dimensions</a>) still describes each arc's individual curve; it just no longer describes one continuous loop.</p>
+<h2 id="removed-the-opposing-turn-twin-bends-583">Removed: the opposing-turn twin bends (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>)<a class="headerlink" href="#removed-the-opposing-turn-twin-bends-583" title="Permanent link">&para;</a></h2>
+<p><em>Decision (2026-08-07, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>): </em><em>"remove tile completely"</em><em> — superseding the earlier "keep them defined-but-unused in Core" state that <a href="https://github.com/derekwinters/lucas-doggiehood/issues/516">#516</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/508">#508</a> left behind.</em></p>
+<p>The catalog once carried two more types — <code>OpposingTurnsNS</code> and <code>OpposingTurnsEW</code>, the "twin bends": a tile with two <em>independent, unconnected</em> corner arcs touching all four edges (NE + SW for <code>OpposingTurnsNS</code>, NW + SE for its 90° rotation). They were never kit-renderable — two bends in one tile with no central crossing has no City Kit mesh, and the <code>road-curve</code> family that could sweep a wide double-arc is a 2×2-unit piece that doesn't fit the single-tile grid. #516 had already swapped the sole authored <code>OpposingTurnsNS</code> at <code>(6,-1)</code> to <code>FourWay</code> and greyed the pair out in the <a href="../../../tools/">Map Builder</a>, leaving them defined-but-unused.</p>
+<h1 id="583-removed-them-outright-the-tiletype-values-their-tilecatalog-entries-the-tilearctiletypedefinitionarcsedgesconnectedvia-arc-machinery-that-existed-only-to-model-them-their-no-lots-rule-the-15m-opposingturnarchradius-standard-dimension-and-the-map-builders-greyed-out-twin-bends-palette-group-nothing-on-the-live-map-or-in-any-save-referenced-them-tiletype-serializes-by-name-so-the-removal-is-behavior-neutral-the-remaining-tile-set-is-pinned-by-name-in-tilecatalogteststypes_exposesexactlythedefinedcatalogtypes-so-they-cant-reappear-silently">583 removed them outright: the <code>TileType</code> values, their <code>TileCatalog</code> entries, the <code>TileArc</code>/<code>TileTypeDefinition.Arcs</code>/<code>EdgesConnectedVia</code> arc machinery that existed only to model them, their no-lots rule, the 15m <code>OpposingTurnArchRadius</code> standard dimension, and the Map Builder's greyed-out "Twin bends" palette group. Nothing on the live map or in any save referenced them (<code>TileType</code> serializes by name), so the removal is behavior-neutral. The remaining tile set is pinned by name in <code>TileCatalogTests.Types_ExposesExactlyTheDefinedCatalogTypes</code>, so they can't reappear silently.<a class="headerlink" href="#583-removed-them-outright-the-tiletype-values-their-tilecatalog-entries-the-tilearctiletypedefinitionarcsedgesconnectedvia-arc-machinery-that-existed-only-to-model-them-their-no-lots-rule-the-15m-opposingturnarchradius-standard-dimension-and-the-map-builders-greyed-out-twin-bends-palette-group-nothing-on-the-live-map-or-in-any-save-referenced-them-tiletype-serializes-by-name-so-the-removal-is-behavior-neutral-the-remaining-tile-set-is-pinned-by-name-in-tilecatalogteststypes_exposesexactlythedefinedcatalogtypes-so-they-cant-reappear-silently" title="Permanent link">&para;</a></h1>
 <details>
-<summary>Original (superseded) framing, kept for history</summary>
+<summary>Design history of the removed types, kept for the record</summary>
 
-The original assumption, per Derek, was that each arch in `OpposingTurnsNS`/`OpposingTurnsEW` is "a curved road, an arch, likely a quarter circle radius" — implying the two arches join into a continuous loop around the central island, using the 15m `OpposingTurnArchRadius`, with both arches connecting the tile's two *opposite* edges (E/W for `OpposingTurnsNS`, N/S for `OpposingTurnsEW`). This is superseded by the resolution above.
+**Resolved 2026-07-18 by Derek on [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), overriding the earlier #105 "loop/island" framing:**
+
+> The two turns would not connect. Each arc would connect two adjacent sides only. There would be two distinct, unconnected arcs.
+
+So each arch was a **turn** in exactly the same sense as the `TurnNE`/`TurnNW`/`TurnSE`/`TurnSW` tiles above: it joined two *adjacent* (corner) edges, not the two *opposite* edges the original framing assumed. Between them the two arcs touched all four edges, but there was no path from one arc into the other — no loop, no shared connection point.
+
+The **original (superseded) #105 framing** was that each arch is "a curved road, an arch, likely a quarter circle radius" — implying the two arches join into a continuous loop around a central island, using a 15m `OpposingTurnArchRadius`, with both arches connecting the tile's two *opposite* edges (E/W for `OpposingTurnsNS`, N/S for `OpposingTurnsEW`).
 
 </details>
 
