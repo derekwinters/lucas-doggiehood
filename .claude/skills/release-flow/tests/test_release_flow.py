@@ -75,16 +75,46 @@ def _check(name, status="completed", conclusion="success"):
 
 
 ALL_GREEN = [
-    _check("docs-test / build"),
-    _check("docs-test / gate-tests"),
-    _check("pr-title-lint / lint"),
+    _check("build"),
+    _check("gate-tests"),
+    _check("Conventional Commits PR title"),
 ]
 
 ALL_PENDING = [
-    _check("docs-test / build", status="in_progress", conclusion=None),
-    _check("docs-test / gate-tests", status="queued", conclusion=None),
-    _check("pr-title-lint / lint", status="in_progress", conclusion=None),
+    _check("build", status="in_progress", conclusion=None),
+    _check("gate-tests", status="queued", conclusion=None),
+    _check("Conventional Commits PR title", status="in_progress", conclusion=None),
 ]
+
+
+# The exact check-run names GitHub reports on the release PR (from the #631
+# empirical capture). The three required ones (``build``, ``gate-tests``,
+# ``Conventional Commits PR title``) are surrounded by non-required noise
+# checks that must be ignored.
+REAL_RELEASE_PR_CHECKS = [
+    _check("Conventional Commits PR title"),
+    _check("Debug APK"),
+    _check("Release-candidate APK"),
+    _check("build"),
+    _check("gate-tests"),
+    _check("sweep"),
+]
+
+
+class RealReleasePrCheckNameTests(unittest.TestCase):
+    """Regression guard for #631: ``REQUIRED_CHECKS`` must be the raw check-run
+    names GitHub actually reports, or ``classify_checks`` never matches and the
+    poll hangs to TIMEOUT while the checks are green."""
+
+    def test_real_green_release_pr_classifies_as_passed(self):
+        self.assertEqual(
+            rf.classify_checks(REAL_RELEASE_PR_CHECKS, rf.REQUIRED_CHECKS),
+            rf.PASSED)
+
+    def test_required_checks_are_the_raw_run_names(self):
+        self.assertEqual(
+            set(rf.REQUIRED_CHECKS),
+            {"build", "gate-tests", "Conventional Commits PR title"})
 
 
 class ClassifyChecksTests(unittest.TestCase):
@@ -102,17 +132,17 @@ class ClassifyChecksTests(unittest.TestCase):
 
     def test_a_required_failure_is_failed(self):
         checks = [
-            _check("docs-test / build"),
-            _check("docs-test / gate-tests", conclusion="failure"),
-            _check("pr-title-lint / lint"),
+            _check("build"),
+            _check("gate-tests", conclusion="failure"),
+            _check("Conventional Commits PR title"),
         ]
         self.assertEqual(rf.classify_checks(checks, rf.REQUIRED_CHECKS), rf.FAILED)
 
     def test_skipped_required_counts_as_pass(self):
         checks = [
-            _check("docs-test / build", conclusion="skipped"),
-            _check("docs-test / gate-tests"),
-            _check("pr-title-lint / lint"),
+            _check("build", conclusion="skipped"),
+            _check("gate-tests"),
+            _check("Conventional Commits PR title"),
         ]
         self.assertEqual(rf.classify_checks(checks, rf.REQUIRED_CHECKS), rf.PASSED)
 
@@ -139,9 +169,9 @@ class PollChecksTests(unittest.TestCase):
 
     def test_returns_failed_immediately(self):
         failed = [
-            _check("docs-test / build", conclusion="failure"),
-            _check("docs-test / gate-tests"),
-            _check("pr-title-lint / lint"),
+            _check("build", conclusion="failure"),
+            _check("gate-tests"),
+            _check("Conventional Commits PR title"),
         ]
         result = rf.poll_checks(lambda: failed, rf.REQUIRED_CHECKS,
                                 timeout_polls=4, sleep_fn=lambda _s: None)

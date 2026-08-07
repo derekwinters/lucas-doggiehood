@@ -72,13 +72,21 @@ So `choose_ci_trigger_action()` hard-codes `close_reopen` with no branch. If
 `workflow_dispatch` is ever added to `docs-test`/`pr-title-lint`, supporting it
 is a *follow-up*, not something to speculatively branch on now.
 
-The **required green checks** on the release PR are therefore exactly:
+The **required green checks** on the release PR are therefore exactly these
+three jobs — spelled with the **raw check-run names GitHub reports** (the job's
+`name:` if set, else its id), which is what `fetch_pr_checks` returns and what
+`REQUIRED_CHECKS` must match (see #631; the old `"<workflow> / <job>"` spelling
+never matched, so the poll hung to `TIMEOUT` while the checks were green):
 
-- `docs-test / build`
-- `docs-test / gate-tests`
-- `pr-title-lint / lint`
+| Workflow / job | Check-run name |
+|---|---|
+| `docs-test.yml` → `build` | `build` |
+| `docs-test.yml` → `gate-tests` | `gate-tests` |
+| `pr-title-lint.yml` → `lint` (`name: Conventional Commits PR title`) | `Conventional Commits PR title` |
 
-(`REQUIRED_CHECKS` in `release_flow.py`.)
+(`REQUIRED_CHECKS` in `release_flow.py`. Other checks that also land on the
+release PR — e.g. `Debug APK`, `Release-candidate APK`, `sweep` — are non-required
+noise and are ignored by `classify_checks`.)
 
 ## The step sequence
 
