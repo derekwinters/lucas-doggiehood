@@ -1212,9 +1212,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#group-contents-representative-tunables" class="md-nav__link">
+  <a href="#group-contents" class="md-nav__link">
     <span class="md-ellipsis">
-      Group contents (representative tunables)
+      Group contents
     </span>
   </a>
   
@@ -1739,9 +1739,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#group-contents-representative-tunables" class="md-nav__link">
+  <a href="#group-contents" class="md-nav__link">
     <span class="md-ellipsis">
-      Group contents (representative tunables)
+      Group contents
     </span>
   </a>
   
@@ -1845,39 +1845,41 @@
 </tr>
 </tbody>
 </table>
-<h3 id="group-contents-representative-tunables">Group contents (representative tunables)<a class="headerlink" href="#group-contents-representative-tunables" title="Permanent link">&para;</a></h3>
-<p>Grounded in the epic <a href="https://github.com/derekwinters/lucas-doggiehood/issues/619">#619</a> sub-issues and the central <code>TuningConfig</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>) — the <strong>source of truth</strong> for these constants and their defaults. Values shown are representative; the point is the <em>structure</em> (which tunables, scalar-vs-<code>base</code>+<code>step</code>), not final numbers, which live in <code>TuningConfig</code> and land via <a href="https://github.com/derekwinters/lucas-doggiehood/issues/619">#623–#626</a>.</p>
+<h3 id="group-contents">Group contents<a class="headerlink" href="#group-contents" title="Permanent link">&para;</a></h3>
+<p>Grounded in the epic <a href="https://github.com/derekwinters/lucas-doggiehood/issues/619">#619</a> sub-issues and the central <code>TuningConfig</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>) — the <strong>source of truth</strong> for these constants and their defaults. The wireframe's job is the <em>structure</em> (which groups, scalar-vs-<code>base</code>+<code>step</code>), not the numbers.</p>
+<p><strong>As built (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a>) the panel renders <em>every</em> <code>TuningConfig</code> field, not a curated subset</strong> — that is what "no hard-coded value list that can drift from Core" requires. The row set comes from the engine-free <strong><code>TuningCatalog</code></strong> (<code>Doggiehood.Core.Tuning</code>), one descriptor per <code>TuningConfig</code> instance field carrying its label, unit, group and slider range; a Core reflection test fails if a field is ever added without one. Adding a tunable in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/619">#623–#626</a> therefore adds its slider automatically. The mockup's ~17 illustrative rows are a subset of the real set for legibility.</p>
 <table>
 <thead>
 <tr>
 <th>Group</th>
 <th>Control rows (each = one slider)</th>
-<th>Shape</th>
+<th>Count</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Pacing</strong></td>
-<td>Quest min target (floor) · Quest max target (ceiling) · Pacing window (hours) · Refresh interval (minutes)</td>
-<td>4 scalars</td>
+<td>Quest min target (floor) · Quest max target (ceiling) · Dogs per active quest · Pacing window · Refresh interval</td>
+<td>5</td>
 </tr>
 <tr>
 <td><strong>Economy</strong></td>
-<td>Quest reward (coins) · Paid-quest markup (×) · Cost-tier 1 gate (coins) · Cost-tier 2 gate (coins)</td>
-<td>4 scalars</td>
+<td>Quest reward · Paid-quest markup · Starter cost min/max · Mid cost min/max · Premium cost min · Starter/Mid/Premium tier gates · Onboarding reward per step</td>
+<td>11</td>
 </tr>
 <tr>
 <td><strong>Expansion</strong></td>
-<td>Tile unlock — base · Tile unlock — step · House build — base · House build — step · Upgrade cost — base · Upgrade cost — step</td>
-<td>3 linear = 6 sliders</td>
+<td>Tile unlock — base/step/origin tiles · House build — base/step/houses per step · House max level · Upgrade cost — to level 2/3/4</td>
+<td>10</td>
 </tr>
 <tr>
 <td><strong>Move-in</strong></td>
-<td>Early rate (%) · Late rate (%) · Population span</td>
-<td>3 scalars</td>
+<td>Early move-in chance · Early increment per quest · Late move-in chance · Late increment per quest · Early/Late population · Household weights (single, parent+puppy, three dogs) · Easter-egg chance · Breed weight smoothing</td>
+<td>11</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Slider ranges.</strong> <code>TuningConfig</code> declares shipping defaults but no bounds, so <code>TuningCatalog</code> declares each field's <code>min</code>/<code>max</code>/<code>step</code> by a stated convention rather than per-field invention: a proportion is <code>0..1</code> step <code>0.01</code>; a multiplier runs from its neutral floor step <code>0.1</code>; a whole-number count/cost runs from its natural floor (<code>0</code>, or <code>1</code> where zero would be degenerate) to a round ceiling comfortably above the default, step <code>1</code>. A Core test asserts every shipping default sits inside its own range, so building the panel can never silently snap a balance value. These are dev-tool slider bounds, not balance numbers.</p>
 <h2 id="anchors-layout-constants">Anchors &amp; layout constants<a class="headerlink" href="#anchors-layout-constants" title="Permanent link">&para;</a></h2>
 <p>Every size, margin, and anchor is a <strong>named constant</strong> — never a fixed pixel position — so the layout holds across the supported tablet aspect ratios. These are the exact constants the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a> implementation declares (per <a href="../../../engineering/tech-stack/#geometry-layout-and-tuning-values-are-named-variables">#161</a>); EditMode tests assert the built overlay against them. This screen is <strong>exempt from the shared Candy Cottage chrome</strong>, so it does <strong>not</strong> inherit the shared outline/shadow/radius baseline — its own utilitarian values are named here instead.</p>
 <table>
@@ -2032,16 +2034,22 @@
 </tbody>
 </table>
 <p>The <strong>entry row</strong> reuses the Settings Debug-pane row metrics (<a href="../settings/">settings.md</a> <code>DebugRowHeightPx</code> = 96, action-pill sizing) — it is a Debug action row like <strong>Add coins</strong> / <strong>Refresh quests now</strong>, not a new component. Everything inside the tuning panel is <strong>local, utilitarian</strong> chrome sized by the constants above; it intentionally does <strong>not</strong> point at <a href="../shared-components/">Shared UI Components</a> for its fills/outline/shadow.</p>
+<p>The implementation (<code>TuningMenuOverlay</code>) declares a handful of further named constants (#161) that the table above doesn't cover, each transcribed off the mockup CSS or derived from the constants above rather than invented: <code>HeaderButtonGapPx</code> = 20 (<code>.thead</code> gap), <code>ButtonRadiusPx</code> / <code>ControlRowRadiusPx</code> = 8, <code>ButtonOutlinePx</code> / <code>ControlRowOutlinePx</code> = 1, <code>GroupHeaderRuleHeightPx</code> = 2 (<code>.ghead</code> bottom rule), the button/close/group-reset font sizes (26 / 30 / 22), and <code>LabelLineHeightPx</code> + <code>ControlRowInsetYPx</code>, which centre the (label line + <code>SliderLabelValueGapPx</code> + slider band) stack inside <code>ControlRowHeightPx</code>.</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Dev-build-only visibility — the hard rule.</strong> The <strong>"Tune balance…"</strong> entry row, and therefore this whole overlay, is compiled/shown <strong>only in development builds</strong> (e.g. gated behind <code>Debug.isDebugBuild</code> / a <code>DEVELOPMENT_BUILD</code> guard at the Unity layer). It <strong>must never appear in a release build</strong> — not merely hidden behind the existing 10-tap Debug unlock, but absent from release entirely. The unlock gesture still gates the Debug <em>tab</em> itself as today; the dev-build guard is an additional, release-excluding gate on this row.</li>
+<li><strong>Dev-build-only visibility — the hard rule.</strong> The <strong>"Tune balance…"</strong> entry row, and therefore this whole overlay, is compiled/shown <strong>only in development builds</strong>. It <strong>must never appear in a release build</strong> — not merely hidden behind the existing 10-tap Debug unlock, but absent from release entirely. The unlock gesture still gates the Debug <em>tab</em> itself as today; the dev-build guard is an additional, release-excluding gate on this row. As built (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a>) this is <code>DevBuildGate.IsDevBuild</code>: a <code>DEVELOPMENT_BUILD || UNITY_EDITOR</code> <strong>build-symbol guard</strong> that compiles to a constant <code>false</code> in a release player, deferring to <code>Debug.isDebugBuild</code> otherwise. Both <code>SettingsPanel.Init</code> and <code>TuningMenuOverlay.CreateIfDevBuild</code> take the answer as an injected <code>bool</code> — so a release build constructs neither the row nor a single overlay GameObject, and EditMode tests can exercise <strong>both</strong> sides of the gate (the Editor can only ever observe the dev side of the symbol itself).</li>
 <li><strong>Entry point (resolved — Option A, Derek 2026-08-06, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/621#issuecomment-5204316292">#621</a>).</strong> The menu is reached from a <strong>new action row in the existing Settings Debug tab</strong> ("Tune balance…"), consistent with the <a href="../settings/">#219 standard</a> that debug affordances live in the Debug tab. This introduces a "row opens a sub-panel" pattern the Debug tab hasn't used before (its rows were all inline toggles/actions).</li>
 <li><strong>Panel-vs-Settings relationship — layer, don't replace.</strong> The tuning panel opens as a <strong>centered modal overlay layered over</strong> the still-open Settings panel (which stays behind, dimmed by the scrim), per the <a href="../shared-components/#modal-overlays-block-world-input">modal-overlay convention</a>. It does <strong>not</strong> tear down / replace Settings. Closing the tuning panel (✕ or scrim tap) returns to the Settings Debug tab exactly as it was, so tuning is a quick in-and-out from Debug rather than a navigation away. The overlay registers with <code>ModalInputGate</code> while open so taps never leak to Settings or the world beneath.</li>
 <li><strong>Scroll behavior.</strong> The four groups live in one <strong>vertically scrollable</strong> column inside the fixed-height panel; the header (title + Reset all + ✕) is <strong>pinned</strong> and does not scroll. When all controls fit, no scrollbar shows; when they overflow (the common case with ~17 control rows), a <code>ScrollbarWidthPx</code> vertical scrollbar appears and content is inset by <code>ScrollBodyPaddingRightPx</code> so a knob never overlaps it. Groups do <strong>not</strong> collapse — it is a single flat scroll, not sub-tabs (kept simple for a dev tool).</li>
 <li><strong>The utilitarian slider (local, layout-only addition).</strong> Sliders have <strong>no</strong> entry in <a href="../shared-components/">Shared UI Components</a> today, and this screen is explicitly exempt from Candy Cottage chrome, so a plain slider is documented <strong>here</strong> rather than promoted to a shared style decision. Each slider is: a <strong>label</strong> + its <strong>live current value</strong> (tabular) on one line, and below it a horizontal <strong>track</strong> (<code>SliderTrackHeightPx</code>) with a draggable <strong>knob</strong> (<code>SliderKnobPx</code>). Dragging updates the live value in place and pushes it straight into the active <code>TuningConfig</code> field (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>) — the change is live. Each slider's min/max/step come from that field's declared range in <code>TuningConfig</code>, not from this layout.</li>
 <li><strong><code>base</code> + <code>step</code> = two sliders.</strong> A tunable that is a linear <code>base + step×n</code> function (tile unlock, house build, upgrade cost) is shown as <strong>two</strong> adjacent control rows — one for <code>base</code>, one for <code>step</code> — matching the field shape <a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a> exposes. "A few sliders per item is fine."</li>
-<li><strong>Reset-to-defaults — both scopes.</strong> A <strong>global Reset all</strong> in the header restores every field to the shipping <code>TuningConfig</code> defaults; each group also carries its <strong>own Reset</strong> restoring just that group's fields. Reset = re-seed from a fresh <code>TuningConfig</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>'s reset-to-defaults seam); the live values snap back.</li>
-<li><strong>TuningConfig is the source of these values.</strong> This overlay is a <em>view</em> over the central Core <a href="../../../engineering/tech-stack/"><code>TuningConfig</code></a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>); it declares no balance numbers of its own — labels, ranges, defaults, and current values all come from that config. The representative numbers in the mockup are illustrative only.</li>
+<li><strong>Reset-to-defaults — both scopes.</strong> A <strong>global Reset all</strong> in the header restores every field to the shipping <code>TuningConfig</code> defaults; each group also carries its <strong>own Reset</strong> restoring just that group's fields. Reset = re-seed from a fresh <code>TuningConfig</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>'s reset-to-defaults seam); the live values snap back. Two Core seams back this: <code>TuningConfig.ResetToDefaults()</code> (global — swaps in a fresh instance) and <code>TuningConfig.ResetGroupToDefaults(group)</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a> — restores just that group's fields <strong>in place</strong>, so the other groups' live overrides survive a partial reset).</li>
+<li>
+<p><strong>TuningConfig is the source of these values.</strong> This overlay is a <em>view</em> over the central Core <a href="../../../engineering/tech-stack/"><code>TuningConfig</code></a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>); it declares no balance numbers of its own — labels, ranges, defaults, and current values all come from Core (the config plus its <code>TuningCatalog</code> descriptors). The representative numbers in the mockup are illustrative only. A drag writes straight into <code>TuningConfig.Active</code> and the Core seams re-read it on every access, so the change is live with no restart; the write is clamped/snapped to the field's declared range by Core, never by the view.</p>
+</li>
+<li>
+<p><strong>Implementation deltas from the mockup (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a>).</strong> Two intentional, cosmetic-only differences: the header renders the Regions table's single title string <strong>"Balance Tuning · DEV"</strong> rather than the mockup's separate title + <code>DEV</code> chip; and the Debug-tab entry pill reads <strong>"Open"</strong> rather than "Open ▸", because the bundled UI font (DejaVu Sans, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>) is not guaranteed to carry the triangle glyph — the same ASCII-only rule the <strong>Add coins</strong> / <strong>Refresh quests now</strong> pills already follow (<a href="../settings/">settings.md</a>).</p>
+</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a>; a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>
 <li><strong>Style is deliberately NOT Candy Cottage.</strong> Unlike every other wireframe here, this page does not source its look from <a href="../../world/art-style/">Art &amp; UI Style</a> — it is a utilitarian dev tool (flat panel, thin outline, monospace-friendly value readouts, plain track/knob sliders). It stays clean, legible, and self-contained, but carries none of the outlines/hard-shadows/pill chrome. This exemption is intentional and recorded so a later reviewer doesn't "fix" it toward the game's art direction.</li>
 </ul>
