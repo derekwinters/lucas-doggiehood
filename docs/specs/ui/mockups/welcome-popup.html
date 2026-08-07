@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome Pop-up — Wireframe #439, amended #671 PROPOSAL (1:1 @ 1920×1200)</title>
+<title>Welcome Pop-up — Wireframe #439, amended #671 (1:1 @ 1920×1200)</title>
 <style>
   :root{
     --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
@@ -44,7 +44,7 @@
   .card{position:absolute;left:550px;width:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);
     padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;}
 
-  /* PROPOSED (#671): top-right ✕ close affordance — flush in the card's corner, matching the
+  /* #671: top-right ✕ close affordance — flush in the card's corner, matching the
      dog/house profile precedent (anchor top-right, pivot top-right, zero inset, CloseButtonSizePx 72).
      Wired to the existing WelcomePopup.Dismiss() — dismisses WITHOUT panning or opening the profile. */
   .close{position:absolute;top:0;right:0;width:72px;height:72px;border-radius:999px;background:var(--cream);
@@ -88,14 +88,13 @@
   .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
   .proposal{font-size:14px;color:var(--text);background:color-mix(in srgb,var(--coral) 12%,transparent);border:1px solid var(--coral);
     border-radius:12px;padding:14px 16px;margin:0 0 18px;} .proposal b{font-weight:700;}
-  .pending{background:color-mix(in srgb,var(--coral) 22%,transparent);border-color:var(--coral);}
 </style>
 </head>
 <body>
 <div class="wrap">
   <p class="eyebrow">Doggiehood · UI Wireframe · Issue #439 · amended by #671 · Welcome Pop-up · Tablet · Landscape · 1920×1200</p>
   <h1 class="rounded">Welcome to the neighborhood pop-up</h1>
-  <p class="proposal"><b>PROPOSAL (draft for your approval) — #671.</b> One region added to the approved #439 layout:
+  <p class="proposal"><b>Amended by #671 — approved by Derek, 2026-08-07.</b> One region added to the #439 layout:
     a <b>top-right ✕ close affordance</b>, matching the dog/house profile precedent
     (<code>CloseButtonSizePx</code> 72, Cream pill, flush in the card's corner). It is wired to the pop-up's
     <b>existing</b> <code>Dismiss()</code> — dismiss <i>without</i> panning the camera and <i>without</i> opening the
@@ -218,7 +217,7 @@
   <footer>
     Modal celebration panel on the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill button · reuses <a href="#">Shared UI Components (#173)</a> and the <a href="onboarding-reward.html">onboarding reward panel</a> composition · reference resolution 1920×1200. Constants named per #161; EditMode tests assert the built panel against them.
     <br><span class="status">Base layout approved — Derek, 2026-07-31 (/approve #439)</span>
-    <span class="status pending">✕ close affordance — PROPOSAL pending approval (#671)</span>
+    <span class="status">✕ close affordance approved — Derek, 2026-08-07 (/approve #671)</span>
   </footer>
 </div>
 </body>

@@ -1,10 +1,8 @@
 # Welcome pop-up
 
 *Wireframe issue: [#439](https://github.com/derekwinters/lucas-doggiehood/issues/439). Implements/covers: `WelcomePopup`. Approved: Derek, 2026-07-31 ([proposal](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147513906) + [decisions](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147589722), [`/approve` on #439](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5148148003)) — authoritative layout contract.*
+*Amended: the **Close (✕)** region and `CloseButtonSizePx` were added by [#671](https://github.com/derekwinters/lucas-doggiehood/issues/671), drafted under `/propose` and approved by Derek, 2026-08-07 — part of the authoritative contract.*
 *Mockup: [mockups/welcome-popup.html](mockups/welcome-popup.html).*
-
-!!! warning "Amendment pending approval — [#671](https://github.com/derekwinters/lucas-doggiehood/issues/671)"
-    The **Close (✕)** region and its `CloseButtonSizePx` constant are a **PROPOSAL drafted under `/propose`**, not yet approved. Everything else on this page is the approved #439 contract. Implementation of the ✕ is gated on Derek's `/approve` on #671 (CLAUDE.md rule #8); remove this banner when it lands.
 
 ## Purpose
 
