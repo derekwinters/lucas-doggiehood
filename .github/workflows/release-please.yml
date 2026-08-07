@@ -101,3 +101,41 @@ jobs:
           fi
           sudo mv "$APK" "doggiehood-${TAG}.apk"
           gh release upload "$TAG" "doggiehood-${TAG}.apk" --clobber
+
+      # Second, emulator-targeted variant (#648). EmulatorBuildProcessor
+      # flips the ABI to x86_64-only and pins the emulator-safe graphics
+      # profile (Vulkan→GLES3, no wide colour gamut, no multithreaded
+      # rendering) for this run only, then restores them — the device APK
+      # built above stays ARM64-only with the committed defaults. Built into
+      # its own buildsPath so the two APKs can never be confused. Debug
+      # signing, same as every other build.
+      - name: Build Android emulator APK
+        if: steps.license.outputs.present == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          DOGGIEHOOD_EMULATOR_BUILD: "true"
+        with:
+          targetPlatform: Android
+          buildName: Doggiehood
+          buildsPath: build-emulator
+          versioning: Custom
+          version: ${{ steps.version.outputs.name }}
+          androidVersionCode: ${{ steps.version.outputs.code }}
+          androidExportType: androidPackage
+
+      - name: Attach emulator APK to the release
+        if: steps.license.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          APK="$(find build-emulator/Android -name '*.apk' | head -n 1)"
+          if [ -z "$APK" ]; then
+            echo "::error::Emulator build completed but no APK found under build-emulator/Android"
+            exit 1
+          fi
+          sudo mv "$APK" "doggiehood-${TAG}-emulator.apk"
+          gh release upload "$TAG" "doggiehood-${TAG}-emulator.apk" --clobber
