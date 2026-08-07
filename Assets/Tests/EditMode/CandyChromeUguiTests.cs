@@ -164,6 +164,19 @@ namespace Doggiehood.Unity.EditModeTests
 
         private const float PipRadiusPx = 12f;
 
+        // The ray-march band checker samples the ACTUAL 9-slice chrome textures,
+        // whose straight edges reach the outer texture border (that is what lets a
+        // sliced sprite stretch). Rays close to an axis therefore run along — or,
+        // for a small-radius sprite, graze the corner arc within a sampling-step
+        // of — that border, where bilinear sampling of the border-clamped texture
+        // corrupts the finite-difference contour normal and inflates the measured
+        // width. Excluding a margin around each axis keeps the check on the clean,
+        // genuinely-curved span of every corner (a full ±~40° of arc is still
+        // asserted). A pip is only ~2px of straight strip, so the small-radius
+        // corner hugs the border and needs a wider margin than the panel does;
+        // this single margin clears it for both.
+        private const double CornerOffAxisMarginDeg = 24.0;
+
         private static void AssertBakedBandIsFlatAroundCorners(float radiusPx)
         {
             var w = CandyChromeUgui.OutlineThicknessPx;
@@ -184,9 +197,9 @@ namespace Doggiehood.Unity.EditModeTests
                 var deg = 360.0 * k / angleCount;
                 var mod = deg % 90.0;
                 var offAxis = System.Math.Min(mod, 90.0 - mod);
-                if (offAxis < 15.0)
+                if (offAxis < CornerOffAxisMarginDeg)
                 {
-                    continue; // straight strip runs to the sprite border — not a contour ray
+                    continue; // near-axis: straight strip / arc-at-border, not a clean contour ray
                 }
 
                 Assert.That(widths[k], Is.EqualTo((double)w).Within(1.0),
