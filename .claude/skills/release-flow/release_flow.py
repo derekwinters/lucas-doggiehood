@@ -40,15 +40,23 @@ import urllib.request
 REPO_DEFAULT = "derekwinters/lucas-doggiehood"
 API = "https://api.github.com"
 
-# The only checks that actually fire on the release PR. Everything else
-# (ci-tests, pr-build, geometry-lint, pipeline-tests) is path-filtered to
-# Assets/**, Packages/**, or .claude/skills/pipeline-*/**; the release PR only
-# touches VERSION, CHANGELOG.md, and .github/release-please/manifest.json, so
-# those never register a check on it.
+# The checks we require green on the release PR, spelled with the RAW check-run
+# names GitHub reports (what ``fetch_pr_checks`` returns via ``run["name"]``),
+# NOT the branch-protection "<workflow> / <job>" form — see #631. GitHub names a
+# check run after the job's ``name:`` if set, else the job id: docs-test.yml's
+# jobs are ``build`` and ``gate-tests`` (no ``name:``), and pr-title-lint.yml's
+# ``lint`` job sets ``name: Conventional Commits PR title``.
+#
+# Everything else that lands on the release PR (Debug APK, Release-candidate
+# APK, sweep, ...) is non-required noise: those workflows are either
+# path-filtered to Assets/**, Packages/**, or .claude/skills/pipeline-*/** (the
+# release PR only touches VERSION, CHANGELOG.md, and
+# .github/release-please/manifest.json) or are not gates for the release, so we
+# classify over this required subset only.
 REQUIRED_CHECKS = (
-    "docs-test / build",
-    "docs-test / gate-tests",
-    "pr-title-lint / lint",
+    "build",
+    "gate-tests",
+    "Conventional Commits PR title",
 )
 
 # Poll-loop tuning (mirrors ci-watch's default cadence/timeout).
