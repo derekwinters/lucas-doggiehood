@@ -28,6 +28,13 @@ namespace Doggiehood.Unity
     /// contour is the band's inner edge by construction, so the fill radius and the
     /// outline's inner radius can never drift. The geometry invariant is proved in
     /// <c>Doggiehood.Core.Ui.RoundedRectContour</c>.</para>
+    ///
+    /// <para><b>Tracking (#663):</b> that band is a <i>sibling</i>, so — unlike the
+    /// mesh effect it replaced, a component on the element itself — it follows
+    /// nothing on its own. <see cref="AddOutline"/> therefore attaches an
+    /// <see cref="OutlineBandFollower"/> to it, which keeps the band on its fill's
+    /// rect, mirrors its visibility, and destroys the band with it. Chrome may be
+    /// applied before or after a call site lays its rect out.</para>
     /// </summary>
     public static class CandyChromeUgui
     {
@@ -115,18 +122,22 @@ namespace Doggiehood.Unity
             var fillRt = go.GetComponent<RectTransform>();
             var inkImage = FindOrCreateInk(go, fillRt);
 
-            var inkRt = inkImage.rectTransform;
-            inkRt.anchorMin = fillRt.anchorMin;
-            inkRt.anchorMax = fillRt.anchorMax;
-            inkRt.pivot = fillRt.pivot;
-            var inflate = new Vector2(thicknessPx, thicknessPx);
-            inkRt.offsetMin = fillRt.offsetMin - inflate;
-            inkRt.offsetMax = fillRt.offsetMax + inflate;
-
             inkImage.sprite = RoundedSprite(cornerRadiusPx + thicknessPx);
             inkImage.type = Image.Type.Sliced;
             inkImage.color = Ink;
             inkImage.raycastTarget = false;
+
+            // #663: a sibling band follows nothing on its own, so hand it to its
+            // own follower rather than snapshotting the fill's rect here. Binding
+            // syncs immediately (chrome applied after layout is correct at once)
+            // and every frame after (chrome applied before layout catches up).
+            var follower = inkImage.GetComponent<OutlineBandFollower>();
+            if (follower == null)
+            {
+                follower = inkImage.gameObject.AddComponent<OutlineBandFollower>();
+            }
+
+            follower.Bind(fillRt, thicknessPx);
 
             return inkImage;
         }

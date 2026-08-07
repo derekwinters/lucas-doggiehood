@@ -250,6 +250,45 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(dialog.TitleLabel.font.name, Does.Not.Contain("Arial"));
         }
 
+        [Test]
+        public void OutlineBands_FollowTheirFills_ThroughTheOpenTimeLayout()
+        {
+            // #663: BuildActionRow chromes both buttons and only sets their
+            // sizeDelta at the END of the method, with their positions landing
+            // later still in LayoutCard — and the card's own height is set after
+            // its chrome too. A band that snapshots its fill's rect at apply time
+            // is stranded by all three.
+            dialog.Open("Sell the bone?", "A body long enough to wrap onto more than one line.", () => { });
+
+            // EditMode runs no frame loop, so drive the bands' per-frame sync.
+            OutlineBandFollower.SyncAll(canvasHost);
+
+            AssertBandSurroundsFill(dialog.CardRect.gameObject);
+            AssertBandSurroundsFill(dialog.NoButtonImage.gameObject);
+            AssertBandSurroundsFill(dialog.YesButtonImage.gameObject);
+        }
+
+        private static void AssertBandSurroundsFill(GameObject fill)
+        {
+            var ink = CandyChromeUgui.OutlineInk(fill);
+            Assert.That(ink, Is.Not.Null, fill.name + " has no Ink contour band");
+
+            var fillRect = (RectTransform)fill.transform;
+            var bandRect = ink.rectTransform;
+            var w = CandyChromeUgui.OutlineThicknessPx;
+            Assert.That(bandRect.anchorMin, Is.EqualTo(fillRect.anchorMin), fill.name + " band anchorMin");
+            Assert.That(bandRect.anchorMax, Is.EqualTo(fillRect.anchorMax), fill.name + " band anchorMax");
+            Assert.That(bandRect.pivot, Is.EqualTo(fillRect.pivot), fill.name + " band pivot");
+            Assert.That(fillRect.offsetMin.x - bandRect.offsetMin.x, Is.EqualTo(w).Within(0.01f),
+                fill.name + " band left edge");
+            Assert.That(fillRect.offsetMin.y - bandRect.offsetMin.y, Is.EqualTo(w).Within(0.01f),
+                fill.name + " band bottom edge");
+            Assert.That(bandRect.offsetMax.x - fillRect.offsetMax.x, Is.EqualTo(w).Within(0.01f),
+                fill.name + " band right edge");
+            Assert.That(bandRect.offsetMax.y - fillRect.offsetMax.y, Is.EqualTo(w).Within(0.01f),
+                fill.name + " band top edge");
+        }
+
         private static void AssertColor(Color actual, Color expected, string what)
         {
             var a = (Color32)actual;

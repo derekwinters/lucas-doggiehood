@@ -302,6 +302,44 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(popup.HeadingLabel.font.name, Does.Contain("DejaVu"));
         }
 
+        [Test]
+        public void OutlineBands_FollowTheirFills_ThroughTheShowTimeLayout()
+        {
+            // #663: BuildActionButton chromes the "Say hi!" pill before
+            // LayoutActionButton places it, and the card's height is set at the
+            // end of LayoutCard — long after its own chrome. Each band has to
+            // track its fill rather than snapshot it. The portrait is included
+            // because its ring is a CUSTOM thickness, which tracking must keep.
+            popup.Show(SingleMessage(), () => { });
+
+            // EditMode runs no frame loop, so drive the bands' per-frame sync.
+            OutlineBandFollower.SyncAll(canvasHost);
+
+            AssertBandSurroundsFill(popup.CardRect.gameObject, CandyChromeUgui.OutlineThicknessPx);
+            AssertBandSurroundsFill(popup.ActionButtonImage.gameObject, CandyChromeUgui.OutlineThicknessPx);
+            AssertBandSurroundsFill(popup.PortraitImage.gameObject, WelcomePopup.PortraitOutlineThicknessPx);
+        }
+
+        private static void AssertBandSurroundsFill(GameObject fill, float thicknessPx)
+        {
+            var ink = CandyChromeUgui.OutlineInk(fill);
+            Assert.That(ink, Is.Not.Null, fill.name + " has no Ink contour band");
+
+            var fillRect = (RectTransform)fill.transform;
+            var bandRect = ink.rectTransform;
+            Assert.That(bandRect.anchorMin, Is.EqualTo(fillRect.anchorMin), fill.name + " band anchorMin");
+            Assert.That(bandRect.anchorMax, Is.EqualTo(fillRect.anchorMax), fill.name + " band anchorMax");
+            Assert.That(bandRect.pivot, Is.EqualTo(fillRect.pivot), fill.name + " band pivot");
+            Assert.That(fillRect.offsetMin.x - bandRect.offsetMin.x, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band left edge");
+            Assert.That(fillRect.offsetMin.y - bandRect.offsetMin.y, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band bottom edge");
+            Assert.That(bandRect.offsetMax.x - fillRect.offsetMax.x, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band right edge");
+            Assert.That(bandRect.offsetMax.y - fillRect.offsetMax.y, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band top edge");
+        }
+
         private static WelcomeMessage SingleMessage()
         {
             return WelcomeMessage.ForHousehold(new List<Dog> { Adult("Waffles", Breed.FrenchBulldog) });

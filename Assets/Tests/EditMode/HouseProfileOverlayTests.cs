@@ -523,6 +523,11 @@ namespace Doggiehood.Unity.EditModeTests
 
         private static void AssertInkOutline(GameObject go)
         {
+            // #663: the band tracks its fill from the band's own follower, so the
+            // overlay no longer re-applies chrome after its open-time layout.
+            // EditMode runs no frame loop — drive that per-frame sync here.
+            OutlineBandFollower.SyncAll(go.transform.root.gameObject);
+
             // #616: the outline is a constant-width Ink contour band (an inflated
             // rounded-sprite Image drawn behind the fill), NOT the offset-copy
             // Outline mesh effect that produced the uneven corners.

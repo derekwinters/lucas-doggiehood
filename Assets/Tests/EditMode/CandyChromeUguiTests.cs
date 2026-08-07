@@ -152,6 +152,108 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void OutlineBand_FollowsItsFill_WhenTheRectIsPlacedAfterTheChrome()
+        {
+            // #663: the band is a SIBLING behind the fill, so — unlike the old
+            // Outline mesh effect, a component on the element itself — it does not
+            // ride the fill's RectTransform for free. ConversationPresenter chromes
+            // the card and anchors it on the NEXT line, which stranded the band at
+            // Unity's default 100x100 centred rect: the two black boxes. The band
+            // must track its fill instead, so chrome may be applied before OR after
+            // layout.
+            var parent = new GameObject("parent", typeof(RectTransform));
+            var go = new GameObject("late-laid-out", typeof(RectTransform));
+            go.transform.SetParent(parent.transform, false);
+            var rt = (RectTransform)go.transform;
+            var image = go.AddComponent<Image>();
+
+            CandyChromeUgui.ApplyRounded(image, CandyChromeUgui.Panel, CandyChromeUgui.PanelRadiusPx, withShadow: true);
+
+            // Layout AFTER the chrome — exactly ConversationPresenter's order.
+            rt.anchorMin = new Vector2(0.5f, 0f);
+            rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.sizeDelta = new Vector2(LateWidthPx, LateHeightPx);
+            rt.anchoredPosition = new Vector2(0f, LateBottomMarginPx);
+
+            // EditMode runs no frame loop, so drive the follower's per-frame sync
+            // explicitly instead of waiting on LateUpdate.
+            OutlineBandFollower.SyncAll(parent);
+
+            AssertBandSurroundsFill(go, CandyChromeUgui.OutlineThicknessPx);
+
+            Object.DestroyImmediate(parent);
+        }
+
+        [Test]
+        public void OutlineBand_HidesWithItsFill_ComesBack_AndIsDestroyedWithIt()
+        {
+            // #663's two secondary faults: the conversation card's band is a
+            // sibling OUTSIDE the content it belongs to, so hiding the fill left
+            // the band on screen forever; and a destroyed fill (RebuildActionRow's
+            // pills) abandoned its band, leaking one more every re-open.
+            var parent = new GameObject("parent", typeof(RectTransform));
+            var go = new GameObject("hideable", typeof(RectTransform));
+            go.transform.SetParent(parent.transform, false);
+            ((RectTransform)go.transform).sizeDelta = new Vector2(200f, 120f);
+            var image = go.AddComponent<Image>();
+
+            CandyChromeUgui.ApplyRounded(image, CandyChromeUgui.Panel, CandyChromeUgui.PanelRadiusPx, withShadow: true);
+            var ink = CandyChromeUgui.OutlineInk(go);
+            Assert.That(BandIsVisible(ink), Is.True, "a shown fill shows its band");
+
+            go.SetActive(false);
+            OutlineBandFollower.SyncAll(parent);
+            Assert.That(BandIsVisible(ink), Is.False, "a hidden fill hides its band");
+
+            go.SetActive(true);
+            OutlineBandFollower.SyncAll(parent);
+            Assert.That(BandIsVisible(ink), Is.True, "re-showing the fill brings its band back");
+
+            Object.DestroyImmediate(go);
+            OutlineBandFollower.SyncAll(parent);
+            Assert.That(parent.transform.childCount, Is.EqualTo(0),
+                "destroying the fill destroys its band — no orphaned '<name> Outline' sibling is left behind");
+
+            Object.DestroyImmediate(parent);
+        }
+
+        // The post-chrome layout the follower has to track (#663) — the
+        // conversation card's own bottom-center placement (#161: named, never
+        // inline).
+        private const float LateWidthPx = 1040f;
+        private const float LateHeightPx = 420f;
+        private const float LateBottomMarginPx = 64f;
+
+        /// <summary>Asserts the fill's Ink band is its rect inflated by
+        /// <paramref name="thicknessPx"/> on all four sides, with the fill's own
+        /// anchors and pivot — the #663 tracking invariant.</summary>
+        private static void AssertBandSurroundsFill(GameObject fill, float thicknessPx)
+        {
+            var ink = CandyChromeUgui.OutlineInk(fill);
+            Assert.That(ink, Is.Not.Null, fill.name + " has no Ink contour band");
+
+            var fillRt = (RectTransform)fill.transform;
+            var inkRt = ink.rectTransform;
+            Assert.That(inkRt.anchorMin, Is.EqualTo(fillRt.anchorMin), fill.name + " band anchorMin");
+            Assert.That(inkRt.anchorMax, Is.EqualTo(fillRt.anchorMax), fill.name + " band anchorMax");
+            Assert.That(inkRt.pivot, Is.EqualTo(fillRt.pivot), fill.name + " band pivot");
+            Assert.That(fillRt.offsetMin.x - inkRt.offsetMin.x, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band left edge");
+            Assert.That(fillRt.offsetMin.y - inkRt.offsetMin.y, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band bottom edge");
+            Assert.That(inkRt.offsetMax.x - fillRt.offsetMax.x, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band right edge");
+            Assert.That(inkRt.offsetMax.y - fillRt.offsetMax.y, Is.EqualTo(thicknessPx).Within(0.01f),
+                fill.name + " band top edge");
+        }
+
+        private static bool BandIsVisible(Image band)
+        {
+            return band != null && band.enabled && band.gameObject.activeInHierarchy;
+        }
+
+        [Test]
         public void RenderedChromeAlpha_HasAConstantWidthInkBand_AroundEveryCornerArc()
         {
             // Item 5 (#616): run the shared Core ray-march checker against the
