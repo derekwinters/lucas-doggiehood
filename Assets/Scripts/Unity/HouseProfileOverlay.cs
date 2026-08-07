@@ -505,14 +505,11 @@ namespace Doggiehood.Unity
         {
             foreach (var row in residents)
             {
-                if (Application.isPlaying)
-                {
-                    Destroy(row.Rect.gameObject);
-                }
-                else
-                {
-                    DestroyImmediate(row.Rect.gameObject);
-                }
+                // The row's Ink contour band (#616) is a sibling behind the row, not
+                // a child, so destroy it alongside the row to avoid orphaning it on
+                // rebuild. The avatar/chip bands ARE children of the row and go with it.
+                DestroyGameObject(CandyChromeUgui.OutlineInk(row.Rect.gameObject)?.gameObject);
+                DestroyGameObject(row.Rect.gameObject);
             }
 
             residents.Clear();
@@ -600,6 +597,15 @@ namespace Doggiehood.Unity
                 ProfileWidthPx - ProfilePaddingPx - UpgradeButtonWidthPx, -FooterTop(rowCount));
 
             cardRect.sizeDelta = new Vector2(ProfileWidthPx, ComputeCardHeight(rowCount));
+
+            // #616: the Ink outline band is a sibling that does not auto-follow its
+            // fill's RectTransform, so re-sync the two rects this open-time layout
+            // moves/resizes — the footer pill's position and the card's height —
+            // to keep each band a uniform OutlineThicknessPx around its fill.
+            CandyChromeUgui.AddOutline(
+                upgradeButtonRect.gameObject, UpgradeButtonHeightPx / 2f, CandyChromeUgui.OutlineThicknessPx);
+            CandyChromeUgui.AddOutline(
+                cardRect.gameObject, CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.OutlineThicknessPx);
         }
 
         private static float InnerWidth()
@@ -704,6 +710,23 @@ namespace Doggiehood.Unity
             }
 
             snapshots.Clear();
+        }
+
+        private static void DestroyGameObject(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(go);
+            }
+            else
+            {
+                DestroyImmediate(go);
+            }
         }
 
         private static void DestroyTexture(RenderTexture texture)

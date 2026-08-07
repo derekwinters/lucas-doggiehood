@@ -142,9 +142,12 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(panel.MedalRect.sizeDelta.y, Is.EqualTo(OnboardingRewardPanel.MedalDiameterPx));
             AssertColor(panel.MedalImage.color, CandyChromeUgui.Gold, "the medal is a gold disc");
 
-            var outline = panel.MedalImage.GetComponent<Outline>();
-            Assert.That(outline, Is.Not.Null, "the medal carries its own ink ring");
-            Assert.That(outline.effectDistance.x, Is.EqualTo(OnboardingRewardPanel.MedalOutlineThicknessPx),
+            // #616: the ring is a constant-width Ink contour band inflated by its
+            // own thickness, not the offset-copy Outline mesh effect.
+            var ink = CandyChromeUgui.OutlineInk(panel.MedalImage.gameObject);
+            Assert.That(ink, Is.Not.Null, "the medal carries its own ink ring");
+            Assert.That(panel.MedalRect.offsetMin.x - ink.rectTransform.offsetMin.x,
+                Is.EqualTo(OnboardingRewardPanel.MedalOutlineThicknessPx).Within(0.01f),
                 "the medal ring is the wireframe's 8px, not the 6px panel outline");
 
             Assert.That(panel.MedalStarLabel.text, Is.EqualTo("★"), "one big ink star inside the medal");
@@ -233,8 +236,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(panel.CardRect.GetComponent<Image>().material,
                 Is.EqualTo(panel.CardRect.GetComponent<Image>().defaultMaterial),
                 "the card assigns no custom material (#291)");
-            Assert.That(panel.CardRect.GetComponent<Outline>(), Is.Not.Null,
-                "the card carries the shared Candy Cottage chrome outline (#298)");
+            Assert.That(CandyChromeUgui.OutlineInk(panel.CardRect.gameObject), Is.Not.Null,
+                "the card carries the shared Candy Cottage chrome outline (#298, #616 contour band)");
 
             Assert.That(panel.HeadingLabel.font, Is.Not.Null);
             Assert.That(panel.HeadingLabel.font.name, Does.Contain("DejaVu"));

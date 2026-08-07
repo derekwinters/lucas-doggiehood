@@ -36,6 +36,8 @@ This section owns UI *style* only. UI **layout** — a screen's regions, anchors
 
 Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and low-poly toy-shelf look. ([#65](https://github.com/derekwinters/lucas-doggiehood/issues/65))
 
+The "thick dark outline" is a **true constant-width contour stroke** — an even band that follows the rounded contour around every corner — not an offset-copy approximation, whose four shifted stamps read as uneven/flattened corners. See the [constant-width contour band](../ui/shared-components.md#outline-a-constant-width-contour-band-616) on Shared UI Components ([#616](https://github.com/derekwinters/lucas-doggiehood/issues/616)).
+
 Applies to: the currency chip, the speech bubble indicator, the dialogue box, decoration/gift choice buttons, and should extend to menus/settings for consistency.
 
 A reference mockup exists at [this artifact](https://claude.ai/code/artifact/e3f24c36-85e3-4301-a099-c16c8ecc47f0), showing both the chosen "Candy Cottage" direction and the rejected "Flat Paper-Craft" alternative for contrast.

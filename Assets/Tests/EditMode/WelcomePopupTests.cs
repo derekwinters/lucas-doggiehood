@@ -156,9 +156,12 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(popup.PortraitRect.sizeDelta.x, Is.EqualTo(WelcomePopup.PortraitDiameterPx));
             Assert.That(popup.PortraitRect.sizeDelta.y, Is.EqualTo(WelcomePopup.PortraitDiameterPx));
 
-            var outline = popup.PortraitImage.GetComponent<Outline>();
-            Assert.That(outline, Is.Not.Null, "the portrait carries its own ink ring");
-            Assert.That(outline.effectDistance.x, Is.EqualTo(WelcomePopup.PortraitOutlineThicknessPx),
+            // #616: the ring is a constant-width Ink contour band inflated by its
+            // own thickness, not the offset-copy Outline mesh effect.
+            var ink = CandyChromeUgui.OutlineInk(popup.PortraitImage.gameObject);
+            Assert.That(ink, Is.Not.Null, "the portrait carries its own ink ring");
+            Assert.That(popup.PortraitRect.offsetMin.x - ink.rectTransform.offsetMin.x,
+                Is.EqualTo(WelcomePopup.PortraitOutlineThicknessPx).Within(0.01f),
                 "the portrait ring is the wireframe's 8px, not the 6px panel outline");
         }
 
@@ -293,8 +296,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(popup.CardRect.GetComponent<Image>().material,
                 Is.EqualTo(popup.CardRect.GetComponent<Image>().defaultMaterial),
                 "the card assigns no custom material (#291)");
-            Assert.That(popup.CardRect.GetComponent<Outline>(), Is.Not.Null,
-                "the card carries the shared Candy Cottage chrome outline (#298)");
+            Assert.That(CandyChromeUgui.OutlineInk(popup.CardRect.gameObject), Is.Not.Null,
+                "the card carries the shared Candy Cottage chrome outline (#298, #616 contour band)");
             Assert.That(popup.HeadingLabel.font, Is.Not.Null);
             Assert.That(popup.HeadingLabel.font.name, Does.Contain("DejaVu"));
         }
