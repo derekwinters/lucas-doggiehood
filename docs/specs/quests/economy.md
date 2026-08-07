@@ -27,7 +27,7 @@ The overall goal is helping dogs around the neighborhood by completing their req
 
 *Source: [#62](https://github.com/derekwinters/lucas-doggiehood/issues/62)*
 
-- A completed quest pays a **flat 10 coins**, regardless of quest type.
+- A completed quest pays a **flat 20 coins**, regardless of quest type. *(#623 raised this from 10 to roughly double the early-game earn rate, which comes only from the free quest types; the value lives on `TuningConfig` so it is slider-tunable in the debug menu.)*
 - A typical gift/decoration item costs **roughly 30-50 coins** (3-5 quests' worth of saving) — this is the **starter cost tier**, the only tier eligible early on (see [Cost tiers](#cost-tiers-population-gated-317) below).
 
 Population-gated cost tiers *(decision 2026-07-28, Derek — see [#317](https://github.com/derekwinters/lucas-doggiehood/issues/317))*:
@@ -110,7 +110,7 @@ This generalizes what earlier drafts did with a single default line and a single
 ## Build checklist
 
 - [ ] Currency balance persists across sessions
-- [ ] Completing any quest grants a flat 10 coins
+- [ ] Completing any quest grants a flat 20 coins
 - [ ] Spending currency on a gift/decoration deducts its cost (30-50 coin range) and fails gracefully if the player can't afford it
 - [x] A rotation system trickles quests in hourly toward a population-scaled cap (`clamp(round(dogCount/3), 3, 12)`), adding `target / PacingWindowHours` (6h) per hour via a persisted fractional error-diffusion accumulator (`GameState.QuestPacingAccumulator`, round-tripped by `SaveCodec`, legacy saves default to 0.0), guaranteeing at least one free-type quest on any refresh that adds a quest so the player is never soft-locked — the cadence, cap, and per-hour trickle all live behind the `QuestPacingPolicy` seam ([#310](https://github.com/derekwinters/lucas-doggiehood/issues/310), [#543](https://github.com/derekwinters/lucas-doggiehood/issues/543))
 - [ ] Completed quest state (delivered items, decorations) persists permanently — no reset logic tied to the daily rotation

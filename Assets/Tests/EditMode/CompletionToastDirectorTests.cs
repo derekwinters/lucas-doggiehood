@@ -101,7 +101,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value), Is.True);
 
             Assert.That(queue.HasCurrent, Is.True, "a completion enqueues a toast");
-            Assert.That(queue.Current.Message, Is.EqualTo("Quest complete! +10 coins"),
+            Assert.That(queue.Current.Message, Is.EqualTo("Quest complete! +20 coins"),
                 "using the approved template with the flat quest payout");
             Assert.That(ModalInputGate.Shared.IsBlocking, Is.False, "the quest toast is non-modal");
         }

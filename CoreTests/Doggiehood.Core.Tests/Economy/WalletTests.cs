@@ -124,10 +124,11 @@ namespace Doggiehood.Core.Tests.Economy
     public class EconomyNumbersTests
     {
         [Test]
-        public void QuestPayout_IsTenCoins_ForAllQuestTypes()
+        public void QuestPayout_IsTwentyCoins_ForAllQuestTypes()
         {
             // #62: flat payout regardless of type, defined once centrally.
-            Assert.That(EconomyNumbers.QuestPayout, Is.EqualTo(10));
+            // #623: raised 10 -> 20 to roughly double the early-game earn rate.
+            Assert.That(EconomyNumbers.QuestPayout, Is.EqualTo(20));
         }
 
         [Test]

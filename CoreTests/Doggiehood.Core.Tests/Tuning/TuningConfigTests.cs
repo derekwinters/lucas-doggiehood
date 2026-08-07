@@ -16,7 +16,7 @@ namespace Doggiehood.Core.Tests.Tuning
         {
             var t = new TuningConfig();
 
-            Assert.That(t.QuestPayout, Is.EqualTo(10));
+            Assert.That(t.QuestPayout, Is.EqualTo(20));
             Assert.That(t.RefreshIntervalHours, Is.EqualTo(1));
             Assert.That(t.PacingWindowHours, Is.EqualTo(6));
             Assert.That(t.TargetActiveDivisor, Is.EqualTo(3));
@@ -111,7 +111,7 @@ namespace Doggiehood.Core.Tests.Tuning
                 Assert.That(TuningConfig.Active.QuestPayout, Is.EqualTo(fresh.QuestPayout));
                 Assert.That(TuningConfig.Active.TileUnlockBaseCost, Is.EqualTo(fresh.TileUnlockBaseCost));
                 Assert.That(TuningConfig.Active.BaseMoveInChance, Is.EqualTo(fresh.BaseMoveInChance));
-                Assert.That(TuningConfig.Active.QuestPayout, Is.EqualTo(10));
+                Assert.That(TuningConfig.Active.QuestPayout, Is.EqualTo(20));
             }
             finally
             {
