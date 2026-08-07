@@ -2025,7 +2025,8 @@
 <p>Source lives in Core (a per-phase title lookup alongside <code>OnboardingCoach</code>'s existing per-step prompt lookup), à la <code>OnboardingRewardCopy</code>; the thin <code>OnboardingOverlay</code> only renders it.</p>
 <h2 id="gesture-arrow-coach-330">Gesture-arrow coach (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330">#330</a>)<a class="headerlink" href="#gesture-arrow-coach-330" title="Permanent link">&para;</a></h2>
 <p><em>Approved: Derek, 2026-07-31 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/330#issuecomment-5148157973"><code>/approve</code> on #330</a>). </em><em>Status: distilled</em><em> (was Proposed) — implemented in the same PR.</em></p>
-<p>Because this is a kids' game, the two <strong>movement</strong> steps <em>show</em> the gesture, not just tell it: a looping directional-arrow coach layers over the map during the <strong>Pan</strong> and <strong>Zoom</strong> steps only (the <code>TapBubble</code>/<code>CompleteQuest</code> steps are unchanged). The arrows are a non-blocking visual coach — Candy Cottage chevron-arrows with a thick Ink outline and <strong>Gold</strong> fill (a color the coach bar's own chrome does not use, so it reads as "look here, do this") — drawn procedurally via the same <code>CandyChrome</code> IMGUI routines as the rest of the overlay. There is <strong>no new rendering path</strong> and no separate soft-lock: the arrows draw only while <code>OnboardingOverlay.ShouldDrawGesture</code> is true (the sequence is on <code>Pan</code>/<code>Zoom</code>) and vanish the instant <code>OnboardingOverlay.AdvanceCameraSteps</code> registers the real pan/zoom, the same real-action gate that advances the coach bar.</p>
+<p>Because this is a kids' game, the two <strong>movement</strong> steps <em>show</em> the gesture, not just tell it: a looping directional-arrow coach layers over the map during the <strong>Pan</strong> and <strong>Zoom</strong> steps only (the <code>TapBubble</code>/<code>CompleteQuest</code> steps are unchanged). The arrows are a non-blocking visual coach reading as a clear <strong>Gold</strong> cue (a color the coach bar's own chrome does not use, so it reads as "look here, do this"). There is <strong>no new rendering path</strong> and no separate soft-lock: the arrows draw only while <code>OnboardingOverlay.ShouldDrawGesture</code> is true (the sequence is on <code>Pan</code>/<code>Zoom</code>) and vanish the instant <code>OnboardingOverlay.AdvanceCameraSteps</code> registers the real pan/zoom, the same real-action gate that advances the coach bar.</p>
+<p><strong>Arrow visual (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/615">#615</a>).</strong> The arrow is the imported <strong>Kenney "Game Icons" <code>arrowRight</code> sprite</strong> (<code>Assets/Art/UI/Onboarding/GestureArrow/Resources/arrowRight.png</code>, CC0 — credited in <code>THIRD_PARTY_NOTICES.md</code>), tinted to the <code>GestureFillColor</code> Candy Cottage gold via the existing <code>TintedIcon.Recolor</code> and rotated to the four directions via the same <code>GUIUtility.RotateAroundPivot</code> math, drawn with <code>GUI.DrawTexture</code> at <code>ArrowFillOpacity</code>. This replaces the earlier procedurally-drawn chevron shaft+head (the <code>DrawChevronArm</code>/<code>ComputeChevronArmEnd</code>/<code>ChevronHalfAngleDeg</code> helpers, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/468">#468</a>). Only the arrow <em>visual</em> changed — the geometry/timing constants below, the beat sequencer, the on-screen anchor, and the per-beat direction/angle are all unchanged. The single imported <code>arrowRight</code> file covers all four directions through rotation (mirroring the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/178">#178</a> lock-icon import precedent). <code>ArrowThicknessPx</code>/<code>ArrowHeadSizePx</code>/<code>ArrowOutlineThicknessPx</code> remain the documented arrow footprint constants but no longer drive a procedural stroke.</p>
 <ul>
 <li><strong>Pan step — 4-beat loop.</strong> A single directional arrow cycles <strong>left→right → right→left → up→down → down→up</strong>, its center sweeping <code>PanTravelPx</code> along the beat's axis over <code>BeatDurationSec</code>, holding <code>BeatPauseSec</code> between beats, then repeating.</li>
 <li><strong>Zoom step — 2-beat loop.</strong> A symmetric pair of arrows either side of the anchor cycles <strong>zoom in</strong> (start near the center at <code>ZoomNearOffsetPx</code> pointing outward, spread to <code>ZoomFarOffsetPx</code>) and <strong>zoom out</strong> (start far at <code>ZoomFarOffsetPx</code> pointing inward, close to <code>ZoomNearOffsetPx</code>), on the same beat timing.</li>
@@ -2043,13 +2044,13 @@
 <tbody>
 <tr>
 <td>Pan gesture arrow</td>
-<td>One directional chevron-arrow cycling the four pan beats</td>
-<td>Ink outline / hard shadow baseline, <a href="../shared-components/">Shared UI Components</a></td>
+<td>One directional gold arrow (the Kenney <code>arrowRight</code> sprite, #615) cycling the four pan beats</td>
+<td>Gold-tinted imported sprite; see <a href="#gesture-arrow-coach-330">Arrow visual</a></td>
 </tr>
 <tr>
 <td>Zoom gesture arrows</td>
-<td>A symmetric pair of chevron-arrows either side of the anchor, cycling the two zoom beats</td>
-<td>Ink outline / hard shadow baseline, <a href="../shared-components/">Shared UI Components</a></td>
+<td>A symmetric pair of gold arrows either side of the anchor, cycling the two zoom beats</td>
+<td>Gold-tinted imported sprite; see <a href="#gesture-arrow-coach-330">Arrow visual</a></td>
 </tr>
 </tbody>
 </table>
@@ -2081,7 +2082,7 @@
 <tr>
 <td><code>ArrowHeadSizePx</code></td>
 <td><code>56</code></td>
-<td>chevron arrowhead span</td>
+<td>arrowhead span (retained footprint constant; no longer a procedural stroke since #615)</td>
 </tr>
 <tr>
 <td><code>ArrowOutlineThicknessPx</code></td>
