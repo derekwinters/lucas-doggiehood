@@ -1899,7 +1899,7 @@
 <h3 id="numbers-placeholder-expect-tuning">Numbers (placeholder, expect tuning)<a class="headerlink" href="#numbers-placeholder-expect-tuning" title="Permanent link">&para;</a></h3>
 <p><em>Source: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/62">#62</a></em></p>
 <ul>
-<li>A completed quest pays a <strong>flat 10 coins</strong>, regardless of quest type.</li>
+<li>A completed quest pays a <strong>flat 20 coins</strong>, regardless of quest type. <em>(#623 raised this from 10 to roughly double the early-game earn rate, which comes only from the free quest types; the value lives on <code>TuningConfig</code> so it is slider-tunable in the debug menu.)</em></li>
 <li>A typical gift/decoration item costs <strong>roughly 30-50 coins</strong> (3-5 quests' worth of saving) — this is the <strong>starter cost tier</strong>, the only tier eligible early on (see <a href="#cost-tiers-population-gated-317">Cost tiers</a> below).</li>
 </ul>
 <p>Population-gated cost tiers <em>(decision 2026-07-28, Derek — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/317">#317</a>)</em>:</p>
@@ -1990,7 +1990,7 @@
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ ] Currency balance persists across sessions</li>
-<li>[ ] Completing any quest grants a flat 10 coins</li>
+<li>[ ] Completing any quest grants a flat 20 coins</li>
 <li>[ ] Spending currency on a gift/decoration deducts its cost (30-50 coin range) and fails gracefully if the player can't afford it</li>
 <li>[x] A rotation system trickles quests in hourly toward a population-scaled cap (<code>clamp(round(dogCount/3), 3, 12)</code>), adding <code>target / PacingWindowHours</code> (6h) per hour via a persisted fractional error-diffusion accumulator (<code>GameState.QuestPacingAccumulator</code>, round-tripped by <code>SaveCodec</code>, legacy saves default to 0.0), guaranteeing at least one free-type quest on any refresh that adds a quest so the player is never soft-locked — the cadence, cap, and per-hour trickle all live behind the <code>QuestPacingPolicy</code> seam (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/310">#310</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/543">#543</a>)</li>
 <li>[ ] Completed quest state (delivered items, decorations) persists permanently — no reset logic tied to the daily rotation</li>
