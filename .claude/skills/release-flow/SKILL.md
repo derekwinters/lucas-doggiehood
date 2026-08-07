@@ -2,11 +2,12 @@
 name: release-flow
 description: >
   Drive the release-please merge flow for Doggiehood: confirm the release PR
-  has regenerated, force real CI onto it (close → reopen), squash-merge with
-  the `chore(main): release X.Y.Z` title, and verify the `vX.Y.Z` tag, the
-  GitHub Release, and the `autorelease: tagged` label all appear. Use at
-  release time, when merging release-please's auto-generated release PR — it
-  captures the two gotchas that bite every release so they aren't re-derived.
+  has regenerated, halt so the user can approve its parked CI runs (the skill
+  never toggles the PR's state), squash-merge with the
+  `chore(main): release X.Y.Z` title, and verify the `vX.Y.Z` tag, the GitHub
+  Release, and the `autorelease: tagged` label all appear. Use at release time,
+  when merging release-please's auto-generated release PR — it captures the two
+  gotchas that bite every release so they aren't re-derived.
 ---
 
 # Release flow — merging release-please's release PR
@@ -37,40 +38,68 @@ until **both**:
 `is_regenerated(pr, expected_pr_numbers, latest_main_sha)` is exactly this
 conjunction. PR-number matching is whole-token (`#57` does not satisfy `#573`).
 
-### 2. The release PR gets ZERO CI checks
+### 2. The release PR's CI is parked awaiting approval
 
-release-please pushes its branch with the built-in **`GITHUB_TOKEN`**, and
-GitHub deliberately does **not** run `on: pull_request` / `on: push` workflows
-for `GITHUB_TOKEN` pushes — this is intentional loop-prevention. So the release
-PR sits at **0 checks**, combined status `pending`, `mergeable_state: blocked`,
-and it **never goes green on its own**. (v0.11.0's PR #557 was merged with 0
-checks via owner override; going forward we want real green checks first.)
+The release PR sits at **0 check runs** on its head commit, combined status
+`pending`, `mergeable_state: blocked`, and it **never goes green on its own**.
+(v0.11.0's PR #557 was merged with 0 checks via owner override.)
 
-## Why close → reopen, and not `workflow_dispatch`
+The reason is *not* that no event fired. Probing the live release PR (#634,
+head `38fac4e6`) shows the runs **do** exist — GitHub is just holding them:
 
-To get real checks we re-fire a `pull_request` event **without** a
-`GITHUB_TOKEN` push. Two options exist in principle:
+```
+rc-build       pull_request  completed / action_required
+docs-test      pull_request  completed / action_required
+pr-build       pull_request  completed / action_required
+pr-title-lint  pull_request  completed / action_required
+```
 
-- **Close → reopen** the PR — fires `pull_request: reopened`. No branch
-  mutation, safe for release-please's branch.
-- **`workflow_dispatch`** each required workflow against the
-  `release-please--branches--main` ref — *only works if the workflow declares
-  `workflow_dispatch`.*
+`conclusion: action_required` is GitHub's "waiting for approval" state — exactly
+what the **"Approve and run"** button in the Actions/Checks UI clears. Until
+someone clears it, no job runs and no check run is ever attached to the commit,
+which is why `GET /commits/{sha}/check-runs` returns 0.
 
-**Decision: close → reopen, unconditionally.** An audit of every workflow's
-trigger block shows that **none** of the workflows that actually run against the
-release PR declare `workflow_dispatch`, so that option is not available today:
+## Why the skill halts and asks, instead of forcing CI (#618)
+
+**Close → reopen is banned.** The skill used to force CI by toggling the PR
+closed and open again (firing `pull_request: reopened`). Derek ruled that out:
+toggling a release PR's state is a heavy, surprising side effect — it churns the
+PR timeline, can disrupt subscribers and automation, and briefly puts the
+release PR into a `closed` state. `close_then_reopen_pr` is gone, and unit tests
+assert it stays gone (`NoCloseReopenTests`, including a source scan for a PR
+`state` payload).
+
+**No API path replaces it, because the token lacks the scope.** Every candidate
+in #618 was probed live against this repo, and all of them fail the same way:
+
+| Candidate trigger | Result |
+|---|---|
+| `POST .../actions/workflows/{docs-test,pr-title-lint}.yml/dispatches` | **403** `Resource not accessible by integration` |
+| Same call against `dashboard.yml`, which **does** declare `workflow_dispatch` | **403** — same error, proving it's the token scope, *not* a missing trigger block |
+| `POST .../actions/runs/{id}/approve` on the real `action_required` runs above | **403** |
+| `POST .../actions/runs/{id}/rerun` | **403** |
+| Empty commit pushed with a PAT | mutates release-please's branch and needs a stored PAT that doesn't exist — #618's own least-preferred option |
+
+The decisive evidence is row 2: the dispatch fails identically on a workflow
+that *already* declares `workflow_dispatch`, so **adding `workflow_dispatch:` to
+`docs-test.yml` / `pr-title-lint.yml` would not have helped** — the skill's
+token simply has no `actions: write`. (It does have `actions: read`, which is
+how the skill lists the parked runs to show you.) Granting `actions: write` is a
+repo/app permission change only Derek can make; if that ever happens, an
+approve-based trigger becomes viable and this section should be revisited.
+
+So the skill takes #618's documented fallback: **stop and ask.** It prints the
+parked runs with direct links and waits for one of two answers — `continue`
+(you approved/ran CI yourself; poll for green) or `skip` (waive CI and merge on
+owner override). Anything else aborts without touching the PR.
+
+For reference, the workflows that would run on the release PR once approved:
 
 | Workflow | Trigger | Runs on release PR? |
 |---|---|---|
 | `docs-test.yml` | `pull_request: [opened, synchronize, reopened, labeled, unlabeled]` — no path filter; has a built-in release-PR exemption (auto-passes) | **Yes** — jobs `build`, `gate-tests` |
 | `pr-title-lint.yml` | `pull_request: [opened, edited, synchronize, reopened]`; `chore` is an allowed type | **Yes** — job `lint` |
-| `ci-tests.yml`, `pr-build.yml`, `geometry-lint.yml`, `pipeline-tests.yml` | path-filtered to `Assets/**` / `Packages/**` / `.claude/skills/pipeline-*/**` | **No** — the release PR only touches `VERSION`, `CHANGELOG.md`, `.github/release-please/manifest.json`, so they never fire regardless of trigger method |
-| any of the above | `workflow_dispatch`? | **None declare it** |
-
-So `choose_ci_trigger_action()` hard-codes `close_reopen` with no branch. If
-`workflow_dispatch` is ever added to `docs-test`/`pr-title-lint`, supporting it
-is a *follow-up*, not something to speculatively branch on now.
+| `ci-tests.yml`, `geometry-lint.yml`, `pipeline-tests.yml` | path-filtered to `Assets/**` / `Packages/**` / `.claude/skills/pipeline-*/**` | **No** — the release PR only touches `VERSION`, `CHANGELOG.md`, `.github/release-please/manifest.json` |
 
 The **required green checks** on the release PR are therefore exactly these
 three jobs — spelled with the **raw check-run names GitHub reports** (the job's
@@ -95,10 +124,15 @@ Given the release PR number `N` and the list of feature PRs that must be in it:
 1. **Regenerated?** Fetch the PR and live `main`; assert
    `is_regenerated(...)`. If the base is behind or a PR number is missing,
    **stop and wait** — release-please is still regenerating.
-2. **Force CI** — `choose_ci_trigger_action()` → close → reopen the PR.
-3. **Poll checks** — `poll_checks(...)` reuses ci-watch's `PASSED` / `FAILED` /
-   `TIMEOUT` shape over `REQUIRED_CHECKS` (skipped counts as pass). Only proceed
-   on `PASSED`.
+2. **Halt and ask** — `choose_ci_trigger_action()` → `ask_user`. The skill lists
+   the runs `runs_awaiting_approval(...)` found parked at `action_required`,
+   prints `format_ci_prompt(...)`, and waits. `parse_ci_answer(...)` maps the
+   reply to `continue` / `skip` / `abort`; unrecognized input aborts, so a stray
+   keypress can never merge. Nothing about the PR is modified at this step.
+3. **Poll checks** (`continue` only) — `poll_checks(...)` reuses ci-watch's
+   `PASSED` / `FAILED` / `TIMEOUT` shape over `REQUIRED_CHECKS` (skipped counts
+   as pass). Only proceed on `PASSED`. On `skip`, polling is bypassed entirely
+   and the merge happens on owner override.
 4. **Squash-merge** — `build_merge_request(...)` builds the `PUT …/merge` call
    with `merge_method: "squash"` and commit title
    `chore(main): release X.Y.Z` (parsed from the PR title / `VERSION`). That
@@ -114,14 +148,26 @@ Given the release PR number `N` and the list of feature PRs that must be in it:
 SKILL=.claude/skills/release-flow/release_flow.py
 
 # Merge release PR #557; require #573 and #575 to be in the changelog first.
+# Halts at the CI prompt and reads your answer from stdin.
 python3 "$SKILL" 557 --expected-pr 573 --expected-pr 575
 
-# Force CI + wait for green, but stop before merging (dry run of the gate).
-python3 "$SKILL" 557 --expected-pr 573 --no-merge
+# Non-interactive: you already hit "Approve and run" in the UI, so go straight
+# to polling for green.
+python3 "$SKILL" 557 --expected-pr 573 --ci continue
+
+# Non-interactive: waive CI and merge on owner override (what v0.11.0 did).
+python3 "$SKILL" 557 --expected-pr 573 --ci skip
+
+# Wait for green, but stop before merging (dry run of the gate).
+python3 "$SKILL" 557 --expected-pr 573 --ci continue --no-merge
 
 # A different repo
 python3 "$SKILL" 557 --expected-pr 573 --repo owner/name
 ```
+
+Because the skill can no longer start CI itself, the usual release is a
+**two-step** interaction: run it, click "Approve and run" on the links it
+prints, then answer `continue`.
 
 ## Shape (for maintenance)
 
