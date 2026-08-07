@@ -2668,7 +2668,7 @@ dashboard for Derek):</p>
 </tr>
 <tr>
 <td><strong>Triaged, no plan</strong> (<code>requeue_triage</code>)</td>
-<td>open, <code>pending-approval</code>/<code>needs-clarification</code>, but <strong>no</strong> triage-authored analysis comment (a <code>## Build checklist</code> heading or <code>❓ Needs from Derek/Lucas:</code> marker, <code>reconcile.has_analysis_signature</code>) — the #569 half of the non-atomic hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
+<td>open, <code>pending-approval</code>/<code>needs-clarification</code>, but <strong>no</strong> triage-authored analysis comment (a <code>## Build checklist</code> heading or a <code>❓ Needs from Derek/Lucas:</code> marker, <code>reconcile.has_analysis_signature</code> — the marker match tolerates Markdown emphasis, so the bolded <code>❓ **Needs from Derek/Lucas:**</code> triage actually writes counts, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a>) — the #569 half of the non-atomic hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
 <td><strong>auto-fix</strong> — strip the state label, re-add <code>ai-triage</code> so the issue re-enters triage and gets a plan; <strong>cron-only</strong> (same event-path caution as <code>requeue</code>)</td>
 </tr>
 <tr>
@@ -2709,6 +2709,19 @@ flags the residual plan-with-no-state-label (<code>flag_orphaned_analysis</code>
 of triage repairs a prior partial write (applies just the missing label move)
 rather than reposting a duplicate analysis, detected deterministically by
 <code>triage-issue/triage_repair.py</code>.</p>
+<p>Because <code>requeue_triage</code> is an unattended auto-fix, <code>has_analysis_signature</code>
+being <em>too narrow</em> is a churn bug, not just a missed heal: an analysis it can't
+see makes the rule re-fire triage on the same issue every cron sweep, forever.
+That is exactly what
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a> was — the
+recognizer matched the marker as a literal substring, while triage writes it
+bolded (<code>❓ **Needs from Derek/Lucas:**</code>), and the needs-clarification route
+never emits a <code>## Build checklist</code> heading, so the marker is those comments'
+<em>only</em> signature. The match now tolerates Markdown emphasis runs (<code>*</code>/<code>_</code>)
+around the marker text; only emphasis and horizontal whitespace may sit in the
+gaps, and the <code>❓</code> anchor is still required, so a bare prose mention of the
+phrase remains a non-match. <code>triage_repair.analysis_comment_times</code> shares the
+same recognizer, so the widening also restores the re-fire's repair path.</p>
 <p><strong><code>requeue</code> is gated to the cron backstop only</strong>
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>;
 <code>reconcile.process(data, events_only=True)</code> on the event path omits it
