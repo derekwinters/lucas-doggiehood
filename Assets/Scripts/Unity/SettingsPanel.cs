@@ -100,6 +100,13 @@ namespace Doggiehood.Unity
         // paints the ground and camera backstop in loud, distinct debug colours.
         private const string DebugColorsRowLabelText = "Show debug element colors";
         private const string DebugColorsRowSubtitleText = "Paint ground vs. backstop distinctly to find the seam (#611)";
+        // #622: the fifth Debug-tab row — the dev-build-only entry point to the
+        // balance tuning menu (docs/specs/ui/debug-tuning-menu.md). Built ONLY
+        // in a development build, so a release player has no trace of it.
+        // ASCII-only pill glyph for the same bundled-font reason as Add coins.
+        private const string TuneBalanceRowLabelText = "Tune balance…";
+        private const string TuneBalanceRowSubtitleText = "Live sliders over TuningConfig — dev builds only (#622)";
+        private const string TuneBalanceGlyph = "Open";
 
         /// <summary>#291: the bundled UI font, loaded from a Resources folder so
         /// it ships in the Android build. Runtime-built UGUI cannot rely on
@@ -129,6 +136,12 @@ namespace Doggiehood.Unity
         private static readonly Color KnobColor = CandyChromeUgui.Panel;
         private static readonly Color InkColor = CandyChromeUgui.Ink;
         private static readonly Color ActionColor = CandyChromeUgui.Gold;       // gold add-coins action
+
+        /// <summary>#622: the "Tune balance…" action pill's fill — the mockup's
+        /// --sky accent (mockups/debug-tuning-menu.html, <c>.action.tune</c>),
+        /// distinct from the gold one-shot actions because this row opens a
+        /// sub-panel rather than performing an action.</summary>
+        private static readonly Color TuneActionColor = new Color32(0x6E, 0xC6, 0xE0, 0xFF); // mockup --sky
 
         // The scrim (translucent dim) and the content pane's neutral stage tone
         // are not Candy Cottage component fills — the scrim is the shared 46%
@@ -160,7 +173,10 @@ namespace Doggiehood.Unity
         private Image debugColorsToggleImage;
         private RectTransform debugColorsToggleRect;
         private RectTransform debugColorsKnobRect;
+        private RectTransform tuneBalanceRowRect;
+        private RectTransform tuneBalanceButtonRect;
         private Text versionLabel;
+        private bool devBuildFeaturesEnabled;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
         /// actually rebuilds the world (fences show/hide on a live build).</summary>
@@ -172,6 +188,14 @@ namespace Doggiehood.Unity
         /// restart (the analogue of <see cref="WorldRebuild"/> for the fence
         /// toggle).</summary>
         public Action DebugColorsRefresh { get; set; }
+
+        /// <summary>#622: raised by the dev-build-only "Tune balance…" Debug row.
+        /// The bootstrap wires it to <see cref="TuningMenuOverlay.Open"/>, which
+        /// layers the tuning panel OVER this still-open Settings panel — the row
+        /// opens a sub-panel, it does not navigate away
+        /// (docs/specs/ui/debug-tuning-menu.md). Never invoked in a release
+        /// build, where the row is not built at all.</summary>
+        public Action TuneBalanceRequested { get; set; }
 
         public RectTransform PanelRect => panelRect;
         public RectTransform ScrimRect => scrimRect;
@@ -188,6 +212,21 @@ namespace Doggiehood.Unity
         public RectTransform DebugColorsRowRect => debugColorsRowRect;
         public RectTransform DebugColorsToggleRect => debugColorsToggleRect;
         public RectTransform DebugColorsKnobRect => debugColorsKnobRect;
+
+        /// <summary>#622: the dev-build-only "Tune balance…" row, or
+        /// <c>null</c> in a release build where it is never built.</summary>
+        public RectTransform TuneBalanceRowRect => tuneBalanceRowRect;
+
+        /// <summary>#622: the "Tune balance…" action pill, or <c>null</c> in a
+        /// release build.</summary>
+        public RectTransform TuneBalanceButtonRect => tuneBalanceButtonRect;
+
+        /// <summary>#622: whether this panel was built with the dev-build-only
+        /// affordances (the tuning menu entry row). Fed from
+        /// <see cref="DevBuildGate.IsDevBuild"/> by the default
+        /// <see cref="Init(GameState, string)"/>.</summary>
+        public bool DevBuildFeaturesEnabled => devBuildFeaturesEnabled;
+
         public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
 
@@ -223,6 +262,22 @@ namespace Doggiehood.Unity
         /// </summary>
         public void Init(GameState state, string version)
         {
+            Init(state, version, DevBuildGate.IsDevBuild);
+        }
+
+        /// <summary>
+        /// #622: as <see cref="Init(GameState, string)"/>, but with the
+        /// dev-build gate injected. When <paramref name="devBuild"/> is false
+        /// the "Tune balance…" Debug row is not built at all — a release player
+        /// carries no trace of it, which is stricter than the 10-tap unlock
+        /// that gates the rest of the Debug tab
+        /// (docs/specs/ui/debug-tuning-menu.md). Taking the flag as a parameter
+        /// is what lets EditMode tests exercise the release side of the gate;
+        /// the Editor can only ever observe the dev side of the build symbol.
+        /// </summary>
+        public void Init(GameState state, string version, bool devBuild)
+        {
+            devBuildFeaturesEnabled = devBuild;
             this.state = state;
             gesture = new DebugUnlockGesture();
             toggles = new DebugToggleRegistry();
@@ -515,6 +570,14 @@ namespace Doggiehood.Unity
             BuildAddCoinsRow(debugPaneRect);
             BuildRefreshQuestsRow(debugPaneRect);
             BuildDebugColorsRow(debugPaneRect);
+
+            // #622: dev builds only — the row (and therefore the whole tuning
+            // overlay it opens) must be absent from a release build entirely.
+            if (devBuildFeaturesEnabled)
+            {
+                BuildTuneBalanceRow(debugPaneRect);
+            }
+
             debugPaneRect.gameObject.SetActive(false);
         }
 
@@ -674,6 +737,48 @@ namespace Doggiehood.Unity
 
             debugColorsToggleImage.gameObject.AddComponent<Button>().onClick.AddListener(ToggleDebugColors);
             SyncToggleVisual(debugColorsToggleImage, debugColorsKnobRect, DebugColorsToggleOn);
+        }
+
+        /// <summary>#622: the fifth Debug-tab row — the dev-build-only
+        /// "Tune balance…" entry point to the balance tuning menu. Structurally
+        /// an action row like <see cref="BuildAddCoinsRow"/> (same
+        /// <see cref="DebugActionWidthPx"/>/<see cref="DebugActionHeightPx"/>
+        /// pill, stacked by the shared
+        /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> metrics —
+        /// no new named layout values), but tinted with the wireframe's sky
+        /// accent because it opens a sub-panel instead of performing a one-shot
+        /// action. Built only when <see cref="DevBuildFeaturesEnabled"/>.</summary>
+        private void BuildTuneBalanceRow(RectTransform parent)
+        {
+            tuneBalanceRowRect = CreateDebugRow(parent, "TuneBalanceRow", order: 4);
+
+            var label = CreateLabel("Label", tuneBalanceRowRect, TuneBalanceRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
+            label.rectTransform.offsetMin = new Vector2(TabRadiusPx, label.rectTransform.offsetMin.y);
+
+            var subtitle = CreateLabel("Subtitle", tuneBalanceRowRect, TuneBalanceRowSubtitleText, DebugRowSubtitleFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(subtitle.rectTransform, DebugRowLabelFontSizePx * 1.4f, DebugRowSubtitleFontSizePx * 1.3f);
+            subtitle.rectTransform.offsetMin = new Vector2(TabRadiusPx, subtitle.rectTransform.offsetMin.y);
+
+            var actionImage = CreateImage("Action", tuneBalanceRowRect, TuneActionColor);
+            tuneBalanceButtonRect = actionImage.rectTransform;
+            tuneBalanceButtonRect.anchorMin = new Vector2(1f, 0.5f);
+            tuneBalanceButtonRect.anchorMax = new Vector2(1f, 0.5f);
+            tuneBalanceButtonRect.pivot = new Vector2(1f, 0.5f);
+            tuneBalanceButtonRect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
+            tuneBalanceButtonRect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            CandyChromeUgui.ApplyPill(actionImage, TuneActionColor, DebugActionHeightPx, withShadow: true);
+
+            CreateLabel("Glyph", tuneBalanceButtonRect, TuneBalanceGlyph, DebugActionFontSizePx, TextAnchor.MiddleCenter);
+            actionImage.gameObject.AddComponent<Button>().onClick.AddListener(OpenTuningMenu);
+        }
+
+        /// <summary>#622: raises <see cref="TuneBalanceRequested"/> so the
+        /// bootstrap-owned tuning overlay opens over this panel. Settings stays
+        /// open on the Debug tab behind it.</summary>
+        public void OpenTuningMenu()
+        {
+            TuneBalanceRequested?.Invoke();
         }
 
         private void SyncFenceToggleVisual(bool on)

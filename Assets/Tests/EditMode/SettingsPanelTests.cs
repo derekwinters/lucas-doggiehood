@@ -668,5 +668,87 @@ namespace Doggiehood.Unity.EditModeTests
                 panel.TapVersion(i * 0.2);
             }
         }
+
+        // ---------------------------------------------------------------
+        // #622: the dev-build-only "Tune balance…" Debug-tab entry row
+        // (docs/specs/ui/debug-tuning-menu.md, docs/specs/ui/settings.md)
+        // ---------------------------------------------------------------
+
+        [Test]
+        public void TuneBalanceRow_IsTheFifthDebugRowAtTheSharedRowMetrics()
+        {
+            UnlockDebug();
+
+            Assert.That(panel.TuneBalanceRowRect, Is.Not.Null);
+            Assert.That(panel.TuneBalanceRowRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugRowHeightPx));
+            Assert.That(panel.TuneBalanceButtonRect.sizeDelta,
+                Is.EqualTo(new Vector2(SettingsPanel.DebugActionWidthPx, SettingsPanel.DebugActionHeightPx)),
+                "the entry row is a Debug action row like Add coins / Refresh quests now");
+
+            // Stacked one row below the #611 debug-colors switch (order 4).
+            Assert.That(panel.TuneBalanceRowRect.anchoredPosition.y,
+                Is.LessThan(panel.DebugColorsRowRect.anchoredPosition.y));
+        }
+
+        [Test]
+        public void TuneBalanceRow_RaisesTheOpenRequest()
+        {
+            UnlockDebug();
+            var opened = 0;
+            panel.TuneBalanceRequested = () => opened++;
+
+            panel.TuneBalanceButtonRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(opened, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TuneBalanceRow_IsAbsentEntirelyInAReleaseBuild()
+        {
+            // #622 checklist: guarded so the overlay cannot appear in a release
+            // build — not merely hidden behind the 10-tap Debug unlock.
+            var releaseHost = new GameObject("release-settings-panel");
+            try
+            {
+                releaseHost.transform.SetParent(canvasHost.transform, false);
+                var releasePanel = releaseHost.AddComponent<SettingsPanel>();
+                releasePanel.Init(GameState.CreateNew(), TestVersion, devBuild: false);
+
+                Assert.That(releasePanel.DevBuildFeaturesEnabled, Is.False);
+                Assert.That(releasePanel.TuneBalanceRowRect, Is.Null);
+                Assert.That(releasePanel.TuneBalanceButtonRect, Is.Null);
+                Assert.That(
+                    releaseHost.GetComponentsInChildren<Text>(true).Any(t => t.text.StartsWith("Tune balance")),
+                    Is.False,
+                    "no trace of the tuning entry row may exist in a release build");
+            }
+            finally
+            {
+                Object.DestroyImmediate(releaseHost);
+            }
+        }
+
+        [Test]
+        public void TuneBalanceRow_IsPresentInADevBuild()
+        {
+            Assert.That(panel.DevBuildFeaturesEnabled, Is.True,
+                "EditMode runs as a dev build, so the row is built");
+            Assert.That(panel.TuneBalanceRowRect, Is.Not.Null);
+        }
+
+        [Test]
+        public void OpeningTheTuningMenu_LeavesSettingsOpenOnTheDebugTab()
+        {
+            // The tuning panel layers OVER Settings; it does not replace it
+            // (docs/specs/ui/debug-tuning-menu.md, "layer, don't replace").
+            UnlockDebug();
+            panel.Open();
+            panel.TuneBalanceRequested = () => { };
+
+            panel.TuneBalanceButtonRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(panel.IsOpen, Is.True);
+            Assert.That(panel.DebugTabVisible, Is.True);
+        }
     }
 }
