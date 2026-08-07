@@ -14,6 +14,26 @@ Android. Application ID: **`com.derekwinters.doggiehood`** ([#80](https://github
 
 Since CI builds APKs directly with `game-ci/unity-builder` (no exported Gradle project to add a `buildTypes { debug { ... } }` block to), the suffix is applied at Unity build time instead: an editor build hook (`Assets/Scripts/Unity/Editor/DebugApplicationIdBuildProcessor.cs`) appends `.debug` to `PlayerSettings.Android.applicationIdentifier` before the build and restores the permanent id afterward, whenever the `DOGGIEHOOD_DEBUG_BUILD` environment variable is set to a truthy value. `pr-build.yml` and `rc-build.yml` set it; `release-build.yml` does not, so release builds always ship the bare `com.derekwinters.doggiehood` id.
 
+### ABIs and build variants
+
+The **device build is ARM64-only** — `ProjectSettings.asset` commits `AndroidTargetArchitectures: 2` and nothing in the normal build path changes it.
+
+The one exception is the **emulator build variant** ([#648](https://github.com/derekwinters/lucas-doggiehood/issues/648)), attached to every release as `doggiehood-vX.Y.Z-emulator.apk` so the game can be run in an x86_64 Android emulator without a hand-produced build. It reuses the `.debug`-suffix mechanism above: a second editor build hook (`Assets/Scripts/Unity/Editor/EmulatorBuildProcessor.cs`), toggled by the `DOGGIEHOOD_EMULATOR_BUILD` environment variable, applies the whole profile at build time and restores every field afterward. Nothing about it is committed to `ProjectSettings.asset`, so a run that doesn't set the variable can't inherit any of it:
+
+| Setting | Emulator variant | Why |
+|---|---|---|
+| Android ABI | `X86_64` only | The variant exists to run on x86_64 emulators; carrying ARM64 too would only bloat it. |
+| applicationId | `com.derekwinters.doggiehood.emulator` | Installs side-by-side with the device build, like `.debug`. |
+| Graphics APIs | Vulkan → GLES3 (Auto Graphics API off) | Unity's runtime backend auto-pick was hanging the render worker on the reported emulator host. Vulkan stays first so emulators that support it still exercise that path, with GLES3 as the fallback. |
+| Wide colour gamut | Off (sRGB only) | Emulator-safe rendering; the project's committed default is already sRGB. |
+| Multithreaded rendering | Off | The render worker is what hangs. |
+| Signing | Debug, same as every other build | No separate decision — nothing in the current scope uses a real keystore ([#75](https://github.com/derekwinters/lucas-doggiehood/issues/75)). |
+
+One emulator APK is produced, not a matrix of graphics variants. The `.emulator` suffix composes with `.debug` if a run ever sets both variables.
+
+!!! note "Colour gamut has no public `PlayerSettings` API"
+    In Unity 6, `PlayerSettings.GetColorGamuts`/`SetColorGamuts` are `internal`, and there is no Android-specific wide-colour-gamut key at all (it's the project-wide `m_ColorGamuts` list). `EmulatorBuildProcessor` therefore reads and writes that one field through the PlayerSettings singleton's serialized data, via the public `Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings")`; every other field in the table uses a normal public API. Per [unity-serialization.md](unity-serialization.md), the `m_ColorGamuts` key name is verified against real `ProjectSettings.asset` files rather than guessed, and the accessor degrades to a warning (not a build failure) if it can't resolve the property.
+
 ## Code architecture: Core / Unity split
 
 *[#72](https://github.com/derekwinters/lucas-doggiehood/issues/72) — foundational, applies to every feature*

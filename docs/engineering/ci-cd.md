@@ -24,6 +24,8 @@ Both PR debug builds and RC builds use debug signing, apply the same `.debug` ap
 
 When a release ships (release-please publishes the `vX.Y.Z` GitHub release), the APK for that tag is built and **attached to the release page** as `doggiehood-vX.Y.Z.apk` — so each release carries its installable build directly, not just as a transient Actions artifact. Debug signing, same as everything else in the current release scope.
 
+Every release also carries a second, **emulator-targeted** asset, `doggiehood-vX.Y.Z-emulator.apk` ([#648](https://github.com/derekwinters/lucas-doggiehood/issues/648)) — so running the game in an x86_64 Android emulator is a download, not a hand-produced one-off. It's built by a second `game-ci/unity-builder` step in the same `build-and-attach` job (into its own `buildsPath: build-emulator`, so the two APKs can't be confused), with `DOGGIEHOOD_EMULATOR_BUILD: "true"` set on that step only. That env var is what `EmulatorBuildProcessor` reads to swap in the [emulator build profile](tech-stack.md#target-platform); the device APK above is built first, from the committed ARM64-only defaults, and is unaffected. Both steps are gated on the same license check, so a missing `UNITY_LICENSE` skips both.
+
 The build-and-attach step lives **inside `release-please.yml`**, as a `build-and-attach` job gated on the release-please job's `release_created` output (`if: needs.release-please.outputs.release_created == 'true'`) and checking out the new `tag_name` output. It runs in the *same* workflow run that publishes the release.
 
 !!! note "Why it's not a separate `release: published` workflow (resolved — [#357](https://github.com/derekwinters/lucas-doggiehood/issues/357))"

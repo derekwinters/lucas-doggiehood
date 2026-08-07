@@ -34,13 +34,7 @@ namespace Doggiehood.Core.Versioning
         /// </summary>
         public static bool IsDebugBuildRequested(string envValue)
         {
-            if (string.IsNullOrWhiteSpace(envValue))
-            {
-                return false;
-            }
-
-            var trimmed = envValue.Trim();
-            return trimmed == "1" || trimmed.Equals("true", StringComparison.OrdinalIgnoreCase);
+            return BuildEnvironmentFlag.IsEnabled(envValue);
         }
     }
 }
