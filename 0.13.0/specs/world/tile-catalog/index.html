@@ -1,0 +1,2153 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Design contract and engineering docs for Doggiehood">
+      
+      
+      
+      
+        <link rel="prev" href="../sidewalks/">
+      
+      
+        <link rel="next" href="../../dogs/behavior/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Tile Catalog (Design Reference) - Doggiehood Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tile-catalog-design-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Doggiehood Docs" class="md-header__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Doggiehood Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tile Catalog (Design Reference)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../intro/vision/" class="md-tabs__link">
+          
+  
+  Introduction
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  Design & Architecture Specs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../engineering/tech-stack/" class="md-tabs__link">
+          
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../tools/" class="md-tabs__link">
+          
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Doggiehood Docs" class="md-nav__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Doggiehood Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../intro/vision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vision
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../intro/how-to-play/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Play
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../intro/conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Design & Architecture Specs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Design & Architecture Specs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    World
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            World
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World & Neighborhood
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../camera-controls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Camera, Navigation & Controls
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../art-style/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Art & UI Style
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sidewalks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sidewalks & Walk Network
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Tile Catalog (Design Reference)
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Tile Catalog (Design Reference)
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#standard-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard dimensions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grid-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grid coordinates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-15-tile-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      The 15 tile types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 15 tile types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tile-539" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tile (#539)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tile codes — connectivity as a single source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#road-tile-art-kit-meshes-per-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road tile art — kit meshes per type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#property-lots-per-tile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Property lots per tile
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#removed-the-opposing-turn-twin-bends-583" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed: the opposing-turn twin bends (#583)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Dogs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Dogs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dogs/behavior/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Behavior
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dogs/roster-names/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Roster & Names
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Conversation & Quests
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Conversation & Quests
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quests/conversation-system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation System
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quests/economy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest & Economy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quests/quest-content/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest Content
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    UI Wireframes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            UI Wireframes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/shared-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shared UI Components
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/hud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HUD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/conversation-panel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation Panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/onboarding-overlay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding Overlay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/dog-profile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Profile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Settings menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/onboarding-reward/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding reward panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/welcome-popup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcome pop-up
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Toast notification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/debug-tuning-menu/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Debug tuning menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ui/mockups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mockups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decorations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Decorations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../expansion/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Neighborhood Expansion (Post-MVP)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audio
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../onboarding/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../product-scope/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Product Scope & Constraints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../future-ideas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Future Ideas
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Engineering
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/tech-stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tech Stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/ui-design-process/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UI Design Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning & Releases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/ci-cd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/agent-workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Map Builder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/unity-serialization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hand-Authoring Unity Serialized Assets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#standard-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard dimensions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grid-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grid coordinates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-15-tile-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      The 15 tile types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 15 tile types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#green-space-tile-539" class="md-nav__link">
+    <span class="md-ellipsis">
+      Green-space tile (#539)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tile-codes-connectivity-as-a-single-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tile codes — connectivity as a single source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#road-tile-art-kit-meshes-per-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Road tile art — kit meshes per type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#property-lots-per-tile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Property lots per tile
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#removed-the-opposing-turn-twin-bends-583" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed: the opposing-turn twin bends (#583)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/specs/world/tile-catalog.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="tile-catalog-design-reference">Tile Catalog (Design Reference)<a class="headerlink" href="#tile-catalog-design-reference" title="Permanent link">&para;</a></h1>
+<p><em>Related: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a> (sidewalks and the walk network, implemented — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a>), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> (multi-tile grid/placement system, implemented), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/86">#86</a> (map-shape question, resolved 2026-07-14 — see <a href="../../expansion/#map-shape">Neighborhood Expansion</a>)</em></p>
+<div class="admonition note">
+<p class="admonition-title">Status: implemented in Core (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>)</p>
+<p>The catalog, grid-coordinate tile map, placement/adjacency validation, and per-type property-lot definitions are built in <code>Doggiehood.Core.World</code>: <code>TileType</code> (16 values — the 15 road tiles plus the roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>; the two <code>OpposingTurns</code> "twin bends" were removed outright by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>), <code>TileTypeDefinition</code>/<code>TileCatalog</code> (road edges), <code>TileCoordinate</code>/<code>TileMap</code> (placement + adjacency), <code>TileGeometry</code> (world-space derivation), and <code>TileLotCatalog</code> (per-type lot slots for the 15 lot-bearing types — every type except the roadless <code>GreenSpace</code>). The starting <code>FourWay</code> intersection still uses its own hand-placed <a href="../world/"><code>NeighborhoodLayout</code></a> rather than this generic system — but its road arms now reach the <strong>tile edge</strong> (<code>NeighborhoodLayout.StreetHalfLength</code> = <code>WorldDimensions.TileSize / 2</code> = 30m, no longer the old hand-picked 26m), so when expansion places a neighbouring tile the two tiles' road arms meet edge-to-edge and the street network reads as continuous (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/392">#392</a>; the kit-art corridor compresses a whole number of road tiles to fit each arm exactly, à la <code>WalkwayTiling</code> — see <a href="../sidewalks/#road-arm-extent">Sidewalks &amp; Walk Network</a>). Zone unlock/house-building on top of this geometry (v0.4's #55/#56/#57) is still future work — this issue only builds the geometry itself; procedural tile selection stays explicitly out of scope, per <a href="../../expansion/#map-shape">Neighborhood Expansion</a>. Sidewalks, crosswalks, and the walk network graph are implemented separately (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/106">#106</a>) — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> — using a generic, data-driven graph rather than this tile/adjacency system.</p>
+</div>
+<h2 id="standard-dimensions">Standard dimensions<a class="headerlink" href="#standard-dimensions" title="Permanent link">&para;</a></h2>
+<p>These measurements are locked in Core (<code>WorldDimensions</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/105">#105</a>; the road-bend corner radius added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>) as the geometric basis every tile type below will eventually be built from.</p>
+<table>
+<thead>
+<tr>
+<th>Standard</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tile size</td>
+<td>60m x 60m</td>
+</tr>
+<tr>
+<td>Road width</td>
+<td>6m</td>
+</tr>
+<tr>
+<td>Grass verge (road edge -&gt; sidewalk)</td>
+<td>0.75m — Derek's 2026-07-13 midpoint decision (in conversation; originally 1.5m, briefly 0m the same day): a logical setback that puts the dogs' walk line at 4.75m from the road centerline, within the City Kit road tiles' paved band (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/121">#121</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/122">#122</a>); no visual grass strip in the kit-art path — see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a></td>
+</tr>
+<tr>
+<td>Sidewalk width</td>
+<td>2m</td>
+</tr>
+<tr>
+<td>Crosswalk width</td>
+<td>3m</td>
+</tr>
+<tr>
+<td>Cul-de-sac bulb radius</td>
+<td>9m</td>
+</tr>
+<tr>
+<td>Road-bend corner radius</td>
+<td>5m — the plain <code>Turn*</code>/<code>road-bend</code> road centerline's corner-arc radius, measured from the shared <code>road-bend</code> kit FBX (raw radius 50 at the raw×0.1 world scale, midline of the inner 20-raw and outer 80-raw asphalt-edge arcs). The walk network curves a bend's sidewalks concentrically about it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>); see <a href="../sidewalks/">Sidewalks &amp; Walk Network</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="grid-coordinates">Grid coordinates<a class="headerlink" href="#grid-coordinates" title="Permanent link">&para;</a></h2>
+<p>The world is an integer tile grid addressed as <strong><code>(x, y)</code></strong> — <code>x</code> runs east/west, <code>y</code> runs north/south. In Core these map to <code>TileCoordinate.Col</code> (<code>x</code>) and <code>TileCoordinate.Row</code> (<code>y</code>); world-space is derived by <code>TileGeometry</code> (<code>Col → +X</code>, <code>Row → +Z</code>). The starting <code>FourWay</code> intersection is the origin <strong><code>(0, 0)</code></strong>; the tile directly north of it is <strong><code>(0, 1)</code></strong>, directly east is <strong><code>(1, 0)</code></strong>.</p>
+<p>A tile's identity is its integer <code>(x, y)</code>; a type name's compass suffix (e.g. <code>CulDeSacEast</code>) describes <em>which edge carries the road</em>, <strong>not</strong> where the tile sits on the map. Position comes from the coordinate, connectivity from the type/code below — keeping the two separate avoids the "is that northwest or is that an east-facing cul-de-sac?" confusion.</p>
+<h2 id="the-15-tile-types">The 15 tile types<a class="headerlink" href="#the-15-tile-types" title="Permanent link">&para;</a></h2>
+<p>Each tile is a 60m x 60m square with roads entering/exiting along some subset of its N/S/E/W edges. <code>FourWay</code> is the existing starting tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/7">#7</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/38">#38</a>); the next 14 are built for the multi-tile grid (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a>). A 16th roadless <a href="#green-space-tile-539"><code>GreenSpace</code></a> tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>) is listed at the end of the table below and detailed in <a href="#green-space-tile-539">its own subsection</a>. Two further <code>OpposingTurns</code> "twin bend" types were part of this catalog until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a> removed them — see <a href="#removed-the-opposing-turn-twin-bends-583">Removed: the opposing-turn twin bends</a>.</p>
+<p>The <strong>Code</strong> column is the compact authoring token (see <a href="#tile-codes-connectivity-as-a-single-source">Tile codes</a> below); it encodes the same road edges as the "Road edges" column.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Code</th>
+<th>Road edges</th>
+<th>Sketch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FourWay</code></td>
+<td><code>NSEW.</code></td>
+<td>N,S,E,W</td>
+<td><code>╋</code> — the starting tile</td>
+</tr>
+<tr>
+<td><code>StraightNS</code></td>
+<td><code>NS--.</code></td>
+<td>N,S</td>
+<td><code>┃</code></td>
+</tr>
+<tr>
+<td><code>StraightEW</code></td>
+<td><code>--EW.</code></td>
+<td>E,W</td>
+<td><code>━</code></td>
+</tr>
+<tr>
+<td><code>TurnNE</code></td>
+<td><code>N-E-.</code></td>
+<td>N,E</td>
+<td><code>┗</code></td>
+</tr>
+<tr>
+<td><code>TurnNW</code></td>
+<td><code>N--W.</code></td>
+<td>N,W</td>
+<td><code>┛</code></td>
+</tr>
+<tr>
+<td><code>TurnSE</code></td>
+<td><code>-SE-.</code></td>
+<td>S,E</td>
+<td><code>┏</code></td>
+</tr>
+<tr>
+<td><code>TurnSW</code></td>
+<td><code>-S-W.</code></td>
+<td>S,W</td>
+<td><code>┓</code></td>
+</tr>
+<tr>
+<td><code>TeeNorth</code></td>
+<td><code>N-EW.</code></td>
+<td>E,W,N</td>
+<td><code>┻</code> (east/west with north half only — upside-down T)</td>
+</tr>
+<tr>
+<td><code>TeeSouth</code></td>
+<td><code>-SEW.</code></td>
+<td>E,W,S</td>
+<td><code>┳</code> (east/west with south half only — T)</td>
+</tr>
+<tr>
+<td><code>TeeEast</code></td>
+<td><code>NSE-.</code></td>
+<td>N,S,E</td>
+<td><code>┣</code> (north/south with east only)</td>
+</tr>
+<tr>
+<td><code>TeeWest</code></td>
+<td><code>NS-W.</code></td>
+<td>N,S,W</td>
+<td><code>┫</code> (north/south with west only)</td>
+</tr>
+<tr>
+<td><code>CulDeSacNorth</code></td>
+<td><code>N---.</code></td>
+<td>N</td>
+<td><code>╹</code> road enters from the north edge, ends in a bulb</td>
+</tr>
+<tr>
+<td><code>CulDeSacSouth</code></td>
+<td><code>-S--.</code></td>
+<td>S</td>
+<td><code>╻</code></td>
+</tr>
+<tr>
+<td><code>CulDeSacEast</code></td>
+<td><code>--E-.</code></td>
+<td>E</td>
+<td><code>╺</code></td>
+</tr>
+<tr>
+<td><code>CulDeSacWest</code></td>
+<td><code>---W.</code></td>
+<td>W</td>
+<td><code>╸</code></td>
+</tr>
+<tr>
+<td><code>GreenSpace</code></td>
+<td><code>----.</code></td>
+<td><em>(none)</em></td>
+<td><code>▦</code> a roadless full-tile park/open-grass tile — see <a href="#green-space-tile-539">Green-space tile</a> below</td>
+</tr>
+</tbody>
+</table>
+<h3 id="green-space-tile-539">Green-space tile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)<a class="headerlink" href="#green-space-tile-539" title="Permanent link">&para;</a></h3>
+<p><code>GreenSpace</code> is the 16th type: a full grid tile the same size and shape as the other 15, but carrying <strong>no road on any edge</strong> (empty <code>RoadEdges</code>) and <strong>no buildable lot</strong> (<code>TileLotCatalog.LotsFor(GreenSpace)</code> = zero lots — no houses, ever). It is authored into the target map (<code>docs/tools/map-data.json</code>) exactly like any other type — <code>{x, y, type: "GreenSpace"}</code> — and its empty road-edge set means it validates through <code>TileMap.CanPlace</code> only against neighbours whose shared edge is <em>also</em> roadless.</p>
+<p>Distinct from <strong>unbuilt-quadrant green space</strong> (the open-grass fill <em>inside</em> a placed road tile, described under <a href="#property-lots-per-tile">Property lots per tile</a> — a static property of a tile's own type). This <code>GreenSpace</code> <em>tile type</em> turns an entire tile on, and unlike the paid, road-connected <a href="../../expansion/#green-space-tiles-auto-activated">expansion frontier</a> it <strong>auto-activates for free</strong> — no coin cost, no lock icon — the moment 2+ of its 4 edges border an already-activated tile (a placed road tile <em>or</em> an already-activated green space), cascading unbounded to a fixpoint. Because it carries no road it can never satisfy <code>TileMap.HasRoadConnectionAt</code>, so it is structurally excluded from the frontier and never shows a lock icon. See <a href="../../expansion/#green-space-tiles-auto-activated">Neighborhood Expansion → Green-space tiles</a> for the activation/persistence detail.</p>
+<h3 id="tile-codes-connectivity-as-a-single-source">Tile codes — connectivity as a single source<a class="headerlink" href="#tile-codes-connectivity-as-a-single-source" title="Permanent link">&para;</a></h3>
+<p>The <strong>Code</strong> is a fixed-width connectivity token: slots 1–4 are the N/S/E/W edges (letter = road on that edge, <code>-</code> = none) and slot 5 is the junction tag, <code>.</code> for every current type. The tag once distinguished the two <code>OpposingTurns</code> tiles' disconnected arcs (<code>\</code> / <code>/</code>); those types were removed in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>, so the slot now carries no information and is kept only so previously authored codes still parse.</p>
+<p>Because the first four slots <em>are</em> the road-edge data, adjacency is a pure slot comparison — a tile's East slot must agree with its east-neighbor's West slot (road meets road, or gap meets gap), while slot 5 never affects adjacency. The code is intended as the <strong>single source</strong> the Core <code>TileCatalog</code>, this table, and map-authoring all read, so the road-edge data can't drift between code and docs — see <a href="https://github.com/derekwinters/lucas-doggiehood/issues/359">#359</a> for the Core unification that removes today's duplication (edges hand-listed in <code>TileCatalog.BuildDefinitions()</code> <em>and</em> re-typed in this table).</p>
+<p>Maps are drawn and validated with the <a href="../../../tools/">Map Builder</a> tool, which reads these codes.</p>
+<h3 id="road-tile-art-kit-meshes-per-type">Road tile art — kit meshes per type<a class="headerlink" href="#road-tile-art-kit-meshes-per-type" title="Permanent link">&para;</a></h3>
+<p>Each junction/terminus type renders a <strong>single Kenney City Kit Roads mesh at the tile centre</strong>, plus tiled <code>road-straight</code> arms reaching out to each road edge. <code>RoadTileArt</code> (Core) resolves the <code>TileType</code> → <code>(Resources key, yaw, bakes-crosswalks)</code> mapping; <code>WorldBuilder</code> places the mesh and yaws it so its <strong>imported</strong> orientation lines up with the tile's declared edges (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/508">#508</a>). The 0°-yaw orientation of each staged 1×1-unit piece (→10×10m at <code>RoadTileScale</code>) is the mesh as Unity <strong>imports</strong> it — which matters because Unity's FBX import applies a handedness (X-axis) mirror. That mirror is invisible on the symmetric pieces (4-way, straight) and on the E/W-symmetric Tee, but it flips the two chirally-asymmetric pieces: the cul-de-sac round end and the bend. #508 read the yaws from the un-imported kit OBJ/FBX source pose instead, so both of those shipped 180°/mirrored off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/514">#514</a> fixed the cul-de-sac; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/515">#515</a> the bend). The empirical mesh-geometry guard that pins each yaw against the real imported vertices lives in the EditMode <code>WorldKitArtTests</code> (it needs <code>UnityEngine.Mesh</code>); the Core <code>RoadTileArtTests</code> stays a pure data-table pin.</p>
+<table>
+<thead>
+<tr>
+<th>Type(s)</th>
+<th>Kit mesh</th>
+<th>Baked crosswalks</th>
+<th>Authored (0°) orientation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FourWay</code></td>
+<td><code>road-crossroad-path</code></td>
+<td>yes (4 arms)</td>
+<td>symmetric</td>
+</tr>
+<tr>
+<td><code>TeeNorth/East/South/West</code></td>
+<td><code>road-intersection-path</code></td>
+<td>yes (3 arms)</td>
+<td>omits the SOUTH arm = <code>TeeNorth</code>; others are 90°/180°/270°</td>
+</tr>
+<tr>
+<td><code>TurnNW/NE/SE/SW</code></td>
+<td><code>road-bend</code></td>
+<td>no</td>
+<td>raw kit connects NORTH+WEST, but the FBX-import X-mirror (W↔E) flips it, so the imported bend connects NORTH+EAST = <code>TurnNE</code> at 0-yaw; the mirror also reverses rotation sense, so the four yaws are derived per-arm (<code>TurnNE</code> 0°, <code>TurnSE</code> 90°, <code>TurnSW</code> 180°, <code>TurnNW</code> 270°), not a uniform offset (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/515">#515</a>). Rounded corner (Derek's locked call; <code>road-bend-square</code> is a one-line swap)</td>
+</tr>
+<tr>
+<td><code>CulDeSacEast/South/West/North</code></td>
+<td><code>road-end-round</code></td>
+<td>no</td>
+<td>imported open road exits WEST at 0-yaw (the raw kit source exits +X/EAST, mirrored on FBX import), so <code>CulDeSacEast</code> takes a half-turn to bring the open road to its EAST edge; rounded bulb caps the other side (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/514">#514</a>)</td>
+</tr>
+<tr>
+<td><code>StraightNS</code>, <code>StraightEW</code></td>
+<td><em>(none — tiled <code>road-straight</code> arms)</em></td>
+<td>n/a</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>GreenSpace</code></td>
+<td><em>(none — no road art)</em></td>
+<td>n/a</td>
+<td>a roadless park tile: no centre mesh, no arms, no crosswalks. Its only visible effect is the grass ground plane growing to cover it (<code>WorldBuilder.ResizeGroundToMap</code>); the road-art and lot-building passes iterate the player-unlocked road tiles, which never include a green space, so it no-ops gracefully (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>Crosswalks are baked into the 4-way/Tee meshes, so the kit path needs no separate crossing tiles; the primitive graybox fallback derives one crosswalk patch per intersection arm from <code>TileCrosswalkGeometry</code> instead — see <a href="../sidewalks/#the-crosswalk-box">Sidewalks &amp; Walk Network</a>.</p>
+<h2 id="property-lots-per-tile">Property lots per tile<a class="headerlink" href="#property-lots-per-tile" title="Permanent link">&para;</a></h2>
+<p><em>Design decisions 2026-07-30 / 2026-07-31 (Derek &amp; Lucas), captured from the <a href="../../../tools/">Map Builder</a>. The Core lot rules below are implemented in <code>TileLotCatalog.LotsFor</code>; each bend's curved/cupped corner is exposed via <code>TileLotCatalog.TryGetCuppedCorner</code>, and every dropped (no-lot) quadrant's tree slots via <code>TileLotCatalog.TreeQuadrantsFor</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/383">#383</a>, refined by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/385">#385</a> and generalized to all tile types by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>).</em></p>
+<p>Each tile offers up to four <strong>property lots</strong>, one per quadrant (NE/NW/SE/SW). Not every quadrant holds a house — lot assignment is per tile type, and <strong>every quadrant with no kept house lot becomes open space with trees</strong> (reusing the #170 tree environment art; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>). The tree quadrants are derived as "the tile's four quadrants minus its <code>LotsFor</code> quadrants", so trees and lots share one source of truth and can never disagree — the sole exception is the whole-tile <a href="#green-space-tile-539"><code>GreenSpace</code> tile type</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>), a separate park tile that stays bare (it has no lots, but a naive "no lot ⇒ trees" rule is explicitly <em>not</em> applied to it). This <em>unbuilt-quadrant</em> open space with trees is a static property of a road tile's own type — distinct from that whole-tile <code>GreenSpace</code>, which turns an entire tile on:</p>
+<ul>
+<li><strong>Bends (<code>Turn*</code>): two lots — drop the small corner the curve cups AND its diagonal opposite.</strong> The cupped corner is the bend's own corner (<code>TurnNE</code> drops NE, <code>TurnSW</code> drops SW, etc.); the corner diagonally opposite it borders neither roaded edge, so it can never face a road and is dropped too. The two kept lots each border a straight roaded edge square-on: <code>TurnNE</code>→NW,SE · <code>TurnNW</code>→NE,SW · <code>TurnSE</code>→NE,SW · <code>TurnSW</code>→NW,SE. Both <strong>dropped</strong> quadrants become <strong>open space with trees</strong>; the cupped corner's tree is kept clear of the bend's road arc via the tile-aware road clearance (<code>LotBounds.RoadsFor</code>/<code>ClearRoadCorridors</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/455">#455</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>) and is skipped rather than force-placed if the corner has no clean grass, while the diagonal-opposite quadrant (bordering no roaded edge) always keeps its tree. A bend renders as a <strong>curved corner</strong>, not two straight bands meeting at a right angle.</li>
+<li><strong>Cul-de-sacs (<code>CulDeSac*</code>): two lots — keep the two quadrants adjacent to the single roaded edge.</strong> <code>CulDeSacNorth</code>→NE,NW · <code>CulDeSacSouth</code>→SE,SW · <code>CulDeSacEast</code>→NE,SE · <code>CulDeSacWest</code>→NW,SW. The two bulb-side quadrants become <strong>open space with trees</strong> (reusing the #170 tree environment art, rendered by <code>WorldBuilder</code>). The two <strong>kept</strong> quadrants get houses, so their procedural <a href="../world/#yard-landscaping">yard landscaping</a> must exclude the tile's road: the kept quadrant faces the tile's single road arm, and a lot on this non-origin tile is only trimmed against that road once the yard clip is made <strong>tile-aware</strong> — <code>LotBounds.RoadsFor(lot, tileType)</code> converts the tile's <code>TileRoadGeometry</code> arm to a <code>Road</code> alongside the origin's streets (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/455">#455</a>, after a playtest showed yard trees landing in the first unlocked cul-de-sac's street).</li>
+<li><strong>Green-space tile (<code>GreenSpace</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/539">#539</a>): no lots</strong> — a park/open-grass tile that never holds a house (<code>TileLotCatalog.LotsFor(GreenSpace)</code> returns an empty set). Not to be confused with the unbuilt-quadrant green space <em>inside</em> a road tile above; see <a href="#green-space-tile-539">Green-space tile</a>.</li>
+<li><strong>All other types</strong> (<code>FourWay</code>, <code>Straight*</code>, <code>Tee*</code>): all four quadrant lots. <strong>A <code>FourWay</code> is a full intersection — all four quadrants border a straight roaded edge square-on — so it carries one buildable lot per quadrant <em>wherever it appears on the map, not only at the origin</em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/607">#607</a>).</strong> <code>TileLotCatalog.LotsFor(FourWay)</code> returns the four quadrant slots like any other full-lot type; the <strong>origin</strong> FourWay is the one exception where those lots are <em>not</em> catalog-generated — its four houses are seeded from <code>NeighborhoodLayout.HouseLots</code> (ids 1–4), so <code>GameState.LotsForUnlockedTile</code> returns an empty set for the origin coordinate to avoid double-counting them, while every non-origin FourWay gets its four <code>TileLotCatalog</code> lots with stable <code>FrontierHouseId.For(coordinate, quadrant)</code> ids. (Before #607 a non-origin FourWay unlocked with <strong>zero</strong> lots — nowhere to build a house.)</li>
+</ul>
+<p><strong>House facing — settled (2026-07-31, Derek): remove, no rotation.</strong> On bends and cul-de-sacs the road curves, so a corner house can't always face it square-on. Rather than rotate houses to fan around a curve, the lots that can't face a road square-on are simply <strong>removed</strong> (they become open space with trees, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/614">#614</a>) — which is exactly why bends and cul-de-sacs keep only two lots above. Every remaining lot already borders a straight roaded edge square-on, so no house ever carries a facing/rotation value.</p>
+<h2 id="removed-the-opposing-turn-twin-bends-583">Removed: the opposing-turn twin bends (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>)<a class="headerlink" href="#removed-the-opposing-turn-twin-bends-583" title="Permanent link">&para;</a></h2>
+<p><em>Decision (2026-08-07, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>): </em><em>"remove tile completely"</em><em> — superseding the earlier "keep them defined-but-unused in Core" state that <a href="https://github.com/derekwinters/lucas-doggiehood/issues/516">#516</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/508">#508</a> left behind.</em></p>
+<p>The catalog once carried two more types — <code>OpposingTurnsNS</code> and <code>OpposingTurnsEW</code>, the "twin bends": a tile with two <em>independent, unconnected</em> corner arcs touching all four edges (NE + SW for <code>OpposingTurnsNS</code>, NW + SE for its 90° rotation). They were never kit-renderable — two bends in one tile with no central crossing has no City Kit mesh, and the <code>road-curve</code> family that could sweep a wide double-arc is a 2×2-unit piece that doesn't fit the single-tile grid. #516 had already swapped the sole authored <code>OpposingTurnsNS</code> at <code>(6,-1)</code> to <code>FourWay</code> and greyed the pair out in the <a href="../../../tools/">Map Builder</a>, leaving them defined-but-unused.</p>
+<h1 id="583-removed-them-outright-the-tiletype-values-their-tilecatalog-entries-the-tilearctiletypedefinitionarcsedgesconnectedvia-arc-machinery-that-existed-only-to-model-them-their-no-lots-rule-the-15m-opposingturnarchradius-standard-dimension-and-the-map-builders-greyed-out-twin-bends-palette-group-nothing-on-the-live-map-or-in-any-save-referenced-them-tiletype-serializes-by-name-so-the-removal-is-behavior-neutral-the-remaining-tile-set-is-pinned-by-name-in-tilecatalogteststypes_exposesexactlythedefinedcatalogtypes-so-they-cant-reappear-silently">583 removed them outright: the <code>TileType</code> values, their <code>TileCatalog</code> entries, the <code>TileArc</code>/<code>TileTypeDefinition.Arcs</code>/<code>EdgesConnectedVia</code> arc machinery that existed only to model them, their no-lots rule, the 15m <code>OpposingTurnArchRadius</code> standard dimension, and the Map Builder's greyed-out "Twin bends" palette group. Nothing on the live map or in any save referenced them (<code>TileType</code> serializes by name), so the removal is behavior-neutral. The remaining tile set is pinned by name in <code>TileCatalogTests.Types_ExposesExactlyTheDefinedCatalogTypes</code>, so they can't reappear silently.<a class="headerlink" href="#583-removed-them-outright-the-tiletype-values-their-tilecatalog-entries-the-tilearctiletypedefinitionarcsedgesconnectedvia-arc-machinery-that-existed-only-to-model-them-their-no-lots-rule-the-15m-opposingturnarchradius-standard-dimension-and-the-map-builders-greyed-out-twin-bends-palette-group-nothing-on-the-live-map-or-in-any-save-referenced-them-tiletype-serializes-by-name-so-the-removal-is-behavior-neutral-the-remaining-tile-set-is-pinned-by-name-in-tilecatalogteststypes_exposesexactlythedefinedcatalogtypes-so-they-cant-reappear-silently" title="Permanent link">&para;</a></h1>
+<details>
+<summary>Design history of the removed types, kept for the record</summary>
+
+**Resolved 2026-07-18 by Derek on [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109), overriding the earlier #105 "loop/island" framing:**
+
+> The two turns would not connect. Each arc would connect two adjacent sides only. There would be two distinct, unconnected arcs.
+
+So each arch was a **turn** in exactly the same sense as the `TurnNE`/`TurnNW`/`TurnSE`/`TurnSW` tiles above: it joined two *adjacent* (corner) edges, not the two *opposite* edges the original framing assumed. Between them the two arcs touched all four edges, but there was no path from one arc into the other — no loop, no shared connection point.
+
+The **original (superseded) #105 framing** was that each arch is "a curved road, an arch, likely a quarter circle radius" — implying the two arches join into a continuous loop around a central island, using a 15m `OpposingTurnArchRadius`, with both arches connecting the tile's two *opposite* edges (E/W for `OpposingTurnsNS`, N/S for `OpposingTurnsEW`).
+
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.top", "content.action.edit", "content.code.copy", "toc.follow"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>

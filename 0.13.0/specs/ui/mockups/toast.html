@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toast Notification — Wireframe #562 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE; --guide:#C4623F;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; --guide:#FF9A76; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE; --guide:#C4623F; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; --guide:#FF9A76; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:66ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+  .framelabel{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:26px 0 8px;}
+
+  .viewer{overflow:auto;max-height:74vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;}
+  .sky{position:absolute;inset:0 0 44% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:56% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;bottom:15%;height:96px;background:#9C9AA0;}
+  .road::before{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:14px;background:repeating-linear-gradient(90deg,var(--gold) 0 56px,transparent 56px 124px);}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:150px;top:44%;} .h2{left:840px;top:40%;background:#7FB2E6;} .h3{right:280px;top:45%;background:#8FD07A;}
+
+  .safe{position:absolute;top:54px;left:72px;right:72px;bottom:48px;border:4px dashed color-mix(in srgb,var(--guide) 55%, transparent);border-radius:34px;pointer-events:none;}
+
+  /* Mirrored HUD context (top-right): CurrencyChip beside the Settings gear (#173/#174/#440) */
+  .cc-chip{position:absolute;top:32px;right:108px;z-index:3;display:inline-flex;align-items:center;gap:17px;
+    height:88px;padding:0 36px 0 14px;border-radius:999px;background:var(--cream);border:5px solid var(--ink);box-shadow:0 8px 0 var(--ink);
+    font-size:46px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1;}
+  .cc-chip .coin{width:60px;height:60px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;}
+
+  /* Reserved TOP-LEFT toast lane — mirrors the top-right chip reservation.
+     ToastLaneTopMarginPx 32, ToastLaneLeftMarginPx 36, ToastHeightPx 88, ToastMaxWidthPx 640. */
+  .lane{position:absolute;top:32px;left:36px;width:640px;height:88px;border:3px dashed color-mix(in srgb,var(--guide) 55%, transparent);border-radius:999px;pointer-events:none;}
+  .lane-label{position:absolute;top:128px;left:36px;font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--guide);
+    background:color-mix(in srgb,var(--bg) 70%, transparent);padding:2px 12px;border-radius:9px;}
+
+  /* Toast — cream pill on the Candy Cottage baseline, sitting in the lane.
+     coin (ToastCoinDiameterPx 60) + one message line (ToastFontSizePx 34). */
+  .toast{position:absolute;top:32px;left:36px;z-index:4;display:inline-flex;align-items:center;gap:16px;
+    max-width:640px;height:88px;padding:0 28px 0 14px;border-radius:999px;
+    background:var(--cream);border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);
+    font-size:34px;color:var(--ink);line-height:1;white-space:nowrap;}
+  .toast .coin{width:60px;height:60px;border-radius:999px;background:var(--gold);border:4px solid var(--ink);position:relative;flex:0 0 auto;}
+  .toast .coin i{position:absolute;inset:10px;border-radius:999px;border:3px solid rgba(46,42,38,.35);}
+  .toast .amt{color:var(--leaf);font-variant-numeric:tabular-nums;}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:96px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  .steps{margin-top:30px;}
+  .steps h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;}
+  .sgrid{display:grid;grid-template-columns:1fr;gap:10px;}
+  .srow{background:var(--stage);border:1px solid var(--hair);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:16px;font-size:14px;}
+  .srow .n{width:26px;height:26px;border-radius:999px;background:var(--ink);color:var(--bg-2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 auto;}
+  .srow .t b{color:var(--text);} .srow .t{color:var(--muted);}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #562 · Toast Notification · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Toast notification</h1>
+  <p class="lede">A small, <b>non-modal</b> cream pill that slides into a reserved <b>top-left lane</b> to celebrate a
+    completion — a quest finishing, or an onboarding reward-chain step paying out — then clears itself on a short
+    auto-timeout (or the instant it is tapped). It mirrors the <b>CurrencyChip</b>'s top-right reservation in the
+    opposite corner, never dims the world, and never blocks input. One toast shows at a time; a second waits its turn.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two frames below show the two triggers' copy — they never appear together (single slot). The mirrored top-right chip/gear and the dashed lane guide are context only.</p>
+
+  <p class="framelabel">Frame A — quest-completion toast</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet; a cream toast pill in the top-left lane reads 'Quest complete! +20 coins' with a gold coin token; the currency chip sits in the opposite top-right corner">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div><div class="house h3"></div>
+      <div class="safe"></div>
+      <div class="lane"></div><div class="lane-label rounded">reserved toast lane</div>
+      <div class="cc-chip rounded"><span class="coin rounded">◎</span>128</div>
+      <div class="toast rounded"><span class="coin"><i></i></span>Quest complete! <span class="amt">&nbsp;+20 coins</span></div>
+    </div>
+  </div>
+
+  <p class="framelabel">Frame B — onboarding reward-chain toast (step 1 shown)</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Landscape tablet; a cream toast pill in the top-left lane reads 'You finished your first quest! +100 coins' with a gold coin token">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div><div class="house h3"></div>
+      <div class="safe"></div>
+      <div class="lane"></div><div class="lane-label rounded">reserved toast lane</div>
+      <div class="cc-chip rounded"><span class="coin rounded">◎</span>228</div>
+      <div class="toast rounded"><span class="coin"><i></i></span>You finished your first quest! <span class="amt">&nbsp;+100 coins</span></div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>ToastAnchor</td><td class="val">TopLeft</td><td>lane corner (mirrors HudChipAnchor TopRight)</td></tr>
+        <tr><td>ToastLaneTopMarginPx</td><td class="val">32</td><td>lane top inset (shares the chip/gear row)</td></tr>
+        <tr><td>ToastLaneLeftMarginPx</td><td class="val">36</td><td>lane left inset (safe-area edge)</td></tr>
+        <tr><td>ToastHeightPx</td><td class="val">88</td><td>toast height (matches CurrencyChip #173)</td></tr>
+        <tr><td>ToastMaxWidthPx</td><td class="val">640</td><td>reserved lane width cap</td></tr>
+        <tr><td>ToastCoinDiameterPx</td><td class="val">60</td><td>coin token (matches CurrencyChip #173)</td></tr>
+        <tr><td>ToastPaddingLeftPx</td><td class="val">14</td><td>coin inset (matches CurrencyChip #173)</td></tr>
+        <tr><td>ToastPaddingRightPx</td><td class="val">28</td><td>message inset</td></tr>
+        <tr><td>ToastIconGapPx</td><td class="val">16</td><td>coin → message</td></tr>
+        <tr><td>ToastFontSizePx</td><td class="val">34</td><td>message (matches MessageFontSizePx #374)</td></tr>
+        <tr><td>ToastAutoDismissSeconds</td><td class="val">3.5</td><td>auto-timeout before self-clear</td></tr>
+        <tr><td>ToastSlideInMs</td><td class="val">220</td><td>slide + fade in from left edge</td></tr>
+        <tr><td>ToastSlideOutMs</td><td class="val">180</td><td>slide + fade out (timeout or tap alike)</td></tr>
+        <tr><td>ToastQueueSlotCount</td><td class="val">1</td><td>one visible; next waits (sequential queue)</td></tr>
+        <tr><td>&nbsp;↳ pill chrome</td><td class="val">#173</td><td>cream fill / outline 6 / pill radius / shadow 8</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions</h2>
+      <p class="note"><b>Coin token</b> (leading gold coin, reuses the CurrencyChip token) · <b>Message</b> (one dynamic line: accomplishment + <b>+N coins</b>). No scrim, no button — the pill is the whole surface, and a tap anywhere on it dismisses early.</p>
+      <p class="note"><b>Not modal:</b> the toast never registers with <code>ModalInputGate</code> and carries no backdrop — a HUD element like the currency chip, just tappable. World taps outside the lane are unaffected; a tap on the toast only dismisses it.</p>
+      <p class="note"><b>Dismiss — both ways:</b> clears after <code>ToastAutoDismissSeconds</code>, or on tap; either runs the same <code>ToastSlideOutMs</code> exit. Never a trap (cf. #329).</p>
+      <p class="note"><b>Sequential queue (slot = 1):</b> only one toast is visible. A second trigger firing while one shows <b>waits</b> and plays right after the first's slide-out — never stacked. First-come, first-served.</p>
+      <p class="note"><b>HUD reservation mirrors the chip:</b> the top-left lane (dashed guide) is reserved the same way the CurrencyChip reserves top-right — nothing else renders there.</p>
+    </div>
+  </div>
+
+  <div class="steps">
+    <h2>Per-toast copy — the two triggers (payout folds into the one line as <code>+N coins</code>)</h2>
+    <div class="sgrid">
+      <div class="srow"><span class="n">Q</span><span class="t"><b>Quest complete</b> (<code>QuestManager.Complete</code>) — “Quest complete! +N coins” (N = flat quest payout, today 10)</span></div>
+      <div class="srow"><span class="n">1</span><span class="t"><b>Onboarding · first quest</b> — “You finished your first quest! +100 coins”</span></div>
+      <div class="srow"><span class="n">2</span><span class="t"><b>Onboarding · upgrade a house</b> — “You made a house even nicer! +100 coins”</span></div>
+      <div class="srow"><span class="n">3</span><span class="t"><b>Onboarding · expand the map</b> — “You opened up a brand-new street! +100 coins”</span></div>
+      <div class="srow"><span class="n">4</span><span class="t"><b>Onboarding · build a house</b> — “You built a brand-new house! +100 coins”</span></div>
+    </div>
+  </div>
+
+  <footer>
+    Non-modal HUD toast on the “Candy Cottage” baseline (#65) — cream pill, thick outline, hard shadow, CurrencyChip coin token · reuses <a href="#">Shared UI Components (#173)</a> · mirrors the HUD chip reservation (#174) in the opposite corner · reference resolution 1920×1200. Constants born here (#161); EditMode tests assert the built toast against them.
+    <br><span class="status">Approved — Derek, 2026-08-04 (/approve #562)</span>
+  </footer>
+</div>
+</body>
+</html>
