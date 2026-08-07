@@ -124,11 +124,14 @@ namespace Doggiehood.Core.Tests.Economy
     public class EconomyNumbersTests
     {
         [Test]
-        public void QuestPayout_IsTwentyCoins_ForAllQuestTypes()
+        public void QuestPayout_IsTwentyCoins_ForFreeTypes()
         {
-            // #62: flat payout regardless of type, defined once centrally.
-            // #623: raised 10 -> 20 to roughly double the early-game earn rate.
+            // #62: flat payout for the free quest types (LostItem / PestControl),
+            // defined once centrally. #623: raised 10 -> 20 to roughly double the
+            // early-game earn rate. #626: paid types are earners instead — they
+            // pay cost × markup (see PaidQuestPayout), not this flat value.
             Assert.That(EconomyNumbers.QuestPayout, Is.EqualTo(20));
+            Assert.That(EconomyNumbers.PaidQuestMarkup, Is.EqualTo(1.5));
         }
 
         [Test]

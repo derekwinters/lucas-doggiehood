@@ -14,8 +14,25 @@ namespace Doggiehood.Core.Economy
     /// </summary>
     public static class EconomyNumbers
     {
-        /// <summary>Flat payout per completed quest, regardless of type.</summary>
+        /// <summary>Flat payout per completed <b>free</b>-type quest
+        /// (LostItem / PestControl) — no fronted item cost to reimburse.
+        /// #626: paid types instead pay <see cref="PaidQuestPayout"/>.</summary>
         public static int QuestPayout => TuningConfig.Active.QuestPayout;
+
+        /// <summary>#626: the paid-quest payout markup — a paid job reimburses
+        /// its fronted item cost times this factor. Slider-tunable via
+        /// <see cref="TuningConfig.Active"/>.</summary>
+        public static double PaidQuestMarkup => TuningConfig.Active.PaidQuestMarkup;
+
+        /// <summary>#626: the coin payout for completing a <b>paid</b>-type quest
+        /// (BuyGift / DecorationRequest / fence) whose fronted item cost is
+        /// <paramref name="cost"/>: <c>round(cost × <see cref="PaidQuestMarkup"/>)</c>.
+        /// Always exceeds the cost for the shipping markup, so a paid job is
+        /// never a net loss — the "getting hired" earner model (economy.md).</summary>
+        public static int PaidQuestPayout(int cost)
+        {
+            return (int)System.Math.Round(cost * PaidQuestMarkup, System.MidpointRounding.AwayFromZero);
+        }
 
         /// <summary>#310/#543: how long between quest-rotation refreshes. The
         /// refresh is a boundary <em>check</em> (never a countdown/expiry —

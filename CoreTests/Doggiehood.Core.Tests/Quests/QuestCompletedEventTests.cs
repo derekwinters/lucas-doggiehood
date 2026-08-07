@@ -52,11 +52,11 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void Delivery_RaisesQuestCompletedOnce_WithTheQuestAndFlatPayout()
+        public void Delivery_RaisesQuestCompletedOnce_WithTheQuestAndPaidPayout()
         {
             var state = GameState.CreateNew();
             // Fund the wallet so the buy-gift acceptance is not rejected (#25).
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(1000);
             var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new System.Random(3));
             Assert.That(state.Quests.Accept(quest), Is.True);
 
@@ -69,7 +69,8 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(events.Count, Is.EqualTo(1));
             Assert.That(events[0].Quest, Is.SameAs(quest));
-            Assert.That(events[0].Amount, Is.EqualTo(EconomyNumbers.QuestPayout));
+            // #626: a paid quest is an earner — the event carries cost × markup.
+            Assert.That(events[0].Amount, Is.EqualTo(EconomyNumbers.PaidQuestPayout(quest.Cost.Value)));
         }
     }
 }

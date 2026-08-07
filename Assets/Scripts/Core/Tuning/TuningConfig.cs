@@ -35,10 +35,21 @@ namespace Doggiehood.Core.Tuning
     {
         // ---- Economy (EconomyNumbers) ----
 
-        /// <summary>Flat payout per completed quest, regardless of type.
+        /// <summary>Flat payout per completed <b>free</b>-type quest
+        /// (LostItem / PestControl), which carry no item cost to reimburse.
         /// #623: raised 10 -> 20 to roughly double the early-game earn rate,
-        /// which comes only from the free quest types.</summary>
+        /// which comes only from the free quest types. #626: paid types
+        /// (BuyGift / DecorationRequest / fence) no longer use this flat value —
+        /// they pay <see cref="PaidQuestMarkup"/> × their item cost instead.</summary>
         public int QuestPayout = 20;
+
+        /// <summary>#626: the payout markup on a <b>paid</b>-type quest — the
+        /// "getting hired to do it" margin. Completing a paid quest (BuyGift /
+        /// DecorationRequest / fence) reimburses the fronted item cost times
+        /// this factor (<c>round(cost × markup)</c>), so every paid job is net
+        /// positive and a bigger stake pays a bigger fee. Default 1.5×
+        /// (toy 30 -> 45, pool 40 -> 60, fence 100 -> 150).</summary>
+        public double PaidQuestMarkup = 1.5;
 
         /// <summary>#543: hours between quest-rotation refresh boundary checks.</summary>
         public int RefreshIntervalHours = 1;

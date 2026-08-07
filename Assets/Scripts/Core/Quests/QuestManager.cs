@@ -547,13 +547,29 @@ namespace Doggiehood.Core.Quests
         {
             quest.Status = QuestStatus.Completed;
             FindDog(quest).ClearQuest();
-            state.Wallet.Deposit(EconomyNumbers.QuestPayout);
-            QuestCompleted?.Invoke(quest, EconomyNumbers.QuestPayout);
+            var payout = PayoutFor(quest);
+            state.Wallet.Deposit(payout);
+            QuestCompleted?.Invoke(quest, payout);
             var household = state.HandleQuestCompleted(moveInRng);
             if (household.Count > 0)
             {
                 MoveInOccurred?.Invoke(household);
             }
+        }
+
+        /// <summary>#626: the coin payout for a completed quest. A paid-type
+        /// quest (BuyGift / DecorationRequest / fence) carries a fronted item
+        /// <see cref="Quest.Cost"/> and is an <em>earner</em> — reimbursed at
+        /// <see cref="EconomyNumbers.PaidQuestPayout"/> (cost × markup), always
+        /// net positive. A free-type quest (LostItem / PestControl) carries no
+        /// cost and pays the flat <see cref="EconomyNumbers.QuestPayout"/>. The
+        /// presence of <see cref="Quest.Cost"/> is the exact paid/free
+        /// discriminator (confirmed against <see cref="GiveQuestTo"/>).</summary>
+        private static int PayoutFor(Quest quest)
+        {
+            return quest.Cost.HasValue
+                ? EconomyNumbers.PaidQuestPayout(quest.Cost.Value)
+                : EconomyNumbers.QuestPayout;
         }
 
         private Dog FindDog(Quest quest)
