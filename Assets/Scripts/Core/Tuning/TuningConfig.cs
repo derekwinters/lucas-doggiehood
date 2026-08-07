@@ -35,8 +35,10 @@ namespace Doggiehood.Core.Tuning
     {
         // ---- Economy (EconomyNumbers) ----
 
-        /// <summary>Flat payout per completed quest, regardless of type.</summary>
-        public int QuestPayout = 10;
+        /// <summary>Flat payout per completed quest, regardless of type.
+        /// #623: raised 10 -> 20 to roughly double the early-game earn rate,
+        /// which comes only from the free quest types.</summary>
+        public int QuestPayout = 20;
 
         /// <summary>#543: hours between quest-rotation refresh boundary checks.</summary>
         public int RefreshIntervalHours = 1;

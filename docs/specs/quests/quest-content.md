@@ -78,4 +78,4 @@ Item/subject names for all 3 types (and for decoration requests) are drawn from 
 - [ ] "Bug problem" quest: spray interaction clears the bug state and completes the quest
 - [ ] "Bug problem" quest: the affected house carries a **clearly visible** world-space indicator (readable under the 45° camera, clears the roofline, feedback-only) that clears the moment the house is sprayed ([#331](https://github.com/derekwinters/lucas-doggiehood/issues/331))
 - [ ] All 3 types are driven by the shared quest template system, not hard-coded per instance
-- [ ] Each quest type correctly triggers the flat 10-coin payout on completion (see [Quest & Economy](economy.md))
+- [ ] Each quest type correctly triggers the flat 20-coin payout on completion (see [Quest & Economy](economy.md))
