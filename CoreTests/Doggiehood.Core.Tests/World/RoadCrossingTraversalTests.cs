@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -21,6 +23,32 @@ namespace Doggiehood.Core.Tests.World
         // the 4.75m crosswalk offset so the "began the leg already inside the
         // setback zone" case is reachable from the intersection centre.
         private const float FrontSetback = 4f;
+
+        // #658: a stand-in rear-overhang setback (pivot-to-tail) for the
+        // vehicle-shaped occupant cases, deliberately large enough that the
+        // release point sits well past the band's far edge and can't be
+        // confused with it.
+        private const float RearSetback = 4f;
+
+        // #658 no-deadlock simulations: the crosswalk at +/-4.75 and the road's
+        // own ends are the fixed geometry every drive below runs over.
+        private const float NorthCrosswalkAlong = 4.75f;
+        private const float SouthCrosswalkAlong = -4.75f;
+        private const float RoadEnd = 30f;
+
+        // A drive is stepped in fixed increments rather than continuously, so a
+        // vehicle that stops making progress simply stays put and the step
+        // budget runs out — which is exactly what a deadlock looks like.
+        private const float DriveStep = 0.1f;
+        private const int DriveStepBudget = 5000;
+        private const float ArrivalTolerance = 0.001f;
+
+        // The real truck's own figures (#660 pins them), so the no-deadlock
+        // cases run at the geometry the game actually ships rather than at
+        // hand-picked numbers (#161).
+        private static readonly float TruckBody = DeliveryTruckFootprint.NominalBodyLength;
+        private static readonly float TruckFront = DeliveryTruckFootprint.FrontSetbackFor(TruckBody);
+        private static readonly float TruckRear = DeliveryTruckFootprint.RearSetbackFor(TruckBody);
 
         private static Road NorthSouthRoad()
         {
@@ -198,6 +226,211 @@ namespace Doggiehood.Core.Tests.World
             var dog = new object();
             Assert.That(gate.TryEnter(north, dog), Is.True,
                 "once the vehicle is fully past a crosswalk it releases the claim, so a dog may cross");
+        }
+
+        [Test]
+        public void WithARearSetback_TheClaimHoldsUntilTheVehiclesTAILClearsTheBand()
+        {
+            // #658: the release side is the mirror of #639's stop side. The
+            // along-coordinate a vehicle reports is its PIVOT — the centre of
+            // its body — so releasing the moment THAT passes the far edge lets a
+            // waiting dog step onto a band the vehicle's back half is still
+            // sitting on, and the dog is clipped from behind.
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var truck = new object();
+            var traversal = new RoadCrossingTraversal(
+                gate, truck, road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, 0f, RearSetback);
+
+            var north = CrosswalkAt(road, NorthCrosswalkAlong);
+            var nearEdge = NorthCrosswalkAlong + HalfCrosswalk; // approached travelling -Z
+            var farEdge = NorthCrosswalkAlong - HalfCrosswalk;
+
+            // Claim the band on the way in.
+            traversal.Advance(nearEdge, -RoadEnd);
+            Assert.That(gate.TryEnter(north, new object()), Is.False, "truck holds it mid-crossing");
+
+            // Pivot already past the far edge, tail still over the stripes.
+            traversal.Advance(farEdge - 1f, -RoadEnd);
+            Assert.That(gate.TryEnter(north, new object()), Is.False,
+                "the vehicle's CENTRE is past the far edge but its tail is still on the band — "
+                + "releasing here would let a dog step out in front of the truck's back half");
+
+            // One tick short of the tail clearing: the release point is a whole
+            // rear setback beyond the far edge.
+            var releaseAlong = farEdge - RearSetback;
+            traversal.Advance(releaseAlong + ArrivalTolerance * 100f, -RoadEnd);
+            Assert.That(gate.TryEnter(north, new object()), Is.False,
+                "still held a hair before the tail clears the far edge");
+
+            traversal.Advance(releaseAlong, -RoadEnd);
+            Assert.That(gate.TryEnter(north, new object()), Is.True,
+                "once the vehicle's TAIL clears the far edge the claim releases and a dog may cross");
+        }
+
+        [Test]
+        public void WithNoRearSetback_TheReleaseIsTheFarEdgeExactly_AsForAPointOccupant()
+        {
+            // #658 regression guard: the rear setback defaults to 0, so occupants
+            // with no body length (dogs, point vehicles) release at exactly the
+            // far edge, byte-for-byte as before.
+            var road = NorthSouthRoad();
+            var north = CrosswalkAt(road, NorthCrosswalkAlong);
+            var nearEdge = NorthCrosswalkAlong + HalfCrosswalk;
+            var farEdge = NorthCrosswalkAlong - HalfCrosswalk;
+
+            var defaultGate = new RoadCrossingGate();
+            var byDefault = new RoadCrossingTraversal(
+                defaultGate, new object(), road, NeighborhoodLayout.WalkNetwork, RoadEnd, -RoadEnd);
+
+            var explicitGate = new RoadCrossingGate();
+            var explicitZero = new RoadCrossingTraversal(
+                explicitGate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, 0f, 0f);
+
+            byDefault.Advance(nearEdge, -RoadEnd);
+            explicitZero.Advance(nearEdge, -RoadEnd);
+
+            // A hair short of the far edge: both still hold.
+            byDefault.Advance(farEdge + ArrivalTolerance * 100f, -RoadEnd);
+            explicitZero.Advance(farEdge + ArrivalTolerance * 100f, -RoadEnd);
+            Assert.That(defaultGate.TryEnter(north, new object()), Is.False,
+                "with no rear setback the claim still holds right up to the far edge");
+            Assert.That(explicitGate.TryEnter(north, new object()), Is.False,
+                "an explicit zero rear setback matches the default exactly");
+
+            // At the far edge itself: both release, unchanged from before #658.
+            byDefault.Advance(farEdge, -RoadEnd);
+            explicitZero.Advance(farEdge, -RoadEnd);
+            Assert.That(defaultGate.TryEnter(north, new object()), Is.True,
+                "a point occupant releases at exactly the far edge, as it always has");
+            Assert.That(explicitGate.TryEnter(north, new object()), Is.True,
+                "an explicit zero rear setback matches the default exactly");
+        }
+
+        [Test]
+        public void ATruckWithBothSetbacks_DrivesTheWholeMultiCrosswalkRoute_AndEndsHoldingNothing()
+        {
+            // #658 checklist item 3: holding a claim LONGER is the shape of
+            // change that introduces deadlock, so pin that a truck carrying both
+            // setbacks still gets all the way across an intersection's two bands.
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var truck = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, TruckFront, TruckRear);
+
+            var ends = DriveAll(
+                new[] { truck }, new[] { RoadEnd }, new[] { -RoadEnd });
+
+            Assert.That(ends[0], Is.EqualTo(-RoadEnd).Within(ArrivalTolerance),
+                "a truck with both setbacks must still reach the far end of the road");
+            Assert.That(gate.TryEnter(CrosswalkAt(road, NorthCrosswalkAlong), new object()), Is.True,
+                "it must not still be holding the north crosswalk once it has driven off");
+            Assert.That(gate.TryEnter(CrosswalkAt(road, SouthCrosswalkAlong), new object()), Is.True,
+                "nor the south one");
+        }
+
+        [Test]
+        public void TwoOncomingTrucksWithBothSetbacks_BothCompleteTheirRoutes_NoLockOrderingCycle()
+        {
+            // #658, the case the issue's own checklist misses: one truck can
+            // never deadlock against itself, but TWO can. If a truck's footprint
+            // is long enough to hold BOTH of an intersection's bands at once,
+            // two ONCOMING trucks acquire them in opposite order — A holds north
+            // and is blocked at south's boundary, B holds south and is blocked at
+            // north's — and neither can release without advancing. That wedge is
+            // permanent and freezes every dog waiting on either band with it.
+            // Oncoming trucks are explicitly permitted (they don't constrain each
+            // other under car-following, #600), so this state is reachable in
+            // normal play, not exotic.
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var southbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, TruckFront, TruckRear);
+            var northbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                -RoadEnd, RoadEnd, TruckFront, TruckRear);
+
+            var ends = DriveAll(
+                new[] { southbound, northbound },
+                new[] { RoadEnd, -RoadEnd },
+                new[] { -RoadEnd, RoadEnd });
+
+            Assert.That(ends[0], Is.EqualTo(-RoadEnd).Within(ArrivalTolerance),
+                $"the southbound truck wedged at {ends[0]} instead of driving off the road");
+            Assert.That(ends[1], Is.EqualTo(RoadEnd).Within(ArrivalTolerance),
+                $"the northbound truck wedged at {ends[1]} instead of driving off the road");
+        }
+
+        [Test]
+        public void TwoOncomingTrucks_DoWedge_OnceTheirSetbacksNoLongerFitBetweenTheBands()
+        {
+            // The teeth behind the test above: with setbacks that DON'T fit the
+            // clear gap the same drive wedges permanently, so the passing case is
+            // a real property of the shipped geometry and not a simulation that
+            // can never fail. DeliveryTruckFootprint.FitsBetweenCrosswalkBands is
+            // exactly the predicate that separates the two.
+            var overBudgetRear = DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands - TruckFront + DriveStep;
+            Assert.That(TruckFront + overBudgetRear,
+                Is.GreaterThan(DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands),
+                "the probe setbacks must genuinely exceed the clear gap between the bands");
+
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var southbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, TruckFront, overBudgetRear);
+            var northbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                -RoadEnd, RoadEnd, TruckFront, overBudgetRear);
+
+            var ends = DriveAll(
+                new[] { southbound, northbound },
+                new[] { RoadEnd, -RoadEnd },
+                new[] { -RoadEnd, RoadEnd });
+
+            Assert.That(ends[0], Is.Not.EqualTo(-RoadEnd).Within(ArrivalTolerance),
+                "an over-budget footprint must wedge — otherwise the no-deadlock test above proves nothing");
+            Assert.That(ends[1], Is.Not.EqualTo(RoadEnd).Within(ArrivalTolerance),
+                "and it wedges both trucks, each holding the band the other needs");
+        }
+
+        /// <summary>Steps every traversal from its entry toward its exit in fixed
+        /// increments, stopping early once they have all arrived, and returns
+        /// where each one ended up. A vehicle that can never advance simply stays
+        /// put until the step budget runs out — so a deadlock shows up as a final
+        /// position short of the exit rather than as a hang.</summary>
+        private static float[] DriveAll(
+            IReadOnlyList<RoadCrossingTraversal> traversals,
+            IReadOnlyList<float> entries,
+            IReadOnlyList<float> exits)
+        {
+            var along = entries.ToArray();
+            for (var step = 0; step < DriveStepBudget; step++)
+            {
+                var allArrived = true;
+                for (var i = 0; i < traversals.Count; i++)
+                {
+                    var target = exits[i] < entries[i]
+                        ? Math.Max(exits[i], along[i] - DriveStep)
+                        : Math.Min(exits[i], along[i] + DriveStep);
+                    along[i] = traversals[i].Advance(along[i], target);
+                    if (Math.Abs(along[i] - exits[i]) > ArrivalTolerance)
+                    {
+                        allArrived = false;
+                    }
+                }
+
+                if (allArrived)
+                {
+                    break;
+                }
+            }
+
+            return along;
         }
 
         [Test]

@@ -92,6 +92,16 @@ namespace Doggiehood.Unity
         /// the matching rear setback have to fit inside.</summary>
         public float CrosswalkFrontSetback => DeliveryTruckFootprint.FrontSetbackFor(BodyLength);
 
+        /// <summary>#658: how far BEHIND the truck's pivot its tail trails (half a
+        /// body). Handed to <see cref="RoadCrossingTraversal"/> so a crosswalk is
+        /// only released once the TAIL has cleared the band: the release used to
+        /// be measured at the pivot, so the truck handed the crosswalk back — and
+        /// a waiting dog stepped onto it — while its whole back half was still
+        /// over the stripes. Derived from the same measured <see cref="BodyLength"/>
+        /// as the front setback (#161), inside the shared budget
+        /// <see cref="DeliveryTruckFootprint.FitsBetweenCrosswalkBands"/> pins.</summary>
+        public float CrosswalkRearSetback => DeliveryTruckFootprint.RearSetbackFor(BodyLength);
+
         /// <summary>
         /// #547: test seam mirroring <see cref="WorldBuilder.ForcePrimitiveFallback"/>
         /// — forces <see cref="Spawn"/> down the graybox-cube branch (the same
@@ -405,12 +415,15 @@ namespace Doggiehood.Unity
             var exitAlong = crossingRoad.AlongAxis(new GridPoint(to.x, to.z));
             legTravelSign = exitAlong - entryAlong < 0f ? -1f : 1f;
 
-            // #639: the truck is not a point — it hands the traversal its own
-            // pivot-to-bumper setback so the yield stop lands at its FRONT,
-            // leaving the whole footprint clear of the crosswalk band.
+            // #639/#658: the truck is not a point — it hands the traversal its
+            // own pivot-to-bumper and pivot-to-tail setbacks, so the yield stop
+            // lands at its FRONT and the release only happens once its TAIL is
+            // clear. Between them the whole footprint stays off a band it does
+            // not hold. #660 bounds the pair: both fit in the clear gap between
+            // an intersection's two bands, so the truck never holds both at once.
             crossing = new RoadCrossingTraversal(
                 RoadCrossingGate.Shared, this, crossingRoad, network, entryAlong, exitAlong,
-                CrosswalkFrontSetback);
+                CrosswalkFrontSetback, CrosswalkRearSetback);
 
             // #600: a fresh follower for this leg's road and travel direction.
             following = new CarFollowing(legTravelSign);
