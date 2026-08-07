@@ -1020,6 +1020,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Shared baseline constants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outline-a-constant-width-contour-band-616" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outline: a constant-width contour band (#616)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1778,6 +1793,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Shared baseline constants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#outline-a-constant-width-contour-band-616" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outline: a constant-width contour band (#616)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1926,6 +1956,9 @@
 </tbody>
 </table>
 <p>These baseline constants + the palette below are realized in code from this single source (no per-screen hand-picked values, <a href="../../../engineering/tech-stack/#geometry-layout-and-tuning-values-are-named-variables">#161</a>): the IMGUI overlays draw them via <code>CandyChrome</code> (HUD chip <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>, onboarding), and the retained-UGUI panels via <code>CandyChromeUgui</code> (Settings <a href="https://github.com/derekwinters/lucas-doggiehood/issues/298">#298</a>) — both procedural, no raster art asset.</p>
+<h4 id="outline-a-constant-width-contour-band-616">Outline: a constant-width contour band (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/616">#616</a>)<a class="headerlink" href="#outline-a-constant-width-contour-band-616" title="Permanent link">&para;</a></h4>
+<p>The dark outline is a <strong>constant-width contour band</strong> of width <code>OutlineThicknessPx</code> that follows the fill's rounded-rect contour exactly — the same even thickness on straight edges <em>and</em> around every corner. It is <strong>not</strong> the offset-copy <code>Outline</code> mesh effect (four diagonally-shifted stamps of the graphic), whose union is not constant-width around a curve — it bulges on-axis and thins/dips off-axis, the uneven look reported in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/616">#616</a>. Both chrome helpers realize the band the same way: the same procedural rounded sprite, <strong>inflated by the band width</strong> (extents and corner radius each grow by <code>W</code>), drawn behind the fill — so a uniform <code>W</code> of Ink shows around the whole perimeter and the fill's own contour is the band's inner edge by construction (fill radius and outline inner radius can never drift).</p>
+<p><strong>Acceptance test (border-evenness invariant).</strong> Chrome outline evenness is a <em>checkable</em> pixel-level spec, not an eyeballed one. Ray-marching outward from a rendered element's centre through densely-sampled angles (through each corner arc): the fill→ink transition traces a true rounded-rect contour (a round corner arc, no inward dip), and the perpendicular ink-band width is constant within an anti-aliasing tolerance (±1px) across <strong>all</strong> angles, corners included. The geometry is proved engine-free in <code>Doggiehood.Core.Ui.RoundedRectContour</code>; the Unity EditMode pixel test enforces it against the actually-baked chrome with <strong>two complementary instruments</strong>: (1) the ray-march checker measures the band on the baked alpha across each corner's curved span, marching along the analytic contour normal (a 9-slice bake's straight strips reach the clamped texture border, so near-axis texels cannot be cleanly <em>sampled</em> bilinearly); and (2) a per-texel bake-fidelity assertion pins every texel of the baked texture — border-hugging near-axis arc texels included — to the analytic contour coverage (<code>RoundedRectContour.Coverage</code>), which transfers the engine-free constant-band proof to the bake at all angles with no sampling involved.</p>
 <h3 id="shared-palette">Shared palette<a class="headerlink" href="#shared-palette" title="Permanent link">&para;</a></h3>
 <p>The fixed Candy Cottage component colors (the same values regardless of viewer theme).</p>
 <table>
