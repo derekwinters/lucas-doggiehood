@@ -1450,6 +1450,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#central-balance-tuning-tuningconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Central balance tuning (TuningConfig)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#automated-backstop" class="md-nav__link">
     <span class="md-ellipsis">
       Automated backstop
@@ -1789,6 +1798,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#central-balance-tuning-tuningconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Central balance tuning (TuningConfig)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#automated-backstop" class="md-nav__link">
     <span class="md-ellipsis">
       Automated backstop
@@ -1875,6 +1893,10 @@
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a> — applies to every feature, graybox included</em></p>
 <p>Every geometry, layout, and tuning value — sizes, offsets, margins, positions, durations, speeds, payouts — is declared as a named constant, static field, or serialized field at the top of its type (or in a shared Core numbers class where one exists, e.g. <code>EconomyNumbers</code>). Inline numeric literals in method bodies are not acceptable for these values, in either Core or the Unity wiring layer. Graybox code is not exempt: interim UI gets restyled, and named values are what make that a one-line change.</p>
 <p>For <strong>UI layout</strong> values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its <a href="../../specs/ui/">UI wireframe spec</a> first (see the <a href="../ui-design-process/">UI Design Process</a>); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.</p>
+<h4 id="central-balance-tuning-tuningconfig">Central balance tuning (<code>TuningConfig</code>)<a class="headerlink" href="#central-balance-tuning-tuningconfig" title="Permanent link">&para;</a></h4>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a></em></p>
+<p>Core <strong>balance</strong> values — quest payout, pacing window/cap, tile-unlock and house-build/upgrade pricing, cost-tier bands and gates, move-in chances/weights, onboarding reward — are not only named, they are read at runtime from a single, overridable Core config: <code>Doggiehood.Core.Tuning.TuningConfig</code>. Each value is a named field on <code>TuningConfig</code>, seeded to the shipping default; a fresh <code>TuningConfig</code> reproduces today's exact behavior. The domain "numbers" classes (<code>EconomyNumbers</code>, <code>TileUnlockNumbers</code>, <code>HouseBuildNumbers</code>, <code>MoveInNumbers</code>, <code>HouseUpgradeNumbers</code>, <code>QuestCostTiers</code>, <code>OnboardingRewardChainNumbers</code>) stay the documented, discoverable homes for each value but now read from <code>TuningConfig.Active</code>, so every seam and gameplay path that goes through them is live-tunable from one place.</p>
+<p><code>TuningConfig.Active</code> is the config all Core balance reads resolve against; <code>TuningConfig.ResetToDefaults()</code> restores it to a fresh, shipping-defaults instance. This is the seam the debug tuning menu (#622) mutates live, and where the pacing rebalances (#623–#626) set their new defaults. <code>TuningConfig</code> is plain C# with no <code>UnityEngine</code> dependency, so it stays in the engine-free Core assembly and NUnit-testable. The named-constant rule above is unchanged — <code>TuningConfig</code> is <em>where</em> the Core balance constants now live, not an exception to naming them.</p>
 <h4 id="automated-backstop">Automated backstop<a class="headerlink" href="#automated-backstop" title="Permanent link">&para;</a></h4>
 <p>The rule above is the standard, and it's absolute — but a lightweight CI check (<code>.github/scripts/check_geometry_literals.py</code>, wired via <code>geometry-lint.yml</code>) catches the egregious case that motivated it (#159 shipped <code>140f</code>/<code>16f</code>/<code>32f</code> inside <code>OnGUI</code>). It's deliberately conservative and low-false-positive: it flags an f-suffixed float literal only when it sits in a method body (not a type-level <code>const</code>/field declaration) and its magnitude is at least <code>3</code> — so structural values (<code>0</code>/<code>1</code>/<code>2</code> for identity, both-sides, centering) and sub-unit fractions (anchors, colour channels, epsilons) are ignored. It is a backstop for the obvious pixel-size/offset/rotation/speed literal, <strong>not</strong> a replacement for the human standard, which still covers every geometry/tuning value regardless of magnitude.</p>
 <p>Because the game tree predates the rule, the check <strong>ratchets against a committed baseline</strong> (<code>.github/scripts/geometry_literals_baseline.txt</code>): the pre-existing literals are recorded there and don't fail CI, while any newly introduced one does. The baseline is the burn-down list — as literals get named, regenerate it with <code>python3 .github/scripts/check_geometry_literals.py --update-baseline</code>. Its unit tests run in the same job. Adding a genuinely new named-constant-worthy literal, or one below the heuristic's threshold, is still governed by the absolute rule and by review — the check only automates the floor.</p>
