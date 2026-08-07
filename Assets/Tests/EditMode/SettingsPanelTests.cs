@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Reflection;
 using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
@@ -670,8 +671,11 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         // ---------------------------------------------------------------
-        // #622: the dev-build-only "Tune balance…" Debug-tab entry row
-        // (docs/specs/ui/debug-tuning-menu.md, docs/specs/ui/settings.md)
+        // #622/#656: the "Tune balance…" Debug-tab entry row. It ships in
+        // EVERY build (development, release-candidate and release alike) and
+        // is gated by the 10-tap Debug unlock alone — the same gate as the
+        // rest of the Debug tab, with no build-configuration gate on top
+        // (docs/specs/ui/debug-tuning-menu.md, docs/specs/ui/settings.md).
         // ---------------------------------------------------------------
 
         [Test]
@@ -703,37 +707,90 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TuneBalanceRow_IsAbsentEntirelyInAReleaseBuild()
+        public void TuneBalanceRow_IsBuiltWithNoDevBuildFlagInvolved()
         {
-            // #622 checklist: guarded so the overlay cannot appear in a release
-            // build — not merely hidden behind the 10-tap Debug unlock.
-            var releaseHost = new GameObject("release-settings-panel");
-            try
-            {
-                releaseHost.transform.SetParent(canvasHost.transform, false);
-                var releasePanel = releaseHost.AddComponent<SettingsPanel>();
-                releasePanel.Init(GameState.CreateNew(), TestVersion, devBuild: false);
-
-                Assert.That(releasePanel.DevBuildFeaturesEnabled, Is.False);
-                Assert.That(releasePanel.TuneBalanceRowRect, Is.Null);
-                Assert.That(releasePanel.TuneBalanceButtonRect, Is.Null);
-                Assert.That(
-                    releaseHost.GetComponentsInChildren<Text>(true).Any(t => t.text.StartsWith("Tune balance")),
-                    Is.False,
-                    "no trace of the tuning entry row may exist in a release build");
-            }
-            finally
-            {
-                Object.DestroyImmediate(releaseHost);
-            }
+            // #656: the panel is built by the one and only Init(state, version)
+            // — the same call every other Debug row goes through — and the row
+            // is there. Nothing about the build configuration is consulted.
+            Assert.That(panel.TuneBalanceRowRect, Is.Not.Null);
+            Assert.That(panel.TuneBalanceButtonRect, Is.Not.Null);
+            Assert.That(
+                panelHost.GetComponentsInChildren<Text>(true).Any(t => t.text.StartsWith("Tune balance")),
+                Is.True);
         }
 
         [Test]
-        public void TuneBalanceRow_IsPresentInADevBuild()
+        public void SettingsPanel_ExposesNoDevBuildGateOnItsApi()
         {
-            Assert.That(panel.DevBuildFeaturesEnabled, Is.True,
-                "EditMode runs as a dev build, so the row is built");
-            Assert.That(panel.TuneBalanceRowRect, Is.Not.Null);
+            // #656 retires the injected dev-build flag entirely: one Init
+            // overload, and no DevBuild* member left implying a rule the
+            // project no longer has.
+            var type = typeof(SettingsPanel);
+
+            Assert.That(
+                type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .Count(m => m.Name == nameof(SettingsPanel.Init)),
+                Is.EqualTo(1),
+                "the Init(state, version, devBuild) overload is retired");
+
+            Assert.That(
+                type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                    .Select(m => m.Name)
+                    .Where(n => n.IndexOf("DevBuild", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToArray(),
+                Is.Empty,
+                "no dev-build member survives on the Settings panel");
+        }
+
+        [Test]
+        public void TuneBalanceRow_IsUnreachableUntilTheTenTapUnlock()
+        {
+            // #656: with the dev-build gate gone, the 10-tap unlock is the ONLY
+            // gate on the tuning menu in a shipping build, so it has to
+            // genuinely hold. Open the panel and prove nothing an untrained tap
+            // can reach leads to the row.
+            panel.Open();
+
+            Assert.That(panel.DebugTabVisible, Is.False, "the Debug tab starts locked");
+            Assert.That(panel.TuneBalanceRowRect.gameObject.activeInHierarchy, Is.False);
+            Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
+            Assert.That(panel.TuneBalanceRowRect.parent, Is.EqualTo(panel.DebugColorsRowRect.parent),
+                "it shares the Debug pane, so it is gated identically to the other rows");
+
+            // Nothing live in the open panel is the entry row, and nothing live
+            // is the Debug tab that would reveal it.
+            var live = panelHost.GetComponentsInChildren<Button>(true)
+                .Where(b => b.gameObject.activeInHierarchy)
+                .ToArray();
+            Assert.That(live, Has.No.Member(panel.TuneBalanceButtonRect.GetComponent<Button>()),
+                "the entry pill must not be tappable before the unlock");
+            Assert.That(live.Any(b => b.gameObject == panel.DebugTabRect.gameObject), Is.False,
+                "the Debug tab is hidden too, so the gesture is the only way in");
+
+            // One tap short of the gesture still gets you nowhere.
+            for (var i = 0; i < DebugUnlockGesture.TapsToUnlock - 1; i++)
+            {
+                panel.TapVersion(i * 0.2);
+            }
+
+            Assert.That(panel.DebugTabVisible, Is.False);
+            Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
+        }
+
+        [Test]
+        public void TuneBalanceRow_BecomesReachableOnlyAfterTheUnlockRevealsTheDebugTab()
+        {
+            panel.Open();
+            UnlockDebug();
+
+            // Revealed, but still not on screen until the Debug tab is selected.
+            Assert.That(panel.DebugTabVisible, Is.True);
+            Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
+
+            panel.DebugTabRect.GetComponent<Button>().onClick.Invoke();
+
+            Assert.That(panel.TuneBalanceRowRect.gameObject.activeInHierarchy, Is.True);
+            Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.True);
         }
 
         [Test]

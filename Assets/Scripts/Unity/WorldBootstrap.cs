@@ -237,18 +237,14 @@ namespace Doggiehood.Unity
                 }
             };
 
-            // #622: the dev-build-only balance tuning menu. CreateIfDevBuild
-            // returns null (and builds nothing at all) in a release player, so
-            // the overlay is absent there rather than merely hidden; the
-            // Settings Debug row that raises it is gated by the same flag.
-            // Built AFTER the Settings panel so it is a later canvas sibling and
-            // therefore layers OVER it, per the wireframe's "layer, don't
-            // replace" (docs/specs/ui/debug-tuning-menu.md).
-            var tuningMenu = TuningMenuOverlay.CreateIfDevBuild(canvas.transform, DevBuildGate.IsDevBuild);
-            if (tuningMenu != null)
-            {
-                settings.TuneBalanceRequested = tuningMenu.Open;
-            }
+            // #622/#656: the balance tuning menu. Built in every build, because
+            // it is part of the existing debug menu — the Settings Debug tab's
+            // 10-tap unlock (#219) is its only gate, exactly like the rows
+            // above it. Built AFTER the Settings panel so it is a later canvas
+            // sibling and therefore layers OVER it, per the wireframe's "layer,
+            // don't replace" (docs/specs/ui/debug-tuning-menu.md).
+            var tuningMenu = TuningMenuOverlay.Create(canvas.transform);
+            settings.TuneBalanceRequested = tuningMenu.Open;
 
             return settings;
         }

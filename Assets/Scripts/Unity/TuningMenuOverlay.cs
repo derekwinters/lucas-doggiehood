@@ -9,8 +9,8 @@ using UnityEngine.UI;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// The dev-build-only balance tuning menu (#622): a centered, scrollable
-    /// panel of grouped sliders over the Core <see cref="TuningConfig"/>, so
+    /// The balance tuning menu (#622): a centered, scrollable panel of grouped
+    /// sliders over the Core <see cref="TuningConfig"/>, so
     /// pacing/economy/expansion/move-in can be dialed in <b>live on-device</b>
     /// instead of guessing numbers and rebuilding. Reached from the
     /// "Tune balance…" row in the Settings Debug tab
@@ -27,11 +27,14 @@ namespace Doggiehood.Unity
     /// <see cref="TuningConfig"/> and it shows up, or the Core catalog test
     /// fails.</para>
     ///
-    /// <para><b>Dev builds only.</b> Built exclusively through
-    /// <see cref="CreateIfDevBuild"/>, which the bootstrap feeds
-    /// <see cref="DevBuildGate.IsDevBuild"/> — compiled away to a constant
-    /// <c>false</c> in a release player. It must never appear in a release
-    /// build (docs/specs/ui/debug-tuning-menu.md).</para>
+    /// <para><b>Part of the debug menu, gated by the 10-tap unlock (#656).</b>
+    /// Built unconditionally through <see cref="Create"/> in <em>every</em>
+    /// build — development, release-candidate and the shipping release alike —
+    /// because it lives inside the existing Debug tab, whose 10-tap unlock
+    /// gesture (#219) is its sole gate. That is deliberate and temporary: the
+    /// debug menu stays in the game while the balance is still being dialed in,
+    /// and the whole thing (tab, gesture, this panel) comes out in one later
+    /// pass (docs/specs/ui/debug-tuning-menu.md).</para>
     ///
     /// <para><b>Style is deliberately NOT Candy Cottage.</b> This is the one
     /// screen exempt from the shared chrome (#298/#465): a flat panel, a thin
@@ -181,21 +184,14 @@ namespace Doggiehood.Unity
 
         /// <summary>
         /// Builds the overlay under <paramref name="parent"/> (expected to be
-        /// the shared <see cref="UiCanvas"/>) — but <b>only</b> when
-        /// <paramref name="devBuild"/> is true, returning <c>null</c>
-        /// otherwise without creating a single GameObject. The bootstrap passes
-        /// <see cref="DevBuildGate.IsDevBuild"/>; the flag is a parameter rather
-        /// than a direct read so EditMode tests can exercise the release side of
-        /// the gate too (the Editor can only ever observe the dev side of the
-        /// build symbol itself).
+        /// the shared <see cref="UiCanvas"/>), unconditionally: #656 makes this
+        /// part of the existing debug menu, so it is built in <b>every</b>
+        /// build and the Settings Debug tab's 10-tap unlock (#219) is its only
+        /// gate. It starts closed, so nothing is on screen until that unlock
+        /// has been performed and the "Tune balance…" row tapped.
         /// </summary>
-        public static TuningMenuOverlay CreateIfDevBuild(Transform parent, bool devBuild)
+        public static TuningMenuOverlay Create(Transform parent)
         {
-            if (!devBuild)
-            {
-                return null;
-            }
-
             var host = new GameObject("TuningMenuOverlay");
             host.transform.SetParent(parent, false);
             var overlay = host.AddComponent<TuningMenuOverlay>();
