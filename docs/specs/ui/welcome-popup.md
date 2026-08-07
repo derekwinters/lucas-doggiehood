@@ -1,6 +1,7 @@
 # Welcome pop-up
 
 *Wireframe issue: [#439](https://github.com/derekwinters/lucas-doggiehood/issues/439). Implements/covers: `WelcomePopup`. Approved: Derek, 2026-07-31 ([proposal](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147513906) + [decisions](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147589722), [`/approve` on #439](https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5148148003)) — authoritative layout contract.*
+*Amended: the **Close (✕)** region and `CloseButtonSizePx` were added by [#671](https://github.com/derekwinters/lucas-doggiehood/issues/671), drafted under `/propose` and approved by Derek, 2026-08-07 — part of the authoritative contract.*
 *Mockup: [mockups/welcome-popup.html](mockups/welcome-popup.html).*
 
 ## Purpose
@@ -11,7 +12,8 @@ A **modal celebration panel** — *"Welcome to the neighborhood!"* — raised wh
 
 | Region | Contains | Shared component |
 |---|---|---|
-| Scrim | Full-screen dim behind the panel; tapping it dismisses (same as the button) so the celebration is never a trap | — |
+| Scrim | Full-screen dim behind the panel; tapping it dismisses **without panning** so the celebration is never a trap | — |
+| Close | Top-right ✕ dismiss affordance, flush in the card's corner. Dismisses **without** panning the camera and **without** opening the house profile — the visible counterpart to the scrim tap ([#671](https://github.com/derekwinters/lucas-doggiehood/issues/671)) | [Shared panel chrome](shared-components.md) |
 | Portrait badge | A single round medal overlapping the panel's top edge, carrying the new dog's (household head's) portrait — a **graybox dog silhouette now**; a real tinted dog-model portrait is a fast-follow (see Notes) | Reuses the Candy Cottage baseline (thick outline, hard shadow) from [Shared UI Components](shared-components.md) |
 | Heading | The fixed celebratory headline — *"Welcome to the neighborhood!"* | [Shared panel chrome](shared-components.md) |
 | Name | The new dog's name, or the household's names for a multi-dog move-in (e.g. *"Biscuit & Pepper"*) | [Shared panel chrome](shared-components.md) |
@@ -37,6 +39,7 @@ A **modal celebration panel** — *"Welcome to the neighborhood!"* — raised wh
 | `NameMetaGapPx` | `8` | Name → meta |
 | `MetaActionMarginPx` | `40` | Meta (or member-chip row) → action button |
 | `ActionMinWidthPx` | `320` | The single **Say hi!** pill (centered; grows with the label) |
+| `CloseButtonSizePx` | `72` | Close (✕) button, flush top-right — matches [dog profile](dog-profile.md) and [house profile](house-profile.md) ([#671](https://github.com/derekwinters/lucas-doggiehood/issues/671)) |
 | `WelcomePopupDelaySeconds` | `1.5` (range 1–3) | Beat after the prior panel closes before this pops (see [Timing](#timing)) |
 | `MemberChipDiameterPx` | `72` | Each per-dog portrait chip in the member row (multi-dog only) |
 | `MemberChipGapPx` | `20` | Gap between member chips |
@@ -61,7 +64,11 @@ The panel pops **`WelcomePopupDelaySeconds` (range 1–3s, default 1.5s) *after*
 ## Notes
 
 - **One pop-up per household, parameterized.** The caller passes the household (head + members), their names, breed, and which house; the heading and chrome are constant. The card grows vertically with its content (name/meta wrap, member-chip row present or absent), exactly like the [reward panel](onboarding-reward.md) and [confirmation card](confirmation-dialog.md).
-- **Always dismissible.** The single **Say hi!** button dismisses; tapping the scrim also dismisses — the same anti-soft-lock posture as the [reward panel](onboarding-reward.md) and [confirmation dialog](confirmation-dialog.md). One button only — a welcome is an acknowledgement, not a choice.
+- **Always dismissible, and visibly so.** Three paths close the panel: the top-right **✕** and a **scrim tap** both dismiss *without* panning or opening anything, and **Say hi!** dismisses *and* pans *and* opens the profile. The ✕ is what makes the anti-soft-lock guarantee ([#329](https://github.com/derekwinters/lucas-doggiehood/issues/329)) **discoverable** rather than merely true: before it, the scrim tap was the only way to decline, and nothing signalled it, so the sole visible control committed the player to a camera move and a profile panel ([#671](https://github.com/derekwinters/lucas-doggiehood/issues/671)). One *action* button only — a welcome is an acknowledgement, not a choice — but declining an acknowledgement must be visible.
+
+  **Why a ✕ here and not on the [confirmation dialog](confirmation-dialog.md):** the ✕ is this project's convention for panels you *close*, and is deliberately absent only where another control already means *cancel*. The confirmation dialog's **No** is that control; **Say hi!** is an accept, not a dismiss, so this panel has none — which is exactly what puts it in the first group alongside the [dog](dog-profile.md) and [house](house-profile.md) profiles.
+
+- **The ✕ clears the portrait medal by 250 px.** The medal is centered and `PortraitDiameterPx` wide, so at the reference resolution it spans x 872–1048 within the `WelcomeWidthPx` = 820 card (left edge 550); the ✕ sits flush at the card's top-right, spanning x 1298–1370. They overlap vertically — the medal's lower half and the ✕ share the card's top band — but never horizontally. The medal is centered regardless of content, so this clearance is **constant across all three household variants** and does not need re-checking per variant.
 - **The camera pan and profile-open are the non-presentational behaviors.** Everything else on this panel is pure presentation, but **"Say hi!" pans the camera to the new house** via `CameraController.FocusOn` **and opens that house's [profile](house-profile.md)** ([#604](https://github.com/derekwinters/lucas-doggiehood/issues/604)) — so tapping it is truthful: the player is taken to *meet* their new neighbour, not just look at their roof, with the resident dog(s) one tap away. The profile-open reuses the exact same resolve a house tap uses (`WorldBootstrap.OpenHouseProfile` → `HouseProfileOverlay.Open`), so there is no duplicated lookup. The pan reuses the existing `FocusOn` and is a slightly wider scope than [#373](https://github.com/derekwinters/lucas-doggiehood/issues/373) chose for zone-unlock (which deliberately only let the player *pan* to a new zone). The welcome unregisters from the modal input gate on dismiss and the profile registers on open within the same synchronous **Say hi!** call, so exactly one modal stays registered across the hand-off and no world tap leaks in between ([#544](https://github.com/derekwinters/lucas-doggiehood/issues/544)). Tapping the scrim dismisses without panning **or** opening anything.
 - **Portrait is graybox now.** The portrait badge and member chips show a graybox dog silhouette for now; a real tinted **dog-model portrait** — needs no new art, it renders the existing coat-tinted model — is a fast-follow, not part of this wireframe.
 - **A brief celebration beat.** Like the [reward panel](onboarding-reward.md), this is a momentary modal (scrim + one button) the player taps through — a warm earned beat, not a tutorial screen. Move-ins are paced (gated behind a built vacant house), so a big earned beat fits.
