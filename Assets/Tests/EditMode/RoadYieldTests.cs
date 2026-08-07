@@ -188,6 +188,92 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ADogWaitingAtTheCurb_IsOnlyReleased_OnceTheTrucksTRAILINGEdgeClearsTheBand()
+        {
+            // #658: the mirror of #639's stop. transform.position is the CENTRE
+            // of the truck body, so releasing the crosswalk the moment THAT
+            // passes the far edge handed the band back — and let the waiting dog
+            // step onto it — while the truck's whole back half was still over the
+            // stripes, clipping the dog from behind.
+            var network = NeighborhoodLayout.WalkNetwork;
+            var crosswalk = NorthCrosswalk();
+
+            // The truck drives south down the north-south road, so it leaves the
+            // +4.75 band across the -Z (far) side and its tail trails on the +Z
+            // side of its pivot.
+            var farEdgeZ = 4.75f - HalfCrosswalk; // 3.25
+
+            var dog = new Dog("Pip", Breed.Beagle, Personality.Brave, 1, false);
+            dog.PlaceOnStreet();
+            var dogGo = new GameObject("dog");
+            var root = new GameObject("truck-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                truck.DeliverTo(new Vector3(
+                    NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter),
+                    OriginMap(), NeighborhoodLayout.WalkNetwork, () => { });
+
+                var halfBody = truck.BodyLength / 2f;
+                Assert.That(halfBody, Is.GreaterThan(0f),
+                    "the spawned truck must expose a measurable body length to release with");
+
+                // Right-of-way is first-come, so drive the truck onto the band
+                // BEFORE the dog arrives — the dog is the one that must wait.
+                for (var step = 0; step < 3000 && !truck.IsGone
+                                   && truck.transform.position.z > 4.75f; step++)
+                {
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(truck.IsGone, Is.False);
+                Assert.That(truck.transform.position.z, Is.LessThanOrEqualTo(4.75f),
+                    "the truck should have driven onto the crosswalk band and claimed it");
+
+                var view = dogGo.AddComponent<DogView>();
+                view.Init(dog, null, () => network);
+                dogGo.transform.position = new Vector3(crosswalk.A.X, 0f, crosswalk.A.Z);
+                view.BeginWanderHop(crosswalk.B);
+                var curb = dogGo.transform.position;
+
+                var steppedOn = false;
+                var truckTailAtStepOn = float.NaN;
+                var truckPivotAtStepOn = float.NaN;
+                for (var step = 0; step < 3000 && !steppedOn && !truck.IsGone; step++)
+                {
+                    truck.Tick(0.05f);
+                    if (truck.IsGone)
+                    {
+                        break;
+                    }
+
+                    view.TickWander(0.05f);
+
+                    var moved = new Vector2(
+                        dogGo.transform.position.x - curb.x, dogGo.transform.position.z - curb.z);
+                    if (moved.magnitude > 0.01f)
+                    {
+                        steppedOn = true;
+                        truckPivotAtStepOn = truck.transform.position.z;
+                        truckTailAtStepOn = truckPivotAtStepOn + halfBody;
+                    }
+                }
+
+                Assert.That(steppedOn, Is.True,
+                    "the dog must eventually be released onto the crosswalk (no deadlock)");
+                Assert.That(truckTailAtStepOn, Is.LessThanOrEqualTo(farEdgeZ + 0.05f),
+                    "the dog stepped onto the band while the truck's TRAILING EDGE was still over it");
+                Assert.That(truckPivotAtStepOn, Is.LessThan(farEdgeZ),
+                    "the truck's CENTRE was already past the far edge — releasing there is the bug");
+            }
+            finally
+            {
+                Object.DestroyImmediate(dogGo);
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void AVehicleAndADog_NeverShareAPointOnACrosswalk_TheInvariant()
         {
             var network = NeighborhoodLayout.WalkNetwork;

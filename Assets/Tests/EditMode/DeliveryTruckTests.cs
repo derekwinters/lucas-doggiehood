@@ -260,6 +260,33 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void CrosswalkRearSetback_IsHalfTheMeasuredBody_AndPairsWithTheFrontInsideTheBudget()
+        {
+            // #658: the release mirror of the test above. The truck hands a
+            // crosswalk back at its TAIL, so it needs its pivot-to-tail distance
+            // too — drawn from the same measured body (#161), and the two
+            // together must still fit the #660 budget on the real spawned truck,
+            // not just on the Core nominal figure.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                Assert.That(truck.CrosswalkRearSetback,
+                    Is.EqualTo(truck.BodyLength / 2f).Within(0.0001f),
+                    "the rear setback is the pivot-to-tail half body, with no stop gap");
+                Assert.That(truck.CrosswalkFrontSetback + truck.CrosswalkRearSetback,
+                    Is.LessThan(DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands),
+                    "both setbacks must fit between an intersection's two bands, or the truck "
+                    + "holds both at once and two oncoming trucks wedge permanently (#658/#660)");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void MeasuredBodyLength_MatchesTheCoreNominal_AndFitsBetweenTheCrosswalkBands()
         {
             // #660: the Core constraint is checked against

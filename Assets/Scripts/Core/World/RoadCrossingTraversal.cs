@@ -13,7 +13,14 @@ namespace Doggiehood.Core.World
     /// EDGE, not its pivot: a caller with a body length passes its own
     /// pivot-to-front-bumper setback so the whole footprint stays clear of the
     /// band (#639), while a point occupant passes nothing and stops at the near
-    /// edge exactly as before. Everything is expressed in along-road
+    /// edge exactly as before. The RELEASE is the mirror image, measured at the
+    /// occupant's TRAILING EDGE (#658): a body-shaped caller also passes its
+    /// pivot-to-tail setback, so it keeps the claim until its back end is off
+    /// the band rather than handing it to a dog that then gets clipped from
+    /// behind. Both setbacks are bounded by #660 — together they must fit inside
+    /// the clear gap between an intersection's two bands, or a vehicle holds both
+    /// at once and two oncoming vehicles wedge in a lock-ordering cycle.
+    /// Everything is expressed in along-road
     /// coordinates (<see cref="Road.AlongAxis"/>), so the Unity delivery-truck
     /// view only converts positions to/from along and drives — no decision logic
     /// leaks into the engine layer.
@@ -35,20 +42,27 @@ namespace Doggiehood.Core.World
         private readonly object occupant;
         private readonly float travelSign;
         private readonly float frontSetback;
+        private readonly float rearSetback;
         private readonly Crossing[] crossings;
         private readonly bool[] held;
 
         public RoadCrossingTraversal(
             RoadCrossingGate gate, object occupant, Road road, WalkNetwork network,
-            float entryAlong, float exitAlong, float frontSetback = 0f)
+            float entryAlong, float exitAlong, float frontSetback = 0f, float rearSetback = 0f)
         {
             // #639: frontSetback is the occupant's own pivot-to-leading-edge
             // distance (plus whatever stop gap it wants). It stays a caller-
             // supplied number so this type remains occupant-agnostic (#546): a
             // point occupant passes nothing and gets exactly the old behaviour.
+            //
+            // #658: rearSetback is the mirror on the release side — the
+            // occupant's own pivot-to-tail distance, so a band is only handed
+            // back once its whole body is off it. Same deal: caller-supplied,
+            // defaulting to 0, so a point occupant is untouched.
             this.gate = gate ?? throw new ArgumentNullException(nameof(gate));
             this.occupant = occupant ?? throw new ArgumentNullException(nameof(occupant));
             this.frontSetback = frontSetback;
+            this.rearSetback = rearSetback;
             if (road == null)
             {
                 throw new ArgumentNullException(nameof(road));
@@ -193,12 +207,25 @@ namespace Doggiehood.Core.World
                 }
 
                 var farEdge = crossings[i].Along + travelSign * HalfCrosswalkAlong;
-                if ((farEdge - currentAlong) * travelSign <= Epsilon)
+                if ((farEdge - TrailingEdge(currentAlong)) * travelSign <= Epsilon)
                 {
                     gate.Exit(crossings[i].Edge, occupant);
                     held[i] = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Where the occupant's TAIL is, given where its pivot is: a rear
+        /// setback back down the road it came from (#658). A crosswalk is only
+        /// released once this — not the pivot — is past the far edge, so a
+        /// waiting dog is never let onto a band the vehicle's back half is still
+        /// covering. With the default zero setback this is the pivot itself, so
+        /// a point occupant releases at exactly the far edge as before.
+        /// </summary>
+        private float TrailingEdge(float currentAlong)
+        {
+            return currentAlong - travelSign * rearSetback;
         }
 
         private bool IsAhead(float currentAlong, float along)
