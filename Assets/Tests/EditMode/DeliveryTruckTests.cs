@@ -1,3 +1,4 @@
+using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -21,6 +22,33 @@ namespace Doggiehood.Unity.EditModeTests
         private static WalkNetwork OriginNetwork()
         {
             return NeighborhoodLayout.WalkNetwork;
+        }
+
+        // #660: the measured kit body is a renderer-bounds AABB brought back into
+        // the truck root's local space, so it is allowed to differ from Core's
+        // nominal figure by a little without meaning anything. This tolerance is
+        // wide enough to absorb that and still catch what matters — a different
+        // kit model, or a ModelScale change that skipped the Core constraint.
+        private const float NominalBodyLengthTolerance = 0.25f;
+
+        private static Road NorthSouthRoad()
+        {
+            return NeighborhoodLayout.Roads.First(r => r.Orientation == StreetOrientation.NorthSouth);
+        }
+
+        // The north-south road's crosswalk on the +Z side of the origin — the one
+        // the truck meets just beyond its NE delivery stop.
+        private static WalkEdge NorthCrosswalkOn(Road road)
+        {
+            return NeighborhoodLayout.WalkNetwork.Edges.Single(e =>
+                e.Kind == WalkEdgeKind.Crosswalk
+                && Mathf.Abs(((e.A.X + e.B.X) / 2f) - road.Center.X) < 0.01f
+                && ((e.A.Z + e.B.Z) / 2f) > 0f);
+        }
+
+        private static GridPoint Midpoint(WalkEdge edge)
+        {
+            return new GridPoint((edge.A.X + edge.B.X) / 2f, (edge.A.Z + edge.B.Z) / 2f);
         }
 
         [SetUp]
@@ -224,6 +252,107 @@ namespace Doggiehood.Unity.EditModeTests
                     "the truck measures its own body length from the spawned kit model");
                 Assert.That(truck.CrosswalkFrontSetback, Is.GreaterThan(truck.BodyLength / 2f),
                     "the setback is the pivot-to-bumper half body PLUS a visible stop gap");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void MeasuredBodyLength_MatchesTheCoreNominal_AndFitsBetweenTheCrosswalkBands()
+        {
+            // #660: the Core constraint is checked against
+            // DeliveryTruckFootprint.NominalBodyLength, a PREDICTION (the model's
+            // imported length times ModelScale). This is the test that ties that
+            // prediction to the body the truck actually spawns, so swapping
+            // delivery.fbx for a longer kit model can't quietly invalidate the
+            // Core proof — the deadlock it guards against is permanent and takes
+            // any crossing dog down with it (#658).
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                Assert.That(truck.BodyLength,
+                    Is.EqualTo(DeliveryTruckFootprint.NominalBodyLength).Within(NominalBodyLengthTolerance),
+                    "the measured kit body must match what Core predicts from the imported "
+                    + "model length and ModelScale");
+                Assert.That(DeliveryTruckFootprint.FitsBetweenCrosswalkBands(truck.BodyLength), Is.True,
+                    "the truck's front and rear setbacks together must fit in the clear gap between "
+                    + "an intersection's two crosswalk bands, or two oncoming trucks deadlock");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void GrayboxFallbackBody_AlsoFitsBetweenTheCrosswalkBands()
+        {
+            // #660: the fallback path is a real runtime path (a kit model that
+            // fails to load), so it is bound by the same constraint.
+            Assert.That(DeliveryTruckFootprint.FitsBetweenCrosswalkBands(DeliveryTruckView.FallbackScale.z),
+                Is.True, "the graybox footprint must satisfy the same fits-between-the-bands rule");
+        }
+
+        [Test]
+        public void TruckStillReachesItsDeliveryStop_WithMarginBeforeTheCrosswalkBoundary()
+        {
+            // #639/#660: the truck's stop is the road point nearest the door, and
+            // the next crosswalk band lies BEYOND it. The front setback pushes the
+            // point at which a held band stops the truck back up the road toward
+            // that stop — so a big enough setback would strand the truck short of
+            // its own delivery. Assert the remaining margin, and prove it
+            // behaviourally by holding the band for the whole run.
+            var road = NorthSouthRoad();
+            var band = NorthCrosswalkOn(road);
+            var route = DeliveryTruckRoute.ToDoor(
+                OriginMap(),
+                new GridPoint(NeighborhoodLayout.LotDistanceFromCenter, NeighborhoodLayout.LotDistanceFromCenter));
+
+            var entryAlong = road.AlongAxis(route.Entry);
+            var stopAlong = road.AlongAxis(route.Stop);
+            var travelSign = stopAlong < entryAlong ? -1f : 1f;
+            var bandAlong = road.AlongAxis(Midpoint(band));
+
+            // Road between the stop and the band's centre, measured forward.
+            var gapToBand = (bandAlong - stopAlong) * travelSign;
+            Assert.That(gapToBand, Is.GreaterThan(0f),
+                "this fixture assumes the band lies beyond the delivery stop");
+
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                // The truck halts with its bumper a stop gap short of the band's
+                // near edge, i.e. half a band plus its own front setback back from
+                // the band centre. Whatever is left over is the delivery margin.
+                var margin = gapToBand - (WorldDimensions.CrosswalkWidth / 2f + truck.CrosswalkFrontSetback);
+                Assert.That(margin, Is.GreaterThan(0f),
+                    "the truck must reach its delivery stop before a held crosswalk can halt it");
+                Assert.That(margin, Is.GreaterThan(truck.BodyLength / 2f),
+                    "and with real margin — more than half a truck — not by a hair");
+
+                // Behavioural half: a dog holds the band for the entire run, so the
+                // truck is stopped as early as it ever can be. It must still deliver.
+                var dog = new object();
+                Assert.That(RoadCrossingGate.Shared.TryEnter(band, dog), Is.True);
+
+                truck.DeliverTo(
+                    new Vector3(
+                        NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter),
+                    OriginMap(), OriginNetwork(), () => { });
+
+                for (var step = 0; step < 3000 && !truck.HasDelivered && !truck.IsGone; step++)
+                {
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(truck.HasDelivered, Is.True,
+                    "the truck delivers even while the crosswalk beyond its stop is held");
             }
             finally
             {

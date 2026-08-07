@@ -38,10 +38,13 @@ namespace Doggiehood.Unity
 
         // Uniform kit scale, mirroring WorldBuilder.HouseKitScale's discipline
         // (#145): one fixed number so the truck reads at a believable size next
-        // to the house kit rather than per-axis stretching. First-pass value —
-        // the exact figure is confirmed on-device against the houses (the issue
-        // flags the kit pivot/scale as needing a visual check).
-        public const float ModelScale = 3f;
+        // to the house kit rather than per-axis stretching. #660: the figure now
+        // lives in Core, because it is not a free visual dial — it is bounded by
+        // DeliveryTruckFootprint.MaxBodyLength (the truck must fit between an
+        // intersection's two crosswalk bands, or two oncoming trucks deadlock),
+        // and that bound is pinned by Core tests. Still subject to an on-device
+        // look against the houses (#547).
+        public const float ModelScale = DeliveryTruckFootprint.ModelScale;
 
         // The Kenney kit models carry ground-level (base) pivots — the road and
         // house loaders place them straight at the surface (WorldBuilder). The
@@ -56,13 +59,12 @@ namespace Doggiehood.Unity
         private const float ModelForwardYawOffsetDegrees = 0f;
 
         // The pre-#547 graybox footprint, kept for the fallback path so the
-        // truck is never invisible when the model can't load.
+        // truck is never invisible when the model can't load. #660: left at its
+        // authored size — at 2.6m it is comfortably inside
+        // DeliveryTruckFootprint.MaxBodyLength, and halving the kit model's
+        // scale brought the two footprints CLOSER together (9.75m vs 2.6m
+        // before, 4.875m vs 2.6m now), so nothing here needs to move.
         public static readonly Vector3 FallbackScale = new Vector3(1.4f, 1.4f, 2.6f);
-
-        // #639: the daylight left between the truck's front bumper and a
-        // crosswalk's near edge when it yields — so it reads as waiting BEHIND
-        // the stripes rather than nosing onto them.
-        private const float CrosswalkStopGap = 0.5f;
 
         // A Bounds has 8 corners; MeasureBodyLength walks all of them to bring a
         // world-space renderer bound back into the truck root's local space.
@@ -81,12 +83,14 @@ namespace Doggiehood.Unity
         public float BodyLength { get; private set; }
 
         /// <summary>#639: how far ahead of the truck's pivot its front bumper
-        /// sits (half a body), plus <see cref="CrosswalkStopGap"/>. Handed to
+        /// sits (half a body), plus the crosswalk stop gap. Handed to
         /// <see cref="RoadCrossingTraversal"/> so the yield stop is measured at
         /// the BUMPER: <c>transform.position</c> is the centre of the body, so
         /// stopping that at a crosswalk's near edge left the whole front half
-        /// overhanging the band — and clipping the dog crossing it.</summary>
-        public float CrosswalkFrontSetback => BodyLength / 2f + CrosswalkStopGap;
+        /// overhanging the band — and clipping the dog crossing it. #660: the
+        /// derivation itself lives in Core, alongside the budget both this and
+        /// the matching rear setback have to fit inside.</summary>
+        public float CrosswalkFrontSetback => DeliveryTruckFootprint.FrontSetbackFor(BodyLength);
 
         /// <summary>
         /// #547: test seam mirroring <see cref="WorldBuilder.ForcePrimitiveFallback"/>

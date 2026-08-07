@@ -49,8 +49,12 @@ namespace Doggiehood.Core.World
         /// <summary>Signed distance from the tile centre to a crosswalk patch's
         /// centre along the crossed road: the crossing road's sidewalk-centre
         /// magnitude, RoadWidth/2 + verge + SidewalkWidth/2 = 4.75m (the same
-        /// place <see cref="WalkNetwork"/> puts its crosswalk edges).</summary>
-        private const float CrosswalkOffset =
+        /// place <see cref="WalkNetwork"/> puts its crosswalk edges).
+        /// Public because it is also the half-spacing between an intersection's
+        /// two opposing bands, which bounds how long the delivery truck may be
+        /// (<see cref="DeliveryTruckFootprint.CrosswalkSpacing"/>, #660) —
+        /// deriving it a second time there would duplicate the rule (#161).</summary>
+        public const float CrosswalkOffset =
             WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth / 2f;
 
         /// <summary>Across-the-road extent of a patch: RoadWidth plus both
