@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.13.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.12.0...v0.13.0) (2026-08-07)
+
+
+### Features
+
+* add central runtime-overridable TuningConfig for Core balance constants ([#644](https://github.com/derekwinters/lucas-doggiehood/issues/644)) ([64cc0f1](https://github.com/derekwinters/lucas-doggiehood/commit/64cc0f14b9c3fffa3807ef8e16341a28b6e922ad))
+* add Debug-tab toggle painting ground and backstop in distinct debug colors ([#638](https://github.com/derekwinters/lucas-doggiehood/issues/638)) ([a976ad3](https://github.com/derekwinters/lucas-doggiehood/commit/a976ad3cb27b63d2c9adea018d0bf0d1d5346263))
+* add the dev-build-only debug tuning menu over TuningConfig ([#655](https://github.com/derekwinters/lucas-doggiehood/issues/655)) ([e23b1b2](https://github.com/derekwinters/lucas-doggiehood/commit/e23b1b285e3e6f59ce09eb84ff4c15eb751aa62b)), closes [#622](https://github.com/derekwinters/lucas-doggiehood/issues/622)
+* attach an emulator-targeted x86_64 debug build to each release ([#664](https://github.com/derekwinters/lucas-doggiehood/issues/664)) ([02002fd](https://github.com/derekwinters/lucas-doggiehood/commit/02002fd5787462b712c96a223999f0d1dcacfc6b)), closes [#648](https://github.com/derekwinters/lucas-doggiehood/issues/648)
+* give open-space trees to every empty tile quadrant, not just cul-de-sacs ([#640](https://github.com/derekwinters/lucas-doggiehood/issues/640)) ([ecf1531](https://github.com/derekwinters/lucas-doggiehood/commit/ecf153107401365b9142517ad66b3a413143a269))
+* open the new house's profile when tapping "Say hi!" on the welcome pop-up ([#635](https://github.com/derekwinters/lucas-doggiehood/issues/635)) ([85d0dfa](https://github.com/derekwinters/lucas-doggiehood/commit/85d0dfa575618d039ab70ed627a9601bd199e194))
+* pay paid quests cost × markup so they become coin earners ([#650](https://github.com/derekwinters/lucas-doggiehood/issues/650)) ([405e278](https://github.com/derekwinters/lucas-doggiehood/commit/405e278c7633d495d21507d3447b2786a4e7d278))
+* raise the flat free-type quest reward from 10 to 20 coins ([#645](https://github.com/derekwinters/lucas-doggiehood/issues/645)) ([cd5f055](https://github.com/derekwinters/lucas-doggiehood/commit/cd5f05557e1da22dcda483a4b4294cf423502c2d))
+* render the red target highlight as a ring outline, not a filled disc ([#633](https://github.com/derekwinters/lucas-doggiehood/issues/633)) ([5bf21fd](https://github.com/derekwinters/lucas-doggiehood/commit/5bf21fdcdcb87bb0128705e39dbc16481d951d0d))
+* scale move-in rate with population (faster early, slower late) ([#647](https://github.com/derekwinters/lucas-doggiehood/issues/647)) ([c3c6c12](https://github.com/derekwinters/lucas-doggiehood/commit/c3c6c120baf1b54b231ffa2cf323b0b810b10211))
+* speed up early quest availability (min target 3→5, pacing window 6h→4h) ([#646](https://github.com/derekwinters/lucas-doggiehood/issues/646)) ([3524a2e](https://github.com/derekwinters/lucas-doggiehood/commit/3524a2e88c5f076b5ca7949b46ac813f3bf18a9e))
+* use Kenney Game Icons arrow sprite for onboarding gesture arrows ([#641](https://github.com/derekwinters/lucas-doggiehood/issues/641)) ([f24f6a3](https://github.com/derekwinters/lucas-doggiehood/commit/f24f6a3f8917dbb72af5a478f3276759d4310c76))
+
+
+### Bug Fixes
+
+* gate the debug tuning menu on the 10-tap unlock, not dev builds ([#659](https://github.com/derekwinters/lucas-doggiehood/issues/659)) ([4b6a515](https://github.com/derekwinters/lucas-doggiehood/commit/4b6a515c4c8d6f3bf08b4919ee0dd8e53976e418)), closes [#656](https://github.com/derekwinters/lucas-doggiehood/issues/656)
+* give unlocked FourWay tiles their four buildable quadrant lots ([#637](https://github.com/derekwinters/lucas-doggiehood/issues/637)) ([f51428b](https://github.com/derekwinters/lucas-doggiehood/commit/f51428b5bfafd0152c84ae8c73b6fa21f81553f2))
+* halt and ask instead of closing/reopening the release PR for CI ([#653](https://github.com/derekwinters/lucas-doggiehood/issues/653)) ([bf4a992](https://github.com/derekwinters/lucas-doggiehood/commit/bf4a9924736ad078d073139f00d93028d5a8da13)), closes [#618](https://github.com/derekwinters/lucas-doggiehood/issues/618)
+* keep lost items out of the road when placing them ([#636](https://github.com/derekwinters/lucas-doggiehood/issues/636)) ([6370dae](https://github.com/derekwinters/lucas-doggiehood/commit/6370daea2471944814d91a28ba8f308f782e2399))
+* make each outline band track its fill's rect, visibility and lifetime ([#666](https://github.com/derekwinters/lucas-doggiehood/issues/666)) ([ad8456b](https://github.com/derekwinters/lucas-doggiehood/commit/ad8456ba8f5cccd0c281de57e8b7d4bc0d6226eb)), closes [#663](https://github.com/derekwinters/lucas-doggiehood/issues/663)
+* match release-flow REQUIRED_CHECKS to raw GitHub check-run names ([#651](https://github.com/derekwinters/lucas-doggiehood/issues/651)) ([d2fe421](https://github.com/derekwinters/lucas-doggiehood/commit/d2fe421af3686f0a3e9c5afa91b7cd6e4a537ce6))
+* recognize the bolded needs-clarification marker so ask-route issues stop flapping ([#665](https://github.com/derekwinters/lucas-doggiehood/issues/665)) ([0b564f1](https://github.com/derekwinters/lucas-doggiehood/commit/0b564f14755ebbefc982d2d0e2c5988706033424)), closes [#654](https://github.com/derekwinters/lucas-doggiehood/issues/654)
+* release a crosswalk at the truck's trailing edge, not its centre ([#662](https://github.com/derekwinters/lucas-doggiehood/issues/662)) ([a44a1e2](https://github.com/derekwinters/lucas-doggiehood/commit/a44a1e2cc0b1994a4463d2360bb7a60f0083b1c1)), closes [#658](https://github.com/derekwinters/lucas-doggiehood/issues/658)
+* render UI chrome outline as a constant-width band for even rounded corners ([#642](https://github.com/derekwinters/lucas-doggiehood/issues/642)) ([39d2d72](https://github.com/derekwinters/lucas-doggiehood/commit/39d2d72f971d2d76fb00ac2996322f89c023531f))
+* shrink the delivery truck so its footprint fits between the crosswalk bands ([#661](https://github.com/derekwinters/lucas-doggiehood/issues/661)) ([741a58c](https://github.com/derekwinters/lucas-doggiehood/commit/741a58c4f0b0984131a8b857d9fa1b35218caa77)), closes [#660](https://github.com/derekwinters/lucas-doggiehood/issues/660)
+* yield the delivery truck at its front bumper, not its centre ([#657](https://github.com/derekwinters/lucas-doggiehood/issues/657)) ([1020cc1](https://github.com/derekwinters/lucas-doggiehood/commit/1020cc11d55990fed147dc17445dd00d9ae79d72)), closes [#639](https://github.com/derekwinters/lucas-doggiehood/issues/639)
+
 ## [0.12.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.11.0...v0.12.0) (2026-08-06)
 
 
