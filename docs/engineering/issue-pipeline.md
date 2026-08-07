@@ -566,7 +566,7 @@ dashboard for Derek):
 | - | - | - |
 | **Closed + stale label** | `closed` issue still carrying any pipeline-state label (`ai-triage`, `pending-approval`, `needs-clarification`, `ready-for-work`, `in-progress`) | **auto-fix** — strip those labels (the `Closes #N` label-leak seen on #211); runs on every sweep (event or cron) |
 | **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries; **cron-only** ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319) — see below) |
-| **Triaged, no plan** (`requeue_triage`) | open, `pending-approval`/`needs-clarification`, but **no** triage-authored analysis comment (a `## Build checklist` heading or `❓ Needs from Derek/Lucas:` marker, `reconcile.has_analysis_signature`) — the #569 half of the non-atomic hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **auto-fix** — strip the state label, re-add `ai-triage` so the issue re-enters triage and gets a plan; **cron-only** (same event-path caution as `requeue`) |
+| **Triaged, no plan** (`requeue_triage`) | open, `pending-approval`/`needs-clarification`, but **no** triage-authored analysis comment (a `## Build checklist` heading or a `❓ Needs from Derek/Lucas:` marker, `reconcile.has_analysis_signature` — the marker match tolerates Markdown emphasis, so the bolded `❓ **Needs from Derek/Lucas:**` triage actually writes counts, [#654](https://github.com/derekwinters/lucas-doggiehood/issues/654)) — the #569 half of the non-atomic hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **auto-fix** — strip the state label, re-add `ai-triage` so the issue re-enters triage and gets a plan; **cron-only** (same event-path caution as `requeue`) |
 | **Plan, no state** (`flag_orphaned_analysis`) | open, carries a triage analysis comment but **none** of the pipeline-state labels — the residual #570-shape after the comment-then-label ordering fix ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **flag** — the intended hand-back state (`pending-approval` vs `needs-clarification`) is ambiguous from the comment alone, so it is surfaced, not auto-restored |
 | **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
@@ -589,6 +589,20 @@ flags the residual plan-with-no-state-label (`flag_orphaned_analysis`). A re-fir
 of triage repairs a prior partial write (applies just the missing label move)
 rather than reposting a duplicate analysis, detected deterministically by
 `triage-issue/triage_repair.py`.
+
+Because `requeue_triage` is an unattended auto-fix, `has_analysis_signature`
+being *too narrow* is a churn bug, not just a missed heal: an analysis it can't
+see makes the rule re-fire triage on the same issue every cron sweep, forever.
+That is exactly what
+[#654](https://github.com/derekwinters/lucas-doggiehood/issues/654) was — the
+recognizer matched the marker as a literal substring, while triage writes it
+bolded (`❓ **Needs from Derek/Lucas:**`), and the needs-clarification route
+never emits a `## Build checklist` heading, so the marker is those comments'
+*only* signature. The match now tolerates Markdown emphasis runs (`*`/`_`)
+around the marker text; only emphasis and horizontal whitespace may sit in the
+gaps, and the `❓` anchor is still required, so a bare prose mention of the
+phrase remains a non-match. `triage_repair.analysis_comment_times` shares the
+same recognizer, so the widening also restores the re-fire's repair path.
 
 **`requeue` is gated to the cron backstop only**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319);

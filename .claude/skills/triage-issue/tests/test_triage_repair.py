@@ -41,6 +41,14 @@ class TestAnalysisCommentTimes(unittest.TestCase):
                      "created_at": FRESH}]
         self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
 
+    def test_bolded_needs_marker_counts_as_analysis(self):
+        # Issue #654: triage's real ask-route comments BOLD the marker, and the
+        # ask route never emits a `## Build checklist`, so the emphasis-tolerant
+        # marker match is the only thing that sees them.
+        comments = [{"body": "❓ **Needs from Derek/Lucas:** the dialogue lines.",
+                     "created_at": FRESH}]
+        self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
+
     def test_no_analysis_comments_empty(self):
         comments = [{"body": "/admit", "created_at": READMIT},
                     {"body": "LGTM", "created_at": FRESH}]
@@ -89,6 +97,21 @@ class TestIsPartialWriteRepair(unittest.TestCase):
     def test_none_timestamps_ignored(self):
         self.assertFalse(triage_repair.is_partial_write_repair(
             ["ai-triage"], [None], READMIT))
+
+    def test_bolded_analysis_re_fire_is_repair_end_to_end(self):
+        # Issue #654, the second-order effect: a re-fire landing on an issue that
+        # already carries a BOLDED analysis and no hand-back label must repair
+        # (apply just the missing label move) instead of reposting a near-
+        # duplicate analysis — which is what filled #100's thread. Exercised
+        # through the real comment list, not pre-filtered timestamps.
+        comments = [
+            {"body": "/admit", "created_at": READMIT},
+            {"body": "❓ **Needs from Derek/Lucas:** the quest dialogue lines.",
+             "created_at": FRESH},
+        ]
+        times = triage_repair.analysis_comment_times(comments)
+        self.assertTrue(triage_repair.is_partial_write_repair(
+            ["ai-triage"], times, READMIT))
 
 
 if __name__ == "__main__":

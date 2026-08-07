@@ -97,21 +97,38 @@ TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
 # Derek/Lucas:` marker (the needs-clarification route). Recognized the same way
 # `_closing_refs_in` recognizes closing keywords — a fixed textual signature,
 # not a semantic read. Used by `fetch_state` to populate `has_analysis_comment`.
+#
+# The marker match tolerates Markdown EMPHASIS runs (`*`/`_`) around the marker
+# text (issue #654): triage writes the callout bolded — `❓ **Needs from
+# Derek/Lucas:**` — and a literal-substring check missed every one of those,
+# because the `**` sits between `❓ ` and `Needs`. Since the ask route never
+# emits a `## Build checklist` heading, that marker is the comment's ONLY
+# signature, so the miss made `requeue_triage` re-fire triage on the same issue
+# every cron sweep, forever (#100, #643). Only emphasis characters and
+# horizontal whitespace may sit in the gaps — never arbitrary prose — and the
+# `❓` anchor stays required, so a bare mention of the phrase is still not a
+# signature.
 _ANALYSIS_HEADING_RE = re.compile(r"(?im)^[ \t]*#{1,6}[ \t]+build checklist[ \t]*$")
-_NEEDS_CLARIFICATION_MARKER = "❓ Needs from Derek/Lucas:"
+_EMPHASIS = r"[ \t]*[*_]*[ \t]*"
+_NEEDS_CLARIFICATION_RE = re.compile(
+    r"❓" + _EMPHASIS + r"Needs from Derek/Lucas" + _EMPHASIS + r":")
 
 
 def has_analysis_signature(text):
     """True iff ``text`` carries a triage-authored analysis signature.
 
     The signature is a ``## Build checklist`` heading (any heading level,
-    case-insensitive) OR the literal ``❓ Needs from Derek/Lucas:`` marker — the
-    two hand-back comment shapes ``triage-issue/SKILL.md`` produces. A plain
-    comment that merely mentions the word "checklist" in prose does not match;
-    the heading form is required.
+    case-insensitive) OR the ``❓ Needs from Derek/Lucas:`` marker — the two
+    hand-back comment shapes ``triage-issue/SKILL.md`` produces. The marker is
+    matched tolerantly of Markdown emphasis around its text (issue #654), so the
+    bolded form triage actually writes — ``❓ **Needs from Derek/Lucas:**`` —
+    counts, as do the italic/underscore variants and a colon outside the
+    emphasis run. A plain comment that merely mentions the word "checklist" in
+    prose does not match (the heading form is required), and neither does the
+    marker phrase without its ``❓`` anchor.
     """
     text = text or ""
-    if _NEEDS_CLARIFICATION_MARKER in text:
+    if _NEEDS_CLARIFICATION_RE.search(text):
         return True
     return bool(_ANALYSIS_HEADING_RE.search(text))
 
