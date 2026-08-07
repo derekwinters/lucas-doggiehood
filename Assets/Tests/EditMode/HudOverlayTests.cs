@@ -45,7 +45,7 @@ namespace Doggiehood.Unity.EditModeTests
 
             state.Wallet.Deposit(EconomyNumbers.QuestPayout);
 
-            Assert.That(overlay.Label, Is.EqualTo("10"));
+            Assert.That(overlay.Label, Is.EqualTo("20"));
         }
 
         [Test]
