@@ -120,22 +120,35 @@ namespace Doggiehood.Core.World
             return lots;
         }
 
-        /// <summary>The dropped quadrants a tile renders as open space with
-        /// trees, as offsets in meters from the tile's center. Only cul-de-sacs
-        /// have any - their two bulb-side quadrants; every other type (bends'
-        /// plain open-space drops included) returns an empty set.</summary>
+        /// <summary>The quadrants a tile renders as open space with trees, as
+        /// offsets in meters from the tile's center: every quadrant that holds
+        /// no kept house lot (#614). Derived as "all four quadrants minus
+        /// <see cref="LotsFor"/>" so trees and lots share one source of truth
+        /// and can never disagree — cul-de-sacs keep their two bulb-side
+        /// quadrants (#385), bends drop the cupped corner AND its diagonal
+        /// opposite, twin bends drop all four, and full-lot types
+        /// (<c>FourWay</c>/<c>Straight*</c>/<c>Tee*</c>) drop none. The
+        /// whole-tile <see cref="TileType.GreenSpace"/> park (#539) is the one
+        /// exception: it holds no lots, so a naive "no lot ⇒ trees" rule would
+        /// plant on all four of its quadrants, but it is a separate park tile
+        /// (out of scope for #614) and stays bare. World-space placement clears
+        /// each tree of the tile's roads and skips any quadrant with no clean
+        /// grass — see <see cref="TileGeometry.TreeWorldPositionsFor"/>.</summary>
         public static IReadOnlyDictionary<Quadrant, GridPoint> TreeQuadrantsFor(TileType type)
         {
-            if (!CulDeSacKeptQuadrants.TryGetValue(type, out var kept))
+            if (type == TileType.GreenSpace)
             {
                 return new Dictionary<Quadrant, GridPoint>();
             }
 
-            var all = AllFourQuadrantLots();
+            var lots = LotsFor(type);
             var trees = new Dictionary<Quadrant, GridPoint>();
-            foreach (var quadrant in TreeQuadrantKeys(kept))
+            foreach (var entry in AllFourQuadrantLots())
             {
-                trees[quadrant] = all[quadrant];
+                if (!lots.ContainsKey(entry.Key))
+                {
+                    trees[entry.Key] = entry.Value;
+                }
             }
 
             return trees;
