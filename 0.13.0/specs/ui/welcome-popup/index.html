@@ -1801,6 +1801,7 @@
 
 <h1 id="welcome-pop-up">Welcome pop-up<a class="headerlink" href="#welcome-pop-up" title="Permanent link">&para;</a></h1>
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/439">#439</a>. Implements/covers: <code>WelcomePopup</code>. Approved: Derek, 2026-07-31 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147513906">proposal</a> + <a href="https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5147589722">decisions</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/439#issuecomment-5148148003"><code>/approve</code> on #439</a>) — authoritative layout contract.</em>
+<em>Amended: the </em><em>Close (✕)</em><em> region and <code>CloseButtonSizePx</code> were added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/671">#671</a>, drafted under <code>/propose</code> and approved by Derek, 2026-08-07 — part of the authoritative contract.</em>
 <em>Mockup: <a href="../mockups/welcome-popup.html">mockups/welcome-popup.html</a>.</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>A <strong>modal celebration panel</strong> — <em>"Welcome to the neighborhood!"</em> — raised when the <a href="../../expansion/#move-in-system">move-in system</a> fills a vacant house, announcing the new arrival(s) to the player. It <strong>reuses the <a href="../onboarding-reward/">onboarding reward panel</a> composition</strong> (portrait medal overlapping the top edge, big heading, one leaf pill), just parameterized for an arrival instead of a coin payout, so a move-in reads as the same warm celebration beat. One pop-up per household. Its single <strong>"Say hi!"</strong> button pans the camera to the new house <strong>and opens that house's <a href="../house-profile/">profile</a></strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/604">#604</a>) so the player lands on their new neighbour with the resident dog(s) one tap away. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
@@ -1816,8 +1817,13 @@
 <tbody>
 <tr>
 <td>Scrim</td>
-<td>Full-screen dim behind the panel; tapping it dismisses (same as the button) so the celebration is never a trap</td>
+<td>Full-screen dim behind the panel; tapping it dismisses <strong>without panning</strong> so the celebration is never a trap</td>
 <td>—</td>
+</tr>
+<tr>
+<td>Close</td>
+<td>Top-right ✕ dismiss affordance, flush in the card's corner. Dismisses <strong>without</strong> panning the camera and <strong>without</strong> opening the house profile — the visible counterpart to the scrim tap (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/671">#671</a>)</td>
+<td><a href="../shared-components/">Shared panel chrome</a></td>
 </tr>
 <tr>
 <td>Portrait badge</td>
@@ -1932,6 +1938,11 @@
 <td>The single <strong>Say hi!</strong> pill (centered; grows with the label)</td>
 </tr>
 <tr>
+<td><code>CloseButtonSizePx</code></td>
+<td><code>72</code></td>
+<td>Close (✕) button, flush top-right — matches <a href="../dog-profile/">dog profile</a> and <a href="../house-profile/">house profile</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/671">#671</a>)</td>
+</tr>
+<tr>
 <td><code>WelcomePopupDelaySeconds</code></td>
 <td><code>1.5</code> (range 1–3)</td>
 <td>Beat after the prior panel closes before this pops (see <a href="#timing">Timing</a>)</td>
@@ -1967,7 +1978,11 @@
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>One pop-up per household, parameterized.</strong> The caller passes the household (head + members), their names, breed, and which house; the heading and chrome are constant. The card grows vertically with its content (name/meta wrap, member-chip row present or absent), exactly like the <a href="../onboarding-reward/">reward panel</a> and <a href="../confirmation-dialog/">confirmation card</a>.</li>
-<li><strong>Always dismissible.</strong> The single <strong>Say hi!</strong> button dismisses; tapping the scrim also dismisses — the same anti-soft-lock posture as the <a href="../onboarding-reward/">reward panel</a> and <a href="../confirmation-dialog/">confirmation dialog</a>. One button only — a welcome is an acknowledgement, not a choice.</li>
+<li><strong>Always dismissible, and visibly so.</strong> Three paths close the panel: the top-right <strong>✕</strong> and a <strong>scrim tap</strong> both dismiss <em>without</em> panning or opening anything, and <strong>Say hi!</strong> dismisses <em>and</em> pans <em>and</em> opens the profile. The ✕ is what makes the anti-soft-lock guarantee (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>) <strong>discoverable</strong> rather than merely true: before it, the scrim tap was the only way to decline, and nothing signalled it, so the sole visible control committed the player to a camera move and a profile panel (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/671">#671</a>). One <em>action</em> button only — a welcome is an acknowledgement, not a choice — but declining an acknowledgement must be visible.</li>
+</ul>
+<p><strong>Why a ✕ here and not on the <a href="../confirmation-dialog/">confirmation dialog</a>:</strong> the ✕ is this project's convention for panels you <em>close</em>, and is deliberately absent only where another control already means <em>cancel</em>. The confirmation dialog's <strong>No</strong> is that control; <strong>Say hi!</strong> is an accept, not a dismiss, so this panel has none — which is exactly what puts it in the first group alongside the <a href="../dog-profile/">dog</a> and <a href="../house-profile/">house</a> profiles.</p>
+<ul>
+<li><strong>The ✕ clears the portrait medal by 250 px.</strong> The medal is centered and <code>PortraitDiameterPx</code> wide, so at the reference resolution it spans x 872–1048 within the <code>WelcomeWidthPx</code> = 820 card (left edge 550); the ✕ sits flush at the card's top-right, spanning x 1298–1370. They overlap vertically — the medal's lower half and the ✕ share the card's top band — but never horizontally. The medal is centered regardless of content, so this clearance is <strong>constant across all three household variants</strong> and does not need re-checking per variant.</li>
 <li><strong>The camera pan and profile-open are the non-presentational behaviors.</strong> Everything else on this panel is pure presentation, but <strong>"Say hi!" pans the camera to the new house</strong> via <code>CameraController.FocusOn</code> <strong>and opens that house's <a href="../house-profile/">profile</a></strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/604">#604</a>) — so tapping it is truthful: the player is taken to <em>meet</em> their new neighbour, not just look at their roof, with the resident dog(s) one tap away. The profile-open reuses the exact same resolve a house tap uses (<code>WorldBootstrap.OpenHouseProfile</code> → <code>HouseProfileOverlay.Open</code>), so there is no duplicated lookup. The pan reuses the existing <code>FocusOn</code> and is a slightly wider scope than <a href="https://github.com/derekwinters/lucas-doggiehood/issues/373">#373</a> chose for zone-unlock (which deliberately only let the player <em>pan</em> to a new zone). The welcome unregisters from the modal input gate on dismiss and the profile registers on open within the same synchronous <strong>Say hi!</strong> call, so exactly one modal stays registered across the hand-off and no world tap leaks in between (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/544">#544</a>). Tapping the scrim dismisses without panning <strong>or</strong> opening anything.</li>
 <li><strong>Portrait is graybox now.</strong> The portrait badge and member chips show a graybox dog silhouette for now; a real tinted <strong>dog-model portrait</strong> — needs no new art, it renders the existing coat-tinted model — is a fast-follow, not part of this wireframe.</li>
 <li><strong>A brief celebration beat.</strong> Like the <a href="../onboarding-reward/">reward panel</a>, this is a momentary modal (scrim + one button) the player taps through — a warm earned beat, not a tutorial screen. Move-ins are paced (gated behind a built vacant house), so a big earned beat fits.</li>
