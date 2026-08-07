@@ -8,8 +8,12 @@ namespace Doggiehood.Core.World
     /// monotonically along one <see cref="Road"/> from an entry along-coordinate
     /// to an exit along-coordinate, it claims each crosswalk it reaches through a
     /// shared <see cref="RoadCrossingGate"/> (so a dog that arrives second must
-    /// wait) and pauses at the near edge of any crosswalk a dog already holds,
-    /// resuming once that dog clears it. Everything is expressed in along-road
+    /// wait) and pauses short of any crosswalk a dog already holds, resuming
+    /// once that dog clears it. The pause is measured at the occupant's LEADING
+    /// EDGE, not its pivot: a caller with a body length passes its own
+    /// pivot-to-front-bumper setback so the whole footprint stays clear of the
+    /// band (#639), while a point occupant passes nothing and stops at the near
+    /// edge exactly as before. Everything is expressed in along-road
     /// coordinates (<see cref="Road.AlongAxis"/>), so the Unity delivery-truck
     /// view only converts positions to/from along and drives — no decision logic
     /// leaks into the engine layer.
@@ -30,15 +34,21 @@ namespace Doggiehood.Core.World
         private readonly RoadCrossingGate gate;
         private readonly object occupant;
         private readonly float travelSign;
+        private readonly float frontSetback;
         private readonly Crossing[] crossings;
         private readonly bool[] held;
 
         public RoadCrossingTraversal(
             RoadCrossingGate gate, object occupant, Road road, WalkNetwork network,
-            float entryAlong, float exitAlong)
+            float entryAlong, float exitAlong, float frontSetback = 0f)
         {
+            // #639: frontSetback is the occupant's own pivot-to-leading-edge
+            // distance (plus whatever stop gap it wants). It stays a caller-
+            // supplied number so this type remains occupant-agnostic (#546): a
+            // point occupant passes nothing and gets exactly the old behaviour.
             this.gate = gate ?? throw new ArgumentNullException(nameof(gate));
             this.occupant = occupant ?? throw new ArgumentNullException(nameof(occupant));
+            this.frontSetback = frontSetback;
             if (road == null)
             {
                 throw new ArgumentNullException(nameof(road));
@@ -120,8 +130,8 @@ namespace Doggiehood.Core.World
                     continue;
                 }
 
-                var nearEdge = along - travelSign * HalfCrosswalkAlong;
-                if (HasReached(currentAlong, nearEdge))
+                var boundary = StopBoundary(along);
+                if (HasReached(currentAlong, boundary))
                 {
                     if (gate.TryEnter(crossings[i].Edge, occupant))
                     {
@@ -129,18 +139,34 @@ namespace Doggiehood.Core.World
                         continue;
                     }
 
-                    // A dog holds it: pause at the near edge.
-                    allowed = ClampAhead(allowed, nearEdge);
+                    // A dog holds it: pause with the leading edge at the stripe.
+                    allowed = ClampAhead(allowed, boundary);
                     break;
                 }
 
                 // Not yet at the boundary: drive up to it, but no further, until
                 // the claim can be resolved there.
-                allowed = ClampAhead(allowed, nearEdge);
+                allowed = ClampAhead(allowed, boundary);
                 break;
             }
 
-            return allowed;
+            // #639: with a non-zero setback the stop boundary can sit BEHIND an
+            // occupant that began its leg already inside the setback zone (a leg
+            // starting at an intersection waypoint, say). Holding position is
+            // right there; reversing out of the zone is not.
+            return NoFurtherBackThan(allowed, currentAlong);
+        }
+
+        /// <summary>
+        /// The along-coordinate at which an occupant must stop for the crosswalk
+        /// centred on <paramref name="along"/>: the stripe's own near edge pushed
+        /// back by the occupant's front setback, so it is the occupant's LEADING
+        /// EDGE — not its pivot — that comes to rest at the edge of the band
+        /// (#639). With the default zero setback this is the near edge itself.
+        /// </summary>
+        private float StopBoundary(float along)
+        {
+            return along - travelSign * (HalfCrosswalkAlong + frontSetback);
         }
 
         /// <summary>Releases every crosswalk this vehicle still holds — used when
@@ -188,6 +214,13 @@ namespace Doggiehood.Core.World
         private float ClampAhead(float value, float cap)
         {
             return travelSign > 0f ? Math.Min(value, cap) : Math.Max(value, cap);
+        }
+
+        /// <summary>#639: never hand back an along-coordinate behind where the
+        /// occupant already is — a clamp may only slow it down or hold it.</summary>
+        private float NoFurtherBackThan(float value, float currentAlong)
+        {
+            return travelSign > 0f ? Math.Max(value, currentAlong) : Math.Min(value, currentAlong);
         }
 
         private readonly struct Crossing
