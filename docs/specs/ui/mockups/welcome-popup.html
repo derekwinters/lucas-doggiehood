@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome Pop-up — Wireframe #439 (1:1 @ 1920×1200)</title>
+<title>Welcome Pop-up — Wireframe #439, amended #671 PROPOSAL (1:1 @ 1920×1200)</title>
 <style>
   :root{
     --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
@@ -44,6 +44,13 @@
   .card{position:absolute;left:550px;width:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);
     padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;}
 
+  /* PROPOSED (#671): top-right ✕ close affordance — flush in the card's corner, matching the
+     dog/house profile precedent (anchor top-right, pivot top-right, zero inset, CloseButtonSizePx 72).
+     Wired to the existing WelcomePopup.Dismiss() — dismisses WITHOUT panning or opening the profile. */
+  .close{position:absolute;top:0;right:0;width:72px;height:72px;border-radius:999px;background:var(--cream);
+    border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;
+    font-size:34px;color:var(--ink);z-index:3;}
+
   /* portrait medal badge overlapping the top edge (PortraitDiameterPx 176, PortraitOverlapPx 88) */
   .portrait{position:absolute;top:-88px;left:50%;transform:translateX(-50%);width:176px;height:176px;border-radius:999px;background:var(--graybox);
     border:8px solid var(--ink);box-shadow:0 8px 0 var(--ink);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;z-index:2;}
@@ -79,12 +86,24 @@
   .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
   footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
   .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+  .proposal{font-size:14px;color:var(--text);background:color-mix(in srgb,var(--coral) 12%,transparent);border:1px solid var(--coral);
+    border-radius:12px;padding:14px 16px;margin:0 0 18px;} .proposal b{font-weight:700;}
+  .pending{background:color-mix(in srgb,var(--coral) 22%,transparent);border-color:var(--coral);}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #439 · Welcome Pop-up · Tablet · Landscape · 1920×1200</p>
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #439 · amended by #671 · Welcome Pop-up · Tablet · Landscape · 1920×1200</p>
   <h1 class="rounded">Welcome to the neighborhood pop-up</h1>
+  <p class="proposal"><b>PROPOSAL (draft for your approval) — #671.</b> One region added to the approved #439 layout:
+    a <b>top-right ✕ close affordance</b>, matching the dog/house profile precedent
+    (<code>CloseButtonSizePx</code> 72, Cream pill, flush in the card's corner). It is wired to the pop-up's
+    <b>existing</b> <code>Dismiss()</code> — dismiss <i>without</i> panning the camera and <i>without</i> opening the
+    house profile — so no new dismiss behavior is being invented, only made visible. Nothing else on this page changes.
+    <br><b>The portrait-medal collision question is resolved:</b> the medal is centered and 176 px wide, so it spans
+    x 872–1048; the ✕ sits flush at the card's top-right, spanning x 1298–1370. They clear each other by
+    <b>250 px</b> horizontally in every household variant — the medal is centered regardless of content, so the
+    clearance is constant. See all three variants below.</p>
   <p class="lede">A <b>modal celebration panel</b> raised when a new dog (or household) moves into a vacant house.
     It reuses the approved <b>onboarding reward panel</b> composition — a portrait medal overlapping the top edge,
     a big heading, one leaf pill — parameterized for an arrival: <b>“Welcome to the neighborhood!”</b>, the new
@@ -99,6 +118,7 @@
       <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
       <div class="scrim"></div>
       <div class="card" style="top:360px;">
+        <div class="close rounded" aria-label="Close">✕</div>
         <div class="portrait"><span class="pup">🐶</span></div>
         <div class="headroom"></div>
         <h2 class="heading rounded">Welcome to the neighborhood!</h2>
@@ -117,6 +137,7 @@
       <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
       <div class="scrim"></div>
       <div class="card" style="top:320px;">
+        <div class="close rounded" aria-label="Close">✕</div>
         <div class="portrait"><span class="pup">🐶</span></div>
         <div class="headroom"></div>
         <h2 class="heading rounded">Welcome to the neighborhood!</h2>
@@ -138,6 +159,7 @@
       <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
       <div class="scrim"></div>
       <div class="card" style="top:300px;">
+        <div class="close rounded" aria-label="Close">✕</div>
         <div class="portrait"><span class="pup">🐶</span></div>
         <div class="headroom"></div>
         <h2 class="heading rounded">Welcome to the neighborhood!</h2>
@@ -172,6 +194,7 @@
         <tr><td>NameMetaGapPx</td><td class="val">8</td><td>name → meta</td></tr>
         <tr><td>MetaActionMarginPx</td><td class="val">40</td><td>meta (or member row) → button</td></tr>
         <tr><td>ActionMinWidthPx</td><td class="val">320</td><td>the single “Say hi!” pill</td></tr>
+        <tr><td><b>CloseButtonSizePx</b></td><td class="val"><b>72</b></td><td><b>#671 — close (✕), flush top-right (matches dog/house profile)</b></td></tr>
         <tr><td>WelcomePopupDelaySeconds</td><td class="val">1.5</td><td>beat after prior panel closes (range 1–3)</td></tr>
         <tr><td>MemberChipDiameterPx</td><td class="val">72</td><td>per-dog chip (multi-dog only)</td></tr>
         <tr><td>MemberChipGapPx</td><td class="val">20</td><td>gap between member chips</td></tr>
@@ -182,7 +205,9 @@
     </div>
     <div>
       <h2>Regions &amp; behavior</h2>
-      <p class="note"><b>Scrim</b> (dim; tapping dismisses without panning) · <b>Portrait badge</b> (graybox silhouette, overlaps top) · <b>Heading</b> (fixed “Welcome to the neighborhood!”) · <b>Name</b> · <b>Meta</b> (breed · household / which house) · <b>Member-chip row</b> (one named chip per dog; hidden for single) · <b>Say hi! button</b> (single leaf pill).</p>
+      <p class="note"><b>Scrim</b> (dim; tapping dismisses without panning) · <b>Close ✕</b> (#671 — flush top-right; dismisses without panning or opening the profile) · <b>Portrait badge</b> (graybox silhouette, overlaps top) · <b>Heading</b> (fixed “Welcome to the neighborhood!”) · <b>Name</b> · <b>Meta</b> (breed · household / which house) · <b>Member-chip row</b> (one named chip per dog; hidden for single) · <b>Say hi! button</b> (single leaf pill).</p>
+      <p class="note"><b>✕ vs. the portrait medal (#671):</b> the medal is centered (176 px wide → x 872–1048) and the ✕ is flush at the card's top-right (72 px → x 1298–1370), so they clear by <b>250 px</b> in every variant. The medal's position does not depend on content, so this clearance is constant across single, parent+puppy and three-dog households.</p>
+      <p class="note"><b>Two dismiss paths, one accept.</b> The ✕ and the scrim both call the existing <code>Dismiss()</code> — no pan, no profile. <b>Say hi!</b> is the accept: dismiss + pan + open the house profile (#604). This is why the pop-up gets a ✕ where the <a href="confirmation-dialog.html">confirmation dialog</a> deliberately does not — that panel's <b>No</b> already means cancel; <b>Say hi!</b> does not.</p>
       <p class="note"><b>One pop-up per household</b> — the head keeps the big portrait; the member-chip row echoes each dog. Household mix 70% single / 25% parent+puppy / 5% three-dog (<a href="#">expansion.md — Move-in system</a>). The row is hidden entirely for single-dog move-ins.</p>
       <p class="note"><b>Timing:</b> the panel pops <code>WelcomePopupDelaySeconds</code> (1–3s, default 1.5s) <i>after</i> the previous panel closes, so it never stacks on the quest-resolution feedback that triggered the move-in.</p>
       <p class="note"><b>Camera pan is the one non-presentational behavior:</b> <b>“Say hi!”</b> dismisses <i>and</i> pans the camera to the new house via <code>CameraController.FocusOn</code> — flagged for the move-in implementation (#436) to wire alongside dismiss. Tapping the scrim dismisses without panning. Always dismissible — no soft-lock.</p>
@@ -192,7 +217,8 @@
 
   <footer>
     Modal celebration panel on the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill button · reuses <a href="#">Shared UI Components (#173)</a> and the <a href="onboarding-reward.html">onboarding reward panel</a> composition · reference resolution 1920×1200. Constants named per #161; EditMode tests assert the built panel against them.
-    <br><span class="status">Approved — Derek, 2026-07-31 (/approve #439)</span>
+    <br><span class="status">Base layout approved — Derek, 2026-07-31 (/approve #439)</span>
+    <span class="status pending">✕ close affordance — PROPOSAL pending approval (#671)</span>
   </footer>
 </div>
 </body>
