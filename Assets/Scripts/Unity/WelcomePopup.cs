@@ -278,9 +278,10 @@ namespace Doggiehood.Unity
             // PortraitOverlapPx of the medal rises above it.
             portraitRect.anchoredPosition = new Vector2(0f, PortraitOverlapPx - PortraitDiameterPx / 2f);
             CandyChromeUgui.ApplyPill(portraitImage, GrayboxColor, PortraitDiameterPx, withShadow: true);
-            // Its own thicker ink ring, distinct from the shared 6px panel outline.
-            CandyChromeUgui.AddOutline(portraitImage.gameObject).effectDistance =
-                new Vector2(PortraitOutlineThicknessPx, PortraitOutlineThicknessPx);
+            // Its own thicker ink ring, distinct from the shared 6px panel outline —
+            // re-sizes the shared contour band to this element's own width (#616).
+            CandyChromeUgui.AddOutline(portraitImage.gameObject,
+                PortraitDiameterPx / 2f, PortraitOutlineThicknessPx);
         }
 
         /// <summary>Rebuilds the member-chip row for the current household —
@@ -326,8 +327,8 @@ namespace Doggiehood.Unity
             discRect.sizeDelta = new Vector2(MemberChipDiameterPx, MemberChipDiameterPx);
             discRect.anchoredPosition = Vector2.zero;
             CandyChromeUgui.ApplyPill(discImage, GrayboxColor, MemberChipDiameterPx, withShadow: true);
-            CandyChromeUgui.AddOutline(discImage.gameObject).effectDistance =
-                new Vector2(MemberChipOutlineThicknessPx, MemberChipOutlineThicknessPx);
+            CandyChromeUgui.AddOutline(discImage.gameObject,
+                MemberChipDiameterPx / 2f, MemberChipOutlineThicknessPx);
 
             var nameLabel = CreateLabel("Name", chipRect, memberName, MemberChipNameFontSizePx, TextAnchor.UpperCenter);
             var nameLabelRect = nameLabel.rectTransform;

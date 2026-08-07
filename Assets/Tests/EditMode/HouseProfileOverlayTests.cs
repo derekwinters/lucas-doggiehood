@@ -523,12 +523,29 @@ namespace Doggiehood.Unity.EditModeTests
 
         private static void AssertInkOutline(GameObject go)
         {
-            var outline = go.GetComponent<Outline>();
-            Assert.That(outline, Is.Not.Null, go.name + " has no Candy Cottage outline");
-            AssertHex(outline.effectColor, 0x2E, 0x2A, 0x26, go.name + " outline");
-            Assert.That(outline.effectDistance,
-                Is.EqualTo(new Vector2(CandyChromeUgui.OutlineThicknessPx, CandyChromeUgui.OutlineThicknessPx)),
-                go.name + " outline thickness is not the shared OutlineThicknessPx = 6");
+            // #616: the outline is a constant-width Ink contour band (an inflated
+            // rounded-sprite Image drawn behind the fill), NOT the offset-copy
+            // Outline mesh effect that produced the uneven corners.
+            Assert.That(go.GetComponent<Outline>(), Is.Null,
+                go.name + " still uses the offset-copy Outline mesh effect (#616)");
+
+            var ink = CandyChromeUgui.OutlineInk(go);
+            Assert.That(ink, Is.Not.Null, go.name + " has no Ink contour-band underlay");
+            AssertHex(ink.color, 0x2E, 0x2A, 0x26, go.name + " outline");
+            Assert.That(ink.raycastTarget, Is.False, go.name + " outline must not intercept taps");
+            Assert.That(ink.material, Is.EqualTo(ink.defaultMaterial),
+                go.name + " outline must render through the default UI material (device-safe)");
+
+            var fillRt = go.GetComponent<RectTransform>();
+            var inkRt = ink.rectTransform;
+            Assert.That(inkRt.GetSiblingIndex(), Is.LessThan(fillRt.GetSiblingIndex()),
+                go.name + " outline band must render behind the fill");
+            var w = CandyChromeUgui.OutlineThicknessPx;
+            Assert.That(fillRt.offsetMin.x - inkRt.offsetMin.x, Is.EqualTo(w).Within(0.01f),
+                go.name + " outline band width is not the shared OutlineThicknessPx = 6");
+            Assert.That(fillRt.offsetMin.y - inkRt.offsetMin.y, Is.EqualTo(w).Within(0.01f));
+            Assert.That(inkRt.offsetMax.x - fillRt.offsetMax.x, Is.EqualTo(w).Within(0.01f));
+            Assert.That(inkRt.offsetMax.y - fillRt.offsetMax.y, Is.EqualTo(w).Within(0.01f));
         }
 
         private static void AssertHardShadow(GameObject go)

@@ -276,8 +276,8 @@ namespace Doggiehood.Unity.EditModeTests
             var panelImage = presenter.PanelRect.GetComponent<Image>();
             Assert.That(panelImage.material, Is.EqualTo(panelImage.defaultMaterial),
                 "the panel assigns no custom material (#291)");
-            Assert.That(presenter.PanelRect.GetComponent<Outline>(), Is.Not.Null,
-                "the panel carries the shared Candy Cottage chrome outline (#298)");
+            Assert.That(CandyChromeUgui.OutlineInk(presenter.PanelRect.gameObject), Is.Not.Null,
+                "the panel carries the shared Candy Cottage chrome outline (#298, #616 contour band)");
 
             Assert.That(presenter.BodyLabel.font, Is.Not.Null);
             Assert.That(presenter.BodyLabel.font.name, Does.Contain("DejaVu"));

@@ -33,6 +33,12 @@ Inherited by every component; a component's own table adds only what is specific
 
 These baseline constants + the palette below are realized in code from this single source (no per-screen hand-picked values, [#161](../../engineering/tech-stack.md#geometry-layout-and-tuning-values-are-named-variables)): the IMGUI overlays draw them via `CandyChrome` (HUD chip [#296](https://github.com/derekwinters/lucas-doggiehood/issues/296), onboarding), and the retained-UGUI panels via `CandyChromeUgui` (Settings [#298](https://github.com/derekwinters/lucas-doggiehood/issues/298)) — both procedural, no raster art asset.
 
+#### Outline: a constant-width contour band ([#616](https://github.com/derekwinters/lucas-doggiehood/issues/616))
+
+The dark outline is a **constant-width contour band** of width `OutlineThicknessPx` that follows the fill's rounded-rect contour exactly — the same even thickness on straight edges *and* around every corner. It is **not** the offset-copy `Outline` mesh effect (four diagonally-shifted stamps of the graphic), whose union is not constant-width around a curve — it bulges on-axis and thins/dips off-axis, the uneven look reported in [#616](https://github.com/derekwinters/lucas-doggiehood/issues/616). Both chrome helpers realize the band the same way: the same procedural rounded sprite, **inflated by the band width** (extents and corner radius each grow by `W`), drawn behind the fill — so a uniform `W` of Ink shows around the whole perimeter and the fill's own contour is the band's inner edge by construction (fill radius and outline inner radius can never drift).
+
+**Acceptance test (border-evenness invariant).** Chrome outline evenness is a *checkable* pixel-level spec, not an eyeballed one. Ray-marching outward from a rendered element's centre through densely-sampled angles (through each corner arc): the fill→ink transition traces a true rounded-rect contour (a round corner arc, no inward dip), and the perpendicular ink-band width is constant within an anti-aliasing tolerance (±1px) across **all** angles, corners included. The geometry is proved engine-free in `Doggiehood.Core.Ui.RoundedRectContour`; the Unity EditMode pixel test runs the same checker against the actually-baked chrome alpha.
+
 ### Shared palette
 
 The fixed Candy Cottage component colors (the same values regardless of viewer theme).
