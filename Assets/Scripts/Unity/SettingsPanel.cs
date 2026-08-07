@@ -696,6 +696,12 @@ namespace Doggiehood.Unity
             knob.anchorMax = knob.anchorMin;
             knob.pivot = new Vector2(on ? 1f : 0f, 0.5f);
             knob.anchoredPosition = new Vector2(on ? -KnobInsetPx : KnobInsetPx, 0f);
+
+            // #616: the knob's Ink outline band is a sibling that does not
+            // auto-follow the knob's RectTransform, so re-sync it to the knob's new
+            // slide position, keeping the band a uniform OutlineThicknessPx around
+            // the knob whichever side it rests on.
+            CandyChromeUgui.AddOutline(knob.gameObject, ToggleKnobPx / 2f, CandyChromeUgui.OutlineThicknessPx);
         }
 
         // --- small UGUI helpers ---
