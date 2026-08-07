@@ -53,6 +53,20 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        private static void AssertTreeQuadrantsAreExactly(TileType type, params Quadrant[] expected)
+        {
+            var trees = TileLotCatalog.TreeQuadrantsFor(type);
+
+            Assert.That(trees.Count, Is.EqualTo(expected.Length));
+            CollectionAssert.AreEquivalent(expected, trees.Keys);
+            foreach (var quadrant in expected)
+            {
+                var offset = ExpectedOffset(quadrant);
+                Assert.That(trees[quadrant].X, Is.EqualTo(offset.X));
+                Assert.That(trees[quadrant].Z, Is.EqualTo(offset.Z));
+            }
+        }
+
         [Test]
         public void Types_CoversEveryLottedType_ExcludingGreenSpace()
         {
@@ -156,16 +170,70 @@ namespace Doggiehood.Core.Tests.World
                 lots.Concat(trees));
         }
 
-        // #385: only cul-de-sacs get open-space trees. Bends' dropped quadrants
-        // stay plain open space (grass), and full-lot types drop nothing.
-        [TestCase(TileType.TurnNE)]
-        [TestCase(TileType.TurnSW)]
+        // #614: every quadrant with no kept house lot renders open-space trees,
+        // not just cul-de-sacs. Tree quadrants are derived as "the tile's four
+        // quadrants minus its LotsFor quadrants", so trees and lots can never
+        // disagree. Full-lot types (FourWay/Straight*/Tee*) drop nothing, and
+        // the whole-tile GreenSpace park (#539) is out of scope, so those all
+        // stay bare.
+        [TestCase(TileType.FourWay)]
         [TestCase(TileType.StraightNS)]
+        [TestCase(TileType.StraightEW)]
         [TestCase(TileType.TeeNorth)]
-        [TestCase(TileType.OpposingTurnsNS)]
-        public void TreeQuadrantsFor_IsEmpty_ForEveryNonCulDeSacType(TileType type)
+        [TestCase(TileType.TeeSouth)]
+        [TestCase(TileType.TeeEast)]
+        [TestCase(TileType.TeeWest)]
+        [TestCase(TileType.GreenSpace)]
+        public void TreeQuadrantsFor_IsEmpty_ForFullLotAndGreenSpaceTypes(TileType type)
         {
             Assert.That(TileLotCatalog.TreeQuadrantsFor(type), Is.Empty);
+        }
+
+        // #614: each bend (Turn*) drops two quadrants — the cupped corner AND
+        // its diagonal opposite — so both become open space with trees, at the
+        // same corner offset a lot would use.
+        [TestCase(TileType.TurnNE, Quadrant.NorthEast, Quadrant.SouthWest)]
+        [TestCase(TileType.TurnNW, Quadrant.NorthWest, Quadrant.SouthEast)]
+        [TestCase(TileType.TurnSE, Quadrant.SouthEast, Quadrant.NorthWest)]
+        [TestCase(TileType.TurnSW, Quadrant.SouthWest, Quadrant.NorthEast)]
+        public void TreeQuadrantsFor_Bend_AreTheCuppedCornerAndItsDiagonalOpposite(
+            TileType type, Quadrant treeA, Quadrant treeB)
+        {
+            AssertTreeQuadrantsAreExactly(type, treeA, treeB);
+        }
+
+        // #614: twin bends carry no lots at all, so all four quadrants become
+        // open space with trees.
+        [TestCase(TileType.OpposingTurnsNS)]
+        [TestCase(TileType.OpposingTurnsEW)]
+        public void TreeQuadrantsFor_TwinBend_AreAllFourQuadrants(TileType type)
+        {
+            AssertTreeQuadrantsAreExactly(
+                type,
+                Quadrant.NorthEast, Quadrant.NorthWest, Quadrant.SouthEast, Quadrant.SouthWest);
+        }
+
+        // #614: for every lotted type, the kept lots and the tree quadrants are
+        // disjoint and together account for all four quadrants — derived from
+        // one LotsFor source of truth so they can never disagree. (FourWay's
+        // lots come from the catalog too now, #607; GreenSpace is the only
+        // no-lot, no-tree type and is excluded here.)
+        [TestCase(TileType.FourWay)]
+        [TestCase(TileType.StraightNS)]
+        [TestCase(TileType.TeeNorth)]
+        [TestCase(TileType.TurnNE)]
+        [TestCase(TileType.TurnSW)]
+        [TestCase(TileType.CulDeSacNorth)]
+        [TestCase(TileType.OpposingTurnsNS)]
+        public void Lots_And_TreeQuadrants_PartitionAllFourQuadrants(TileType type)
+        {
+            var lots = TileLotCatalog.LotsFor(type).Keys;
+            var trees = TileLotCatalog.TreeQuadrantsFor(type).Keys;
+
+            CollectionAssert.IsEmpty(lots.Intersect(trees));
+            CollectionAssert.AreEquivalent(
+                (Quadrant[])Enum.GetValues(typeof(Quadrant)),
+                lots.Concat(trees));
         }
 
         // The cupped corner of a bend is also the corner that renders curved

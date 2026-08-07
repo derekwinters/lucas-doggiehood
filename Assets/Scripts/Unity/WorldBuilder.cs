@@ -1102,12 +1102,14 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>
-        /// Renders each unlocked frontier tile's open-space trees (#385/#453): a
-        /// cul-de-sac's two dropped bulb-side quadrants become open space with
-        /// trees, reusing the #170 tree kit art. Runs at initial build so a
-        /// loaded game whose save already unlocked a tile renders those trees,
-        /// mirroring <see cref="BuildUnlockedTileRoads"/>. Which quadrants (and
-        /// their positions) is Core's decision
+        /// Renders each unlocked frontier tile's open-space trees (#385/#453/#614):
+        /// every quadrant with no kept house lot becomes open space with trees —
+        /// a cul-de-sac's two bulb-side quadrants, a bend's cupped corner and its
+        /// diagonal opposite, and all four of a twin bend's quadrants — reusing
+        /// the #170 tree kit art. Runs at initial build so a loaded game whose
+        /// save already unlocked a tile renders those trees, mirroring
+        /// <see cref="BuildUnlockedTileRoads"/>. Which quadrants (and their
+        /// positions) is Core's decision
         /// (<see cref="TileGeometry.TreeWorldPositionsFor"/>); nothing here
         /// decides where a tree goes.
         /// </summary>
@@ -1121,10 +1123,11 @@ namespace Doggiehood.Unity
 
         /// <summary>Renders one placed tile's open-space trees into a single
         /// "OpenSpaceTree - col,row" container - one tree per Core tree-quadrant
-        /// world position. A tile type with no tree quadrants (everything but
-        /// cul-de-sacs) renders nothing, same as the loop. Reuses the shared
-        /// tree renderer (<see cref="BuildYardTree"/>) so open-space trees and
-        /// yard trees stay one art path.</summary>
+        /// world position. A tile type with no tree quadrants (full-lot
+        /// FourWay/Straight*/Tee* and the GreenSpace park) renders nothing, same
+        /// as the loop. Reuses the shared tree renderer
+        /// (<see cref="BuildYardTree"/>) so open-space trees and yard trees stay
+        /// one art path.</summary>
         private static void BuildTileOpenSpaceTrees(Transform parent, TileCoordinate coordinate, TileType type)
         {
             var positions = TileGeometry.TreeWorldPositionsFor(type, coordinate);

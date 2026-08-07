@@ -266,8 +266,22 @@ namespace Doggiehood.Core.World
         /// </summary>
         public static IReadOnlyList<Road> RoadsFor(HouseLot lot, TileType tileType)
         {
+            return RoadsFor(NearestTileCoordinate(lot.Position), tileType);
+        }
+
+        /// <summary>
+        /// The roads a tile at <paramref name="coordinate"/> of type
+        /// <paramref name="tileType"/> contributes to clearance (#614): the
+        /// origin FourWay's fixed streets (<see cref="NeighborhoodLayout.Roads"/>)
+        /// plus one <see cref="Road"/> per <see cref="TileRoadGeometry.SegmentsFor"/>
+        /// segment. The coordinate-keyed sibling of
+        /// <see cref="RoadsFor(HouseLot, TileType)"/>, so open-space-tree
+        /// placement can clear a tile's roads (<see cref="ClearRoadCorridors"/>)
+        /// without inventing a <see cref="HouseLot"/>.
+        /// </summary>
+        public static IReadOnlyList<Road> RoadsFor(TileCoordinate coordinate, TileType tileType)
+        {
             var roads = new List<Road>(NeighborhoodLayout.Roads);
-            var coordinate = NearestTileCoordinate(lot.Position);
             foreach (var segment in TileRoadGeometry.SegmentsFor(coordinate, tileType))
             {
                 roads.Add(new Road(segment.Orientation, segment.Center, segment.Length / 2f));

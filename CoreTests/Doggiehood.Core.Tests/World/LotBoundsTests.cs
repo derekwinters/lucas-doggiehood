@@ -314,6 +314,65 @@ namespace Doggiehood.Core.Tests.World
             }
         }
 
+        [Test]
+        public void RoadsFor_ByCoordinate_CombinesOriginRoadsWithTheTilesOwnSegments()
+        {
+            // #614: the coordinate overload lets open-space-tree placement clear
+            // a tile's roads without inventing a HouseLot. It equals the origin's
+            // fixed streets plus one Road per TileRoadGeometry segment.
+            const TileType type = TileType.TurnSE;
+            var coordinate = new TileCoordinate(0, 1);
+
+            var roads = LotBounds.RoadsFor(coordinate, type);
+            var segments = TileRoadGeometry.SegmentsFor(coordinate, type);
+
+            Assert.That(roads.Count, Is.EqualTo(NeighborhoodLayout.Roads.Count + segments.Count));
+            foreach (var segment in segments)
+            {
+                Assert.That(
+                    roads.Any(r =>
+                        r.Orientation == segment.Orientation
+                        && Math.Abs(r.Center.X - segment.Center.X) < Epsilon
+                        && Math.Abs(r.Center.Z - segment.Center.Z) < Epsilon
+                        && Math.Abs(r.HalfLength - segment.Length / 2f) < Epsilon),
+                    Is.True,
+                    $"each tile road segment ({segment.Orientation}) appears as a Road");
+            }
+        }
+
+        [Test]
+        public void RoadsFor_ByCoordinate_MatchesTheHouseLotOverloadForALotOnThatTile()
+        {
+            // #455/#614: the two overloads resolve the same tile — the HouseLot
+            // one via NearestTileCoordinate(lot.Position), the coordinate one
+            // directly — so their road lists match for a lot on that tile.
+            var coordinate = new TileCoordinate(0, 1);
+            const TileType type = TileType.CulDeSacSouth;
+            var center = TileGeometry.CenterOf(coordinate);
+            var lot = new HouseLot(
+                1,
+                Quadrant.SouthEast,
+                new GridPoint(
+                    center.X + NeighborhoodLayout.LotDistanceFromCenter,
+                    center.Z - NeighborhoodLayout.LotDistanceFromCenter));
+
+            var byCoordinate = LotBounds.RoadsFor(coordinate, type);
+            var byLot = LotBounds.RoadsFor(lot, type);
+
+            Assert.That(byCoordinate.Count, Is.EqualTo(byLot.Count));
+            foreach (var road in byLot)
+            {
+                Assert.That(
+                    byCoordinate.Any(r =>
+                        r.Orientation == road.Orientation
+                        && Math.Abs(r.Center.X - road.Center.X) < Epsilon
+                        && Math.Abs(r.Center.Z - road.Center.Z) < Epsilon
+                        && Math.Abs(r.HalfLength - road.HalfLength) < Epsilon),
+                    Is.True,
+                    "the coordinate overload yields the same roads as the HouseLot overload");
+            }
+        }
+
         private static LotRect RoadStrip(TileRoadSegment segment)
         {
             var halfWidth = segment.Width / 2f;

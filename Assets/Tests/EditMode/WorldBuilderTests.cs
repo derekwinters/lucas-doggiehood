@@ -788,6 +788,59 @@ namespace Doggiehood.Unity.EditModeTests
             }
         }
 
+        /// <summary>A game with a single road tile of <paramref name="type"/>
+        /// unlocked at <see cref="TeeTileCoordinate"/> (0,1) — the one
+        /// onboarding-permitted expansion coordinate. The type must carry a
+        /// south road so it connects to the origin FourWay's north edge (#109).
+        /// #614 uses this to render open-space trees on bend/twin-bend tiles.</summary>
+        private static GameState WithRoadTileUnlockedAtFirstZone(TileType type)
+        {
+            var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
+            target.Place(TeeTileCoordinate, type);
+
+            var state = GameState.CreateNew();
+            state.SetTargetMap(target);
+            state.Wallet.Deposit(Doggiehood.Core.Expansion.TileUnlock.Cost(state.Map.Tiles.Count));
+            Assert.That(state.TryUnlockTile(TeeTileCoordinate), Is.True, "the test needs the tile unlocked");
+            return state;
+        }
+
+        // #614: every quadrant with no kept house lot renders open-space trees,
+        // not just cul-de-sacs. A bend (TurnSE) drops its cupped corner and the
+        // diagonal opposite (2 trees); a twin bend (OpposingTurnsNS) has no lots
+        // and plants all four quadrants. One rendered tree per Core tree-quadrant
+        // world position, in the same per-tile "OpenSpaceTree - col,row"
+        // container the cul-de-sac path uses. Pinned on the primitive fallback so
+        // the per-tile object count is deterministic.
+        [TestCase(TileType.TurnSE, 2)]
+        [TestCase(TileType.OpposingTurnsNS, 4)]
+        public void Build_RendersOpenSpaceTreesOnEveryDroppedQuadrant_ForBendsAndTwinBends(
+            TileType type, int expectedTreeCount)
+        {
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithRoadTileUnlockedAtFirstZone(type);
+            root = WorldBuilder.Build(state);
+
+            var container = root.transform.Cast<Transform>()
+                .FirstOrDefault(t => t.name == WorldBuilder.OpenSpaceTreeNamePrefix + "0,1");
+            Assert.That(container, Is.Not.Null, "the tile (0,1) gets an open-space-trees container");
+
+            var expected = TileGeometry.TreeWorldPositionsFor(type, TeeTileCoordinate);
+            Assert.That(expected.Count, Is.EqualTo(expectedTreeCount), "precondition: one tree per dropped quadrant");
+            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per dropped quadrant");
+
+            var treeXZ = container.Cast<Transform>()
+                .Select(t => new Vector2(t.position.x, t.position.z))
+                .ToList();
+            foreach (var position in expected)
+            {
+                Assert.That(treeXZ.Any(p =>
+                        Mathf.Abs(p.x - position.X) < 0.001f && Mathf.Abs(p.y - position.Z) < 0.001f),
+                    Is.True, $"a tree renders at dropped quadrant ({position.X}, {position.Z})");
+            }
+        }
+
         [Test]
         public void BuildYardTree_ScalesEachYardTree_ByItsPlacementScale_NotTheFlatUniformScale()
         {
