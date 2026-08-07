@@ -1427,6 +1427,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Target platform">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#abis-and-build-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      ABIs and build variants
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1775,6 +1790,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Target platform">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#abis-and-build-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      ABIs and build variants
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1883,6 +1913,55 @@
 <h2 id="target-platform">Target platform<a class="headerlink" href="#target-platform" title="Permanent link">&para;</a></h2>
 <p>Android. Application ID: <strong><code>com.derekwinters.doggiehood</code></strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/80">#80</a>) — permanent once published, debug builds apply an <code>applicationIdSuffix</code> (e.g. <code>.debug</code>) so they can install side-by-side with release builds on the same device.</p>
 <p>Since CI builds APKs directly with <code>game-ci/unity-builder</code> (no exported Gradle project to add a <code>buildTypes { debug { ... } }</code> block to), the suffix is applied at Unity build time instead: an editor build hook (<code>Assets/Scripts/Unity/Editor/DebugApplicationIdBuildProcessor.cs</code>) appends <code>.debug</code> to <code>PlayerSettings.Android.applicationIdentifier</code> before the build and restores the permanent id afterward, whenever the <code>DOGGIEHOOD_DEBUG_BUILD</code> environment variable is set to a truthy value. <code>pr-build.yml</code> and <code>rc-build.yml</code> set it; <code>release-build.yml</code> does not, so release builds always ship the bare <code>com.derekwinters.doggiehood</code> id.</p>
+<h3 id="abis-and-build-variants">ABIs and build variants<a class="headerlink" href="#abis-and-build-variants" title="Permanent link">&para;</a></h3>
+<p>The <strong>device build is ARM64-only</strong> — <code>ProjectSettings.asset</code> commits <code>AndroidTargetArchitectures: 2</code> and nothing in the normal build path changes it.</p>
+<p>The one exception is the <strong>emulator build variant</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/648">#648</a>), attached to every release as <code>doggiehood-vX.Y.Z-emulator.apk</code> so the game can be run in an x86_64 Android emulator without a hand-produced build. It reuses the <code>.debug</code>-suffix mechanism above: a second editor build hook (<code>Assets/Scripts/Unity/Editor/EmulatorBuildProcessor.cs</code>), toggled by the <code>DOGGIEHOOD_EMULATOR_BUILD</code> environment variable, applies the whole profile at build time and restores every field afterward. Nothing about it is committed to <code>ProjectSettings.asset</code>, so a run that doesn't set the variable can't inherit any of it:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Emulator variant</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Android ABI</td>
+<td><code>X86_64</code> only</td>
+<td>The variant exists to run on x86_64 emulators; carrying ARM64 too would only bloat it.</td>
+</tr>
+<tr>
+<td>applicationId</td>
+<td><code>com.derekwinters.doggiehood.emulator</code></td>
+<td>Installs side-by-side with the device build, like <code>.debug</code>.</td>
+</tr>
+<tr>
+<td>Graphics APIs</td>
+<td>Vulkan → GLES3 (Auto Graphics API off)</td>
+<td>Unity's runtime backend auto-pick was hanging the render worker on the reported emulator host. Vulkan stays first so emulators that support it still exercise that path, with GLES3 as the fallback.</td>
+</tr>
+<tr>
+<td>Wide colour gamut</td>
+<td>Off (sRGB only)</td>
+<td>Emulator-safe rendering; the project's committed default is already sRGB.</td>
+</tr>
+<tr>
+<td>Multithreaded rendering</td>
+<td>Off</td>
+<td>The render worker is what hangs.</td>
+</tr>
+<tr>
+<td>Signing</td>
+<td>Debug, same as every other build</td>
+<td>No separate decision — nothing in the current scope uses a real keystore (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/75">#75</a>).</td>
+</tr>
+</tbody>
+</table>
+<p>One emulator APK is produced, not a matrix of graphics variants. The <code>.emulator</code> suffix composes with <code>.debug</code> if a run ever sets both variables.</p>
+<div class="admonition note">
+<p class="admonition-title">Colour gamut has no public <code>PlayerSettings</code> API</p>
+<p>In Unity 6, <code>PlayerSettings.GetColorGamuts</code>/<code>SetColorGamuts</code> are <code>internal</code>, and there is no Android-specific wide-colour-gamut key at all (it's the project-wide <code>m_ColorGamuts</code> list). <code>EmulatorBuildProcessor</code> therefore reads and writes that one field through the PlayerSettings singleton's serialized data, via the public <code>Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings")</code>; every other field in the table uses a normal public API. Per <a href="../unity-serialization/">unity-serialization.md</a>, the <code>m_ColorGamuts</code> key name is verified against real <code>ProjectSettings.asset</code> files rather than guessed, and the accessor degrades to a warning (not a build failure) if it can't resolve the property.</p>
+</div>
 <h2 id="code-architecture-core-unity-split">Code architecture: Core / Unity split<a class="headerlink" href="#code-architecture-core-unity-split" title="Permanent link">&para;</a></h2>
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/72">#72</a> — foundational, applies to every feature</em></p>
 <p>Game logic (quest system, economy, dog state, name-pool selection, house leveling, etc.) lives in <strong>plain C# assemblies with no <code>UnityEngine</code> dependency</strong>, so it runs under plain NUnit instantly, with no Unity runtime, editor, or device needed at all.</p>
