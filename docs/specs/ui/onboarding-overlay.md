@@ -86,7 +86,9 @@ Source lives in Core (a per-phase title lookup alongside `OnboardingCoach`'s exi
 
 *Approved: Derek, 2026-07-31 ([`/approve` on #330](https://github.com/derekwinters/lucas-doggiehood/issues/330#issuecomment-5148157973)). **Status: distilled** (was Proposed) — implemented in the same PR.*
 
-Because this is a kids' game, the two **movement** steps *show* the gesture, not just tell it: a looping directional-arrow coach layers over the map during the **Pan** and **Zoom** steps only (the `TapBubble`/`CompleteQuest` steps are unchanged). The arrows are a non-blocking visual coach — Candy Cottage chevron-arrows with a thick Ink outline and **Gold** fill (a color the coach bar's own chrome does not use, so it reads as "look here, do this") — drawn procedurally via the same `CandyChrome` IMGUI routines as the rest of the overlay. There is **no new rendering path** and no separate soft-lock: the arrows draw only while `OnboardingOverlay.ShouldDrawGesture` is true (the sequence is on `Pan`/`Zoom`) and vanish the instant `OnboardingOverlay.AdvanceCameraSteps` registers the real pan/zoom, the same real-action gate that advances the coach bar.
+Because this is a kids' game, the two **movement** steps *show* the gesture, not just tell it: a looping directional-arrow coach layers over the map during the **Pan** and **Zoom** steps only (the `TapBubble`/`CompleteQuest` steps are unchanged). The arrows are a non-blocking visual coach reading as a clear **Gold** cue (a color the coach bar's own chrome does not use, so it reads as "look here, do this"). There is **no new rendering path** and no separate soft-lock: the arrows draw only while `OnboardingOverlay.ShouldDrawGesture` is true (the sequence is on `Pan`/`Zoom`) and vanish the instant `OnboardingOverlay.AdvanceCameraSteps` registers the real pan/zoom, the same real-action gate that advances the coach bar.
+
+**Arrow visual ([#615](https://github.com/derekwinters/lucas-doggiehood/issues/615)).** The arrow is the imported **Kenney "Game Icons" `arrowRight` sprite** (`Assets/Art/UI/Onboarding/GestureArrow/Resources/arrowRight.png`, CC0 — credited in `THIRD_PARTY_NOTICES.md`), tinted to the `GestureFillColor` Candy Cottage gold via the existing `TintedIcon.Recolor` and rotated to the four directions via the same `GUIUtility.RotateAroundPivot` math, drawn with `GUI.DrawTexture` at `ArrowFillOpacity`. This replaces the earlier procedurally-drawn chevron shaft+head (the `DrawChevronArm`/`ComputeChevronArmEnd`/`ChevronHalfAngleDeg` helpers, [#468](https://github.com/derekwinters/lucas-doggiehood/issues/468)). Only the arrow *visual* changed — the geometry/timing constants below, the beat sequencer, the on-screen anchor, and the per-beat direction/angle are all unchanged. The single imported `arrowRight` file covers all four directions through rotation (mirroring the [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) lock-icon import precedent). `ArrowThicknessPx`/`ArrowHeadSizePx`/`ArrowOutlineThicknessPx` remain the documented arrow footprint constants but no longer drive a procedural stroke.
 
 - **Pan step — 4-beat loop.** A single directional arrow cycles **left→right → right→left → up→down → down→up**, its center sweeping `PanTravelPx` along the beat's axis over `BeatDurationSec`, holding `BeatPauseSec` between beats, then repeating.
 - **Zoom step — 2-beat loop.** A symmetric pair of arrows either side of the anchor cycles **zoom in** (start near the center at `ZoomNearOffsetPx` pointing outward, spread to `ZoomFarOffsetPx`) and **zoom out** (start far at `ZoomFarOffsetPx` pointing inward, close to `ZoomNearOffsetPx`), on the same beat timing.
@@ -96,8 +98,8 @@ Because this is a kids' game, the two **movement** steps *show* the gesture, not
 
 | Region | Contains | Shared component |
 |---|---|---|
-| Pan gesture arrow | One directional chevron-arrow cycling the four pan beats | Ink outline / hard shadow baseline, [Shared UI Components](shared-components.md) |
-| Zoom gesture arrows | A symmetric pair of chevron-arrows either side of the anchor, cycling the two zoom beats | Ink outline / hard shadow baseline, [Shared UI Components](shared-components.md) |
+| Pan gesture arrow | One directional gold arrow (the Kenney `arrowRight` sprite, #615) cycling the four pan beats | Gold-tinted imported sprite; see [Arrow visual](#gesture-arrow-coach-330) |
+| Zoom gesture arrows | A symmetric pair of gold arrows either side of the anchor, cycling the two zoom beats | Gold-tinted imported sprite; see [Arrow visual](#gesture-arrow-coach-330) |
 
 **Anchors & layout constants** (authored at the 1200px reference; declared as named constants per [#161](https://github.com/derekwinters/lucas-doggiehood/issues/161))
 
@@ -106,7 +108,7 @@ Because this is a kids' game, the two **movement** steps *show* the gesture, not
 | `GestureCenterYPx` | `480` | vertical anchor of the gesture group (horizontal = screen center) |
 | `ArrowLengthPx` | `200` | each arrow's shaft + head, along its axis |
 | `ArrowThicknessPx` | `22` | shaft width |
-| `ArrowHeadSizePx` | `56` | chevron arrowhead span |
+| `ArrowHeadSizePx` | `56` | arrowhead span (retained footprint constant; no longer a procedural stroke since #615) |
 | `ArrowOutlineThicknessPx` | `6` | ink outline (matches the shared `OutlineThicknessPx` baseline) |
 | `PanTravelPx` | `260` | distance the pan arrow's center sweeps per beat |
 | `ZoomNearOffsetPx` | `70` | each zoom arrow's distance from the anchor, closest |

@@ -98,9 +98,13 @@ namespace Doggiehood.Unity
         // gesture reads as "do this", not decoration.
         public static readonly Color GestureFillColor = CandyChrome.GoldColor;
 
-        // Chevron arrowhead arm angle off the shaft axis — an internal rendering
-        // constant (not a wireframe layout value), named per #161.
-        private const float ChevronHalfAngleDeg = 40f;
+        // #615: the gesture arrow is now the imported Kenney "Game Icons"
+        // arrowRight sprite (Assets/Art/UI/Onboarding/GestureArrow/Resources/
+        // arrowRight.png), tinted gold and rotated to the four directions,
+        // replacing the former procedurally-drawn chevron. Loaded by name from
+        // Resources so it ships in the Android build, mirroring the #178 lock
+        // icon (WorldBuilder.LockIconResource / TryLoadExpansionIndicatorSprites).
+        public const string GestureArrowResource = "arrowRight";
 
         // Direction the canonical (points +x / right) arrow is rotated to, in
         // GUI degrees (clockwise, y-down): right, down, left, up.
@@ -121,6 +125,19 @@ namespace Doggiehood.Unity
         /// <see cref="OnboardingStep.Pan"/> is the enum's zero value, matching the
         /// live first step after <see cref="Init"/>.</summary>
         private OnboardingStep lastGestureStep;
+
+        /// <summary>#615: the gold-tinted Kenney arrow sprite, loaded once from
+        /// Resources on first draw via <see cref="TryLoadGestureArrowSprite"/>
+        /// and reused across every beat and direction (the per-direction spin is
+        /// a GUI rotation, not a separate texture). Null if the asset can't
+        /// resolve — a defensive no-op that simply draws no arrow, never a
+        /// crash.</summary>
+        private Sprite gestureArrowSprite;
+
+        /// <summary>#615: whether the one-time load in
+        /// <see cref="EnsureGestureArrowSprite"/> has run, so a failed load
+        /// isn't retried every frame.</summary>
+        private bool gestureArrowLoadAttempted;
 
         /// <summary>#291: the bundled UI font, loaded from Resources so it ships
         /// in the Android build — never an editor-only built-in font, which
@@ -601,32 +618,17 @@ namespace Doggiehood.Unity
             }
         }
 
-        /// <summary>#468: the screen position of an arrow's tip — the point half
-        /// a shaft-length (<see cref="ArrowLengthPx"/>) from <paramref name="center"/>
+        /// <summary>The screen position of an arrow's tip — the point half a
+        /// shaft-length (<see cref="ArrowLengthPx"/>) from <paramref name="center"/>
         /// along the arrow's axis after the per-direction rotation. Public static
-        /// so EditMode tests can assert the chevron head's anchor without a running
-        /// player loop, mirroring <see cref="ComputePanArrowCenter"/>.</summary>
+        /// so EditMode tests can assert the per-direction axis geometry without a
+        /// running player loop, mirroring <see cref="ComputePanArrowCenter"/>.
+        /// (#615 removed the procedural chevron head this once anchored; the tip
+        /// helper stays as the direction-axis reference point.)</summary>
         public static Vector2 ComputeArrowTip(Vector2 center, float directionDeg, float scale)
         {
             var halfLength = ArrowLengthPx * scale / 2f;
             return center + Rotate(new Vector2(halfLength, 0f), directionDeg);
-        }
-
-        /// <summary>#468: the screen position of a chevron arm's far (back)
-        /// endpoint. Each arm is one head-length (<see cref="ArrowHeadSizePx"/>)
-        /// bar running back from the tip, rotated by a SINGLE consistent rotation
-        /// of <c>directionDeg + <paramref name="armHalfAngleDeg"/></c> — never a
-        /// second <see cref="GUIUtility.RotateAroundPivot"/> nested on the already
-        /// per-direction-rotated shaft matrix (whose differing pivot mispositioned
-        /// the head for every non-zero direction). <paramref name="armHalfAngleDeg"/>
-        /// is the signed half-angle off the shaft axis (<c>+/-</c>
-        /// <see cref="ChevronHalfAngleDeg"/>). Public static so the head geometry is
-        /// EditMode-testable, mirroring <see cref="ComputePanArrowCenter"/>.</summary>
-        public static Vector2 ComputeChevronArmEnd(Vector2 center, float directionDeg, float armHalfAngleDeg, float scale)
-        {
-            var tip = ComputeArrowTip(center, directionDeg, scale);
-            var head = ArrowHeadSizePx * scale;
-            return tip + Rotate(new Vector2(-head, 0f), directionDeg + armHalfAngleDeg);
         }
 
         /// <summary>Rotates <paramref name="v"/> by <paramref name="degrees"/>
@@ -641,60 +643,71 @@ namespace Doggiehood.Unity
             return new Vector2(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
         }
 
-        /// <summary>Draws one Candy Cottage arrow (Gold fill, ink outline)
-        /// centered at <paramref name="center"/> and rotated to
-        /// <paramref name="directionDeg"/> — a stadium shaft plus a two-armed
-        /// chevron head, all built from <see cref="CandyChrome"/> stadiums so
-        /// there is no external raster art.</summary>
-        private static void DrawArrow(Vector2 center, float directionDeg, float scale)
+        /// <summary>#615: draws the gold-tinted Kenney arrow sprite centered at
+        /// <paramref name="center"/> and rotated to <paramref name="directionDeg"/>
+        /// (0 = the source's native "points right"), in place of the former
+        /// procedural shaft+chevron. The sprite is square, drawn
+        /// <see cref="ArrowLengthPx"/> across (scaled from the reference), at
+        /// <see cref="ArrowFillOpacity"/> so the map stays faintly readable
+        /// beneath it. Positioning and the per-beat direction are unchanged — only
+        /// the arrow visual is swapped. No-op if the sprite couldn't load.</summary>
+        private void DrawArrow(Vector2 center, float directionDeg, float scale)
         {
-            var length = ArrowLengthPx * scale;
-            var thickness = ArrowThicknessPx * scale;
-            var head = ArrowHeadSizePx * scale;
-            var outline = ArrowOutlineThicknessPx * scale;
-
-            // Shaft: one rotation about the arrow center is correct on its own.
-            var previous = GUI.matrix;
-            GUIUtility.RotateAroundPivot(directionDeg, center);
-            var left = center.x - length / 2f;
-            var shaftRight = center.x + length / 2f - head;
-            var shaft = new Rect(left, center.y - thickness / 2f, Mathf.Max(0f, shaftRight - left), thickness);
-            DrawArrowStroke(shaft, outline);
-            GUI.matrix = previous;
-
-            // Chevron head (#468): each arm is drawn under ONE rotation about the
-            // final tip — directionDeg combined with the arm's +/- half-angle — so
-            // the head stays attached to the shaft for every direction. Previously
-            // a second RotateAroundPivot(ChevronHalfAngleDeg, tip) was nested on the
-            // already-rotated shaft matrix; the differing pivots don't commute, so
-            // the head was only correct at directionDeg == 0.
-            var tip = ComputeArrowTip(center, directionDeg, scale);
-            DrawChevronArm(tip, directionDeg + ChevronHalfAngleDeg, head, thickness, outline);
-            DrawChevronArm(tip, directionDeg - ChevronHalfAngleDeg, head, thickness, outline);
-        }
-
-        private static void DrawChevronArm(Vector2 tip, float armDeg, float head, float thickness, float outline)
-        {
-            var saved = GUI.matrix;
-            GUIUtility.RotateAroundPivot(armDeg, tip);
-            var arm = new Rect(tip.x - head, tip.y - thickness / 2f, head, thickness);
-            DrawArrowStroke(arm, outline);
-            GUI.matrix = saved;
-        }
-
-        private static void DrawArrowStroke(Rect rect, float outline)
-        {
-            if (rect.width <= 0f || rect.height <= 0f)
+            EnsureGestureArrowSprite();
+            if (gestureArrowSprite == null)
             {
                 return;
             }
 
-            var ink = new Rect(rect.x - outline, rect.y - outline, rect.width + 2f * outline, rect.height + 2f * outline);
-            CandyChrome.DrawStadium(ink, InkColor);
+            var size = ArrowLengthPx * scale;
+            var rect = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
 
-            var fill = GestureFillColor;
-            fill.a = ArrowFillOpacity;
-            CandyChrome.DrawStadium(rect, fill);
+            var previousMatrix = GUI.matrix;
+            GUIUtility.RotateAroundPivot(directionDeg, center);
+
+            var previousColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, ArrowFillOpacity);
+            GUI.DrawTexture(rect, gestureArrowSprite.texture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = previousColor;
+
+            GUI.matrix = previousMatrix;
+        }
+
+        /// <summary>#615: loads the gold-tinted gesture arrow sprite once, on the
+        /// first draw, caching the result (success or failure) so a missing asset
+        /// doesn't re-attempt the Resources load every frame.</summary>
+        private void EnsureGestureArrowSprite()
+        {
+            if (gestureArrowLoadAttempted)
+            {
+                return;
+            }
+
+            gestureArrowLoadAttempted = true;
+            TryLoadGestureArrowSprite(out gestureArrowSprite);
+        }
+
+        /// <summary>#615: resolves the imported Kenney <c>arrowRight</c> texture
+        /// from Resources and recolors it to <see cref="GestureFillColor"/>
+        /// (Candy Cottage gold) via <see cref="TintedIcon.Recolor"/> — the same
+        /// tinted-icon path #178 uses for the expansion-lock icon
+        /// (<see cref="WorldBuilder.TryLoadExpansionIndicatorSprites"/>). Returns
+        /// false, with a null out-sprite, if the texture can't load — there is no
+        /// procedural stand-in now, so a missing asset simply draws no arrow.
+        /// Public static so the wiring is EditMode-testable without a running
+        /// player loop.</summary>
+        public static bool TryLoadGestureArrowSprite(out Sprite arrowSprite)
+        {
+            arrowSprite = null;
+
+            var baseTexture = Resources.Load<Texture2D>(GestureArrowResource);
+            if (baseTexture == null)
+            {
+                return false;
+            }
+
+            arrowSprite = TintedIcon.Recolor(baseTexture, GestureFillColor);
+            return true;
         }
 
         /// <summary>Draws the Candy Cottage coach bar (#297/#451), back to front:

@@ -71,7 +71,8 @@ issue #6).
 
 ## Game Icons (Kenney)
 
-- **Files:** `Assets/Art/UI/ExpansionIndicator/Resources/locked.png`
+- **Files:** `Assets/Art/UI/ExpansionIndicator/Resources/locked.png`,
+  `Assets/Art/UI/Onboarding/GestureArrow/Resources/arrowRight.png`
 - **Asset:** Game Icons
 - **Author:** Kenney (www.kenney.nl)
 - **Source:** https://kenney.nl/assets/game-icons
@@ -84,9 +85,11 @@ issue #6).
 
 No attribution is legally required under CC0, but Kenney is credited here
 as a courtesy. The `locked` icon is the chosen map-expansion indicator —
-the marker that signals an unexplored/expandable zone (issue #178). It is
-staged here for the v0.4 neighborhood expansion; nothing wires
-it yet.
+the marker that signals an unexplored/expandable zone (issue #178). The
+`arrowRight` icon is the onboarding gesture-arrow coach's directional arrow
+— tinted gold and rotated to the four directions during the pan/zoom
+onboarding steps (issue #615), replacing the former procedurally-drawn
+chevron. Both are recolored at runtime via `TintedIcon.Recolor`.
 
 ## Car Kit (Kenney)
 
