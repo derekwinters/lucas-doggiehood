@@ -285,13 +285,14 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void CompletingAnyQuestType_PaysTheFlatPayout()
+        public void CompletingEachQuestType_PaysItsPayout()
         {
-            // #23/#24/#62 + integration: full loop for each quest type.
+            // #23/#24/#62/#626 + integration: full loop for each quest type.
+            // Free types pay the flat payout; paid types pay cost × markup.
             var state = NewState();
-            state.Wallet.Deposit(100); // funds for the BuyGift acceptance cost
+            state.Wallet.Deposit(1000); // funds for the BuyGift acceptance cost
 
-            // Lost item: accept, then tap the hidden position (#12, #31).
+            // Lost item (free type): accept, then tap the hidden position (#12, #31).
             var lost = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new System.Random(1));
             var before = state.Wallet.Coins;
             state.Quests.Accept(lost);
@@ -299,7 +300,7 @@ namespace Doggiehood.Core.Tests.Quests
             Assert.That(lost.Status, Is.EqualTo(QuestStatus.Completed));
             Assert.That(state.Wallet.Coins, Is.EqualTo(before + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout));
 
-            // Buy gift: accept deducts cost; payout only after delivery (#13, #30).
+            // Buy gift (paid earner): accept deducts cost; payout only after delivery (#13, #30).
             var buy = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new System.Random(2));
             before = state.Wallet.Coins;
             state.Quests.Accept(buy);
@@ -308,9 +309,10 @@ namespace Doggiehood.Core.Tests.Quests
             state.Quests.DeliverPackage(buy);
             Assert.That(buy.Status, Is.EqualTo(QuestStatus.Completed));
             Assert.That(state.Wallet.Coins,
-                Is.EqualTo(before - buy.Cost.Value + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout));
+                Is.EqualTo(before - buy.Cost.Value
+                    + Doggiehood.Core.Economy.EconomyNumbers.PaidQuestPayout(buy.Cost.Value)));
 
-            // Pest control: spray the right house (#53).
+            // Pest control (free type): spray the right house (#53).
             var pest = state.Quests.GiveQuestTo(state.Dogs[4], QuestType.PestControl, new System.Random(3));
             before = state.Wallet.Coins;
             state.Quests.Accept(pest);
@@ -832,8 +834,9 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // #318: the fence has no delivery-truck flow — accepting deducts the
             // 100-coin cost and completes the quest right away, never entering
-            // the HeadingHome/WaitingForDelivery delivery phases, while still
-            // paying the flat quest payout.
+            // the HeadingHome/WaitingForDelivery delivery phases. #626: as a paid
+            // (Gift-tagged) job it pays back cost × markup (100 -> 150), not the
+            // flat free-type payout.
             var (state, quest, dog) = ReadyFenceQuest();
             var coinsBefore = state.Wallet.Coins;
             var fenceCost = ItemCatalog.Get(ItemCatalog.FenceItemName).Cost.Value;
@@ -846,7 +849,7 @@ namespace Doggiehood.Core.Tests.Quests
                 "the fence skips the delivery legs entirely");
             Assert.That(dog.HasActiveQuest, Is.False);
             Assert.That(state.Wallet.Coins,
-                Is.EqualTo(coinsBefore - fenceCost + EconomyNumbers.QuestPayout));
+                Is.EqualTo(coinsBefore - fenceCost + EconomyNumbers.PaidQuestPayout(fenceCost)));
         }
 
         [Test]
