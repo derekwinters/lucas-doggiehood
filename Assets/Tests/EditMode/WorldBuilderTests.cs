@@ -807,14 +807,13 @@ namespace Doggiehood.Unity.EditModeTests
 
         // #614: every quadrant with no kept house lot renders open-space trees,
         // not just cul-de-sacs. A bend (TurnSE) drops its cupped corner and the
-        // diagonal opposite (2 trees); a twin bend (OpposingTurnsNS) has no lots
-        // and plants all four quadrants. One rendered tree per Core tree-quadrant
+        // diagonal opposite (2 trees). One rendered tree per Core tree-quadrant
         // world position, in the same per-tile "OpenSpaceTree - col,row"
         // container the cul-de-sac path uses. Pinned on the primitive fallback so
-        // the per-tile object count is deterministic.
+        // the per-tile object count is deterministic. (#583 removed the twin-bend
+        // OpposingTurns types, which used to cover the all-four-quadrants case.)
         [TestCase(TileType.TurnSE, 2)]
-        [TestCase(TileType.OpposingTurnsNS, 4)]
-        public void Build_RendersOpenSpaceTreesOnEveryDroppedQuadrant_ForBendsAndTwinBends(
+        public void Build_RendersOpenSpaceTreesOnEveryDroppedQuadrant_ForBends(
             TileType type, int expectedTreeCount)
         {
             Object.DestroyImmediate(root);

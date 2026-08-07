@@ -1178,8 +1178,8 @@ namespace Doggiehood.Unity
             // arms reaching from that centre mesh out to each road edge. A wrong
             // rotation would misalign a Tee against its neighbours, so the yaw
             // comes from the Core RoadTileArt table (guarded by tests). A straight
-            // tile (or the deferred OpposingTurns) has no centre mesh and keeps
-            // tiling straight arms across its whole span.
+            // tile has no centre mesh and keeps tiling straight arms across its
+            // whole span.
             RoadTilePiece piece = default;
             var centerModel = straightKit != null && RoadTileArt.TryGetCenterPiece(type, out piece)
                 ? Resources.Load<GameObject>(piece.ResourceKey)
@@ -1303,7 +1303,7 @@ namespace Doggiehood.Unity
         /// hardcoded origin <see cref="NeighborhoodLayout.WalkNetwork"/> — so
         /// every unlocked intersection (a Tee's three arms as well as the origin
         /// 4-way's four) paints correct crosswalks. Non-intersection tiles
-        /// (straights, turns, cul-de-sacs, the deferred OpposingTurns) yield no
+        /// (straights, turns, cul-de-sacs) yield no
         /// patches. Each patch is clipped across the road so it never covers
         /// sidewalk pavement. Parented to the world root (not the tile's road
         /// container) so it lives alongside the origin's crosswalks.

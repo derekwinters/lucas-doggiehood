@@ -143,16 +143,6 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void TreeWorldPositionsFor_TwinBend_PlantsAllFourQuadrants()
-        {
-            // #614: twin bends carry no lots, so all four quadrants render trees.
-            var positions = TileGeometry.TreeWorldPositionsFor(
-                TileType.OpposingTurnsNS, new TileCoordinate(0, 1));
-
-            Assert.That(positions.Count, Is.EqualTo(4));
-        }
-
-        [Test]
         public void OpenSpaceTreeHasClearGrass_IsTrue_WhenTheQuadrantHasGrassClearOfRoads()
         {
             var quadrant = new LotRect(0f, 15f, 0f, 15f);

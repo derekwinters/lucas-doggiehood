@@ -75,11 +75,11 @@ namespace Doggiehood.Core.Tests.World
         [TestCase(TileType.StraightEW)]
         [TestCase(TileType.TurnNW)]
         [TestCase(TileType.CulDeSacSouth)]
-        [TestCase(TileType.OpposingTurnsNS)]
+        [TestCase(TileType.GreenSpace)]
         public void NonIntersectionTiles_HaveNoCrosswalkPatches(TileType type)
         {
             // Only true crossings (FourWay + the Tees) carry crosswalks; a
-            // straight, turn, cul-de-sac, or (deferred) opposing-turns tile
+            // straight, turn, cul-de-sac, or roadless green-space tile
             // has no crossing to paint.
             var rects = TileCrosswalkGeometry.RectanglesFor(new TileCoordinate(0, 0), type);
             Assert.That(rects.Count, Is.EqualTo(0));

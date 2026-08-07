@@ -92,8 +92,10 @@ namespace Doggiehood.Core.Tests.World
         {
             // #516: every tile on the live map must render — either it resolves a
             // RoadTileArt centre piece, or it is a plain-straight type (tiled
-            // road-straight arms). OpposingTurns* has no kit render path (deferred
-            // in #508), so its presence on the live map is this bug's repro.
+            // road-straight arms). The original repro was an OpposingTurns tile,
+            // which had no kit render path; #583 removed those types outright, so
+            // this now guards against any *future* type reaching the live map
+            // before its render path exists.
             var definition = MapDefinition.Parse(File.ReadAllText(AuthoredMapPath()));
 
             var result = MapLoader.Load(definition);
@@ -106,7 +108,7 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(unrenderable, Is.Empty,
                 "Every live-map tile must resolve a kit render path; "
-                + "OpposingTurns* (no kit mesh) must not appear on the live map.");
+                + "a type with no kit mesh must not appear on the live map.");
         }
 
         private static readonly TileType[] PlainStraightTypes =

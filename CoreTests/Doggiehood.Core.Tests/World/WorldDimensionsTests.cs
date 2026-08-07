@@ -8,7 +8,7 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void LockedStandardDimensions_MatchTheDesignedValues()
         {
-            // #105: the 7 locked standard-world-dimension constants, in
+            // #105: the locked standard-world-dimension constants, in
             // meters, that the tile catalog (docs/specs/world/tile-catalog.md)
             // and future rendering (#106, #109) are built from.
             Assert.That(WorldDimensions.TileSize, Is.EqualTo(60f));
@@ -26,7 +26,6 @@ namespace Doggiehood.Core.Tests.World
             Assert.That(WorldDimensions.SidewalkWidth, Is.EqualTo(2f));
             Assert.That(WorldDimensions.CrosswalkWidth, Is.EqualTo(3f));
             Assert.That(WorldDimensions.CulDeSacBulbRadius, Is.EqualTo(9f));
-            Assert.That(WorldDimensions.OpposingTurnArchRadius, Is.EqualTo(15f));
         }
 
         [Test]

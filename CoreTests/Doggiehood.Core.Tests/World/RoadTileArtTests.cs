@@ -75,12 +75,9 @@ namespace Doggiehood.Core.Tests.World
 
         [TestCase(TileType.StraightNS)]
         [TestCase(TileType.StraightEW)]
-        [TestCase(TileType.OpposingTurnsNS)]
-        [TestCase(TileType.OpposingTurnsEW)]
-        public void StraightAndOpposingTurns_HaveNoDedicatedCentrePiece(TileType type)
+        public void Straights_HaveNoDedicatedCentrePiece(TileType type)
         {
-            // A straight tile is just tiled road-straight arms; OpposingTurns is
-            // deferred (#508 follow-up: compose two bends). Neither resolves a
+            // A straight tile is just tiled road-straight arms — it resolves no
             // single centre mesh, so the kit path keeps tiling straight arms.
             Assert.That(RoadTileArt.TryGetCenterPiece(type, out _), Is.False);
         }

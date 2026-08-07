@@ -4,25 +4,23 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.World
 {
     /// <summary>
-    /// #539: the new 18th <see cref="TileType.GreenSpace"/> — a full grid tile
-    /// authored like the other 17 but carrying NO road and NO buildable lots.
+    /// #539: the <see cref="TileType.GreenSpace"/> tile — a full grid tile
+    /// authored like the other 15 but carrying NO road and NO buildable lots.
     /// It auto-activates (free, no lock icon) once 2+ of its 4 edges border an
     /// already-activated tile; those higher-level behaviors live in
     /// <see cref="Doggiehood.Core.Expansion.GreenSpaceActivation"/> and
     /// <see cref="GameState"/>. These tests pin the catalog data the rest
-    /// builds on: empty road edges/arcs and zero lots.
+    /// builds on: empty road edges and zero lots.
     /// </summary>
     public class GreenSpaceTileTests
     {
         [Test]
-        public void Catalog_GreenSpace_HasNoRoadEdgesOrArcs()
+        public void Catalog_GreenSpace_HasNoRoadEdges()
         {
             var definition = TileCatalog.Get(TileType.GreenSpace);
 
             Assert.That(definition.RoadEdges, Is.Empty,
                 "a green-space tile carries no road on any edge");
-            Assert.That(definition.Arcs, Is.Empty,
-                "a green-space tile has no internal road arcs");
         }
 
         [Test]

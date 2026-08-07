@@ -12,9 +12,10 @@ namespace Doggiehood.Core.World
     /// geometry and walk network (#106) — see
     /// docs/specs/world/sidewalks.md. RoadWidth, GrassVergeWidth, and
     /// SidewalkWidth are wired up via Road/Sidewalk/WalkNetwork;
-    /// CrosswalkWidth is wired up via WalkNetwork's Crosswalk edges.
-    /// CulDeSacBulbRadius and OpposingTurnArchRadius remain unconsumed —
-    /// they're only meaningful once the multi-tile grid (#109) exists.
+    /// CrosswalkWidth is wired up via WalkNetwork's Crosswalk edges, and
+    /// CulDeSacBulbRadius/RoadBendCornerRadius via its curved corners (#581).
+    /// (#583 removed a seventh, OpposingTurnArchRadius, along with the
+    /// OpposingTurns tile types it described.)
     /// </summary>
     public static class WorldDimensions
     {
@@ -74,12 +75,6 @@ namespace Doggiehood.Core.World
         /// 5m out from the junction centre.
         /// </summary>
         public const float RoadBendCornerRadius = 5f;
-
-        /// <summary>
-        /// Opposing-turn arch radius (a quarter-circle radius for the two
-        /// arches in an <c>OpposingTurnsNS</c>/<c>OpposingTurnsEW</c> tile).
-        /// </summary>
-        public const float OpposingTurnArchRadius = 15f;
 
         /// <summary>
         /// World-Y of the road/crosswalk surface — the ground plane most

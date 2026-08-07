@@ -11,7 +11,7 @@ namespace Doggiehood.Core.Tests.World
     /// curve the walk network to follow the rounded road art, instead of the
     /// straight box-corner chord the crossing/crosswalk logic used to emit at a
     /// bend. Box-corner intersection turns (<c>FourWay</c>/<c>Tee</c>) stay hard
-    /// 90 (Derek's decision); <c>OpposingTurns</c> are out of scope (#583).
+    /// 90 (Derek's decision).
     /// </summary>
     public class WalkNetworkCornerCurveTests
     {

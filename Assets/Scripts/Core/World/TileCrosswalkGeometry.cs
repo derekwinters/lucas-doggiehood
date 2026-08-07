@@ -33,8 +33,8 @@ namespace Doggiehood.Core.World
     /// Only a true crossing carries crosswalks: the types whose centre mesh
     /// bakes crosswalk stripes (the 4-way and the four Tees, per
     /// <see cref="RoadTileArt"/>). A straight, turn, or cul-de-sac has no
-    /// crossing to paint, and OpposingTurns is two independent arcs (deferred),
-    /// so all of those yield none. Each intersection gets one patch per
+    /// crossing to paint, so all of those yield none. Each intersection gets
+    /// one patch per
     /// road-bearing edge — a Tee's three real arms, never a phantom fourth over
     /// its closed edge — placed a sidewalk-centre offset out from the tile
     /// centre and clipped across the road so it never covers sidewalk pavement.

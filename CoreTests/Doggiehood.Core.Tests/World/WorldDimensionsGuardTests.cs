@@ -53,7 +53,6 @@ namespace Doggiehood.Core.Tests.World
             WorldDimensions.SidewalkWidth,
             WorldDimensions.CrosswalkWidth,
             WorldDimensions.CulDeSacBulbRadius,
-            WorldDimensions.OpposingTurnArchRadius,
             WorldDimensions.RoadBendCornerRadius,
         };
 
