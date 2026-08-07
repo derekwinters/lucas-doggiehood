@@ -597,15 +597,6 @@ namespace Doggiehood.Unity
                 ProfileWidthPx - ProfilePaddingPx - UpgradeButtonWidthPx, -FooterTop(rowCount));
 
             cardRect.sizeDelta = new Vector2(ProfileWidthPx, ComputeCardHeight(rowCount));
-
-            // #616: the Ink outline band is a sibling that does not auto-follow its
-            // fill's RectTransform, so re-sync the two rects this open-time layout
-            // moves/resizes — the footer pill's position and the card's height —
-            // to keep each band a uniform OutlineThicknessPx around its fill.
-            CandyChromeUgui.AddOutline(
-                upgradeButtonRect.gameObject, UpgradeButtonHeightPx / 2f, CandyChromeUgui.OutlineThicknessPx);
-            CandyChromeUgui.AddOutline(
-                cardRect.gameObject, CandyChromeUgui.PanelRadiusPx, CandyChromeUgui.OutlineThicknessPx);
         }
 
         private static float InnerWidth()

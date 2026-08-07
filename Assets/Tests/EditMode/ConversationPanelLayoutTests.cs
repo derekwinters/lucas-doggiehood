@@ -284,6 +284,121 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(presenter.BodyLabel.font.name, Does.Not.Contain("Arial"));
         }
 
+        [Test]
+        public void Open_LeavesEveryOutlineBandSurroundingItsFill_NoneStrandedInItsParentsCentre()
+        {
+            // #663: this panel chromes the card, the name tag and each pill at
+            // CREATION and places their rects afterwards, so every band used to
+            // keep Unity's default 100x100 centred rect — two black boxes on
+            // screen (one per parent) and no visible outline anywhere on the
+            // panel. Chrome-then-layout must now be as correct as layout-then-
+            // chrome.
+            var dog = state.Dogs.First();
+            state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            presenter.TryOpen(dog);
+
+            SyncBands();
+
+            var followers = presenterHost.GetComponentsInChildren<OutlineBandFollower>(true);
+            Assert.That(followers.Length, Is.EqualTo(ExpectedBandCount),
+                "the card, the name tag and both action pills each carry exactly one band");
+
+            foreach (var follower in followers)
+            {
+                AssertBandSurroundsItsFill(follower);
+            }
+        }
+
+        [Test]
+        public void Close_LeavesNoOutlineBandDrawnUnderThePresenter()
+        {
+            // #663: `content` IS the card, so the card's band is a sibling
+            // OUTSIDE it — content.SetActive(false) could never hide the band,
+            // which is why one black box stayed on screen permanently.
+            var dog = state.Dogs.First();
+            state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+            presenter.TryOpen(dog);
+            SyncBands();
+
+            presenter.Close();
+            SyncBands();
+
+            foreach (var follower in presenterHost.GetComponentsInChildren<OutlineBandFollower>(true))
+            {
+                Assert.That(follower.IsShowing, Is.False,
+                    follower.name + " is still drawn after the conversation closed");
+            }
+        }
+
+        [Test]
+        public void ReopeningTheConversation_DoesNotLeakOutlineBands()
+        {
+            // #663: RebuildActionRow destroys each pill GameObject but not its
+            // sibling band, and an orphan is never re-found — so a fresh band was
+            // created and abandoned on every single open.
+            var dog = state.Dogs.First();
+            state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
+
+            presenter.TryOpen(dog);
+            SyncBands();
+            var afterFirstOpen = OutlineBandObjectCount();
+
+            presenter.TryOpen(dog);
+            presenter.TryOpen(dog);
+            SyncBands();
+
+            Assert.That(OutlineBandObjectCount(), Is.EqualTo(afterFirstOpen),
+                "three opens leave the same number of '<name> Outline' objects as one");
+        }
+
+        // The card, the name tag, "Not now" and the accept pill (#663).
+        private const int ExpectedBandCount = 4;
+
+        // Unity's default RectTransform is 100x100 in its parent's centre; a band
+        // stranded on one measures that inflated by the band width on each side.
+        private const float StrandedBandSizePx = 100f + CandyChromeUgui.OutlineThicknessPx * 2f;
+
+        private const string OutlineSuffix = " Outline";
+
+        /// <summary>EditMode runs no frame loop, so stand in for the frame's
+        /// worth of <c>LateUpdate</c> calls that keep each band on its fill.</summary>
+        private void SyncBands()
+        {
+            OutlineBandFollower.SyncAll(presenterHost);
+        }
+
+        private int OutlineBandObjectCount()
+        {
+            var count = 0;
+            foreach (var rect in presenterHost.GetComponentsInChildren<RectTransform>(true))
+            {
+                if (rect.name.EndsWith(OutlineSuffix))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static void AssertBandSurroundsItsFill(OutlineBandFollower follower)
+        {
+            var band = (RectTransform)follower.transform;
+            var fill = follower.Fill;
+            Assert.That(fill, Is.Not.Null, band.name + " follows no fill");
+
+            var w = CandyChromeUgui.OutlineThicknessPx;
+            Assert.That(fill.offsetMin.x - band.offsetMin.x, Is.EqualTo(w).Within(0.01f), band.name + " left edge");
+            Assert.That(fill.offsetMin.y - band.offsetMin.y, Is.EqualTo(w).Within(0.01f), band.name + " bottom edge");
+            Assert.That(band.offsetMax.x - fill.offsetMax.x, Is.EqualTo(w).Within(0.01f), band.name + " right edge");
+            Assert.That(band.offsetMax.y - fill.offsetMax.y, Is.EqualTo(w).Within(0.01f), band.name + " top edge");
+
+            Assert.That(band.rect.width, Is.Not.EqualTo(StrandedBandSizePx).Within(0.01f),
+                band.name + " is stranded on the default 100x100 rect");
+            Assert.That(band.rect.height, Is.Not.EqualTo(StrandedBandSizePx).Within(0.01f),
+                band.name + " is stranded on the default 100x100 rect");
+        }
+
         private static void AssertColor(Color actual, Color expected, string what)
         {
             var a = (Color32)actual;
