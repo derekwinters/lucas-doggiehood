@@ -1,3 +1,5 @@
+using Doggiehood.Core.Tuning;
+
 namespace Doggiehood.Core.Expansion
 {
     /// <summary>
@@ -9,21 +11,23 @@ namespace Doggiehood.Core.Expansion
     /// unlocked, with no upper cap. The seeded origin FourWay is excluded from
     /// the scaling via <see cref="OriginTileCount"/>, so the first unlock (only
     /// the origin placed) is at the base. See <see cref="TileUnlock"/> for the
-    /// swappable cost function. Tune here (and only here).
+    /// swappable cost function. As of #620 the values read from the
+    /// runtime-overridable <see cref="TuningConfig.Active"/>; the shipping
+    /// defaults live on <see cref="TuningConfig"/>.
     /// </summary>
     public static class TileUnlockNumbers
     {
         /// <summary>Coin cost of unlocking the FIRST frontier tile — the same as
         /// a house build (#540), down from the earlier flat 100.</summary>
-        public const int BaseCost = 50;
+        public static int BaseCost => TuningConfig.Active.TileUnlockBaseCost;
 
         /// <summary>How much each already-unlocked tile adds to the next unlock's
         /// cost (#540, Derek's "+10 per existing tile").</summary>
-        public const int PerExistingTileStep = 10;
+        public static int PerExistingTileStep => TuningConfig.Active.TileUnlockPerExistingTileStep;
 
         /// <summary>The number of pre-seeded, non-player tiles on a fresh map —
         /// just the origin FourWay (<c>GameState</c> seeds exactly one). Excluded
         /// from the per-tile scaling so the first PLAYER unlock is at the base.</summary>
-        public const int OriginTileCount = 1;
+        public static int OriginTileCount => TuningConfig.Active.TileUnlockOriginTileCount;
     }
 }

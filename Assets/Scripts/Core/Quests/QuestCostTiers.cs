@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Tuning;
 
 namespace Doggiehood.Core.Quests
 {
@@ -39,38 +40,41 @@ namespace Doggiehood.Core.Quests
     {
         // --- Cost band boundaries (coins) ---
 
+        // As of #620 each band/gate reads from the runtime-overridable
+        // TuningConfig.Active; the shipping defaults live on TuningConfig.
+
         /// <summary>Cheapest starter-band cost — today's catalog floor.</summary>
-        public const int StarterMinCost = 30;
+        public static int StarterMinCost => TuningConfig.Active.StarterMinCost;
 
         /// <summary>Starter-band ceiling; the gated cost cap at minimum
         /// population, so the early pool matches today's behavior exactly.</summary>
-        public const int StarterMaxCost = 50;
+        public static int StarterMaxCost => TuningConfig.Active.StarterMaxCost;
 
         /// <summary>Mid-band floor.</summary>
-        public const int MidMinCost = 60;
+        public static int MidMinCost => TuningConfig.Active.MidMinCost;
 
         /// <summary>Mid-band ceiling; the gated cost cap once the mid tier is
         /// eligible.</summary>
-        public const int MidMaxCost = 90;
+        public static int MidMaxCost => TuningConfig.Active.MidMaxCost;
 
         /// <summary>Premium-band floor; the premium tier carries no ceiling
         /// (marquee items priced at or above this are all eligible once the
         /// neighborhood is mature).</summary>
-        public const int PremiumMinCost = 100;
+        public static int PremiumMinCost => TuningConfig.Active.PremiumMinCost;
 
         // --- Population gates (dog count at which each tier becomes eligible) ---
 
         /// <summary>Starter tier is eligible from the first dog onward — i.e.
         /// always, so today's behavior is preserved.</summary>
-        public const int StarterPopulationGate = 1;
+        public static int StarterPopulationGate => TuningConfig.Active.StarterPopulationGate;
 
         /// <summary>Mid tier becomes eligible once the neighborhood reaches
         /// this population.</summary>
-        public const int MidPopulationGate = 5;
+        public static int MidPopulationGate => TuningConfig.Active.MidPopulationGate;
 
         /// <summary>Premium tier becomes eligible once the neighborhood reaches
         /// this population.</summary>
-        public const int PremiumPopulationGate = 10;
+        public static int PremiumPopulationGate => TuningConfig.Active.PremiumPopulationGate;
 
         /// <summary>The cost tiers eligible at a given dog population, cheapest
         /// first. Cumulative and monotonic in <paramref name="dogCount"/>.</summary>
