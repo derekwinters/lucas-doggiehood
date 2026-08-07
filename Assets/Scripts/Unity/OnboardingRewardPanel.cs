@@ -232,9 +232,9 @@ namespace Doggiehood.Unity
             medalRect.anchoredPosition = new Vector2(0f, MedalOverlapPx - MedalDiameterPx / 2f);
             CandyChromeUgui.ApplyPill(medalImage, CandyChromeUgui.Gold, MedalDiameterPx, withShadow: true);
             // The medal wears its own thicker ink ring, distinct from the shared
-            // 6px panel/button outline.
-            CandyChromeUgui.AddOutline(medalImage.gameObject).effectDistance =
-                new Vector2(MedalOutlineThicknessPx, MedalOutlineThicknessPx);
+            // 6px panel/button outline — re-sizes the shared contour band (#616).
+            CandyChromeUgui.AddOutline(medalImage.gameObject,
+                MedalDiameterPx / 2f, MedalOutlineThicknessPx);
 
             medalStarText = CreateLabel("Star", medalRect, MedalStarGlyph, MedalStarFontSizePx, TextAnchor.MiddleCenter);
             Stretch(medalStarText.rectTransform);

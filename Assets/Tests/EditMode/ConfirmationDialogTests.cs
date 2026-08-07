@@ -242,8 +242,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(dialog.CardRect.GetComponent<Image>().material,
                 Is.EqualTo(dialog.CardRect.GetComponent<Image>().defaultMaterial),
                 "the card assigns no custom material (#291)");
-            Assert.That(dialog.CardRect.GetComponent<Outline>(), Is.Not.Null,
-                "the card carries the shared Candy Cottage chrome outline (#298)");
+            Assert.That(CandyChromeUgui.OutlineInk(dialog.CardRect.gameObject), Is.Not.Null,
+                "the card carries the shared Candy Cottage chrome outline (#298, #616 contour band)");
 
             Assert.That(dialog.TitleLabel.font, Is.Not.Null);
             Assert.That(dialog.TitleLabel.font.name, Does.Contain("DejaVu"));
