@@ -34,6 +34,14 @@ Every geometry, layout, and tuning value — sizes, offsets, margins, positions,
 
 For **UI layout** values specifically, the named constants don't originate in the code — they originate in the screen's approved wireframe. A UI screen's size/margin/anchor constants are defined and approved in its [UI wireframe spec](../specs/ui/index.md) first (see the [UI Design Process](ui-design-process.md)); implementation code declares exactly those constants, and EditMode tests assert the built UI against them.
 
+#### Central balance tuning (`TuningConfig`)
+
+*[#620](https://github.com/derekwinters/lucas-doggiehood/issues/620)*
+
+Core **balance** values — quest payout, pacing window/cap, tile-unlock and house-build/upgrade pricing, cost-tier bands and gates, move-in chances/weights, onboarding reward — are not only named, they are read at runtime from a single, overridable Core config: `Doggiehood.Core.Tuning.TuningConfig`. Each value is a named field on `TuningConfig`, seeded to the shipping default; a fresh `TuningConfig` reproduces today's exact behavior. The domain "numbers" classes (`EconomyNumbers`, `TileUnlockNumbers`, `HouseBuildNumbers`, `MoveInNumbers`, `HouseUpgradeNumbers`, `QuestCostTiers`, `OnboardingRewardChainNumbers`) stay the documented, discoverable homes for each value but now read from `TuningConfig.Active`, so every seam and gameplay path that goes through them is live-tunable from one place.
+
+`TuningConfig.Active` is the config all Core balance reads resolve against; `TuningConfig.ResetToDefaults()` restores it to a fresh, shipping-defaults instance. This is the seam the debug tuning menu (#622) mutates live, and where the pacing rebalances (#623–#626) set their new defaults. `TuningConfig` is plain C# with no `UnityEngine` dependency, so it stays in the engine-free Core assembly and NUnit-testable. The named-constant rule above is unchanged — `TuningConfig` is *where* the Core balance constants now live, not an exception to naming them.
+
 #### Automated backstop
 
 The rule above is the standard, and it's absolute — but a lightweight CI check (`.github/scripts/check_geometry_literals.py`, wired via `geometry-lint.yml`) catches the egregious case that motivated it (#159 shipped `140f`/`16f`/`32f` inside `OnGUI`). It's deliberately conservative and low-false-positive: it flags an f-suffixed float literal only when it sits in a method body (not a type-level `const`/field declaration) and its magnitude is at least `3` — so structural values (`0`/`1`/`2` for identity, both-sides, centering) and sub-unit fractions (anchors, colour channels, epsilons) are ignored. It is a backstop for the obvious pixel-size/offset/rotation/speed literal, **not** a replacement for the human standard, which still covers every geometry/tuning value regardless of magnitude.

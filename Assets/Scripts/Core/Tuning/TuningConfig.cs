@@ -1,0 +1,180 @@
+namespace Doggiehood.Core.Tuning
+{
+    /// <summary>
+    /// #620: the single, central, runtime-overridable home for Core balance
+    /// values. Every balance number the game reads at runtime lives here as a
+    /// named, mutable instance field, seeded to today's shipping defaults —
+    /// so a fresh <see cref="TuningConfig"/> reproduces current behavior
+    /// exactly, and a live override (from the debug tuning menu, #622) flows
+    /// through to the dependent Core logic without any call-site change.
+    ///
+    /// <para><b>How the seams reach it.</b> The domain "numbers" classes
+    /// (<c>EconomyNumbers</c>, <c>TileUnlockNumbers</c>,
+    /// <c>HouseBuildNumbers</c>, <c>MoveInNumbers</c>,
+    /// <c>HouseUpgradeNumbers</c>, <c>QuestCostTiers</c>,
+    /// <c>OnboardingRewardChainNumbers</c>) read their values from
+    /// <see cref="Active"/>, so every consumer that goes through those classes
+    /// — the pricing/pacing seams AND the gameplay paths that call them — is
+    /// live-tunable from one place. The <c>…Numbers</c> classes remain the
+    /// documented, discoverable named-constant homes (#161); the literal
+    /// defaults now live on this config's field initializers.</para>
+    ///
+    /// <para><b>Behavior-preserving (#620 scope: plumbing only).</b> No default
+    /// value changes here — the new pacing numbers land in #623–#626 on top of
+    /// this seam. Overriding is opt-in: nothing changes on screen until a
+    /// slider moves.</para>
+    ///
+    /// <para>Unity-independent plain C# (no <c>UnityEngine</c> dependency), per
+    /// the Core/Unity split, so it stays NUnit-testable with no engine.</para>
+    ///
+    /// <para>Most values are a <b>scalar</b> or a linear <c>base + step×n</c>
+    /// function, so each is exposed as one (scalar) or two (base + slope)
+    /// tunable fields — the shape the slider UI (#622) consumes.</para>
+    /// </summary>
+    public sealed class TuningConfig
+    {
+        // ---- Economy (EconomyNumbers) ----
+
+        /// <summary>Flat payout per completed quest, regardless of type.</summary>
+        public int QuestPayout = 10;
+
+        /// <summary>#543: hours between quest-rotation refresh boundary checks.</summary>
+        public int RefreshIntervalHours = 1;
+
+        /// <summary>#543: window (hours) the population-scaled active-quest
+        /// target is spread over — the per-hour trickle rate is
+        /// <c>target / PacingWindowHours</c>.</summary>
+        public int PacingWindowHours = 6;
+
+        /// <summary>#310: divisor of the population-scaled concurrent-quest cap
+        /// — roughly one active quest per this many dogs.</summary>
+        public int TargetActiveDivisor = 3;
+
+        /// <summary>#310: minimum aggregate active-quest target.</summary>
+        public int TargetActiveFloor = 3;
+
+        /// <summary>#310: maximum aggregate active-quest target (the flood
+        /// control dial).</summary>
+        public int TargetActiveCeiling = 12;
+
+        // ---- Tile unlock pricing (TileUnlockNumbers) ----
+
+        /// <summary>Coin cost of unlocking the FIRST frontier tile (#540).</summary>
+        public int TileUnlockBaseCost = 50;
+
+        /// <summary>How much each already-unlocked tile adds to the next
+        /// unlock's cost (#540).</summary>
+        public int TileUnlockPerExistingTileStep = 10;
+
+        /// <summary>Pre-seeded non-player tiles on a fresh map (just the origin
+        /// FourWay), excluded from the per-tile scaling.</summary>
+        public int TileUnlockOriginTileCount = 1;
+
+        // ---- House-build pricing (HouseBuildNumbers) ----
+
+        /// <summary>Coin cost of the FIRST house the player builds.</summary>
+        public int HouseBuildBaseCost = 50;
+
+        /// <summary>How much the build cost rises per completed batch of
+        /// <see cref="HouseBuildHousesPerStep"/> houses (#540).</summary>
+        public int HouseBuildPerBatchStep = 5;
+
+        /// <summary>How many houses make up one build-cost step.</summary>
+        public int HouseBuildHousesPerStep = 4;
+
+        // ---- House-upgrade pricing (HouseUpgradeNumbers) ----
+
+        /// <summary>The highest level a house can reach (#59).</summary>
+        public int HouseMaxLevel = 4;
+
+        /// <summary>Coin cost of the level 1 -> 2 upgrade.</summary>
+        public int HouseUpgradeCostToLevel2 = 100;
+
+        /// <summary>Coin cost of the level 2 -> 3 upgrade.</summary>
+        public int HouseUpgradeCostToLevel3 = 200;
+
+        /// <summary>Coin cost of the level 3 -> 4 upgrade.</summary>
+        public int HouseUpgradeCostToLevel4 = 400;
+
+        // ---- Move-in system (MoveInNumbers) ----
+
+        /// <summary>Move-in chance rolled on the next completed quest after a
+        /// success (or at neighborhood start).</summary>
+        public double BaseMoveInChance = 0.05;
+
+        /// <summary>Added to the chance for every completed quest without a
+        /// move-in; reset to base on a success.</summary>
+        public double MoveInChanceIncrementPerQuest = 0.05;
+
+        /// <summary>Relative weight out of 100 for a single-dog household.</summary>
+        public int MoveInSingleWeight = 70;
+
+        /// <summary>Relative weight out of 100 for a parent+puppy household.</summary>
+        public int MoveInParentAndPuppyWeight = 25;
+
+        /// <summary>Relative weight out of 100 for a three-dog household.</summary>
+        public int MoveInThreeDogWeight = 5;
+
+        /// <summary>Chance a household head is drawn from the easter-egg
+        /// reserve instead of the general pools.</summary>
+        public double EasterEggChance = 0.05;
+
+        /// <summary>Smoothing term in the inverse-count breed weight so a breed
+        /// with zero current dogs still gets a finite, positive weight.</summary>
+        public double BreedWeightSmoothing = 1.0;
+
+        // ---- Quest cost tiers (QuestCostTiers) ----
+
+        /// <summary>Cheapest starter-band cost — today's catalog floor.</summary>
+        public int StarterMinCost = 30;
+
+        /// <summary>Starter-band ceiling; the gated cost cap at minimum
+        /// population.</summary>
+        public int StarterMaxCost = 50;
+
+        /// <summary>Mid-band floor.</summary>
+        public int MidMinCost = 60;
+
+        /// <summary>Mid-band ceiling.</summary>
+        public int MidMaxCost = 90;
+
+        /// <summary>Premium-band floor (premium carries no ceiling).</summary>
+        public int PremiumMinCost = 100;
+
+        /// <summary>Population at which the starter tier becomes eligible
+        /// (i.e. always, so today's behavior is preserved).</summary>
+        public int StarterPopulationGate = 1;
+
+        /// <summary>Population at which the mid tier becomes eligible.</summary>
+        public int MidPopulationGate = 5;
+
+        /// <summary>Population at which the premium tier becomes eligible.</summary>
+        public int PremiumPopulationGate = 10;
+
+        // ---- Onboarding reward chain (OnboardingRewardChainNumbers) ----
+
+        /// <summary>Flat coin reward granted at each of the four scripted
+        /// onboarding steps.</summary>
+        public int OnboardingRewardPerStep = 100;
+
+        private static TuningConfig active = new TuningConfig();
+
+        /// <summary>The active config that all Core balance seams read from.
+        /// Defaults to a fresh (shipping-defaults) instance; the debug tuning
+        /// menu (#622) mutates this instance's fields or replaces it live.</summary>
+        public static TuningConfig Active
+        {
+            get { return active; }
+            set { active = value ?? new TuningConfig(); }
+        }
+
+        /// <summary>Restores <see cref="Active"/> to a fresh, shipping-defaults
+        /// config — the debug menu's reset-to-defaults hook (#620). A fresh
+        /// <see cref="TuningConfig"/> is, by construction, bit-identical to
+        /// shipping defaults.</summary>
+        public static void ResetToDefaults()
+        {
+            active = new TuningConfig();
+        }
+    }
+}
