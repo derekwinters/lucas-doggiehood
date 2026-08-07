@@ -215,5 +215,27 @@ namespace Doggiehood.Core.Tuning
         {
             active = new TuningConfig();
         }
+
+        /// <summary>#622: restores only <paramref name="group"/>'s fields on
+        /// <see cref="Active"/> to their shipping defaults, leaving every other
+        /// group's live override in place — the debug tuning menu's per-group
+        /// "Reset" button (docs/specs/ui/debug-tuning-menu.md: "each group also
+        /// carries its own Reset restoring just that group's fields").
+        ///
+        /// <para>Unlike <see cref="ResetToDefaults"/>, which re-seeds by
+        /// swapping in a fresh instance, this mutates the live instance in
+        /// place: a partial reset must not discard the other groups' overrides
+        /// that instance is carrying. Which fields belong to which group is the
+        /// engine-free <see cref="TuningCatalog"/>'s answer, so the scope can
+        /// never drift from the panel's own grouping.</para></summary>
+        public static void ResetGroupToDefaults(TuningGroup group)
+        {
+            var defaults = new TuningConfig();
+            var fields = TuningCatalog.FieldsIn(group);
+            for (var i = 0; i < fields.Count; i++)
+            {
+                fields[i].Write(active, fields[i].Read(defaults));
+            }
+        }
     }
 }
