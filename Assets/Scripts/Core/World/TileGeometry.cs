@@ -107,7 +107,10 @@ namespace Doggiehood.Core.World
         private static LotRect QuadrantWorldBounds(TileCoordinate coordinate, Quadrant quadrant)
         {
             var center = CenterOf(coordinate);
-            var half = WorldDimensions.TileSize / 4f;
+            // The quadrant is a TileSize/2-per-side rect; its half-extent (used
+            // to place and size it) is half of that quadrant side.
+            var quadrantSide = WorldDimensions.TileSize / 2f;
+            var half = quadrantSide / 2f;
             var (signX, signZ) = SignsFor(quadrant);
             var centerX = center.X + signX * half;
             var centerZ = center.Z + signZ * half;
