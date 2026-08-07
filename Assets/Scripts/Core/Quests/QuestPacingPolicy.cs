@@ -72,8 +72,8 @@ namespace Doggiehood.Core.Quests
         /// <summary>#543: the per-hour quest trickle rate — the population-scaled
         /// <see cref="TargetActiveCount"/> spread over
         /// <see cref="EconomyNumbers.PacingWindowHours"/>
-        /// (<c>target / window</c>). So target 6 over a 6h window is 1.0/hr,
-        /// 12 → 2.0/hr, 3 → 0.5/hr, 4 → ~0.667/hr. This is a fractional rate;
+        /// (<c>target / window</c>). #624: over a 4h window target 6 is 1.5/hr,
+        /// 12 → 3.0/hr, and the raised floor of 5 → 1.25/hr. This is a fractional rate;
         /// <see cref="AdvanceAccumulator"/> turns it into whole quests per hour
         /// without ever creating a fractional quest.</summary>
         public double PerHourRate(GameState state)
@@ -87,9 +87,9 @@ namespace Doggiehood.Core.Quests
         /// hour (<c>floor</c> of the sum — 0 on a quiet hour is expected and
         /// fine), and hands back the leftover fraction (&lt; 1) in
         /// <paramref name="remainingAccumulator"/> to carry to the next hour. The
-        /// long-run whole-quest rate equals <see cref="PerHourRate"/>, so a
-        /// 0.5/hr target adds one quest every other hour and a 0.667/hr target
-        /// adds two every three hours — never a fractional quest. Pure: no state
+        /// long-run whole-quest rate equals <see cref="PerHourRate"/>, so (with
+        /// #624's 4h window) a 1.25/hr floor target adds five quests every four
+        /// hours and a 1.5/hr target adds six — never a fractional quest. Pure: no state
         /// is read or written here, so the caller
         /// (<see cref="QuestManager.StartNewDay"/>) owns persisting the
         /// remainder.</summary>

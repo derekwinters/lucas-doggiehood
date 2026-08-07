@@ -18,9 +18,9 @@ namespace Doggiehood.Core.Tests.Tuning
 
             Assert.That(t.QuestPayout, Is.EqualTo(20));
             Assert.That(t.RefreshIntervalHours, Is.EqualTo(1));
-            Assert.That(t.PacingWindowHours, Is.EqualTo(6));
+            Assert.That(t.PacingWindowHours, Is.EqualTo(4));
             Assert.That(t.TargetActiveDivisor, Is.EqualTo(3));
-            Assert.That(t.TargetActiveFloor, Is.EqualTo(3));
+            Assert.That(t.TargetActiveFloor, Is.EqualTo(5));
             Assert.That(t.TargetActiveCeiling, Is.EqualTo(12));
         }
 

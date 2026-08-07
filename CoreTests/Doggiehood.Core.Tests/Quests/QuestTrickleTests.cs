@@ -41,30 +41,31 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void HourlyBoundary_PersistsTheLeftoverFraction_OnGameState()
         {
-            // 8 dogs -> target 3 -> 0.5/hr. The first boundary adds floor(0.5)=0
-            // whole quests and carries 0.5 on the accumulator; the second adds 1
-            // and carries 0.0 — the remainder lives on GameState between calls.
+            // #624: 8 dogs -> target 5 (floor) -> 1.25/hr. The first boundary adds
+            // floor(1.25)=1 whole quest and carries 0.25 on the accumulator; the
+            // second adds floor(0.25+1.25)=1 and carries 0.5 — the remainder lives
+            // on GameState between calls.
             var state = StateWithDogs(8);
 
             state.Quests.MaybeStartNewDay(T0, new Random(1));
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "0.5/hr adds nothing the first hour");
-            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.5).Within(1e-9), "the 0.5 remainder is banked");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(1), "1.25/hr adds one quest the first hour");
+            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.25).Within(1e-9), "the 0.25 remainder is banked");
 
             state.Quests.MaybeStartNewDay(T0 + EconomyNumbers.RefreshInterval, new Random(2));
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(1), "the carried 0.5 + 0.5 makes a whole quest");
-            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.0).Within(1e-9), "and the remainder returns to 0");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(2), "the second hour adds another whole quest");
+            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.5).Within(1e-9), "the carried 0.25 + 1.25 leaves 0.5");
         }
 
         [Test]
         public void QuestPacingAccumulator_RoundTripsThroughSaveCodec()
         {
             var state = StateWithDogs(8);
-            state.Quests.MaybeStartNewDay(T0, new Random(1)); // banks 0.5
-            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.5).Within(1e-9), "precondition: a pending fraction");
+            state.Quests.MaybeStartNewDay(T0, new Random(1)); // #624: banks 0.25 (1.25/hr)
+            Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.25).Within(1e-9), "precondition: a pending fraction");
 
             var loaded = SaveCodec.Load(SaveCodec.Save(state));
 
-            Assert.That(loaded.QuestPacingAccumulator, Is.EqualTo(0.5).Within(1e-9),
+            Assert.That(loaded.QuestPacingAccumulator, Is.EqualTo(0.25).Within(1e-9),
                 "the pending fraction survives save/load so cadence is not reset on relaunch");
         }
 
