@@ -417,8 +417,8 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void RefreshQuests_ForcesAQuestRotation_ViaTheCoreSeam()
         {
-            // #543: quests trickle in hourly (target/6 per hour), so top the
-            // roster up to a 1.0/hr population (18 dogs -> target 6) to make a
+            // #543/#624: quests trickle in hourly (target/4 per hour), so top the
+            // roster up to a 1.5/hr population (18 dogs -> target 6) to make a
             // single forced tick add a whole quest deterministically.
             for (var i = state.Dogs.Count; i < 18; i++)
             {

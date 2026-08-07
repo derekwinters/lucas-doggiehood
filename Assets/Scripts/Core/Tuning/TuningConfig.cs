@@ -45,15 +45,17 @@ namespace Doggiehood.Core.Tuning
 
         /// <summary>#543: window (hours) the population-scaled active-quest
         /// target is spread over — the per-hour trickle rate is
-        /// <c>target / PacingWindowHours</c>.</summary>
-        public int PacingWindowHours = 6;
+        /// <c>target / PacingWindowHours</c>. #624: shortened 6 -> 4 to lift
+        /// the early quest rate off its floor (target/4 instead of target/6).</summary>
+        public int PacingWindowHours = 4;
 
         /// <summary>#310: divisor of the population-scaled concurrent-quest cap
         /// — roughly one active quest per this many dogs.</summary>
         public int TargetActiveDivisor = 3;
 
-        /// <summary>#310: minimum aggregate active-quest target.</summary>
-        public int TargetActiveFloor = 3;
+        /// <summary>#310: minimum aggregate active-quest target. #624: raised
+        /// 3 -> 5 so more of the early neighborhood holds a quest at once.</summary>
+        public int TargetActiveFloor = 5;
 
         /// <summary>#310: maximum aggregate active-quest target (the flood
         /// control dial).</summary>

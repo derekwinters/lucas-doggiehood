@@ -77,74 +77,74 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void PacingWindowHours_IsANamedConstant_EqualToSix()
+        public void PacingWindowHours_IsANamedConstant_EqualToFour()
         {
-            // #543 confirmation #1: the window the target is spread over is a
-            // named, tunable EconomyNumbers constant (#161), not a magic 6.
-            Assert.That(EconomyNumbers.PacingWindowHours, Is.EqualTo(6));
+            // #624 confirmation: the window the target is spread over is a
+            // named, tunable EconomyNumbers constant (#161), not a magic 4.
+            // #624 shortened it 6h -> 4h to lift the early quest rate.
+            Assert.That(EconomyNumbers.PacingWindowHours, Is.EqualTo(4));
         }
 
         [Test]
         public void PerHourRate_IsTargetOverThePacingWindow()
         {
-            // #543: perHour = target / 6.0. Representative targets fall out of
-            // the population-scaled clamp: 8 dogs -> 3, 12 -> 4, 18 -> 6,
-            // 100 -> 12 (ceiling).
+            // #624: perHour = target / 4.0. Representative targets fall out of
+            // the population-scaled clamp with the raised floor of 5:
+            // 8 dogs -> 5 (floor), 12 -> 5 (floor), 18 -> 6, 100 -> 12 (ceiling).
             var policy = new QuestPacingPolicy();
 
-            Assert.That(policy.PerHourRate(StateWithDogs(18)), Is.EqualTo(1.0).Within(1e-9), "target 6 -> 1.0/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(100)), Is.EqualTo(2.0).Within(1e-9), "target 12 -> 2.0/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(8)), Is.EqualTo(0.5).Within(1e-9), "target 3 -> 0.5/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(12)), Is.EqualTo(4.0 / 6.0).Within(1e-9), "target 4 -> ~0.667/hr");
+            Assert.That(policy.PerHourRate(StateWithDogs(18)), Is.EqualTo(1.5).Within(1e-9), "target 6 -> 1.5/hr");
+            Assert.That(policy.PerHourRate(StateWithDogs(100)), Is.EqualTo(3.0).Within(1e-9), "target 12 -> 3.0/hr");
+            Assert.That(policy.PerHourRate(StateWithDogs(8)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
+            Assert.That(policy.PerHourRate(StateWithDogs(12)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
         }
 
         [Test]
         public void AdvanceAccumulator_CarriesTheFractionalRemainder_AcrossBoundaries()
         {
-            // #543: a 0.5/hr target adds exactly 1 whole quest every other hour,
-            // never a fractional quest — the leftover 0.5 is carried forward.
+            // #624: a 1.25/hr target (target 5 floor over the 4h window) adds a
+            // whole quest each hour and, on the fourth hour, the carried
+            // 0.25 + 0.25 + 0.25 remainder tips a second whole quest in — never a
+            // fractional quest, the leftover fraction is carried forward.
             var policy = new QuestPacingPolicy();
-            var state = StateWithDogs(8); // target 3 -> 0.5/hr
+            var state = StateWithDogs(8); // target 5 (floor) -> 1.25/hr
 
             var acc = 0.0;
             var addedPerHour = new System.Collections.Generic.List<int>();
-            for (var hour = 0; hour < 6; hour++)
+            for (var hour = 0; hour < 4; hour++)
             {
                 addedPerHour.Add(policy.AdvanceAccumulator(acc, state, out acc));
             }
 
-            Assert.That(addedPerHour, Is.EqualTo(new[] { 0, 1, 0, 1, 0, 1 }),
-                "0.5/hr trickles 1 quest every other hourly boundary");
+            Assert.That(addedPerHour, Is.EqualTo(new[] { 1, 1, 1, 2 }),
+                "1.25/hr trickles a quest each hour, the carried fraction adding a second on the fourth");
         }
 
         [Test]
-        public void AdvanceAccumulator_TwoThirdsRate_AddsRoughlyTwoQuestsEveryThreeHours()
+        public void AdvanceAccumulator_FractionalRate_NeverAddsAFractionalOrBursts()
         {
-            // #543: a 0.667/hr target (target 4) adds roughly 2 whole quests per
-            // 3 hours via error diffusion — never a fractional quest and never a
-            // burst above ceil(0.667)=1 in a single hour. (Because target/6 is
-            // not exactly representable in double, an individual 3-hour window is
-            // "roughly 2", within one of 2; the long-run rate is exact — see
-            // AdvanceAccumulator_LongRunRate_ConvergesToTargetOverSix.)
+            // #624: a 1.5/hr target (target 6) fills to target over the 4h window
+            // via error diffusion — never a fractional quest and never a burst
+            // above ceil(1.5)=2 in a single hour.
             var policy = new QuestPacingPolicy();
-            var state = StateWithDogs(12); // target 4 -> 0.6667/hr
+            var state = StateWithDogs(18); // target 6 -> 1.5/hr
 
             var acc = 0.0;
             var addedPerHour = new System.Collections.Generic.List<int>();
-            for (var hour = 0; hour < 3; hour++)
+            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
             {
                 addedPerHour.Add(policy.AdvanceAccumulator(acc, state, out acc));
             }
 
-            Assert.That(addedPerHour, Has.All.LessThanOrEqualTo(1), "never a fractional or burst add");
-            Assert.That(addedPerHour.Sum(), Is.EqualTo(2).Within(1), "roughly 2 whole quests over 3 hours");
+            Assert.That(addedPerHour, Has.All.LessThanOrEqualTo(2), "never a fractional or flood add");
+            Assert.That(addedPerHour.Sum(), Is.EqualTo(6), "fills exactly to target over the pacing window");
         }
 
         [Test]
-        public void AdvanceAccumulator_LongRunRate_ConvergesToTargetOverSix()
+        public void AdvanceAccumulator_LongRunRate_ConvergesToTargetOverThePacingWindow()
         {
-            // #543: over the long run the whole quests added per hour equal the
-            // fractional rate target/6 — no drift, no lost fraction.
+            // #624: over the long run the whole quests added per hour equal the
+            // fractional rate target/4 — no drift, no lost fraction.
             var policy = new QuestPacingPolicy();
 
             foreach (var dogCount in new[] { 8, 12, 18, 100 })
@@ -162,7 +162,7 @@ namespace Doggiehood.Core.Tests.Quests
 
                 // Long-run total is within one whole quest of rate*hours.
                 Assert.That(total, Is.EqualTo((int)Math.Round(rate * hours)).Within(1),
-                    $"long-run rate for {dogCount} dogs converges to target/6");
+                    $"long-run rate for {dogCount} dogs converges to target/4");
             }
         }
 
@@ -171,10 +171,21 @@ namespace Doggiehood.Core.Tests.Quests
         {
             var policy = new QuestPacingPolicy();
 
-            // clamp(round(dogCount / 3), 3, 12).
-            Assert.That(policy.TargetActiveCount(StateWithDogs(8)), Is.EqualTo(3), "floor: 8 dogs");
+            // #624: clamp(round(dogCount / 3), 5, 12) — floor raised 3 -> 5.
+            Assert.That(policy.TargetActiveCount(StateWithDogs(8)), Is.EqualTo(5), "floor: 8 dogs");
             Assert.That(policy.TargetActiveCount(StateWithDogs(18)), Is.EqualTo(6), "mid: 18 dogs");
             Assert.That(policy.TargetActiveCount(StateWithDogs(100)), Is.EqualTo(12), "ceiling: 100 dogs");
+        }
+
+        [Test]
+        public void TargetActiveCount_ForAStartingNeighborhood_IsTheRaisedFloorOfFive()
+        {
+            // #624 checklist: a starting neighborhood sits below the divisor's
+            // reach, so its target is the floor — raised 3 -> 5 here.
+            var policy = new QuestPacingPolicy();
+            var starting = GameState.CreateNew();
+
+            Assert.That(policy.TargetActiveCount(starting), Is.EqualTo(5));
         }
 
         [Test]
@@ -182,7 +193,7 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // #161: divisor, floor, ceiling are all named, not inline literals.
             Assert.That(EconomyNumbers.TargetActiveDivisor, Is.EqualTo(3));
-            Assert.That(EconomyNumbers.TargetActiveFloor, Is.EqualTo(3));
+            Assert.That(EconomyNumbers.TargetActiveFloor, Is.EqualTo(5));
             Assert.That(EconomyNumbers.TargetActiveCeiling, Is.EqualTo(12));
         }
 

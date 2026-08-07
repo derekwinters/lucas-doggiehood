@@ -35,8 +35,9 @@ namespace Doggiehood.Core.Economy
         /// target is spread over, giving the per-hour trickle rate
         /// <c>target / PacingWindowHours</c> (see
         /// <see cref="Doggiehood.Core.Quests.QuestPacingPolicy.PerHourRate"/>).
-        /// A named, tunable constant per #161: at 6h a target of 6 trickles one
-        /// quest per hour, 12 → two per hour, 3 → one every other hour.</summary>
+        /// A named, tunable constant per #161. #624: 4h — a target of 6
+        /// trickles 1.5 quests per hour, 12 → three per hour, 5 (floor) →
+        /// 1.25 per hour.</summary>
         public static int PacingWindowHours => TuningConfig.Active.PacingWindowHours;
 
         /// <summary>#310: divisor of the population-scaled concurrent-quest
