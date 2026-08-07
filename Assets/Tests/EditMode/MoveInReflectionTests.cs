@@ -24,9 +24,12 @@ namespace Doggiehood.Unity.EditModeTests
     /// </summary>
     public class MoveInReflectionTests
     {
-        // The move-in pity counter (MoveInNumbers) starts at a 5% base and rises
-        // 5% per completion without a move-in, so it reaches 100% by this many
-        // completions — a vacant house is then guaranteed filled. The loop is
+        // The move-in pity counter (MoveInNumbers) rises by its per-quest
+        // increment on every completion without a move-in, so it reaches 100%
+        // by this many completions — a vacant house is then guaranteed filled.
+        // #625 made the increment population-scaled; the LATE increment is its
+        // minimum across all populations, so basing the bound on it is the safe
+        // worst case (a smaller neighborhood fills even sooner). The loop is
         // deterministic in that it always terminates with a move-in; only WHICH
         // completion triggers it (and the household drawn) is random.
         private static readonly int MaxCompletionsToGuaranteeMoveIn =

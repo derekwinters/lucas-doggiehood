@@ -74,9 +74,16 @@ namespace Doggiehood.Core.Expansion
             get { return remainingReservedBreeds; }
         }
 
-        public double CurrentMoveInChance
+        /// <summary>The effective move-in chance for the next completed quest,
+        /// given the live neighborhood size. #625: the base and per-quest
+        /// increment are population-scaled — higher for a small neighborhood,
+        /// settling to today's values as it fills — so this is derived from the
+        /// live <paramref name="dogCount"/> plus the persisted pity counter,
+        /// with no new stored state.</summary>
+        public double CurrentMoveInChance(int dogCount)
         {
-            get { return MoveInNumbers.BaseMoveInChance + QuestsSinceLastMoveIn * MoveInNumbers.MoveInChanceIncrementPerQuest; }
+            return MoveInNumbers.ScaledBaseMoveInChance(dogCount)
+                + QuestsSinceLastMoveIn * MoveInNumbers.ScaledMoveInIncrementPerQuest(dogCount);
         }
 
         /// <summary>Call once per completed quest. Returns the newly
@@ -93,7 +100,7 @@ namespace Doggiehood.Core.Expansion
                 return Array.Empty<Dog>();
             }
 
-            if (rng.NextDouble() >= CurrentMoveInChance)
+            if (rng.NextDouble() >= CurrentMoveInChance(activeDogs.Count))
             {
                 QuestsSinceLastMoveIn++;
                 return Array.Empty<Dog>();
