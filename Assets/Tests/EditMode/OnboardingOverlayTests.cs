@@ -688,47 +688,45 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void ComputeChevronArmEnd_LandsWhereASingleConsistentRotationPlacesIt_ForANonZeroDirection()
+        public void ComputeArrowTip_IsHalfAShaftLengthFromCenter_AlongThePerDirectionAxis()
         {
-            // #468: the chevron head was drawn by nesting a second
-            // RotateAroundPivot(ChevronHalfAngleDeg, tip) on top of the already
-            // active per-direction rotation about `center`. Because the two
-            // pivots differ, that composition mispositions the arm for every
-            // direction except 0. The fix computes each arm under ONE consistent
-            // rotation via a public static helper (mirroring ComputePanArrowCenter),
-            // so it is EditMode-testable without a running player loop. Assert, for
-            // a non-zero direction (RightToLeft / 180 deg), that both arm endpoints
-            // land exactly where a single vector rotation of the local arm places
-            // them from the rotated tip.
+            // #615: the procedural chevron head (and its ComputeChevronArmEnd /
+            // ChevronHalfAngleDeg helpers) is gone — the arrow is now the tinted
+            // Kenney sprite. ComputeArrowTip survives as the per-direction axis
+            // geometry helper (mirroring ComputePanArrowCenter): the tip sits half
+            // a shaft-length (ArrowLengthPx) from the center along the arrow's
+            // rotated axis. Right (0 deg) points +x; left (180 deg) points -x.
             const float scale = 1f;
-            const float dir = 180f; // ArrowAngleLeftDeg — points left
-            const float armHalfAngle = 40f; // matches ChevronHalfAngleDeg
+            const float half = 200f / 2f; // ArrowLengthPx / 2 at scale 1
             var center = new Vector2(600f, 480f);
 
-            var tip = OnboardingOverlay.ComputeArrowTip(center, dir, scale);
-            // Points left: the tip is half a shaft-length to the left of center.
-            Assert.That(tip.x, Is.EqualTo(center.x - OnboardingOverlay.ArrowLengthPx / 2f).Within(0.01f),
-                "the tip lands where a single per-direction rotation places it");
-            Assert.That(tip.y, Is.EqualTo(center.y).Within(0.01f));
+            var right = OnboardingOverlay.ComputeArrowTip(center, 0f, scale);
+            Assert.That(right.x, Is.EqualTo(center.x + half).Within(0.01f),
+                "the canonical 0-degree arrow's tip is half a shaft-length to the right");
+            Assert.That(right.y, Is.EqualTo(center.y).Within(0.01f));
 
-            var head = OnboardingOverlay.ArrowHeadSizePx; // scale 1
-            foreach (var s in new[] { 1f, -1f })
+            var left = OnboardingOverlay.ComputeArrowTip(center, 180f, scale);
+            Assert.That(left.x, Is.EqualTo(center.x - half).Within(0.01f),
+                "a 180-degree rotation flips the tip to the left of center");
+            Assert.That(left.y, Is.EqualTo(center.y).Within(0.01f));
+        }
+
+        [Test]
+        public void ChevronHead_HelpersAndConstants_AreFullyRemoved_ForTheKenneySpriteSwap()
+        {
+            // #615: the procedural shaft+chevron draw is replaced by the imported
+            // Kenney arrow sprite, so its head-only helpers/constant are DROPPED,
+            // not hidden. This regression guard fails if any are reintroduced.
+            var type = typeof(OnboardingOverlay);
+            var flags = BindingFlags.Public | BindingFlags.NonPublic
+                | BindingFlags.Static | BindingFlags.Instance;
+            foreach (var name in new[]
             {
-                var rad = (dir + s * armHalfAngle) * Mathf.Deg2Rad;
-                // Single consistent rotation: rotate the local arm vector (-head, 0)
-                // by (dir + s*halfAngle) about the tip.
-                var expected = new Vector2(
-                    tip.x + (-head) * Mathf.Cos(rad),
-                    tip.y + (-head) * Mathf.Sin(rad));
-
-                var actual = OnboardingOverlay.ComputeChevronArmEnd(center, dir, s * armHalfAngle, scale);
-                Assert.That(actual.x, Is.EqualTo(expected.x).Within(0.01f), "arm x under one consistent rotation");
-                Assert.That(actual.y, Is.EqualTo(expected.y).Within(0.01f), "arm y under one consistent rotation");
-
-                // The bug's tell: a non-zero direction must tilt the arm off the
-                // horizontal — the old nested-pivot head stayed at tip.y here.
-                Assert.That(actual.y, Is.Not.EqualTo(tip.y).Within(1f),
-                    "a non-zero direction tilts the chevron arm off the horizontal");
+                "ComputeChevronArmEnd", "DrawChevronArm", "DrawArrowStroke", "ChevronHalfAngleDeg",
+            })
+            {
+                Assert.That(type.GetMember(name, flags), Is.Empty,
+                    name + " must be gone (#615 swapped in the Kenney arrow sprite)");
             }
         }
 
