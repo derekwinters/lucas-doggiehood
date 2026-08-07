@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Reflection;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
@@ -12,9 +13,11 @@ using UnityEngine.UI;
 namespace Doggiehood.Unity.EditModeTests
 {
     /// <summary>
-    /// #622: the dev-build-only balance tuning overlay, asserted against the
-    /// approved wireframe's named constants (docs/specs/ui/debug-tuning-menu.md
-    /// / mockups/debug-tuning-menu.html, #161/#621).
+    /// #622: the balance tuning overlay, asserted against the approved
+    /// wireframe's named constants (docs/specs/ui/debug-tuning-menu.md /
+    /// mockups/debug-tuning-menu.html, #161/#621). Per #656 it is part of the
+    /// existing debug menu — present in every build and reached only through
+    /// the 10-tap Debug unlock.
     ///
     /// The load-bearing property is that the panel is a pure <b>view</b> over
     /// Core: its slider set comes from <see cref="TuningCatalog"/> (never a
@@ -52,7 +55,7 @@ namespace Doggiehood.Unity.EditModeTests
             canvasHost = new GameObject("ui-canvas", typeof(Canvas));
             canvasHost.AddComponent<UiCanvas>().Configure();
 
-            overlay = TuningMenuOverlay.CreateIfDevBuild(canvasHost.transform, devBuild: true);
+            overlay = TuningMenuOverlay.Create(canvasHost.transform);
         }
 
         [TearDown]
@@ -244,36 +247,35 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         // ---------------------------------------------------------------
-        // Checklist 4 — dev builds only
+        // Checklist 4 — built in every build, gated by the 10-tap unlock alone
+        // (#656; the Settings-side gate is asserted in SettingsPanelTests and
+        // end-to-end in WorldBootstrapTuningMenuTests)
         // ---------------------------------------------------------------
 
         [Test]
-        public void CreateIfDevBuild_BuildsNothingInAReleaseBuild()
-        {
-            var childrenBefore = canvasHost.transform.childCount;
-
-            var released = TuningMenuOverlay.CreateIfDevBuild(canvasHost.transform, devBuild: false);
-
-            Assert.That(released, Is.Null, "a release build must never instantiate the tuning overlay");
-            Assert.That(canvasHost.transform.childCount, Is.EqualTo(childrenBefore),
-                "a release build must not leave a tuning-overlay GameObject behind either");
-        }
-
-        [Test]
-        public void CreateIfDevBuild_BuildsThePanelInADevBuild()
+        public void Create_BuildsThePanel_WithNoBuildConfigurationGate()
         {
             Assert.That(overlay, Is.Not.Null);
             Assert.That(overlay.PanelRect, Is.Not.Null);
             Assert.That(overlay.IsOpen, Is.False, "the overlay starts closed");
+
+            // #656: the factory takes a parent and nothing else — there is no
+            // dev-build flag left to inject.
+            var create = typeof(TuningMenuOverlay).GetMethod(
+                nameof(TuningMenuOverlay.Create), BindingFlags.Public | BindingFlags.Static);
+            Assert.That(create, Is.Not.Null);
+            Assert.That(create.GetParameters().Select(p => p.ParameterType).ToArray(),
+                Is.EqualTo(new[] { typeof(Transform) }));
         }
 
         [Test]
-        public void DevBuildGate_IsOnInsideTheEditor()
+        public void Create_AlwaysReturnsAnOverlay_NeverNull()
         {
-            // The shipped default the bootstrap feeds CreateIfDevBuild. In a
-            // non-development player build the DEVELOPMENT_BUILD/UNITY_EDITOR
-            // guard compiles this to a constant false.
-            Assert.That(DevBuildGate.IsDevBuild, Is.True);
+            var second = TuningMenuOverlay.Create(canvasHost.transform);
+
+            Assert.That(second, Is.Not.Null,
+                "the overlay ships in every build — development, release-candidate and release");
+            Object.DestroyImmediate(second.gameObject);
         }
 
         // ---------------------------------------------------------------
