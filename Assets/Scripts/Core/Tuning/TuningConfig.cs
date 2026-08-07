@@ -103,12 +103,36 @@ namespace Doggiehood.Core.Tuning
         // ---- Move-in system (MoveInNumbers) ----
 
         /// <summary>Move-in chance rolled on the next completed quest after a
-        /// success (or at neighborhood start).</summary>
+        /// success (or at neighborhood start), at/above the <b>late</b>
+        /// population. #625: this is now the settled (large-neighborhood) end of
+        /// the population-scaled curve; below <see cref="MoveInLatePopulation"/>
+        /// the effective base rises toward <see cref="EarlyMoveInChance"/>.</summary>
         public double BaseMoveInChance = 0.05;
 
         /// <summary>Added to the chance for every completed quest without a
-        /// move-in; reset to base on a success.</summary>
+        /// move-in; reset to base on a success. #625: the settled (late)
+        /// increment — the effective increment scales up toward
+        /// <see cref="EarlyMoveInChanceIncrementPerQuest"/> for small
+        /// neighborhoods.</summary>
         public double MoveInChanceIncrementPerQuest = 0.05;
+
+        /// <summary>#625: the <b>early</b> (small-neighborhood) base move-in
+        /// chance — the high end of the population-scaled curve, so a tiny
+        /// starting neighborhood grows faster.</summary>
+        public double EarlyMoveInChance = 0.15;
+
+        /// <summary>#625: the <b>early</b> (small-neighborhood) per-quest
+        /// increment — the high end of the population-scaled curve.</summary>
+        public double EarlyMoveInChanceIncrementPerQuest = 0.15;
+
+        /// <summary>#625: at/below this dog count the effective move-in rate is
+        /// the early rate; the scaling span's small end.</summary>
+        public int MoveInEarlyPopulation = 6;
+
+        /// <summary>#625: at/above this dog count the effective move-in rate
+        /// settles to the late rate (today's values); the scaling span's large
+        /// end. Between the two populations the rate interpolates linearly.</summary>
+        public int MoveInLatePopulation = 20;
 
         /// <summary>Relative weight out of 100 for a single-dog household.</summary>
         public int MoveInSingleWeight = 70;

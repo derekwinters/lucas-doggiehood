@@ -87,7 +87,10 @@ namespace Doggiehood.Core.Tests.Tuning
             TuningConfig.Active.BaseMoveInChance = overridden;
 
             var system = new MoveInSystem();
-            Assert.That(system.CurrentMoveInChance, Is.EqualTo(overridden));
+            // #625: BaseMoveInChance is the late (settled) end of the
+            // population-scaled curve, so it flows through at/above the late
+            // population with the pity counter at zero.
+            Assert.That(system.CurrentMoveInChance(MoveInNumbers.MoveInLatePopulation), Is.EqualTo(overridden));
         }
 
         [Test]

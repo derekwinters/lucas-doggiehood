@@ -12,15 +12,81 @@ namespace Doggiehood.Core.Tests.Expansion
     public class MoveInSystemTests
     {
         [Test]
+        public void EffectiveRate_ScalesFromEarlyHighToLateLow_ClampedOutsideTheSpan()
+        {
+            // #625: base & increment scale with the live dog count — the early
+            // (small neighborhood) rate high, the late (full neighborhood)
+            // rate settling to today's values, linear between, clamped outside.
+
+            // At/below the early population, the effective base & increment
+            // equal the early rate (e.g. 4 dogs -> early base).
+            Assert.That(MoveInNumbers.ScaledBaseMoveInChance(4),
+                Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9));
+            Assert.That(MoveInNumbers.ScaledMoveInIncrementPerQuest(4),
+                Is.EqualTo(MoveInNumbers.EarlyMoveInChanceIncrementPerQuest).Within(1e-9));
+            Assert.That(MoveInNumbers.ScaledBaseMoveInChance(0),
+                Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9),
+                "far below the early population still clamps to the early rate");
+
+            // At/above the late population, they equal today's late rate.
+            Assert.That(MoveInNumbers.ScaledBaseMoveInChance(MoveInNumbers.MoveInLatePopulation),
+                Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+            Assert.That(MoveInNumbers.ScaledMoveInIncrementPerQuest(MoveInNumbers.MoveInLatePopulation + 100),
+                Is.EqualTo(MoveInNumbers.MoveInChanceIncrementPerQuest).Within(1e-9),
+                "far above the late population still clamps to the late rate");
+
+            // An intermediate population interpolates linearly. The midpoint of
+            // the span lands exactly halfway between the early and late rates.
+            var midPop = (MoveInNumbers.MoveInEarlyPopulation + MoveInNumbers.MoveInLatePopulation) / 2;
+            var expectedMidBase = (MoveInNumbers.EarlyMoveInChance + MoveInNumbers.BaseMoveInChance) / 2.0;
+            var expectedMidIncrement =
+                (MoveInNumbers.EarlyMoveInChanceIncrementPerQuest + MoveInNumbers.MoveInChanceIncrementPerQuest) / 2.0;
+            Assert.That(MoveInNumbers.ScaledBaseMoveInChance(midPop),
+                Is.EqualTo(expectedMidBase).Within(1e-9));
+            Assert.That(MoveInNumbers.ScaledMoveInIncrementPerQuest(midPop),
+                Is.EqualTo(expectedMidIncrement).Within(1e-9));
+
+            // The early rate is strictly higher than the late rate — move-ins
+            // really are faster when the neighborhood is small.
+            Assert.That(MoveInNumbers.EarlyMoveInChance, Is.GreaterThan(MoveInNumbers.BaseMoveInChance));
+        }
+
+        [Test]
+        public void CurrentMoveInChance_UsesTheScaledBaseAndIncrement_ForTheLivePopulation()
+        {
+            // The pity mechanics are unchanged (base + quests * increment); only
+            // the base/increment now come from the population-scaled rate.
+            const int persistedQuests = 2;
+            var system = new MoveInSystem(Array.Empty<string>(), Array.Empty<Breed>(), persistedQuests);
+
+            var smallPop = MoveInNumbers.MoveInEarlyPopulation - 2;
+            var largePop = MoveInNumbers.MoveInLatePopulation + 5;
+
+            Assert.That(system.CurrentMoveInChance(smallPop),
+                Is.EqualTo(MoveInNumbers.ScaledBaseMoveInChance(smallPop)
+                    + persistedQuests * MoveInNumbers.ScaledMoveInIncrementPerQuest(smallPop)).Within(1e-9));
+            Assert.That(system.CurrentMoveInChance(largePop),
+                Is.EqualTo(MoveInNumbers.ScaledBaseMoveInChance(largePop)
+                    + persistedQuests * MoveInNumbers.ScaledMoveInIncrementPerQuest(largePop)).Within(1e-9));
+
+            // Same counter, smaller neighborhood -> strictly higher chance.
+            Assert.That(system.CurrentMoveInChance(smallPop),
+                Is.GreaterThan(system.CurrentMoveInChance(largePop)));
+        }
+
+        [Test]
         public void PityCounter_IncrementsOnFailureAndResetsOnSuccess()
         {
-            // #54: base 5%, +5% per completed quest without a move-in, reset
-            // to base on success.
+            // #54: pity counter climbs +increment per completed quest without a
+            // move-in, reset to base on success. #625: the effective base &
+            // increment are population-scaled; an empty roster (0 dogs) sits
+            // below the early population, so the early rate applies.
             var system = new MoveInSystem();
             var vacant = new VacantHouses(new[] { 1 });
             var activeDogs = Array.Empty<Dog>();
+            var pop = activeDogs.Length;
 
-            Assert.That(system.CurrentMoveInChance, Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+            Assert.That(system.CurrentMoveInChance(pop), Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9));
 
             for (var i = 1; i <= 3; i++)
             {
@@ -28,15 +94,15 @@ namespace Doggiehood.Core.Tests.Expansion
 
                 Assert.That(result, Is.Empty, $"quest {i} should not have triggered a move-in");
                 Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(i));
-                Assert.That(system.CurrentMoveInChance,
-                    Is.EqualTo(MoveInNumbers.BaseMoveInChance + i * MoveInNumbers.MoveInChanceIncrementPerQuest).Within(1e-9));
+                Assert.That(system.CurrentMoveInChance(pop),
+                    Is.EqualTo(MoveInNumbers.EarlyMoveInChance + i * MoveInNumbers.EarlyMoveInChanceIncrementPerQuest).Within(1e-9));
             }
 
             var household = system.OnQuestCompleted(vacant, activeDogs, new SequenceRandom(0.0));
 
             Assert.That(household, Is.Not.Empty);
             Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(0));
-            Assert.That(system.CurrentMoveInChance, Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+            Assert.That(system.CurrentMoveInChance(pop), Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9));
         }
 
         [Test]
@@ -54,7 +120,7 @@ namespace Doggiehood.Core.Tests.Expansion
             }
 
             Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(0));
-            Assert.That(system.CurrentMoveInChance, Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+            Assert.That(system.CurrentMoveInChance(0), Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9));
         }
 
         [Test]
@@ -378,8 +444,8 @@ namespace Doggiehood.Core.Tests.Expansion
                 persistedQuests);
 
             Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(persistedQuests));
-            Assert.That(system.CurrentMoveInChance,
-                Is.EqualTo(MoveInNumbers.BaseMoveInChance + persistedQuests * MoveInNumbers.MoveInChanceIncrementPerQuest)
+            Assert.That(system.CurrentMoveInChance(0),
+                Is.EqualTo(MoveInNumbers.EarlyMoveInChance + persistedQuests * MoveInNumbers.EarlyMoveInChanceIncrementPerQuest)
                     .Within(1e-9));
             Assert.That(system.RemainingReservedBreeds, Is.EqualTo(new[] { Breed.FrenchBulldog }));
         }
@@ -390,7 +456,7 @@ namespace Doggiehood.Core.Tests.Expansion
             var system = new MoveInSystem(Array.Empty<string>(), Array.Empty<Breed>());
 
             Assert.That(system.QuestsSinceLastMoveIn, Is.EqualTo(0));
-            Assert.That(system.CurrentMoveInChance, Is.EqualTo(MoveInNumbers.BaseMoveInChance).Within(1e-9));
+            Assert.That(system.CurrentMoveInChance(0), Is.EqualTo(MoveInNumbers.EarlyMoveInChance).Within(1e-9));
         }
 
         [Test]

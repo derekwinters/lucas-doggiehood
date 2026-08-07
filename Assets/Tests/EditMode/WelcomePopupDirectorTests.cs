@@ -22,6 +22,9 @@ namespace Doggiehood.Unity.EditModeTests
     /// </summary>
     public class WelcomePopupDirectorTests
     {
+        // #625: the increment is population-scaled; the late increment is its
+        // minimum, so this bound (built from it) is the safe worst case that
+        // still guarantees a move-in within that many completions.
         private static readonly int MaxCompletionsToGuaranteeMoveIn =
             (int)System.Math.Ceiling(1.0 / MoveInNumbers.MoveInChanceIncrementPerQuest) + 1;
 
