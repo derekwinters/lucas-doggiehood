@@ -209,6 +209,49 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void CrosswalkFrontSetback_IsDerivedFromTheMeasuredBodyLength_PlusAStopGap()
+        {
+            // #639: the truck yields at its FRONT BUMPER, so it needs to know how
+            // far its pivot sits behind that bumper. That distance is MEASURED off
+            // the spawned kit body (its renderer bounds, already at ModelScale) —
+            // never a hand-tuned literal (#161) — so it tracks the real model.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                Assert.That(truck.BodyLength, Is.GreaterThan(0f),
+                    "the truck measures its own body length from the spawned kit model");
+                Assert.That(truck.CrosswalkFrontSetback, Is.GreaterThan(truck.BodyLength / 2f),
+                    "the setback is the pivot-to-bumper half body PLUS a visible stop gap");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void BodyLength_FallsBackToTheGrayboxFootprint_WhenTheModelCannotLoad()
+        {
+            // #639: on the graybox path the body IS the fallback cube, so its
+            // footprint length is the measurement the setback derives from.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                DeliveryTruckView.ForcePrimitiveFallback = true;
+                var truck = DeliveryTruckView.Spawn(root.transform);
+
+                Assert.That(truck.BodyLength, Is.EqualTo(DeliveryTruckView.FallbackScale.z).Within(0.0001f),
+                    "the graybox path measures the pre-#547 footprint's own length");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void Spawn_FallsBackToGrayboxCube_WhenModelCannotLoad()
         {
             // #547: same fallback discipline the road/house kit loaders use — when

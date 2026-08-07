@@ -139,21 +139,36 @@ namespace Doggiehood.Unity.EditModeTests
 
                 // Near edge on the +Z approach side of the +4.75 crosswalk band.
                 var nearEdgeZ = 4.75f + HalfCrosswalk; // 6.25
-                var reachedNearEdge = false;
+
+                // #639: transform.position is the CENTRE of the truck body, so
+                // stopping THAT at the near edge leaves the front half hanging
+                // over the stripes and clipping the dog. Measure the LEADING
+                // EDGE instead — half a body ahead of the pivot, and travelling
+                // south the front leads in -Z. Both figures come from the view's
+                // own measured body, so this tracks the real model rather than a
+                // literal.
+                var halfBody = truck.BodyLength / 2f;
+                Assert.That(halfBody, Is.GreaterThan(0f),
+                    "the spawned truck must expose a measurable body length to yield with");
+                var expectedStopZ = nearEdgeZ + truck.CrosswalkFrontSetback;
+
+                var reachedStop = false;
                 for (var step = 0; step < 3000 && !truck.IsGone; step++)
                 {
                     truck.Tick(0.05f);
                     var z = truck.transform.position.z;
-                    Assert.That(z, Is.GreaterThan(nearEdgeZ - 0.05f),
-                        "the truck must never drive into a crosswalk band a dog holds");
-                    if (Mathf.Abs(z - nearEdgeZ) < 0.1f)
+                    var frontBumperZ = z - halfBody;
+                    Assert.That(frontBumperZ, Is.GreaterThan(nearEdgeZ - 0.05f),
+                        "the truck's FRONT must never overhang a crosswalk band a dog holds");
+                    if (Mathf.Abs(z - expectedStopZ) < 0.1f)
                     {
-                        reachedNearEdge = true;
+                        reachedStop = true;
                     }
                 }
 
-                Assert.That(reachedNearEdge, Is.True,
-                    "the truck should have driven up to the crosswalk's near edge and paused there");
+                Assert.That(reachedStop, Is.True,
+                    "the truck should have driven up to its stop boundary — a front setback "
+                    + "short of the crosswalk's near edge — and paused there");
                 Assert.That(truck.IsGone, Is.False, "the truck cannot finish while the dog holds the crosswalk");
 
                 // The dog clears the crosswalk; the truck resumes and completes.

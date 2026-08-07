@@ -59,6 +59,35 @@ namespace Doggiehood.Unity
         // truck is never invisible when the model can't load.
         public static readonly Vector3 FallbackScale = new Vector3(1.4f, 1.4f, 2.6f);
 
+        // #639: the daylight left between the truck's front bumper and a
+        // crosswalk's near edge when it yields — so it reads as waiting BEHIND
+        // the stripes rather than nosing onto them.
+        private const float CrosswalkStopGap = 0.5f;
+
+        // A Bounds has 8 corners; MeasureBodyLength walks all of them to bring a
+        // world-space renderer bound back into the truck root's local space.
+        private const int BoundsCornerCount = 8;
+
+        // Below this the measurement is degenerate (a body that contributed no
+        // renderers), and the graybox footprint is the better answer.
+        private const float MinMeasurableBodyLength = 0.01f;
+
+        /// <summary>#639: the truck's length along its own travel axis, measured
+        /// at spawn from the body it actually got — the kit model's renderer
+        /// bounds (already scaled by <see cref="ModelScale"/>), or
+        /// <see cref="FallbackScale"/>.z on the graybox path. The crosswalk
+        /// setback derives from this rather than a hand-tuned literal (#161), so
+        /// it tracks the real model if the kit or its scale ever changes.</summary>
+        public float BodyLength { get; private set; }
+
+        /// <summary>#639: how far ahead of the truck's pivot its front bumper
+        /// sits (half a body), plus <see cref="CrosswalkStopGap"/>. Handed to
+        /// <see cref="RoadCrossingTraversal"/> so the yield stop is measured at
+        /// the BUMPER: <c>transform.position</c> is the centre of the body, so
+        /// stopping that at a crosswalk's near edge left the whole front half
+        /// overhanging the band — and clipping the dog crossing it.</summary>
+        public float CrosswalkFrontSetback => BodyLength / 2f + CrosswalkStopGap;
+
         /// <summary>
         /// #547: test seam mirroring <see cref="WorldBuilder.ForcePrimitiveFallback"/>
         /// — forces <see cref="Spawn"/> down the graybox-cube branch (the same
@@ -172,6 +201,10 @@ namespace Doggiehood.Unity
                 visual.transform.localRotation = Quaternion.Euler(0f, ModelForwardYawOffsetDegrees, 0f);
                 visual.transform.localScale = Vector3.one * ModelScale;
                 ApplyCarColor(visual, view.CarColorHex);
+
+                // #639: measure the real body now, while the root is still
+                // unrotated and before Drive() starts aiming it.
+                view.BodyLength = MeasureBodyLength(truck.transform, visual);
             }
             else
             {
@@ -183,9 +216,45 @@ namespace Doggiehood.Unity
                 graybox.transform.SetParent(truck.transform);
                 graybox.transform.localPosition = Vector3.zero;
                 graybox.transform.localScale = FallbackScale;
+
+                // #639: on this path the graybox IS the body, so its footprint
+                // length is the measurement the crosswalk setback derives from.
+                view.BodyLength = FallbackScale.z;
             }
 
             return view;
+        }
+
+        /// <summary>#639: the spawned body's extent along the truck root's own
+        /// forward (local +Z) axis — the length that decides how far ahead of the
+        /// pivot the front bumper sits. <see cref="Renderer.bounds"/> is a
+        /// world-space AABB, so each one's corners are brought back into the
+        /// root's local space before measuring; the root is unrotated at spawn,
+        /// but this keeps the figure right whatever the parent's orientation.
+        /// Falls back to the graybox footprint when the body contributes no
+        /// renderers at all.</summary>
+        private static float MeasureBodyLength(Transform root, GameObject visual)
+        {
+            var minZ = float.MaxValue;
+            var maxZ = float.MinValue;
+
+            foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
+            {
+                var bounds = renderer.bounds;
+                for (var corner = 0; corner < BoundsCornerCount; corner++)
+                {
+                    var offset = new Vector3(
+                        (corner & 1) == 0 ? -bounds.extents.x : bounds.extents.x,
+                        (corner & 2) == 0 ? -bounds.extents.y : bounds.extents.y,
+                        (corner & 4) == 0 ? -bounds.extents.z : bounds.extents.z);
+                    var local = root.InverseTransformPoint(bounds.center + offset);
+                    minZ = Mathf.Min(minZ, local.z);
+                    maxZ = Mathf.Max(maxZ, local.z);
+                }
+            }
+
+            var length = maxZ - minZ;
+            return length > MinMeasurableBodyLength ? length : FallbackScale.z;
         }
 
         public void DeliverTo(Vector3 doorTarget, TileMap map, WalkNetwork walkNetwork, Action deliveredCallback)
@@ -332,8 +401,12 @@ namespace Doggiehood.Unity
             var exitAlong = crossingRoad.AlongAxis(new GridPoint(to.x, to.z));
             legTravelSign = exitAlong - entryAlong < 0f ? -1f : 1f;
 
+            // #639: the truck is not a point — it hands the traversal its own
+            // pivot-to-bumper setback so the yield stop lands at its FRONT,
+            // leaving the whole footprint clear of the crosswalk band.
             crossing = new RoadCrossingTraversal(
-                RoadCrossingGate.Shared, this, crossingRoad, network, entryAlong, exitAlong);
+                RoadCrossingGate.Shared, this, crossingRoad, network, entryAlong, exitAlong,
+                CrosswalkFrontSetback);
 
             // #600: a fresh follower for this leg's road and travel direction.
             following = new CarFollowing(legTravelSign);
