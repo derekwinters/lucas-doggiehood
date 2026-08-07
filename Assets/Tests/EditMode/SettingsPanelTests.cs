@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Reflection;
 using Doggiehood.Core.Debugging;
@@ -737,7 +736,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(
                 type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                     .Select(m => m.Name)
-                    .Where(n => n.IndexOf("DevBuild", StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Where(n => n.IndexOf("DevBuild", System.StringComparison.OrdinalIgnoreCase) >= 0)
                     .ToArray(),
                 Is.Empty,
                 "no dev-build member survives on the Settings panel");
@@ -763,7 +762,7 @@ namespace Doggiehood.Unity.EditModeTests
             var live = panelHost.GetComponentsInChildren<Button>(true)
                 .Where(b => b.gameObject.activeInHierarchy)
                 .ToArray();
-            Assert.That(live, Does.Not.Contain(panel.TuneBalanceButtonRect.GetComponent<Button>()),
+            Assert.That(live, Has.No.Member(panel.TuneBalanceButtonRect.GetComponent<Button>()),
                 "the entry pill must not be tappable before the unlock");
             Assert.That(live.Any(b => b.gameObject == panel.DebugTabRect.gameObject), Is.False,
                 "the Debug tab is hidden too, so the gesture is the only way in");
