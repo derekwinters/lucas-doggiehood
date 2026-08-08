@@ -19,6 +19,8 @@ These measurements are locked in Core (`WorldDimensions`, [#105](https://github.
 | Cul-de-sac bulb radius | 9m |
 | Road-bend corner radius | 5m — the plain `Turn*`/`road-bend` road centerline's corner-arc radius, measured from the shared `road-bend` kit FBX (raw radius 50 at the raw×0.1 world scale, midline of the inner 20-raw and outer 80-raw asphalt-edge arcs). The walk network curves a bend's sidewalks concentrically about it ([#581](https://github.com/derekwinters/lucas-doggiehood/issues/581)); see [Sidewalks & Walk Network](sidewalks.md) |
 
+The **lane offset** (`1.5m`, the distance from a road centerline to a lane's centre, [#672](https://github.com/derekwinters/lucas-doggiehood/issues/672)) is **not** a locked dimension — it is *derived* as `RoadWidth / 4` in `RoadLane.Offset`, so widening the road carries the lanes with it and there is nothing new to keep in sync. See [Sidewalks & Walk Network § Lanes](sidewalks.md#lanes-672).
+
 ## Grid coordinates
 
 The world is an integer tile grid addressed as **`(x, y)`** — `x` runs east/west, `y` runs north/south. In Core these map to `TileCoordinate.Col` (`x`) and `TileCoordinate.Row` (`y`); world-space is derived by `TileGeometry` (`Col → +X`, `Row → +Z`). The starting `FourWay` intersection is the origin **`(0, 0)`**; the tile directly north of it is **`(0, 1)`**, directly east is **`(1, 0)`**.

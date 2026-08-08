@@ -98,6 +98,52 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void NominalBodyWidth_IsTheImportedModelWidthTimesTheConfiguredScale()
+        {
+            // #672: the lane offset spends half the roadway's half-width, so the
+            // truck's WIDTH is now a budgeted dimension too — not just its length.
+            Assert.That(DeliveryTruckFootprint.NominalBodyWidth,
+                Is.EqualTo(DeliveryTruckFootprint.ModelWidthAtImportScale
+                           * DeliveryTruckFootprint.ModelScale).Within(Tolerance));
+        }
+
+        [Test]
+        public void TheWholeBodyFitsInsideTheLane_SoNoBumperReachesTheSidewalk()
+        {
+            // THE lane constraint (#672). Shifting the truck a lane offset off the
+            // centerline only counts as "keeps to the right-hand lane" if its far
+            // side is still on the pavement:
+            //
+            //     laneOffset + halfBodyWidth  <=  RoadWidth / 2
+            //
+            // Otherwise the fix that stops the truck straddling the centre line
+            // would just put its outer wheels on the sidewalk instead — exactly
+            // the technically-correct-but-wrong trade the #538 invariant exists to
+            // rule out.
+            var halfBody = DeliveryTruckFootprint.NominalBodyWidth / 2f;
+
+            Assert.That(RoadLane.Offset + halfBody,
+                Is.LessThanOrEqualTo(WorldDimensions.RoadWidth / 2f),
+                "the truck's outer side must stay on the paved roadway once it is in its lane");
+            Assert.That(DeliveryTruckFootprint.FitsInsideItsLane(
+                DeliveryTruckFootprint.NominalBodyWidth), Is.True);
+        }
+
+        [Test]
+        public void FitsInsideItsLane_RejectsABodyWiderThanTheBudget()
+        {
+            // Pin both sides of the boundary, like the length budget above, so a
+            // later kit swap or scale change fails CI rather than quietly putting
+            // a bumper over the curb.
+            Assert.That(DeliveryTruckFootprint.MaxBodyWidth,
+                Is.EqualTo((WorldDimensions.RoadWidth / 2f - RoadLane.Offset) * 2f).Within(Tolerance));
+            Assert.That(DeliveryTruckFootprint.NominalBodyWidth,
+                Is.LessThanOrEqualTo(DeliveryTruckFootprint.MaxBodyWidth));
+            Assert.That(DeliveryTruckFootprint.FitsInsideItsLane(
+                    DeliveryTruckFootprint.MaxBodyWidth * 2f), Is.False);
+        }
+
+        [Test]
         public void SetbacksAreDrawnFromTheSameBody_FrontLeadingByTheStopGap()
         {
             // Both setbacks are measured from the truck's pivot (the centre of
