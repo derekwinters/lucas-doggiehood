@@ -327,7 +327,7 @@ namespace Doggiehood.Unity.EditModeTests
             // #57: the whole first zone is unlocked and empty — every one
             // of its lots gets a tappable "build here" marker.
             var state = GameState.CreateNew();
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));  // the live unlock price
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
@@ -343,7 +343,8 @@ namespace Doggiehood.Unity.EditModeTests
         public void BuildsNoEmptyLotMarker_ForALotThatAlreadyHasAHouse()
         {
             var state = GameState.CreateNew();
-            state.Wallet.Deposit(150);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));  // the live unlock + build prices
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
             var zoneLots = state.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile);
@@ -451,7 +452,7 @@ namespace Doggiehood.Unity.EditModeTests
             // YardLandscaping (keyed on the lot alone), rendered at the empty-lot
             // render sites via the existing BuildYardLandscaping(lot) helper.
             var state = GameState.CreateNew();
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));  // the live unlock price
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
@@ -481,7 +482,7 @@ namespace Doggiehood.Unity.EditModeTests
             // lot's real facing is along X, so the two diverge — asserting the
             // network footprint here is what the full-build path must now match.
             var state = GameState.CreateNew();
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));  // the live unlock price
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 
@@ -1395,7 +1396,8 @@ namespace Doggiehood.Unity.EditModeTests
             // same resolution the build/upgrade paths use — so the zone house
             // is fenced alongside the four starters.
             var withZoneHouse = GameState.CreateNew();
-            withZoneHouse.Wallet.Deposit(150);
+            withZoneHouse.Wallet.Deposit(TileUnlock.Cost(withZoneHouse.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(withZoneHouse.PlayerBuiltHouseCount));  // the live unlock + build prices
             withZoneHouse.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             Assert.That(withZoneHouse.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True, "the test needs the first zone unlocked");
             var zoneLot = withZoneHouse.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];
@@ -1439,7 +1441,8 @@ namespace Doggiehood.Unity.EditModeTests
             // live world with a zone house, toggling fences on must fence the
             // zone house too — not only the starting four.
             var withZoneHouse = GameState.CreateNew();
-            withZoneHouse.Wallet.Deposit(150);
+            withZoneHouse.Wallet.Deposit(TileUnlock.Cost(withZoneHouse.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(withZoneHouse.PlayerBuiltHouseCount));  // the live unlock + build prices
             withZoneHouse.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             withZoneHouse.TryUnlockTile(FrontierEditModeWorld.FirstTile);
             var zoneLot = withZoneHouse.LotsForUnlockedTile(FrontierEditModeWorld.FirstTile)[0];

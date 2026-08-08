@@ -35,7 +35,8 @@ namespace Doggiehood.Unity.EditModeTests
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
 
             state = GameState.CreateNew();
-            state.Wallet.Deposit(150); // 100 to unlock the first zone + 50 to build a house
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));  // the live unlock + build prices
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 

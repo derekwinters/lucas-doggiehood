@@ -11,7 +11,7 @@ namespace Doggiehood.Core.Tests.World
     /// of the first-quest dog. While the chain waits on that step,
     /// <see cref="GameState.TryUpgradeHouse"/> upgrades only the stored target
     /// house — any other house is a no-op (no charge, no level change), so the
-    /// self-funding ladder can't be soft-locked by spending the sole 100 coins
+    /// self-funding ladder can't be soft-locked by spending the step's coins
     /// on the wrong house. Once the chain advances past the step, upgrading any
     /// house is unrestricted again.
     /// </summary>
@@ -25,7 +25,7 @@ namespace Doggiehood.Core.Tests.World
             var target = state.Houses[0].Id;
             var other = state.Houses[1].Id;
 
-            // Step 1 completes: pays the 100-coin bonus and records the target house.
+            // Step 1 completes: pays the flat step reward and records the target house.
             state.GrantOnboardingCompletionReward(target);
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
             var coinsBefore = state.Wallet.Coins;
@@ -54,8 +54,9 @@ namespace Doggiehood.Core.Tests.World
 
             Assert.That(upgraded, Is.True, "the first-quest dog's house is the eligible upgrade");
             Assert.That(state.GetHouseLevel(target), Is.EqualTo(levelBefore + 1), "the target house rose one level");
-            Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep),
-                "the 100-coin bonus funded the 100-coin upgrade, and advancing pays the next step's 100");
+            Assert.That(state.Wallet.Coins,
+                Is.EqualTo(2 * OnboardingRewardChainNumbers.RewardPerStep - HouseUpgradeNumbers.CostToLevel2),
+                "the first-quest bonus funded the upgrade, and advancing pays the next step's reward");
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.ExpandMap),
                 "upgrading the target house advances the reward chain");
         }

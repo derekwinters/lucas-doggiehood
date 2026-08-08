@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Expansion;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -65,7 +66,8 @@ namespace Doggiehood.Unity.EditModeTests
             // WorldBootstrap wires it (its onHouseBuilt callback), then tap the
             // resulting house through TapRouter.
             var state = GameState.CreateNew();
-            state.Wallet.Deposit(150); // 100 to unlock the first zone + 50 to build a house
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));  // the live unlock + build prices
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             state.TryUnlockTile(FrontierEditModeWorld.FirstTile);
 

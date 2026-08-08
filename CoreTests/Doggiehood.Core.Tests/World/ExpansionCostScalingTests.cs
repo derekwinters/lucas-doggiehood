@@ -10,8 +10,10 @@ namespace Doggiehood.Core.Tests.World
     /// balance functions. The tile curve counts only player-unlocked tiles (the
     /// seeded origin FourWay is excluded), and the house curve counts only
     /// player-built houses (the 4 starting houses are excluded) — so the first
-    /// unlock and the first build are both at the 50-coin base, and only later
-    /// builds/unlocks scale up.
+    /// unlock and the first build are both at their base cost, and only later
+    /// builds/unlocks scale up. (#674 moved the tile base to 200; the counting
+    /// rules this class guards are unchanged, and the expectations read the
+    /// live seams so they stay true through any further tuning.)
     /// </summary>
     public class ExpansionCostScalingTests
     {
@@ -19,18 +21,20 @@ namespace Doggiehood.Core.Tests.World
         public void FirstUnlock_ChargesTheBase_SecondUnlock_ChargesBasePlusTen()
         {
             var state = FrontierTestWorld.AfterOnboarding();
-            state.Wallet.Deposit(1_000);
+            state.Wallet.Deposit(TileUnlockNumbers.BaseCost * 2 + TileUnlockNumbers.PerExistingTileStep);
 
             var before = state.Wallet.Coins;
             Assert.That(state.TryUnlockTile(new TileCoordinate(0, 1)), Is.True);
             var firstCharge = before - state.Wallet.Coins;
-            Assert.That(firstCharge, Is.EqualTo(50), "first unlock is at the base (origin excluded)");
+            Assert.That(firstCharge, Is.EqualTo(TileUnlockNumbers.BaseCost),
+                "first unlock is at the base (origin excluded)");
 
             before = state.Wallet.Coins;
             Assert.That(state.TryUnlockTile(new TileCoordinate(1, 0)), Is.True);
             var secondCharge = before - state.Wallet.Coins;
-            Assert.That(secondCharge, Is.EqualTo(60),
-                "second unlock scales by +10 for the one player-unlocked tile");
+            Assert.That(secondCharge,
+                Is.EqualTo(TileUnlockNumbers.BaseCost + TileUnlockNumbers.PerExistingTileStep),
+                "second unlock scales by one step for the one player-unlocked tile");
         }
 
         [Test]

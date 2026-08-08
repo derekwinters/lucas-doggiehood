@@ -127,7 +127,7 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
 
             state.TryUnlockTile(FrontierTestWorld.FirstTile);
 
@@ -234,11 +234,13 @@ namespace Doggiehood.Core.Tests.World
         [Test]
         public void TryBuildHouse_Succeeds_DeductsTheFlatCost_AndAddsALevelOneVacantHouse_OnAnEmptyLotInAnUnlockedZone()
         {
-            // #57/#540: 50 to unlock the first tile + 50 (HouseBuildNumbers base)
-            // to build on one of its lots.
+            // #57/#540: the first tile's unlock cost + HouseBuildNumbers' base
+            // to build on one of its lots — read from the live pricing seams so
+            // a rebalance (#674) can't strand this setup.
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));
             state.TryUnlockTile(FrontierTestWorld.FirstTile);
             var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
@@ -259,7 +261,8 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(200);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count)
+                + HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));
             state.TryUnlockTile(FrontierTestWorld.FirstTile);
             var lot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
             state.TryBuildHouse(lot.HouseId);
@@ -308,7 +311,7 @@ namespace Doggiehood.Core.Tests.World
         {
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
             state.TryUnlockTile(FrontierTestWorld.FirstTile);
             var expectedLot = state.LotsForUnlockedTile(FrontierTestWorld.FirstTile)[0];
 
@@ -459,7 +462,7 @@ namespace Doggiehood.Core.Tests.World
             // dogs can wander there.
             var state = GameState.CreateNew();
             state.SetTargetMap(FrontierTestWorld.LoadAuthoredTargetMap());
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));
 
             Assert.That(state.WalkNetwork.Nodes.Any(n => n.Z > WorldDimensions.TileSize / 2f + 0.001f), Is.False,
                 "network already spanned the zone before unlocking");

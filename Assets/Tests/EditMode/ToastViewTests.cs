@@ -1,4 +1,5 @@
 using Doggiehood.Core.Cameras;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.Ui;
 using NUnit.Framework;
@@ -162,16 +163,19 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         // Every currently-approved toast line (#578): the quest template plus the
-        // four onboarding step lines, built through the real copy assembly.
+        // four onboarding step lines, built through the real copy assembly at the
+        // LIVE payouts (#674 moved the onboarding reward to 200) — the fit guard
+        // has to measure the strings a player actually sees.
         private static string[] ApprovedToastMessages()
         {
+            var reward = OnboardingRewardChainNumbers.RewardPerStep;
             return new[]
             {
-                ToastCopy.QuestComplete(10),
-                ToastCopy.OnboardingStep(OnboardingRewardStep.FirstQuest, 100),
-                ToastCopy.OnboardingStep(OnboardingRewardStep.UpgradeHouse, 100),
-                ToastCopy.OnboardingStep(OnboardingRewardStep.ExpandMap, 100),
-                ToastCopy.OnboardingStep(OnboardingRewardStep.BuildHouse, 100),
+                ToastCopy.QuestComplete(EconomyNumbers.QuestPayout),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.FirstQuest, reward),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.UpgradeHouse, reward),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.ExpandMap, reward),
+                ToastCopy.OnboardingStep(OnboardingRewardStep.BuildHouse, reward),
             };
         }
 

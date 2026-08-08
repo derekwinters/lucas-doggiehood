@@ -74,8 +74,11 @@ namespace Doggiehood.Core.Tuning
 
         // ---- Tile unlock pricing (TileUnlockNumbers) ----
 
-        /// <summary>Coin cost of unlocking the FIRST frontier tile (#540).</summary>
-        public int TileUnlockBaseCost = 50;
+        /// <summary>Coin cost of unlocking the FIRST frontier tile (#540,
+        /// raised 50 -> 200 by #674 so expanding costs about what it costs to
+        /// FILL the tile it opens — 4 lots x a 50-coin house — which flips the
+        /// incentive from spreading out to building houses first).</summary>
+        public int TileUnlockBaseCost = 200;
 
         /// <summary>How much each already-unlocked tile adds to the next
         /// unlock's cost (#540).</summary>
@@ -193,8 +196,13 @@ namespace Doggiehood.Core.Tuning
         // ---- Onboarding reward chain (OnboardingRewardChainNumbers) ----
 
         /// <summary>Flat coin reward granted at each of the four scripted
-        /// onboarding steps.</summary>
-        public int OnboardingRewardPerStep = 100;
+        /// onboarding steps. #674 raised this 100 -> 200 in lockstep with
+        /// <see cref="TileUnlockBaseCost"/>: the guided chain is self-funding by
+        /// design, and the binding rung is the expand step — the player reaches
+        /// it holding <c>2R − upgrade</c>, which has to cover the unlock. See
+        /// <c>Doggiehood.Core.Onboarding.OnboardingLadder</c>, which derives the
+        /// minimum viable reward from the live costs.</summary>
+        public int OnboardingRewardPerStep = 200;
 
         private static TuningConfig active = new TuningConfig();
 

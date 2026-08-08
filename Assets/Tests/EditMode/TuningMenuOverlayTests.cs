@@ -3,6 +3,7 @@ using System.Reflection;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
+using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.Tuning;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -165,13 +166,34 @@ namespace Doggiehood.Unity.EditModeTests
         public void MovingASlider_ChangesAPricingSeamThatDependsOnIt()
         {
             // A second, non-economy seam so "live" is proven end to end and not
-            // just for one field: tile-unlock pricing reads the same config.
+            // just for one field: tile-unlock pricing reads the same config. The
+            // slider value is deliberately NOT the shipping default (#674 made
+            // that 200), or the assertion would pass without the slider moving.
+            const int overriddenBaseCost = 275;
             var baseCost = Row(nameof(TuningConfig.TileUnlockBaseCost));
+            Assert.That(TuningConfig.Active.TileUnlockBaseCost, Is.Not.EqualTo(overriddenBaseCost),
+                "precondition: the test value must differ from the shipping default");
 
-            baseCost.Slider.value = 200f;
+            baseCost.Slider.value = overriddenBaseCost;
 
-            Assert.That(TuningConfig.Active.TileUnlockBaseCost, Is.EqualTo(200));
-            Assert.That(TileUnlockNumbers.BaseCost, Is.EqualTo(200));
+            Assert.That(TuningConfig.Active.TileUnlockBaseCost, Is.EqualTo(overriddenBaseCost));
+            Assert.That(TileUnlockNumbers.BaseCost, Is.EqualTo(overriddenBaseCost));
+        }
+
+        [Test]
+        public void MovingTheOnboardingRewardSlider_ChangesTheRewardChainSeam()
+        {
+            // #674: the onboarding reward moved in lockstep with the tile-unlock
+            // cost, so it too must stay live-tunable rather than inlined (#161).
+            const int overriddenReward = 275;
+            var reward = Row(nameof(TuningConfig.OnboardingRewardPerStep));
+            Assert.That(TuningConfig.Active.OnboardingRewardPerStep, Is.Not.EqualTo(overriddenReward),
+                "precondition: the test value must differ from the shipping default");
+
+            reward.Slider.value = overriddenReward;
+
+            Assert.That(TuningConfig.Active.OnboardingRewardPerStep, Is.EqualTo(overriddenReward));
+            Assert.That(OnboardingRewardChainNumbers.RewardPerStep, Is.EqualTo(overriddenReward));
         }
 
         [Test]

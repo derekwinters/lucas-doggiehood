@@ -298,7 +298,7 @@ namespace Doggiehood.Unity.EditModeTests
             }
 
             // Upgrading the target advances the chain past UpgradeHouse — the
-            // 100-coin step-1 bonus funds the 100-coin upgrade.
+            // step-1 bonus funds the upgrade (the self-funding ladder).
             Assert.That(state.TryUpgradeHouse(target), Is.True, "the target house upgrades");
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.ExpandMap));
 

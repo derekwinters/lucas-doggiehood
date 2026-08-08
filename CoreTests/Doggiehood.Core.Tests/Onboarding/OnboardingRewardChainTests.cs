@@ -12,9 +12,10 @@ namespace Doggiehood.Core.Tests.Onboarding
     /// <summary>
     /// #316: the 4-step scripted, one-time first-run reward chain
     /// (first-quest -> upgrade -> expand -> build), each step paying a flat
-    /// 100 coins by reusing the quest reward-payout path (a Wallet deposit),
-    /// not the random rotation. Steps fire exactly once, in fixed order, and
-    /// the chain self-funds every step.
+    /// 200 coins (#674, raised from 100) by reusing the quest reward-payout path
+    /// (a Wallet deposit), not the random rotation. Steps fire exactly once, in
+    /// fixed order, and the chain self-funds every step — the self-funding
+    /// relationship itself is guarded by <c>OnboardingLadderTests</c>.
     /// </summary>
     public class OnboardingRewardChainTests
     {
@@ -28,13 +29,15 @@ namespace Doggiehood.Core.Tests.Onboarding
         }
 
         [Test]
-        public void RewardPerStep_IsTheSingleHundredCoinConstant()
+        public void RewardPerStep_IsTheSingleTwoHundredCoinConstant()
         {
-            Assert.That(OnboardingRewardChainNumbers.RewardPerStep, Is.EqualTo(100));
+            // #674: raised 100 -> 200 alongside the 200-coin tile unlock, so the
+            // ladder below still funds itself (see OnboardingLadderTests).
+            Assert.That(OnboardingRewardChainNumbers.RewardPerStep, Is.EqualTo(200));
         }
 
         [Test]
-        public void CompletingTheCurrentStep_PaysExactlyOneHundred_AndAdvances()
+        public void CompletingTheCurrentStep_PaysExactlyTheFlatReward_AndAdvances()
         {
             var chain = new OnboardingRewardChain();
             var wallet = new Wallet();
@@ -100,10 +103,12 @@ namespace Doggiehood.Core.Tests.Onboarding
         [Test]
         public void SelfFunding_EachStepsRewardCoversTheNextStepsCost_AcrossAllFourSteps()
         {
-            // The player starts with nothing; the chain funds itself end-to-end:
-            // 100 bonus >= 100 upgrade; upgrade reward >= 50 expand (#540: the
-            // first tile is now only 50); expand reward >= 50 build; the player
-            // ends with a (now larger) cushion.
+            // The player starts with nothing; the chain funds itself end-to-end
+            // (#674: 200 per step against a 100 upgrade, a 200 tile unlock and a
+            // 50 build, ending on a 450-coin cushion). The relationship — that
+            // the reward is large enough for the live costs — is derived and
+            // guarded in OnboardingLadderTests; this walks the real Core entry
+            // points step by step.
             var state = GameState.CreateNew();
             state.SetTargetMap(Doggiehood.Core.Tests.World.FrontierTestWorld.LoadAuthoredTargetMap());
             Assert.That(state.Wallet.Coins, Is.EqualTo(0));
@@ -114,28 +119,31 @@ namespace Doggiehood.Core.Tests.Onboarding
             Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.UpgradeHouse));
 
-            // Step 2: upgrade a house (L1->L2, cost 100) — funded by the bonus.
+            // Step 2: upgrade a house (L1->L2, cost 100) — funded by step 1.
             var houseId = state.Houses[0].Id;
             Assert.That(state.Wallet.CanAfford(HouseUpgradeNumbers.CostToLevel2), Is.True,
-                "the 100 bonus covers the 100 upgrade");
+                "the first-quest reward covers the upgrade");
             Assert.That(state.TryUpgradeHouse(houseId), Is.True);
-            Assert.That(state.Wallet.Coins, Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep));
+            Assert.That(state.Wallet.Coins,
+                Is.EqualTo(2 * OnboardingRewardChainNumbers.RewardPerStep - HouseUpgradeNumbers.CostToLevel2),
+                "two rewards banked, minus the upgrade");
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.ExpandMap));
 
-            // Step 3: expand the map (first tile, #540 cost 50) — funded by step 2.
+            // Step 3: expand the map (first tile, #674 cost 200) — funded by steps 1-2.
             Assert.That(state.Wallet.CanAfford(TileUnlock.Cost(state.Map.Tiles.Count)), Is.True,
-                "the upgrade reward covers the 50 expand");
+                "the banked rewards cover the expand");
             Assert.That(state.TryUnlockTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile), Is.True);
             Assert.That(state.Wallet.Coins,
-                Is.EqualTo(OnboardingRewardChainNumbers.RewardPerStep
-                    + (OnboardingRewardChainNumbers.RewardPerStep - TileUnlock.Cost(1))),
-                "step 2's balance plus step 3's reward, minus the cheaper 50 expand");
+                Is.EqualTo(3 * OnboardingRewardChainNumbers.RewardPerStep
+                    - HouseUpgradeNumbers.CostToLevel2
+                    - TileUnlock.Cost(TileUnlockNumbers.OriginTileCount)),
+                "three rewards banked, minus the upgrade and the expand");
             Assert.That(state.RewardChain.CurrentStep, Is.EqualTo(OnboardingRewardStep.BuildHouse));
 
-            // Step 4: build a house on the newly unlocked lot (base cost 50).
+            // Step 4: build a house on the newly unlocked lot (the build base).
             var lot = state.LotsForUnlockedTile(Doggiehood.Core.Tests.World.FrontierTestWorld.FirstTile)[0];
             Assert.That(state.Wallet.CanAfford(HouseBuildNumbers.BaseCost), Is.True,
-                "the expand reward covers the 50 build");
+                "the expand reward covers the build");
             Assert.That(state.TryBuildHouse(lot.HouseId), Is.True);
 
             Assert.That(state.RewardChain.IsComplete, Is.True);
@@ -144,7 +152,7 @@ namespace Doggiehood.Core.Tests.Onboarding
                     - HouseUpgradeNumbers.CostToLevel2
                     - TileUnlock.Cost(1)
                     - HouseBuildNumbers.BaseCost),
-                "the player ends the chain with a small cushion (larger now the first tile is 50)");
+                "the player ends the chain with a comfortable cushion");
         }
 
         [Test]
