@@ -13,9 +13,18 @@ namespace Doggiehood.Core.World
     /// overlapping — and it is deliberately generic: it knows nothing about
     /// trucks or dogs, only opaque occupant identities, so every current and
     /// future vehicle shares one mechanism. The claim is keyed per crosswalk
-    /// segment (not per whole route), so it generalizes for free to a vehicle
-    /// that eventually turns across an intersection — each crosswalk span it
-    /// drives over is one independent claim.
+    /// segment (not per whole route).
+    ///
+    /// That per-segment keying is the right STORAGE but the wrong unit of
+    /// decision (#673). This type's doc used to argue the per-segment claim
+    /// "generalizes for free to a vehicle that eventually turns across an
+    /// intersection — each crosswalk span it drives over is one independent
+    /// claim." It does not: an intersection's incoming and outgoing bands are
+    /// not independent, because a vehicle that takes the first without being
+    /// sure of the second strands itself between them. A vehicle therefore
+    /// claims a whole <see cref="RoadManoeuvre"/> at a time, layered on the
+    /// per-band <see cref="TryEnter"/>/<see cref="Exit"/> here — whose
+    /// semantics are unchanged.
     ///
     /// Not thread-safe: the simulation ticks on one thread.
     /// </summary>
@@ -72,6 +81,40 @@ namespace Doggiehood.Core.World
             }
         }
 
+        /// <summary>
+        /// True when <paramref name="occupant"/> currently holds
+        /// <paramref name="crosswalk"/>. A read-only probe with no claiming side
+        /// effect, so an all-or-nothing multi-band acquire
+        /// (<see cref="RoadManoeuvre.TryAcquire"/>) can tell a band it claimed
+        /// in THIS attempt — and must unwind if the attempt fails — from one the
+        /// occupant already legitimately held.
+        /// </summary>
+        public bool IsHeldBy(WalkEdge crosswalk, object occupant)
+        {
+            if (occupant == null)
+            {
+                return false;
+            }
+
+            return claims.TryGetValue(CrosswalkKey.For(crosswalk), out var holder)
+                   && Equals(holder, occupant);
+        }
+
+        /// <summary>
+        /// A total order over crosswalk identity — the same for every occupant,
+        /// whichever direction it is driving. #673 needs it so two vehicles
+        /// whose manoeuvres overlap always ATTEMPT the shared bands in the same
+        /// sequence: one of them then wins outright, instead of the pair
+        /// grabbing different halves, both rolling back, and retrying in
+        /// lockstep forever. Ordered by the canonical (low, high) endpoint pair,
+        /// so a vehicle reading an edge A-&gt;B and one reading it B-&gt;A sort
+        /// it identically.
+        /// </summary>
+        public static int CompareClaimOrder(WalkEdge a, WalkEdge b)
+        {
+            return CrosswalkKey.For(a).CompareTo(CrosswalkKey.For(b));
+        }
+
         /// <summary>Drops every claim. Used to reset <see cref="Shared"/> to a
         /// clean state between tests, exactly as the modal-input gate is.</summary>
         public void Clear()
@@ -86,7 +129,7 @@ namespace Doggiehood.Core.World
         /// width are intentionally excluded — the two endpoints fully identify
         /// the span.
         /// </summary>
-        private readonly struct CrosswalkKey : IEquatable<CrosswalkKey>
+        private readonly struct CrosswalkKey : IEquatable<CrosswalkKey>, IComparable<CrosswalkKey>
         {
             private readonly GridPoint low;
             private readonly GridPoint high;
@@ -117,6 +160,21 @@ namespace Doggiehood.Core.World
             public bool Equals(CrosswalkKey other)
             {
                 return low.Equals(other.low) && high.Equals(other.high);
+            }
+
+            /// <summary>Lexicographic over the canonical endpoint pair — an
+            /// arbitrary but STABLE order, which is all a lock ordering needs
+            /// (#673).</summary>
+            public int CompareTo(CrosswalkKey other)
+            {
+                var byLow = Compare(low, other.low);
+                return byLow != 0 ? byLow : Compare(high, other.high);
+            }
+
+            private static int Compare(GridPoint a, GridPoint b)
+            {
+                var byX = a.X.CompareTo(b.X);
+                return byX != 0 ? byX : a.Z.CompareTo(b.Z);
             }
 
             public override bool Equals(object obj)

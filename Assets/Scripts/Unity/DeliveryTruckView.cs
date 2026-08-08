@@ -21,6 +21,14 @@ namespace Doggiehood.Unity
     /// different right-hand sides, so a lane baked into the graph would be
     /// ambiguous); the lane is resolved per LEG in Core (<see cref="RoadLeg"/> /
     /// <see cref="RoadLane"/>) and applied to every drive target and clamp here.
+    ///
+    /// #673: right-of-way, by contrast, is NOT per leg. Crossing an intersection
+    /// is always two legs meeting at its centre, so a per-leg claim could not see
+    /// the whole crossing — the truck drove to the turn point, released what it
+    /// held, and only then looked at the crosswalk it was about to cross. It now
+    /// acquires every band of the crossing at once, before entering it
+    /// (<see cref="RouteManoeuvres"/> / <see cref="RoadManoeuvre"/> in Core), and
+    /// holds them until its tail is clear of the far side.
     /// </summary>
     public sealed class DeliveryTruckView : MonoBehaviour
     {
@@ -151,6 +159,16 @@ namespace Doggiehood.Unity
         // position to along-road coordinates.
         private RoadCrossingTraversal crossing;
         private Road crossingRoad;
+
+        // #673: right-of-way is scoped to the whole MANOEUVRE through an
+        // intersection, not to one leg of it. A route's waypoints are junctions,
+        // so crossing an intersection is always two legs meeting at its centre —
+        // which is why the per-leg traversal could never see a whole crossing.
+        // These are resolved once for the route and SHARED by both legs, so the
+        // claim taken on the approach survives the turn and is released only when
+        // the truck's tail is clear of the far side.
+        private RouteManoeuvres routeManoeuvres = RouteManoeuvres.None;
+        private readonly List<GridPoint> routePoints = new List<GridPoint>();
 
         // #672: the lane the truck keeps to on the current leg — the signed
         // perpendicular offset from that leg's road centerline to the centre of
@@ -321,9 +339,11 @@ namespace Doggiehood.Unity
             var route = DeliveryTruckRoute.ToDoor(map, new GridPoint(doorTarget.x, doorTarget.z));
 
             waypoints.Clear();
+            routePoints.Clear();
             foreach (var point in route.Inbound)
             {
                 waypoints.Add(new Vector3(point.X, TruckHeight, point.Z));
+                routePoints.Add(point);
             }
 
             // Outbound[0] is the stop, already the last inbound waypoint — skip it.
@@ -331,7 +351,12 @@ namespace Doggiehood.Unity
             {
                 var point = route.Outbound[i];
                 waypoints.Add(new Vector3(point.X, TruckHeight, point.Z));
+                routePoints.Add(point);
             }
+
+            // #673: resolve the whole route's intersection manoeuvres up front —
+            // the decision is Core's, this only supplies the geometry.
+            routeManoeuvres = RouteManoeuvres.Resolve(roads, network, routePoints);
 
             stopIndex = route.Inbound.Count - 1;
             doorPosition = new Vector3(doorTarget.x, TruckHeight, doorTarget.z);
@@ -401,7 +426,12 @@ namespace Doggiehood.Unity
                 DropPackage();
             }
 
-            crossing?.ReleaseAll();
+            // #673: reaching a waypoint must NOT release anything. At an
+            // intersection the waypoint IS the turn point, so releasing here left
+            // the truck sitting in the middle of the box holding nothing — and
+            // only then looking at the crosswalk on its outgoing leg. The release
+            // is driven by "my tail has cleared the last band of this manoeuvre"
+            // instead, inside RoadCrossingTraversal.
             targetIndex++;
             if (targetIndex >= waypoints.Count)
             {
@@ -418,7 +448,7 @@ namespace Doggiehood.Unity
         {
             IsGone = true;
             routeActive = false;
-            crossing?.ReleaseAll();
+            ReleaseEveryClaim();
             if (Application.isPlaying)
             {
                 Destroy(gameObject);
@@ -471,18 +501,38 @@ namespace Doggiehood.Unity
                 return;
             }
 
+            // #673: the manoeuvres this leg has to reason about — the
+            // intersection it is driving INTO (acquired whole, before it enters)
+            // and the one it has just come out of (released once its tail is
+            // clear). Both legs of a crossing share the same manoeuvre objects,
+            // so the claim carries across the turn.
+            var manoeuvres = routeManoeuvres.ForLeg(targetIndex);
+
             // #639/#658: the truck is not a point — it hands the traversal its
             // own pivot-to-bumper and pivot-to-tail setbacks, so the yield stop
             // lands at its FRONT and the release only happens once its TAIL is
             // clear. Between them the whole footprint stays off a band it does
-            // not hold. #660 bounds the pair: both fit in the clear gap between
-            // an intersection's two bands, so the truck never holds both at once.
+            // not hold. #660 bounds the pair so both fit in the clear gap between
+            // an intersection's two bands. (#673 made that bound belt-and-braces
+            // rather than load-bearing: the truck now takes an intersection's
+            // bands all-or-nothing, so holding two at once can no longer produce
+            // the lock-ordering cycle #660 was raised for.)
             crossing = new RoadCrossingTraversal(
                 RoadCrossingGate.Shared, this, crossingRoad, network, entryAlong, exitAlong,
-                CrosswalkFrontSetback, CrosswalkRearSetback);
+                CrosswalkFrontSetback, CrosswalkRearSetback, manoeuvres);
 
             // #600: a fresh follower for this leg's road and travel direction.
             following = new CarFollowing(legTravelSign);
+        }
+
+        /// <summary>#673: drops every crosswalk claim this truck still holds
+        /// anywhere on its route. The per-leg traversal only knows the manoeuvres
+        /// of its own leg, and a manoeuvre acquired on an approach leg outlives
+        /// that leg by design — so teardown has to go through the route.</summary>
+        private void ReleaseEveryClaim()
+        {
+            crossing?.ReleaseAll();
+            routeManoeuvres.ReleaseAll(RoadCrossingGate.Shared, this);
         }
 
         /// <summary>#672: the point on the current leg's LANE line that a
@@ -549,7 +599,7 @@ namespace Doggiehood.Unity
         {
             // #546: never leave a crosswalk claimed if the truck is torn down
             // mid-route (it normally releases each as it passes).
-            crossing?.ReleaseAll();
+            ReleaseEveryClaim();
 
             // #601: release this truck's car color back to the pool so a later
             // spawn can reuse it (the "distinct from active" rule only avoids

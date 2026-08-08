@@ -182,7 +182,7 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void ClaimsAFreeCrosswalkAndDrivesThrough_BlockingADogUntilPast()
+        public void ClaimsTheWholeIntersectionAtItsBoundary_AndDrivesStraightThrough()
         {
             var gate = new RoadCrossingGate();
             var road = NorthSouthRoad();
@@ -190,29 +190,39 @@ namespace Doggiehood.Core.Tests.World
             var traversal = new RoadCrossingTraversal(gate, truck, road, NeighborhoodLayout.WalkNetwork, 30f, -30f);
 
             var north = CrosswalkAt(road, 4.75f);
+            var south = CrosswalkAt(road, -4.75f);
             var nearEdge = 4.75f + HalfCrosswalk;
 
-            // Reaching a FREE crosswalk boundary claims it and lets the truck
-            // continue past — down to the next crosswalk's near edge.
+            // #673: the four-way's two bands are ONE manoeuvre. Reaching the
+            // first band's boundary with the whole crossing free claims all of
+            // it, and the vehicle drives right through without ever coming to
+            // rest inside the box. (Before #673 this stopped at the second
+            // band's near edge — with the vehicle sitting in the intersection.)
             var allowed = traversal.Advance(nearEdge, -30f);
-            var southNear = -4.75f + HalfCrosswalk; // -3.25
-            Assert.That(allowed, Is.EqualTo(southNear).Within(0.001f),
-                "a free crosswalk is claimed and driven through, stopping at the next crosswalk's near edge");
+            Assert.That(allowed, Is.EqualTo(-30f).Within(0.001f),
+                "an available intersection is claimed whole and driven through in one move");
 
-            // Having claimed it, a dog arriving now is denied.
+            // Having claimed it, a dog arriving at EITHER band is denied.
             Assert.That(gate.TryEnter(north, new object()), Is.False,
-                "while the truck holds the crosswalk, a dog that arrives second must wait");
+                "while the truck holds the crossing, a dog that arrives second must wait");
+            Assert.That(gate.TryEnter(south, new object()), Is.False,
+                "including at the far band, which the truck has already committed to");
         }
 
         [Test]
-        public void ReleasesEachCrosswalkOnceFullyPast_SoALaterDogMayCross()
+        public void ReleasesASingleBandCrossingOnceFullyPast_SoALaterDogMayCross()
         {
+            // #546's release rule at a ONE-band crossing (a Tee's single arm, or
+            // any crossing whose manoeuvre is one band): unchanged by #673 —
+            // the claim is handed back the moment the vehicle is past that band.
             var gate = new RoadCrossingGate();
             var road = NorthSouthRoad();
             var truck = new object();
-            var traversal = new RoadCrossingTraversal(gate, truck, road, NeighborhoodLayout.WalkNetwork, 30f, -30f);
-
             var north = CrosswalkAt(road, 4.75f);
+            var traversal = new RoadCrossingTraversal(
+                gate, truck, road, NeighborhoodLayout.WalkNetwork, 30f, -30f, 0f, 0f,
+                SingleBand(north));
+
             var nearEdge = 4.75f + HalfCrosswalk;
 
             // Claim the north crosswalk at its boundary...
@@ -229,6 +239,30 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void ReleasesAMultiBandManoeuvre_OnlyOnceItIsPastTheFINALBand()
+        {
+            // #673's counterpart to the single-band case above: a vehicle that
+            // has committed to a whole intersection keeps every band of it until
+            // it is out the far side. Letting a dog onto the band behind it
+            // while it is still inside the box is the state the issue forbids.
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var truck = new object();
+            var traversal = new RoadCrossingTraversal(gate, truck, road, NeighborhoodLayout.WalkNetwork, 30f, -30f);
+
+            var north = CrosswalkAt(road, 4.75f);
+            traversal.Advance(4.75f + HalfCrosswalk, -30f);
+
+            traversal.Advance(4.75f - HalfCrosswalk - 0.5f, -30f);
+            Assert.That(gate.TryEnter(north, new object()), Is.False,
+                "past the FIRST band but still inside the intersection — nothing is handed back yet");
+
+            traversal.Advance(-4.75f - HalfCrosswalk - 0.5f, -30f);
+            Assert.That(gate.TryEnter(north, new object()), Is.True,
+                "out the far side, the whole set releases at once");
+        }
+
+        [Test]
         public void WithARearSetback_TheClaimHoldsUntilTheVehiclesTAILClearsTheBand()
         {
             // #658: the release side is the mirror of #639's stop side. The
@@ -239,11 +273,13 @@ namespace Doggiehood.Core.Tests.World
             var gate = new RoadCrossingGate();
             var road = NorthSouthRoad();
             var truck = new object();
+            // A ONE-band crossing, so this pins the #658 rule itself rather than
+            // #673's whole-manoeuvre release (covered in RoadManoeuvreTests).
+            var north = CrosswalkAt(road, NorthCrosswalkAlong);
             var traversal = new RoadCrossingTraversal(
                 gate, truck, road, NeighborhoodLayout.WalkNetwork,
-                RoadEnd, -RoadEnd, 0f, RearSetback);
+                RoadEnd, -RoadEnd, 0f, RearSetback, SingleBand(north));
 
-            var north = CrosswalkAt(road, NorthCrosswalkAlong);
             var nearEdge = NorthCrosswalkAlong + HalfCrosswalk; // approached travelling -Z
             var farEdge = NorthCrosswalkAlong - HalfCrosswalk;
 
@@ -280,14 +316,19 @@ namespace Doggiehood.Core.Tests.World
             var nearEdge = NorthCrosswalkAlong + HalfCrosswalk;
             var farEdge = NorthCrosswalkAlong - HalfCrosswalk;
 
+            // Both traversals are given the SAME one-band crossing, so this stays
+            // the #658 point-occupant regression guard it was written as (#673
+            // groups a four-way's two bands, which is a different rule tested in
+            // RoadManoeuvreTests).
             var defaultGate = new RoadCrossingGate();
             var byDefault = new RoadCrossingTraversal(
-                defaultGate, new object(), road, NeighborhoodLayout.WalkNetwork, RoadEnd, -RoadEnd);
+                defaultGate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, 0f, 0f, SingleBand(north));
 
             var explicitGate = new RoadCrossingGate();
             var explicitZero = new RoadCrossingTraversal(
                 explicitGate, new object(), road, NeighborhoodLayout.WalkNetwork,
-                RoadEnd, -RoadEnd, 0f, 0f);
+                RoadEnd, -RoadEnd, 0f, 0f, SingleBand(north));
 
             byDefault.Advance(nearEdge, -RoadEnd);
             explicitZero.Advance(nearEdge, -RoadEnd);
@@ -366,17 +407,53 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void TwoOncomingTrucks_DoWedge_OnceTheirSetbacksNoLongerFitBetweenTheBands()
+        public void TwoOncomingTrucks_DoWedge_WhenRightOfWayIsScopedPerBandRatherThanPerManoeuvre()
         {
-            // The teeth behind the test above: with setbacks that DON'T fit the
-            // clear gap the same drive wedges permanently, so the passing case is
-            // a real property of the shipped geometry and not a simulation that
-            // can never fail. DeliveryTruckFootprint.FitsBetweenCrosswalkBands is
-            // exactly the predicate that separates the two.
+            // The teeth behind the test above. The wedge is a real, reachable
+            // state — it is only unreachable because right-of-way is now scoped
+            // to the whole manoeuvre (#673). Drive the identical geometry with
+            // the PRE-#673 scope (each band its own independent claim) and the
+            // pair locks solid: each truck takes the band it reaches first and
+            // then waits forever on the one the other is sitting on.
+            //
+            // The over-budget setbacks are what make each truck long enough to
+            // still be holding its first band when it reaches the second —
+            // exactly the condition #660's bound exists to keep out.
             var overBudgetRear = DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands - TruckFront + DriveStep;
             Assert.That(TruckFront + overBudgetRear,
                 Is.GreaterThan(DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands),
                 "the probe setbacks must genuinely exceed the clear gap between the bands");
+
+            var gate = new RoadCrossingGate();
+            var road = NorthSouthRoad();
+            var southbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                RoadEnd, -RoadEnd, TruckFront, overBudgetRear, PerBandManoeuvres(road));
+            var northbound = new RoadCrossingTraversal(
+                gate, new object(), road, NeighborhoodLayout.WalkNetwork,
+                -RoadEnd, RoadEnd, TruckFront, overBudgetRear, PerBandManoeuvres(road));
+
+            var ends = DriveAll(
+                new[] { southbound, northbound },
+                new[] { RoadEnd, -RoadEnd },
+                new[] { -RoadEnd, RoadEnd });
+
+            Assert.That(ends[0], Is.Not.EqualTo(-RoadEnd).Within(ArrivalTolerance),
+                "per-band right-of-way must wedge here — otherwise the no-deadlock test above proves nothing");
+            Assert.That(ends[1], Is.Not.EqualTo(RoadEnd).Within(ArrivalTolerance),
+                "and it wedges both trucks, each holding the band the other needs");
+        }
+
+        [Test]
+        public void TheSameOverBudgetPair_ClearsFine_OnceRightOfWayIsPerManoeuvre()
+        {
+            // #673 removes the hold-and-wait the wedge above is built from: the
+            // intersection is taken all-or-nothing, so one truck gets the whole
+            // crossing and the other waits outside holding nothing. #660's
+            // length bound still stands as a spec rule (a vehicle must fit
+            // between the bands), but it is no longer the ONLY thing between the
+            // game and a permanent lock.
+            var overBudgetRear = DeliveryTruckFootprint.ClearGapBetweenCrosswalkBands - TruckFront + DriveStep;
 
             var gate = new RoadCrossingGate();
             var road = NorthSouthRoad();
@@ -392,10 +469,32 @@ namespace Doggiehood.Core.Tests.World
                 new[] { RoadEnd, -RoadEnd },
                 new[] { -RoadEnd, RoadEnd });
 
-            Assert.That(ends[0], Is.Not.EqualTo(-RoadEnd).Within(ArrivalTolerance),
-                "an over-budget footprint must wedge — otherwise the no-deadlock test above proves nothing");
-            Assert.That(ends[1], Is.Not.EqualTo(RoadEnd).Within(ArrivalTolerance),
-                "and it wedges both trucks, each holding the band the other needs");
+            Assert.That(ends[0], Is.EqualTo(-RoadEnd).Within(ArrivalTolerance),
+                $"the southbound truck wedged at {ends[0]} despite the atomic manoeuvre claim");
+            Assert.That(ends[1], Is.EqualTo(RoadEnd).Within(ArrivalTolerance),
+                $"the northbound truck wedged at {ends[1]} despite the atomic manoeuvre claim");
+        }
+
+        /// <summary>A manoeuvre set containing one single-band crossing — the
+        /// shape a Tee's lone arm has, and the shape every crossing had before
+        /// #673 grouped a four-way's two bands.</summary>
+        private static IReadOnlyList<RoadManoeuvre> SingleBand(WalkEdge band)
+        {
+            return new[] { new RoadManoeuvre(new[] { band }) };
+        }
+
+        /// <summary>Pre-#673 scope: every band on the road as its own
+        /// independent claim, with nothing tying an intersection's two together.
+        /// Used to show the deadlock that scope allows.</summary>
+        private static IReadOnlyList<RoadManoeuvre> PerBandManoeuvres(Road road)
+        {
+            var perBand = new List<RoadManoeuvre>();
+            foreach (var band in RoadManoeuvre.BandsOn(road, NeighborhoodLayout.WalkNetwork))
+            {
+                perBand.Add(new RoadManoeuvre(new[] { band.Edge }));
+            }
+
+            return perBand;
         }
 
         /// <summary>Steps every traversal from its entry toward its exit in fixed

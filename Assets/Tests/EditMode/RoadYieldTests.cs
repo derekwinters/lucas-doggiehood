@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.World;
@@ -17,6 +18,19 @@ namespace Doggiehood.Unity.EditModeTests
     public class RoadYieldTests
     {
         private const float HalfCrosswalk = 3f / 2f; // WorldDimensions.CrosswalkWidth / 2
+
+        // #673: the intersection BOX — everything inside the two crosswalk
+        // bands' outer edges, on both roads. A vehicle is either fully before it
+        // or fully through it; it never comes to rest inside.
+        private const float BoxEdge = 4.75f + HalfCrosswalk; // 6.25
+
+        // Generous ceiling on how long crossing the box may take: the box is
+        // 12.5m across and the truck drives 8 m/s, so ~2s of ticks. A truck that
+        // STOPPED inside would blow past this by orders of magnitude, which is
+        // what the bound is really testing.
+        private const int MaxTicksInsideTheBox = 150;
+
+        private const float TickSeconds = 0.05f;
 
         [SetUp]
         public void ClearSharedGate()
@@ -61,6 +75,114 @@ namespace Doggiehood.Unity.EditModeTests
                 e.Kind == WalkEdgeKind.Crosswalk
                 && Mathf.Abs(((e.A.X + e.B.X) / 2f) - road.Center.X) < 0.01f
                 && ((e.A.Z + e.B.Z) / 2f) > 0f);
+        }
+
+        /// <summary>#673: the delivery route to the north-east door, and the
+        /// manoeuvre it makes through the origin intersection — the two crosswalk
+        /// bands it crosses to get in one side and out the other.</summary>
+        private static RoadManoeuvre IntersectionManoeuvreOnTheNorthEastRoute(out Vector3 door)
+        {
+            var map = OriginMap();
+            var doorPoint = new GridPoint(
+                NeighborhoodLayout.LotDistanceFromCenter, NeighborhoodLayout.LotDistanceFromCenter);
+            door = new Vector3(doorPoint.X, 0f, doorPoint.Z);
+
+            var route = DeliveryTruckRoute.ToDoor(map, doorPoint);
+            var points = new List<GridPoint>(route.Inbound);
+            for (var i = 1; i < route.Outbound.Count; i++)
+            {
+                points.Add(route.Outbound[i]);
+            }
+
+            var manoeuvres = RouteManoeuvres.Resolve(
+                MapWalkNetwork.RoadsFrom(map), NeighborhoodLayout.WalkNetwork, points);
+            return manoeuvres.All.FirstOrDefault(m => m.Bands.Count > 1);
+        }
+
+        /// <summary>How far outside the intersection the truck's whole footprint
+        /// is: the Chebyshev distance of its pivot from the crossing centre, which
+        /// is the right measure for a box bounded on both roads at once.</summary>
+        private static float DistanceOutsideTheBox(Vector3 position)
+        {
+            return Mathf.Max(Mathf.Abs(position.x), Mathf.Abs(position.z));
+        }
+
+        [Test]
+        public void ATruckWithATurnQueued_WaitsOUTSIDETheIntersection_WhenItsOUTGOINGCrosswalkIsHeld()
+        {
+            // THE reported bug, end to end. A dog holds the crosswalk on the leg
+            // the truck will leave by. Right-of-way used to be per leg, so
+            // nothing looked at that band until the truck had already driven to
+            // the turn point — and it stopped dead in the middle of the box,
+            // holding nothing, because arriving at the waypoint released the
+            // claims from the leg it had just finished.
+            var manoeuvre = IntersectionManoeuvreOnTheNorthEastRoute(out var door);
+            Assert.That(manoeuvre, Is.Not.Null,
+                "the north-east delivery route must pass through the origin intersection");
+
+            var outgoing = manoeuvre.Bands[manoeuvre.Bands.Count - 1];
+            var dog = new object();
+            Assert.That(RoadCrossingGate.Shared.TryEnter(outgoing, dog), Is.True);
+
+            var root = new GameObject("truck-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                truck.DeliverTo(door, OriginMap(), NeighborhoodLayout.WalkNetwork, () => { });
+
+                var halfBody = truck.BodyLength / 2f;
+                Assert.That(halfBody, Is.GreaterThan(0f),
+                    "the spawned truck must expose a measurable body length");
+
+                for (var step = 0; step < 4000 && !truck.IsGone; step++)
+                {
+                    truck.Tick(TickSeconds);
+                    if (truck.IsGone)
+                    {
+                        break;
+                    }
+
+                    Assert.That(DistanceOutsideTheBox(truck.transform.position),
+                        Is.GreaterThanOrEqualTo(BoxEdge + halfBody - 0.05f),
+                        $"at step {step} the truck was at {truck.transform.position} — inside the "
+                        + "intersection box. It must work out BEFORE entering that it cannot get "
+                        + "all the way through, and wait behind the first band.");
+                }
+
+                Assert.That(truck.IsGone, Is.False,
+                    "the truck cannot finish its route while a dog holds a band of its manoeuvre");
+
+                // The dog clears: the truck now takes the whole crossing at once
+                // and drives it in one continuous move.
+                RoadCrossingGate.Shared.Exit(outgoing, dog);
+
+                var ticksInsideTheBox = 0;
+                for (var step = 0; step < 6000 && !truck.IsGone; step++)
+                {
+                    truck.Tick(TickSeconds);
+                    if (truck.IsGone)
+                    {
+                        break;
+                    }
+
+                    if (DistanceOutsideTheBox(truck.transform.position) < BoxEdge)
+                    {
+                        ticksInsideTheBox++;
+                    }
+                }
+
+                Assert.That(truck.IsGone, Is.True,
+                    "once the dog clears, the truck completes the manoeuvre and finishes its route");
+                Assert.That(ticksInsideTheBox, Is.GreaterThan(0),
+                    "the truck must actually have driven through the intersection");
+                Assert.That(ticksInsideTheBox, Is.LessThan(MaxTicksInsideTheBox),
+                    $"the truck spent {ticksInsideTheBox} ticks inside the intersection — it must "
+                    + "cross in one continuous move, never coming to rest in the box");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         [Test]
