@@ -125,13 +125,21 @@ namespace Doggiehood.Unity
                 }
 
                 var houseId = house.HouseId;
-                house.Tapped += () => OnHouseTapped(houseId);
+
+                // #670: supply the live "does this house have bugs?" predicate
+                // the Core arbiter resolves the tap with, then take only the
+                // spray outcome. The profile-open outcome is WorldBootstrap's,
+                // and the two are now mutually exclusive by construction rather
+                // than by two subscribers both firing on one tap.
+                house.HasPendingSpray = () => State.Quests.IsAwaitingSpray(houseId);
+                house.SprayRequested += () => OnHouseSprayed(houseId);
             }
         }
 
-        /// <summary>#53: a house tap is a spray attempt. When it clears a bug
-        /// quest, the swarm feedback is removed and the world saved.</summary>
-        private void OnHouseTapped(int houseId)
+        /// <summary>#53: a house tap on a bugged house is a spray. When it
+        /// clears the bug quest, the swarm feedback is removed and the world
+        /// saved.</summary>
+        private void OnHouseSprayed(int houseId)
         {
             if (State.Quests.SprayHouse(houseId))
             {

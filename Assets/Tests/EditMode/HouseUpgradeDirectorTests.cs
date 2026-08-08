@@ -364,13 +364,18 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void AfterUpgrade_TheRebuiltHouseTap_StillOpensTheProfile_AndStillReachesQuestSpray()
         {
-            // The re-wiring guarantee (triage's core wrinkle): HouseView.Tapped
-            // is subscribed by two independent one-time loops — WorldBootstrap's
-            // profile-open loop and QuestDirector's spray loop. A naive
-            // destroy-and-rebuild would produce a fresh view neither loop has
-            // seen, silently breaking both on that house after an upgrade. The
-            // fix re-subscribes both; a single tap on the rebuilt view must
-            // reach the profile overlay AND the quest spray path.
+            // The re-wiring guarantee (triage's core wrinkle): a HouseView's two
+            // tap outcomes are subscribed by two independent one-time loops —
+            // WorldBootstrap's profile-open loop and QuestDirector's spray loop.
+            // A naive destroy-and-rebuild would produce a fresh view neither
+            // loop has seen, silently breaking both on that house after an
+            // upgrade. The fix re-subscribes both.
+            //
+            // #670: the two are now mutually exclusive per tap — while a house
+            // has bugs, tapping it sprays and its profile is unreachable. So the
+            // re-wiring is proved across two taps rather than one: the first
+            // sprays the rebuilt house, and only once it's clear does the next
+            // tap open its profile.
             AssetDatabase.ImportAsset(BundledFontPath, ImportAssetOptions.ForceSynchronousImport);
 
             worldRoot = WorldBuilder.Build(state);
@@ -394,7 +399,7 @@ namespace Doggiehood.Unity.EditModeTests
             director.Init(state, worldRoot.transform, view =>
             {
                 var rewiredId = view.HouseId;
-                view.Tapped += () => OpenProfileFor(overlay, state, rewiredId);
+                view.ProfileRequested += () => OpenProfileFor(overlay, state, rewiredId);
                 questDirector.WireHouses();
             });
 
@@ -402,7 +407,7 @@ namespace Doggiehood.Unity.EditModeTests
             foreach (var view in worldRoot.GetComponentsInChildren<HouseView>())
             {
                 var initialId = view.HouseId;
-                view.Tapped += () => OpenProfileFor(overlay, state, initialId);
+                view.ProfileRequested += () => OpenProfileFor(overlay, state, initialId);
             }
 
             overlay.ConfigureUpgrade(
@@ -437,20 +442,28 @@ namespace Doggiehood.Unity.EditModeTests
             overlay.Close();
             Assert.That(overlay.IsOpen, Is.False);
 
-            // A single tap on the REBUILT house must reach BOTH subscribers.
+            // Tap 1 on the REBUILT house: it still has bugs, so it sprays — and
+            // #670 says it must NOT also open the profile.
             var rebuilt = worldRoot.GetComponentsInChildren<HouseView>().Single(h => h.HouseId == targetHouseId);
             var payoutBefore = state.Wallet.Coins;
             rebuilt.OnTapped();
 
-            Assert.That(overlay.IsOpen, Is.True,
-                "tap-to-open-profile still reaches the rebuilt HouseView after an upgrade (#208)");
-            Assert.That(overlay.CurrentHouse, Is.SameAs(house), "and it opens the right house");
             Assert.That(quest.Status, Is.EqualTo(QuestStatus.Completed),
                 "quest spray still reaches the rebuilt HouseView after an upgrade (#53)");
             Assert.That(state.Wallet.Coins, Is.EqualTo(payoutBefore + Doggiehood.Core.Economy.EconomyNumbers.QuestPayout),
                 "the spray completion pays the flat quest payout");
             Assert.That(Object.FindObjectsByType<BugSwarmView>(FindObjectsSortMode.None).Any(s => s.HouseId == targetHouseId),
                 Is.False, "the swarm is cleared once the rebuilt house is sprayed");
+            Assert.That(overlay.IsOpen, Is.False,
+                "#670: the spraying tap does not also open the profile over the top of it");
+
+            // Tap 2, now that the house is clear: the profile subscriber is
+            // re-wired too and opens the right house.
+            rebuilt.OnTapped();
+
+            Assert.That(overlay.IsOpen, Is.True,
+                "tap-to-open-profile still reaches the rebuilt HouseView after an upgrade (#208)");
+            Assert.That(overlay.CurrentHouse, Is.SameAs(house), "and it opens the right house");
         }
     }
 }

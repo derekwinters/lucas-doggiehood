@@ -331,7 +331,7 @@ namespace Doggiehood.Unity
             }
 
             // #568: a closed conversation no longer blocks world taps. The gate's
-            // ClosedThisFrame latch (cleared in CameraRig.LateUpdate) keeps the
+            // ClosedThisFrame latch (cleared in InputRouter.LateUpdate) keeps the
             // dismissing tap consumed for the rest of this frame, so it can't fall
             // through to the object underneath.
             Doggiehood.Core.Cameras.ModalInputGate.Shared.Unregister(this);

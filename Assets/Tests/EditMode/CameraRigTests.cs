@@ -23,6 +23,12 @@ namespace Doggiehood.Unity.EditModeTests
             showDebugAtStart = WorldBuilder.ShowDebugElementColors;
             WorldBuilder.ShowDebugElementColors = false;
 
+            // #670: the input authority and the modal gate are process-global.
+            // Clear both so a rig or modal leaked by an earlier test can't claim
+            // this fixture's gestures ahead of the rig under test.
+            ModalInputGate.Shared.Clear();
+            Doggiehood.Core.Interaction.InputAuthority.Shared.Clear();
+
             rigObject = new GameObject("rig-under-test", typeof(Camera));
             cam = rigObject.GetComponent<Camera>();
             rig = rigObject.AddComponent<CameraRig>();
@@ -34,6 +40,8 @@ namespace Doggiehood.Unity.EditModeTests
         {
             WorldBuilder.ShowDebugElementColors = showDebugAtStart;
             Object.DestroyImmediate(rigObject);
+            Doggiehood.Core.Interaction.InputAuthority.Shared.Clear();
+            ModalInputGate.Shared.Clear();
         }
 
         [Test]
@@ -110,19 +118,26 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TwoFingerTwist_PerFrameAngleDelta_ForwardsToHandleTwist()
+        public void TwoFingerTwist_PerFrameAngleDelta_ReachesTheCameraThroughTheAuthority()
         {
             // #203: two-finger twist detection mirrors the lastPinchDistance
             // pattern - the first sample only records the baseline angle, and
-            // the next sample forwards the per-frame angle delta to HandleTwist.
-            // Fingers here rotate counter-clockwise (angle 0deg -> 45deg); the
-            // scene follows the fingers, so the camera turns the opposite way
-            // (yaw increases) - see GestureMapper.TwistToRotation.
+            // the next sample forwards the per-frame angle delta. Fingers here
+            // rotate counter-clockwise (angle 0deg -> 45deg); the scene follows
+            // the fingers, so the camera turns the opposite way (yaw increases)
+            // - see GestureMapper.TwistToRotation.
+            //
+            // #670: the sampling moved to InputRouter (the single raw-input
+            // entry point) and reaches the rig only via InputAuthority, so this
+            // now drives the router and asserts the rig still turns.
+            var router = rigObject.GetComponent<InputRouter>();
+            Assert.That(router, Is.Not.Null, "the rig brings the single input router with it");
+
             var start = new Vector2(0f, 0f);
-            rig.ProcessTwoFingerSample(start, new Vector2(100f, 0f), true, 1000f);
+            router.SampleTwoFingerGesture(start, new Vector2(100f, 0f), true);
             var yawAfterBaseline = rig.Controller.Yaw;
 
-            rig.ProcessTwoFingerSample(start, new Vector2(100f, 100f), true, 1000f);
+            router.SampleTwoFingerGesture(start, new Vector2(100f, 100f), true);
 
             Assert.That(rig.Controller.Yaw, Is.GreaterThan(yawAfterBaseline),
                 "a counter-clockwise finger twist turns the scene counter-clockwise (camera yaw increases)");

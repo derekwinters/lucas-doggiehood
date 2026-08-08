@@ -25,6 +25,14 @@ namespace Doggiehood.Core.Cameras
     /// button still fires through UGUI's GraphicRaycaster, so panels that
     /// intentionally dismiss on scrim tap keep doing so — the "dismiss this
     /// panel" and "pass the tap through to the world" behaviors stay distinct.
+    ///
+    /// #670: this gate was always correct — the problem was who asked it. Only
+    /// the world-tap router ever did, so camera pan, pinch, twist and scroll
+    /// reached the camera without consulting it and a drag on an open dialog
+    /// panned the map underneath. It is now the modal tier of
+    /// <c>Doggiehood.Core.Interaction.InputAuthority</c>, consulted once at
+    /// press-down for <em>every</em> gesture kind, so registering here blocks
+    /// all input rather than only taps.
     /// </summary>
     public sealed class ModalInputGate
     {
@@ -96,7 +104,7 @@ namespace Doggiehood.Core.Cameras
         }
 
         /// <summary>#568: clears the <see cref="ClosedThisFrame"/> latch at end
-        /// of frame. Called from <c>CameraRig.LateUpdate</c>, which Unity runs
+        /// of frame. Called from <c>InputRouter.LateUpdate</c>, which Unity runs
         /// only after every <c>Update()</c> (including the EventSystem's) has
         /// completed — so the latch can never be cleared before this frame's tap
         /// has been routed, but is always clear before the next frame's unrelated

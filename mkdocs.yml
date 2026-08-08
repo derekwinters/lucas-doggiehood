@@ -87,6 +87,7 @@ nav:
       - Future Ideas: specs/future-ideas.md
   - Engineering:
       - Tech Stack: engineering/tech-stack.md
+      - Input Authority: engineering/input-authority.md
       - Testing Strategy: engineering/testing.md
       - UI Design Process: engineering/ui-design-process.md
       - Versioning & Releases: engineering/versioning.md

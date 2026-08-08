@@ -1,23 +1,40 @@
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Debugging;
+using Doggiehood.Core.Interaction;
 using UnityEngine;
 
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// Thin adapter between input gestures and the Core CameraController
+    /// Thin adapter between camera gestures and the Core CameraController
     /// (#20, #21, #203). All decisions (pan clamping, gesture math, the fixed
-    /// pitch/projection, free yaw rotation) live in Core; this component polls
-    /// input, forwards deltas, and copies the resulting state onto the actual
-    /// camera. The two-finger twist that drives rotation is assembled here
-    /// from per-frame touch angles, since Unity's touch API has no built-in
-    /// twist gesture.
+    /// pitch/projection, free yaw rotation) live in Core; this component
+    /// forwards deltas and copies the resulting state onto the actual camera.
+    ///
+    /// #670: the rig no longer polls input. It registers with
+    /// <see cref="InputAuthority"/> as an ordinary <see cref="InputTier.Camera"/>
+    /// consumer — the lowest tier — and is offered a gesture only once modal UI,
+    /// non-modal UI and the world have all declined it. That is what makes an
+    /// open dialog block pan, pinch, twist and scroll: before, those four ran
+    /// straight from this component's own raw polling and never asked the modal
+    /// gate at all, so dragging a slider in the debug tuning menu panned the map
+    /// underneath it. Raw input now enters only through <see cref="InputRouter"/>.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class CameraRig : MonoBehaviour
     {
         private const float TapMaxDragPixels = 12f;
+
+        /// <summary>Screen height to scale gestures by when Unity reports a
+        /// non-positive one (headless/batch runs have no game view).
+        /// <see cref="GestureMapper"/> requires a positive height, so without a
+        /// fallback the camera would throw rather than merely be mis-scaled
+        /// (#161 — named, not a bare literal).</summary>
+        private const float FallbackScreenHeightPixels = 1080f;
+
+        private static float ScreenHeightPixels
+            => Screen.height > 0 ? Screen.height : FallbackScreenHeightPixels;
 
         /// <summary>Void backstop clear colour (#558): the same grass green the
         /// ground plane is painted (<see cref="Palette.GrassHex"/>), so any area
@@ -34,10 +51,8 @@ namespace Doggiehood.Unity
                 DebugElementColors.BackstopHex(WorldBuilder.ShowDebugElementColors));
 
         private Camera cachedCamera;
-        private Vector3 lastPointerPosition;
         private float accumulatedDragPixels;
-        private float lastPinchDistance;
-        private float lastTwistAngle;
+        private IInputConsumer inputConsumer;
 
         public CameraController Controller { get; } = CameraController.ForStartingNeighborhood();
 
@@ -46,8 +61,14 @@ namespace Doggiehood.Unity
             ApplyConfiguration();
         }
 
+        private void OnDestroy()
+        {
+            InputAuthority.Shared.Unregister(inputConsumer);
+        }
+
         /// <summary>Applies the fixed projection and current controller state
-        /// (position, zoom, yaw). Idempotent; tests call it directly.</summary>
+        /// (position, zoom, yaw), and registers the rig as the camera-tier input
+        /// consumer. Idempotent; tests call it directly.</summary>
         public void ApplyConfiguration()
         {
             cachedCamera = GetComponent<Camera>();
@@ -62,7 +83,24 @@ namespace Doggiehood.Unity
             cachedCamera.clearFlags = CameraClearFlags.SolidColor;
             cachedCamera.backgroundColor = BackstopColor();
 
+            EnsureInputWiring();
             ApplyControllerState();
+        }
+
+        /// <summary>#670: joins the input authority as the lowest-priority
+        /// consumer, and makes sure the single raw-input entry point exists
+        /// alongside the rig. Done here rather than only in <c>Awake</c> because
+        /// EditMode tests build a rig without Unity's lifecycle callbacks;
+        /// registration is idempotent, so calling it again is free.</summary>
+        private void EnsureInputWiring()
+        {
+            if (GetComponent<InputRouter>() == null)
+            {
+                gameObject.AddComponent<InputRouter>();
+            }
+
+            inputConsumer ??= new DelegateInputConsumer(InputTier.Camera, OnGesture);
+            InputAuthority.Shared.Register(inputConsumer);
         }
 
         public void HandleDrag(float dragXPixels, float dragYPixels, float screenHeightPixels)
@@ -94,32 +132,70 @@ namespace Doggiehood.Unity
             TapRouter.RouteTap(cachedCamera, screenPosition, pointerId);
         }
 
-        /// <summary>Input-independent core of two-finger polling (#203). Given
-        /// this frame's two touch positions and whether both touches are
-        /// continuing (neither just began), emits the pinch-zoom and
-        /// twist-rotation for the change since the previous sample, then
-        /// records the new baseline. Public so EditMode tests can drive it
-        /// without simulating Unity's touch input.</summary>
-        public void ProcessTwoFingerSample(Vector2 first, Vector2 second, bool bothContinuing, float screenHeightPixels)
+        /// <summary>#670: the camera's whole input surface. Reached only for
+        /// gestures the authority has already resolved to this consumer, so
+        /// every "is a dialog open?" question has been answered before we get
+        /// here — the rig itself no longer has (or needs) a gate check.
+        ///
+        /// A pan gesture's press and release are the same gesture as its travel,
+        /// which is why the tap falls out of the release rather than needing its
+        /// own path: under a threshold of travel, the release is a tap.</summary>
+        private void OnGesture(InputGesture gesture, InputGesturePhase phase)
         {
-            var span = second - first;
-            var distance = span.magnitude;
-            var angle = Mathf.Atan2(span.y, span.x) * Mathf.Rad2Deg;
-
-            if (bothContinuing && lastPinchDistance > 0f)
+            switch (gesture.Kind)
             {
-                HandlePinch(distance - lastPinchDistance, screenHeightPixels);
+                case InputGestureKind.Pan:
+                    OnPan(gesture, phase);
+                    break;
+                case InputGestureKind.Pinch:
+                    if (phase == InputGesturePhase.Changed)
+                    {
+                        HandlePinch(gesture.Scalar, ScreenHeightPixels);
+                    }
 
-                // Mathf.DeltaAngle gives the counter-clockwise angle change;
-                // negate so a clockwise finger twist is a positive twist delta.
-                // GestureMapper.TwistToRotation then inverts that into the camera
-                // yaw so the scene follows the fingers (see its docs).
-                HandleTwist(-Mathf.DeltaAngle(lastTwistAngle, angle));
+                    break;
+                case InputGestureKind.Twist:
+                    if (phase == InputGesturePhase.Changed)
+                    {
+                        HandleTwist(gesture.Scalar);
+                    }
+
+                    break;
+                case InputGestureKind.Scroll:
+                    // Desktop convenience: scroll ~ pinch.
+                    HandlePinch(gesture.Scalar, ScreenHeightPixels);
+                    break;
             }
+        }
 
-            lastPinchDistance = distance;
-            lastTwistAngle = angle;
-            accumulatedDragPixels = float.MaxValue; // a two-finger gesture is never a tap
+        private void OnPan(InputGesture gesture, InputGesturePhase phase)
+        {
+            switch (phase)
+            {
+                case InputGesturePhase.Began:
+                    accumulatedDragPixels = 0f;
+                    break;
+                case InputGesturePhase.Changed:
+                    accumulatedDragPixels += new Vector2(gesture.DeltaX, gesture.DeltaY).magnitude;
+                    HandleDrag(gesture.DeltaX, gesture.DeltaY, ScreenHeightPixels);
+                    break;
+                case InputGesturePhase.Ended:
+                    if (accumulatedDragPixels <= TapMaxDragPixels)
+                    {
+                        // #422: thread the fingerId so the pointer-over-UI guard
+                        // uses IsPointerOverGameObject(fingerId) for this touch;
+                        // the mouse uses the parameterless overload (null).
+                        HandleTap(
+                            new Vector2(gesture.ScreenX, gesture.ScreenY),
+                            gesture.PointerId == InputGesture.MousePointerId ? (int?)null : gesture.PointerId);
+                    }
+
+                    break;
+                case InputGesturePhase.Cancelled:
+                    // Superseded (a second finger arrived) — never a tap.
+                    accumulatedDragPixels = float.MaxValue;
+                    break;
+            }
         }
 
         private void ApplyControllerState()
@@ -128,99 +204,6 @@ namespace Doggiehood.Unity
             cachedCamera.orthographicSize = Controller.Zoom;
             var target = new Vector3(Controller.Position.X, 0f, Controller.Position.Z);
             transform.position = target - transform.forward * CameraRigConfig.RigDistance;
-        }
-
-        private void Update()
-        {
-            if (Input.touchCount >= 2)
-            {
-                PollPinch();
-            }
-            else if (Input.touchCount == 1)
-            {
-                PollTouchDrag(Input.GetTouch(0));
-            }
-            else
-            {
-                PollMouse();
-            }
-        }
-
-        /// <summary>#568: clears the shared <see cref="ModalInputGate"/>'s
-        /// this-frame close latch at end of frame. Unity guarantees every
-        /// <c>LateUpdate</c> runs only after all <c>Update</c>s (including the
-        /// EventSystem's UI dispatch and this rig's own tap routing) have
-        /// completed for the frame — so a modal that a tap dismissed this frame
-        /// keeps blocking that same tap's world raycast, but the latch is always
-        /// clear before the next frame's unrelated tap is checked.</summary>
-        private void LateUpdate()
-        {
-            ModalInputGate.Shared.EndFrame();
-        }
-
-        private void PollPinch()
-        {
-            var a = Input.GetTouch(0);
-            var b = Input.GetTouch(1);
-            var bothContinuing = a.phase != TouchPhase.Began && b.phase != TouchPhase.Began;
-
-            ProcessTwoFingerSample(a.position, b.position, bothContinuing, Screen.height);
-        }
-
-        private void PollTouchDrag(Touch touch)
-        {
-            lastPinchDistance = 0f;
-
-            switch (touch.phase)
-            {
-                case TouchPhase.Began:
-                    accumulatedDragPixels = 0f;
-                    break;
-                case TouchPhase.Moved:
-                    accumulatedDragPixels += touch.deltaPosition.magnitude;
-                    HandleDrag(touch.deltaPosition.x, touch.deltaPosition.y, Screen.height);
-                    break;
-                case TouchPhase.Ended:
-                    if (accumulatedDragPixels <= TapMaxDragPixels)
-                    {
-                        // #422: thread the fingerId so the pointer-over-UI guard
-                        // uses IsPointerOverGameObject(fingerId) for this touch.
-                        HandleTap(touch.position, touch.fingerId);
-                    }
-                    break;
-            }
-        }
-
-        private void PollMouse()
-        {
-            lastPinchDistance = 0f;
-
-            if (Input.GetMouseButtonDown(0))
-            {
-                lastPointerPosition = Input.mousePosition;
-                accumulatedDragPixels = 0f;
-            }
-            else if (Input.GetMouseButton(0))
-            {
-                var delta = Input.mousePosition - lastPointerPosition;
-                accumulatedDragPixels += delta.magnitude;
-                if (delta != Vector3.zero)
-                {
-                    HandleDrag(delta.x, delta.y, Screen.height);
-                    lastPointerPosition = Input.mousePosition;
-                }
-            }
-            else if (Input.GetMouseButtonUp(0) && accumulatedDragPixels <= TapMaxDragPixels)
-            {
-                HandleTap(Input.mousePosition);
-            }
-
-            var scroll = Input.mouseScrollDelta.y;
-            if (scroll != 0f)
-            {
-                // Desktop convenience: scroll ~ pinch.
-                HandlePinch(scroll * 50f, Screen.height);
-            }
         }
     }
 }
