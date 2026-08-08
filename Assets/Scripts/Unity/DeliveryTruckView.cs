@@ -15,16 +15,17 @@ namespace Doggiehood.Unity
     /// bee-line across yards, and the truck stops short of the waiting dog
     /// rather than driving into it. Tick is separated from Update so EditMode
     /// tests can step the animation deterministically.
+    ///
+    /// #672: it also keeps to the RIGHT-hand lane. The route's waypoints stay on
+    /// the road centerline (an intersection waypoint belongs to two roads with two
+    /// different right-hand sides, so a lane baked into the graph would be
+    /// ambiguous); the lane is resolved per LEG in Core (<see cref="RoadLeg"/> /
+    /// <see cref="RoadLane"/>) and applied to every drive target and clamp here.
     /// </summary>
     public sealed class DeliveryTruckView : MonoBehaviour
     {
         private const float Speed = 8f;
         private const float ArriveDistance = 0.2f;
-
-        // A route leg is axis-aligned on a road centerline; this tolerance
-        // decides which axis (N-S vs E-W) a leg runs along when matching it to
-        // the road it lies on (#161: no bare geometry literals in method bodies).
-        private const float LegAxisEpsilon = 0.01f;
 
         // Fixed vertical offsets (unrelated to the #471 door-position bug):
         // the truck body rides at TruckHeight; the dropped package rests at
@@ -151,6 +152,13 @@ namespace Doggiehood.Unity
         private RoadCrossingTraversal crossing;
         private Road crossingRoad;
 
+        // #672: the lane the truck keeps to on the current leg — the signed
+        // perpendicular offset from that leg's road centerline to the centre of
+        // its RIGHT-hand lane. The decision is Core's (RoadLeg/RoadLane); this
+        // only remembers the resolved figure so every drive target and clamp on
+        // the leg is expressed on the lane line rather than the centerline.
+        private float legLaneOffset;
+
         // #600: 1-D car-following on the current leg's road. The crosswalk gate
         // above arbitrates only the crosswalk claim, so this is what keeps the
         // truck one car length behind whatever truck is ahead of it on the
@@ -187,6 +195,33 @@ namespace Doggiehood.Unity
         public float CurrentAlong => crossingRoad == null
             ? 0f
             : crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
+
+        /// <summary>#672: the signed perpendicular offset from the current leg's
+        /// road centerline to the centre of the lane the truck keeps to — the
+        /// companion to <see cref="CurrentAlong"/> on the road's other axis.
+        /// <c>RoadLane.Offset</c> in magnitude, its sign set by the leg's travel
+        /// direction (<see cref="RoadLane"/>). Zero when not on a resolved road
+        /// leg.</summary>
+        public float LaneOffset => legLaneOffset;
+
+        /// <summary>#672: where the truck actually IS across its current leg's
+        /// road, signed the same way as <see cref="LaneOffset"/> — so a test (or a
+        /// later road user) can check it is keeping right without re-deriving the
+        /// road's perpendicular axis. Zero when not on a resolved road leg.</summary>
+        public float CurrentLateral
+        {
+            get
+            {
+                if (crossingRoad == null)
+                {
+                    return 0f;
+                }
+
+                return crossingRoad.Orientation == StreetOrientation.NorthSouth
+                    ? transform.position.x - crossingRoad.Center.X
+                    : transform.position.z - crossingRoad.Center.Z;
+            }
+        }
 
         public static DeliveryTruckView Spawn(Transform parent)
         {
@@ -314,6 +349,10 @@ namespace Doggiehood.Unity
             }
 
             BeginLeg();
+
+            // #672: enter off-map already in the right-hand lane rather than
+            // sliding across from the centerline on the first tick.
+            transform.position = OnLegLane(transform.position);
         }
 
         /// <summary>Advances the drive along the waypoint path with no truck
@@ -344,7 +383,9 @@ namespace Doggiehood.Unity
                 return;
             }
 
-            var target = waypoints[targetIndex];
+            // #672: drive the leg's LANE line, not the road centerline the
+            // waypoint sits on.
+            var target = OnLegLane(waypoints[targetIndex]);
             Drive(ClampToLeader(ClampToCrossing(target), leaderAlong, deltaTime), deltaTime);
 
             if (Vector3.Distance(transform.position, target) > ArriveDistance)
@@ -392,12 +433,15 @@ namespace Doggiehood.Unity
         /// the truck is about to drive (from the previous waypoint to the target),
         /// bound to that leg's road on the LIVE network. Each leg is axis-aligned
         /// on one road centerline, so crosswalks are met in a single fixed order —
-        /// exactly what RoadCrossingTraversal expects, now applied per-segment.</summary>
+        /// exactly what RoadCrossingTraversal expects, now applied per-segment.
+        /// #672: the same resolution also fixes the lane the truck keeps to for
+        /// this leg, since "right" depends on the direction it is driven.</summary>
         private void BeginLeg()
         {
             crossing = null;
             crossingRoad = null;
             following = null;
+            legLaneOffset = 0f;
             if (targetIndex <= 0 || targetIndex >= waypoints.Count)
             {
                 return;
@@ -405,15 +449,27 @@ namespace Doggiehood.Unity
 
             var from = waypoints[targetIndex - 1];
             var to = waypoints[targetIndex];
-            crossingRoad = ResolveLegRoad(from, to);
-            if (crossingRoad == null || network == null)
+
+            // #672: the leg — which road it runs along, which way, and therefore
+            // which lane the truck keeps to — is resolved in Core (RoadLeg), so
+            // the lane rule and its sign convention are testable without the
+            // engine and shared with any future road user.
+            if (!RoadLeg.TryResolve(
+                    roads, new GridPoint(from.x, from.z), new GridPoint(to.x, to.z), out var leg))
             {
                 return;
             }
 
-            var entryAlong = crossingRoad.AlongAxis(new GridPoint(from.x, from.z));
-            var exitAlong = crossingRoad.AlongAxis(new GridPoint(to.x, to.z));
-            legTravelSign = exitAlong - entryAlong < 0f ? -1f : 1f;
+            crossingRoad = leg.Road;
+            legTravelSign = leg.TravelSign;
+            legLaneOffset = leg.LaneOffset;
+            var entryAlong = leg.EntryAlong;
+            var exitAlong = leg.ExitAlong;
+
+            if (network == null)
+            {
+                return;
+            }
 
             // #639/#658: the truck is not a point — it hands the traversal its
             // own pivot-to-bumper and pivot-to-tail setbacks, so the yield stop
@@ -429,39 +485,23 @@ namespace Doggiehood.Unity
             following = new CarFollowing(legTravelSign);
         }
 
-        /// <summary>The road a leg runs along: the one whose centerline contains
-        /// both endpoints and whose orientation matches the leg's axis.</summary>
-        private Road ResolveLegRoad(Vector3 from, Vector3 to)
+        /// <summary>#672: the point on the current leg's LANE line that a
+        /// centerline waypoint corresponds to — the truck aims at, and snaps onto,
+        /// its own lane rather than the middle of the road. The route's waypoints
+        /// deliberately stay on the centerline (#538/#599), because an
+        /// intersection waypoint belongs to two roads with two different
+        /// right-hand sides; the lane is derived per leg here instead. Off a
+        /// resolved road leg (a turnaround pivot) the raw waypoint stands.</summary>
+        private Vector3 OnLegLane(Vector3 waypoint)
         {
-            if (roads == null)
+            if (crossingRoad == null)
             {
-                return null;
+                return waypoint;
             }
 
-            var a = new GridPoint(from.x, from.z);
-            var b = new GridPoint(to.x, to.z);
-            var runsNorthSouth = Mathf.Abs(from.x - to.x) < LegAxisEpsilon;
-            var runsEastWest = Mathf.Abs(from.z - to.z) < LegAxisEpsilon;
-
-            foreach (var road in roads)
-            {
-                if (!road.Contains(a) || !road.Contains(b))
-                {
-                    continue;
-                }
-
-                if (runsNorthSouth && road.Orientation == StreetOrientation.NorthSouth)
-                {
-                    return road;
-                }
-
-                if (runsEastWest && road.Orientation == StreetOrientation.EastWest)
-                {
-                    return road;
-                }
-            }
-
-            return null;
+            var along = crossingRoad.AlongAxis(new GridPoint(waypoint.x, waypoint.z));
+            var point = crossingRoad.PointAt(along, legLaneOffset);
+            return new Vector3(point.X, waypoint.y, point.Z);
         }
 
         /// <summary>#546: clamps this tick's drive target so the truck never
@@ -479,7 +519,7 @@ namespace Doggiehood.Unity
             var currentAlong = crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
             var targetAlong = crossingRoad.AlongAxis(new GridPoint(target.x, target.z));
             var allowedAlong = crossing.Advance(currentAlong, targetAlong);
-            var point = crossingRoad.PointAt(allowedAlong, 0f);
+            var point = crossingRoad.PointAt(allowedAlong, legLaneOffset);
             return new Vector3(point.X, target.y, point.Z);
         }
 
@@ -501,7 +541,7 @@ namespace Doggiehood.Unity
             var currentAlong = crossingRoad.AlongAxis(new GridPoint(transform.position.x, transform.position.z));
             var targetAlong = crossingRoad.AlongAxis(new GridPoint(target.x, target.z));
             var allowedAlong = following.Advance(currentAlong, targetAlong, leaderAlong, deltaTime);
-            var point = crossingRoad.PointAt(allowedAlong, 0f);
+            var point = crossingRoad.PointAt(allowedAlong, legLaneOffset);
             return new Vector3(point.X, target.y, point.Z);
         }
 

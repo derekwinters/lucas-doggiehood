@@ -31,6 +31,12 @@ namespace Doggiehood.Unity.EditModeTests
         // kit model, or a ModelScale change that skipped the Core constraint.
         private const float NominalBodyLengthTolerance = 0.25f;
 
+        // #672: the truck steps toward its lane line at a fixed speed per tick, so
+        // a sampled position can sit a fraction of a step off the exact lane
+        // centre. Wide enough to absorb that, far narrower than the 1.5m lane
+        // offset it guards.
+        private const float LaneTolerance = 0.01f;
+
         private static Road NorthSouthRoad()
         {
             return NeighborhoodLayout.Roads.First(r => r.Orientation == StreetOrientation.NorthSouth);
@@ -119,6 +125,144 @@ namespace Doggiehood.Unity.EditModeTests
             }
             finally
             {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TruckKeepsToItsRightHandLane_ForItsEntireRoute()
+        {
+            // #672: the truck used to drive straddling the centre line the whole
+            // way down the street, because every road position it could express
+            // WAS the centerline. Drive the real route and assert two things per
+            // tick: it never strays onto the wrong side of the centerline for the
+            // leg it is driving, and it does actually leave the middle of the road
+            // — reaching its lane centre, a quarter of the road width over.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var door = new Vector3(
+                    NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter);
+
+                truck.DeliverTo(door, OriginMap(), OriginNetwork(), () => { });
+
+                var reachedItsLaneCentre = false;
+
+                for (var step = 0; step < 4000 && !truck.IsGone; step++)
+                {
+                    if (truck.IsDriving)
+                    {
+                        // The wrong-side test. A leg handover at an intersection
+                        // hands the truck over at the NEW leg's centerline (the old
+                        // leg's lane point sits on the new road's own axis), so it
+                        // moves from 0 out to its lane offset and never through it.
+                        Assert.That(truck.CurrentLateral * truck.LaneOffset,
+                            Is.GreaterThanOrEqualTo(-LaneTolerance),
+                            "the truck crossed to the oncoming side of the centerline");
+
+                        Assert.That(Mathf.Abs(truck.CurrentLateral),
+                            Is.LessThanOrEqualTo(RoadLane.Offset + LaneTolerance),
+                            "the truck drifted outside its own lane");
+
+                        if (Mathf.Abs(Mathf.Abs(truck.CurrentLateral) - RoadLane.Offset) < LaneTolerance)
+                        {
+                            reachedItsLaneCentre = true;
+                        }
+                    }
+
+                    Assert.That(OnAnyRoad(new GridPoint(truck.transform.position.x, truck.transform.position.z)),
+                        Is.True, "keeping right must not push the truck off the roadway (#538)");
+
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(reachedItsLaneCentre, Is.True,
+                    "the truck must actually drive its lane, not the centre of the road");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TruckDelivers_FromItsOwnLane_NotFromTheMiddleOfTheRoad()
+        {
+            // #672: the delivery stop is still the road point nearest the door,
+            // but the truck parks there in its lane. A door on the far side of the
+            // street does NOT pull the truck across the centerline — the package
+            // is carried to the door, the truck stays where it belongs.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var door = new Vector3(
+                    NeighborhoodLayout.LotDistanceFromCenter, 0f, NeighborhoodLayout.LotDistanceFromCenter);
+
+                truck.DeliverTo(door, OriginMap(), OriginNetwork(), () => { });
+
+                for (var step = 0; step < 4000 && !truck.HasDelivered && !truck.IsGone; step++)
+                {
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(truck.HasDelivered, Is.True, "the truck must reach its delivery stop");
+                Assert.That(Mathf.Abs(truck.CurrentLateral), Is.EqualTo(RoadLane.Offset).Within(LaneTolerance),
+                    "the truck delivers from its lane centre, not straddling the middle of the street");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void CrosswalkYield_StopsTheTruckAtTheSameAlongCoordinate_WithTheLaneOffsetApplied()
+        {
+            // #639/#658 regression guard for #672: crosswalk claims and setbacks
+            // are ALONG-road quantities, so shifting the truck sideways into its
+            // lane must not move where it stops. Hold the band the truck meets
+            // beyond its stop and assert it halts with its bumper the stop gap
+            // short of the band's near edge — while sitting in its lane.
+            var road = NorthSouthRoad();
+            var band = NorthCrosswalkOn(road);
+            var bandAlong = road.AlongAxis(Midpoint(band));
+
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                var dog = new object();
+                Assert.That(RoadCrossingGate.Shared.TryEnter(band, dog), Is.True);
+
+                // A door far up the north arm, so the truck's route must run
+                // THROUGH the held band rather than stopping before reaching it.
+                var door = new Vector3(NeighborhoodLayout.LotDistanceFromCenter, 0f, 28f);
+                truck.DeliverTo(door, OriginMap(), OriginNetwork(), () => { });
+
+                for (var step = 0; step < 4000 && !truck.IsGone; step++)
+                {
+                    truck.Tick(0.05f);
+                }
+
+                Assert.That(truck.IsGone, Is.False,
+                    "a held crosswalk on its route must hold the truck, not let it drive through");
+
+                var stoppedAlong = road.AlongAxis(
+                    new GridPoint(truck.transform.position.x, truck.transform.position.z));
+                var bumperAlong = stoppedAlong + truck.TravelSign * truck.CrosswalkFrontSetback;
+                var nearEdgeAlong = bandAlong - truck.TravelSign * (WorldDimensions.CrosswalkWidth / 2f);
+
+                Assert.That((nearEdgeAlong - bumperAlong) * truck.TravelSign,
+                    Is.GreaterThanOrEqualTo(-LaneTolerance),
+                    "the bumper must stay behind the band's near edge — unchanged by the lane offset");
+                Assert.That(Mathf.Abs(truck.CurrentLateral), Is.EqualTo(RoadLane.Offset).Within(LaneTolerance),
+                    "and it waits in its own lane");
+            }
+            finally
+            {
+                RoadCrossingGate.Shared.Clear();
                 Object.DestroyImmediate(root);
             }
         }

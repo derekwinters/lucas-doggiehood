@@ -89,5 +89,19 @@ namespace Doggiehood.Core.World
                 ? new GridPoint(Center.X + perpendicularOffset, Center.Z + alongAxis)
                 : new GridPoint(Center.X + alongAxis, Center.Z + perpendicularOffset);
         }
+
+        /// <summary>
+        /// #672: the point a vehicle actually drives through at
+        /// <paramref name="alongAxis"/> — the centre of the RIGHT-hand lane for
+        /// the direction it is travelling (<paramref name="travelSign"/>: +1
+        /// toward increasing along-coordinates, -1 toward decreasing). Reversing
+        /// direction puts it on the other side of the centerline, because "right"
+        /// is relative to travel, not to the road's axis. See
+        /// <see cref="RoadLane"/> for the sign convention and the lane invariant.
+        /// </summary>
+        public GridPoint LanePointAt(float alongAxis, float travelSign)
+        {
+            return PointAt(alongAxis, RoadLane.PerpendicularOffsetFor(Orientation, travelSign));
+        }
     }
 }

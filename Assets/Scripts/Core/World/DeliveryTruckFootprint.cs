@@ -36,6 +36,24 @@ namespace Doggiehood.Core.World
         public const float ModelLengthAtImportScale = 3.25f;
 
         /// <summary>
+        /// Width of the same staged "delivery" model across its own lateral axis,
+        /// as imported and BEFORE <see cref="ModelScale"/>. Measured from the mesh
+        /// the same documented way <see cref="ModelLengthAtImportScale"/> was:
+        /// delivery.fbx's body vertices span X = -75..75 in FBX internal units
+        /// (the file's own UnitScaleFactor is 1, i.e. cm), so 150 raw units become
+        /// 1.5m on Unity's default cm-to-m FBX import. The body is the widest
+        /// part — the four wheel meshes reach X = +/-60 once their model
+        /// translations are applied, and the door mesh X = +/-55, both inside the
+        /// body's own span — so this figure bounds the whole model.
+        ///
+        /// #672 is what makes the width a budgeted dimension rather than a
+        /// rendering detail: once the truck sits a lane offset off the centerline,
+        /// its outer side is what decides whether "keep right" put a bumper over
+        /// the curb. See <see cref="FitsInsideItsLane"/>.
+        /// </summary>
+        public const float ModelWidthAtImportScale = 1.5f;
+
+        /// <summary>
         /// Uniform scale the kit model is instantiated at (#547). Bounded above
         /// by <see cref="MaxBodyLength"/>: the truck has to fit between an
         /// intersection's crosswalk bands, so this is not a free visual dial.
@@ -86,6 +104,40 @@ namespace Doggiehood.Core.World
         /// configured <see cref="ModelScale"/> — what the view should measure on
         /// the kit-model path.</summary>
         public static float NominalBodyLength => ModelLengthAtImportScale * ModelScale;
+
+        /// <summary>#672: the truck body's width across its travel axis at the
+        /// configured <see cref="ModelScale"/> — the dimension the lane budget
+        /// below is spent on.</summary>
+        public static float NominalBodyWidth => ModelWidthAtImportScale * ModelScale;
+
+        /// <summary>
+        /// #672: the widest body that still fits in its lane. The vehicle's centre
+        /// sits <see cref="RoadLane.Offset"/> off the centerline, so only
+        /// <c>RoadWidth/2 - laneOffset</c> of pavement remains outboard of it, and
+        /// the body may reach half its width into that. (Written multiplier-last,
+        /// like <see cref="CrosswalkSpacing"/>, so the #105 duplicate-dimension
+        /// source guard reads the <c>2</c> as the multiplier it is rather than as
+        /// a re-declared <see cref="WorldDimensions.SidewalkWidth"/>.)
+        /// </summary>
+        public const float MaxBodyWidth = (WorldDimensions.RoadWidth / 2f - RoadLane.Offset) * 2f;
+
+        /// <summary>
+        /// THE lane constraint (#672). Keeping right is only a fix if the whole
+        /// body stays on the pavement once it is over there:
+        ///
+        ///     laneOffset + bodyWidth / 2  &lt;=  RoadWidth / 2
+        ///
+        /// Otherwise moving the truck out of the middle of the road would just put
+        /// its outer side on the sidewalk instead — the same technically-correct-
+        /// but-wrong trade the #538 "never leaves the roadway" invariant exists to
+        /// rule out. Unlike <see cref="FitsBetweenCrosswalkBands"/> this one allows
+        /// equality: a body exactly as wide as its lane touches the curb line but
+        /// never crosses it, and nothing deadlocks at the boundary.
+        /// </summary>
+        public static bool FitsInsideItsLane(float bodyWidth)
+        {
+            return RoadLane.Offset + bodyWidth / 2f <= WorldDimensions.RoadWidth / 2f;
+        }
 
         /// <summary>#639: how far ahead of the truck's pivot its front bumper
         /// stops short of a crosswalk band — half a body, plus the stop gap. The

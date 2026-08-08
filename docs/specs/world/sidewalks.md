@@ -18,6 +18,20 @@ Every road gets a sidewalk on **both** sides — not just one edge. Moving outwa
 
 A sidewalk's centerline sits `RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 2` from the road's own centerline — `4.75m` for the starting intersection's two roads. `Road` and `Sidewalk` (Core, `Assets/Scripts/Core/World/`) express this purely as that formula over `WorldDimensions`; a guard test (`WorldDimensionsGuardTests`) fails the build if any of the locked values is ever re-declared as a literal outside `WorldDimensions.cs`.
 
+## Lanes ([#672](https://github.com/derekwinters/lucas-doggiehood/issues/672))
+
+A road carries **two lanes**, one per direction, split by its centerline. A lane's centre sits `RoadWidth / 4` (`1.5m`) from the road centerline — half a lane's width, since a lane is half the road. This is **derived**, not a new locked measurement: `RoadLane.Offset` (Core) computes it from `WorldDimensions.RoadWidth`, so widening the road carries the lanes with it.
+
+**Invariant — a vehicle keeps to the right-hand lane for its direction of travel.** Its body stays entirely within the right-hand half of the roadway on a road leg: it drives its lane centre, never the road centerline, and never crosses to the oncoming side. "Right" is relative to *travel*, not to the road's axis — a vehicle that reverses direction, or turns onto a road heading the other way, moves to the **other** side of the centerline.
+
+**Invariant — the lane never puts a vehicle off the pavement.** `laneOffset + bodyWidth / 2 ≤ RoadWidth / 2`. Keeping right is only a fix if the whole body is still on the roadway once it is over there; a vehicle too wide for its lane fails CI (`DeliveryTruckFootprint.FitsInsideItsLane`) rather than quietly putting a bumper over the curb. The delivery truck's measured body is `2.25m` wide against a `3m` lane budget.
+
+The rule lives on the **road model** rather than on any one vehicle, so a future road user inherits it instead of re-deriving it. Dogs are not lane users — they walk sidewalks and crosswalks, never the roadway (see [Dog Behavior](../dogs/behavior.md)).
+
+Because "right" depends on direction, the lane is a property of the **leg being driven**, not of the road network. A route's waypoints stay on the road **centerline** — an intersection waypoint belongs to two roads with two different right-hand sides, so a lane baked into the graph would be ambiguous exactly where routes turn. Core's `RoadLeg` resolves each leg (its road, its travel sign, and therefore its lane) and the driving code offsets there.
+
+**Intersection interiors are out of scope for the lane invariant.** A left turn inherently crosses the oncoming lane, and a U-turn crosses the centerline by definition — turn geometry is reasoned about with the intersection manoeuvre work ([#673](https://github.com/derekwinters/lucas-doggiehood/issues/673)). The invariant binds on road *legs*; a vehicle handing over between legs at an intersection does so at the new leg's centerline and moves out to its lane, so it never enters the oncoming half.
+
 ## Road arm extent
 
 Each of the starting intersection's two roads (and, keying off the same extent, each road's two sidewalks) runs a fixed distance either way from the origin — `NeighborhoodLayout.StreetHalfLength`. That extent is **half a tile** (`WorldDimensions.TileSize / 2` = 30m), so every arm reaches the **tile edge**. The `WalkNetwork` sidewalk arms and everything else derive from `NeighborhoodLayout.Roads`, so lengthening the arms extends the walkable sidewalks with them.
@@ -107,6 +121,9 @@ A front walkway renders as tiled Kenney City Kit Suburban `path-short` pieces �
 ## Build checklist
 
 - [x] Every road declares a sidewalk on both sides, set back 0.75m from the road edge (2026-07-13 midpoint decision — a logical setback for dog placement, no visual grass strip in the kit-art path), sized from `WorldDimensions` only
+- [x] A road carries two lanes, centred `RoadWidth / 4` either side of the centerline, **derived** from `WorldDimensions.RoadWidth` in `RoadLane.Offset` rather than declared as a new locked value (#672)
+- [x] A vehicle keeps to the **right-hand lane for its direction of travel** on every road leg — never on or across the centerline — with the sign convention pinned for all four orientation × travel-direction cases, and reversing direction moving it to the other side (#672)
+- [x] A vehicle's whole body fits inside its lane (`laneOffset + bodyWidth / 2 ≤ RoadWidth / 2`), so keeping right never puts a bumper over the curb (`DeliveryTruckFootprint.FitsInsideItsLane`, #672)
 - [x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm
 - [x] Crosswalks derive **per tile** from the tile catalog geometry (`TileCrosswalkGeometry`), so **every unlocked intersection** paints them — a 4-way's four arms and a three-way (Tee)'s three, with none over a Tee's closed edge; non-intersection tiles get none (#508)
 - [x] Kit-art path renders the baked-crosswalk intersection mesh at each intersection tile's centre (`road-crossroad-path` 4-way / `road-intersection-path` Tee), yawed per `RoadTileArt`, instead of composing straights + separate crossing tiles (#508)
