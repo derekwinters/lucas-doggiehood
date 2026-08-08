@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome Pop-up — Wireframe #439, amended #671 (1:1 @ 1920×1200)</title>
+<style>
+  :root{
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE;
+    --graybox:#C9C1B2;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; } }
+  :root[data-theme="light"]{ --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE; }
+  :root[data-theme="dark"]{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .rounded{font-family:ui-rounded,"SF Pro Rounded","Segoe UI Rounded","Nunito","Quicksand",system-ui,sans-serif;font-weight:800;letter-spacing:.01em;}
+  .wrap{max-width:1000px;margin:0 auto;padding:36px 24px 72px;}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px;}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:16px;color:var(--muted);max-width:66ch;margin:0 0 8px;}
+  .scalenote{font-size:12.5px;color:var(--accent);font-weight:600;margin:0 0 22px;}
+  .variantlabel{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:26px 0 10px;}
+
+  .viewer{overflow:auto;max-height:74vh;border:1px solid var(--hair);border-radius:14px;background:var(--bg-2);
+    background-image:linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%),linear-gradient(45deg,var(--hair) 25%,transparent 25%,transparent 75%,var(--hair) 75%);
+    background-size:24px 24px;background-position:0 0,12px 12px;}
+  .screen{position:relative;width:1920px;height:1200px;background:#BFE3F2;overflow:hidden;}
+  .sky{position:absolute;inset:0 0 46% 0;background:linear-gradient(#AFDDF0,#D7F0F8);}
+  .ground{position:absolute;inset:54% 0 0 0;background:linear-gradient(#8FD07A,#79C264);}
+  .road{position:absolute;left:0;right:0;top:57%;height:90px;background:#9C9AA0;}
+  .house{position:absolute;width:150px;height:118px;background:#F4A65B;border:9px solid var(--ink);border-radius:16px;}
+  .house::before{content:"";position:absolute;left:-12px;right:-12px;top:-46px;height:58px;background:#E4693F;border:9px solid var(--ink);border-radius:16px 16px 6px 6px;}
+  .h1{left:250px;top:19%;} .h2{left:1520px;top:20%;background:#7FB2E6;}
+  /* the freshly filled house — brought to full color behind the scrim to hint where the pan lands */
+  .h3{left:900px;top:21%;background:#9AD08A;}
+
+  /* dim scrim behind the panel — tapping it dismisses (same as the button) */
+  .scrim{position:absolute;inset:0;background:rgba(46,42,38,.42);}
+
+  /* centered celebration panel: WelcomeWidthPx 820, centered => left (1920-820)/2 = 550 */
+  .card{position:absolute;left:550px;width:820px;background:var(--panel);border:6px solid var(--ink);border-radius:40px;box-shadow:0 14px 0 var(--ink);
+    padding:56px;display:flex;flex-direction:column;align-items:center;text-align:center;}
+
+  /* #671: top-right ✕ close affordance — flush in the card's corner, matching the
+     dog/house profile precedent (anchor top-right, pivot top-right, zero inset, CloseButtonSizePx 72).
+     Wired to the existing WelcomePopup.Dismiss() — dismisses WITHOUT panning or opening the profile. */
+  .close{position:absolute;top:0;right:0;width:72px;height:72px;border-radius:999px;background:var(--cream);
+    border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;
+    font-size:34px;color:var(--ink);z-index:3;}
+
+  /* portrait medal badge overlapping the top edge (PortraitDiameterPx 176, PortraitOverlapPx 88) */
+  .portrait{position:absolute;top:-88px;left:50%;transform:translateX(-50%);width:176px;height:176px;border-radius:999px;background:var(--graybox);
+    border:8px solid var(--ink);box-shadow:0 8px 0 var(--ink);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;z-index:2;}
+  .portrait .pup{font-size:120px;line-height:.9;filter:grayscale(1) brightness(.72);}
+
+  .headroom{height:96px;} /* PortraitOverlapPx 88 + PortraitTopGapPx 28 minus padding — reserves space under the portrait */
+  .heading{font-size:54px;color:var(--ink);margin:0;line-height:1.05;}
+  .name{font-size:40px;color:var(--ink);margin:18px 0 0;line-height:1.1;}      /* HeadingNameGapPx 18 */
+  .meta{font-size:30px;color:var(--muted);margin:8px 0 0;line-height:1.25;}    /* NameMetaGapPx 8 */
+
+  /* member-chip row — one named graybox chip per dog; hidden for single-dog move-ins */
+  .members{margin-top:28px;display:flex;gap:20px;justify-content:center;}      /* MemberRowMarginPx 28, MemberChipGapPx 20 */
+  .member{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .member .chip{width:72px;height:72px;border-radius:999px;background:var(--graybox);border:5px solid var(--ink);box-shadow:0 5px 0 var(--ink);
+    display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}  /* MemberChipDiameterPx 72 */
+  .member .chip .pup{font-size:52px;line-height:.9;filter:grayscale(1) brightness(.72);}
+  .member .mname{font-size:20px;color:var(--ink);}
+
+  /* single positive action — "Say hi!" dismisses AND pans the camera to the new house */
+  .actions{margin-top:40px;}   /* MetaActionMarginPx 40 */
+  .cc-btn{display:inline-flex;align-items:center;justify-content:center;min-width:320px;height:96px;padding:0 48px;border-radius:999px;
+    border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);background:var(--leaf);}
+
+  .info{margin-top:30px;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;}
+  @media (max-width:640px){ .info{grid-template-columns:1fr;} }
+  .info h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--hair);}
+  td{padding:8px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  td:first-child{font-family:ui-monospace,monospace;font-size:12px;padding-right:14px;white-space:nowrap;}
+  td.val{font-variant-numeric:tabular-nums;width:96px;}
+  tr:last-child td{border-bottom:none;}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;} .note b{color:var(--text);font-weight:600;}
+  footer{margin-top:36px;padding-top:20px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);} footer a{color:var(--accent);}
+  .status{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--gold) 25%,transparent);border:1px solid var(--gold);color:var(--text);font-size:12.5px;font-weight:600;}
+  .proposal{font-size:14px;color:var(--text);background:color-mix(in srgb,var(--coral) 12%,transparent);border:1px solid var(--coral);
+    border-radius:12px;padding:14px 16px;margin:0 0 18px;} .proposal b{font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Doggiehood · UI Wireframe · Issue #439 · amended by #671 · Welcome Pop-up · Tablet · Landscape · 1920×1200</p>
+  <h1 class="rounded">Welcome to the neighborhood pop-up</h1>
+  <p class="proposal"><b>Amended by #671 — approved by Derek, 2026-08-07.</b> One region added to the #439 layout:
+    a <b>top-right ✕ close affordance</b>, matching the dog/house profile precedent
+    (<code>CloseButtonSizePx</code> 72, Cream pill, flush in the card's corner). It is wired to the pop-up's
+    <b>existing</b> <code>Dismiss()</code> — dismiss <i>without</i> panning the camera and <i>without</i> opening the
+    house profile — so no new dismiss behavior is being invented, only made visible. Nothing else on this page changes.
+    <br><b>The portrait-medal collision question is resolved:</b> the medal is centered and 176 px wide, so it spans
+    x 872–1048; the ✕ sits flush at the card's top-right, spanning x 1298–1370. They clear each other by
+    <b>250 px</b> horizontally in every household variant — the medal is centered regardless of content, so the
+    clearance is constant. See all three variants below.</p>
+  <p class="lede">A <b>modal celebration panel</b> raised when a new dog (or household) moves into a vacant house.
+    It reuses the approved <b>onboarding reward panel</b> composition — a portrait medal overlapping the top edge,
+    a big heading, one leaf pill — parameterized for an arrival: <b>“Welcome to the neighborhood!”</b>, the new
+    dog’s name, a breed/household line, and one button, <b>“Say hi!”</b>, that dismisses <b>and</b> pans the camera
+    to the new house. One pop-up per household; a per-dog member-chip row appears for multi-dog move-ins.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference, once per household variant. Portraits are graybox silhouettes (real tinted dog-model portrait is a fast-follow). Names/breeds are placeholders passed by the caller.</p>
+
+  <p class="variantlabel">Variant 1 — Single (70%): member-chip row hidden</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Dimmed neighborhood behind a centered welcome panel: graybox dog portrait medal, heading Welcome to the neighborhood, name Waffles, meta French Bulldog moved in next door, and a Say hi button. No member-chip row.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="card" style="top:360px;">
+        <div class="close rounded" aria-label="Close">✕</div>
+        <div class="portrait"><span class="pup">🐶</span></div>
+        <div class="headroom"></div>
+        <h2 class="heading rounded">Welcome to the neighborhood!</h2>
+        <p class="name rounded">Waffles</p>
+        <p class="meta rounded">French Bulldog · moved in next door</p>
+        <!-- member-chip row hidden: single-dog move-in -->
+        <div class="actions"><button class="cc-btn rounded">Say hi!</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="variantlabel">Variant 2 — Parent + puppy (25%): two named member chips</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Dimmed neighborhood behind a centered welcome panel: graybox portrait medal, heading Welcome to the neighborhood, names Biscuit and Pepper, meta French Bulldog family of 2, a row of two named graybox chips Biscuit and Pepper, and a Say hi button.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="card" style="top:320px;">
+        <div class="close rounded" aria-label="Close">✕</div>
+        <div class="portrait"><span class="pup">🐶</span></div>
+        <div class="headroom"></div>
+        <h2 class="heading rounded">Welcome to the neighborhood!</h2>
+        <p class="name rounded">Biscuit &amp; Pepper</p>
+        <p class="meta rounded">French Bulldog · family of 2</p>
+        <div class="members">
+          <div class="member"><div class="chip"><span class="pup">🐶</span></div><span class="mname rounded">Biscuit</span></div>
+          <div class="member"><div class="chip"><span class="pup">🐶</span></div><span class="mname rounded">Pepper</span></div>
+        </div>
+        <div class="actions"><button class="cc-btn rounded">Say hi!</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="variantlabel">Variant 3 — Three-dog (5%): one pop-up for the household, three named member chips</p>
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="Dimmed neighborhood behind a centered welcome panel: graybox portrait medal, heading Welcome to the neighborhood, names Mochi Nori and Yuzu, meta moved in — 3 dogs, a row of three named graybox chips, and a Say hi button.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h3"></div><div class="house h2"></div>
+      <div class="scrim"></div>
+      <div class="card" style="top:300px;">
+        <div class="close rounded" aria-label="Close">✕</div>
+        <div class="portrait"><span class="pup">🐶</span></div>
+        <div class="headroom"></div>
+        <h2 class="heading rounded">Welcome to the neighborhood!</h2>
+        <p class="name rounded">Mochi, Nori &amp; Yuzu</p>
+        <p class="meta rounded">Shiba Inu · moved in — 3 dogs</p>
+        <div class="members">
+          <div class="member"><div class="chip"><span class="pup">🐶</span></div><span class="mname rounded">Mochi</span></div>
+          <div class="member"><div class="chip"><span class="pup">🐶</span></div><span class="mname rounded">Nori</span></div>
+          <div class="member"><div class="chip"><span class="pup">🐶</span></div><span class="mname rounded">Yuzu</span></div>
+        </div>
+        <div class="actions"><button class="cc-btn rounded">Say hi!</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div>
+      <h2>Layout constants (@ 1920×1200)</h2>
+      <table>
+        <tr><th>Constant</th><th>Value</th><th>Applies to</th></tr>
+        <tr><td>WelcomeAnchor</td><td class="val">Center</td><td>panel position (over a dim scrim)</td></tr>
+        <tr><td>WelcomeWidthPx</td><td class="val">820</td><td>panel width</td></tr>
+        <tr><td>WelcomePaddingPx</td><td class="val">56</td><td>panel inset</td></tr>
+        <tr><td>PortraitDiameterPx</td><td class="val">176</td><td>portrait medal badge</td></tr>
+        <tr><td>PortraitOverlapPx</td><td class="val">88</td><td>portrait rise above top edge</td></tr>
+        <tr><td>PortraitOutlineThicknessPx</td><td class="val">8</td><td>portrait ink ring</td></tr>
+        <tr><td>PortraitTopGapPx</td><td class="val">28</td><td>portrait → heading</td></tr>
+        <tr><td>HeadingFontSizePx</td><td class="val">54</td><td>“Welcome to the neighborhood!”</td></tr>
+        <tr><td>NameFontSizePx</td><td class="val">40</td><td>dog / household names line</td></tr>
+        <tr><td>MetaFontSizePx</td><td class="val">30</td><td>breed · household / which-house line</td></tr>
+        <tr><td>HeadingNameGapPx</td><td class="val">18</td><td>heading → name</td></tr>
+        <tr><td>NameMetaGapPx</td><td class="val">8</td><td>name → meta</td></tr>
+        <tr><td>MetaActionMarginPx</td><td class="val">40</td><td>meta (or member row) → button</td></tr>
+        <tr><td>ActionMinWidthPx</td><td class="val">320</td><td>the single “Say hi!” pill</td></tr>
+        <tr><td><b>CloseButtonSizePx</b></td><td class="val"><b>72</b></td><td><b>#671 — close (✕), flush top-right (matches dog/house profile)</b></td></tr>
+        <tr><td>WelcomePopupDelaySeconds</td><td class="val">1.5</td><td>beat after prior panel closes (range 1–3)</td></tr>
+        <tr><td>MemberChipDiameterPx</td><td class="val">72</td><td>per-dog chip (multi-dog only)</td></tr>
+        <tr><td>MemberChipGapPx</td><td class="val">20</td><td>gap between member chips</td></tr>
+        <tr><td>MemberRowMarginPx</td><td class="val">28</td><td>meta → member-chip row</td></tr>
+        <tr><td>&nbsp;↳ panel chrome</td><td class="val">#173</td><td>outline 6 / radius 40 / shadow 12–14</td></tr>
+        <tr><td>&nbsp;↳ PillButton</td><td class="val">#173</td><td>Say hi! (96px, leaf)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Regions &amp; behavior</h2>
+      <p class="note"><b>Scrim</b> (dim; tapping dismisses without panning) · <b>Close ✕</b> (#671 — flush top-right; dismisses without panning or opening the profile) · <b>Portrait badge</b> (graybox silhouette, overlaps top) · <b>Heading</b> (fixed “Welcome to the neighborhood!”) · <b>Name</b> · <b>Meta</b> (breed · household / which house) · <b>Member-chip row</b> (one named chip per dog; hidden for single) · <b>Say hi! button</b> (single leaf pill).</p>
+      <p class="note"><b>✕ vs. the portrait medal (#671):</b> the medal is centered (176 px wide → x 872–1048) and the ✕ is flush at the card's top-right (72 px → x 1298–1370), so they clear by <b>250 px</b> in every variant. The medal's position does not depend on content, so this clearance is constant across single, parent+puppy and three-dog households.</p>
+      <p class="note"><b>Two dismiss paths, one accept.</b> The ✕ and the scrim both call the existing <code>Dismiss()</code> — no pan, no profile. <b>Say hi!</b> is the accept: dismiss + pan + open the house profile (#604). This is why the pop-up gets a ✕ where the <a href="confirmation-dialog.html">confirmation dialog</a> deliberately does not — that panel's <b>No</b> already means cancel; <b>Say hi!</b> does not.</p>
+      <p class="note"><b>One pop-up per household</b> — the head keeps the big portrait; the member-chip row echoes each dog. Household mix 70% single / 25% parent+puppy / 5% three-dog (<a href="#">expansion.md — Move-in system</a>). The row is hidden entirely for single-dog move-ins.</p>
+      <p class="note"><b>Timing:</b> the panel pops <code>WelcomePopupDelaySeconds</code> (1–3s, default 1.5s) <i>after</i> the previous panel closes, so it never stacks on the quest-resolution feedback that triggered the move-in.</p>
+      <p class="note"><b>Camera pan is the one non-presentational behavior:</b> <b>“Say hi!”</b> dismisses <i>and</i> pans the camera to the new house via <code>CameraController.FocusOn</code> — flagged for the move-in implementation (#436) to wire alongside dismiss. Tapping the scrim dismisses without panning. Always dismissible — no soft-lock.</p>
+      <p class="note"><b>Portrait is graybox now;</b> a real tinted dog-model portrait (no new art — renders the existing coat-tinted model) is a fast-follow.</p>
+    </div>
+  </div>
+
+  <footer>
+    Modal celebration panel on the “Candy Cottage” baseline (#65) — thick outline, hard shadow, pill button · reuses <a href="#">Shared UI Components (#173)</a> and the <a href="onboarding-reward.html">onboarding reward panel</a> composition · reference resolution 1920×1200. Constants named per #161; EditMode tests assert the built panel against them.
+    <br><span class="status">Base layout approved — Derek, 2026-07-31 (/approve #439)</span>
+    <span class="status">✕ close affordance approved — Derek, 2026-08-07 (/approve #671)</span>
+  </footer>
+</div>
+</body>
+</html>
