@@ -1103,9 +1103,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#modal-overlays-block-world-input" class="md-nav__link">
+  <a href="#modal-overlays-block-all-input" class="md-nav__link">
     <span class="md-ellipsis">
-      Modal overlays block world input
+      Modal overlays block all input
     </span>
   </a>
   
@@ -1537,6 +1537,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../engineering/input-authority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input Authority
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../engineering/testing/" class="md-nav__link">
         
   
@@ -1876,9 +1897,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#modal-overlays-block-world-input" class="md-nav__link">
+  <a href="#modal-overlays-block-all-input" class="md-nav__link">
     <span class="md-ellipsis">
-      Modal overlays block world input
+      Modal overlays block all input
     </span>
   </a>
   
@@ -2187,16 +2208,21 @@
 </tbody>
 </table>
 <p>The overall panel <strong>width and placement</strong> are settled per screen (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/175">#175</a>), not here; the mockup shows a representative wide tablet panel.</p>
-<h2 id="modal-overlays-block-world-input">Modal overlays block world input<a class="headerlink" href="#modal-overlays-block-world-input" title="Permanent link">&para;</a></h2>
-<p>Every dialog/menu overlay is <strong>modal</strong>: a tap that lands on it — on a button, on the panel's empty area, or on its dimmed backdrop — is consumed by the UI and <strong>never</strong> reaches a world interactable (a dog, a house, a lost item) behind it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/422">#422</a>). Tapping <strong>Accept</strong> only accepts; tapping <strong>Close</strong> only closes; neither also fires whatever sat behind the button.</p>
+<h2 id="modal-overlays-block-all-input">Modal overlays block all input<a class="headerlink" href="#modal-overlays-block-all-input" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/670">#670</a>).</strong> It used to say a modal blocks <em>taps</em> from reaching the world → it now says a modal blocks <strong>every kind of input</strong> from reaching the world <em>or the camera</em> → because "blocking" had only ever been built into the tap path: camera pan, pinch, twist and scroll never consulted the modal registry at all, so dragging a slider on the open debug tuning menu also panned the map underneath it.</p>
+</blockquote>
+<p><strong>Invariant — while any modal is open, no input of any kind reaches the camera or the world.</strong> Not taps, not drags, not pinches, not twists, not scroll. This is a rule about how input is wired, not a list of symptoms to fix: every gesture is resolved by the single <a href="../../../engineering/input-authority/">input authority</a>, which consults the modal registry once at press-down, so a new gesture kind cannot quietly arrive unblocked.</p>
+<p><strong>Invariant — a gesture belongs to exactly one consumer, chosen at press-down, for its whole lifetime.</strong> A drag that starts on a modal stays with that modal even after the pointer leaves it. A gesture already in flight when a modal opens keeps its owner until release; the modal blocks every gesture that <em>starts</em> after it opens.</p>
+<p>Every dialog/menu overlay is <strong>modal</strong>: a tap that lands on it — on a button, on the panel's empty area, or on its dimmed backdrop — is consumed by the UI and <strong>never</strong> reaches a world interactable (a dog, a house, a lost item) behind it (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/422">#422</a>) — and, since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/670">#670</a>, never reaches the camera either. Tapping <strong>Accept</strong> only accepts; tapping <strong>Close</strong> only closes; neither also fires whatever sat behind the button, and neither drags the neighborhood around under the panel.</p>
 <p>This is why every <strong>center-anchored</strong> overlay (confirmation dialog, house profile, dog profile) carries a <strong>full-screen raycast-blocking scrim/backdrop</strong> under its card. A new center-anchored modal surface must include such a backdrop, or taps on its empty regions would fall through to the world. The bottom-center <strong>conversation panel</strong> is the exception — it has <em>no</em> scrim (tapping outside it does not dim the world), so it can rely only on the shared registry below, not on a backdrop; the <code>EventSystem.IsPointerOverGameObject</code> check covers just its own button/panel rects, and until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/568">#568</a> it was not on the registry at all (a tap just outside its rects leaked to the world).</p>
-<p>The world tap-router (see <a href="../../world/camera-controls/#navigation">Camera &amp; controls → Navigation</a>) enforces the block two ways:</p>
+<p>The <a href="../../../engineering/input-authority/">input authority</a> (see also <a href="../../world/camera-controls/#navigation">Camera &amp; controls → Navigation</a>) enforces the block two ways:</p>
 <ul>
-<li><strong>A shared modal registry (<code>ModalInputGate</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/544">#544</a>).</strong> Every modal surface — confirmation dialog, dog profile, house profile, welcome pop-up, onboarding reward, and the conversation panel (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/568">#568</a>) — registers itself as open on show and unregisters on close (and again if it is destroyed while open, so a torn-down overlay never leaves the block set). While any is registered (<code>IsBlocking</code>) the tap-router swallows the tap before its world raycast. The registry also exposes a one-call reset used at hard boundaries — scene unload, or test isolation — so a stale registration can never leak past that boundary and leave world taps dead. This is a deterministic, frame-timing-independent flag: it is the authoritative guard, added because the original <code>EventSystem.IsPointerOverGameObject</code> signal alone could miss a fast <strong>touch</strong> tap-release over the scrim and leak that tap to the world object behind the panel (opening it and closing the profile).</li>
-<li><strong>A same-frame close latch (<code>ClosedThisFrame</code> / <code>EndFrame()</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/568">#568</a>).</strong> <code>IsBlocking</code> alone is a <em>live</em> snapshot of the open-token count, and a panel's <code>Unregister</code> runs <strong>synchronously</strong> while the <code>EventSystem</code> dispatches the very tap that dismissed it — but <code>EventSystem.Update()</code> and the camera rig's tap-routing <code>Update()</code> have no defined order. If the <code>EventSystem</code> runs first, <code>IsBlocking</code> already reads <code>false</code> for that same tap, which then falls through and fires whatever world object sat under the panel (the reported "one tap closes the window <strong>and</strong> opens the object underneath" bug). So <code>Unregister</code> of a still-open modal <strong>latches</strong> <code>ClosedThisFrame</code>, the tap-router blocks on <code>IsBlocking || ClosedThisFrame</code>, and <code>CameraRig.LateUpdate</code> calls <code>EndFrame()</code> to clear the latch — Unity runs every <code>LateUpdate</code> only after all <code>Update</code>s have completed, so the closing tap stays consumed for the rest of its frame regardless of ordering, while the next frame's genuinely-new tap routes normally. A no-op <code>Unregister</code> (unknown / already-removed / null token) does <strong>not</strong> latch, so a frame with no modal open never dead-ends a world tap.</li>
+<li><strong>A shared modal registry (<code>ModalInputGate</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/544">#544</a>).</strong> Every modal surface — confirmation dialog, dog profile, house profile, welcome pop-up, onboarding reward, and the conversation panel (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/568">#568</a>) — registers itself as open on show and unregisters on close (and again if it is destroyed while open, so a torn-down overlay never leaves the block set). While any is registered (<code>IsBlocking</code>) the authority consumes the gesture at press-down, before any tier below it — world <em>or</em> camera — is offered it (#670; before that, only the tap-router asked). The registry also exposes a one-call reset used at hard boundaries — scene unload, or test isolation — so a stale registration can never leak past that boundary and leave world taps dead. This is a deterministic, frame-timing-independent flag: it is the authoritative guard, added because the original <code>EventSystem.IsPointerOverGameObject</code> signal alone could miss a fast <strong>touch</strong> tap-release over the scrim and leak that tap to the world object behind the panel (opening it and closing the profile).</li>
+<li><strong>A same-frame close latch (<code>ClosedThisFrame</code> / <code>EndFrame()</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/568">#568</a>).</strong> <code>IsBlocking</code> alone is a <em>live</em> snapshot of the open-token count, and a panel's <code>Unregister</code> runs <strong>synchronously</strong> while the <code>EventSystem</code> dispatches the very tap that dismissed it — but <code>EventSystem.Update()</code> and the camera rig's tap-routing <code>Update()</code> have no defined order. If the <code>EventSystem</code> runs first, <code>IsBlocking</code> already reads <code>false</code> for that same tap, which then falls through and fires whatever world object sat under the panel (the reported "one tap closes the window <strong>and</strong> opens the object underneath" bug). So <code>Unregister</code> of a still-open modal <strong>latches</strong> <code>ClosedThisFrame</code>, the tap-router blocks on <code>IsBlocking || ClosedThisFrame</code>, and <code>InputRouter.LateUpdate</code> calls <code>EndFrame()</code> to clear the latch — Unity runs every <code>LateUpdate</code> only after all <code>Update</code>s have completed, so the closing tap stays consumed for the rest of its frame regardless of ordering, while the next frame's genuinely-new tap routes normally. A no-op <code>Unregister</code> (unknown / already-removed / null token) does <strong>not</strong> latch, so a frame with no modal open never dead-ends a world tap.</li>
 <li><strong><code>EventSystem.IsPointerOverGameObject</code></strong> on the backdrop remains as a belt-and-suspenders check for overlays not (yet) on the registry.</li>
 </ul>
-<p>Blocking suppresses only the <em>world pass-through</em>. A scrim/backdrop's own close/cancel button still fires through UGUI, so a panel that intentionally <strong>dismisses on scrim tap</strong> keeps doing so — "dismiss this panel" and "pass the tap through to the world" stay distinct.</p>
+<p>Blocking suppresses only the <em>pass-through to the world and the camera</em>. A scrim/backdrop's own close/cancel button still fires through UGUI, so a panel that intentionally <strong>dismisses on scrim tap</strong> keeps doing so — "dismiss this panel" and "pass the tap through to the world" stay distinct.</p>
 <p>The one still-IMGUI affordance, the HUD Settings gear, sits outside the EventSystem and so is covered by an interim screen-space rect guard instead; it folds into this same rule once it migrates to UGUI (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/370">#370</a>).</p>
 
 

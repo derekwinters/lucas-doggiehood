@@ -1376,6 +1376,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../engineering/input-authority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input Authority
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../engineering/testing/" class="md-nav__link">
         
   
@@ -1678,7 +1699,7 @@
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/293">#293</a> (unblocks <a href="https://github.com/derekwinters/lucas-doggiehood/issues/208">#208</a>). Implements/covers: house profile view (opened by tapping a house). Approved: Derek, 2026-07-26 (in-session).</em>
 <em>Mockup: <a href="../mockups/house-profile.html">mockups/house-profile.html</a>.</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
-<p>Tapping a <strong>house</strong> opens its profile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/208">#208</a>) — the mirror of the <a href="../dog-profile/">dog profile</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/177">#177</a>). A centered card over a dimmed scene shows the house's <strong>level</strong> (1–4), the <strong>resident dog(s)</strong> as tappable links to their own profiles, and an <strong>entry point to the house-upgrade action</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>). A house tap is the primary entry point; the <strong><a href="../welcome-popup/">move-in welcome pop-up</a></strong>'s <strong>"Say hi!"</strong> button is a second one — it opens this same profile for the freshly moved-in house (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/604">#604</a>). Content scope is option B, settled by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/208">#208</a> (2026-07-25). Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
+<p>Tapping a <strong>house</strong> opens its profile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/208">#208</a>) — the mirror of the <a href="../dog-profile/">dog profile</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/177">#177</a>). A centered card over a dimmed scene shows the house's <strong>level</strong> (1–4), the <strong>resident dog(s)</strong> as tappable links to their own profiles, and an <strong>entry point to the house-upgrade action</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>). A house tap is the primary entry point — <strong>except while that house has bugs on it</strong>, see below; the <strong><a href="../welcome-popup/">move-in welcome pop-up</a></strong>'s <strong>"Say hi!"</strong> button is a second one — it opens this same profile for the freshly moved-in house (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/604">#604</a>). Content scope is option B, settled by Derek on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/208">#208</a> (2026-07-25). Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1792,7 +1813,16 @@
 <li><strong>Level display.</strong> Level 1–4 is shown as <code>Lv N</code> plus <code>LevelPipCount</code> pips (filled = current level), so the current level and the remaining headroom to upgrade both read at a glance. Per-level house <em>visuals</em> are the model-swap ladders in <a href="../../expansion/#house-leveling">House leveling</a>; the thumbnail renders the house's current mesh (see the render note below).</li>
 <li><strong>Thumbnail &amp; resident avatars are render-to-texture snapshots (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/464">#464</a>, Derek's Option A, 2026-08-01).</strong> The <code>ThumbnailSizePx</code> box and each <code>ResidentAvatarSizePx</code> box show a <strong>live render of the actual 3D model</strong>, not the flat placeholder color: an off-screen portrait camera (<code>PortraitCamera</code>) snapshots the house's real current model — its actual kit variant and upgrade level, with its vacancy/palette tint — into the thumbnail, and each resident dog's real breed-tinted model into its avatar. The house model name is resolved through the same Core source the world uses (<code>Doggiehood.Core.Art.HouseModelResolver</code>), so a profile can never drift from the house standing in the neighborhood. The snapshot is captured <strong>once on overlay-open</strong> (and again on a successful upgrade, when the profile re-renders) — not live every frame — so up to four portraits (1 house + up to 3 residents) cost one render each. This is a content-fill change within the already-approved boxes; the layout is unchanged.</li>
 <li><strong>Data.</strong> Level, vacancy, and the resident roster read from the house's Core data (<code>Doggiehood.Core.World.House</code> — <code>IsVacant</code>, level; residents via the dog roster); this page fixes layout only. The field values shown in the mockup are placeholders.</li>
-<li><strong>Symmetry with the dog profile.</strong> Card anchor, width, padding, thumbnail size, and close button match the <a href="../dog-profile/">dog profile</a> so tapping a dog and tapping its house feel like two faces of the same card. A resident link here opens the <a href="../dog-profile/">dog profile</a>; the dog profile's <strong>Home</strong> button is the reciprocal path back to the house.</li>
+<li>
+<p><strong>A house with bugs on it sprays instead of opening its profile (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/670">#670</a>, Derek 2026-08-07).</strong></p>
+<blockquote>
+<p><strong>How the spec is changing (#670).</strong> It used to say a house tap always opens this profile → it now says a house tap opens this profile <em>unless</em> the house has an active pest-control quest, in which case the tap sprays it and the profile is unreachable until it's clear → because a house tap used to fire <strong>both</strong> handlers at once, spraying the house <em>and</em> opening this panel over the result.</p>
+</blockquote>
+<p><strong>Invariant — one house tap does exactly one thing.</strong> Tapping a house either sprays it or opens its profile, never both, and the choice is made once from the house's own state (<code>HouseTapArbiter</code> in Core). While a <a href="../../quests/quest-content/">pest-control quest</a> is active on a house, the whole house is the spray target and this profile is temporarily unreachable for it; spraying the last bug restores profile access on the very next tap. That keeps the pest-control rule — <em>"the house itself is the tap target… no separate spray tool or aiming"</em> — literally true, and is why the bug swarm needs no tap zone of its own.</p>
+</li>
+<li>
+<p><strong>Symmetry with the dog profile.</strong> Card anchor, width, padding, thumbnail size, and close button match the <a href="../dog-profile/">dog profile</a> so tapping a dog and tapping its house feel like two faces of the same card. A resident link here opens the <a href="../dog-profile/">dog profile</a>; the dog profile's <strong>Home</strong> button is the reciprocal path back to the house.</p>
+</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a>; a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>
 <li>Style itself (outlines, flat shadows, pill shapes, rounded type) lives in <a href="../../world/art-style/">Art &amp; UI Style</a>; this page is layout only.</li>
 </ul>

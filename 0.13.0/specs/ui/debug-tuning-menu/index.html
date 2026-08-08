@@ -1480,6 +1480,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../engineering/input-authority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input Authority
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../engineering/testing/" class="md-nav__link">
         
   
@@ -1815,7 +1836,7 @@
 </tr>
 <tr>
 <td>Scrim</td>
-<td>Full-screen dim behind the panel; makes the overlay <strong>modal</strong> — a tap over it is absorbed and never reaches the Settings panel or the world behind it (<a href="../shared-components/#modal-overlays-block-world-input">modal-overlay convention</a>). Tapping it dismisses the tuning panel (returns to Settings)</td>
+<td>Full-screen dim behind the panel; makes the overlay <strong>modal</strong> — a tap over it is absorbed and never reaches the Settings panel or the world behind it (<a href="../shared-components/#modal-overlays-block-all-input">modal-overlay convention</a>). Tapping it dismisses the tuning panel (returns to Settings)</td>
 <td>—</td>
 </tr>
 <tr>
@@ -2039,7 +2060,8 @@
 <ul>
 <li><strong>Visibility — the 10-tap Debug unlock is the only gate (corrected by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/656">#656</a>, Derek).</strong> The <strong>"Tune balance…"</strong> entry row, and therefore this whole overlay, is built in <strong>every</strong> build — development, release-candidate, and the shipping release alike — and is reachable <strong>only</strong> after the existing <strong>10-tap Debug unlock</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>) has revealed the Debug tab. There is no build-configuration gate on it at all: <code>SettingsPanel.Init(state, version)</code> builds the row like every other Debug row, and <code>TuningMenuOverlay.Create(parent)</code> builds the overlay unconditionally, closed. <em>This reverses the rule this page originally carried</em> — that the row was dev-builds-only and "must never appear in a release build … not merely hidden behind the existing 10-tap Debug unlock". Derek overruled exactly that clause: <em>"it was meant to be part of the existing debug menu but not debug build version only … I want the debug menu there always, hidden by tap, until we decide to remove it when we are comfortable with the game."</em> Its presence in a shipping release is therefore <strong>deliberate and temporary</strong>, not an oversight — the balance is still being dialed in on-device. When Derek and Lucas are comfortable with the game, the <strong>entire debug menu</strong> (the Debug tab, its unlock gesture, this tuning panel and the other on-device debug affordances) is removed in one deliberate pass, which will get its own issue at that time. Because the unlock gesture is now the <em>only</em> thing between a shipping player and the balance sliders, EditMode tests assert that gate directly: the row and its pill are inactive until ten version taps inside the window reveal the Debug tab and it is selected.</li>
 <li><strong>Entry point (resolved — Option A, Derek 2026-08-06, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/621#issuecomment-5204316292">#621</a>).</strong> The menu is reached from a <strong>new action row in the existing Settings Debug tab</strong> ("Tune balance…"), consistent with the <a href="../settings/">#219 standard</a> that debug affordances live in the Debug tab. This introduces a "row opens a sub-panel" pattern the Debug tab hasn't used before (its rows were all inline toggles/actions).</li>
-<li><strong>Panel-vs-Settings relationship — layer, don't replace.</strong> The tuning panel opens as a <strong>centered modal overlay layered over</strong> the still-open Settings panel (which stays behind, dimmed by the scrim), per the <a href="../shared-components/#modal-overlays-block-world-input">modal-overlay convention</a>. It does <strong>not</strong> tear down / replace Settings. Closing the tuning panel (✕ or scrim tap) returns to the Settings Debug tab exactly as it was, so tuning is a quick in-and-out from Debug rather than a navigation away. The overlay registers with <code>ModalInputGate</code> while open so taps never leak to Settings or the world beneath.</li>
+<li><strong>Panel-vs-Settings relationship — layer, don't replace.</strong> The tuning panel opens as a <strong>centered modal overlay layered over</strong> the still-open Settings panel (which stays behind, dimmed by the scrim), per the <a href="../shared-components/#modal-overlays-block-all-input">modal-overlay convention</a>. It does <strong>not</strong> tear down / replace Settings. Closing the tuning panel (✕ or scrim tap) returns to the Settings Debug tab exactly as it was, so tuning is a quick in-and-out from Debug rather than a navigation away. The overlay registers with <code>ModalInputGate</code> while open so <strong>no</strong> input leaks to Settings, the world, or the camera beneath (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/670">#670</a>).</li>
+<li><strong>Dragging a slider must not also drag the world (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/670">#670</a>).</strong> This was the reported case that exposed the input architecture: the panel registered as modal correctly, but "modal" had only ever blocked <em>taps</em>, so the same drag that moved a slider knob also panned the neighborhood behind the scrim. A slider drag now belongs to the slider for its whole lifetime — ownership is claimed at press-down by the single <a href="../../../engineering/input-authority/">input authority</a> and held to release — so the camera never sees it, with no drag-distance heuristic involved. The same holds for pinch, twist and scroll over the open panel.</li>
 <li><strong>Scroll behavior.</strong> The four groups live in one <strong>vertically scrollable</strong> column inside the fixed-height panel; the header (title + Reset all + ✕) is <strong>pinned</strong> and does not scroll. When all controls fit, no scrollbar shows; when they overflow (the common case with ~17 control rows), a <code>ScrollbarWidthPx</code> vertical scrollbar appears and content is inset by <code>ScrollBodyPaddingRightPx</code> so a knob never overlaps it. Groups do <strong>not</strong> collapse — it is a single flat scroll, not sub-tabs (kept simple for a dev tool).</li>
 <li><strong>The utilitarian slider (local, layout-only addition).</strong> Sliders have <strong>no</strong> entry in <a href="../shared-components/">Shared UI Components</a> today, and this screen is explicitly exempt from Candy Cottage chrome, so a plain slider is documented <strong>here</strong> rather than promoted to a shared style decision. Each slider is: a <strong>label</strong> + its <strong>live current value</strong> (tabular) on one line, and below it a horizontal <strong>track</strong> (<code>SliderTrackHeightPx</code>) with a draggable <strong>knob</strong> (<code>SliderKnobPx</code>). Dragging updates the live value in place and pushes it straight into the active <code>TuningConfig</code> field (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a>) — the change is live. Each slider's min/max/step come from that field's declared range in <code>TuningConfig</code>, not from this layout.</li>
 <li><strong><code>base</code> + <code>step</code> = two sliders.</strong> A tunable that is a linear <code>base + step×n</code> function (tile unlock, house build, upgrade cost) is shown as <strong>two</strong> adjacent control rows — one for <code>base</code>, one for <code>step</code> — matching the field shape <a href="https://github.com/derekwinters/lucas-doggiehood/issues/620">#620</a> exposes. "A few sliders per item is fine."</li>
