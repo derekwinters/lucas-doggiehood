@@ -166,6 +166,93 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void CameraPlacementAndBothClipPlanes_AreDerivedFromTheLiveZoom()
+        {
+            // #679: the rig's depth placement is no longer pinned to a constant,
+            // and the clip planes are no longer whatever the Main scene happens
+            // to have serialized (0.3 / 300) — the rig writes both itself, from
+            // the live zoom, so the "the whole viewport renders world" guarantee
+            // is owned by code and travels with every scene.
+            foreach (var targetZoom in new[] { CameraController.MinZoom, CameraController.DefaultZoom, rig.Controller.MaxZoom })
+            {
+                rig.Controller.ZoomBy(targetZoom - rig.Controller.Zoom);
+                rig.ApplyConfiguration();
+
+                var focus = new Vector3(rig.Controller.Position.X, 0f, rig.Controller.Position.Z);
+                var expected = focus
+                    - rigObject.transform.forward * CameraRigConfig.RigDistanceFor(rig.Controller.Zoom);
+
+                Assert.That(rigObject.transform.position.x, Is.EqualTo(expected.x).Within(0.01f));
+                Assert.That(rigObject.transform.position.y, Is.EqualTo(expected.y).Within(0.01f));
+                Assert.That(rigObject.transform.position.z, Is.EqualTo(expected.z).Within(0.01f));
+                Assert.That(cam.nearClipPlane,
+                    Is.EqualTo(CameraRigConfig.NearClipPlane).Within(0.0001f),
+                    $"the near clip plane is not code-owned at zoom {rig.Controller.Zoom}");
+                Assert.That(cam.farClipPlane,
+                    Is.EqualTo(CameraRigConfig.FarClipFor(rig.Controller.Zoom)).Within(0.01f),
+                    $"the far clip plane is not code-owned at zoom {rig.Controller.Zoom}");
+            }
+        }
+
+        [Test]
+        public void AtMaxZoomOutOnAGrownMap_TheGroundAtEveryFrameEdge_LiesBetweenTheClipPlanes()
+        {
+            // #679, the actual artifact: at max zoom-out on an expanded map the
+            // near half of the ground fell *behind* the camera and was clipped
+            // away, leaving a blank band along the bottom of the screen that
+            // grew with the zoom. Asserted here on real Unity clipping state —
+            // WorldToViewportPoint against the camera's own clip planes — rather
+            // than on the Core formula, which is pinned separately.
+            var map = new Doggiehood.Core.World.TileMap(
+                new Doggiehood.Core.World.TileCoordinate(0, 0), Doggiehood.Core.World.TileType.FourWay);
+            for (int north = 1; north <= 4; north++)
+            {
+                map.Place(new Doggiehood.Core.World.TileCoordinate(0, north),
+                    Doggiehood.Core.World.TileType.FourWay);
+            }
+
+            rig.Controller.RecomputeBoundsFromMap(map);
+            rig.Controller.ZoomBy(rig.Controller.MaxZoom - rig.Controller.Zoom);
+            rig.ApplyConfiguration();
+
+            var texture = new RenderTexture(1920, 1080, 0);
+            cam.targetTexture = texture;
+            try
+            {
+                float zoom = rig.Controller.Zoom;
+                Assert.That(zoom, Is.GreaterThan(CameraRigConfig.RigDistance),
+                    "a five-tile map must zoom out past the old fixed set-back, or this proves nothing");
+
+                // The ground points that land on the bottom and top edges of the
+                // frame: zoom / sin(pitch) metres either side of the focus point,
+                // measured across the ground along the camera's heading.
+                var focus = new Vector3(rig.Controller.Position.X, 0f, rig.Controller.Position.Z);
+                var groundHeading = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up).normalized;
+                float groundReach = zoom / Mathf.Sin(CameraRigConfig.PitchDegrees * Mathf.Deg2Rad);
+
+                var nearestVisibleGround = cam.WorldToViewportPoint(focus - groundHeading * groundReach);
+                var farthestVisibleGround = cam.WorldToViewportPoint(focus + groundHeading * groundReach);
+
+                Assert.That(nearestVisibleGround.y, Is.EqualTo(0f).Within(0.01f),
+                    "this point should sit on the bottom edge of the frame");
+                Assert.That(nearestVisibleGround.z, Is.GreaterThan(cam.nearClipPlane),
+                    "the ground along the bottom of the screen is behind the near clip plane — the #679 band");
+                Assert.That(nearestVisibleGround.z, Is.EqualTo(CameraRigConfig.RigDistance).Within(0.01f),
+                    "the nearest visible ground should sit the constant clearance in front of the lens");
+
+                Assert.That(farthestVisibleGround.y, Is.EqualTo(1f).Within(0.01f),
+                    "this point should sit on the top edge of the frame");
+                Assert.That(farthestVisibleGround.z, Is.LessThan(cam.farClipPlane),
+                    "the ground along the top of the screen is past the far clip plane");
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void TapOnAHouse_ReachesItsInteractionHandler_AtAnyZoom()
         {
             // #20: tap hit-testing works across zoom levels. A RenderTexture

@@ -198,12 +198,22 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>Copies the controller's state onto the real camera. The
+        /// set-back and both clip planes are derived from the live zoom (#679),
+        /// never pinned and never left to the scene: the visible ground is a
+        /// slab whose view depth grows with the zoom, so a fixed set-back put
+        /// the near half of the frame behind the camera past ~60m of zoom — the
+        /// blank band along the bottom of the screen. Writing the planes here
+        /// rather than reading the Main scene's serialized 0.3/300 is what makes
+        /// the guarantee hold for every scene and every map size.</summary>
         private void ApplyControllerState()
         {
             transform.rotation = Quaternion.Euler(CameraRigConfig.PitchDegrees, Controller.Yaw, 0f);
             cachedCamera.orthographicSize = Controller.Zoom;
             var target = new Vector3(Controller.Position.X, 0f, Controller.Position.Z);
-            transform.position = target - transform.forward * CameraRigConfig.RigDistance;
+            transform.position = target - transform.forward * CameraRigConfig.RigDistanceFor(Controller.Zoom);
+            cachedCamera.nearClipPlane = CameraRigConfig.NearClipPlane;
+            cachedCamera.farClipPlane = CameraRigConfig.FarClipFor(Controller.Zoom);
         }
     }
 }
