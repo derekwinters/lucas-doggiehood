@@ -3,11 +3,13 @@ using System;
 namespace Doggiehood.Core.Economy
 {
     /// <summary>
-    /// The player's coin balance (#24, #25). In normal play coins enter only
-    /// via quest completion (QuestManager is the sole gameplay depositor); the
-    /// on-device Debug "Add coins" action (#286) is the one other, debug-only
-    /// depositor. The balance can never go negative — a rejected spend leaves
-    /// it untouched.
+    /// The player's coin balance (#24, #25). In normal play coins enter on the
+    /// back of a completed quest: the quest payout itself (QuestManager), the
+    /// onboarding reward chain, and — since #675 — the flat move-in reward a
+    /// completed quest's move-in roll can produce (GameState.HandleQuestCompleted).
+    /// All three are ordinary deposits through this one path; the on-device
+    /// Debug "Add coins" action (#286) is the one other, debug-only depositor.
+    /// The balance can never go negative — a rejected spend leaves it untouched.
     /// </summary>
     public sealed class Wallet
     {

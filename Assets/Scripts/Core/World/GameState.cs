@@ -465,13 +465,37 @@ namespace Doggiehood.Core.World
         /// against whichever houses currently report vacant, and on
         /// success fills exactly one — flipping its vacancy and adding
         /// its new dog(s) to the live roster immediately. Returns the
-        /// newly moved-in household (empty when nothing happened).</summary>
+        /// newly moved-in household (empty when nothing happened).
+        ///
+        /// <para>#675: a successful move-in also pays the player
+        /// <see cref="Economy.EconomyNumbers.MoveInReward"/> — once per
+        /// household, never once per dog, since one move-in fills exactly one
+        /// house. The deposit hangs off the move-in state change itself (here,
+        /// beside the household placement) rather than off the welcome pop-up:
+        /// the pop-up is presentation and can be dismissed or missed, and a
+        /// payout wired to it would silently cost the player the coins. It is an
+        /// ordinary <see cref="Economy.Wallet.Deposit"/> — the same path quest
+        /// and onboarding payouts use, not a second money-granting
+        /// mechanism.</para>
+        ///
+        /// <para><b>Invariant — move-in income is rate-limited by quest
+        /// completions, never by the number of vacant houses.</b> This runs once
+        /// per completed quest and <see cref="Expansion.HouseOccupancy.ApplyMoveIn"/>
+        /// fills at most one house per call, so however many houses stand empty
+        /// the player collects at most one reward per completion. Building more
+        /// houses stockpiles vacancies; it never raises the move-in rate, so
+        /// there is no build-to-earn loop.</para></summary>
         public IReadOnlyList<Dog> HandleQuestCompleted(Random rng)
         {
             var household = Expansion.HouseOccupancy.ApplyMoveIn(Houses, moveInSystem, Dogs, rng);
             foreach (var dog in household)
             {
                 AddDog(dog);
+            }
+
+            if (household.Count > 0)
+            {
+                Wallet.Deposit(Economy.EconomyNumbers.MoveInReward);
             }
 
             return household;

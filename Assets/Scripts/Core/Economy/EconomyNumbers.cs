@@ -19,6 +19,17 @@ namespace Doggiehood.Core.Economy
         /// #626: paid types instead pay <see cref="PaidQuestPayout"/>.</summary>
         public static int QuestPayout => TuningConfig.Active.QuestPayout;
 
+        /// <summary>#675: the flat coin payout for a completed move-in — the
+        /// coins a household brings with it when it fills a vacant house. Paid
+        /// <b>per household, not per dog</b> (one move-in event, one payout,
+        /// whatever the household's size), on the move-in state change itself
+        /// rather than on the welcome pop-up, through the same
+        /// <see cref="Wallet.Deposit"/> path quest and onboarding payouts use.
+        /// Sits here with the other coin sources; the move-in <em>mechanism</em>
+        /// (chances, household weights) stays in
+        /// <see cref="Doggiehood.Core.Expansion.MoveInNumbers"/>.</summary>
+        public static int MoveInReward => TuningConfig.Active.MoveInReward;
+
         /// <summary>#626: the paid-quest payout markup — a paid job reimburses
         /// its fronted item cost times this factor. Slider-tunable via
         /// <see cref="TuningConfig.Active"/>.</summary>

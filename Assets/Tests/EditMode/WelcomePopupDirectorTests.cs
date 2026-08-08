@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Expansion;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -237,6 +238,35 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(houseProfile.IsOpen, Is.True, "the profile opened");
             Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True,
                 "a modal stays registered across the welcome→profile hand-off");
+        }
+
+        [Test]
+        public void TheMoveInReward_IsBankedOnTheMoveIn_AndNoPopUpPathMovesCoins()
+        {
+            // #675: the payout hangs off the move-in state change in Core, never
+            // off this pop-up. #671 makes that load-bearing rather than tidy —
+            // once the panel has a ✕, closing without "Say hi!" is the COMMON
+            // path, and a reward wired to the pop-up would silently cost the
+            // player 50 coins there. The pop-up itself is unchanged by #675.
+            var deltas = new List<int>();
+            state.Wallet.CoinsChanged += delta => deltas.Add(delta);
+
+            TriggerMoveIn();
+
+            Assert.That(popup.IsOpen, Is.False,
+                "precondition: the welcome has not popped yet (it waits a beat)");
+            Assert.That(deltas.Count(d => d == EconomyNumbers.MoveInReward), Is.EqualTo(1),
+                "the move-in reward is already banked before the pop-up exists at all");
+
+            deltas.Clear();
+            director.Tick(WelcomePopup.WelcomePopupDelaySeconds);
+            Assert.That(popup.IsOpen, Is.True, "precondition: the welcome popped");
+
+            popup.CloseButton.onClick.Invoke();
+
+            Assert.That(popup.IsOpen, Is.False, "the ✕ closes the pop-up");
+            Assert.That(deltas, Is.Empty,
+                "no pop-up path grants or withholds coins — dismissing cannot cost the player the reward");
         }
     }
 }
