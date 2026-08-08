@@ -45,13 +45,13 @@ Both triggers render one line: the accomplishment sentence followed by the flat 
 
 | Trigger | Copy |
 |---|---|
-| **Quest complete** (any completion path, `QuestManager.Complete`) | *"Quest complete! +N coins"* — N is the flat quest payout ([economy.md](../quests/economy.md), today 10) |
-| **Onboarding — first quest** | *"You finished your first quest! +100 coins"* |
-| **Onboarding — upgrade a house** | *"You made a house even nicer! +100 coins"* |
-| **Onboarding — expand the map** | *"You opened up a brand-new street! +100 coins"* |
-| **Onboarding — build a house** | *"You built a brand-new house! +100 coins"* |
+| **Quest complete** (any completion path, `QuestManager.Complete`) | *"Quest complete! +N coins"* — N is the flat quest payout ([economy.md](../quests/economy.md), today 20) |
+| **Onboarding — first quest** | *"You finished your first quest! +200 coins"* |
+| **Onboarding — upgrade a house** | *"You made a house even nicer! +200 coins"* |
+| **Onboarding — expand the map** | *"You opened up a brand-new street! +200 coins"* |
+| **Onboarding — build a house** | *"You built a brand-new house! +200 coins"* |
 
-The four onboarding lines carry over **verbatim** from the retired [onboarding reward panel](onboarding-reward.md)'s accepted per-step copy (`/approve` [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) — only the surface changes, not the words; the panel's separate **"+N coins"** button label folds into the one toast line. The onboarding amount is `OnboardingRewardChainNumbers.RewardPerStep` (100 today); the quest amount is the flat quest payout (10 today). Keep every line to one short sentence that fits on a single line within `ToastMaxWidthPx` at `ToastFontSizePx` — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider `+N` payout) that would overflow fails loudly instead of clipping the reward amount ([#578](https://github.com/derekwinters/lucas-doggiehood/issues/578)).
+The four onboarding lines carry over **verbatim** from the retired [onboarding reward panel](onboarding-reward.md)'s accepted per-step copy (`/approve` [#374](https://github.com/derekwinters/lucas-doggiehood/issues/374)) — only the surface changes, not the words; the panel's separate **"+N coins"** button label folds into the one toast line. The onboarding amount is `OnboardingRewardChainNumbers.RewardPerStep` (200 today, [#674](https://github.com/derekwinters/lucas-doggiehood/issues/674)); the quest amount is the flat quest payout (20 today). Both are read live, so the numbers in the table above are illustrations of the shipped values, not part of the approved wording. Keep every line to one short sentence that fits on a single line within `ToastMaxWidthPx` at `ToastFontSizePx` — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider `+N` payout) that would overflow fails loudly instead of clipping the reward amount ([#578](https://github.com/derekwinters/lucas-doggiehood/issues/578)).
 
 ## Notes
 

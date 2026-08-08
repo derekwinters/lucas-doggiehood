@@ -75,12 +75,15 @@ namespace Doggiehood.Unity.EditModeTests
             state.RewardChain.TryAdvance(OnboardingRewardStep.ExpandMap, state.Wallet);
             state.RewardChain.TryAdvance(OnboardingRewardStep.BuildHouse, state.Wallet);
 
+            // The payout in the line is the live per-step reward (#674: 200), so
+            // the expectation is built from the seam rather than a stale literal.
+            var reward = OnboardingRewardChainNumbers.RewardPerStep;
             Assert.That(Drain(queue), Is.EqualTo(new[]
             {
-                "You finished your first quest! +100 coins",
-                "You made a house even nicer! +100 coins",
-                "You opened up a brand-new street! +100 coins",
-                "You built a brand-new house! +100 coins",
+                $"You finished your first quest! +{reward} coins",
+                $"You made a house even nicer! +{reward} coins",
+                $"You opened up a brand-new street! +{reward} coins",
+                $"You built a brand-new house! +{reward} coins",
             }), "one toast per step, queued FCFS, with the approved copy");
 
             Assert.That(ModalInputGate.Shared.IsBlocking, Is.False,

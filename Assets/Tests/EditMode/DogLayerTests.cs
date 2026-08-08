@@ -1,6 +1,7 @@
 using System.Linq;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Expansion;
 using Doggiehood.Core.Onboarding;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
@@ -211,7 +212,7 @@ namespace Doggiehood.Unity.EditModeTests
                     "dog left the starting tile before the zone was unlocked");
             }
 
-            state.Wallet.Deposit(100);
+            state.Wallet.Deposit(TileUnlock.Cost(state.Map.Tiles.Count));  // the live unlock price
             state.SetTargetMap(FrontierEditModeWorld.LoadTargetMap());
             Assert.That(state.TryUnlockTile(FrontierEditModeWorld.FirstTile), Is.True);
 

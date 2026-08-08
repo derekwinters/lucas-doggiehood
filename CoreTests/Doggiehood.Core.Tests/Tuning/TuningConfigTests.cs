@@ -30,7 +30,7 @@ namespace Doggiehood.Core.Tests.Tuning
         {
             var t = new TuningConfig();
 
-            Assert.That(t.TileUnlockBaseCost, Is.EqualTo(50));
+            Assert.That(t.TileUnlockBaseCost, Is.EqualTo(200));
             Assert.That(t.TileUnlockPerExistingTileStep, Is.EqualTo(10));
             Assert.That(t.TileUnlockOriginTileCount, Is.EqualTo(1));
         }
@@ -90,7 +90,7 @@ namespace Doggiehood.Core.Tests.Tuning
         {
             var t = new TuningConfig();
 
-            Assert.That(t.OnboardingRewardPerStep, Is.EqualTo(100));
+            Assert.That(t.OnboardingRewardPerStep, Is.EqualTo(200));
         }
 
         [Test]
