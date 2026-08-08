@@ -57,6 +57,17 @@ namespace Doggiehood.Core.World
         public const float CrosswalkOffset =
             WorldDimensions.RoadWidth / 2f + WorldDimensions.GrassVergeWidth + WorldDimensions.SidewalkWidth / 2f;
 
+        /// <summary>Centre-to-centre distance between an intersection's two
+        /// opposing bands on the SAME road — one <see cref="CrosswalkOffset"/>
+        /// either side of the crossing. Declared here, with the offset it comes
+        /// from, because two consumers need it: the truck-length budget
+        /// (<see cref="DeliveryTruckFootprint.CrosswalkSpacing"/>, #660) and the
+        /// test that decides whether two bands on one road belong to the same
+        /// intersection (<see cref="RoadManoeuvre.GroupByIntersection"/>, #673).
+        /// (Written offset-first so the #105 duplicate-dimension source guard
+        /// reads the <c>2</c> as the multiplier it is.)</summary>
+        public const float BandSpacing = CrosswalkOffset * 2f;
+
         /// <summary>Across-the-road extent of a patch: RoadWidth plus both
         /// verges, so it stops at the sidewalk boundary and never paints over
         /// sidewalk pavement (matching the origin's rendered clip).</summary>

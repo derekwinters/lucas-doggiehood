@@ -49,8 +49,11 @@ namespace Doggiehood.Core.Tests.World
             // start-up delay for when it moves).
             followModel.Advance(held, -30f, leaderAlong, 0.1f);
 
-            // The leader clears the crosswalk's far edge and releases the claim.
-            leaderTraversal.Advance(4.75f - halfCrosswalk - 1f, -30f);
+            // The leader clears the whole intersection and releases the claim.
+            // #673: the two bands of a four-way are ONE manoeuvre, so the release
+            // comes when the leader is past the far side of the crossing — not
+            // when it is past the first band alone.
+            leaderTraversal.Advance(-4.75f - halfCrosswalk - 1f, -30f);
             Assert.That(gate.TryEnter(north, follower), Is.True,
                 "once the leader releases, the follower may claim the crosswalk itself");
 

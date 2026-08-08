@@ -79,11 +79,11 @@ namespace Doggiehood.Core.World
         /// centre to centre: each sits one crossing-road sidewalk-centre offset
         /// out from the intersection (<see cref="TileCrosswalkGeometry.CrosswalkOffset"/>,
         /// the same place <see cref="WalkNetwork"/> puts its crosswalk edges),
-        /// one on either side. (Written offset-first so the #105
-        /// duplicate-dimension source guard reads the <c>2</c> as the multiplier
-        /// it is, rather than as a re-declared <c>SidewalkWidth</c>.)
+        /// one on either side. Kept as this type's own name for the figure, but
+        /// derived from the one road-geometry declaration of it (#673 needs the
+        /// same spacing to decide which bands share an intersection).
         /// </summary>
-        public const float CrosswalkSpacing = TileCrosswalkGeometry.CrosswalkOffset * 2f;
+        public const float CrosswalkSpacing = TileCrosswalkGeometry.BandSpacing;
 
         /// <summary>
         /// The clear roadway between an intersection's two crosswalk bands: the
