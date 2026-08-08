@@ -4,18 +4,26 @@ using UnityEngine;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// #571: the red highlight on the onboarding "fix up a home" target house.
+    /// #571: the red highlight on an onboarding target — the "fix up a home"
+    /// house, and since #668 the "build a new house" lot's foundation slab.
     /// It reuses the established finder-glow visual (#535) — a flat, non-pulsing,
     /// translucent red ground contact ring in <c>Palette.LostItemGlowHex</c>,
     /// with no halo/size-pulse/sparkle — so onboarding guidance stays visually
     /// consistent instead of inventing a new cue. Purely feedback: the ring is
-    /// collider-free and never intercepts the house's own tap (the house stays
-    /// the tap target that routes to the upgrade).
+    /// collider-free and never intercepts the target's own tap (the house stays
+    /// the tap target that routes to the upgrade; the foundation stays the tap
+    /// target that opens the build confirmation dialog, #406).
+    ///
+    /// <para>#668: nothing here is house-specific — the ring is sized and placed
+    /// from whatever transform it is handed, so the build-step foundation reuses
+    /// this view (and its mesh, colour and sizing rule) rather than getting a
+    /// second parallel highlight. <see cref="HouseId"/> carries a house id or a
+    /// frontier lot id; the two share one id space.</para>
     ///
     /// <para>The one difference from <see cref="LostItemView"/>'s finder glow is
     /// SIZE: a lost item's ring is a fixed <see cref="LostItemGlow.GroundRingScale"/>
     /// relative to a small item, which would look lost under a much bigger house
-    /// mesh. So the ring's footprint is derived from the target house's OWN
+    /// mesh. So the ring's footprint is derived from the target's OWN
     /// encapsulated renderer bounds (the same approach <see cref="BugSwarmView"/>
     /// uses to sit above a house's real roofline), reading correctly under any
     /// house variant/level. The flat height/thickness reuse the named
@@ -37,6 +45,10 @@ namespace Doggiehood.Unity
     {
         private const string RingName = "GroundRing";
 
+        /// <summary>Scene-hierarchy name prefix for a highlight root, so a ring is
+        /// identifiable while debugging. Named per #161.</summary>
+        private const string RootNamePrefix = "OnboardingHighlight - target ";
+
         /// <summary>Translucency of the ring material — matches the finder glow so
         /// the ring blends over the ground rather than occluding it (#535). Named
         /// per #161.</summary>
@@ -50,19 +62,20 @@ namespace Doggiehood.Unity
 
         public int HouseId { get; private set; }
 
-        /// <summary>Builds the flat red ground ring under <paramref name="houseTransform"/>,
-        /// parented to <paramref name="parent"/> (the world root), sized from the
-        /// house's own renderer bounds so the whole footprint sits inside the ring's
+        /// <summary>Builds the flat red ground ring under <paramref name="houseTransform"/>
+        /// — a built house's transform, or an empty lot's foundation slab (#668) —
+        /// parented to <paramref name="parent"/> (the world root), sized from that
+        /// target's own renderer bounds so the whole footprint sits inside the ring's
         /// hole with a gap. Returns the view for the director to track.</summary>
         public static OnboardingHouseHighlightView Spawn(int houseId, Transform houseTransform, Transform parent)
         {
             var bounds = HouseBounds(houseTransform);
             var ringDiameter = TargetRingGeometry.OuterDiameter(bounds.size.x, bounds.size.z);
 
-            var root = new GameObject("OnboardingHouseHighlight - house " + houseId);
+            var root = new GameObject(RootNamePrefix + houseId);
             root.transform.SetParent(parent);
-            // Sit on the ground under the house (its bounds' base), concentric with
-            // the house MESH — a contact ring, not a floating disc. Centering on
+            // Sit on the ground under the target (its bounds' base), concentric with
+            // the target MESH — a contact ring, not a floating disc. Centering on
             // the bounds rather than the pivot keeps the ring concentric even for a
             // house variant whose pivot sits off its mesh (#669).
             root.transform.position = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
@@ -89,10 +102,11 @@ namespace Doggiehood.Unity
             return view;
         }
 
-        /// <summary>The house's combined world renderer bounds (mirroring
+        /// <summary>The target's combined world renderer bounds (mirroring
         /// <see cref="BugSwarmView"/>'s encapsulate approach), so the ring can be
-        /// sized to the real mesh. Falls back to a unit box at the house's
-        /// position if it has no renderers yet.</summary>
+        /// sized to the real mesh — a house mesh, or an empty lot's foundation
+        /// slab (#668). Falls back to a unit box at the target's position if it
+        /// has no renderers yet.</summary>
         private static Bounds HouseBounds(Transform houseTransform)
         {
             var renderers = houseTransform.GetComponentsInChildren<Renderer>();
@@ -111,9 +125,9 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>Strips the primitive's collider so the ring never intercepts a
-        /// tap meant for the house. Mode-aware (mirrors
-        /// <see cref="BugSwarmView"/>) — DestroyImmediate so EditMode tests see it
-        /// gone at once, Destroy under Play.</summary>
+        /// tap meant for the house (or, on the build step, the foundation slab).
+        /// Mode-aware (mirrors <see cref="BugSwarmView"/>) — DestroyImmediate so
+        /// EditMode tests see it gone at once, Destroy under Play.</summary>
         private static void MakeFeedbackOnly(GameObject go)
         {
             var collider = go.GetComponent<Collider>();
