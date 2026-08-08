@@ -1,6 +1,6 @@
 # Development Agent & Workflow
 
-*Issues: [#77](https://github.com/derekwinters/lucas-doggiehood/issues/77), [#78](https://github.com/derekwinters/lucas-doggiehood/issues/78), [#84](https://github.com/derekwinters/lucas-doggiehood/issues/84), [#135](https://github.com/derekwinters/lucas-doggiehood/issues/135)*
+*Issues: [#77](https://github.com/derekwinters/lucas-doggiehood/issues/77), [#78](https://github.com/derekwinters/lucas-doggiehood/issues/78), [#84](https://github.com/derekwinters/lucas-doggiehood/issues/84), [#135](https://github.com/derekwinters/lucas-doggiehood/issues/135), [#545](https://github.com/derekwinters/lucas-doggiehood/issues/545)*
 
 ## Who writes the code
 
@@ -40,15 +40,52 @@ A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't
 1. Pick the next open issue in the current focus milestone, lowest number first (milestones are version-numbered planning scopes — see [Conventions](../intro/conventions.md#milestones-are-version-numbered-scopes)).
 2. Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.
 3. Work test-first per [Testing Strategy](testing.md), checking off checklist items as they're satisfied.
-4. **Reconcile the docs/specs the change affects, in the same PR.** If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant [`docs/specs`](../specs/index.md) (or `docs/engineering`) page(s) alongside the code — never leave the spec describing the old behavior. Record the outcome on its own dedicated `**Docs:**` PR-body line — **not** inside `Deviations and Decisions` — e.g. `**Docs:** reconciled in this PR` or `**Docs:** none needed — <reason>`. That routine confirmation is kept out of `Deviations and Decisions` on purpose, so it doesn't dilute that section's high-signal bar (see [below](#pr-reflection-deviations-and-decisions)). This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the `docs-test` `build` job runs on **every** PR and fails a code-only PR unless it carries the `skip-docs` label (see [CI/CD](ci-cd.md)) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass. (release-please's mechanical release PR is auto-exempt from the gate — it only bumps `VERSION`/`CHANGELOG.md`/`manifest.json`, so it never has docs to reconcile and can't self-apply the label.)
+4. **Reconcile the docs/specs the change affects, in the same PR.** If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant [`docs/specs`](../specs/index.md) (or `docs/engineering`) page(s) alongside the code — never leave the spec describing the old behavior. Record the outcome on its own dedicated `**Docs:**` PR-body line — **not** inside `Deviations and Decisions` — e.g. `**Docs:** reconciled in this PR` or `**Docs:** none needed — <reason>`. That routine confirmation is kept out of `Deviations and Decisions` on purpose, so it doesn't dilute that section's high-signal bar (see [below](#pr-reflection-deviations-and-decisions)). This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the `docs-test` `build` job runs on **every** PR and fails a code-only PR unless it carries the `skip-docs` label (see [CI/CD](ci-cd.md)) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass. (release-please's mechanical release PR is auto-exempt from the gate — it only bumps `VERSION`/`CHANGELOG.md`/`manifest.json`, so it never has docs to reconcile and can't self-apply the label.) When the reconciliation changes what a spec page *says* — rather than only adding new, previously-uncovered content — it also carries a [**"how the spec is changing" note**](#spec-invariants-and-the-how-the-spec-is-changing-note) in the spec page itself.
 5. **Reflect**: review the run for deviations and mid-run decisions (see below).
-6. Commit with a Conventional Commit message; open a PR whose body starts with the `Deviations and Decisions` section. Because an agent PR resolves exactly one issue, its body **must** carry a GitHub closing keyword — `Closes #N` (`Fixes`/`Resolves` are equivalent) — for that issue, so merging the PR auto-closes it. Without a closing keyword the issue stays `open`/`in-progress` after merge and has to be reconciled by hand (this drift was the cause of [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)). If a PR went through iteration loops and no commit ended up carrying the keyword, add it in the PR body (or an empty follow-up commit) before merge. A bare `Refs #N` reference is **not** sufficient — it links but does not close.
+6. Commit with a Conventional Commit message; open a PR whose body opens with the [plain-English lead](#the-plain-english-lead) and then the `Deviations and Decisions` section. Because an agent PR resolves exactly one issue, its body **must** carry a GitHub closing keyword — `Closes #N` (`Fixes`/`Resolves` are equivalent) — for that issue, so merging the PR auto-closes it. Without a closing keyword the issue stays `open`/`in-progress` after merge and has to be reconciled by hand (this drift was the cause of [#211](https://github.com/derekwinters/lucas-doggiehood/issues/211)). If a PR went through iteration loops and no commit ended up carrying the keyword, add it in the PR body (or an empty follow-up commit) before merge. A bare `Refs #N` reference is **not** sufficient — it links but does not close.
 7. If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.
 8. If the issue would touch a UI screen's **structure** (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in [`docs/specs/ui/`](../specs/ui/index.md), stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the [UI Design Process](ui-design-process.md). See its [gate](ui-design-process.md#the-gate).
 
+## The plain-English lead
+
+*[#545](https://github.com/derekwinters/lucas-doggiehood/issues/545)*
+
+**Every triage analysis, implementation note, and PR body opens with a direct, plain-English summary — two or three sentences, before any class names, file paths, or TDD detail.** What's wrong (or what we want), and what we're changing about it, in words that are easy to skim.
+
+The reason is review, not style. A write-up that opens in technical detail is hard to sanity-check against expectations, so a plan that solves the stated problem the *wrong* way reads as fine and ships. A plain-English lead puts the intent where a skim catches it, and a wrong plan gets caught before implementation rather than after release.
+
+The technical content still follows in full — the lead sits on top of it, it doesn't replace it. In a PR body the lead is an un-headed paragraph above `## Deviations and Decisions`, which remains the first *heading* (see [below](#pr-reflection-deviations-and-decisions)). In a triage hand-back comment it sits above the diagnosis, plan, or `❓ Needs from Derek/Lucas:` question (see [Issue Pipeline → Analysis](issue-pipeline.md#analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill)).
+
+## Spec invariants and the "how the spec is changing" note
+
+*[#545](https://github.com/derekwinters/lucas-doggiehood/issues/545)*
+
+### Specs state rules, not only outcomes
+
+A spec that says only *what* the outcome should be leaves *how* it's achieved wide open, and a technically-correct-but-wrong implementation can satisfy it. The motivating case ([#538](https://github.com/derekwinters/lucas-doggiehood/issues/538)): the delivery truck dropped a package the dog never acknowledged, and the "fix" was to drive the truck off the road, through the yard, and into the dog. The reported bug closed; the game got worse.
+
+So **wherever a system could plausibly be built in a wrong-but-passing way, the spec carries an explicit invariant** — a short imperative sentence constraining how it may work:
+
+> **Invariant — the delivery truck never leaves the roadway.**
+
+Written that way, the bad solution is ruled out before anyone reaches for it. Two consequences for the workflow:
+
+- **Triage proposes the missing rule.** When a bug's root cause is that the spec stated an outcome without ruling out a bad path — not a plain coding mistake — the triage plan proposes the invariant as a spec addition, and its `## Build checklist` includes a test that would fail if the invariant were violated.
+- **Implementation lands the rule with the fix.** The invariant goes into the relevant `docs/specs/` page in the same PR as the code, in the existing `**Invariant — …**` paragraph style (see [Quest Content → Buy something](../specs/quests/quest-content.md) for the worked example).
+
+### "How the spec is changing"
+
+**When a PR (or a triage plan) alters what a spec page *says*, the page also gets a plain-English note recording the shift**, as a blockquote:
+
+> **How the spec is changing (#N).** It used to say X → it now says Y → because Z.
+
+This is the human-readable record of a design change, kept deliberately separate from three things it's easy to confuse it with: the technical diff (which shows the edit but not the intent), `## Deviations and Decisions` (which is about how the *run* went, not what the *design* now is), and the `**Docs:**` PR-body line (a routine compliance confirmation — see [step 4](#how-an-issue-gets-worked)). The `**Docs:**` line may point at the note; it does not substitute for it.
+
+A **purely additive** page — new content covering something the spec never spoke to — needs no note. The note is for a change of mind: the spec said one thing, and now it says another.
+
 ## PR reflection: Deviations and Decisions
 
-Every agent PR body begins with a `## Deviations and Decisions` header — mandatory, present even when there are no findings (write "None." under each empty category).
+Every agent PR body begins with the [plain-English lead](#the-plain-english-lead), immediately followed by a `## Deviations and Decisions` header — mandatory, present even when there are no findings (write "None." under each empty category).
 
 This section is a **short list of things the reviewer should consciously sign off on** — not an exhaustive change-log. It had drifted toward listing many small, inconsequential items (obvious implementation choices, restatements of the diff, "consistent with the existing pattern," "X isn't unit-tested per that file's design," "kept the milestone as-is"), which buries the one or two entries that actually matter. So the bar for inclusion is deliberately **conservative**.
 

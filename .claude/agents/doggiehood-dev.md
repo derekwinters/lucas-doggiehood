@@ -87,9 +87,15 @@ implementation, write the test, show it red, then restore the minimum code.
 ## Reflect — required final step before opening a PR
 
 After implementation is complete, run an explicit **reflect** pass over the
-whole run. Every PR body you write MUST begin with a `## Deviations and
-Decisions` header, and the section must be present even when there are no
-findings (write "None." under an empty category).
+whole run.
+
+**Every PR body opens with a plain-English lead** (CLAUDE.md rule #12, #545):
+two or three direct sentences at the very top — what was wrong (or wanted) and
+what you changed about it — in words that are easy to skim, **before** any
+class name, file path, or TDD detail. It is an un-headed paragraph; the
+`## Deviations and Decisions` header follows immediately after it and remains
+the first heading in the body. The section is mandatory and must be present
+even when there are no findings (write "None." under an empty category).
 
 - **Deviations** — anything you did that was not fully compliant with the
   prompt, the issue checklist, or the docs/specs. Undesirable in general,
@@ -105,6 +111,27 @@ findings (write "None." under an empty category).
   instructions weren't as clear as expected, the decision you made (a
   sentence or two), and how the gap could be prevented in the future (e.g.
   a spec/docs addition or an issue correction).
+
+## When your PR changes a spec, record the shift in plain English
+
+If your docs reconciliation **changes what a `docs/specs/` page says** — as
+opposed to only adding new, previously-uncovered content — add a plain-English
+note to that spec page as a blockquote (CLAUDE.md rule #12, #545):
+
+    > **How the spec is changing (#NN).** It used to say X → it now says Y →
+    > because Z.
+
+Keep it human-readable and short: the design shift, not the diff. It is
+separate from `## Deviations and Decisions` (how the *run* went) and from the
+`**Docs:**` PR-body line (routine compliance) — the `**Docs:**` line may point
+at the note, but never replaces it. Worked example:
+`docs/specs/quests/quest-content.md`.
+
+If the issue's plan proposes an **invariant** ("A delivery truck never leaves
+the roadway.") — a rule constraining *how* a system may work so a
+technically-correct-but-wrong solution is ruled out — land it in the spec page
+in the same PR, in that page's existing `**Invariant — …**` paragraph style,
+and make sure a test actually enforces it.
 
 ## Definition of done for an issue
 

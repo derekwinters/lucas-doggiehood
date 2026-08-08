@@ -100,24 +100,51 @@ readmit_time)` (unit-tested in `tests/test_triage_repair.py`), with
 An analysis that *predates* the re-admission is stale (e.g. superseded by a later
 `/redo`) and must be re-triaged fresh, not repaired.
 
+**Every hand-back comment opens with a plain-English lead (CLAUDE.md rule #12,
+#545).** Two or three direct, skimmable sentences at the very top — what's
+wrong (or what's wanted) and what you're proposing to change about it — **before**
+the diagnosis, the plan, the question, or any class name, file path, or TDD
+detail. Write it the way you'd explain it out loud to someone who hasn't read
+the code. Bold lead-in (`**In plain English.**`) is the house style; the
+technical content follows in full underneath. This applies to **all four routes
+below**, `needs-clarification` included: a lead is what lets Derek catch a
+wrong plan at `/approve` time instead of after it ships.
+
 Read the issue, its comments (including any `/revise` notes or `/propose`
 from Derek), and the `/docs` pages it relates to. Then route:
 
-1. **Bug** → root-cause **diagnosis** + a recommended fix approach, ending with
-   a **`## Build checklist`** (acceptance criteria — see below). Add
-   `type:bug`. Post the analysis, **set the milestone field** (see milestone
-   matching below), and set `pending-approval` **while removing `ai-triage` in
-   the same `issue_write` call**.
-
-2. **Feature fully covered by the specs** → a concrete **implementation plan**
-   grounded in the relevant `docs/specs/` pages, a matched milestone **set on
-   the issue's milestone field** (see milestone matching), and a closing
-   **`## Build checklist`** (acceptance criteria — see below). Post it, and set
+1. **Bug** → the plain-English lead, then root-cause **diagnosis** + a
+   recommended fix approach, ending with a **`## Build checklist`**
+   (acceptance criteria — see below). Add `type:bug`. Post the analysis,
+   **set the milestone field** (see milestone matching below), and set
    `pending-approval` **while removing `ai-triage` in the same `issue_write`
    call**.
 
+   **When the root cause is a missing rule, propose the rule (#545).** Ask
+   explicitly: *did the spec state the desired outcome without ruling out the
+   bad way of reaching it?* If so, the diagnosis is not just "the code did X" —
+   it's "the spec permitted X." Then the plan must **propose an invariant** to
+   add to the relevant `docs/specs/` page: one short imperative sentence
+   constraining *how* the system may work, in the existing
+   `**Invariant — …**` paragraph style (worked example:
+   `docs/specs/quests/quest-content.md` → "Buy something", *"the delivery truck
+   never leaves the roadway"*). Add a matching **Build checklist item that
+   tests the invariant** — a test that would fail if it were violated — so the
+   rule ships enforced, not merely written down. Without this, the next fix in
+   that area is free to be technically-correct-but-wrong all over again
+   ([#538](https://github.com/derekwinters/lucas-doggiehood/issues/538) is the
+   case that motivated the rule).
+
+2. **Feature fully covered by the specs** → the plain-English lead, then a
+   concrete **implementation plan** grounded in the relevant `docs/specs/`
+   pages, a matched milestone **set on the issue's milestone field** (see
+   milestone matching), and a closing **`## Build checklist`** (acceptance
+   criteria — see below). Post it, and set `pending-approval` **while removing
+   `ai-triage` in the same `issue_write` call**.
+
 3. **Feature needing a new design decision or a UI wireframe (rule #8)** →
-   **stop and ask.** Post a clearly-labeled block:
+   **stop and ask.** Lead with the plain-English summary of what's being asked
+   and why it can't be planned yet, then post a clearly-labeled block:
 
    ```
    ❓ Needs from Derek/Lucas: <one specific, self-contained question,
@@ -148,8 +175,8 @@ from Derek), and the `/docs` pages it relates to. Then route:
 4. **`/propose` present on the issue** (an owner comment containing `/propose`)
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your
-   approval):`), ending with a **`## Build checklist`** (acceptance criteria —
-   see below). Set the milestone field (see milestone matching), then set
+   approval):`) — still under the plain-English lead — ending with a
+   **`## Build checklist`** (acceptance criteria — see below). Set the milestone field (see milestone matching), then set
    `pending-approval` **while removing `ai-triage` in the same `issue_write`
    call**. This is the single opt-in that lets triage suggest design; without
    it, case 3 applies.
@@ -172,6 +199,18 @@ cross-reference that page. Honor the Core/Unity split: any item covering game
 logic leads with a **Core** NUnit test before the Unity wiring. Keep each item
 checkable — "Core test: building on an empty lot deducts the flat house cost
 (named constant)", not "implement house costs".
+
+## When the plan changes a spec, say so in plain English (#545)
+
+If the plan would **change what a `docs/specs/` page says** — including adding
+a proposed invariant that narrows existing behavior — the analysis states the
+shift plainly, separate from the checklist: **what the spec used to say → what
+it would now say → why**. Derek should be able to approve the *design change*
+knowingly without reverse-engineering it from a plan. A purely additive plan
+(covering something the spec never spoke to) doesn't need one. The PR that
+implements the plan lands the same note as a
+`> **How the spec is changing (#N).**` blockquote in the spec page itself
+(CLAUDE.md rule #12; example in `docs/specs/quests/quest-content.md`).
 
 ## Milestone matching — read milestones live, and SET the field (#319)
 

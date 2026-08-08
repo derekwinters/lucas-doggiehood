@@ -100,11 +100,17 @@ For each issue in the resolved order, **serially**:
 3. **Open exactly one PR** (do not merge yet):
    - **Title** = the issue's single Conventional line (e.g.
      `feat: give approach-to-rest real walk-to-decoration movement`).
-   - **Body** starts with the required `## Deviations and Decisions` section,
+   - **Body** starts with the plain-English lead — 2–3 skimmable sentences on
+     what was wrong and what changed, before any file/class detail (CLAUDE.md
+     rule #12) — then the required `## Deviations and Decisions` section,
      then a dedicated `**Docs:**` line, then `Closes #NN` so the merge
-     auto-closes the issue (CLAUDE.md rules #5, #9, #10). Example:
+     auto-closes the issue (CLAUDE.md rules #5, #9, #10, #12). Example:
 
      ```
+     Dogs stopped walking to a decoration before resting on it, so they
+     teleported into place. They now walk the last stretch on the ground
+     network and only settle once they arrive.
+
      ## Deviations and Decisions
 
      Deviations: None.
