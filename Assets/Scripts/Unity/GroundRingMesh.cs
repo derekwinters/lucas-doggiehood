@@ -52,8 +52,12 @@ namespace Doggiehood.Unity
         /// ratio, so it matches across every highlight that shares this mesh.</summary>
         public static Mesh BuildAnnulus()
         {
-            var innerFraction = LostItemGlow.GroundRingInnerScale / LostItemGlow.GroundRingScale;
-            var innerRadius = OuterRadius * innerFraction;
+            // #669: the hole ratio is read from the ONE shared Core constant
+            // rather than recomputed here, because the sizing rule that has to
+            // clear a target's footprint (TargetRingGeometry) reads the same
+            // number — otherwise a future change to the hole would silently
+            // break containment with no test failing.
+            var innerRadius = OuterRadius * LostItemGlow.GroundRingInnerFraction;
 
             var vertices = new Vector3[SegmentCount * VerticesPerSegment];
             var normals = new Vector3[SegmentCount * VerticesPerSegment];

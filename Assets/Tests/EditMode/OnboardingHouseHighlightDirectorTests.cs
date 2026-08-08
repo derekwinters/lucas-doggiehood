@@ -23,6 +23,12 @@ namespace Doggiehood.Unity.EditModeTests
     /// renderer bounds (mirroring <see cref="BugSwarmView"/>), and the director's
     /// attach/teardown lifecycle keyed to exactly the recorded target house,
     /// independent of the #506 coach-bar panel suppression.
+    ///
+    /// <para>#669: the seam now takes its diameter straight from the engine-free
+    /// <see cref="TargetRingGeometry"/> rule and centres the ring on the house's
+    /// BOUNDS centre rather than its transform pivot, so the house sits fully
+    /// inside the ring's hole with open ground to spare instead of covering the
+    /// band on every diagonal.</para>
     /// </summary>
     public class OnboardingHouseHighlightDirectorTests
     {
@@ -186,6 +192,91 @@ namespace Doggiehood.Unity.EditModeTests
                 "the hole matches the shared finder-glow inner/outer ratio, so both highlights stay consistent");
         }
 
+        [TestCase(6f, 6f, TestName = "a square house")]
+        [TestCase(14f, 4f, TestName = "a strongly rectangular house")]
+        [TestCase(4f, 14f, TestName = "a strongly rectangular house, other axis")]
+        public void Ring_ContainsTheWholeHouse_CornersIncluded_WithAVisibleGapOfOpenGround(
+            float sizeX, float sizeZ)
+        {
+            // #669: the ring used to be sized from the house's LONGEST SIDE
+            // (1.15 · max(x, z)) and applied as a diameter, so a square house's
+            // own corners (1.414·w) reached past the ring's OUTER edge — the
+            // house covered the whole band on all four diagonals and it read as
+            // a few red slivers. The band is hollow, so the edge that has to
+            // clear the house is the ring's INNER one.
+            var house = SyntheticHouse(new Vector3(sizeX, 5f, sizeZ), new Vector3(200f, 0f, 200f));
+            var ring = OnboardingHouseHighlightView.Spawn(110, house.transform, worldRoot.transform)
+                .GetComponentInChildren<Renderer>();
+
+            var outerDiameter = ring.bounds.size.x;
+            var innerRadius = 0.5f * TargetRingGeometry.InnerDiameter(outerDiameter);
+            var houseCornerReach = 0.5f * Mathf.Sqrt((sizeX * sizeX) + (sizeZ * sizeZ));
+
+            Assert.That(innerRadius, Is.GreaterThan(houseCornerReach),
+                "the whole house, corners included, sits inside the ring's hole");
+            Assert.That(
+                innerRadius - houseCornerReach,
+                Is.GreaterThan(houseCornerReach * TargetRingGeometry.FootprintGapFraction * 0.99f),
+                "with the named gap of open ground between the house and the band");
+
+            // ...and not absurdly oversized on the short axis: a shallow house
+            // gets a smaller ring than a square house of its long side would.
+            var longestSide = Mathf.Max(sizeX, sizeZ);
+            Assert.That(outerDiameter,
+                Is.LessThanOrEqualTo(TargetRingGeometry.OuterDiameter(longestSide, longestSide) + 0.01f),
+                "the ring is sized from the footprint's diagonal, not from a square of its longest side");
+        }
+
+        [Test]
+        public void Ring_TakesItsDiameterFromTheCoreSizingRule_NotItsOwnUnityNumbers()
+        {
+            // The sizing rule is engine-free Core so the build-step foundation
+            // highlight (#668) reuses it rather than re-deriving its own
+            // numbers; the Unity seam only applies it.
+            var house = SyntheticHouse(new Vector3(9f, 6f, 5f), new Vector3(220f, 0f, 220f));
+            var ring = OnboardingHouseHighlightView.Spawn(111, house.transform, worldRoot.transform)
+                .GetComponentInChildren<Renderer>();
+
+            Assert.That(ring.transform.lossyScale.x,
+                Is.EqualTo(TargetRingGeometry.OuterDiameter(9f, 5f)).Within(0.01f));
+            Assert.That(ring.transform.lossyScale.z,
+                Is.EqualTo(TargetRingGeometry.OuterDiameter(9f, 5f)).Within(0.01f));
+        }
+
+        [Test]
+        public void Ring_IsConcentricWithTheHouseMesh_NotItsTransformPivot()
+        {
+            // #669: the root was positioned from houseTransform.position while
+            // the SIZE came from the renderer bounds, so a house variant whose
+            // pivot is not at its bounds centre got an off-centre ring that
+            // clipped harder on one side. Centre on the mesh.
+            var offset = new Vector3(3.5f, 0f, -2.25f);
+            var house = SyntheticHouse(new Vector3(8f, 5f, 6f), new Vector3(240f, 0f, 240f), offset);
+
+            var ring = OnboardingHouseHighlightView.Spawn(112, house.transform, worldRoot.transform)
+                .GetComponentInChildren<Renderer>();
+
+            var meshCenter = house.GetComponentInChildren<Renderer>().bounds.center;
+            Assert.That(ring.bounds.center.x, Is.EqualTo(meshCenter.x).Within(0.01f),
+                "the ring is centred on the house's actual mesh, not its pivot");
+            Assert.That(ring.bounds.center.z, Is.EqualTo(meshCenter.z).Within(0.01f));
+        }
+
+        [Test]
+        public void NoLongestSideMultiplierConstant_SoASubDiagonalValueCannotComeBack()
+        {
+            // #669/#161: `FootprintMultiplier` is deleted rather than retuned —
+            // any surviving "multiply the longest side" constant invites someone
+            // to put a value below √2 back, which cannot contain the house no
+            // matter how it is tuned.
+            Assert.That(
+                typeof(OnboardingHouseHighlightView).GetField(
+                    "FootprintMultiplier",
+                    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public),
+                Is.Null,
+                "the retired longest-side multiplier is gone, not retuned");
+        }
+
         [Test]
         public void Highlight_AttachesToExactlyTheTargetHouse_AndTearsDownWhenTheChainAdvancesPastUpgrade()
         {
@@ -260,13 +351,31 @@ namespace Doggiehood.Unity.EditModeTests
         /// renderer bounds have a known XZ extent.</summary>
         private GameObject SyntheticHouse(float size, Vector3 position)
         {
+            return SyntheticHouse(Vector3.one * size, position, Vector3.zero);
+        }
+
+        /// <summary>A bare house transform whose single child cube renderer has
+        /// the given non-uniform <paramref name="size"/>, so the ring can be
+        /// checked against a strongly rectangular footprint as well as a square
+        /// one.</summary>
+        private GameObject SyntheticHouse(Vector3 size, Vector3 position)
+        {
+            return SyntheticHouse(size, position, Vector3.zero);
+        }
+
+        /// <summary>As above, with the mesh shifted <paramref name="meshOffset"/>
+        /// from the house's transform pivot — the pivot-offset house variant the
+        /// #669 concentricity check needs.</summary>
+        private GameObject SyntheticHouse(Vector3 size, Vector3 position, Vector3 meshOffset)
+        {
             var house = new GameObject("synthetic-house");
             house.transform.SetParent(worldRoot.transform);
             house.transform.position = position;
 
             var mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
             mesh.transform.SetParent(house.transform, worldPositionStays: false);
-            mesh.transform.localScale = Vector3.one * size;
+            mesh.transform.localPosition = meshOffset;
+            mesh.transform.localScale = size;
             return house;
         }
 

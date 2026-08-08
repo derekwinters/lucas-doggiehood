@@ -22,15 +22,20 @@ namespace Doggiehood.Unity
     /// <see cref="LostItemGlow"/> constants (#161) so the ring stays the same thin
     /// pool of light. Lifecycle (attach/teardown) is the
     /// <see cref="OnboardingHouseHighlightDirector"/>'s.</para>
+    ///
+    /// <para>#669: how those bounds become a diameter is NOT decided here — it is
+    /// the engine-free <see cref="TargetRingGeometry"/> rule, so every target ring
+    /// (including the build-step foundation highlight, #668) is sized the same way
+    /// instead of growing its own numbers. This view had derived the diameter from
+    /// the house's LONGEST SIDE, which cannot contain a footprint whose corners
+    /// reach its diagonal — the house covered the band on all four diagonals and
+    /// the highlight read as a couple of red slivers. The ring is also centred on
+    /// the bounds' CENTRE rather than the transform pivot, so a house variant
+    /// whose pivot is off its mesh still gets a concentric ring.</para>
     /// </summary>
     public sealed class OnboardingHouseHighlightView : MonoBehaviour
     {
         private const string RingName = "GroundRing";
-
-        /// <summary>The ring extends this far beyond the house's own XZ footprint,
-        /// so it reads as a pool of light framing the house rather than a disc
-        /// hidden under it. Named per #161.</summary>
-        private const float FootprintMultiplier = 1.15f;
 
         /// <summary>Translucency of the ring material — matches the finder glow so
         /// the ring blends over the ground rather than occluding it (#535). Named
@@ -47,33 +52,35 @@ namespace Doggiehood.Unity
 
         /// <summary>Builds the flat red ground ring under <paramref name="houseTransform"/>,
         /// parented to <paramref name="parent"/> (the world root), sized from the
-        /// house's own renderer bounds. Returns the view for the director to track.</summary>
+        /// house's own renderer bounds so the whole footprint sits inside the ring's
+        /// hole with a gap. Returns the view for the director to track.</summary>
         public static OnboardingHouseHighlightView Spawn(int houseId, Transform houseTransform, Transform parent)
         {
             var bounds = HouseBounds(houseTransform);
-            var footprint = Mathf.Max(bounds.size.x, bounds.size.z) * FootprintMultiplier;
+            var ringDiameter = TargetRingGeometry.OuterDiameter(bounds.size.x, bounds.size.z);
 
             var root = new GameObject("OnboardingHouseHighlight - house " + houseId);
             root.transform.SetParent(parent);
-            // Sit on the ground under the house (its bounds' base), centered on the
-            // house's XZ — a contact ring, not a floating disc.
-            root.transform.position = new Vector3(houseTransform.position.x, bounds.min.y, houseTransform.position.z);
+            // Sit on the ground under the house (its bounds' base), concentric with
+            // the house MESH — a contact ring, not a floating disc. Centering on
+            // the bounds rather than the pivot keeps the ring concentric even for a
+            // house variant whose pivot sits off its mesh (#669).
+            root.transform.position = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
 
             var glowColor = CoreColors.FromHex(Doggiehood.Core.Art.Palette.LostItemGlowHex);
 
             // #602: a flat HOLLOW annulus mesh (shared with the finder glow via
             // GroundRingMesh), not a solid Cylinder primitive — so the highlight
             // is a red ring OUTLINE framing the house rather than a filled disc
-            // painted over the ground inside it. The unit-ring mesh keeps the
-            // same footprint-valued localScale the disc used, so the ring's
-            // outer edge still tracks the house's own bounds; only the middle
-            // opens up.
+            // painted over the ground inside it. The mesh is unit-DIAMETER, so
+            // the Core-computed outer diameter is the localScale directly.
             var ring = new GameObject(RingName);
             ring.AddComponent<MeshFilter>().sharedMesh = GroundRingMesh.BuildAnnulus();
             ring.AddComponent<MeshRenderer>();
             ring.transform.SetParent(root.transform, worldPositionStays: false);
             ring.transform.localPosition = new Vector3(0f, LostItemGlow.GroundRingHeight, 0f);
-            ring.transform.localScale = new Vector3(footprint, LostItemGlow.GroundRingThickness, footprint);
+            ring.transform.localScale =
+                new Vector3(ringDiameter, LostItemGlow.GroundRingThickness, ringDiameter);
             MakeFeedbackOnly(ring);
             PaintGlow(ring, glowColor);
 

@@ -34,6 +34,15 @@ namespace Doggiehood.Core.Quests
         /// consistent (#571).</summary>
         public const float GroundRingInnerScale = 1.6f;
 
+        /// <summary>#669: the ONE hole ratio every red ground ring is drawn
+        /// with — the annulus's inner diameter as a fraction of its outer one.
+        /// It was previously recomputed inside the Unity mesh builder, which
+        /// meant the sizing rule that has to clear a target's footprint
+        /// (<see cref="TargetRingGeometry"/>) could only restate it and then
+        /// silently drift if #602's hole ever changed. Both the mesh and the
+        /// sizing read this single constant instead.</summary>
+        public const float GroundRingInnerFraction = GroundRingInnerScale / GroundRingScale;
+
         /// <summary>How high off the ground the flat ring floats — just enough
         /// to avoid z-fighting with the surface, not enough to read as
         /// hovering.</summary>
