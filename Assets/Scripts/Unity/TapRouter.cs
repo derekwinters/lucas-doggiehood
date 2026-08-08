@@ -73,7 +73,7 @@ namespace Doggiehood.Unity
         /// tap that dismissed a modal this frame can't leak through and fire the
         /// world object underneath — regardless of whether the modal's
         /// <c>Unregister</c> ran before or after this tap was routed within the
-        /// frame. The latch is cleared by <c>CameraRig.LateUpdate</c> at end of
+        /// frame. The latch is cleared by <c>InputRouter.LateUpdate</c> at end of
         /// frame, so the next frame's genuinely new tap routes normally.</summary>
         public static bool DefaultIsModalOpen() =>
             ModalInputGate.Shared.IsBlocking || ModalInputGate.Shared.ClosedThisFrame;

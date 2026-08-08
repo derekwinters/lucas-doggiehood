@@ -38,7 +38,7 @@ namespace Doggiehood.Unity
         /// <summary>#456: a house built here is the only house that is both vacant
         /// and never rebuilt, so — unlike a starter house (wired at bootstrap) or
         /// an occupied house (re-wired on every move-in/upgrade rebuild) — nothing
-        /// else subscribes to its <see cref="HouseView.Tapped"/>. WorldBootstrap
+        /// else subscribes to its <see cref="HouseView.ProfileRequested"/>. WorldBootstrap
         /// passes <paramref name="onHouseBuilt"/> (the same wiring it hands the
         /// HouseUpgradeDirector rebuild callback) so the freshly built house's tap
         /// opens its profile. Optional: EditMode tests that don't exercise the tap

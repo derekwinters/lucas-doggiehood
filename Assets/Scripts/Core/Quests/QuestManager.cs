@@ -525,6 +525,18 @@ namespace Doggiehood.Core.Quests
                 .ToList();
         }
 
+        /// <summary>#670: does this one house currently have bugs on it — i.e.
+        /// is it holding an accepted, not-yet-sprayed PestControl quest? The
+        /// single-house form of <see cref="HousesAwaitingSpray"/>, and the
+        /// predicate <c>HouseTapArbiter</c> resolves a house tap with: a bugged
+        /// house sprays, a clear house opens its profile, never both.</summary>
+        public bool IsAwaitingSpray(int houseId)
+        {
+            return quests.Any(q => q.Type == QuestType.PestControl
+                && q.Status == QuestStatus.Accepted
+                && q.TargetHouseId == houseId);
+        }
+
         /// <summary>#53: spraying the afflicted house completes its accepted
         /// PestControl quest; spraying anything else is a no-op.</summary>
         public bool SprayHouse(int houseId)

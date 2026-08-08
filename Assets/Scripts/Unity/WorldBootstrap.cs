@@ -97,13 +97,14 @@ namespace Doggiehood.Unity
             // — unlike a starter house (wired in BuildHouseProfileOverlay's
             // foreach) or an occupied house (re-wired on move-in/upgrade rebuild)
             // — nothing else subscribes to its tap. Wire the freshly built house
-            // to the profile-open + spray taps here, the same wiring the
-            // HouseUpgradeDirector rebuild callback applies to a rebuilt house.
+            // to the profile-open outcome here (WireHouses supplies the spray
+            // side), the same wiring the HouseUpgradeDirector rebuild callback
+            // applies to a rebuilt house.
             var expansionDirector = gameObject.AddComponent<ExpansionDirector>();
             expansionDirector.Init(state, root.transform, confirmationDialog, built =>
             {
                 var builtId = built.HouseId;
-                built.Tapped += () => OpenHouseProfile(houseProfile, state, builtId);
+                built.ProfileRequested += () => OpenHouseProfile(houseProfile, state, builtId);
                 director.WireHouses();
             });
 
@@ -323,9 +324,10 @@ namespace Doggiehood.Unity
 
             // #407: the upgrade re-renders the world house so its mesh swaps up
             // the ladder (the profile panel already advanced, the world didn't).
-            // On rebuild the fresh HouseView is re-wired to both tap subscribers
-            // — the profile-open handler here and QuestDirector's spray handler —
-            // since a rebuilt object neither one-time bootstrap loop has seen.
+            // On rebuild the fresh HouseView is re-wired to both tap outcomes
+            // — the profile-open handler here and QuestDirector's spray handler
+            // (#670: mutually exclusive, arbitrated in Core) — since a rebuilt
+            // object neither one-time bootstrap loop has seen.
             // #436: the same rebuild + re-wire runs when a move-in drops a
             // house's vacancy tint (QuestDirector calls RefreshHouse), so the
             // rebuilt house's taps keep reaching the profile and spray paths.
@@ -334,7 +336,7 @@ namespace Doggiehood.Unity
             upgradeDirector.Init(state, worldRoot, rebuilt =>
             {
                 var houseId = rebuilt.HouseId;
-                rebuilt.Tapped += () => OpenHouseProfile(overlay, state, houseId);
+                rebuilt.ProfileRequested += () => OpenHouseProfile(overlay, state, houseId);
                 questDirector.WireHouses();
             });
 
@@ -365,7 +367,7 @@ namespace Doggiehood.Unity
             foreach (var view in worldRoot.GetComponentsInChildren<HouseView>())
             {
                 var houseId = view.HouseId;
-                view.Tapped += () => OpenHouseProfile(overlay, state, houseId);
+                view.ProfileRequested += () => OpenHouseProfile(overlay, state, houseId);
             }
 
             return overlay;

@@ -21,7 +21,7 @@ namespace Doggiehood.Unity.EditModeTests
     /// (<see cref="HouseUpgradeDirector.RefreshHouse"/>), but a house freshly
     /// built on an empty lot by <see cref="ExpansionDirector"/> — the only house
     /// that is vacant and has never been rebuilt — had no subscriber on its
-    /// <see cref="HouseView.Tapped"/> event, so the tap reached the world and
+    /// <see cref="HouseView.ProfileRequested"/> event, so the tap reached the world and
     /// then did nothing. These tests lock both vacancy states so neither can
     /// silently regress again.
     /// </summary>
@@ -59,7 +59,7 @@ namespace Doggiehood.Unity.EditModeTests
         public void TapRaycast_OnAVacantHousesBody_OpensItsProfile()
         {
             // #456: a house just built on an empty lot is vacant and, before the
-            // fix, its Tapped event had no subscriber — so a real camera-ray tap
+            // fix, its profile-open event had no subscriber — so a real camera-ray tap
             // reached the HouseView but nothing opened. Drive the actual
             // ExpansionDirector build path, wired to the profile exactly as
             // WorldBootstrap wires it (its onHouseBuilt callback), then tap the
@@ -88,7 +88,7 @@ namespace Doggiehood.Unity.EditModeTests
             // via ExpansionDirector's onHouseBuilt callback (the mirror of the
             // HouseUpgradeDirector rebuild callback).
             director.Init(state, worldRoot.transform, dialog,
-                built => built.Tapped += () => OpenHouseProfile(overlay, state, built.HouseId));
+                built => built.ProfileRequested += () => OpenHouseProfile(overlay, state, built.HouseId));
 
             try
             {
@@ -137,7 +137,7 @@ namespace Doggiehood.Unity.EditModeTests
             var house = state.Houses.First(h => !h.IsVacant);
             var houseRoot = WorldBuilder.BuildHouse(worldRoot.transform, house);
             var houseView = houseRoot.GetComponent<HouseView>();
-            houseView.Tapped += () => OpenHouseProfile(overlay, state, house.Id);
+            houseView.ProfileRequested += () => OpenHouseProfile(overlay, state, house.Id);
 
             try
             {
