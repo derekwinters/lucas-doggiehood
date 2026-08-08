@@ -21,10 +21,11 @@ namespace Doggiehood.Unity
     ///
     /// <para>The dynamic copy is composed in engine-free Core
     /// (<see cref="WelcomeMessage"/>); this layer only renders it. Always
-    /// dismissible (button OR scrim), never a trap (#329). The one
-    /// non-presentational behavior is the camera pan: <b>Say hi!</b> dismisses
-    /// AND invokes the caller-supplied pan-to-house callback; tapping the scrim
-    /// dismisses WITHOUT panning. Chrome comes from the device-safe
+    /// dismissible — and, since #671, <em>visibly</em> so: a top-right ✕, the
+    /// scrim, or the button, never a trap (#329). The one non-presentational
+    /// behavior is the camera pan: <b>Say hi!</b> dismisses AND invokes the
+    /// caller-supplied pan-to-house callback; the ✕ and the scrim dismiss
+    /// WITHOUT panning. Chrome comes from the device-safe
     /// <see cref="CandyChromeUgui"/> (#298) and text from the bundled font
     /// (#291); built under the #256 <see cref="UiCanvas"/> CanvasScaler so each
     /// px constant keeps a fixed on-screen meaning across tablet sizes.</para>
@@ -48,6 +49,11 @@ namespace Doggiehood.Unity
         public const float MemberChipDiameterPx = 72f;
         public const float MemberChipGapPx = 20f;
         public const float MemberRowMarginPx = 28f;
+
+        /// <summary>#671: the top-right ✕ dismiss affordance, flush in the card's
+        /// corner — the same 72px as <see cref="DogProfileOverlay"/> and
+        /// <see cref="HouseProfileOverlay"/>, per the amended wireframe.</summary>
+        public const float CloseButtonSizePx = 72f;
 
         /// <summary>Beat after the prior panel closes before this pops
         /// (welcome-popup.md "Timing", range 1–3s). Owned here with the rest of
@@ -76,6 +82,12 @@ namespace Doggiehood.Unity
         /// <summary>The single positive action's label.</summary>
         public const string ActionText = "Say hi!";
 
+        // #671: close (✕) chrome, matching the dog/house profile close button —
+        // a Cream pill with the shared Ink outline + hard shadow.
+        private const int CloseGlyphFontPx = 38;
+        private const string CloseGlyphText = "✕";
+        private static readonly Color CloseColor = CandyChromeUgui.Cream;
+
         // Portrait/chips are a graybox silhouette for now (welcome-popup.md
         // Notes) — the mockup's --graybox (#C9C1B2). A real tinted dog-model
         // portrait is a fast-follow, not part of this wireframe.
@@ -99,6 +111,8 @@ namespace Doggiehood.Unity
         private RectTransform memberRowRect;
         private RectTransform actionButtonRect;
         private RectTransform actionLabelRect;
+        private RectTransform closeButtonRect;
+        private Button closeButton;
         private Image portraitImage;
         private Image actionButtonImage;
         private Text headingText;
@@ -115,6 +129,8 @@ namespace Doggiehood.Unity
         public RectTransform ScrimRect => scrimRect;
         public RectTransform PortraitRect => portraitRect;
         public RectTransform ActionButtonRect => actionButtonRect;
+        public RectTransform CloseButtonRect => closeButtonRect;
+        public Button CloseButton => closeButton;
         public Image PortraitImage => portraitImage;
         public Image ActionButtonImage => actionButtonImage;
         public Text HeadingLabel => headingText;
@@ -182,9 +198,10 @@ namespace Doggiehood.Unity
             pan?.Invoke();
         }
 
-        /// <summary>Scrim tap (or programmatic close): dismisses WITHOUT panning.
-        /// A welcome is an acknowledgement, not a choice — no path leaves it stuck
-        /// open (#329).</summary>
+        /// <summary>The ✕, a scrim tap, or a programmatic close: dismisses WITHOUT
+        /// panning and without opening the house profile. A welcome is an
+        /// acknowledgement, not a choice — no path leaves it stuck open (#329),
+        /// and since #671 one of those paths is visible.</summary>
         public void Dismiss()
         {
             if (content != null)
@@ -244,6 +261,32 @@ namespace Doggiehood.Unity
 
             BuildActionButton(cardRect);
             BuildPortrait(cardRect);
+            // Built last so it draws above the portrait medal, matching the
+            // mockup's z-order (.close z-index 3 over .portrait z-index 2).
+            BuildCloseButton(cardRect);
+        }
+
+        /// <summary>#671: the top-right ✕ — the visible counterpart to the scrim
+        /// tap. It wires to the existing <see cref="Dismiss"/>, deliberately NOT
+        /// <see cref="SayHi"/>: closing the celebration must not pan the camera or
+        /// open the house profile. Flush in the card's corner (anchor and pivot
+        /// top-right, zero inset), matching
+        /// <see cref="DogProfileOverlay"/>/<see cref="HouseProfileOverlay"/>.</summary>
+        private void BuildCloseButton(RectTransform parent)
+        {
+            var closeImage = CreateImage("Close", parent, CloseColor);
+            closeButtonRect = closeImage.rectTransform;
+            closeButtonRect.anchorMin = Vector2.one;
+            closeButtonRect.anchorMax = Vector2.one;
+            closeButtonRect.pivot = Vector2.one;
+            closeButtonRect.sizeDelta = new Vector2(CloseButtonSizePx, CloseButtonSizePx);
+            closeButtonRect.anchoredPosition = Vector2.zero;
+            CandyChromeUgui.ApplyPill(closeImage, CloseColor, CloseButtonSizePx, withShadow: true);
+
+            CreateLabel("Glyph", closeButtonRect, CloseGlyphText, CloseGlyphFontPx, TextAnchor.MiddleCenter);
+
+            closeButton = closeButtonRect.gameObject.AddComponent<Button>();
+            closeButton.onClick.AddListener(Dismiss);
         }
 
         /// <summary>The single leaf pill — "Say hi!" — that dismisses and pans the
