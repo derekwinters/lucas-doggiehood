@@ -126,8 +126,22 @@ namespace Doggiehood.Unity
         {
             transform.rotation = Quaternion.Euler(CameraRigConfig.PitchDegrees, Controller.Yaw, 0f);
             cachedCamera.orthographicSize = Controller.Zoom;
+
+            // #679: the set-back and the far clip are derived from the zoom, not
+            // fixed. A camera pitched down at a flat ground plane sees a slab of
+            // view depth 2 x GroundDepthReach(zoom) thick, so a constant 60m
+            // set-back put the foreground behind the camera the moment the zoom
+            // passed 60 — the near clip plane discarded it and the grass clear
+            // colour showed through as the growing bottom-of-screen band that
+            // #536/#558/#570/#611 kept chasing as a coverage problem. The
+            // serialized far clip (300) had the mirror-image failure at the top
+            // of the frame. Both now track the zoom, so the whole frame renders
+            // at every zoom the map-scaled MaxZoom (#510/#524) allows.
+            cachedCamera.nearClipPlane = CameraRigConfig.NearClipPlane;
+            cachedCamera.farClipPlane = CameraRigConfig.FarClipFor(Controller.Zoom);
+
             var target = new Vector3(Controller.Position.X, 0f, Controller.Position.Z);
-            transform.position = target - transform.forward * CameraRigConfig.RigDistance;
+            transform.position = target - transform.forward * CameraRigConfig.RigDistanceFor(Controller.Zoom);
         }
 
         private void Update()

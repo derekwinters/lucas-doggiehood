@@ -80,6 +80,104 @@ namespace Doggiehood.Unity.EditModeTests
                 "the backstop is no longer the matched grass green");
         }
 
+        /// <summary>Zooms the rig all the way out on a map big enough that the
+        /// grown MaxZoom (#510/#524) is well past the old fixed 60m set-back,
+        /// then reports the zoom it settled at.</summary>
+        private float ZoomOutOverALargeMap()
+        {
+            var map = new Doggiehood.Core.World.TileMap(
+                new Doggiehood.Core.World.TileCoordinate(0, 0), Doggiehood.Core.World.TileType.FourWay);
+            for (var ring = 1; ring <= 6; ring++)
+            {
+                map.Place(new Doggiehood.Core.World.TileCoordinate(ring, 0),
+                    Doggiehood.Core.World.TileType.StraightEW);
+                map.Place(new Doggiehood.Core.World.TileCoordinate(0, ring),
+                    Doggiehood.Core.World.TileType.StraightNS);
+            }
+
+            rig.Controller.RecomputeBoundsFromMap(map);
+            rig.HandlePinch(-100000f, 1000f); // pinch together = zoom out, pinned at the cap
+            return rig.Controller.Zoom;
+        }
+
+        /// <summary>The two ground points at the foreground and distant edges of
+        /// the frame, derived from the camera's own transform rather than from
+        /// the production formula: step across the ground, away from and toward
+        /// the camera, by the orthographic half-height divided by sin(pitch).</summary>
+        private (Vector3 Nearest, Vector3 Farthest) FrameEdgeGroundPoints()
+        {
+            var target = new Vector3(rig.Controller.Position.X, 0f, rig.Controller.Position.Z);
+            var awayFromCamera = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up).normalized;
+            var acrossGround = cam.orthographicSize
+                / Mathf.Sin(CameraRigConfig.PitchDegrees * Mathf.Deg2Rad);
+
+            return (target - awayFromCamera * acrossGround, target + awayFromCamera * acrossGround);
+        }
+
+        private float ViewDepthOf(Vector3 worldPoint)
+        {
+            return Vector3.Dot(worldPoint - cam.transform.position, cam.transform.forward);
+        }
+
+        [Test]
+        public void ZoomedOut_TheWholeFrameStaysInsideTheCameraClipRange()
+        {
+            // #679 regression. The bottom "border" chased through #536 → #558 →
+            // #570 → #611 was never a coverage problem: at a fixed 60m set-back
+            // the foreground half of the frame sat at negative view depth, behind
+            // the camera, so the near clip plane discarded it and the clear colour
+            // showed through. Assert on real Unity clipping state, at a zoom the
+            // grown MaxZoom actually permits.
+            var zoom = ZoomOutOverALargeMap();
+            Assert.That(zoom, Is.GreaterThan(CameraRigConfig.RigDistance),
+                "the map must be big enough to zoom past the old fixed set-back, or this proves nothing");
+
+            var edges = FrameEdgeGroundPoints();
+
+            Assert.That(ViewDepthOf(edges.Nearest), Is.GreaterThan(cam.nearClipPlane),
+                "the foreground edge of the frame is clipped away — the bottom-of-screen band");
+            Assert.That(ViewDepthOf(edges.Farthest), Is.LessThan(cam.farClipPlane),
+                "the distant edge of the frame is clipped away");
+        }
+
+        [Test]
+        public void ZoomedOut_TheFrameEdgeGroundIsStillRenderedByUnitysOwnProjection()
+        {
+            // Cross-check the geometry above against Unity's projection matrices
+            // rather than our own dot product: the derived points really are the
+            // bottom and top edges of the viewport, and both are in front of the
+            // near plane.
+            ZoomOutOverALargeMap();
+            var edges = FrameEdgeGroundPoints();
+
+            var nearest = cam.WorldToViewportPoint(edges.Nearest);
+            var farthest = cam.WorldToViewportPoint(edges.Farthest);
+
+            Assert.That(nearest.y, Is.EqualTo(0f).Within(0.01f), "derived foreground point is the frame's bottom edge");
+            Assert.That(farthest.y, Is.EqualTo(1f).Within(0.01f), "derived distant point is the frame's top edge");
+            Assert.That(nearest.z, Is.GreaterThan(cam.nearClipPlane), "bottom edge of the frame is not rendered");
+            Assert.That(farthest.z, Is.LessThan(cam.farClipPlane), "top edge of the frame is not rendered");
+        }
+
+        [Test]
+        public void ZoomingOut_PullsTheCameraBack_AndPushesTheFarClipOut()
+        {
+            // The mechanism: the rig no longer parks at a constant distance from
+            // its focus point, and no longer inherits the scene's fixed far clip.
+            var target = new Vector3(rig.Controller.Position.X, 0f, rig.Controller.Position.Z);
+            var distanceBefore = Vector3.Distance(cam.transform.position, target);
+            var farClipBefore = cam.farClipPlane;
+
+            var zoom = ZoomOutOverALargeMap();
+
+            Assert.That(Vector3.Distance(cam.transform.position, target), Is.GreaterThan(distanceBefore),
+                "zooming out has to pull the camera back, not just widen the frustum");
+            Assert.That(cam.farClipPlane, Is.GreaterThan(farClipBefore));
+            Assert.That(cam.transform.position.y, Is.GreaterThan(0f), "the camera stays above the ground plane");
+            Assert.That(cam.nearClipPlane, Is.EqualTo(CameraRigConfig.NearClipPlane).Within(0.0001f));
+            Assert.That(cam.farClipPlane, Is.EqualTo(CameraRigConfig.FarClipFor(zoom)).Within(0.01f));
+        }
+
         [Test]
         public void DragGesture_MapsToControllerPan()
         {
