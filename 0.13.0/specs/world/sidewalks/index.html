@@ -707,6 +707,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lanes-672" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lanes (#672)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#road-arm-extent" class="md-nav__link">
     <span class="md-ellipsis">
       Road arm extent
@@ -1789,6 +1798,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lanes-672" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lanes (#672)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#road-arm-extent" class="md-nav__link">
     <span class="md-ellipsis">
       Road arm extent
@@ -1923,6 +1941,13 @@
 <p><strong>Decision (2026-07-13, Derek, in conversation — follow-up to the above, same day):</strong> <code>GrassVergeWidth</code> is now <code>0.75m</code>. After seeing the kit world in the Editor, Derek found the dogs at 4m "a little too close to the road" and asked for the midpoint between the previous distance (5.5m at the 1.5m verge) and the current one (4m at the 0m verge) — putting the dogs' walk line at <code>4.75m</code>. This is a <strong>logical setback for dog placement</strong>, not a return of the visual grass strip: the kit tiles pave 3–5m from the centerline, so in the kit-art path nothing visually changes and the earlier "no grass verge" decision (a visual call) stands — 4.75m sits within the paved band, near its outer edge. Only <code>WorldBuilder</code>'s primitive graybox fallback renders the 0.75m verge as an actual grass strip.</p>
 </blockquote>
 <p>A sidewalk's centerline sits <code>RoadWidth / 2 + GrassVergeWidth + SidewalkWidth / 2</code> from the road's own centerline — <code>4.75m</code> for the starting intersection's two roads. <code>Road</code> and <code>Sidewalk</code> (Core, <code>Assets/Scripts/Core/World/</code>) express this purely as that formula over <code>WorldDimensions</code>; a guard test (<code>WorldDimensionsGuardTests</code>) fails the build if any of the locked values is ever re-declared as a literal outside <code>WorldDimensions.cs</code>.</p>
+<h2 id="lanes-672">Lanes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/672">#672</a>)<a class="headerlink" href="#lanes-672" title="Permanent link">&para;</a></h2>
+<p>A road carries <strong>two lanes</strong>, one per direction, split by its centerline. A lane's centre sits <code>RoadWidth / 4</code> (<code>1.5m</code>) from the road centerline — half a lane's width, since a lane is half the road. This is <strong>derived</strong>, not a new locked measurement: <code>RoadLane.Offset</code> (Core) computes it from <code>WorldDimensions.RoadWidth</code>, so widening the road carries the lanes with it.</p>
+<p><strong>Invariant — a vehicle keeps to the right-hand lane for its direction of travel.</strong> Its body stays entirely within the right-hand half of the roadway on a road leg: it drives its lane centre, never the road centerline, and never crosses to the oncoming side. "Right" is relative to <em>travel</em>, not to the road's axis — a vehicle that reverses direction, or turns onto a road heading the other way, moves to the <strong>other</strong> side of the centerline.</p>
+<p><strong>Invariant — the lane never puts a vehicle off the pavement.</strong> <code>laneOffset + bodyWidth / 2 ≤ RoadWidth / 2</code>. Keeping right is only a fix if the whole body is still on the roadway once it is over there; a vehicle too wide for its lane fails CI (<code>DeliveryTruckFootprint.FitsInsideItsLane</code>) rather than quietly putting a bumper over the curb. The delivery truck's measured body is <code>2.25m</code> wide against a <code>3m</code> lane budget.</p>
+<p>The rule lives on the <strong>road model</strong> rather than on any one vehicle, so a future road user inherits it instead of re-deriving it. Dogs are not lane users — they walk sidewalks and crosswalks, never the roadway (see <a href="../../dogs/behavior/">Dog Behavior</a>).</p>
+<p>Because "right" depends on direction, the lane is a property of the <strong>leg being driven</strong>, not of the road network. A route's waypoints stay on the road <strong>centerline</strong> — an intersection waypoint belongs to two roads with two different right-hand sides, so a lane baked into the graph would be ambiguous exactly where routes turn. Core's <code>RoadLeg</code> resolves each leg (its road, its travel sign, and therefore its lane) and the driving code offsets there.</p>
+<p><strong>Intersection interiors are out of scope for the lane invariant.</strong> A left turn inherently crosses the oncoming lane, and a U-turn crosses the centerline by definition — turn geometry is reasoned about with the intersection manoeuvre work (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/673">#673</a>). The invariant binds on road <em>legs</em>; a vehicle handing over between legs at an intersection does so at the new leg's centerline and moves out to its lane, so it never enters the oncoming half.</p>
 <h2 id="road-arm-extent">Road arm extent<a class="headerlink" href="#road-arm-extent" title="Permanent link">&para;</a></h2>
 <p>Each of the starting intersection's two roads (and, keying off the same extent, each road's two sidewalks) runs a fixed distance either way from the origin — <code>NeighborhoodLayout.StreetHalfLength</code>. That extent is <strong>half a tile</strong> (<code>WorldDimensions.TileSize / 2</code> = 30m), so every arm reaches the <strong>tile edge</strong>. The <code>WalkNetwork</code> sidewalk arms and everything else derive from <code>NeighborhoodLayout.Roads</code>, so lengthening the arms extends the walkable sidewalks with them.</p>
 <blockquote>
@@ -1991,6 +2016,9 @@ indicator (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/580"
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[x] Every road declares a sidewalk on both sides, set back 0.75m from the road edge (2026-07-13 midpoint decision — a logical setback for dog placement, no visual grass strip in the kit-art path), sized from <code>WorldDimensions</code> only</li>
+<li>[x] A road carries two lanes, centred <code>RoadWidth / 4</code> either side of the centerline, <strong>derived</strong> from <code>WorldDimensions.RoadWidth</code> in <code>RoadLane.Offset</code> rather than declared as a new locked value (#672)</li>
+<li>[x] A vehicle keeps to the <strong>right-hand lane for its direction of travel</strong> on every road leg — never on or across the centerline — with the sign convention pinned for all four orientation × travel-direction cases, and reversing direction moving it to the other side (#672)</li>
+<li>[x] A vehicle's whole body fits inside its lane (<code>laneOffset + bodyWidth / 2 ≤ RoadWidth / 2</code>), so keeping right never puts a bumper over the curb (<code>DeliveryTruckFootprint.FitsInsideItsLane</code>, #672)</li>
 <li>[x] The 4-crosswalk box exists at the starting intersection, one crosswalk per road arm</li>
 <li>[x] Crosswalks derive <strong>per tile</strong> from the tile catalog geometry (<code>TileCrosswalkGeometry</code>), so <strong>every unlocked intersection</strong> paints them — a 4-way's four arms and a three-way (Tee)'s three, with none over a Tee's closed edge; non-intersection tiles get none (#508)</li>
 <li>[x] Kit-art path renders the baked-crosswalk intersection mesh at each intersection tile's centre (<code>road-crossroad-path</code> 4-way / <code>road-intersection-path</code> Tee), yawed per <code>RoadTileArt</code>, instead of composing straights + separate crossing tiles (#508)</li>
