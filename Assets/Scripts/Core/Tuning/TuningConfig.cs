@@ -43,6 +43,16 @@ namespace Doggiehood.Core.Tuning
         /// they pay <see cref="PaidQuestMarkup"/> × their item cost instead.</summary>
         public int QuestPayout = 20;
 
+        /// <summary>#675: flat coin payout when a household moves into a vacant
+        /// house — <b>per household, not per dog</b>, so one move-in event pays
+        /// this once whatever the household's size. 50 is exactly what a house
+        /// costs to build (<see cref="HouseBuildBaseCost"/>), so a new neighbour
+        /// pays for the next house. Income from it is rate-limited by quest
+        /// completions (a move-in is rolled on quest completion, never on
+        /// construction), so raising it cannot open a build-to-earn loop — see
+        /// docs/specs/expansion.md#move-in-system.</summary>
+        public int MoveInReward = 50;
+
         /// <summary>#626: the payout markup on a <b>paid</b>-type quest — the
         /// "getting hired to do it" margin. Completing a paid quest (BuyGift /
         /// DecorationRequest / fence) reimburses the fronted item cost times

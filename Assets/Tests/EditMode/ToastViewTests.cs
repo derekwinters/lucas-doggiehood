@@ -165,7 +165,9 @@ namespace Doggiehood.Unity.EditModeTests
         // Every currently-approved toast line (#578): the quest template plus the
         // four onboarding step lines, built through the real copy assembly at the
         // LIVE payouts (#674 moved the onboarding reward to 200) — the fit guard
-        // has to measure the strings a player actually sees.
+        // has to measure the strings a player actually sees. The third trigger's
+        // lines (#675 move-in) vary with the household drawn, so their worst case
+        // is derived from the name roster and measured in MoveInToastTests.
         private static string[] ApprovedToastMessages()
         {
             var reward = OnboardingRewardChainNumbers.RewardPerStep;

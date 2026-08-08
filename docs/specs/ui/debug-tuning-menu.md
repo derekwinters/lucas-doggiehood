@@ -28,7 +28,7 @@ Grounded in the epic [#619](https://github.com/derekwinters/lucas-doggiehood/iss
 | Group | Control rows (each = one slider) | Count |
 |---|---|---|
 | **Pacing** | Quest min target (floor) · Quest max target (ceiling) · Dogs per active quest · Pacing window · Refresh interval | 5 |
-| **Economy** | Quest reward · Paid-quest markup · Starter cost min/max · Mid cost min/max · Premium cost min · Starter/Mid/Premium tier gates · Onboarding reward per step | 11 |
+| **Economy** | Quest reward · Move-in reward · Paid-quest markup · Starter cost min/max · Mid cost min/max · Premium cost min · Starter/Mid/Premium tier gates · Onboarding reward per step | 12 |
 | **Expansion** | Tile unlock — base/step/origin tiles · House build — base/step/houses per step · House max level · Upgrade cost — to level 2/3/4 | 10 |
 | **Move-in** | Early move-in chance · Early increment per quest · Late move-in chance · Late increment per quest · Early/Late population · Household weights (single, parent+puppy, three dogs) · Easter-egg chance · Breed weight smoothing | 11 |
 
