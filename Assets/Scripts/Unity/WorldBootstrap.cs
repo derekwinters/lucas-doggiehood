@@ -116,18 +116,21 @@ namespace Doggiehood.Unity
             gameObject.AddComponent<ExpansionUnlockDirector>()
                 .Init(state, root.transform, confirmationDialog, expansionDirector);
 
-            // Completion toasts (#541): the non-modal top-left toast lane
-            // (docs/specs/ui/toast.md) celebrates two — and only two — triggers,
-            // each enqueued onto one shared single-slot queue and rendered one at a
-            // time by the ToastView. This reverses the #374 modal reward panel: the
-            // onboarding reward-chain step feedback now surfaces as a toast, never a
-            // blocking modal. Core owns both payouts (the toasts move no coins), and
-            // both directors stay silent when their event never fires (a returning
-            // player's completed chain never re-pays).
+            // Completion toasts (#541, third trigger added by #675): the
+            // non-modal top-left toast lane (docs/specs/ui/toast.md) celebrates
+            // three — and only three — triggers, each enqueued onto one shared
+            // single-slot queue and rendered one at a time by the ToastView. This
+            // reverses the #374 modal reward panel: the onboarding reward-chain
+            // step feedback now surfaces as a toast, never a blocking modal. Core
+            // owns all three payouts (the toasts move no coins), and each director
+            // stays silent when its event never fires (a returning player's
+            // completed chain never re-pays; a neighborhood with no vacant house
+            // never moves anyone in).
             var toastQueue = new Doggiehood.Core.Ui.ToastQueue<ToastRequest>();
             gameObject.AddComponent<ToastView>().Init(toastQueue);
             gameObject.AddComponent<OnboardingRewardDirector>().Init(state, toastQueue);
             gameObject.AddComponent<QuestCompletionDirector>().Init(state, toastQueue);
+            gameObject.AddComponent<MoveInToastDirector>().Init(state, toastQueue);
 
             // Move-in welcome (#518): the approved "Welcome to the
             // neighborhood!" pop-up (docs/specs/ui/welcome-popup.md) pops a beat

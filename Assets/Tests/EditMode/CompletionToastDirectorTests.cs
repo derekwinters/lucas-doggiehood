@@ -17,6 +17,9 @@ namespace Doggiehood.Unity.EditModeTests
     /// enqueues on every quest completion with the "Quest complete! +N coins"
     /// template. Copy is assembled in the Unity layer (<see cref="ToastCopy"/>);
     /// Core owns both payouts and neither toast is modal.
+    ///
+    /// <para>The toast's third trigger — a move-in (#675) — has its own director
+    /// and copy branch, covered in <c>MoveInToastTests</c>.</para>
     /// </summary>
     public class CompletionToastDirectorTests
     {

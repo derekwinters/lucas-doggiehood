@@ -84,10 +84,10 @@
   <p class="eyebrow">Doggiehood · UI Wireframe · Issue #562 · Toast Notification · Tablet · Landscape · 1920×1200</p>
   <h1 class="rounded">Toast notification</h1>
   <p class="lede">A small, <b>non-modal</b> cream pill that slides into a reserved <b>top-left lane</b> to celebrate a
-    completion — a quest finishing, or an onboarding reward-chain step paying out — then clears itself on a short
+    completion — a quest finishing, an onboarding reward-chain step paying out, or a household moving in (#675) — then clears itself on a short
     auto-timeout (or the instant it is tapped). It mirrors the <b>CurrencyChip</b>'s top-right reservation in the
     opposite corner, never dims the world, and never blocks input. One toast shows at a time; a second waits its turn.</p>
-  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two frames below show the two triggers' copy — they never appear together (single slot). The mirrored top-right chip/gear and the dashed lane guide are context only.</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two frames below show the quest and onboarding copy — no two toasts ever appear together (single slot). The move-in trigger (#675) reuses this same pill and lane unchanged; only its copy is new, listed below. The mirrored top-right chip/gear and the dashed lane guide are context only.</p>
 
   <p class="framelabel">Frame A — quest-completion toast</p>
   <div class="viewer">
@@ -146,13 +146,16 @@
   </div>
 
   <div class="steps">
-    <h2>Per-toast copy — the two triggers (payout folds into the one line as <code>+N coins</code>)</h2>
+    <h2>Per-toast copy — the three triggers (payout folds into the one line as <code>+N coins</code>)</h2>
     <div class="sgrid">
       <div class="srow"><span class="n">Q</span><span class="t"><b>Quest complete</b> (<code>QuestManager.Complete</code>) — “Quest complete! +N coins” (N = flat quest payout, today 10)</span></div>
       <div class="srow"><span class="n">1</span><span class="t"><b>Onboarding · first quest</b> — “You finished your first quest! +100 coins”</span></div>
       <div class="srow"><span class="n">2</span><span class="t"><b>Onboarding · upgrade a house</b> — “You made a house even nicer! +100 coins”</span></div>
       <div class="srow"><span class="n">3</span><span class="t"><b>Onboarding · expand the map</b> — “You opened up a brand-new street! +100 coins”</span></div>
       <div class="srow"><span class="n">4</span><span class="t"><b>Onboarding · build a house</b> — “You built a brand-new house! +100 coins”</span></div>
+      <div class="srow"><span class="n">M</span><span class="t"><b>Move-in · one dog</b> (<code>QuestManager.MoveInOccurred</code>, #675) — “Biscuit moved in! +50 coins”</span></div>
+      <div class="srow"><span class="n">M</span><span class="t"><b>Move-in · two dogs</b> — “Biscuit &amp; Pepper moved in! +50 coins”</span></div>
+      <div class="srow"><span class="n">M</span><span class="t"><b>Move-in · three or more dogs</b> — “A new family moved in! +50 coins” (no names — three names would overflow the one-line pill, #578)</span></div>
     </div>
   </div>
 
