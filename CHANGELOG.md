@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.14.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.13.0...v0.14.0) (2026-08-08)
+
+
+### Features
+
+* give the welcome pop-up a visible way out with a top-right ✕ ([#688](https://github.com/derekwinters/lucas-doggiehood/issues/688)) ([4b17fa8](https://github.com/derekwinters/lucas-doggiehood/commit/4b17fa82badd4fc3673f333466b94b05baeb3035))
+* mark the onboarding build step's target lot with the red target ring ([#686](https://github.com/derekwinters/lucas-doggiehood/issues/686)) ([1305ddd](https://github.com/derekwinters/lucas-doggiehood/commit/1305ddd42b2b668ec6ea5a2113fadcf1d5055fb1))
+* pay 50 coins when a household moves in, announced by a toast ([#698](https://github.com/derekwinters/lucas-doggiehood/issues/698)) ([0e6881e](https://github.com/derekwinters/lucas-doggiehood/commit/0e6881e72e3f4d0ba06b770e3ce1d8824b37c576))
+* raise tile unlock to 200 and the onboarding reward to 200 ([#697](https://github.com/derekwinters/lucas-doggiehood/issues/697)) ([0c00a0a](https://github.com/derekwinters/lucas-doggiehood/commit/0c00a0a3cf93fe8ee2f7aa767ebea0006bba4c14))
+
+
+### Bug Fixes
+
+* keep the delivery truck in the right-hand lane, not down the middle ([#689](https://github.com/derekwinters/lucas-doggiehood/issues/689)) ([12a6366](https://github.com/derekwinters/lucas-doggiehood/commit/12a63668230f7bd18604b5262af668ff92c327b5))
+* keep the whole viewport rendering world at every zoom ([#699](https://github.com/derekwinters/lucas-doggiehood/issues/699)) ([7ac051b](https://github.com/derekwinters/lucas-doggiehood/commit/7ac051b70485931ce9aaf9f94d0bbe49732433c6)), closes [#679](https://github.com/derekwinters/lucas-doggiehood/issues/679)
+* make a vehicle take a whole intersection or none of it ([#694](https://github.com/derekwinters/lucas-doggiehood/issues/694)) ([def2703](https://github.com/derekwinters/lucas-doggiehood/commit/def270377abda4ea3ba5de0b56694ea852e2225e))
+* route all input through one authority so modals block every gesture ([#687](https://github.com/derekwinters/lucas-doggiehood/issues/687)) ([5a31e9e](https://github.com/derekwinters/lucas-doggiehood/commit/5a31e9e0533570464a6a3c19a32e2c0ec370e928))
+* size the target-house ring to contain the house, with a visible gap ([#682](https://github.com/derekwinters/lucas-doggiehood/issues/682)) ([84ef373](https://github.com/derekwinters/lucas-doggiehood/commit/84ef3731f438686420cf89dc4d8134fab806e2e2))
+
 ## [0.13.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.12.0...v0.13.0) (2026-08-07)
 
 
