@@ -412,6 +412,15 @@ big round":
    that just gained `ai-triage`, making triage per-issue and near-instant too
    — a forward-looking composition, not something #320 wires up.
 
+**Every hand-back comment opens with a plain-English lead**
+([#545](https://github.com/derekwinters/lucas-doggiehood/issues/545)): two or
+three skimmable sentences saying what's wrong (or what's wanted) and what the
+plan changes about it, **before** the diagnosis, the implementation plan, the
+`❓ Needs from Derek/Lucas:` question, or any file/class detail. This is what
+makes a wrong plan catchable at `/approve` time instead of at release time —
+see [Agent Workflow → The plain-English lead](agent-workflow.md#the-plain-english-lead).
+It applies to all four routes below, `needs-clarification` included.
+
 `triage-issue` **owns milestone assignment**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319)): every
 route that lands on `pending-approval` also **sets the issue's milestone
@@ -421,7 +430,12 @@ to a plain presence-check (see **The `/approve` milestone gate** above):
 
 - **Bug** → root-cause diagnosis + fix approach, ending with a `## Build
   checklist` of acceptance criteria → milestone set → `pending-approval`
-  (adds `type:bug`).
+  (adds `type:bug`). When the root cause is that a **spec stated the outcome
+  but never ruled out the bad path** — not a plain coding mistake — the plan
+  also **proposes the missing invariant rule** as a `docs/specs/` addition and
+  adds a checklist item testing it
+  ([#545](https://github.com/derekwinters/lucas-doggiehood/issues/545); see
+  [Agent Workflow → Specs state rules, not only outcomes](agent-workflow.md#specs-state-rules-not-only-outcomes)).
 - **Spec-covered feature** → implementation plan + a matched milestone (set on
   the field) + a closing `## Build checklist` of acceptance criteria →
   `pending-approval`.
@@ -435,6 +449,12 @@ to a plain presence-check (see **The `/approve` milestone gate** above):
 The `## Build checklist` is TDD-ordered checkbox acceptance criteria seeded from
 the relevant `docs/specs/**` page's own build checklist — what Derek approves
 and the reviewer checks the PR against.
+
+A plan that would **change what a spec page says** (rather than only add
+previously-uncovered content) states the shift in plain English — *it used to
+say X → it would now say Y → why* — so Derek is approving the design change
+knowingly, and the resulting PR lands the same note in the spec page itself
+(see [Agent Workflow → "How the spec is changing"](agent-workflow.md#how-the-spec-is-changing)).
 
 Dependencies are recorded as first-class GitHub relationships — sub-issues for
 decomposition, **native issue-dependencies** (set with the `issue-blockers`

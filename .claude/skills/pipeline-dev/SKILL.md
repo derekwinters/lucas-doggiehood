@@ -93,11 +93,17 @@ dashboard issue.
      Conventional Commit and release-please emits one clean changelog entry —
      no raw-lines-in-body trick is needed or allowed. See
      `docs/engineering/versioning.md`.
-   - **Body** starts with the required `## Deviations and Decisions` section
-     (per `docs/engineering/agent-workflow.md`), followed by a `Closes #NN`
+   - **Body** starts with the plain-English lead — 2–3 skimmable sentences on
+     what was wrong and what changed, before any file/class detail (CLAUDE.md
+     rule #12) — then the required `## Deviations and Decisions` section (per
+     `docs/engineering/agent-workflow.md`), followed by a `Closes #NN`
      line so merging auto-closes the issue. Example body:
 
      ```
+     Dogs stopped walking to a decoration before resting on it, so they
+     teleported into place. They now walk the last stretch on the ground
+     network and only settle once they arrive.
+
      ## Deviations and Decisions
 
      Deviations: None.
