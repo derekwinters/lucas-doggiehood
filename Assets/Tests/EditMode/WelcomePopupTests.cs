@@ -17,14 +17,21 @@ namespace Doggiehood.Unity.EditModeTests
     /// edge, a big fixed heading, one leaf pill — parameterized for an arrival:
     /// the new dog's name, one dynamic meta line, an optional per-dog member-chip
     /// row (hidden for a single-dog move-in), and a single "Say hi!" button that
-    /// dismisses AND pans the camera to the new house. Always dismissible (button
-    /// OR scrim), never a trap; the scrim dismisses WITHOUT panning. The dynamic
-    /// copy comes from engine-free Core (<see cref="WelcomeMessage"/>).
+    /// dismisses AND pans the camera to the new house. Always dismissible — and
+    /// since #671 visibly so, via a top-right ✕ alongside the scrim — never a
+    /// trap; both the ✕ and the scrim dismiss WITHOUT panning. The dynamic copy
+    /// comes from engine-free Core (<see cref="WelcomeMessage"/>).
     /// </summary>
     public class WelcomePopupTests
     {
         private const string BundledFontPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
         private const int HouseId = 3;
+
+        /// <summary>#671 / welcome-popup.md: the centered medal spans x 872–1048
+        /// and the ✕ spans x 1298–1370 within the 820px card, so they clear each
+        /// other by 250px horizontally — constant across every household
+        /// variant, because the medal is centered regardless of content.</summary>
+        private const float CloseToPortraitClearancePx = 250f;
 
         private GameObject canvasHost;
         private GameObject overlayHost;
@@ -114,6 +121,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(WelcomePopup.MemberChipDiameterPx, Is.EqualTo(72f));
             Assert.That(WelcomePopup.MemberChipGapPx, Is.EqualTo(20f));
             Assert.That(WelcomePopup.MemberRowMarginPx, Is.EqualTo(28f));
+            Assert.That(WelcomePopup.CloseButtonSizePx, Is.EqualTo(72f),
+                "#671: the close (✕) matches the dog/house profile at 72px");
             Assert.That(WelcomePopup.WelcomePopupDelaySeconds, Is.EqualTo(1.5f));
             Assert.That(WelcomePopup.ButtonHeightPx, Is.EqualTo(96f),
                 "the Say hi! button reuses the shared 96px PillButton (#173)");
@@ -286,6 +295,122 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(popup.IsOpen, Is.False, "the scrim tap dismisses too (#329)");
             Assert.That(panned, Is.False, "the scrim tap does NOT pan the camera (welcome-popup.md Notes)");
+        }
+
+        // --- #671: the top-right ✕ — the visible way out ---
+
+        [Test]
+        public void CloseButton_IsFlushInTheCardsTopRightCorner_AtTheWireframeSize()
+        {
+            // welcome-popup.md "Close" region: flush in the card's corner, zero
+            // inset, matching DogProfileOverlay/HouseProfileOverlay exactly.
+            Assert.That(popup.CloseButtonRect, Is.Not.Null, "the pop-up renders a close (✕) button");
+            Assert.That(popup.CloseButtonRect.sizeDelta,
+                Is.EqualTo(new Vector2(WelcomePopup.CloseButtonSizePx, WelcomePopup.CloseButtonSizePx)));
+            Assert.That(popup.CloseButtonRect.anchorMin, Is.EqualTo(Vector2.one), "anchored top-right");
+            Assert.That(popup.CloseButtonRect.anchorMax, Is.EqualTo(Vector2.one));
+            Assert.That(popup.CloseButtonRect.pivot, Is.EqualTo(Vector2.one), "pivoted top-right");
+            Assert.That(popup.CloseButtonRect.anchoredPosition, Is.EqualTo(Vector2.zero),
+                "flush in the corner — zero inset (welcome-popup.md)");
+            Assert.That(popup.CloseButtonRect.parent, Is.EqualTo(popup.CardRect),
+                "the ✕ lives on the card, so it travels with it");
+        }
+
+        [Test]
+        public void TappingTheClose_Dismisses_WithoutPanningOrOpeningTheHouseProfile()
+        {
+            // The whole point of #671: the ✕ routes to the EXISTING Dismiss(),
+            // never through SayHi(). Asserting on the callback (not just that the
+            // panel closed) is what stops a future refactor re-routing it.
+            var sayHiInvoked = false;
+            popup.Show(SingleMessage(), () => sayHiInvoked = true);
+
+            popup.CloseButton.onClick.Invoke();
+
+            Assert.That(popup.IsOpen, Is.False, "the ✕ dismisses the celebration");
+            Assert.That(sayHiInvoked, Is.False,
+                "the ✕ does NOT pan the camera and does NOT open the house profile (#604 is Say hi!'s job)");
+        }
+
+        [Test]
+        public void CloseTap_UnregistersFromTheModalGate_AndStaysLatchedForTheRestOfTheFrame()
+        {
+            // #568: Dismiss() unregisters, which latches ClosedThisFrame, so the
+            // very tap that closed the pop-up cannot also fire the world object
+            // behind it — InputAuthority blocks on IsBlocking || ClosedThisFrame.
+            popup.Show(SingleMessage(), () => { });
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.True);
+
+            popup.CloseButton.onClick.Invoke();
+
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.IsBlocking, Is.False,
+                "the ✕ unregisters the pop-up from the shared modal gate");
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.ClosedThisFrame, Is.True,
+                "and the closing tap stays consumed for the rest of the frame (#568), "
+                + "so it does not leak to the world behind the pop-up");
+
+            Doggiehood.Core.Cameras.ModalInputGate.Shared.EndFrame();
+            Assert.That(Doggiehood.Core.Cameras.ModalInputGate.Shared.ClosedThisFrame, Is.False,
+                "and the latch is clear again before the next frame's unrelated tap");
+        }
+
+        [Test]
+        public void CloseButton_ClearsThePortraitMedalAndMemberRow_InEveryHouseholdVariant()
+        {
+            // welcome-popup.md: the medal is centered regardless of content, so
+            // the ✕ clears it by 250px in all three variants. Enforced, not
+            // assumed — and the member-chip row is centered too, so it clears as
+            // well however many chips it carries.
+            AssertCloseButtonClearsTheCardContents(SingleMessage(), "single");
+
+            AssertCloseButtonClearsTheCardContents(WelcomeMessage.ForHousehold(new List<Dog>
+            {
+                Adult("Biscuit", Breed.FrenchBulldog),
+                Puppy("Pepper", Breed.FrenchBulldog),
+            }), "parent+puppy");
+
+            AssertCloseButtonClearsTheCardContents(WelcomeMessage.ForHousehold(new List<Dog>
+            {
+                Adult("Mochi", Breed.Beagle),
+                Adult("Nori", Breed.Labrador),
+                Puppy("Yuzu", Breed.Chihuahua),
+            }), "three-dog");
+        }
+
+        private void AssertCloseButtonClearsTheCardContents(WelcomeMessage message, string variant)
+        {
+            popup.Show(message, () => { });
+
+            var close = CardLocalRect(popup.CloseButtonRect, popup.CardRect);
+            var portrait = CardLocalRect(popup.PortraitRect, popup.CardRect);
+
+            Assert.That(close.Overlaps(portrait), Is.False,
+                variant + ": the ✕ must not overlap the portrait medal");
+            Assert.That(close.xMin - portrait.xMax, Is.EqualTo(CloseToPortraitClearancePx).Within(0.01f),
+                variant + ": the ✕ clears the centered medal by the wireframe's 250px");
+
+            if (popup.MemberRow.activeSelf)
+            {
+                var memberRow = (RectTransform)popup.MemberRow.transform;
+                Assert.That(close.Overlaps(CardLocalRect(memberRow, popup.CardRect)), Is.False,
+                    variant + ": the ✕ must not overlap the member-chip row");
+            }
+        }
+
+        /// <summary>The child's rect in the card's own coordinate space (origin
+        /// bottom-left), so overlap can be checked without a canvas layout pass.
+        /// Point-anchored children only, which is every element on this card.</summary>
+        private static Rect CardLocalRect(RectTransform child, RectTransform card)
+        {
+            Assert.That(child.anchorMin, Is.EqualTo(child.anchorMax),
+                child.name + " is stretch-anchored; this helper assumes point anchors");
+
+            var parentSize = card.rect.size;
+            var anchor = new Vector2(child.anchorMin.x * parentSize.x, child.anchorMin.y * parentSize.y);
+            var size = child.sizeDelta;
+            var bottomLeft = anchor + child.anchoredPosition
+                - new Vector2(child.pivot.x * size.x, child.pivot.y * size.y);
+            return new Rect(bottomLeft, size);
         }
 
         [Test]
