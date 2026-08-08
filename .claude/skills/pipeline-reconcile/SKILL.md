@@ -43,7 +43,7 @@ findings).
 2. **Done-ness is decided by a merged commit *body* *closing-keyword* reference
    (`Closes`/`Fixes`/`Resolves #N` + tense/case variants) or deliverables on
    `HEAD`, never a PR/commit *title* and never a bare `#N` / `Refs #N`.** Only a
-   closing keyword resolves an issue (CLAUDE.md rule #10); a bare `#N`,
+   closing keyword resolves an issue (CLAUDE.md rule #11); a bare `#N`,
    `Refs #N`, `Part of #N`, or `Relates to #N` merely links, so a prose
    cross-reference in a merged commit body must not flag that issue done (#277).
    Titles are excluded separately: the nightly builder squash-merges several

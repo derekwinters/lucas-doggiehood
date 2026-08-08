@@ -48,7 +48,7 @@ structured ``Blocked by: #N`` line or a native GitHub relationship), and
 ``in-progress`` shortcut: it resolves **only when closed** (absent from the open
 snapshot). A wireframe issue at ``ready-for-work`` is merely approved to go
 *draft* the wireframe; its downstream is hard-gated on the wireframe being
-distilled into ``docs/specs/ui/`` and closed (CLAUDE.md rule #8 /
+distilled into ``docs/specs/ui/`` and closed (CLAUDE.md rule #9 /
 ``docs/engineering/ui-design-process.md``). Without the carve-out the blocker's
 label never changes, so every sweep re-fires the same revisit and single-issue
 triage keeps concluding "still blocked" — the infinite churn #396 fixes. All
@@ -67,7 +67,7 @@ RESOLVED_LABELS = {"ready-for-work", "in-progress"}
 # blocker at `ready-for-work` only means "approved to go *draft* the wireframe,"
 # not "the wireframe is an approved, distilled contract." Its downstream is
 # hard-gated on the wireframe being CLOSED (its layout distilled into
-# `docs/specs/ui/`, per CLAUDE.md rule #8 / docs/engineering/ui-design-process.md),
+# `docs/specs/ui/`, per CLAUDE.md rule #9 / docs/engineering/ui-design-process.md),
 # so a wireframe blocker resolves ONLY when it is absent from the open snapshot
 # (closed/merged) — the `RESOLVED_LABELS` shortcut does not apply to it.
 WIREFRAME_LABEL = "type:wireframe"

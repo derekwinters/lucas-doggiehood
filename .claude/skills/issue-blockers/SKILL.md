@@ -5,7 +5,7 @@ description: >
   relationships for Doggiehood issues, via the issue-dependencies REST API.
   Use whenever one issue depends on / is blocked by another — instead of
   writing a prose "Blocked by #N" line, which is not allowed (CLAUDE.md rule
-  #11) and gets flagged as drift by the reconcile sweep. Invoke when asked to
+  #12) and gets flagged as drift by the reconcile sweep. Invoke when asked to
   make an issue depend on / block / be blocked by another, or to wire up a
   dependency before creating/approving work.
 ---
@@ -14,7 +14,7 @@ description: >
 
 Doggiehood records "issue A is blocked by issue B" as a **native GitHub
 issue-dependency relationship**, never as text in the issue body. Prose
-dependency lines are banned (CLAUDE.md rule #11): the pipeline's reconcile
+dependency lines are banned (CLAUDE.md rule #12): the pipeline's reconcile
 sweep reads native blockers (`reconcile.py::native_blocked_by`) and actively
 **flags** prose-only dependency phrases as drift (`flag_prose_dep`, surfaced on
 the dashboard). This skill is the write side that keeps every relationship on

@@ -14,7 +14,7 @@ description: >
 The **single-issue triage flow** extracted from `pipeline-analysis` (issue
 #320) so it is a reusable unit, not welded to a full round. See
 `docs/engineering/issue-pipeline.md` and honor the project's hard rules in
-`CLAUDE.md` — especially **rule #8 (wireframe before UI)** and the
+`CLAUDE.md` — especially **rule #9 (wireframe before UI)** and the
 **no-inventing-design** rule.
 
 ## Scope — exactly one issue
@@ -116,7 +116,7 @@ from Derek), and the `/docs` pages it relates to. Then route:
    `pending-approval` **while removing `ai-triage` in the same `issue_write`
    call**.
 
-3. **Feature needing a new design decision or a UI wireframe (rule #8)** →
+3. **Feature needing a new design decision or a UI wireframe (rule #9)** →
    **stop and ask.** Post a clearly-labeled block:
 
    ```

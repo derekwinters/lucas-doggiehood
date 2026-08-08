@@ -242,11 +242,11 @@ class TestStretchRules(unittest.TestCase):
 class TestClosingRefsParsing(unittest.TestCase):
     """Parsing layer (#277): done-ness / open-PR association counts ONLY closing
     keywords (Closes/Fixes/Resolves #N + tense/case variants), per CLAUDE.md
-    rule #10. A bare `#N`, `Refs #N`, `Part of #N`, `Relates to #N` only links.
+    rule #11. A bare `#N`, `Refs #N`, `Part of #N`, `Relates to #N` only links.
     """
 
     def test_prose_and_bare_refs_are_not_closing(self):
-        # None of these landed work per rule #10 -> empty closing-ref set.
+        # None of these landed work per rule #11 -> empty closing-ref set.
         for text in [
             "Relates to #250",
             "Part of #191",

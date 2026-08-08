@@ -33,7 +33,20 @@ vocabulary, routines, and stage behavior.
 
 ## CLAUDE.md
 
-A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: the Core/Unity split, the TDD workflow, the Conventional Commit requirement, `VERSION` file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).
+A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: **rule #1, the gate on starting development at all** (see [below](#before-any-of-this-the-gate-on-starting-work)), the Core/Unity split, the TDD workflow, the Conventional Commit requirement, `VERSION` file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).
+
+## Before any of this: the gate on starting work
+
+**CLAUDE.md rule #1 governs *whether* an agent writes code at all**; everything below governs *how*, once past it. An agent may only start development when **both** are true:
+
+1. **Derek explicitly asked for the work to be built**, in his own words — "build it", "fix it", "implement #N", "work through v0.14".
+2. **The work is an issue that has been through the [pipeline](issue-pipeline.md) to `ready-for-work`** with a milestone set.
+
+Neither alone is enough: an approved issue is not a standing instruction to start, and an instruction to start does not skip triage.
+
+**A problem report is not a work order.** A screenshot, a bug description, "this is still broken", a stack trace, a red build — all of these are *inputs to triage*. The correct response is to investigate read-only, file or update the issue with the diagnosis and proposed fix direction, and stop there. Handing back a diagnosis and an issue is a **complete outcome**, not a half-measure — being able to see the cause does not make it the agent's to fix.
+
+This gate exists because it was breached repeatedly: an agent reading a bug report as authorization to fix it. That is doubly costly here, because **multiple agents develop in this repo concurrently** — unrequested work duplicates or collides with whoever actually owns the issue. Before touching anything, check for an existing branch, an open PR, or an `in-progress` label.
 
 ## How an issue gets worked
 

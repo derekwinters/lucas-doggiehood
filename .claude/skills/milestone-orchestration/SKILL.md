@@ -102,7 +102,7 @@ For each issue in the resolved order, **serially**:
      `feat: give approach-to-rest real walk-to-decoration movement`).
    - **Body** starts with the required `## Deviations and Decisions` section,
      then a dedicated `**Docs:**` line, then `Closes #NN` so the merge
-     auto-closes the issue (CLAUDE.md rules #5, #9, #10). Example:
+     auto-closes the issue (CLAUDE.md rules #6, #10, #11). Example:
 
      ```
      ## Deviations and Decisions

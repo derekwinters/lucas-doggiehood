@@ -177,7 +177,7 @@ class TestCheckBlockerRevisits(unittest.TestCase):
     def test_wireframe_blocker_at_ready_for_work_does_not_revisit(self):
         # #396: a wireframe-producing blocker (`type:wireframe`) at
         # `ready-for-work` only means "approved to go draft the wireframe," not
-        # "the wireframe is a distilled, closed contract" (CLAUDE.md rule #8 /
+        # "the wireframe is a distilled, closed contract" (CLAUDE.md rule #9 /
         # ui-design-process.md). The downstream issue is hard-gated on the
         # wireframe being CLOSED, so `ready-for-work` must NOT resolve it.
         out = check_revisits.check_blocker_revisits([

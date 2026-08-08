@@ -217,7 +217,7 @@ silently ignored everywhere else.
    a blocker carrying `type:wireframe`, which resolves **only when closed** (#396):
    a wireframe issue at `ready-for-work` is only approved to go *draft* the
    wireframe, and its downstream is hard-gated on the wireframe being distilled
-   into `docs/specs/ui/` and closed (CLAUDE.md rule #8), so resolving it early
+   into `docs/specs/ui/` and closed (CLAUDE.md rule #9), so resolving it early
    caused an infinite revisit churn. An issue with **multiple** blockers only
    revisits once **all** are resolved (each under its own rule). Hard
    blockers are the union of structured `Blocked by: #N` lines and native

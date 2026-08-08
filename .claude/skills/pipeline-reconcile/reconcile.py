@@ -16,7 +16,7 @@ network (same pattern as ``select_queue.py`` / ``render_dashboard.py``):
   * ``fetch_state(repo, token)`` — queries the GitHub REST API (stdlib urllib,
     no third-party deps) and assembles the state dict. Not unit-tested.
 
-Done-ness — closing keywords only (CLAUDE.md rule #10, #277): an issue's work is
+Done-ness — closing keywords only (CLAUDE.md rule #11, #277): an issue's work is
 judged "on main" ONLY from a **closing-keyword** reference
 (``Closes``/``Fixes``/``Resolves #N`` and their tense/case variants) in a merged
 commit *body* reachable from main, or from its deliverables existing at HEAD. A
@@ -279,7 +279,7 @@ def _paginate(path, token):
 
 
 # A GitHub closing keyword (any tense) immediately preceding ``#N``. Per
-# CLAUDE.md rule #10, ONLY these resolve an issue — a bare ``#N`` / ``Refs #N`` /
+# CLAUDE.md rule #11, ONLY these resolve an issue — a bare ``#N`` / ``Refs #N`` /
 # ``Part of #N`` / ``Relates to #N`` merely links and must NOT mark work done.
 # ``\b`` keeps ``prefix #5`` from tripping ``fix``; ``[:\s]+`` allows the
 # ``Closes #N`` and ``Closes: #N`` separators GitHub accepts.
@@ -418,7 +418,7 @@ def fetch_state(repo, token):
 
     Done-ness is gathered from **closing-keyword** references in merged commit
     **bodies** on the default branch — never PR/commit titles, never a bare
-    ``#N``/``Refs #N`` (CLAUDE.md rule #10, #277) — so bundled squashes are
+    ``#N``/``Refs #N`` (CLAUDE.md rule #11, #277) — so bundled squashes are
     caught (see module docstring) without prose cross-references false-positing.
     Open-PR association is likewise taken from each open PR's closing-keyword
     refs in its title+body, so a PR that merely "Relates to #N" does not mark

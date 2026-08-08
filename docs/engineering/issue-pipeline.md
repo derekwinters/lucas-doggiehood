@@ -159,7 +159,7 @@ resolved when it is closed/merged (absent from the open snapshot) or carries
 a blocker carrying `type:wireframe` resolves **only when closed**, never merely
 at `ready-for-work`/`in-progress`. A wireframe issue at `ready-for-work` is only
 approved to go *draft* the wireframe; its downstream is hard-gated on the
-wireframe being distilled into `docs/specs/ui/` and closed (CLAUDE.md rule #8 /
+wireframe being distilled into `docs/specs/ui/` and closed (CLAUDE.md rule #9 /
 [UI Design Process](ui-design-process.md)). Without the carve-out the blocker's
 label never changes, so the sweep re-fired the same revisit every run and
 single-issue triage kept concluding "still blocked" — an infinite churn. An
@@ -425,7 +425,7 @@ to a plain presence-check (see **The `/approve` milestone gate** above):
 - **Spec-covered feature** → implementation plan + a matched milestone (set on
   the field) + a closing `## Build checklist` of acceptance criteria →
   `pending-approval`.
-- **Feature needing a new design call or a UI wireframe** (CLAUDE.md rule #8) →
+- **Feature needing a new design call or a UI wireframe** (CLAUDE.md rule #9) →
   **stops and asks** with a concrete `❓ Needs from Derek/Lucas:` question →
   `needs-clarification` (no plan, no checklist, no milestone set).
 - **`/propose` set** → authorized to draft the design as a marked PROPOSAL,
@@ -477,7 +477,7 @@ different needs — do not conflate them**
 - **Hard blockers (`Blocked by:`)** are recorded as a **native GitHub
   issue-dependency relationship**, set with the `issue-blockers` skill
   (`.claude/skills/issue-blockers/`, `set_blocker.py`) — the required, canonical
-  form (CLAUDE.md rule #11).
+  form (CLAUDE.md rule #12).
   Writing a `Blocked by: #N` **text line** as the source of truth is no longer
   allowed. Every deterministic reader — the nightly builder, the reconciliation
   sweep, the dashboard "Blocked by" columns + unblocker graph, the blocker
@@ -630,7 +630,7 @@ anything the merge event saw mid-flight.
 **Done-ness is decided by a merged commit *body* *closing-keyword* reference
 (`Closes` / `Fixes` / `Resolves #N` and their tense/case variants) or
 deliverables on `HEAD` — never a PR/commit *title*, and never a bare `#N` /
-`Refs #N`.** This matches CLAUDE.md rule #10: only a closing keyword resolves an
+`Refs #N`.** This matches CLAUDE.md rule #11: only a closing keyword resolves an
 issue; a bare `#N`, `Refs #N`, `Part of #N`, or `Relates to #N` merely links, so
 a prose cross-reference in a merged commit body must not mark that issue done
 ([#277](https://github.com/derekwinters/lucas-doggiehood/issues/277)). The same
@@ -761,7 +761,7 @@ Each stage is a self-contained skill directory under `.claude/skills/`:
   issue-dependency relationships — add/remove/list, resolving the write API's
   numeric `issue_id`) + tests. The manual/agent counterpart to the readers in
   `reconcile.py` (`native_blocked_by`) and `select_queue.py`; use it instead of
-  writing a prose `Blocked by #N` line (CLAUDE.md rule #11).
+  writing a prose `Blocked by #N` line (CLAUDE.md rule #12).
 
 The gatekeeper is now driven by two workflows —
 [`gatekeeper-comment.yml`](#routines-and-the-dashboard-workflow) (per-issue,

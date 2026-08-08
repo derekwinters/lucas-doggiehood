@@ -3,7 +3,7 @@
 
 Doggiehood records "issue A is blocked by issue B" as a *native* GitHub
 issue-dependency relationship, never as a prose line in the body (CLAUDE.md
-rule #11). The pipeline's reconcile sweep already reads native blockers
+rule #12). The pipeline's reconcile sweep already reads native blockers
 (``reconcile.py::native_blocked_by``) and *flags* prose-only dependency lines
 as drift (``flag_prose_dep``); this script is the write side that keeps work
 on the native path.
