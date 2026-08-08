@@ -2508,6 +2508,14 @@ big round":</p>
    that just gained <code>ai-triage</code>, making triage per-issue and near-instant too
    — a forward-looking composition, not something #320 wires up.</li>
 </ol>
+<p><strong>Every hand-back comment opens with a plain-English lead</strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a>): two or
+three skimmable sentences saying what's wrong (or what's wanted) and what the
+plan changes about it, <strong>before</strong> the diagnosis, the implementation plan, the
+<code>❓ Needs from Derek/Lucas:</code> question, or any file/class detail. This is what
+makes a wrong plan catchable at <code>/approve</code> time instead of at release time —
+see <a href="../agent-workflow/#the-plain-english-lead">Agent Workflow → The plain-English lead</a>.
+It applies to all four routes below, <code>needs-clarification</code> included.</p>
 <p><code>triage-issue</code> <strong>owns milestone assignment</strong>
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>): every
 route that lands on <code>pending-approval</code> also <strong>sets the issue's milestone
@@ -2517,7 +2525,12 @@ to a plain presence-check (see <strong>The <code>/approve</code> milestone gate<
 <ul>
 <li><strong>Bug</strong> → root-cause diagnosis + fix approach, ending with a <code>## Build
   checklist</code> of acceptance criteria → milestone set → <code>pending-approval</code>
-  (adds <code>type:bug</code>).</li>
+  (adds <code>type:bug</code>). When the root cause is that a <strong>spec stated the outcome
+  but never ruled out the bad path</strong> — not a plain coding mistake — the plan
+  also <strong>proposes the missing invariant rule</strong> as a <code>docs/specs/</code> addition and
+  adds a checklist item testing it
+  (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a>; see
+  <a href="../agent-workflow/#specs-state-rules-not-only-outcomes">Agent Workflow → Specs state rules, not only outcomes</a>).</li>
 <li><strong>Spec-covered feature</strong> → implementation plan + a matched milestone (set on
   the field) + a closing <code>## Build checklist</code> of acceptance criteria →
   <code>pending-approval</code>.</li>
@@ -2531,6 +2544,11 @@ to a plain presence-check (see <strong>The <code>/approve</code> milestone gate<
 <p>The <code>## Build checklist</code> is TDD-ordered checkbox acceptance criteria seeded from
 the relevant <code>docs/specs/**</code> page's own build checklist — what Derek approves
 and the reviewer checks the PR against.</p>
+<p>A plan that would <strong>change what a spec page says</strong> (rather than only add
+previously-uncovered content) states the shift in plain English — <em>it used to
+say X → it would now say Y → why</em> — so Derek is approving the design change
+knowingly, and the resulting PR lands the same note in the spec page itself
+(see <a href="../agent-workflow/#how-the-spec-is-changing">Agent Workflow → "How the spec is changing"</a>).</p>
 <p>Dependencies are recorded as first-class GitHub relationships — sub-issues for
 decomposition, <strong>native issue-dependencies</strong> (set with the <code>issue-blockers</code>
 skill) for hard <code>Blocked by</code> gates, and <code>Depends on: #N</code> lines for soft sibling

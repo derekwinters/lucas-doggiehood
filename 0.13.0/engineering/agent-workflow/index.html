@@ -1562,6 +1562,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-plain-english-lead" class="md-nav__link">
+    <span class="md-ellipsis">
+      The plain-English lead
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-invariants-and-the-how-the-spec-is-changing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Spec invariants and the "how the spec is changing" note
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spec invariants and the "how the spec is changing" note">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specs-state-rules-not-only-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specs state rules, not only outcomes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-the-spec-is-changing" class="md-nav__link">
+    <span class="md-ellipsis">
+      "How the spec is changing"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pr-reflection-deviations-and-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       PR reflection: Deviations and Decisions
@@ -1766,6 +1808,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-plain-english-lead" class="md-nav__link">
+    <span class="md-ellipsis">
+      The plain-English lead
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-invariants-and-the-how-the-spec-is-changing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      Spec invariants and the "how the spec is changing" note
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spec invariants and the "how the spec is changing" note">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specs-state-rules-not-only-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specs state rules, not only outcomes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-the-spec-is-changing" class="md-nav__link">
+    <span class="md-ellipsis">
+      "How the spec is changing"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pr-reflection-deviations-and-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       PR reflection: Deviations and Decisions
@@ -1798,7 +1882,7 @@
 
 
 <h1 id="development-agent-workflow">Development Agent &amp; Workflow<a class="headerlink" href="#development-agent-workflow" title="Permanent link">&para;</a></h1>
-<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/77">#77</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/78">#78</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/84">#84</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/135">#135</a></em></p>
+<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/77">#77</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/78">#78</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/84">#84</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/135">#135</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a></em></p>
 <h2 id="who-writes-the-code">Who writes the code<a class="headerlink" href="#who-writes-the-code" title="Permanent link">&para;</a></h2>
 <p>A dedicated Claude Code agent (<code>.claude/agents/</code>), not ad-hoc chat sessions, does the actual Unity/C# implementation work. It:</p>
 <ul>
@@ -1830,14 +1914,39 @@ vocabulary, routines, and stage behavior.</p>
 <li>Pick the next open issue in the current focus milestone, lowest number first (milestones are version-numbered planning scopes — see <a href="../../intro/conventions/#milestones-are-version-numbered-scopes">Conventions</a>).</li>
 <li>Read its build checklist and the doc page(s) it links to for full context — the issue is the checklist, the docs are the contract.</li>
 <li>Work test-first per <a href="../testing/">Testing Strategy</a>, checking off checklist items as they're satisfied.</li>
-<li><strong>Reconcile the docs/specs the change affects, in the same PR.</strong> If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant <a href="../../specs/"><code>docs/specs</code></a> (or <code>docs/engineering</code>) page(s) alongside the code — never leave the spec describing the old behavior. Record the outcome on its own dedicated <code>**Docs:**</code> PR-body line — <strong>not</strong> inside <code>Deviations and Decisions</code> — e.g. <code>**Docs:** reconciled in this PR</code> or <code>**Docs:** none needed — &lt;reason&gt;</code>. That routine confirmation is kept out of <code>Deviations and Decisions</code> on purpose, so it doesn't dilute that section's high-signal bar (see <a href="#pr-reflection-deviations-and-decisions">below</a>). This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the <code>docs-test</code> <code>build</code> job runs on <strong>every</strong> PR and fails a code-only PR unless it carries the <code>skip-docs</code> label (see <a href="../ci-cd/">CI/CD</a>) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass. (release-please's mechanical release PR is auto-exempt from the gate — it only bumps <code>VERSION</code>/<code>CHANGELOG.md</code>/<code>manifest.json</code>, so it never has docs to reconcile and can't self-apply the label.)</li>
+<li><strong>Reconcile the docs/specs the change affects, in the same PR.</strong> If the work adds, removes, or alters behavior, layout, or a design decision, update the relevant <a href="../../specs/"><code>docs/specs</code></a> (or <code>docs/engineering</code>) page(s) alongside the code — never leave the spec describing the old behavior. Record the outcome on its own dedicated <code>**Docs:**</code> PR-body line — <strong>not</strong> inside <code>Deviations and Decisions</code> — e.g. <code>**Docs:** reconciled in this PR</code> or <code>**Docs:** none needed — &lt;reason&gt;</code>. That routine confirmation is kept out of <code>Deviations and Decisions</code> on purpose, so it doesn't dilute that section's high-signal bar (see <a href="#pr-reflection-deviations-and-decisions">below</a>). This has the same non-negotiable posture as the docs-conflict and wireframe (#172) gates below. CI backs it up: the <code>docs-test</code> <code>build</code> job runs on <strong>every</strong> PR and fails a code-only PR unless it carries the <code>skip-docs</code> label (see <a href="../ci-cd/">CI/CD</a>) — the label is the deliberate escape hatch for genuinely doc-irrelevant changes, not a routine bypass. (release-please's mechanical release PR is auto-exempt from the gate — it only bumps <code>VERSION</code>/<code>CHANGELOG.md</code>/<code>manifest.json</code>, so it never has docs to reconcile and can't self-apply the label.) When the reconciliation changes what a spec page <em>says</em> — rather than only adding new, previously-uncovered content — it also carries a <a href="#spec-invariants-and-the-how-the-spec-is-changing-note"><strong>"how the spec is changing" note</strong></a> in the spec page itself.</li>
 <li><strong>Reflect</strong>: review the run for deviations and mid-run decisions (see below).</li>
-<li>Commit with a Conventional Commit message; open a PR whose body starts with the <code>Deviations and Decisions</code> section. Because an agent PR resolves exactly one issue, its body <strong>must</strong> carry a GitHub closing keyword — <code>Closes #N</code> (<code>Fixes</code>/<code>Resolves</code> are equivalent) — for that issue, so merging the PR auto-closes it. Without a closing keyword the issue stays <code>open</code>/<code>in-progress</code> after merge and has to be reconciled by hand (this drift was the cause of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/211">#211</a>). If a PR went through iteration loops and no commit ended up carrying the keyword, add it in the PR body (or an empty follow-up commit) before merge. A bare <code>Refs #N</code> reference is <strong>not</strong> sufficient — it links but does not close.</li>
+<li>Commit with a Conventional Commit message; open a PR whose body opens with the <a href="#the-plain-english-lead">plain-English lead</a> and then the <code>Deviations and Decisions</code> section. Because an agent PR resolves exactly one issue, its body <strong>must</strong> carry a GitHub closing keyword — <code>Closes #N</code> (<code>Fixes</code>/<code>Resolves</code> are equivalent) — for that issue, so merging the PR auto-closes it. Without a closing keyword the issue stays <code>open</code>/<code>in-progress</code> after merge and has to be reconciled by hand (this drift was the cause of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/211">#211</a>). If a PR went through iteration loops and no commit ended up carrying the keyword, add it in the PR body (or an empty follow-up commit) before merge. A bare <code>Refs #N</code> reference is <strong>not</strong> sufficient — it links but does not close.</li>
 <li>If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.</li>
 <li>If the issue would touch a UI screen's <strong>structure</strong> (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in <a href="../../specs/ui/"><code>docs/specs/ui/</code></a>, stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the <a href="../ui-design-process/">UI Design Process</a>. See its <a href="../ui-design-process/#the-gate">gate</a>.</li>
 </ol>
+<h2 id="the-plain-english-lead">The plain-English lead<a class="headerlink" href="#the-plain-english-lead" title="Permanent link">&para;</a></h2>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a></em></p>
+<p><strong>Every triage analysis, implementation note, and PR body opens with a direct, plain-English summary — two or three sentences, before any class names, file paths, or TDD detail.</strong> What's wrong (or what we want), and what we're changing about it, in words that are easy to skim.</p>
+<p>The reason is review, not style. A write-up that opens in technical detail is hard to sanity-check against expectations, so a plan that solves the stated problem the <em>wrong</em> way reads as fine and ships. A plain-English lead puts the intent where a skim catches it, and a wrong plan gets caught before implementation rather than after release.</p>
+<p>The technical content still follows in full — the lead sits on top of it, it doesn't replace it. In a PR body the lead is an un-headed paragraph above <code>## Deviations and Decisions</code>, which remains the first <em>heading</em> (see <a href="#pr-reflection-deviations-and-decisions">below</a>). In a triage hand-back comment it sits above the diagnosis, plan, or <code>❓ Needs from Derek/Lucas:</code> question (see <a href="../issue-pipeline/#analysis-pipeline-analysis-discovery-script-dispatcher-single-issue-skill">Issue Pipeline → Analysis</a>).</p>
+<h2 id="spec-invariants-and-the-how-the-spec-is-changing-note">Spec invariants and the "how the spec is changing" note<a class="headerlink" href="#spec-invariants-and-the-how-the-spec-is-changing-note" title="Permanent link">&para;</a></h2>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a></em></p>
+<h3 id="specs-state-rules-not-only-outcomes">Specs state rules, not only outcomes<a class="headerlink" href="#specs-state-rules-not-only-outcomes" title="Permanent link">&para;</a></h3>
+<p>A spec that says only <em>what</em> the outcome should be leaves <em>how</em> it's achieved wide open, and a technically-correct-but-wrong implementation can satisfy it. The motivating case (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/538">#538</a>): the delivery truck dropped a package the dog never acknowledged, and the "fix" was to drive the truck off the road, through the yard, and into the dog. The reported bug closed; the game got worse.</p>
+<p>So <strong>wherever a system could plausibly be built in a wrong-but-passing way, the spec carries an explicit invariant</strong> — a short imperative sentence constraining how it may work:</p>
+<blockquote>
+<p><strong>Invariant — the delivery truck never leaves the roadway.</strong></p>
+</blockquote>
+<p>Written that way, the bad solution is ruled out before anyone reaches for it. Two consequences for the workflow:</p>
+<ul>
+<li><strong>Triage proposes the missing rule.</strong> When a bug's root cause is that the spec stated an outcome without ruling out a bad path — not a plain coding mistake — the triage plan proposes the invariant as a spec addition, and its <code>## Build checklist</code> includes a test that would fail if the invariant were violated.</li>
+<li><strong>Implementation lands the rule with the fix.</strong> The invariant goes into the relevant <code>docs/specs/</code> page in the same PR as the code, in the existing <code>**Invariant — …**</code> paragraph style (see <a href="../../specs/quests/quest-content/">Quest Content → Buy something</a> for the worked example).</li>
+</ul>
+<h3 id="how-the-spec-is-changing">"How the spec is changing"<a class="headerlink" href="#how-the-spec-is-changing" title="Permanent link">&para;</a></h3>
+<p><strong>When a PR (or a triage plan) alters what a spec page <em>says</em>, the page also gets a plain-English note recording the shift</strong>, as a blockquote:</p>
+<blockquote>
+<p><strong>How the spec is changing (#N).</strong> It used to say X → it now says Y → because Z.</p>
+</blockquote>
+<p>This is the human-readable record of a design change, kept deliberately separate from three things it's easy to confuse it with: the technical diff (which shows the edit but not the intent), <code>## Deviations and Decisions</code> (which is about how the <em>run</em> went, not what the <em>design</em> now is), and the <code>**Docs:**</code> PR-body line (a routine compliance confirmation — see <a href="#how-an-issue-gets-worked">step 4</a>). The <code>**Docs:**</code> line may point at the note; it does not substitute for it.</p>
+<p>A <strong>purely additive</strong> page — new content covering something the spec never spoke to — needs no note. The note is for a change of mind: the spec said one thing, and now it says another.</p>
 <h2 id="pr-reflection-deviations-and-decisions">PR reflection: Deviations and Decisions<a class="headerlink" href="#pr-reflection-deviations-and-decisions" title="Permanent link">&para;</a></h2>
-<p>Every agent PR body begins with a <code>## Deviations and Decisions</code> header — mandatory, present even when there are no findings (write "None." under each empty category).</p>
+<p>Every agent PR body begins with the <a href="#the-plain-english-lead">plain-English lead</a>, immediately followed by a <code>## Deviations and Decisions</code> header — mandatory, present even when there are no findings (write "None." under each empty category).</p>
 <p>This section is a <strong>short list of things the reviewer should consciously sign off on</strong> — not an exhaustive change-log. It had drifted toward listing many small, inconsequential items (obvious implementation choices, restatements of the diff, "consistent with the existing pattern," "X isn't unit-tested per that file's design," "kept the milestone as-is"), which buries the one or two entries that actually matter. So the bar for inclusion is deliberately <strong>conservative</strong>.</p>
 <p><strong>The materiality test — apply it to every candidate item:</strong> <em>"If the reviewer knew this, would they plausibly do something differently — object, adjust, or follow up?"</em> If <strong>no</strong>, leave it out. A high-signal list of <strong>0–2 items is the norm</strong>, and <strong>"None" is a good, common outcome</strong> — it means the run stayed on the rails, not that reflection was skipped.</p>
 <ul>
