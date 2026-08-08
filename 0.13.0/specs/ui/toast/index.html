@@ -1199,9 +1199,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#per-toast-copy-the-two-triggers" class="md-nav__link">
+  <a href="#per-toast-copy-the-three-triggers" class="md-nav__link">
     <span class="md-ellipsis">
-      Per-toast copy — the two triggers
+      Per-toast copy — the three triggers
     </span>
   </a>
   
@@ -1762,9 +1762,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#per-toast-copy-the-two-triggers" class="md-nav__link">
+  <a href="#per-toast-copy-the-three-triggers" class="md-nav__link">
     <span class="md-ellipsis">
-      Per-toast copy — the two triggers
+      Per-toast copy — the three triggers
     </span>
   </a>
   
@@ -1805,9 +1805,12 @@
 <h1 id="toast-notification">Toast notification<a class="headerlink" href="#toast-notification" title="Permanent link">&para;</a></h1>
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/562">#562</a>. Implements/covers: <code>ToastNotification</code>. Approved: Derek, 2026-08-04 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/562#issuecomment-5185675524"><code>/approve</code> on #562</a>) — authoritative layout contract.</em>
 <em>Mockup: <a href="../mockups/toast.html">mockups/toast.html</a>.</em>
-<em>Status: </em><em>implemented</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/541">#541</a>) — the engine-free single-slot <code>Doggiehood.Core.Ui.ToastQueue&lt;T&gt;</code> sequences requests; <code>Assets/Scripts/Unity/ToastView.cs</code> renders the current slot in the reserved top-left lane (IMGUI HUD element, mirroring the currency chip); and the two directors (<code>QuestCompletionDirector</code> off <code>QuestManager.QuestCompleted</code>, <code>OnboardingRewardDirector</code> off <code>OnboardingRewardChain.RewardGranted</code>) assemble copy (<code>ToastCopy</code>) and enqueue. Wired in <code>WorldBootstrap</code>.</em></p>
+<em>Status: </em><em>implemented</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/541">#541</a>, third trigger added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/675">#675</a>) — the engine-free single-slot <code>Doggiehood.Core.Ui.ToastQueue&lt;T&gt;</code> sequences requests; <code>Assets/Scripts/Unity/ToastView.cs</code> renders the current slot in the reserved top-left lane (IMGUI HUD element, mirroring the currency chip); and the three directors (<code>QuestCompletionDirector</code> off <code>QuestManager.QuestCompleted</code>, <code>OnboardingRewardDirector</code> off <code>OnboardingRewardChain.RewardGranted</code>, <code>MoveInToastDirector</code> off <code>QuestManager.MoveInOccurred</code>) assemble copy (<code>ToastCopy</code>) and enqueue. Wired in <code>WorldBootstrap</code>.</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
-<p>A small, <strong>non-modal</strong> notification that slides into a reserved <strong>top-left lane</strong> to celebrate a completion the player just earned, then clears itself on a short auto-timeout (or the moment it is tapped). It is the standard "you did that, and here's your reward" surface for two — and only two — triggers: <strong>quest completion</strong> (<code>QuestManager.Complete</code>) and <strong>onboarding reward-chain step completion</strong> (<code>OnboardingRewardChain.RewardGranted</code>). It is a HUD element like the <a href="../hud/">currency chip</a>, not a centered panel: it never dims the world, never blocks input, and mirrors the chip's reservation in the opposite corner. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
+<p>A small, <strong>non-modal</strong> notification that slides into a reserved <strong>top-left lane</strong> to celebrate a completion the player just earned, then clears itself on a short auto-timeout (or the moment it is tapped). It is the standard "you did that, and here's your reward" surface for three — and only three — triggers: <strong>quest completion</strong> (<code>QuestManager.Complete</code>), <strong>onboarding reward-chain step completion</strong> (<code>OnboardingRewardChain.RewardGranted</code>), and a <strong>move-in</strong> (<code>QuestManager.MoveInOccurred</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/675">#675</a>). It is a HUD element like the <a href="../hud/">currency chip</a>, not a centered panel: it never dims the world, never blocks input, and mirrors the chip's reservation in the opposite corner. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
+<blockquote>
+<p><strong>How the spec is changing (#675).</strong> This page used to say the toast serves <em>"two — and only two — triggers"</em>, both of them things the <strong>player</strong> did → it now serves <strong>three</strong>, the new one being a <strong>move-in</strong>: a household arriving and paying its 50 coins, which the player didn't directly do → because <a href="https://github.com/derekwinters/lucas-doggiehood/issues/675">#675</a> made a move-in pay out, and a payout with no announcement is invisible. The count is still a closed list, not an open invitation: a fourth trigger needs the same deliberate change. The move-in reuses the approved component with new copy and no layout change, so it needed no new wireframe — but it did force a copy decision, below.</p>
+</blockquote>
 <p>Deliberately <strong>not</strong> a centered modal. It replaces the modal-per-step <a href="../onboarding-reward/">onboarding reward panel</a> for the reward-chain's completion feedback (reversing the #374 "brief modal celebration beat" exception — see <a href="#notes">Notes</a>) with a lightweight toast that never interrupts play, while still sitting on the shared Candy Cottage baseline and reusing the <a href="../shared-components/#currency-chip-currencychip"><code>CurrencyChip</code></a> coin token.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
 <table>
@@ -1821,7 +1824,7 @@
 <tbody>
 <tr>
 <td>Coin token</td>
-<td>A leading gold coin, reusing the <a href="../shared-components/#currency-chip-currencychip"><code>CurrencyChip</code></a> coin-token treatment — both triggers pay flat coins, so one icon covers both</td>
+<td>A leading gold coin, reusing the <a href="../shared-components/#currency-chip-currencychip"><code>CurrencyChip</code></a> coin-token treatment — all three triggers pay flat coins, so one icon covers them all</td>
 <td><a href="../shared-components/#currency-chip-currencychip">CurrencyChip</a> coin token</td>
 </tr>
 <tr>
@@ -1919,8 +1922,8 @@
 </tbody>
 </table>
 <p>The toast's <strong>chrome</strong> (cream pill fill, outline <code>OutlineThicknessPx</code> = 6, full pill radius <code>PillRadiusPx</code> = 999, hard drop-shadow <code>ShadowOffsetPx</code> = 8) and the <strong>coin token</strong> are owned by the <a href="../shared-components/">shared components</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/173">#173</a>) and not re-specified here. This page adds the toast-specific composition — the reserved lane, the single message line, the dismiss/queue timing — and sizes them.</p>
-<h2 id="per-toast-copy-the-two-triggers">Per-toast copy — the two triggers<a class="headerlink" href="#per-toast-copy-the-two-triggers" title="Permanent link">&para;</a></h2>
-<p>Both triggers render one line: the accomplishment sentence followed by the flat coin payout as <strong>"+N coins"</strong>. The message is built in the thin Unity layer from Core-supplied data (the just-completed step/quest + amount); no copy lives in Core.</p>
+<h2 id="per-toast-copy-the-three-triggers">Per-toast copy — the three triggers<a class="headerlink" href="#per-toast-copy-the-three-triggers" title="Permanent link">&para;</a></h2>
+<p>Every trigger renders one line: the accomplishment sentence followed by the flat coin payout as <strong>"+N coins"</strong>. The message is built in the thin Unity layer from Core-supplied data (the just-completed step/quest, or the arrived household, + amount); no copy lives in Core.</p>
 <table>
 <thead>
 <tr>
@@ -1949,17 +1952,31 @@
 <td><strong>Onboarding — build a house</strong></td>
 <td><em>"You built a brand-new house! +200 coins"</em></td>
 </tr>
+<tr>
+<td><strong>Move-in — one dog</strong></td>
+<td><em>"Biscuit moved in! +50 coins"</em></td>
+</tr>
+<tr>
+<td><strong>Move-in — two dogs</strong></td>
+<td><em>"Biscuit &amp; Pepper moved in! +50 coins"</em></td>
+</tr>
+<tr>
+<td><strong>Move-in — three or more dogs</strong></td>
+<td><em>"A new family moved in! +50 coins"</em> — no names</td>
+</tr>
 </tbody>
 </table>
-<p>The four onboarding lines carry over <strong>verbatim</strong> from the retired <a href="../onboarding-reward/">onboarding reward panel</a>'s accepted per-step copy (<code>/approve</code> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) — only the surface changes, not the words; the panel's separate <strong>"+N coins"</strong> button label folds into the one toast line. The onboarding amount is <code>OnboardingRewardChainNumbers.RewardPerStep</code> (200 today, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/674">#674</a>); the quest amount is the flat quest payout (20 today). Both are read live, so the numbers in the table above are illustrations of the shipped values, not part of the approved wording. Keep every line to one short sentence that fits on a single line within <code>ToastMaxWidthPx</code> at <code>ToastFontSizePx</code> — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider <code>+N</code> payout) that would overflow fails loudly instead of clipping the reward amount (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a>).</p>
+<p>One toast per <strong>household</strong>, never one per dog — the same per-household rule the <a href="../../expansion/#move-in-system">payout</a> follows. A one- or two-dog household is named with the <em>same</em> name line the <a href="../welcome-popup/">welcome pop-up</a> shows, so the two surfaces can never word a household differently.</p>
+<p><strong>Why three dogs drops the names (Derek, 2026-08-08).</strong> The message never wraps and clips at the pill edge, so every line has to fit the one-line budget at its <strong>worst</strong> case, not its typical one. Three names is the branch that doesn't: the roster's widest three ("Marshmallow, Cinnamon &amp; Buttercup") plus the payout measures ~<strong>1000 px</strong> against the ~<strong>934 px</strong> budget, so it would have shipped clipping the reward amount for a 5%-probability household — invisible in casual playtest. Naming was dropped for that branch rather than widening <code>ToastMaxWidthPx</code>, which <a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a> sized deliberately. The branch is on <em>three or more</em>, so a larger household could never fall back to naming everyone. Measured worst cases at today's payout: one dog <strong>589 px</strong>, two dogs <strong>810 px</strong>, family line <strong>584 px</strong> — all inside the budget, and an EditMode guard derives each from the real name roster and re-measures with the real font rather than trusting these figures.</p>
+<p>The four onboarding lines carry over <strong>verbatim</strong> from the retired <a href="../onboarding-reward/">onboarding reward panel</a>'s accepted per-step copy (<code>/approve</code> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/374">#374</a>) — only the surface changes, not the words; the panel's separate <strong>"+N coins"</strong> button label folds into the one toast line. The onboarding amount is <code>OnboardingRewardChainNumbers.RewardPerStep</code> (200 today, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/674">#674</a>); the quest amount is the flat quest payout (20 today); the move-in amount is <code>EconomyNumbers.MoveInReward</code> (50 today, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/675">#675</a>). All three are read live, so the numbers in the table above are illustrations of the shipped values, not part of the approved wording. Keep every line to one short sentence that fits on a single line within <code>ToastMaxWidthPx</code> at <code>ToastFontSizePx</code> — an EditMode guard measures every approved line against the pill's text budget so new copy (or a wider <code>+N</code> payout) that would overflow fails loudly instead of clipping the reward amount (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/578">#578</a>).</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Not modal.</strong> Unlike every centered panel in <a href="../shared-components/#modal-overlays-block-all-input">shared components</a>, the toast never registers with <code>ModalInputGate</code> and carries no backdrop — it is a HUD element like the currency chip, just tappable. World taps outside the reserved lane are unaffected; a tap <em>on</em> the toast only dismisses it and does not fall through to the world.</li>
 <li><strong>Dismiss model — both auto-timeout and tap.</strong> The toast clears itself after <code>ToastAutoDismissSeconds</code>, and a tap anywhere on it dismisses early; either path runs the same <code>ToastSlideOutMs</code> exit. It can never trap the player (the same anti-soft-lock posture as the <a href="../confirmation-dialog/">confirmation dialog</a> and <a href="https://github.com/derekwinters/lucas-doggiehood/issues/329">#329</a>).</li>
-<li><strong>Sequential queue, one slot (<code>ToastQueueSlotCount</code> = 1).</strong> Only one toast is ever visible. If a second trigger fires while one is showing — e.g. a quest-complete and an onboarding-reward toast landing close together — the second <strong>waits</strong> and plays immediately after the first's slide-out finishes, never stacked or overlapping. Order is first-come, first-served.</li>
+<li><strong>Sequential queue, one slot (<code>ToastQueueSlotCount</code> = 1).</strong> Only one toast is ever visible. If a second trigger fires while one is showing — e.g. a quest-complete and the move-in it rolled, which land in the same frame — the second <strong>waits</strong> and plays immediately after the first's slide-out finishes, never stacked or overlapping. Order is first-come, first-served, so a move-in toast always follows the quest-complete toast that produced it.</li>
 <li><strong>Reverses #374's modal exception</strong> (confirmed intended per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/541">#541</a>'s revise thread): the onboarding reward-chain step's completion feedback moves off the centered <code>OnboardingRewardPanel</code> (scrim + button) onto this toast. <a href="../onboarding-reward/">onboarding-reward.md</a> and <a href="../../onboarding/#onboarding-reward-chain-316">onboarding.md</a>'s reward-chain section are reconciled accordingly.</li>
 <li><strong>HUD reservation mirrors the chip.</strong> <a href="../hud/">hud.md</a> gains a <strong>Toast lane</strong> region, top-left, sized to <code>ToastHeightPx</code> + margins — nothing else renders there, the same posture as the <a href="../shared-components/#currency-chip-currencychip"><code>CurrencyChip</code></a>'s reserved top-right region.</li>
-<li><strong>Payout stays in Core.</strong> The toast is pure presentation over the existing payout paths (<code>QuestManager.Complete</code> → <code>Wallet.Deposit</code>, <code>OnboardingRewardChain</code> → <code>Wallet.Deposit</code>); it shows the coins Core already granted and never moves coins itself. The currency chip updates on its own (it reads <code>Wallet.Coins</code> live). A reloaded chain never re-pays nor re-toasts.</li>
+<li><strong>Payout stays in Core.</strong> The toast is pure presentation over the existing payout paths (<code>QuestManager.Complete</code> → <code>Wallet.Deposit</code>, <code>OnboardingRewardChain</code> → <code>Wallet.Deposit</code>, <code>GameState.HandleQuestCompleted</code> → <code>Wallet.Deposit</code> for a move-in); it shows the coins Core already granted and never moves coins itself. The currency chip updates on its own (it reads <code>Wallet.Coins</code> live). A reloaded chain never re-pays nor re-toasts, and the move-in reward is banked on the move-in itself — never on this toast or on the <a href="../welcome-popup/">welcome pop-up</a>, so dismissing either cannot cost the player the coins.</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a>; a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>
 <li>Style itself (outlines, flat shadows, pill shapes, rounded type, palette) lives in <a href="../../world/art-style/">Art &amp; UI Style</a>; this page is layout only.</li>
 </ul>
