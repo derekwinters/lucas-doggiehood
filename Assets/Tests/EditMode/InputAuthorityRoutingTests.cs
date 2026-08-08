@@ -27,6 +27,14 @@ namespace Doggiehood.Unity.EditModeTests
     {
         private const string BundledFontPath = "Assets/UI/Fonts/Resources/DejaVuSans.ttf";
 
+        /// <summary>Gesture magnitudes for the no-modal regression leg (#161 —
+        /// named, not bare literals). Modest on purpose: the zoom delta scales
+        /// with the live screen height, so a large one can cross the whole zoom
+        /// range and land on a clamp regardless of which end it started at.</summary>
+        private const float PinchApartPixels = 40f;
+        private const float ScrollOutPixels = 40f;
+        private const float TwistDegrees = 45f;
+
         private GameObject rigObject;
         private CameraRig rig;
         private object modalToken;
@@ -148,27 +156,44 @@ namespace Doggiehood.Unity.EditModeTests
             // The regression guard that keeps the four tests above honest — and
             // the promise that this rework does not change how the camera feels
             // in normal play. Every gesture that used to work still works.
+            //
+            // Each zoom leg deliberately starts at the far end of the zoom range
+            // from the direction it drives, and re-seeds the zoom first rather
+            // than inheriting the previous leg's. The zoom is clamped to
+            // [MinZoom, MaxZoom] (CameraController.Clamp), and a gesture's pixel
+            // delta scales with the live screen height — which is whatever the
+            // headless runner reports. Chaining two zoom-in gestures from the
+            // default therefore pinned the camera on MinZoom and made the second
+            // one a legitimate no-op, which is a fact about the clamp, not about
+            // routing. Driving each leg away from the clamp nearest it keeps this
+            // asserting the thing it is here to assert: the gesture reaches the
+            // camera at all.
             var startPosition = rig.Controller.Position;
             Drag(100f, 100f, 400f, 0f);
             Assert.That(rig.Controller.Position.X, Is.Not.EqualTo(startPosition.X).Within(0.0001f),
                 "a drag with nothing blocking still pans");
 
+            // Pinch apart zooms IN, so start zoomed all the way out.
+            rig.Controller.ZoomBy(rig.Controller.MaxZoom - rig.Controller.Zoom);
             var zoomBeforePinch = rig.Controller.Zoom;
             InputAuthority.Shared.Begin(InputGesture.Pinch(0f));
-            InputAuthority.Shared.Continue(InputGesture.Pinch(200f));
+            InputAuthority.Shared.Continue(InputGesture.Pinch(PinchApartPixels));
             InputAuthority.Shared.End(InputGesture.Pinch(0f));
             Assert.That(rig.Controller.Zoom, Is.LessThan(zoomBeforePinch), "pinch apart still zooms in");
 
             var yawBeforeTwist = rig.Controller.Yaw;
             InputAuthority.Shared.Begin(InputGesture.Twist(0f));
-            InputAuthority.Shared.Continue(InputGesture.Twist(45f));
+            InputAuthority.Shared.Continue(InputGesture.Twist(TwistDegrees));
             InputAuthority.Shared.End(InputGesture.Twist(0f));
             Assert.That(rig.Controller.Yaw, Is.Not.EqualTo(yawBeforeTwist).Within(0.0001f),
                 "a twist still rotates");
 
-            var zoomBeforeScroll = rig.Controller.Zoom;
-            InputAuthority.Shared.Deliver(InputGesture.Scroll(150f));
-            Assert.That(rig.Controller.Zoom, Is.Not.EqualTo(zoomBeforeScroll).Within(0.0001f),
+            // Scrolling down zooms OUT, so start pinned at the zoom-in floor.
+            rig.Controller.ZoomBy(CameraController.MinZoom - rig.Controller.Zoom);
+            Assert.That(rig.Controller.Zoom, Is.EqualTo(CameraController.MinZoom).Within(0.0001f),
+                "seeded at the zoom-in clamp, so any real zoom-out must move it");
+            InputAuthority.Shared.Deliver(InputGesture.Scroll(-ScrollOutPixels));
+            Assert.That(rig.Controller.Zoom, Is.GreaterThan(CameraController.MinZoom),
                 "the scroll wheel still zooms");
         }
 
