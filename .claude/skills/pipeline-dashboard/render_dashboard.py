@@ -327,14 +327,16 @@ def _reconcile_section(a, repo, rec):
     """Read-only "⚠️ Reconcile" section — board state drifted from reality.
 
     Lists the *flag* findings from the reconciliation sweep (issue #246):
-    merged-but-open issues to close, orphaned ready-for-work, and prose-only
-    dependency references. The safe auto-fixes (stale-label strips, requeues)
+    merged-but-open issues to close, orphaned ready-for-work, prose-only
+    dependency references, and issues whose triage re-queue hit its bound
+    (`flag_stuck_triage`, #710). The safe auto-fixes (stale-label strips, requeues)
     are applied by the gatekeeper routine, not shown as pending here; their
     counts are noted so the sweep's activity is visible.
     """
     done = rec.get("flag_done", [])
     orphaned = rec.get("orphaned_ready", [])
     prose = rec.get("prose_dep", [])
+    stuck = rec.get("stuck_triage", [])
     fixed = rec.get("auto_fixed") or {}
 
     a("## ⚠️ Reconcile — board drifted from reality")
@@ -371,7 +373,23 @@ def _reconcile_section(a, repo, rec):
             a("| %s | %s | %s |"
               % (_issue_link(repo, it["number"]), it["title"], refs))
         a("")
-    if not (done or orphaned or prose):
+    if stuck:
+        # #710: the sweep gave up auto-requeuing these — their hand-back comment
+        # carries no signature `reconcile.has_analysis_signature` knows, so
+        # re-queuing would just re-triage them every sweep forever. Surfaced
+        # once here instead; the label is left exactly as it is.
+        a("**🔁 Triage re-queued too many times** — the sweep stopped "
+          "auto-requeuing these (their analysis comment carries no recognized "
+          "signature); answer or re-triage them by hand:")
+        a("")
+        a("| Issue | Summary | Resting state |")
+        a("| - | - | - |")
+        for it in stuck:
+            a("| %s | %s | `%s` |"
+              % (_issue_link(repo, it["number"]), it["title"],
+                 it.get("handback_state", "")))
+        a("")
+    if not (done or orphaned or prose or stuck):
         a("_✅ Nothing to reconcile — every issue's labels match reality._")
         a("")
 
@@ -727,10 +745,14 @@ def _reconcile_block(repo, token, issues):
 
     prose = [{"number": f["number"], "title": titles.get(f["number"], ""),
               "refs": f.get("refs", [])} for f in findings["flag_prose_dep"]]
+    stuck = [{"number": f["number"], "title": titles.get(f["number"], ""),
+              "handback_state": f.get("handback_state", "")}
+             for f in findings.get("flag_stuck_triage", [])]
     return {
         "flag_done": rows(findings["flag_done"]),
         "orphaned_ready": rows(findings["flag_orphaned_ready"]),
         "prose_dep": prose,
+        "stuck_triage": stuck,
         "auto_fixed": {"strip_labels": len(findings["strip_labels"]),
                        "requeue": len(findings["requeue"])},
     }

@@ -34,9 +34,10 @@ def analysis_comment_times(comments):
     """The ``created_at`` timestamps of the triage-authored analysis comments.
 
     Keeps exactly the comments whose body matches the triage analysis signature
-    (``reconcile.has_analysis_signature`` — a ``## Build checklist`` heading or
-    the ``❓ Needs from Derek/Lucas:`` marker), preserving input order. Each
-    ``comments`` item is a dict with ``body`` and ``created_at`` keys.
+    (``reconcile.has_analysis_signature`` — a ``## Build checklist`` heading, or
+    the ``❓ Needs from Derek/Lucas`` marker inline *or* as a heading, #710),
+    preserving input order. Each ``comments`` item is a dict with ``body`` and
+    ``created_at`` keys.
     """
     return [c.get("created_at") for c in comments
             if reconcile.has_analysis_signature(c.get("body"))]

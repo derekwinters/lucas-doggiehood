@@ -65,6 +65,10 @@
     "prose_dep": [
       {"number": 178, "title": "Depends on the tile grid in prose", "refs": [109]}
     ],
+    "stuck_triage": [
+      {"number": 684, "title": "Gate agents from building without an issue",
+       "handback_state": "needs-clarification"}
+    ],
     "auto_fixed": {"strip_labels": 2, "requeue": 1}
   }
 }

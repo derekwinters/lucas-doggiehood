@@ -586,7 +586,8 @@ dashboard for Derek):
 | - | - | - |
 | **Closed + stale label** | `closed` issue still carrying any pipeline-state label (`ai-triage`, `pending-approval`, `needs-clarification`, `ready-for-work`, `in-progress`) | **auto-fix** — strip those labels (the `Closes #N` label-leak seen on #211); runs on every sweep (event or cron) |
 | **Stalled `in-progress`** | open, `in-progress`, no open PR, not on `main` | **auto-fix** — requeue `in-progress` → `ready-for-work` so the builder retries; **cron-only** ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319) — see below) |
-| **Triaged, no plan** (`requeue_triage`) | open, `pending-approval`/`needs-clarification`, but **no** triage-authored analysis comment (a `## Build checklist` heading or a `❓ Needs from Derek/Lucas:` marker, `reconcile.has_analysis_signature` — the marker match tolerates Markdown emphasis, so the bolded `❓ **Needs from Derek/Lucas:**` triage actually writes counts, [#654](https://github.com/derekwinters/lucas-doggiehood/issues/654)) — the #569 half of the non-atomic hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **auto-fix** — strip the state label, re-add `ai-triage` so the issue re-enters triage and gets a plan; **cron-only** (same event-path caution as `requeue`) |
+| **Triaged, no plan** (`requeue_triage`) | open, `pending-approval`/`needs-clarification`, but **no** triage-authored analysis comment (a `## Build checklist` heading or a `❓ Needs from Derek/Lucas` marker, `reconcile.has_analysis_signature` — the marker match tolerates Markdown emphasis, so the bolded `❓ **Needs from Derek/Lucas:**` triage actually writes counts ([#654](https://github.com/derekwinters/lucas-doggiehood/issues/654)), and it matches the heading form `## ❓ Needs from Derek/Lucas` with no colon, any level ([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710))) — the #569 half of the non-atomic hand-off ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **auto-fix** — strip the state label, re-add `ai-triage` so the issue re-enters triage and gets a plan; **cron-only** (same event-path caution as `requeue`), and **bounded** — after 3 requeues with no owner comment in between it stops and flags instead ([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710), below) |
+| **Triage re-queued too many times** (`flag_stuck_triage`) | open, would be a `requeue_triage` above, but this issue has already been auto-requeued `STUCK_TRIAGE_REQUEUE_LIMIT` (3) times with no repo-owner comment in between (`unrecognized_requeue_count`, read from the issue timeline) ([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)) | **flag** — the auto-fix gives up: the issue keeps its current label and is surfaced on the dashboard, so a recognizer gap costs one entry instead of a triage re-fire every sweep |
 | **Plan, no state** (`flag_orphaned_analysis`) | open, carries a triage analysis comment but **none** of the pipeline-state labels — the residual #570-shape after the comment-then-label ordering fix ([#582](https://github.com/derekwinters/lucas-doggiehood/issues/582)) | **flag** — the intended hand-back state (`pending-approval` vs `needs-clarification`) is ambiguous from the comment alone, so it is surfaced, not auto-restored |
 | **Merged-but-open** (incl. bundled squash) | open, work is on `main` | **flag** — surface in the dashboard "⚠️ Reconcile" section, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, no milestone | **flag** |
@@ -618,11 +619,41 @@ That is exactly what
 recognizer matched the marker as a literal substring, while triage writes it
 bolded (`❓ **Needs from Derek/Lucas:**`), and the needs-clarification route
 never emits a `## Build checklist` heading, so the marker is those comments'
-*only* signature. The match now tolerates Markdown emphasis runs (`*`/`_`)
-around the marker text; only emphasis and horizontal whitespace may sit in the
-gaps, and the `❓` anchor is still required, so a bare prose mention of the
-phrase remains a non-match. `triage_repair.analysis_comment_times` shares the
-same recognizer, so the widening also restores the re-fire's repair path.
+*only* signature. The match tolerates Markdown emphasis runs (`*`/`_`) around
+the marker text, and — since triage also promotes the marker to a **heading**
+with no colon, which is what flapped #683 and #684
+([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)) — a
+heading-form `## ❓ Needs from Derek/Lucas` at any level 1-6, colon optional.
+Only emphasis and horizontal whitespace may sit in the gaps, and the `❓` anchor
+is still required, so a bare prose mention of the phrase remains a non-match.
+`triage_repair.analysis_comment_times` shares the same recognizer, so each
+widening also restores the re-fire's repair path.
+
+**Invariant — `requeue_triage` cannot re-queue the same issue unboundedly.**
+Once an issue has been auto-requeued to `ai-triage` for an unrecognized
+hand-back `STUCK_TRIAGE_REQUEUE_LIMIT` (3) times with no intervening repo-owner
+comment, the sweep stops auto-fixing it, leaves its label alone, and flags it on
+the dashboard (`flag_stuck_triage`) instead. This is the structural half of
+[#710](https://github.com/derekwinters/lucas-doggiehood/issues/710), and it
+exists because widening the recognizer is only ever a fix for the *last*
+phrasing variant: #654 asked whether a loop guard was needed, answered "the
+recognizer fix alone suffices," and the loop recurred one variant later. N = 3
+is the flap count observed on #684 before #710 was filed — a seen threshold, not
+a guess — and changing it is a change to this page, not just to the constant.
+The count is `unrecognized_requeue_count`, read per issue from the GitHub issue
+timeline (`reconcile.unrecognized_requeue_count`): bot-actor `ai-triage`
+label-adds since the repo owner's most recent comment, degrading safely to `0`
+on any HTTP error so a failed timeline read can never invent a flag. The
+prevention half lives in `triage-issue/SKILL.md`, whose needs-clarification
+route now makes the inline `❓ Needs from Derek/Lucas: <question>` line
+mandatory verbatim on **every** hand-back, short re-triage notes included.
+
+> **How the spec is changing (#710).** This page used to say `requeue_triage`
+> auto-fixes *every* open hand-back with no recognizable analysis comment,
+> unconditionally, on every cron sweep. It now says that auto-fix stops after 3
+> unrecognized requeues with no intervening owner comment and hands off to a new
+> `flag_stuck_triage` dashboard flag instead — so a recognizer gap degrades to
+> visible noise once, not infinite churn.
 
 **`requeue` is gated to the cron backstop only**
 ([#319](https://github.com/derekwinters/lucas-doggiehood/issues/319);

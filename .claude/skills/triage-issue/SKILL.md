@@ -86,7 +86,8 @@ and no plan.
 drafting a *new* analysis, check whether this issue is a re-fire landing on a
 prior run's partial write: it already carries a triage-authored analysis comment
 (the same signature the reconcile sweep recognizes — a `## Build checklist`
-heading or a `❓ Needs from Derek/Lucas:` marker) posted **at or after the most
+heading, or the `❓ Needs from Derek/Lucas` marker inline or as a heading, #710)
+posted **at or after the most
 recent re-admission signal** (the latest `ai-triage` add, or the owner's latest
 `/revise` / `/redo`), yet **no hand-back state label is set yet**
 (`pending-approval` / `needs-clarification`). If so, this is a partial write from
@@ -150,6 +151,23 @@ from Derek), and the `/docs` pages it relates to. Then route:
    ❓ Needs from Derek/Lucas: <one specific, self-contained question,
    stating the options and what each would mean>
    ```
+
+   **Invariant — every needs-clarification hand-back carries the marker
+   verbatim.** Every comment that hands an issue to `needs-clarification` —
+   including a short re-triage/no-change note — must contain the exact inline
+   line `❓ Needs from Derek/Lucas: <question>`, never restyled as a heading
+   (`## ❓ Needs from Derek/Lucas`) and never omitted, even when the note is one
+   sentence. This route emits no `## Build checklist`, so that line is the
+   comment's **only** machine-readable signature: without it the reconcile
+   sweep sees a hand-back state label with no analysis and re-queues the issue
+   to `ai-triage`, which re-triages it and posts again, every cron sweep. That
+   loop has happened three times on marker restyling alone (#100/#643 → #654,
+   then #683/#684 → [#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)),
+   which is why the shape is mandatory rather than preferred. The recognizer
+   (`reconcile.has_analysis_signature`) also tolerates the heading form now, but
+   writing the inline form is still required — the guard that bounds the loop
+   ([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)'s
+   `flag_stuck_triage`) gives up on the issue rather than healing it.
 
    Set `needs-clarification` **while removing `ai-triage` in the same
    `issue_write` call**. The question must stand on its own — someone reading

@@ -49,6 +49,17 @@ class TestAnalysisCommentTimes(unittest.TestCase):
                      "created_at": FRESH}]
         self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
 
+    def test_heading_form_needs_marker_counts_as_analysis(self):
+        # Issue #710: triage promotes the marker to a HEADING on the
+        # needs-clarification route (`## ❓ Needs from Derek/Lucas`, no colon) —
+        # the shape #683 and #684 actually carry. The ask route emits no
+        # `## Build checklist`, so missing it made a re-fire repost a duplicate
+        # analysis instead of repairing the stalled label move.
+        comments = [{"body": "## ❓ Needs from Derek/Lucas\n\n"
+                             "**Which gate do you want?**",
+                     "created_at": FRESH}]
+        self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
+
     def test_no_analysis_comments_empty(self):
         comments = [{"body": "/admit", "created_at": READMIT},
                     {"body": "LGTM", "created_at": FRESH}]

@@ -118,6 +118,12 @@ _Detected by the reconciliation sweep. Auto-fixes (stale-label strips, requeues)
 | - | - | - |
 | [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) | Depends on the tile grid in prose | [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) |
 
+**🔁 Triage re-queued too many times** — the sweep stopped auto-requeuing these (their analysis comment carries no recognized signature); answer or re-triage them by hand:
+
+| Issue | Summary | Resting state |
+| - | - | - |
+| [#684](https://github.com/derekwinters/lucas-doggiehood/issues/684) | Gate agents from building without an issue | `needs-clarification` |
+
 _Sweep auto-fixed this run: 2 stale-label strip(s), 1 requeue(s)._
 
 ---

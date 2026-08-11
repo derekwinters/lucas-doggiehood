@@ -31,7 +31,8 @@ Input schema (stdin):
     "issues": [
       {"number": 109, "state": "open", "labels": ["in-progress"],
        "milestone": "v0.4", "is_epic": false, "is_dashboard": false,
-       "has_open_pr": false, "prose_deps": [178]}
+       "has_open_pr": false, "prose_deps": [178],
+       "has_analysis_comment": false, "unrecognized_requeue_count": 0}
     ],
     "merged_commit_body_refs": [56, 54, 189, 222],
     "deliverables_present": {"58": true}
@@ -47,11 +48,13 @@ Output schema (stdout):
     "flag_done":               [{"number": 56, "reason": "..."}],
     "flag_orphaned_ready":     [{"number": 300}],
     "flag_prose_dep":          [{"number": 178, "refs": [109]}],
-    "flag_orphaned_analysis":  [{"number": 570}]
+    "flag_orphaned_analysis":  [{"number": 570}],
+    "flag_stuck_triage":       [{"number": 684,
+                                "handback_state": "needs-clarification"}]
   }
 
 ``strip_labels``, ``requeue`` and ``requeue_triage`` are the auto-fixes
-(applied by the gatekeeper); the four ``flag_*`` lists are surfaced read-only
+(applied by the gatekeeper); the five ``flag_*`` lists are surfaced read-only
 on the dashboard. Every list is sorted by issue number.
 
 ``requeue_triage`` / ``flag_orphaned_analysis`` catch the non-atomic reactive-
@@ -60,6 +63,13 @@ hand-back state label as two separate writes, so a partial failure can leave a
 state label with no analysis (``requeue_triage`` re-queues it to ``ai-triage``)
 or an analysis with no state label (``flag_orphaned_analysis`` flags it — the
 intended state is ambiguous). ``has_analysis_comment`` per issue drives both.
+
+``flag_stuck_triage`` bounds the first of those (#710): ``requeue_triage`` is an
+unattended auto-fix, so an analysis ``has_analysis_signature`` cannot see makes
+it re-fire triage on the same issue every cron sweep, forever. After
+``STUCK_TRIAGE_REQUEUE_LIMIT`` requeues with no repo-owner comment in between
+(``unrecognized_requeue_count`` per issue) the auto-fix stops and the issue is
+flagged instead — a recognizer gap costs one dashboard entry, not infinite churn.
 """
 
 import json
@@ -91,6 +101,24 @@ FLAG_DONE_REASON = "work landed on main (merged commit body / deliverables) but 
 # post-approval `ready-for-work`/`in-progress` states.
 TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
 
+# How many times `requeue_triage` may auto-requeue the SAME issue for an
+# unrecognized hand-back before it gives up and flags instead (issue #710).
+#
+# `requeue_triage` is an unattended auto-fix, so a `has_analysis_signature` that
+# cannot see an issue's analysis re-fires triage on it every cron sweep,
+# forever. That happened twice (#100/#643 → #654, then #683/#684), each time
+# fixed by widening the recognizer for the phrasing variant of the day — which
+# fixes today's variant and re-arms the trap for the next one. This is the
+# structural stop: once an issue has been requeued this many times with no
+# intervening repo-owner comment, the sweep stops auto-fixing it and emits
+# `flag_stuck_triage` for the dashboard instead, so a recognizer gap degrades to
+# visible noise once rather than unbounded churn.
+#
+# N = 3 is the flap count actually observed on #684 before #710 was filed — a
+# seen threshold, not a guess. It is a documented rule
+# (`docs/engineering/issue-pipeline.md`); changing it is a spec change.
+STUCK_TRIAGE_REQUEUE_LIMIT = 3
+
 # A triage-authored analysis comment identifies itself with one of the two
 # hand-back shapes `triage-issue/SKILL.md` defines: a `## Build checklist`
 # heading (the bug / spec-feature / `/propose` routes) or the `❓ Needs from
@@ -108,27 +136,42 @@ TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
 # horizontal whitespace may sit in the gaps — never arbitrary prose — and the
 # `❓` anchor stays required, so a bare mention of the phrase is still not a
 # signature.
+#
+# The same miss recurred one variant later (issue #710): triage also promotes
+# the marker to a HEADING — `## ❓ Needs from Derek/Lucas` — which drops the
+# trailing colon the inline form requires, so #683 and #684 flapped for exactly
+# the same reason #100 did. The heading form is therefore a second recognized
+# shape (any level 1-6, colon optional, emphasis-tolerant, `❓` still required).
+# Widening alone is not the whole fix — see `STUCK_TRIAGE_REQUEUE_LIMIT` for the
+# structural stop that bounds the churn when the NEXT variant appears.
 _ANALYSIS_HEADING_RE = re.compile(r"(?im)^[ \t]*#{1,6}[ \t]+build checklist[ \t]*$")
 _EMPHASIS = r"[ \t]*[*_]*[ \t]*"
 _NEEDS_CLARIFICATION_RE = re.compile(
     r"❓" + _EMPHASIS + r"Needs from Derek/Lucas" + _EMPHASIS + r":")
+_NEEDS_CLARIFICATION_HEADING_RE = re.compile(
+    r"(?m)^[ \t]*#{1,6}[ \t]*❓" + _EMPHASIS + r"Needs from Derek/Lucas"
+    + _EMPHASIS + r":?[ \t]*$")
 
 
 def has_analysis_signature(text):
     """True iff ``text`` carries a triage-authored analysis signature.
 
     The signature is a ``## Build checklist`` heading (any heading level,
-    case-insensitive) OR the ``❓ Needs from Derek/Lucas:`` marker — the two
-    hand-back comment shapes ``triage-issue/SKILL.md`` produces. The marker is
-    matched tolerantly of Markdown emphasis around its text (issue #654), so the
-    bolded form triage actually writes — ``❓ **Needs from Derek/Lucas:**`` —
-    counts, as do the italic/underscore variants and a colon outside the
-    emphasis run. A plain comment that merely mentions the word "checklist" in
-    prose does not match (the heading form is required), and neither does the
-    marker phrase without its ``❓`` anchor.
+    case-insensitive) OR the ``❓ Needs from Derek/Lucas`` marker in either of
+    the two shapes triage writes it — the inline colon-bearing form
+    (``❓ Needs from Derek/Lucas: <question>``) or a heading
+    (``## ❓ Needs from Derek/Lucas``, any level 1-6, colon optional, issue
+    #710). Both marker forms tolerate Markdown emphasis around the marker text
+    (issue #654), so the bolded ``❓ **Needs from Derek/Lucas:**`` triage
+    actually writes counts, as do the italic/underscore variants and a colon
+    outside the emphasis run. A plain comment that merely mentions the word
+    "checklist" in prose does not match (the heading form is required), and
+    neither marker form matches without its ``❓`` anchor.
     """
     text = text or ""
     if _NEEDS_CLARIFICATION_RE.search(text):
+        return True
+    if _NEEDS_CLARIFICATION_HEADING_RE.search(text):
         return True
     return bool(_ANALYSIS_HEADING_RE.search(text))
 
@@ -169,6 +212,7 @@ def process(data, events_only=False):
     flag_orphaned_ready = []
     flag_prose_dep = []
     flag_orphaned_analysis = []
+    flag_stuck_triage = []
 
     for issue in data.get("issues", []):
         # Excluded throughout the pipeline: epics, the dashboard issue, parked.
@@ -220,8 +264,20 @@ def process(data, events_only=False):
             # Cron-only, like `requeue`: on the event path a just-set
             # `pending-approval` can momentarily precede the analysis comment's
             # visibility, and requeuing it there would churn a healthy triage.
-            requeue_triage.append({"number": number, "from": handback[0],
-                                   "to": "ai-triage"})
+            #
+            # BOUNDED (#710): the auto-fix only runs while this issue has been
+            # requeued fewer than `STUCK_TRIAGE_REQUEUE_LIMIT` times with no
+            # intervening owner comment. At the limit the requeue is withheld,
+            # the issue keeps its current label, and it is FLAGGED instead — an
+            # analysis the recognizer cannot see then costs one dashboard entry,
+            # not a triage re-fire every cron sweep forever.
+            if issue.get("unrecognized_requeue_count", 0) \
+                    >= STUCK_TRIAGE_REQUEUE_LIMIT:
+                flag_stuck_triage.append({"number": number,
+                                          "handback_state": handback[0]})
+            else:
+                requeue_triage.append({"number": number, "from": handback[0],
+                                       "to": "ai-triage"})
         if has_analysis and not any(l in labels for l in PIPELINE_STATE_LABELS):
             # Rule (b) — the residual #570 shape: a full analysis comment exists
             # but no pipeline-state label at all, so the issue is invisible to
@@ -246,6 +302,7 @@ def process(data, events_only=False):
         "flag_orphaned_ready": sorted(flag_orphaned_ready, key=by_num),
         "flag_prose_dep": sorted(flag_prose_dep, key=by_num),
         "flag_orphaned_analysis": sorted(flag_orphaned_analysis, key=by_num),
+        "flag_stuck_triage": sorted(flag_stuck_triage, key=by_num),
     }
 
 
@@ -390,6 +447,69 @@ def _issue_has_analysis_comment(repo, number, token):
                if isinstance(c, dict))
 
 
+# --------------------------------------------------------------------------
+# Stuck-triage loop guard input (issue #710). `requeue_triage` is bounded by how
+# many times the sweep has ALREADY auto-requeued this issue with no repo-owner
+# comment in between — see `STUCK_TRIAGE_REQUEUE_LIMIT`. The counting is pure
+# (timeline in, int out) so the guard's arithmetic is unit-tested; only the
+# timeline fetch is I/O.
+# --------------------------------------------------------------------------
+
+def _actor_login(event):
+    who = event.get("actor") or event.get("user") or {}
+    return who.get("login") or "" if isinstance(who, dict) else ""
+
+
+def unrecognized_requeue_count(timeline, owner_login):
+    """Automated ``ai-triage`` re-adds since the owner's most recent comment.
+
+    ``timeline`` is the issue's timeline events in chronological order (GitHub's
+    ``GET /repos/{repo}/issues/{n}/timeline``). Walking it in order:
+
+    * a ``labeled`` event adding ``ai-triage`` whose actor is a bot
+      (``…[bot]``, i.e. the ``GITHUB_TOKEN`` the sweep and the gatekeeper
+      workflows run as) counts as one automated requeue;
+    * a ``commented`` event authored by ``owner_login`` resets the count to
+      zero — Derek said something, so the situation may have changed and triage
+      deserves another attempt.
+
+    Triage's own hand-back label writes are authored by the owner, not a bot, so
+    a healthy hand-back never counts. Malformed entries are skipped rather than
+    raising: this feeds an unattended sweep.
+    """
+    count = 0
+    for event in timeline or []:
+        if not isinstance(event, dict):
+            continue
+        kind = event.get("event")
+        actor = _actor_login(event)
+        if kind == "commented" and actor == owner_login:
+            count = 0
+        elif kind == "labeled" and actor.endswith("[bot]"):
+            label = event.get("label") or {}
+            if isinstance(label, dict) and label.get("name") == "ai-triage":
+                count += 1
+    return count
+
+
+def _issue_unrecognized_requeue_count(repo, number, token):
+    """``unrecognized_requeue_count`` over issue ``#number``'s live timeline.
+
+    I/O only, not exercised by the unit tests (same split as the rest of this
+    fetch layer — the counting itself is unit-tested via
+    ``unrecognized_requeue_count``). Any HTTP error degrades safely to ``0``,
+    matching ``native_blocked_by`` / ``_issue_has_analysis_comment``: a timeline
+    read that fails must never turn into a spurious ``flag_stuck_triage``, so
+    the sweep falls back to the unbounded-but-healing behavior it had before.
+    """
+    try:
+        timeline = _paginate(
+            "/repos/%s/issues/%d/timeline" % (repo, number), token)
+    except urllib.error.HTTPError:
+        return 0
+    return unrecognized_requeue_count(timeline, repo.split("/")[0])
+
+
 def prose_deps_in(body, native_refs=()):
     """Issue numbers referenced as a dependency **only in prose** in ``body``.
 
@@ -469,6 +589,13 @@ def fetch_state(repo, token):
         # closed ones are skipped.
         has_analysis = (_issue_has_analysis_comment(repo, i["number"], token)
                         if i["state"] == "open" else False)
+        # The stuck-triage guard's input (#710) — one timeline read per OPEN
+        # issue that actually needs it: only a hand-back with no recognizable
+        # analysis can be requeued, so no other issue pays for the call.
+        needs_guard = (i["state"] == "open" and not has_analysis
+                       and any(l in labels for l in TRIAGE_HANDBACK_LABELS))
+        requeues = (_issue_unrecognized_requeue_count(repo, i["number"], token)
+                    if needs_guard else 0)
         issues.append({
             "number": i["number"],
             "state": i["state"],
@@ -480,6 +607,7 @@ def fetch_state(repo, token):
             "prose_deps": prose_deps_in(i.get("body") or "",
                                         native_refs=native_refs),
             "has_analysis_comment": has_analysis,
+            "unrecognized_requeue_count": requeues,
         })
 
     return {

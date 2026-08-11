@@ -276,6 +276,17 @@ class TestRender(unittest.TestCase):
         # Auto-fix activity note.
         self.assertIn("2 stale-label strip(s), 1 requeue(s)", self.body)
 
+    def test_reconcile_section_lists_stuck_triage(self):
+        # Issue #710: an issue the sweep gave up auto-requeuing (its analysis
+        # comment carries no signature the recognizer knows) surfaces here
+        # instead of being re-triaged every cron sweep forever.
+        self.assertIn("Triage re-queued too many times", self.body)
+        self.assertIn(
+            "[#684](https://github.com/derekwinters/lucas-doggiehood/issues/684)",
+            self.body,
+        )
+        self.assertIn("needs-clarification", self.body)
+
     def test_reconcile_empty_shows_clean_message(self):
         state = load_state()
         state["reconcile"] = {}
