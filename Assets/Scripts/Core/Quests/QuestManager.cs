@@ -460,6 +460,29 @@ namespace Doggiehood.Core.Quests
             FindDog(quest).TrySit(buyQuestAccepted: true, isAtHome: true);
         }
 
+        /// <summary>
+        /// #677: the delivery leg could not be carried out — the walk home could
+        /// not be planned, or no road route to the door exists for the truck. The
+        /// player has already been charged, so the safe outcome is the one they
+        /// paid for: the item still lands, the dog is handed straight back to
+        /// wander, and the quest completes. Crucially it does NOT sit the dog: a
+        /// dog only ever enters the waiting pose at its own front door, and this
+        /// is precisely the path that must not leave one stranded in that pose with
+        /// no truck ever coming. A no-op for a quest with no delivery leg in
+        /// flight (the fence purchase, an already-delivered quest).
+        /// </summary>
+        public void FailDelivery(Quest quest)
+        {
+            if (quest.DeliveryPhase != DeliveryPhase.HeadingHome
+                && quest.DeliveryPhase != DeliveryPhase.WaitingForDelivery)
+            {
+                return;
+            }
+
+            quest.DeliveryPhase = DeliveryPhase.WaitingForDelivery;
+            DeliverPackage(quest);
+        }
+
         /// <summary>#30: the truck delivers — the item appears at the house
         /// permanently (#27) and only now does the quest complete and pay.</summary>
         public void DeliverPackage(Quest quest)
