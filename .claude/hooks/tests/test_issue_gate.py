@@ -246,5 +246,34 @@ class PipelinePlumbingTest(unittest.TestCase):
                           % (skill, issue_gate.ENV_APPROVED_ISSUE))
 
 
+class SettingsWiringTest(unittest.TestCase):
+    """The gate is only real if `.claude/settings.json` actually fires it."""
+
+    def setUp(self):
+        path = os.path.join(
+            issue_gate._default_root(), ".claude", "settings.json")
+        self.assertTrue(os.path.exists(path),
+                        ".claude/settings.json must wire the PreToolUse gate")
+        with open(path, encoding="utf-8") as handle:
+            self.settings = json.load(handle)
+
+    def entries(self):
+        return self.settings.get("hooks", {}).get("PreToolUse", [])
+
+    def test_every_gated_tool_is_matched_by_a_hook_running_the_gate(self):
+        for tool in issue_gate.GATED_TOOLS:
+            matched = [
+                entry for entry in self.entries()
+                if tool in [m.strip() for m in entry.get("matcher", "").split("|")]
+            ]
+            self.assertTrue(matched, "no PreToolUse matcher covers %s" % tool)
+            commands = [hook.get("command", "")
+                        for entry in matched
+                        for hook in entry.get("hooks", [])]
+            self.assertTrue(
+                any("issue_gate.py" in command for command in commands),
+                "%s is matched but does not run issue_gate.py" % tool)
+
+
 if __name__ == "__main__":
     unittest.main()
