@@ -10,8 +10,8 @@ namespace Doggiehood.Unity.EditModeTests
 {
     /// <summary>
     /// Covers the emulator-targeted build variant's editor hook (#648): the
-    /// x86_64 ABI, the `.emulator` applicationId suffix and the emulator-safe
-    /// graphics profile are applied only when
+    /// x86_64 ABI, the `.emulator` applicationId suffix, the emulator-safe
+    /// graphics profile and the disabled audio engine (#705) are applied only when
     /// <c>DOGGIEHOOD_EMULATOR_BUILD</c> is truthy, and every mutated
     /// PlayerSettings field is put back afterwards. PlayerSettings and the
     /// environment variable are both process-global, so every test saves and
@@ -31,6 +31,7 @@ namespace Doggiehood.Unity.EditModeTests
         private GraphicsDeviceType[] _originalGraphicsApis;
         private bool _originalMultithreadedRendering;
         private ColorGamut[] _originalColorGamuts;
+        private bool _originalDisableUnityAudio;
 
         [SetUp]
         public void SaveGlobalState()
@@ -42,6 +43,7 @@ namespace Doggiehood.Unity.EditModeTests
             _originalGraphicsApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
             _originalMultithreadedRendering = PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android);
             _originalColorGamuts = EmulatorBuildProcessor.GetColorGamuts();
+            _originalDisableUnityAudio = EmulatorBuildProcessor.GetDisableUnityAudio();
         }
 
         [TearDown]
@@ -54,6 +56,7 @@ namespace Doggiehood.Unity.EditModeTests
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, _originalUseDefaultGraphicsApis);
             PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, _originalMultithreadedRendering);
             EmulatorBuildProcessor.SetColorGamuts(_originalColorGamuts);
+            EmulatorBuildProcessor.SetDisableUnityAudio(_originalDisableUnityAudio);
         }
 
         private static void RequestEmulatorBuild()
@@ -73,6 +76,7 @@ namespace Doggiehood.Unity.EditModeTests
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, true);
             PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, true);
             EmulatorBuildProcessor.SetColorGamuts(new[] { ColorGamut.sRGB });
+            EmulatorBuildProcessor.SetDisableUnityAudio(false);
         }
 
         [Test]
@@ -138,6 +142,37 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void ApplyIfRequested_DisablesUnityAudio_WhenEmulatorBuildRequested()
+        {
+            // #705: the reporter's per-thread profile of the hung emulator APK
+            // showed `FMOD stream thr` and `AudioTrack` — Unity's audio engine —
+            // pinned at ~100% CPU while the render thread slept. The game ships
+            // no audio assets at all, so the emulator variant gives the whole
+            // subsystem up rather than let it spin against a virtual audio HAL.
+            SeedDeviceDefaults();
+            RequestEmulatorBuild();
+
+            EmulatorBuildProcessor.ApplyIfRequested();
+
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.True);
+        }
+
+        [Test]
+        public void DisableUnityAudioAccessor_ResolvesTheSerializedProperty_SoTheSettingCannotBeSilentlyIgnored()
+        {
+            // Rule #6 guard: `m_DisableAudio` on the AudioManager singleton is
+            // written through serialized data (no public API). If the key name
+            // or singleton name ever stops resolving, the accessor degrades to a
+            // no-op and the emulator APK would ship with audio still on — this
+            // asserts the round trip actually takes.
+            EmulatorBuildProcessor.SetDisableUnityAudio(true);
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.True);
+
+            EmulatorBuildProcessor.SetDisableUnityAudio(false);
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.False);
+        }
+
+        [Test]
         public void ApplyIfRequested_LeavesEveryDeviceSettingUntouched_WhenEnvironmentVariableUnset()
         {
             SeedDeviceDefaults();
@@ -154,6 +189,8 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(PlayerSettings.GetGraphicsAPIs(BuildTarget.Android), Is.EqualTo(deviceGraphicsApis));
             Assert.That(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android), Is.True);
             Assert.That(EmulatorBuildProcessor.GetColorGamuts(), Is.EqualTo(new[] { ColorGamut.sRGB }));
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.False,
+                "The device build keeps Unity audio on — only the emulator variant gives it up.");
         }
 
         [Test]
@@ -174,6 +211,7 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(PlayerSettings.GetGraphicsAPIs(BuildTarget.Android), Is.EqualTo(deviceGraphicsApis));
             Assert.That(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android), Is.True);
             Assert.That(EmulatorBuildProcessor.GetColorGamuts(), Is.EqualTo(new[] { ColorGamut.sRGB }));
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.False);
         }
 
         [Test]
