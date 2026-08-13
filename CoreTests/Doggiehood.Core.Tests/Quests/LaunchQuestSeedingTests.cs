@@ -104,8 +104,14 @@ namespace Doggiehood.Core.Tests.Quests
                     $"hour {hour}: recurring rotation never exceeds the already-met target");
             }
 
-            Assert.That(state.LastRotationUtc, Is.Not.Null,
-                "the recurring rotation records its boundary once released");
+            // #704: a board sitting at target is waiting for nothing, so the
+            // recurring pacing tick starts no clock and stamps no rotation —
+            // where it used to record a boundary that added nothing. The clock
+            // starts the moment the player completes something and opens a slot.
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.Null,
+                "no wait runs against a full board");
+            Assert.That(state.LastRotationUtc, Is.Null,
+                "and no top-up was needed, so nothing stamped the rotation clock");
         }
     }
 }

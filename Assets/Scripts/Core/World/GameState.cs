@@ -271,10 +271,18 @@ namespace Doggiehood.Core.World
             get { return decorations; }
         }
 
+        /// <summary>#704: how many of <see cref="Dogs"/> came from
+        /// <see cref="DogRoster.CreateStartingDogs"/>. Every dog past this
+        /// index moved in during play and so must be persisted — the starters
+        /// are recreated by <see cref="CreateNew"/> on every load, exactly like
+        /// the four starting houses.</summary>
+        private readonly int startingDogCount;
+
         private GameState(IReadOnlyList<House> houses, IReadOnlyList<Dog> startingDogs)
         {
             this.houses = new List<House>(houses);
             dogs = new List<Dog>(startingDogs);
+            startingDogCount = startingDogs.Count;
             Wallet = new Economy.Wallet();
             Quests = new Quests.QuestManager(this);
             Map = new TileMap(StartingIntersectionCoordinate, TileType.FourWay);
@@ -458,6 +466,61 @@ namespace Doggiehood.Core.World
         public void AddDog(Dog dog)
         {
             dogs.Add(dog);
+        }
+
+        /// <summary>#704: the dogs that moved in during play — everyone past
+        /// the starting roster <see cref="CreateNew"/> seeds. These are the
+        /// dogs <see cref="SaveCodec"/> persists (the starters are recreated on
+        /// every load, like the four starting houses), so the neighborhood
+        /// keeps the population it grew to instead of resetting to 8.</summary>
+        public IReadOnlyList<Dog> MovedInDogs
+        {
+            get { return dogs.Skip(startingDogCount).ToList(); }
+        }
+
+        /// <summary>#704: restores a persisted moved-in dog on load — adds it
+        /// to the live roster WITHOUT rolling a move-in, filling a house, or
+        /// paying the move-in reward (the parallel of
+        /// <see cref="RestoreBuiltHouse"/>). Defensively ignores a name already
+        /// on the roster, since dog names are unique among active dogs and a
+        /// replayed line must never double a household. Also ignores a dog
+        /// whose house is not in the save at all: the scene spawns a view per
+        /// dog by looking its house up, so a resident of a house that never
+        /// loaded would take the whole launch down — a save should never
+        /// contain one, but a truncated or hand-edited file must still
+        /// open.</summary>
+        public void RestoreDog(Dog dog)
+        {
+            if (dogs.Any(existing => existing.Name == dog.Name)
+                || houses.All(house => house.Id != dog.HouseId))
+            {
+                return;
+            }
+
+            dogs.Add(dog);
+        }
+
+        /// <summary>#704: the load-time repair for a legacy save's
+        /// occupied-but-empty house. Before moved-in dogs were persisted, a
+        /// filled house round-tripped as occupied while its residents did not —
+        /// leaving a house with no dogs in it that could never take another
+        /// move-in either (<see cref="Expansion.HouseOccupancy.ApplyMoveIn"/>
+        /// only ever considers vacant houses). Any house with no resident on
+        /// the roster is marked vacant again so it re-enters the move-in pool.
+        /// Run once at the end of <see cref="SaveCodec.Load"/>, after every
+        /// house= and dog= line has been replayed; a post-#704 save has a
+        /// resident for every occupied house, so it is a no-op there.</summary>
+        public void VacateHousesWithNoResidents()
+        {
+            foreach (var house in houses)
+            {
+                if (house.IsVacant || dogs.Any(dog => dog.HouseId == house.Id))
+                {
+                    continue;
+                }
+
+                house.MarkVacant();
+            }
         }
 
         /// <summary>The #54/#58 move-in hook: called once per completed
@@ -885,6 +948,24 @@ namespace Doggiehood.Core.World
         public void RecordRotationUtc(DateTime nowUtc)
         {
             LastRotationUtc = nowUtc;
+        }
+
+        /// <summary>#704: the UTC instant the quest board dropped below its
+        /// population-scaled target — the start of the wait for the next
+        /// trickle top-up — or null while the board is full (nothing is being
+        /// waited for, so no clock runs). Persisted through
+        /// <see cref="SaveCodec"/> so the wait is measured in elapsed time and
+        /// never restarted by a relaunch. Maintained in one place,
+        /// <see cref="Quests.QuestManager.TickPacing"/>, which the app polls
+        /// while it is open as well as at launch.</summary>
+        public DateTime? QuestRefreshTimerStartedUtc { get; private set; }
+
+        /// <summary>#704: records (or clears, with null) the start of the wait
+        /// for the next top-up. Caller passes a UTC instant — never a local
+        /// time. Also the restore path used by <see cref="SaveCodec"/>.</summary>
+        public void RecordQuestRefreshTimerStart(DateTime? startedUtc)
+        {
+            QuestRefreshTimerStartedUtc = startedUtc;
         }
 
         /// <summary>#543: the persisted fractional quest-pacing accumulator — the

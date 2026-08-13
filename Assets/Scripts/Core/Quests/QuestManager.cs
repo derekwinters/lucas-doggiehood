@@ -140,7 +140,7 @@ namespace Doggiehood.Core.Quests
         {
             if (state.RewardChain.IsComplete)
             {
-                MaybeStartNewDay(nowUtc, rng);
+                TickPacing(nowUtc, rng);
                 return;
             }
 
@@ -153,6 +153,27 @@ namespace Doggiehood.Core.Quests
             // Mid-chain (steps 2-4): the guided upgrade/expand/build actions are
             // not quests, so the rotation stays suppressed until the chain
             // completes at the build step and releases it.
+        }
+
+        /// <summary>#704: the recurring counterpart to
+        /// <see cref="EnsureQuestsForLaunch"/> — the seam the app polls on a
+        /// timer while it is open, so the hourly cadence is measured in hours
+        /// rather than in app launches (before this, the boundary was checked
+        /// only from the scene bootstrap, and a long session received no new
+        /// quests at all). Honours the same onboarding gate the launch path
+        /// does: the rotation stays suppressed until the guided reward chain
+        /// completes, and — unlike the launch path — this never seeds the
+        /// tutorial quest, which is a launch-time decision. Returns whether
+        /// anything changed, so the caller saves only when it did.
+        /// <paramref name="nowUtc"/> is a UTC instant.</summary>
+        public bool TickQuests(DateTime nowUtc, Random rng)
+        {
+            if (!state.RewardChain.IsComplete)
+            {
+                return false;
+            }
+
+            return TickPacing(nowUtc, rng);
         }
 
         /// <summary>#316/#579: releases the onboarding reward-chain rotation
@@ -176,25 +197,66 @@ namespace Doggiehood.Core.Quests
             SeedBatch(pacing.TargetActiveCount(state), moveInRng);
         }
 
-        /// <summary>#310/#543: the recurring refresh boundary. Asks
-        /// <see cref="QuestPacingPolicy.ShouldRefresh"/> whether the hourly UTC
-        /// cadence has been crossed and, if so, runs one <see cref="StartNewDay"/>
-        /// trickle top-up and records the instant. Purely a boundary
-        /// <em>check</em> — nothing is removed and no quest can fail (economy.md
-        /// #28). Elapsed time only decides <em>whether</em> to refresh, never
-        /// <em>how many</em> to add: away 1 hour or 4 days is one top-up (the
-        /// accumulator advances a single hour's worth, never per missed hour), so
-        /// there is no catch-up flood. <paramref name="nowUtc"/> is a UTC instant
-        /// (<c>DateTime.UtcNow</c> in production).</summary>
-        public void MaybeStartNewDay(DateTime nowUtc, Random rng)
+        /// <summary>#310/#543/#704: the recurring refresh boundary, and the
+        /// only place the refresh clock is maintained. Three things happen
+        /// here, in order:
+        /// <list type="number">
+        /// <item>a board at <see cref="QuestPacingPolicy.TargetActiveCount"/>
+        /// stops (clears) the clock — it is waiting for nothing;</item>
+        /// <item>a board that has just dropped below target starts the clock at
+        /// <paramref name="nowUtc"/> — that drop, not the last rotation, is what
+        /// begins the hour (#704);</item>
+        /// <item>a clock that has run its
+        /// <see cref="EconomyNumbers.RefreshInterval"/> runs one
+        /// <see cref="StartNewDay"/> trickle top-up, records the instant, and
+        /// restarts the clock if the board is still short.</item>
+        /// </list>
+        ///
+        /// <para>Purely a boundary <em>check</em> — nothing is removed and no
+        /// quest can fail (economy.md #28). Elapsed time only decides
+        /// <em>whether</em> to top up, never <em>how many</em> to add: away 1
+        /// hour or 4 days is one top-up (the accumulator advances a single
+        /// hour's worth, never per missed hour), so there is no catch-up flood
+        /// and relaunching is never a shortcut.</para>
+        ///
+        /// <para>#704: this is also the seam the Unity layer polls on a timer
+        /// while the app is open, not only at launch — before that the hourly
+        /// cadence was effectively "per app launch", and a long session
+        /// received no new quests at all. Returns whether anything changed, so
+        /// the caller saves only when it did. <paramref name="nowUtc"/> is a UTC
+        /// instant (<c>DateTime.UtcNow</c> in production).</para></summary>
+        public bool TickPacing(DateTime nowUtc, Random rng)
         {
+            if (!pacing.IsBoardBelowTarget(state))
+            {
+                if (!state.QuestRefreshTimerStartedUtc.HasValue)
+                {
+                    return false;
+                }
+
+                state.RecordQuestRefreshTimerStart(null);
+                return true;
+            }
+
+            if (!state.QuestRefreshTimerStartedUtc.HasValue)
+            {
+                state.RecordQuestRefreshTimerStart(nowUtc);
+                return true;
+            }
+
             if (!pacing.ShouldRefresh(nowUtc, state))
             {
-                return;
+                return false;
             }
 
             StartNewDay(rng);
             state.RecordRotationUtc(nowUtc);
+            // The next hour is measured from this top-up, so a board that is
+            // still short waits another full interval rather than firing again
+            // immediately — and a board that filled up stops waiting entirely.
+            state.RecordQuestRefreshTimerStart(
+                pacing.IsBoardBelowTarget(state) ? nowUtc : (DateTime?)null);
+            return true;
         }
 
         /// <summary>#457: the Debug-tab "Refresh quests now" seam. Runs the same
@@ -212,6 +274,11 @@ namespace Doggiehood.Core.Quests
         {
             StartNewDay(rng);
             state.RecordRotationUtc(nowUtc);
+            // #704: restart the wait from this forced refresh exactly as
+            // TickPacing does after a natural one, so the debug button can't
+            // leave a stale clock that fires again a moment later.
+            state.RecordQuestRefreshTimerStart(
+                pacing.IsBoardBelowTarget(state) ? nowUtc : (DateTime?)null);
         }
 
         /// <summary>Hourly trickle top-up (#26, #310, #543): tops up toward the
@@ -306,6 +373,68 @@ namespace Doggiehood.Core.Quests
         private static bool IsFreeType(QuestType type)
         {
             return Array.IndexOf(FreeQuestTypes, type) >= 0;
+        }
+
+        /// <summary>#704: rebuilds a persisted active quest on load — the
+        /// parallel of <see cref="GameState.RestoreBuiltHouse"/>. Nothing is
+        /// rolled (the subject, dialogue, hidden-item position and cost all
+        /// come from the save), nothing is charged (an accepted quest's cost
+        /// was already spent in the session that accepted it), and the dog is
+        /// booked exactly once so the rotation can't hand it a second quest.
+        /// The id counter resumes past every restored quest, so a quest added
+        /// after the relaunch can never collide with one on the board.
+        ///
+        /// <para><b>Invariant — a restored quest is always something the game
+        /// can still finish.</b> <see cref="DeliveryPhase.WaitingForDelivery"/>
+        /// means "a truck is on its way", and a truck is an in-flight view
+        /// object that does not survive a relaunch — restoring that phase
+        /// verbatim would leave the player having paid for an item that could
+        /// never arrive. It is resumed at
+        /// <see cref="DeliveryPhase.HeadingHome"/> instead: the same accepted,
+        /// already-paid job, rejoined at the last step something still drives
+        /// (the walk home, which QuestDirector ticks). Nothing is re-rolled and
+        /// nothing is re-charged — only the presentation leg restarts.</para>
+        ///
+        /// <para>Returns null (and restores nothing) when no dog on the roster
+        /// answers to <paramref name="dogName"/> — a quest with no dog can
+        /// never be completed, so it is dropped rather than crashing the
+        /// load.</para></summary>
+        public Quest RestoreQuest(
+            int id, QuestType type, string dogName, string itemName,
+            IReadOnlyList<string> dialogueLines, GridPoint? hiddenItemPosition,
+            int? cost, int? targetHouseId, IReadOnlyList<string> options,
+            QuestStatus status, DeliveryPhase deliveryPhase)
+        {
+            var dog = state.Dogs.FirstOrDefault(d => d.Name == dogName);
+            if (dog == null)
+            {
+                return null;
+            }
+
+            var quest = new Quest(id, type, dogName, itemName, dialogueLines,
+                hiddenItemPosition, cost, targetHouseId, options)
+            {
+                Status = status,
+                DeliveryPhase = deliveryPhase == DeliveryPhase.WaitingForDelivery
+                    ? DeliveryPhase.HeadingHome
+                    : deliveryPhase,
+            };
+
+            quests.Add(quest);
+            dog.GiveQuest();
+            if (quest.DeliveryPhase == DeliveryPhase.HeadingHome)
+            {
+                // #470: the walk home resumes under the director's control, so
+                // the dog must not also be wandering.
+                dog.BeginDelivery();
+            }
+
+            if (id >= nextQuestId)
+            {
+                nextQuestId = id + 1;
+            }
+
+            return quest;
         }
 
         public Quest GiveQuestTo(Dog dog, QuestType type, Random rng)

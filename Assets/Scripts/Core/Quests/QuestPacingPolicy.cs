@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Doggiehood.Core.Economy;
 using Doggiehood.Core.World;
 
@@ -14,7 +15,11 @@ namespace Doggiehood.Core.Quests
     ///
     /// <para><b>Cadence</b> (<see cref="ShouldRefresh"/>): every
     /// <see cref="EconomyNumbers.RefreshInterval"/> (hourly, #543), measured
-    /// against a persisted UTC timestamp. Each hour a fractional amount
+    /// against a persisted UTC timestamp — since #704 the instant the board
+    /// dropped below <see cref="TargetActiveCount"/>
+    /// (<see cref="GameState.QuestRefreshTimerStartedUtc"/>), so the hour is
+    /// spent waiting for a slot the player actually opened rather than ticking
+    /// against a full board. Each hour a fractional amount
     /// (<see cref="PerHourRate"/>, driven by <see cref="AdvanceAccumulator"/>)
     /// trickles in, replacing the old 8h all-or-nothing batch. This is a
     /// boundary <em>check</em>, not a
@@ -29,19 +34,37 @@ namespace Doggiehood.Core.Quests
     /// </summary>
     public sealed class QuestPacingPolicy
     {
-        /// <summary>Whether it is time to add quests. True when no rotation has
-        /// happened yet, or at least <see cref="EconomyNumbers.RefreshInterval"/>
-        /// has elapsed since the last one. <paramref name="nowUtc"/> must be a
+        /// <summary>#704: whether the board is waiting on more quests — it
+        /// holds fewer than <see cref="TargetActiveCount"/>. This is what starts
+        /// (and stops) the refresh clock: a board at the cap is waiting for
+        /// nothing, so no clock runs while it is full.</summary>
+        public bool IsBoardBelowTarget(GameState state)
+        {
+            return state.Quests.ActiveQuests.Count() < TargetActiveCount(state);
+        }
+
+        /// <summary>Whether it is time to add quests: at least
+        /// <see cref="EconomyNumbers.RefreshInterval"/> has elapsed since the
+        /// board dropped below target
+        /// (<see cref="GameState.QuestRefreshTimerStartedUtc"/>). False while no
+        /// clock is running — a full board. <paramref name="nowUtc"/> must be a
         /// UTC instant; the policy never reads <c>DateTime.Now</c> or
-        /// <c>TimeZoneInfo.Local</c>.</summary>
+        /// <c>TimeZoneInfo.Local</c>.
+        ///
+        /// <para>#704 changed what starts this clock. It used to measure from
+        /// <see cref="GameState.LastRotationUtc"/> — always ticking, whether or
+        /// not the board had room, and true outright for a game that had never
+        /// rotated. The hour is now spent waiting for a slot the player has
+        /// actually opened, so a full board can never bank refreshes and an
+        /// empty one starts its hour the moment it empties.</para></summary>
         public bool ShouldRefresh(DateTime nowUtc, GameState state)
         {
-            if (!state.LastRotationUtc.HasValue)
+            if (!state.QuestRefreshTimerStartedUtc.HasValue)
             {
-                return true;
+                return false;
             }
 
-            return nowUtc - state.LastRotationUtc.Value >= EconomyNumbers.RefreshInterval;
+            return nowUtc - state.QuestRefreshTimerStartedUtc.Value >= EconomyNumbers.RefreshInterval;
         }
 
         /// <summary>How many active quests the neighborhood should hold:

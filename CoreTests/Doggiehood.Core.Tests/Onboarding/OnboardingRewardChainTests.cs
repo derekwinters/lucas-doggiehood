@@ -187,7 +187,7 @@ namespace Doggiehood.Core.Tests.Onboarding
             var releasedNow = new System.DateTime(2026, 8, 3, 0, 0, 0, System.DateTimeKind.Utc);
             for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
             {
-                state.Quests.MaybeStartNewDay(
+                state.Quests.TickPacing(
                     releasedNow + System.TimeSpan.FromHours(hour), new System.Random(hour));
             }
 
