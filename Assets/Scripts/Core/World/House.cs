@@ -65,6 +65,19 @@ namespace Doggiehood.Core.World
             IsVacant = false;
         }
 
+        /// <summary>#704: the load-time repair for an occupied-but-empty house
+        /// — a house a legacy save recorded as occupied while the household
+        /// that filled it was never persisted. Marking it vacant again is the
+        /// only way it can ever receive a move-in (occupancy only ever
+        /// considers vacant houses), so without this the house is permanently
+        /// dead. This is NOT a "move out": no gameplay path calls it — only
+        /// <see cref="GameState.VacateHousesWithNoResidents"/>, from the save
+        /// load, and only for a house nobody lives in.</summary>
+        public void MarkVacant()
+        {
+            IsVacant = true;
+        }
+
         /// <summary>Upgrades this house one level (#59). Like
         /// <see cref="MarkOccupied"/> this is a bare one-way mutation: the
         /// max-level ceiling and the coin cost of the step are enforced by

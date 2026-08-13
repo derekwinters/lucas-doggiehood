@@ -308,6 +308,68 @@ namespace Doggiehood.Core.Quests
             return Array.IndexOf(FreeQuestTypes, type) >= 0;
         }
 
+        /// <summary>#704: rebuilds a persisted active quest on load — the
+        /// parallel of <see cref="GameState.RestoreBuiltHouse"/>. Nothing is
+        /// rolled (the subject, dialogue, hidden-item position and cost all
+        /// come from the save), nothing is charged (an accepted quest's cost
+        /// was already spent in the session that accepted it), and the dog is
+        /// booked exactly once so the rotation can't hand it a second quest.
+        /// The id counter resumes past every restored quest, so a quest added
+        /// after the relaunch can never collide with one on the board.
+        ///
+        /// <para><b>Invariant — a restored quest is always something the game
+        /// can still finish.</b> <see cref="DeliveryPhase.WaitingForDelivery"/>
+        /// means "a truck is on its way", and a truck is an in-flight view
+        /// object that does not survive a relaunch — restoring that phase
+        /// verbatim would leave the player having paid for an item that could
+        /// never arrive. It is resumed at
+        /// <see cref="DeliveryPhase.HeadingHome"/> instead: the same accepted,
+        /// already-paid job, rejoined at the last step something still drives
+        /// (the walk home, which QuestDirector ticks). Nothing is re-rolled and
+        /// nothing is re-charged — only the presentation leg restarts.</para>
+        ///
+        /// <para>Returns null (and restores nothing) when no dog on the roster
+        /// answers to <paramref name="dogName"/> — a quest with no dog can
+        /// never be completed, so it is dropped rather than crashing the
+        /// load.</para></summary>
+        public Quest RestoreQuest(
+            int id, QuestType type, string dogName, string itemName,
+            IReadOnlyList<string> dialogueLines, GridPoint? hiddenItemPosition,
+            int? cost, int? targetHouseId, IReadOnlyList<string> options,
+            QuestStatus status, DeliveryPhase deliveryPhase)
+        {
+            var dog = state.Dogs.FirstOrDefault(d => d.Name == dogName);
+            if (dog == null)
+            {
+                return null;
+            }
+
+            var quest = new Quest(id, type, dogName, itemName, dialogueLines,
+                hiddenItemPosition, cost, targetHouseId, options)
+            {
+                Status = status,
+                DeliveryPhase = deliveryPhase == DeliveryPhase.WaitingForDelivery
+                    ? DeliveryPhase.HeadingHome
+                    : deliveryPhase,
+            };
+
+            quests.Add(quest);
+            dog.GiveQuest();
+            if (quest.DeliveryPhase == DeliveryPhase.HeadingHome)
+            {
+                // #470: the walk home resumes under the director's control, so
+                // the dog must not also be wandering.
+                dog.BeginDelivery();
+            }
+
+            if (id >= nextQuestId)
+            {
+                nextQuestId = id + 1;
+            }
+
+            return quest;
+        }
+
         public Quest GiveQuestTo(Dog dog, QuestType type, Random rng)
         {
             string item;
