@@ -219,6 +219,84 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void Open_DefaultsToAnEnabledConfirm_SoExistingCallersAreUnchanged()
+        {
+            // #690: the new confirmEnabled argument defaults to true, so the
+            // tile-unlock caller (ExpansionUnlockDirector) keeps today's
+            // behavior without passing anything.
+            dialog.Open("Unlock this area?", "Open up the next zone.", () => { }, cost: 100);
+
+            Assert.That(dialog.YesButton.interactable, Is.True,
+                "a confirmation with no explicit enabled state stays pressable");
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Leaf,
+                "and keeps the leaf confirm tint");
+        }
+
+        [Test]
+        public void OpeningWithTheConfirmDisabled_GreysYes_AndMakesItNonInteractable()
+        {
+            // #690: a spend the wallet can't cover is presented as a greyed-out,
+            // unpressable Yes — never a normal-looking button that does nothing.
+            dialog.Open("Build a house here?", "Spend coins to build a house on this lot.",
+                () => { }, cost: 50, confirmEnabled: false);
+
+            Assert.That(dialog.IsOpen, Is.True, "the dialog still opens so the price is visible");
+            Assert.That(dialog.YesButton.interactable, Is.False, "a disabled Yes is not pressable");
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Disabled,
+                "a disabled Yes takes the shared Disabled role tint");
+        }
+
+        [Test]
+        public void ADisabledConfirm_StillShowsTheCostTokenAndAmount()
+        {
+            // #690: the point of still opening the dialog is that the player sees
+            // the price they are short of.
+            dialog.Open("Build a house here?", "body", () => { }, cost: 50, confirmEnabled: false);
+
+            Assert.That(dialog.CostGroup.activeSelf, Is.True,
+                "the cost token stays on a disabled Yes");
+            Assert.That(dialog.CostAmountLabel.text, Is.EqualTo("50"));
+        }
+
+        [Test]
+        public void ADisabledConfirm_IsStillDismissableByNoAndTheScrim()
+        {
+            // #329 guard: greying the confirm must never grey the way out.
+            dialog.Open("Build a house here?", "body", () => { }, cost: 50, confirmEnabled: false);
+            dialog.NoButton.onClick.Invoke();
+            Assert.That(dialog.IsOpen, Is.False, "No dismisses an unaffordable prompt");
+
+            dialog.Open("Build a house here?", "body", () => { }, cost: 50, confirmEnabled: false);
+            Assert.That(dialog.NoButton.interactable, Is.True, "No never greys out");
+            dialog.ScrimRect.GetComponent<Button>().onClick.Invoke();
+            Assert.That(dialog.IsOpen, Is.False, "the scrim dismisses an unaffordable prompt");
+        }
+
+        [Test]
+        public void ReopeningEnabled_AfterADisabledOpen_RestoresALiveLeafYes()
+        {
+            // The one reused overlay must not carry a previous open's disabled
+            // state into the next caller's prompt.
+            dialog.Open("Q?", "body", () => { }, cost: 50, confirmEnabled: false);
+            dialog.Open("Q2?", "body2", () => { }, cost: 50);
+
+            Assert.That(dialog.YesButton.interactable, Is.True);
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Leaf,
+                "an affordable reopen is leaf-tinted again");
+        }
+
+        [Test]
+        public void ADisabledConfirmTint_WinsOverACallerSuppliedConfirmTint()
+        {
+            // Disabled is a state, not a role: it overrides the override.
+            dialog.Open("Q?", "body", () => { }, cost: 50,
+                confirmTint: CandyChromeUgui.Coral, confirmEnabled: false);
+
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Disabled,
+                "a disabled Yes greys out even when the caller asked for another tint");
+        }
+
+        [Test]
         public void Card_GrowsVerticallyWithLongerBodyCopy()
         {
             dialog.Open("Q?", "One line.", () => { });

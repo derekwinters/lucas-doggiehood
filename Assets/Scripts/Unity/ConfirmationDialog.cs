@@ -13,7 +13,12 @@ namespace Doggiehood.Unity
     /// the scrim or No cancels (never a trap — a deliberate contrast with the
     /// #329 stuck-dialog bug); Yes runs the caller's confirm callback. When
     /// the confirmed action spends coins, Yes carries a gold coin token + the
-    /// caller's amount so a young player sees the price on the button.
+    /// caller's amount so a young player sees the price on the button. When
+    /// that spend <b>cannot succeed</b> (#690) the caller opens with
+    /// <c>confirmEnabled: false</c> and Yes is presented greyed out and
+    /// unpressable rather than as a live button that silently does nothing —
+    /// the confirmation-dialog invariant that <i>a spend button is never
+    /// pressable when the spend cannot succeed</i>. No and the scrim stay live.
     ///
     /// One instance, reused: any screen raises the same overlay by supplying
     /// its title, body, optional cost, and a confirm callback (labels + confirm
@@ -119,9 +124,24 @@ namespace Doggiehood.Unity
         /// <paramref name="yesLabel"/>, <paramref name="noLabel"/> and
         /// <paramref name="confirmTint"/> default to Yes/No + leaf but are
         /// overridable so the one overlay is genuinely reusable.
+        ///
+        /// <para>#690: <paramref name="confirmEnabled"/> is how a caller says
+        /// <i>"this action cannot succeed"</i> — an unaffordable spend. False
+        /// greys Yes to the shared <see cref="CandyChromeUgui.Disabled"/> role
+        /// tint and clears its <see cref="Button.interactable"/>, exactly as an
+        /// unaffordable quest gift pill and the house-upgrade button already do,
+        /// while the dialog still opens and still shows the cost so the player
+        /// sees the price they're short of. Disabled is a <i>state</i>, so it
+        /// wins over <paramref name="confirmTint"/>. No and the scrim are never
+        /// greyed — the prompt is never a trap (#329). It defaults to enabled,
+        /// leaving every existing caller unchanged. Resolved once, at open
+        /// (matching the quest pills): a payout arriving mid-prompt does not
+        /// re-enable the button. This is presentation only — the caller's
+        /// callback and Core remain the authority on the spend.</para>
         /// </summary>
         public void Open(string title, string body, Action onConfirm, int? cost = null,
-            string yesLabel = null, string noLabel = null, Color? confirmTint = null)
+            string yesLabel = null, string noLabel = null, Color? confirmTint = null,
+            bool confirmEnabled = true)
         {
             pendingConfirm = onConfirm;
 
@@ -129,7 +149,10 @@ namespace Doggiehood.Unity
             bodyText.text = body;
             yesText.text = string.IsNullOrEmpty(yesLabel) ? DefaultYesLabel : yesLabel;
             noText.text = string.IsNullOrEmpty(noLabel) ? DefaultNoLabel : noLabel;
-            yesButtonImage.color = confirmTint ?? CandyChromeUgui.Leaf;
+            yesButtonImage.color = confirmEnabled
+                ? (confirmTint ?? CandyChromeUgui.Leaf)
+                : CandyChromeUgui.Disabled;
+            yesButton.interactable = confirmEnabled;
 
             costGroupRect.gameObject.SetActive(cost.HasValue);
             if (cost.HasValue)
