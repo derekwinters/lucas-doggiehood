@@ -122,6 +122,16 @@ jobs:
       # restores them — the device APK built above stays ARM64-only with the
       # committed defaults. Built into its own buildsPath so the two APKs can
       # never be confused. Debug signing, same as every other build.
+      #
+      # The variant is requested with `customParameters`, NOT with a step
+      # `env:` entry (#731). unity-builder does not run Unity in this step's
+      # process — it runs it inside a Docker container and forwards only a
+      # fixed allowlist of variables, so `DOGGIEHOOD_EMULATOR_BUILD: "true"`
+      # (what this step used to carry) was set on the runner and never inside
+      # the container: the processor no-op'd and v0.15.0's "emulator" APK was
+      # a second device build. `customParameters` is forwarded as
+      # CUSTOM_PARAMETERS and appended verbatim to the unity-editor command
+      # line, which is where EmulatorBuildProcessor now reads the switch from.
       - name: Build Android emulator APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -129,11 +139,11 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          DOGGIEHOOD_EMULATOR_BUILD: "true"
         with:
           targetPlatform: Android
           buildName: Doggiehood
           buildsPath: build-emulator
+          customParameters: -doggiehoodEmulatorBuild
           versioning: Custom
           version: ${{ steps.version.outputs.name }}
           androidVersionCode: ${{ steps.version.outputs.code }}

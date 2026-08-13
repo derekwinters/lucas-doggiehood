@@ -1,4 +1,5 @@
 using System;
+using Doggiehood.Core.Versioning;
 using Doggiehood.Unity.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -232,6 +233,85 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(
                 PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android),
                 Is.EqualTo(PermanentApplicationId));
+        }
+
+        [Test]
+        public void ApplyIfRequested_AppliesTheWholeProfile_WhenRequestedOnTheCommandLineAlone()
+        {
+            // #731: game-ci/unity-builder runs Unity inside a Docker container
+            // and forwards only a fixed allowlist of environment variables, so
+            // DOGGIEHOOD_EMULATOR_BUILD set on the workflow step never reaches
+            // the editor — v0.15.0 shipped no APKs because the gate correctly
+            // caught the resulting second device build. The command line
+            // (unity-builder's `customParameters`) is the channel that does
+            // arrive, and it must be sufficient on its own, with the
+            // environment variable unset.
+            SeedDeviceDefaults();
+            RequestDeviceBuild();
+
+            EmulatorBuildProcessor.ApplyIfRequested(
+                envValue: null,
+                commandLineArgs: new[] { "unity-editor", EmulatorBuildProfile.CommandLineFlag });
+
+            Assert.That(PlayerSettings.Android.targetArchitectures, Is.EqualTo(AndroidArchitecture.X86_64));
+            Assert.That(
+                PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android),
+                Is.EqualTo("com.derekwinters.doggiehood.emulator"));
+            Assert.That(PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android), Is.False);
+            Assert.That(
+                PlayerSettings.GetGraphicsAPIs(BuildTarget.Android),
+                Is.EqualTo(new[] { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 }));
+            Assert.That(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android), Is.False);
+            Assert.That(EmulatorBuildProcessor.GetColorGamuts(), Is.EqualTo(new[] { ColorGamut.sRGB }));
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.True);
+        }
+
+        [Test]
+        public void RestoreIfApplied_PutsEveryMutatedSettingBack_AfterACommandLineRequestedEmulatorBuild()
+        {
+            SeedDeviceDefaults();
+            var deviceGraphicsApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            RequestDeviceBuild();
+
+            EmulatorBuildProcessor.ApplyIfRequested(
+                envValue: null,
+                commandLineArgs: new[] { "unity-editor", EmulatorBuildProfile.CommandLineFlag });
+            EmulatorBuildProcessor.RestoreIfApplied();
+
+            Assert.That(PlayerSettings.Android.targetArchitectures, Is.EqualTo(AndroidArchitecture.ARM64));
+            Assert.That(
+                PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android),
+                Is.EqualTo(PermanentApplicationId));
+            Assert.That(PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android), Is.True);
+            Assert.That(PlayerSettings.GetGraphicsAPIs(BuildTarget.Android), Is.EqualTo(deviceGraphicsApis));
+            Assert.That(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android), Is.True);
+            Assert.That(EmulatorBuildProcessor.GetColorGamuts(), Is.EqualTo(new[] { ColorGamut.sRGB }));
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.False);
+        }
+
+        [Test]
+        public void ApplyIfRequested_LeavesEveryDeviceSettingUntouched_WhenNeitherChannelRequestsIt()
+        {
+            // The device build passes no switch and sets no variable — the
+            // invariant that the emulator profile never changes what the
+            // device APK ships now has to hold across both channels.
+            SeedDeviceDefaults();
+            var deviceGraphicsApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            RequestDeviceBuild();
+
+            EmulatorBuildProcessor.ApplyIfRequested(
+                envValue: null,
+                commandLineArgs: new[] { "unity-editor", "-batchmode", "-buildTarget", "Android" });
+
+            Assert.That(PlayerSettings.Android.targetArchitectures, Is.EqualTo(AndroidArchitecture.ARM64));
+            Assert.That(
+                PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android),
+                Is.EqualTo(PermanentApplicationId));
+            Assert.That(PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android), Is.True);
+            Assert.That(PlayerSettings.GetGraphicsAPIs(BuildTarget.Android), Is.EqualTo(deviceGraphicsApis));
+            Assert.That(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android), Is.True);
+            Assert.That(EmulatorBuildProcessor.GetColorGamuts(), Is.EqualTo(new[] { ColorGamut.sRGB }));
+            Assert.That(EmulatorBuildProcessor.GetDisableUnityAudio(), Is.False);
         }
 
         [Test]

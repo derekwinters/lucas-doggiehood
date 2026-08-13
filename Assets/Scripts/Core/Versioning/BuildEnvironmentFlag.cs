@@ -13,6 +13,14 @@ namespace Doggiehood.Core.Versioning
     /// </summary>
     public static class BuildEnvironmentFlag
     {
+        /// <summary>
+        /// The canonical value that turns a flag on. Named so the
+        /// command-line channel (<see cref="BuildCommandLineFlag"/>) can route
+        /// a bare switch through this same parser instead of short-circuiting
+        /// to its own literal <c>true</c>.
+        /// </summary>
+        public const string EnabledValue = "true";
+
         public static bool IsEnabled(string envValue)
         {
             if (string.IsNullOrWhiteSpace(envValue))

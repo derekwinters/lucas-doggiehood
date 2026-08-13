@@ -110,8 +110,16 @@ jobs:
         run: sudo rm -rf Library/Bee
 
       # The backfill builds *both* release assets, so re-running it for a tag
-      # is enough to replace a bad emulator asset — v0.14.0's is currently a
-      # copy of the device APK (#706), and this is the path that fixes it.
+      # is enough to replace a bad emulator asset — v0.14.0's is a copy of the
+      # device APK (#706) and v0.15.0 has no assets at all (#731), and this is
+      # the path that fixes both.
+      #
+      # As in release-please.yml, the variant is requested with
+      # `customParameters` rather than a step `env:` entry: unity-builder runs
+      # Unity inside a Docker container that receives only an allowlist of
+      # variables, so a repo-specific one never arrives, while
+      # `customParameters` is appended straight to the unity-editor command
+      # line (#731).
       - name: Build Android emulator APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -119,11 +127,11 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          DOGGIEHOOD_EMULATOR_BUILD: "true"
         with:
           targetPlatform: Android
           buildName: Doggiehood
           buildsPath: build-emulator
+          customParameters: -doggiehoodEmulatorBuild
           versioning: Custom
           version: ${{ steps.version.outputs.name }}
           androidVersionCode: ${{ steps.version.outputs.code }}

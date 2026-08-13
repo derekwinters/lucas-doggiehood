@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Doggiehood.Core.Versioning;
 using UnityEditor;
 using UnityEditor.Build;
@@ -10,14 +11,18 @@ namespace Doggiehood.Unity.Editor
 {
     /// <summary>
     /// Turns a normal Android build into the emulator-targeted variant (#648)
-    /// when <see cref="EmulatorBuildEnvironmentVariable"/> is truthy ("1" or
-    /// "true", case-insensitive) — the x86_64 ABI, the `.emulator`
+    /// when the build asks for it — either via
+    /// <see cref="EmulatorBuildEnvironmentVariable"/> being truthy ("1" or
+    /// "true", case-insensitive), which is the local/editor channel, or via
+    /// <see cref="EmulatorBuildProfile.CommandLineFlag"/> on Unity's command
+    /// line, which is the only channel that reaches the editor inside
+    /// game-ci's build container (#731) — the x86_64 ABI, the `.emulator`
     /// applicationId suffix, an emulator-safe graphics profile and a disabled
     /// audio engine (#705, the game ships no audio assets yet). Nothing
     /// here is committed to <c>ProjectSettings.asset</c>: under Design A the
     /// device/release build stays ARM64-only with its default graphics
-    /// config, and only a run that opts in via the environment variable sees
-    /// any of these values. Every mutated setting is put back in
+    /// config, and only a run that opts in through one of those two channels
+    /// sees any of these values. Every mutated setting is put back in
     /// <see cref="RestoreIfApplied"/> so repeated local/CI builds in the same
     /// editor session don't inherit the emulator profile.
     ///
@@ -29,6 +34,9 @@ namespace Doggiehood.Unity.Editor
     public class EmulatorBuildProcessor : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
         public const string EmulatorBuildEnvironmentVariable = "DOGGIEHOOD_EMULATOR_BUILD";
+
+        /// <summary>Grep-able marker for the build log line written when the profile applies.</summary>
+        private const string AppliedProfileLogPrefix = "[Doggiehood] Emulator build profile applied:";
 
         /// <summary>Runs after the `.debug` suffix hook (callback order 0).</summary>
         private const int EmulatorCallbackOrder = 1;
@@ -110,18 +118,41 @@ namespace Doggiehood.Unity.Editor
         public void OnPostprocessBuild(BuildReport report) => RestoreIfApplied();
 
         /// <summary>
-        /// Applies the emulator profile if
-        /// <see cref="EmulatorBuildEnvironmentVariable"/> is truthy, capturing
-        /// the pre-build value of every field it touches. Public (rather than
-        /// private) so EditMode tests can drive it without constructing a
-        /// <see cref="BuildReport"/> — Unity's Bee build strips non-public
-        /// members from an assembly's ref.dll, so `internal` isn't visible to
-        /// the separate EditMode test assembly.
+        /// Applies the emulator profile if this build's real environment or
+        /// command line requests it.
         /// </summary>
         public static void ApplyIfRequested()
         {
-            var envValue = Environment.GetEnvironmentVariable(EmulatorBuildEnvironmentVariable);
-            if (!EmulatorBuildProfile.IsEmulatorBuildRequested(envValue))
+            ApplyIfRequested(
+                Environment.GetEnvironmentVariable(EmulatorBuildEnvironmentVariable),
+                Environment.GetCommandLineArgs());
+        }
+
+        /// <summary>
+        /// Applies the emulator profile if either channel requests it —
+        /// <see cref="EmulatorBuildEnvironmentVariable"/> being truthy, or
+        /// <see cref="EmulatorBuildProfile.CommandLineFlag"/> appearing in
+        /// Unity's command line — capturing the pre-build value of every field
+        /// it touches.
+        ///
+        /// Both channels exist because neither covers both cases (#731). A
+        /// local or editor build sets the environment variable; a CI build
+        /// cannot, because <c>game-ci/unity-builder</c> runs Unity inside a
+        /// Docker container and forwards only a fixed allowlist of variables,
+        /// so a repo-specific one is stranded on the runner. CI therefore
+        /// passes the switch through the builder's <c>customParameters</c>
+        /// input, which is appended to the <c>unity-editor</c> command line.
+        ///
+        /// Both parameters are injected rather than read here so EditMode
+        /// tests can drive either channel; the parameterless overload supplies
+        /// the real ones. Public (rather than private) so those tests can call
+        /// it without constructing a <see cref="BuildReport"/> — Unity's Bee
+        /// build strips non-public members from an assembly's ref.dll, so
+        /// `internal` isn't visible to the separate EditMode test assembly.
+        /// </summary>
+        public static void ApplyIfRequested(string envValue, IReadOnlyList<string> commandLineArgs)
+        {
+            if (!EmulatorBuildProfile.IsEmulatorBuildRequested(envValue, commandLineArgs))
             {
                 _profileApplied = false;
                 return;
@@ -145,6 +176,13 @@ namespace Doggiehood.Unity.Editor
             PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, EmulatorMultithreadedRendering);
             SetColorGamuts(EmulatorColorGamuts);
             SetDisableUnityAudio(EmulatorDisablesUnityAudio);
+
+            // Leaves a trace in the Unity build log, so a CI run's own output
+            // says whether the profile applied rather than leaving it to be
+            // inferred from the finished APK (#731).
+            Debug.Log($"{AppliedProfileLogPrefix} applicationId "
+                      + $"{PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android)}, "
+                      + $"ABIs {EmulatorArchitectures}.");
         }
 
         /// <summary>
