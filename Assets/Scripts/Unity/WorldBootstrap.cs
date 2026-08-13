@@ -8,6 +8,12 @@ namespace Doggiehood.Unity
     {
         private void Awake()
         {
+            // #692: FIRST, before anything else can log — the bug report's LOG
+            // section is only worth having if it caught the startup errors that
+            // are hardest to reproduce on a tablet. A bounded ring buffer that
+            // writes nothing to disk until a report is generated.
+            var logBuffer = DiagnosticLogBuffer.Install(gameObject);
+
             var state = SaveStore.LoadOrCreate();
 
             // #453/#691: finish restoring the world's map, then re-derive the
@@ -66,6 +72,12 @@ namespace Doggiehood.Unity
             // from the build (release-please owns it); the Debug fence toggle
             // rebuilds only the fences live.
             var settings = BuildSettingsPanel(canvas, state, root.transform);
+
+            // #692: the Debug tab's two bug-report rows snapshot the whole game
+            // — the live log tail and the dogs' on-screen positions included,
+            // which only the scene knows. Wired here, where both are in hand.
+            settings.BugReportProvider = () => BugReportBuilder.Build(
+                state, settings.Toggles, logBuffer, root.transform, System.DateTime.UtcNow);
 
             // Dog profile overlay (#165): tapping a dog's body opens it. Its
             // Home button flies the camera to that dog's house.
@@ -128,6 +140,11 @@ namespace Doggiehood.Unity
             gameObject.AddComponent<OnboardingRewardDirector>().Init(state, toastQueue);
             gameObject.AddComponent<QuestCompletionDirector>().Init(state, toastQueue);
             gameObject.AddComponent<MoveInToastDirector>().Init(state, toastQueue);
+
+            // #692: the two Debug bug-report actions confirm on the same lane.
+            // Debug-only, and the only toast trigger that is not a player
+            // reward — see docs/specs/ui/toast.md.
+            settings.ToastRequested = message => toastQueue.Enqueue(new ToastRequest(message));
 
             // Move-in welcome (#518): the approved "Welcome to the
             // neighborhood!" pop-up (docs/specs/ui/welcome-popup.md) pops a beat

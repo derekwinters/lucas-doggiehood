@@ -178,8 +178,20 @@ namespace Doggiehood.Unity.EditModeTests
                 ToastCopy.OnboardingStep(OnboardingRewardStep.UpgradeHouse, reward),
                 ToastCopy.OnboardingStep(OnboardingRewardStep.ExpandMap, reward),
                 ToastCopy.OnboardingStep(OnboardingRewardStep.BuildHouse, reward),
+
+                // #692: the two Debug bug-report confirmations. They share the
+                // lane, so they share the one-line budget — the saved line is
+                // measured with a real timestamped filename, its worst case.
+                BugReportCopy.Copied(BugReportSizeForFitGuardChars),
+                BugReportCopy.Saved(BugReportFile.FileNameFor(
+                    new System.DateTime(2026, 12, 31, 23, 59, 59, System.DateTimeKind.Utc))),
             };
         }
+
+        /// <summary>#692: a deliberately large report size for the toast-fit
+        /// guard — six figures of characters is far beyond a real snapshot, so
+        /// the measured "Bug report copied (N KB)" line is a worst case.</summary>
+        private const int BugReportSizeForFitGuardChars = 999999;
 
         [Test]
         public void EveryApprovedToastLine_FitsOnOneLineWithinTheContentBudget()
