@@ -22,6 +22,7 @@ carries the bug itself: its package id is the bare, unsuffixed one.
 
 import hashlib
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -177,6 +178,104 @@ class AssessTests(unittest.TestCase):
 
         self.assertFalse(verdict.ok)
         self.assertEqual(len(verdict.reasons), 2)
+
+
+class ReleaseWorkflowsRequestTheEmulatorProfileTests(unittest.TestCase):
+    """The gate above proves the *artifact* is right; these prove the *request*
+    reaches Unity in the first place (issue #731).
+
+    `v0.15.0` shipped with **no APKs at all**: both builds were device builds,
+    so the gate correctly refused to upload either. The cause was that the
+    emulator step asked for the variant with a step `env:` entry,
+    `DOGGIEHOOD_EMULATOR_BUILD: "true"`. `game-ci/unity-builder` does not run
+    Unity in that step's process — it runs it inside a Docker container and
+    forwards only a fixed allowlist of variables (`UNITY_*`, `BUILD_*`,
+    `ANDROID_*`, `CUSTOM_PARAMETERS`, `GITHUB_*`, `RUNNER_*`), so a
+    repo-specific variable is stranded on the runner and the processor no-ops.
+    `customParameters` is on that allowlist and is appended verbatim to the
+    `unity-editor` command line, which is the channel that actually arrives.
+
+    These tests read the switch name out of `EmulatorBuildProfile.cs`, so a
+    rename on either side of the wiring — the C# constant or the workflow —
+    fails here rather than silently producing a second device build. They run
+    on every PR in `ci-tests.yml` and again in both release jobs before the
+    gate is trusted.
+    """
+
+    REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))))
+    PROFILE_SOURCE = os.path.join(
+        REPO_ROOT, "Assets", "Scripts", "Core", "Versioning", "EmulatorBuildProfile.cs")
+    RELEASE_WORKFLOWS = ("release-please.yml", "release-build.yml")
+    EMULATOR_STEP_NAME = "Build Android emulator APK"
+    DEVICE_STEP_NAME = "Build Android release APK"
+
+    def _command_line_flag(self):
+        """The `-doggiehoodEmulatorBuild` switch, read from the C# constant."""
+        with open(self.PROFILE_SOURCE, encoding="utf-8") as handle:
+            source = handle.read()
+        match = re.search(
+            r'CommandLineFlag\s*=\s*"([^"]+)"', source)
+        self.assertIsNotNone(
+            match, "EmulatorBuildProfile.CommandLineFlag is no longer a string constant")
+        return match.group(1)
+
+    def _step_body(self, workflow, step_name):
+        """The YAML lines of one named step, up to the next step at its indent."""
+        path = os.path.join(self.REPO_ROOT, ".github", "workflows", workflow)
+        with open(path, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+
+        start = None
+        indent = None
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped == "- name: {0}".format(step_name):
+                start = index
+                indent = len(line) - len(line.lstrip())
+                break
+        self.assertIsNotNone(
+            start, "{0} has no '{1}' step".format(workflow, step_name))
+
+        body = [lines[start]]
+        for line in lines[start + 1:]:
+            bare = line.strip()
+            if bare.startswith("- ") and (len(line) - len(line.lstrip())) == indent:
+                break
+            body.append(line)
+        return body
+
+    def _custom_parameters(self, body):
+        """The `customParameters:` tokens declared in a step body, if any."""
+        for line in body:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if stripped.startswith("customParameters:"):
+                return stripped.split(":", 1)[1].split()
+        return []
+
+    def test_every_release_workflow_passes_the_switch_on_the_unity_command_line(self):
+        flag = self._command_line_flag()
+        for workflow in self.RELEASE_WORKFLOWS:
+            with self.subTest(workflow=workflow):
+                body = self._step_body(workflow, self.EMULATOR_STEP_NAME)
+                self.assertIn(
+                    flag,
+                    self._custom_parameters(body),
+                    "{0}'s emulator build step must request the profile with "
+                    "customParameters: {1} — a step env: entry never reaches "
+                    "Unity inside game-ci's container (#731)".format(workflow, flag),
+                )
+
+    def test_no_release_workflow_passes_the_switch_to_the_device_build(self):
+        # The mirror of the gate's "device APK picked up the suffix" case: the
+        # device APK must never be built with the emulator profile.
+        flag = self._command_line_flag()
+        for workflow in self.RELEASE_WORKFLOWS:
+            with self.subTest(workflow=workflow):
+                body = self._step_body(workflow, self.DEVICE_STEP_NAME)
+                self.assertNotIn(flag, self._custom_parameters(body))
 
 
 if __name__ == "__main__":

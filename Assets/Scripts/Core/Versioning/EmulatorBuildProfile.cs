@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Doggiehood.Core.Versioning
 {
@@ -13,6 +14,16 @@ namespace Doggiehood.Core.Versioning
     public static class EmulatorBuildProfile
     {
         public const string Suffix = ".emulator";
+
+        /// <summary>
+        /// The Unity command-line switch that requests the emulator variant
+        /// (#731). The release workflows pass it through
+        /// <c>game-ci/unity-builder</c>'s <c>customParameters</c> input, which
+        /// is the only channel that actually reaches the Unity process inside
+        /// the builder's Docker container — see
+        /// <see cref="BuildCommandLineFlag"/>.
+        /// </summary>
+        public const string CommandLineFlag = "-doggiehoodEmulatorBuild";
 
         public static string Apply(string baseApplicationId, bool isEmulatorBuild)
         {
@@ -31,11 +42,26 @@ namespace Doggiehood.Core.Versioning
 
         /// <summary>
         /// Parses the truthy/falsy convention used by the
-        /// <c>DOGGIEHOOD_EMULATOR_BUILD</c> CI environment variable.
+        /// <c>DOGGIEHOOD_EMULATOR_BUILD</c> environment variable. This is the
+        /// local/editor channel; CI must use the two-channel overload,
+        /// because the variable never crosses into the build container.
         /// </summary>
         public static bool IsEmulatorBuildRequested(string envValue)
         {
             return BuildEnvironmentFlag.IsEnabled(envValue);
+        }
+
+        /// <summary>
+        /// True when either channel requests the emulator variant: the
+        /// <c>DOGGIEHOOD_EMULATOR_BUILD</c> environment variable (local and
+        /// editor builds) or the <see cref="CommandLineFlag"/> switch on
+        /// Unity's command line (CI, where the environment variable is
+        /// stranded outside game-ci's Docker container — #731).
+        /// </summary>
+        public static bool IsEmulatorBuildRequested(string envValue, IReadOnlyList<string> commandLineArgs)
+        {
+            return BuildEnvironmentFlag.IsEnabled(envValue)
+                   || BuildCommandLineFlag.IsEnabled(commandLineArgs, CommandLineFlag);
         }
     }
 }
