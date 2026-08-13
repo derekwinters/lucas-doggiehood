@@ -42,8 +42,6 @@ namespace Doggiehood.Unity
     /// </summary>
     public static class TapRouter
     {
-        private const float MaxRayDistance = 1000f;
-
         /// <summary>
         /// "Is this tap over a UGUI graphic?" — the modal-overlay guard (#422).
         /// Defaults to the live EventSystem query
@@ -138,8 +136,21 @@ namespace Doggiehood.Unity
                 return true;
             }
 
+            // #680: the ray reaches exactly as far as the camera can see — its
+            // own far clip plane — never a fixed constant. The distance to the
+            // far edge of the frame is RigDistanceFor(zoom) +
+            // GroundDepthReach(zoom), which grows with the zoom, and the max
+            // zoom-out grows with the map (#510/#524); the old pinned 1000 m
+            // was therefore already short of the top of the screen on a map
+            // ~940 m across, so taps up there would silently stop registering
+            // while taps lower down still worked. Because #679 derives the far
+            // clip plane from the live zoom and leaves a named RigDistance
+            // margin past the far edge of the visible ground, anything the
+            // player can see is inside this reach by construction, at every
+            // map size — the same fixed-constant-vs-map-scaled-zoom trap #679
+            // itself fell into, closed rather than re-thresholded.
             var ray = camera.ScreenPointToRay(screenPosition);
-            if (!Physics.Raycast(ray, out var hit, MaxRayDistance))
+            if (!Physics.Raycast(ray, out var hit, camera.farClipPlane))
             {
                 return false;
             }
