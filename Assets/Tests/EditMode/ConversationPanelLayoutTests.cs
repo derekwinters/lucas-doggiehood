@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
 using NUnit.Framework;
@@ -119,11 +120,12 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void ActiveQuestReminder_ShowsExactlyOneStillLookingPill_AndNoAcceptPill()
+        public void ActiveQuestReminder_ForALostItem_ShowsExactlyOneStillLookingPill_AndNoAcceptPill()
         {
             // #472: re-tapping a dog whose quest is Accepted shows a dismiss-only
-            // reminder — the single pill is the "Not now" close relabeled "Still
-            // looking", with no accept/complete affordance.
+            // reminder — the single pill is the "Not now" close relabeled, with
+            // no accept/complete affordance. #708: for a lost item the player
+            // really does still owe the next action, so it stays "Still looking".
             var dog = state.Dogs.First();
             var quest = state.Quests.GiveQuestTo(dog, QuestType.LostItem, new System.Random(1));
             state.Quests.Accept(quest);
@@ -132,7 +134,55 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(presenter.AcceptPills, Is.Empty, "a reminder offers no accept/complete pill");
             Assert.That(presenter.DeclinePill, Is.Not.Null, "the reminder still has its dismiss pill");
             Assert.That(presenter.DeclinePill.Label.text, Is.EqualTo("Still looking"),
-                "the sole pill is the dismiss, relabeled for the active-quest reminder (#472)");
+                "a quest the player still owes work on keeps the 'Still looking' dismiss (#472)");
+            Assert.That(presenter.DeclinePill.Label.text,
+                Is.EqualTo(QuestTemplates.For(quest.Type, quest.ItemName).ReminderDismissLabel),
+                "the label comes from Core's template, never a switch in the presenter (#708)");
+        }
+
+        [Test]
+        public void ActiveQuestReminder_ForAnAcceptedGift_ShowsAnOnItsWayPill_AndNoAcceptPill()
+        {
+            // #708: accepting a buy-gift quest IS the purchase — the coins are
+            // spent and the truck is dispatched — so re-tapping must acknowledge
+            // the delivery instead of asking the player to keep looking. The
+            // label is read off the same Core template the reminder line comes
+            // from, so the line and the pill can never disagree.
+            var dog = state.Dogs.First();
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new System.Random(1));
+            Assert.That(quest.ItemName, Is.Not.EqualTo(ItemCatalog.FenceItemName),
+                "sanity: the fence completes at accept and has no reminder window (#318)");
+            state.Wallet.Deposit(quest.Cost.Value);
+            Assert.That(state.Quests.Accept(quest), Is.True, "sanity: the gift quest accepts");
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.AcceptPills, Is.Empty, "a reminder offers no accept/complete pill");
+            Assert.That(presenter.DeclinePill.Label.text, Is.EqualTo("On its way"),
+                "a paid-for gift's dismiss acknowledges the delivery, not a search (#708)");
+            Assert.That(presenter.DeclinePill.Label.text,
+                Is.EqualTo(QuestTemplates.For(quest.Type, quest.ItemName).ReminderDismissLabel),
+                "the label comes from Core's template, never a switch in the presenter (#708)");
+            Assert.That(presenter.BodyLabel.text.ToLowerInvariant(), Does.Not.Contain("any luck"),
+                "the reminder line must not ask for a purchase the player already made");
+        }
+
+        [Test]
+        public void ActiveQuestReminder_ForAnAcceptedDecorationChoice_ShowsAnOnItsWayPill()
+        {
+            // #708: the decoration request is paid at accept too, with the item
+            // the player chose — the reminder acknowledges that choice is coming.
+            var dog = state.Dogs[2];
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.DecorationRequest, new System.Random(7));
+            var chosen = quest.Options.First();
+            state.Wallet.Deposit(ItemCatalog.Get(chosen).Cost.Value);
+            Assert.That(state.Quests.AcceptWithChoice(quest, chosen), Is.True,
+                "sanity: the decoration request accepts with a chosen option");
+            presenter.TryOpen(dog);
+
+            Assert.That(presenter.AcceptPills, Is.Empty, "a reminder offers no accept/complete pill");
+            Assert.That(presenter.DeclinePill.Label.text, Is.EqualTo("On its way"));
+            Assert.That(presenter.BodyLabel.text, Does.Contain(chosen),
+                "the reminder names the item chosen at accept time");
         }
 
         [Test]
