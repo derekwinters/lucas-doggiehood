@@ -1972,6 +1972,11 @@
 <td>The render worker is what hangs.</td>
 </tr>
 <tr>
+<td>Unity audio engine</td>
+<td>Off ("Disable Unity Audio")</td>
+<td>A per-thread profile of a hung emulator APK (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/705">#705</a>) showed <code>FMOD stream thr</code> and <code>AudioTrack</code> pinned at ~100% CPU with <code>UnityMain</code> blocked behind them, while the render thread slept. The project ships no audio assets, so the variant gives the subsystem up rather than let it spin against an emulated audio HAL.</td>
+</tr>
+<tr>
 <td>Signing</td>
 <td>Debug, same as every other build</td>
 <td>No separate decision — nothing in the current scope uses a real keystore (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/75">#75</a>).</td>
@@ -1979,9 +1984,14 @@
 </tbody>
 </table>
 <p>One emulator APK is produced, not a matrix of graphics variants. The <code>.emulator</code> suffix composes with <code>.debug</code> if a run ever sets both variables.</p>
+<div class="admonition warning">
+<p class="admonition-title">The emulator variant's mitigations are unverified on the reporting host</p>
+<p>Every row above exists because a tester's emulator/Waydroid session hung — but no agent, and no CI job, can reproduce those hosts (<a href="../testing/">testing.md</a>: no on-device or emulator testing). CI-hosted Android emulators render through SwiftShader, not a real GPU driver, and Waydroid is a container sharing the host's vCPUs and audio/graphics HALs, so neither the graphics rows (#648) nor the audio row (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/705">#705</a>) has been confirmed to actually clear the hang on the machine that reported it. They are evidence-led best-effort settings, and each one stays open until a tester confirms it against a real release APK. What <em>is</em> guaranteed here is the blast radius: the profile is applied at build time and restored afterward, so a wrong guess can only affect <code>doggiehood-vX.Y.Z-emulator.apk</code>, never the device build.</p>
+<p><strong>Invariant — the emulator profile never changes what the device build ships.</strong> Every setting it touches is captured before the build and restored after it, and none of them is committed to <code>ProjectSettings.asset</code>. <code>EmulatorBuildProcessorTests</code> asserts both halves (untouched when the environment variable is unset, restored after an emulator build) for every field in the table, so a new mitigation can't leak into the release APK.</p>
+</div>
 <div class="admonition note">
-<p class="admonition-title">Colour gamut has no public <code>PlayerSettings</code> API</p>
-<p>In Unity 6, <code>PlayerSettings.GetColorGamuts</code>/<code>SetColorGamuts</code> are <code>internal</code>, and there is no Android-specific wide-colour-gamut key at all (it's the project-wide <code>m_ColorGamuts</code> list). <code>EmulatorBuildProcessor</code> therefore reads and writes that one field through the PlayerSettings singleton's serialized data, via the public <code>Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings")</code>; every other field in the table uses a normal public API. Per <a href="../unity-serialization/">unity-serialization.md</a>, the <code>m_ColorGamuts</code> key name is verified against real <code>ProjectSettings.asset</code> files rather than guessed, and the accessor degrades to a warning (not a build failure) if it can't resolve the property.</p>
+<p class="admonition-title">Neither colour gamut nor Disable Unity Audio has a public <code>PlayerSettings</code> API</p>
+<p>In Unity 6, <code>PlayerSettings.GetColorGamuts</code>/<code>SetColorGamuts</code> are <code>internal</code>, and there is no Android-specific wide-colour-gamut key at all (it's the project-wide <code>m_ColorGamuts</code> list). "Disable Unity Audio" has no public API either, and it lives on a <em>different</em> settings singleton — <code>AudioManager</code>, not <code>PlayerSettings</code>. <code>EmulatorBuildProcessor</code> therefore reads and writes both fields through serialized data, via the public <code>Unsupported.GetSerializedAssetInterfaceSingleton(...)</code>; every other field in the table uses a normal public API. Per <a href="../unity-serialization/">unity-serialization.md</a>, <code>m_ColorGamuts</code> and <code>m_DisableAudio</code> are verified against real <code>ProjectSettings.asset</code> / <code>ProjectSettings/AudioManager.asset</code> files (and, for <code>m_DisableAudio</code>, against Unity's own <code>AudioManagerInspector</code>, which reads it as a <code>boolValue</code>) rather than guessed. Both accessors degrade to a warning rather than a build failure if the property can't be resolved — which is precisely why <code>EmulatorBuildProcessorTests</code> asserts a <strong>round trip</strong> through each one: a silently-ignored setting would otherwise look fixed while shipping the old behaviour.</p>
 </div>
 <h2 id="code-architecture-core-unity-split">Code architecture: Core / Unity split<a class="headerlink" href="#code-architecture-core-unity-split" title="Permanent link">&para;</a></h2>
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/72">#72</a> — foundational, applies to every feature</em></p>
