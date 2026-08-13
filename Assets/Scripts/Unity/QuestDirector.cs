@@ -23,12 +23,24 @@ namespace Doggiehood.Unity
         private const float RestTickInterval = 2f;
         private const float WaypointArriveDistance = 0.05f;
 
+        /// <summary>#704: seconds between quest-pacing re-checks while the app
+        /// is open. The boundary itself is hourly, so this only has to be
+        /// frequent enough that a quest appears promptly after its hour is up
+        /// (and that the refresh clock is stamped soon after a completion opens
+        /// a slot) — it is not a per-frame check. Named constant per #161.</summary>
+        private const float PacingTickInterval = 15f;
+
         public GameState State { get; private set; }
 
         private Transform worldRoot;
         private HouseUpgradeDirector houseRefresher;
         private readonly System.Random restRng = new System.Random();
         private float restTickTimer;
+
+        // #704: the recurring quest-pacing re-check (its own RNG, like the rest
+        // ticker's, so neither perturbs the other's draws).
+        private readonly System.Random pacingRng = new System.Random();
+        private float pacingTickTimer;
 
         // Per-quest home route (Core-computed waypoints) and how far along
         // it that dog has walked so far.
@@ -62,6 +74,10 @@ namespace Doggiehood.Unity
             WireHouses();
             RefreshDecorations();
             RefreshBugSwarms();
+            // #704: quests now survive a relaunch, so an accepted find-it quest
+            // needs its hidden item put back in the world — the swarms and
+            // decorations above already re-derive from Core the same way.
+            RefreshLostItems();
 
             // #436: reflect a move-in the instant Core reports one — spawn the
             // new resident(s) and drop the filled house's vacancy tint.
@@ -206,6 +222,34 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>#704: ensures every accepted LostItem quest has its hidden
+        /// item in the world — spawning one for a quest restored from the save
+        /// that has no view yet. Idempotent (a quest whose item is already in
+        /// the scene is skipped), so Init and any later re-sync just converge,
+        /// mirroring <see cref="RefreshDecorations"/> / <see cref="RefreshBugSwarms"/>.
+        /// An offered-but-unaccepted quest deliberately spawns nothing — the
+        /// item appears when the search starts, not when the quest is offered,
+        /// so a relaunch can't leak the hiding place.</summary>
+        public void RefreshLostItems()
+        {
+            var existing = Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None)
+                .Select(view => view.Quest)
+                .ToHashSet();
+
+            foreach (var quest in State.Quests.ActiveQuests)
+            {
+                if (quest.Type != QuestType.LostItem
+                    || quest.Status != QuestStatus.Accepted
+                    || !quest.HiddenItemPosition.HasValue
+                    || existing.Contains(quest))
+                {
+                    continue;
+                }
+
+                LostItemView.Spawn(State, quest, worldRoot);
+            }
+        }
+
         /// <summary>Called by the presenter when a quest is accepted.</summary>
         public void OnQuestAccepted(Quest quest)
         {
@@ -243,6 +287,32 @@ namespace Doggiehood.Unity
             {
                 restTickTimer = 0f;
                 TickRestApproaches();
+            }
+
+            // #704: re-check the quest-pacing boundary while the app is open.
+            // It used to be checked only from WorldBootstrap.Awake, which made
+            // the hourly cadence effectively "per app launch" — a five-hour
+            // session produced no new quests at all.
+            pacingTickTimer += Time.deltaTime;
+            if (pacingTickTimer >= PacingTickInterval)
+            {
+                pacingTickTimer = 0f;
+                TickQuestPacing();
+            }
+        }
+
+        /// <summary>#704: asks Core whether the quest board is due a top-up (and
+        /// keeps its refresh clock current), saving only when something
+        /// actually changed. Every decision — the onboarding gate, when the
+        /// clock starts, how many quests arrive — stays in
+        /// <see cref="QuestManager.TickQuests"/>; this layer supplies the
+        /// current UTC instant and the disk write. Called by Update at runtime
+        /// and directly by EditMode tests.</summary>
+        public void TickQuestPacing()
+        {
+            if (State.Quests.TickQuests(System.DateTime.UtcNow, pacingRng))
+            {
+                SaveStore.Save(State);
             }
         }
 

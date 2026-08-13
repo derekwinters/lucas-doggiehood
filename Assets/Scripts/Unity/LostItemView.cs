@@ -88,8 +88,13 @@ namespace Doggiehood.Unity
         private const float ShaderTransparentMode = 3f;
 
         private GameState state;
-        private Quest quest;
         private bool looksAround;
+
+        /// <summary>#704: the quest this item belongs to, so the director can
+        /// tell which accepted quests already have their item in the world when
+        /// it re-syncs after a relaunch (mirrors
+        /// <see cref="DecorationView.Decoration"/>).</summary>
+        public Quest Quest { get; private set; }
 
         private Transform glowRoot;
 
@@ -151,7 +156,7 @@ namespace Doggiehood.Unity
         {
             var view = go.AddComponent<LostItemView>();
             view.state = state;
-            view.quest = quest;
+            view.Quest = quest;
             view.looksAround = looksAround;
             if (LostItemGlow.ShouldShow(quest))
             {
@@ -199,7 +204,7 @@ namespace Doggiehood.Unity
             // contact ring floats on top of that band's mesh instead of being
             // occluded beneath it. Positioning-only: the ring's scale/colour
             // are untouched (#535/#549).
-            var surfaceHeight = state.WalkNetwork.SurfaceHeightAt(quest.HiddenItemPosition.Value);
+            var surfaceHeight = state.WalkNetwork.SurfaceHeightAt(Quest.HiddenItemPosition.Value);
             glowRoot.localPosition = new Vector3(
                 0f, (surfaceHeight - transform.position.y) * Invert(rootScale.y), 0f);
 
@@ -400,8 +405,13 @@ namespace Doggiehood.Unity
 
         private void Collect()
         {
-            if (state.Quests.TapWorldPosition(quest.HiddenItemPosition.Value))
+            if (state.Quests.TapWorldPosition(Quest.HiddenItemPosition.Value))
             {
+                // #704: finding the item completes the quest and pays out, so
+                // it is a discrete state change and has to reach the save — it
+                // was the one completion path with no write behind it.
+                SaveStore.Save(state);
+
                 // Match the mode-aware teardown RefreshBugSwarms uses (#157):
                 // Destroy is deferred in edit mode, so EditMode tests (and any
                 // edit-time caller) need DestroyImmediate to see it removed.

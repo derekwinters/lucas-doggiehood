@@ -155,6 +155,27 @@ namespace Doggiehood.Core.Quests
             // completes at the build step and releases it.
         }
 
+        /// <summary>#704: the recurring counterpart to
+        /// <see cref="EnsureQuestsForLaunch"/> — the seam the app polls on a
+        /// timer while it is open, so the hourly cadence is measured in hours
+        /// rather than in app launches (before this, the boundary was checked
+        /// only from the scene bootstrap, and a long session received no new
+        /// quests at all). Honours the same onboarding gate the launch path
+        /// does: the rotation stays suppressed until the guided reward chain
+        /// completes, and — unlike the launch path — this never seeds the
+        /// tutorial quest, which is a launch-time decision. Returns whether
+        /// anything changed, so the caller saves only when it did.
+        /// <paramref name="nowUtc"/> is a UTC instant.</summary>
+        public bool TickQuests(DateTime nowUtc, Random rng)
+        {
+            if (!state.RewardChain.IsComplete)
+            {
+                return false;
+            }
+
+            return TickPacing(nowUtc, rng);
+        }
+
         /// <summary>#316/#579: releases the onboarding reward-chain rotation
         /// suppression by seeding the first batch exactly once, when the 4-step
         /// chain completes at the build step. Unlike the recurring hourly

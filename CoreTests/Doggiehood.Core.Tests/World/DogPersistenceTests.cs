@@ -135,6 +135,24 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
+        public void ADogWhoseHouseIsNotInTheSave_IsDropped_RatherThanCrashingTheLaunch()
+        {
+            // Defensive: the scene spawns a view per dog by looking its house
+            // up, so a resident of a house that isn't there would take the whole
+            // launch down. A save should never contain one — but a hand-edited
+            // or truncated file must still open.
+            var saved = SaveCodec.Save(WithMovedInHousehold(Newcomer()));
+            var orphaned = string.Join("\n", saved.Split('\n').Where(line => !line.StartsWith("house=")));
+
+            var reloaded = SaveCodec.Load(orphaned);
+
+            Assert.That(reloaded.Dogs.Any(d => d.Name == "Biscuit"), Is.False,
+                "a dog with no house to live in is not restored");
+            Assert.That(reloaded.Dogs.Count, Is.EqualTo(GameState.CreateNew().Dogs.Count),
+                "and the rest of the roster is untouched");
+        }
+
+        [Test]
         public void Load_NeverVacatesAHouseThatStillHasResidents()
         {
             var state = WithMovedInHousehold(Newcomer());

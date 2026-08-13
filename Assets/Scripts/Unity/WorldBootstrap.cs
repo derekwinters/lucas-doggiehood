@@ -50,6 +50,21 @@ namespace Doggiehood.Unity
             // device-local). No pacing logic lives in this MonoBehaviour.
             state.Quests.EnsureQuestsForLaunch(System.DateTime.UtcNow, new System.Random());
 
+            // #704: commit what the launch itself resolved — any seeded quest,
+            // the refresh clock this launch started, and (for a save written
+            // before quests and dogs were persisted) the legacy repairs
+            // SaveCodec applied on load. Without this they lived only in memory
+            // until the next event happened to save.
+            SaveStore.Save(state);
+
+            // #704: the autosave backstop. Discrete actions still save the
+            // moment they happen; this covers everything that changes without
+            // one of those events (the quest-pacing clock advancing during a
+            // long session) and, crucially, writes on Android backgrounding and
+            // on quit — before this, a session that ended without a completion
+            // or a spend simply rolled back.
+            gameObject.AddComponent<AutoSaveDirector>().Init(state);
+
             gameObject.AddComponent<SfxPlayer>();
 
             // Shared UI canvas (#256): the Settings panel and the dog profile
@@ -384,6 +399,10 @@ namespace Doggiehood.Unity
                     }
 
                     upgradeDirector.RefreshHouse(houseId);
+                    // #704: an upgrade spends coins and raises the house's level
+                    // and decoration capacity — a discrete state change, and the
+                    // one spend path that had no save behind it.
+                    SaveStore.Save(state);
                     return true;
                 },
                 // #469: fold "not the eligible house right now" into the button's

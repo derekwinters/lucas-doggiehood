@@ -483,10 +483,16 @@ namespace Doggiehood.Core.World
         /// paying the move-in reward (the parallel of
         /// <see cref="RestoreBuiltHouse"/>). Defensively ignores a name already
         /// on the roster, since dog names are unique among active dogs and a
-        /// replayed line must never double a household.</summary>
+        /// replayed line must never double a household. Also ignores a dog
+        /// whose house is not in the save at all: the scene spawns a view per
+        /// dog by looking its house up, so a resident of a house that never
+        /// loaded would take the whole launch down — a save should never
+        /// contain one, but a truncated or hand-edited file must still
+        /// open.</summary>
         public void RestoreDog(Dog dog)
         {
-            if (dogs.Any(existing => existing.Name == dog.Name))
+            if (dogs.Any(existing => existing.Name == dog.Name)
+                || houses.All(house => house.Id != dog.HouseId))
             {
                 return;
             }

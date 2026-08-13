@@ -31,6 +31,7 @@ namespace Doggiehood.Core.Tests.Quests
         {
             var state = GameState.CreateNew();
             state.MarkOnboardingComplete();
+            state.RestoreRewardChainStep(Doggiehood.Core.Onboarding.OnboardingRewardStep.Done);
             var rng = new Random(1);
             while (state.Quests.ActiveQuests.Count() < Target(state))
             {
@@ -199,6 +200,38 @@ namespace Doggiehood.Core.Tests.Quests
             reloaded.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(17));
             Assert.That(reloaded.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
                 "so the first launch after the upgrade is not penalised an extra hour");
+        }
+
+        [Test]
+        public void TickQuests_TopsUpDuringALongSession_WithoutARelaunch()
+        {
+            // #704 cause (c): the hourly boundary was only ever checked from
+            // WorldBootstrap.Awake, so sitting in the game for hours produced no
+            // new quests at all. This is the seam the app polls while open.
+            var state = StateWithAFullBoard();
+            CompleteOneQuest(state);
+            var below = state.Quests.ActiveQuests.Count();
+
+            state.Quests.TickQuests(T0, new Random(22));
+            state.Quests.TickQuests(T0 + EconomyNumbers.RefreshInterval, new Random(23));
+
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(below),
+                "an hour of play refills the slot, exactly as an hour away would");
+        }
+
+        [Test]
+        public void TickQuests_StaysSuppressed_WhileTheOnboardingChainIsUnfinished()
+        {
+            // The recurring tick honours the same gate the launch path does:
+            // the guided reward chain holds the rotation back until it completes.
+            var state = GameState.CreateNew();
+            Assert.That(state.RewardChain.IsComplete, Is.False, "precondition: mid-chain");
+
+            state.Quests.TickQuests(T0, new Random(24));
+            state.Quests.TickQuests(T0 + TimeSpan.FromDays(1), new Random(25));
+
+            Assert.That(state.Quests.ActiveQuests, Is.Empty, "no rotation quests arrive during onboarding");
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.Null, "and no clock is started behind its back");
         }
 
         [Test]
