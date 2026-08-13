@@ -2557,7 +2557,16 @@ to a plain presence-check (see <strong>The <code>/approve</code> milestone gate<
   <code>pending-approval</code>.</li>
 <li><strong>Feature needing a new design call or a UI wireframe</strong> (CLAUDE.md rule #8) →
   <strong>stops and asks</strong> with a concrete <code>❓ Needs from Derek/Lucas:</code> question →
-  <code>needs-clarification</code> (no plan, no checklist, no milestone set).</li>
+  <code>needs-clarification</code> (no plan, no checklist, no milestone set).
+  <strong>Invariant — every <code>needs-clarification</code> hand-back carries the marker
+  verbatim</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a>):
+  the marker line is written inline with its colon, exactly as
+  <code>❓ Needs from Derek/Lucas: &lt;question&gt;</code>, on <em>every</em> hand-back comment —
+  including a one-line re-triage note that only restates an unanswered question.
+  Never restyled as a heading, never omitted. That marker is the ask route's
+  only machine-readable signature (it emits no <code>## Build checklist</code>), so a
+  restyled or missing one is what makes the reconcile sweep re-queue the issue
+  every cron sweep — see <a href="#reconciliation-pipeline-reconcile">Reconciliation</a> below.</li>
 <li><strong><code>/propose</code> set</strong> → authorized to draft the design as a marked PROPOSAL,
   with a <code>## Build checklist</code> of acceptance criteria → milestone set →
   <code>pending-approval</code>.</li>
@@ -2707,8 +2716,13 @@ dashboard for Derek):</p>
 </tr>
 <tr>
 <td><strong>Triaged, no plan</strong> (<code>requeue_triage</code>)</td>
-<td>open, <code>pending-approval</code>/<code>needs-clarification</code>, but <strong>no</strong> triage-authored analysis comment (a <code>## Build checklist</code> heading or a <code>❓ Needs from Derek/Lucas:</code> marker, <code>reconcile.has_analysis_signature</code> — the marker match tolerates Markdown emphasis, so the bolded <code>❓ **Needs from Derek/Lucas:**</code> triage actually writes counts, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a>) — the #569 half of the non-atomic hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
-<td><strong>auto-fix</strong> — strip the state label, re-add <code>ai-triage</code> so the issue re-enters triage and gets a plan; <strong>cron-only</strong> (same event-path caution as <code>requeue</code>)</td>
+<td>open, <code>pending-approval</code>/<code>needs-clarification</code>, but <strong>no</strong> triage-authored analysis comment (a <code>## Build checklist</code> heading or a <code>❓ Needs from Derek/Lucas</code> marker, <code>reconcile.has_analysis_signature</code> — the marker counts both inline with a colon, tolerant of Markdown emphasis so the bolded <code>❓ **Needs from Derek/Lucas:**</code> triage actually writes matches (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a>), and as a heading of any level with the colon optional, <code>## ❓ Needs from Derek/Lucas</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a>)) — the #569 half of the non-atomic hand-off (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/582">#582</a>)</td>
+<td><strong>auto-fix</strong> — strip the state label, re-add <code>ai-triage</code> so the issue re-enters triage and gets a plan; <strong>cron-only</strong> (same event-path caution as <code>requeue</code>), and <strong>bounded</strong> by the rule below</td>
+</tr>
+<tr>
+<td><strong>Triage stuck in a loop</strong> (<code>flag_stuck_triage</code>)</td>
+<td>the same condition as <strong>Triaged, no plan</strong>, once the issue has been handed back to <code>pending-approval</code>/<code>needs-clarification</code> <strong>3</strong> times (<code>reconcile.MAX_UNRECOGNIZED_HANDBACKS</code>, counted from its label timeline by <code>reconcile.count_handback_label_adds</code>) without the sweep ever recognizing an analysis (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a>)</td>
+<td><strong>flag</strong> — the auto-fix <strong>stops</strong>, the issue's current label is left alone, and the dashboard's "⚠️ Reconcile" section names it; <strong>cron-only</strong>, gated with the auto-fix it replaces because both are branches of one rule</td>
 </tr>
 <tr>
 <td><strong>Plan, no state</strong> (<code>flag_orphaned_analysis</code>)</td>
@@ -2750,17 +2764,52 @@ rather than reposting a duplicate analysis, detected deterministically by
 <code>triage-issue/triage_repair.py</code>.</p>
 <p>Because <code>requeue_triage</code> is an unattended auto-fix, <code>has_analysis_signature</code>
 being <em>too narrow</em> is a churn bug, not just a missed heal: an analysis it can't
-see makes the rule re-fire triage on the same issue every cron sweep, forever.
-That is exactly what
-<a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a> was — the
-recognizer matched the marker as a literal substring, while triage writes it
-bolded (<code>❓ **Needs from Derek/Lucas:**</code>), and the needs-clarification route
-never emits a <code>## Build checklist</code> heading, so the marker is those comments'
-<em>only</em> signature. The match now tolerates Markdown emphasis runs (<code>*</code>/<code>_</code>)
-around the marker text; only emphasis and horizontal whitespace may sit in the
-gaps, and the <code>❓</code> anchor is still required, so a bare prose mention of the
-phrase remains a non-match. <code>triage_repair.analysis_comment_times</code> shares the
-same recognizer, so the widening also restores the re-fire's repair path.</p>
+see makes the rule re-fire triage on the same issue every cron sweep, and triage
+then posts another near-identical comment for a question nobody has answered.
+That has now happened twice, one marker-phrasing variant apart each time.
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a> was the
+first (#100, #643) — the recognizer matched the marker as a literal substring,
+while triage writes it bolded (<code>❓ **Needs from Derek/Lucas:**</code>), and the
+needs-clarification route never emits a <code>## Build checklist</code> heading, so the
+marker is those comments' <em>only</em> signature.
+<a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a> was the
+second (#683, #684): triage wrote the same marker as a <strong>heading with no colon</strong>
+(<code>## ❓ Needs from Derek/Lucas</code>), which the colon-requiring match missed the same
+way. The match now tolerates Markdown emphasis runs (<code>*</code>/<code>_</code>) around the marker
+text <strong>and</strong> accepts the heading form at any level with the colon optional; only
+emphasis and horizontal whitespace may sit in the gaps, the <code>❓</code> anchor is still
+required, and the heading must be the whole line — so a bare prose mention of
+the phrase remains a non-match. <code>triage_repair.analysis_comment_times</code> shares the
+same recognizer, so each widening also restores the re-fire's repair path.</p>
+<p><strong>Invariant — the sweep never re-queues one issue unboundedly</strong>
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a>). Widening
+the recognizer fixes the <em>known</em> phrasing and re-arms the same trap for the next
+one, so the bound, not the regex, is what ends this class of bug. After <strong>3</strong>
+hand-backs (<code>reconcile.MAX_UNRECOGNIZED_HANDBACKS</code> — the flap count actually
+observed on #684) with no analysis the sweep can recognize, <code>requeue_triage</code>
+stops firing on that issue and <code>flag_stuck_triage</code> surfaces it on the dashboard
+instead, naming the state it is stuck in and the hand-back count. A recognizer
+gap must degrade to a flag a human sees, never to unattended churn. The count is
+read from the issue's label timeline — hand-back label <em>adds</em>, which are one per
+triage run and need no author attribution, rather than <code>ai-triage</code> re-adds, which
+<code>/admit</code>, <code>/revise</code>, <code>/redo</code> and the blocker-revisit sweep also produce. It
+degrades to <code>0</code> when the timeline read fails, so an API hiccup can never suppress
+the healing auto-fix. The complementary half of the fix lives in
+<code>triage-issue/SKILL.md</code>, whose <code>needs-clarification</code> route now carries an
+invariant making the inline marker mandatory verbatim on <em>every</em> hand-back
+comment — including a one-line "still waiting on your ruling" note, the shape
+that carried no marker at all on #684 and that no recognizer can see.</p>
+<blockquote>
+<p><strong>How the spec is changing (#710).</strong> This page used to say <code>requeue_triage</code>
+auto-fixes <em>every</em> hand-back with no recognizable analysis, unconditionally, on
+every cron sweep — and it named a too-narrow recognizer as the hazard while
+leaving nothing to stop the resulting loop. It now says the auto-fix is
+<strong>bounded</strong>: after three unrecognized hand-backs it stops and hands off to a
+new <code>flag_stuck_triage</code> dashboard flag. Because the previous round of this fix
+(<a href="https://github.com/derekwinters/lucas-doggiehood/issues/654">#654</a>) answered
+the loop-guard question with "a recognizer fix alone suffices," and the loop
+came straight back one phrasing variant later on #683 and #684.</p>
+</blockquote>
 <p><strong><code>requeue</code> is gated to the cron backstop only</strong>
 (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/319">#319</a>;
 <code>reconcile.process(data, events_only=True)</code> on the event path omits it
@@ -2832,7 +2881,8 @@ milestone is visible at every stage of the flow (<a href="https://github.com/der
 on the focus ready-for-work queue it is constant (the focus milestone) and is
 shown for consistency. The dashboard also carries
 a <strong>"⚠️ Reconcile"</strong> section listing the sweep's flag findings (merged-but-open,
-orphaned ready, prose-only dependencies — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a>),
+orphaned ready, prose-only dependencies — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/246">#246</a> —
+and triage loops the sweep has stopped auto-requeuing, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/710">#710</a>),
 other-milestone progress, and the command reference. In the focus ready-for-work
 queue, <strong>unblocking issues are starred</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/250">#250</a>):
 an issue that is open, not itself blocked by any open issue, and listed in at
