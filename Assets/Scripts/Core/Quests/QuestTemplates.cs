@@ -77,21 +77,25 @@ namespace Doggiehood.Core.Quests
                 "\"I'll head home and keep an eye out for the delivery truck!\"",
             },
             new Dictionary<Personality, IReadOnlyList<string>>(),
+            // #708: a Gift quest is paid for at accept and the truck is
+            // dispatched right then, so its reminder pool speaks in the
+            // already-bought voice — never "have you got it yet?".
             new[]
             {
-                "{dog} looks up hopefully. \"Any luck getting me that {item}?\"",
-                "{dog} wags gently. \"Still thinking about my {item}?\"",
-                "{dog} nudges your hand. \"Did you manage to get that {item} yet?\"",
+                "{dog} watches the road. \"My {item} is on its way — thanks for ordering it!\"",
+                "{dog} wags its tail. \"Just waiting on the delivery truck to bring my {item} now!\"",
+                "{dog} peeks down the street. \"That {item} is paid for and coming. I can hardly wait!\"",
             },
             new Dictionary<Personality, IReadOnlyList<string>>
             {
-                { Personality.Grumpy, new[] { "{dog} huffs. \"That {item} isn't going to buy itself, you know.\"" } },
-                { Personality.Excited, new[] { "{dog} spins in a circle! \"Is it {item} time yet?! Is it?!\"" } },
-                { Personality.Shy, new[] { "{dog} paws the ground. \"No rush on the {item}... but, um, any news?\"" } },
-                { Personality.Brave, new[] { "{dog} nods firmly. \"Status on the {item}? The household is counting on it.\"" } },
-                { Personality.Adventurous, new[] { "{dog} grins. \"That {item} for my next adventure — on its way?\"" } },
-                { Personality.Athletic, new[] { "{dog} stretches. \"Still need that {item} for training. Close?\"" } },
-            });
+                { Personality.Grumpy, new[] { "{dog} huffs. \"That {item}'s bought and on its way. About time, too.\"" } },
+                { Personality.Excited, new[] { "{dog} spins in a circle! \"My {item} is coming! It's actually COMING!\"" } },
+                { Personality.Shy, new[] { "{dog} paws the ground. \"Um... I heard my {item} is on its way. I'll wait right here.\"" } },
+                { Personality.Brave, new[] { "{dog} nods firmly. \"The {item} is ordered and en route. I'll hold the post until it lands.\"" } },
+                { Personality.Adventurous, new[] { "{dog} grins. \"My {item}'s already on its way — the adventure starts the moment it lands!\"" } },
+                { Personality.Athletic, new[] { "{dog} stretches. \"Delivery's rolling in with my {item}. I'll warm up in the meantime!\"" } },
+            },
+            PendingActionOwner.Game);
 
         /// <summary>#701: the fence's own "Buy something" pools. The fence is
         /// the one Gift subject with no delivery leg (#318) — accepting installs
@@ -99,7 +103,14 @@ namespace Doggiehood.Core.Quests
         /// <see cref="BuyGift"/> pools, whose closers promise a delivery truck
         /// and a walk home and whose openers frame the subject as a portable
         /// handed-over gift. First-draft placeholder text like every other pool
-        /// here; the writing pass is #100.</summary>
+        /// here; the writing pass is #100.
+        ///
+        /// <para>#708: it keeps the default player-owed reminder voice rather
+        /// than the generic Gift pool's "your delivery is on its way" — there is
+        /// no delivery to acknowledge. In practice the fence completes at accept,
+        /// so it never sits Accepted and never reaches a reminder at all; the
+        /// pool exists only so the template has the same shape as every
+        /// other.</para></summary>
         private static readonly QuestTemplate BuyFence = new QuestTemplate(
             new[]
             {
@@ -198,21 +209,25 @@ namespace Doggiehood.Core.Quests
                 "\"Whatever you find comfy is fine by me!\"",
             },
             new Dictionary<Personality, IReadOnlyList<string>>(),
+            // #708: the player picks the option and pays for it at accept, and
+            // the truck leaves with that choice — so the reminder acknowledges
+            // the chosen item is coming rather than asking for it again.
             new[]
             {
-                "{dog} glances at the yard. \"Still thinking about that {item} for out here?\"",
-                "{dog} flops in the grass. \"Any word on my {item} for the yard?\"",
-                "{dog} looks around the yard. \"That {item} would still be lovely — any luck?\"",
+                "{dog} glances at the yard. \"The {item} is on its way over — this spot's all ready for it.\"",
+                "{dog} flops in the grass. \"Just waiting on the truck to drop off my {item}. Won't be long!\"",
+                "{dog} looks around the yard. \"My {item} is paid for and coming. The yard's about to get so comfy.\"",
             },
             new Dictionary<Personality, IReadOnlyList<string>>
             {
-                { Personality.Grumpy, new[] { "{dog} sighs. \"This yard is still uncomfortable. Where's my {item}?\"" } },
-                { Personality.Excited, new[] { "{dog} zooms across the yard! \"Is the {item} coming?! I can't wait to try it out!\"" } },
-                { Personality.Shy, new[] { "{dog} looks at the ground. \"The yard's still a bit bare... any news on the {item}?\"" } },
-                { Personality.Brave, new[] { "{dog} surveys the yard. \"The {item} for the post — arranged yet?\"" } },
-                { Personality.Adventurous, new[] { "{dog} flops down. \"Still craving that {item} to rest on after a trek.\"" } },
-                { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery {item} for the yard — close, coach?\"" } },
-            });
+                { Personality.Grumpy, new[] { "{dog} sighs. \"The {item} is on its way. This yard had better feel better with it here.\"" } },
+                { Personality.Excited, new[] { "{dog} zooms across the yard! \"The {item} is COMING! I'm trying it out the second it lands!\"" } },
+                { Personality.Shy, new[] { "{dog} looks at the ground. \"I heard my {item} is on its way... I'll just wait quietly over here.\"" } },
+                { Personality.Brave, new[] { "{dog} surveys the yard. \"The {item} is ordered and en route. The post will be properly equipped.\"" } },
+                { Personality.Adventurous, new[] { "{dog} flops down. \"My {item}'s on its way — a proper rest spot after the next trek!\"" } },
+                { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery {item} is on the truck, coach. Right on schedule!\"" } },
+            },
+            PendingActionOwner.Game);
 
         /// <summary>#701: the subject-aware template lookup — the seam that
         /// keeps a quest's dialogue matching the mechanic that quest actually

@@ -33,10 +33,6 @@ namespace Doggiehood.Unity
 
         private const string NotNowLabel = "Not now";
 
-        // #472: the reminder's dismiss pill reuses the exact non-punishing
-        // "Not now" close, just relabeled for the active-quest context.
-        private const string StillLookingLabel = "Still looking";
-
         // --- Wireframe layout constants (docs/specs/ui/conversation-panel.md,
         // #175 / #161: named, never inline) ---
 
@@ -103,8 +99,15 @@ namespace Doggiehood.Unity
 
         /// <summary>#472: true when the open conversation is a reminder for an
         /// already-Accepted quest (dismiss-only), false for an Available offer
-        /// (accept/decline). Drives the action row's single "Still looking" pill.</summary>
+        /// (accept/decline). Drives the action row's single dismiss pill.</summary>
         private bool isReminder;
+
+        /// <summary>#708: the open reminder's dismiss label, read off the same
+        /// Core template the reminder line was drawn from — "Still looking" when
+        /// the player still owes the next action, "On its way" once the purchase
+        /// is made and the delivery is in flight. Held rather than re-derived so
+        /// the pill and the line can never come from different templates.</summary>
+        private string reminderDismissLabel;
 
         /// <summary>#472: reminder lines are pure-random each fire (no anti-repeat,
         /// no persisted state), matching the template's Model 2 convention — a
@@ -205,6 +208,7 @@ namespace Doggiehood.Unity
         {
             StatusMessage = null;
             isReminder = false;
+            reminderDismissLabel = null;
             currentDogName = dog.Name;
 
             if (State != null)
@@ -223,7 +227,8 @@ namespace Doggiehood.Unity
 
                 // #472: the "active" quest re-tapping should remind about — a
                 // quest already accepted for this dog. Render its pooled reminder
-                // line and show a dismiss-only "Still looking" action row.
+                // line and show a dismiss-only action row, labeled by whoever
+                // owes the next action (#708).
                 var acceptedQuest = System.Linq.Enumerable.FirstOrDefault(
                     State.Quests.ActiveQuests,
                     q => q.DogName == dog.Name && q.Status == Doggiehood.Core.Quests.QuestStatus.Accepted);
@@ -235,8 +240,13 @@ namespace Doggiehood.Unity
                     // #701: subject-aware selection here too, so the reminder is
                     // drawn from the same pools the opener/closer came from and
                     // never re-promises a mechanic this quest doesn't run.
-                    var reminderLine = Doggiehood.Core.Quests.QuestTemplates
-                        .For(acceptedQuest.Type, acceptedQuest.ItemName)
+                    var reminderTemplate = Doggiehood.Core.Quests.QuestTemplates
+                        .For(acceptedQuest.Type, acceptedQuest.ItemName);
+                    // #708: the dismiss label comes off that same template, so the
+                    // pill always agrees with the line about who owes the next
+                    // action — no QuestType switch in this Unity layer.
+                    reminderDismissLabel = reminderTemplate.ReminderDismissLabel;
+                    var reminderLine = reminderTemplate
                         .RenderReminder(dog, acceptedQuest.ItemName, reminderRng);
                     Current = new Conversation(new[] { reminderLine }, ConversationEnding.Accept);
                     ShowView();
@@ -327,6 +337,7 @@ namespace Doggiehood.Unity
             Current = null;
             currentQuest = null;
             isReminder = false;
+            reminderDismissLabel = null;
             StatusMessage = null;
             if (content != null)
             {
@@ -392,7 +403,10 @@ namespace Doggiehood.Unity
         /// per decoration choice (#50) or a single Accept/Complete/Buy pill —
         /// each greyed + non-interactive when unaffordable (#186). For an
         /// active-quest reminder (#472) the row is that single dismiss pill alone,
-        /// relabeled "Still looking" with no accept/complete affordance.</summary>
+        /// relabeled by the quest's Core template — "Still looking" while the
+        /// player still owes the next action, "On its way" once the item is
+        /// bought and the delivery is in flight (#708) — with no
+        /// accept/complete affordance.</summary>
         private void RebuildActionRow()
         {
             foreach (var pill in allPills)
@@ -405,7 +419,7 @@ namespace Doggiehood.Unity
 
             declinePill = CreatePill(
                 "NotNowPill",
-                isReminder ? StillLookingLabel : NotNowLabel,
+                isReminder ? reminderDismissLabel : NotNowLabel,
                 CandyChromeUgui.Cream,
                 interactable: true);
             declinePill.Button.onClick.AddListener(DeclineCurrent);
