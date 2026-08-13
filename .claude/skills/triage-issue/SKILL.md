@@ -172,6 +172,20 @@ from Derek), and the `/docs` pages it relates to. Then route:
    the visible churn #396 targets. Only post a fresh `needs-clarification`
    analysis when the blocker set or the conclusion has actually changed.
 
+   **Invariant — every `needs-clarification` hand-back carries the marker
+   verbatim** ([#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)).
+   Every comment that hands an issue to `needs-clarification` — including a short
+   re-triage or "still waiting on your ruling" note — contains the marker line
+   **exactly** as `❓ Needs from Derek/Lucas: <question>`: inline, colon
+   present, never restyled as a `## ❓ Needs from Derek/Lucas` heading, and never
+   omitted because the note is only a sentence long. Bolding the marker text is
+   the one permitted variation. This is not a style preference: the ask route
+   never emits a `## Build checklist`, so the marker is the comment's **only**
+   machine-readable signature, and a hand-back the reconcile sweep can't see gets
+   re-queued to `ai-triage` every cron sweep until the `flag_stuck_triage` bound
+   stops it (`pipeline-reconcile`, #710). Restyling the marker is how #683 and
+   #684 started flapping; #100 and #643 flapped one variant earlier (#654).
+
 4. **`/propose` present on the issue** (an owner comment containing `/propose`)
    → you are authorized to draft the missing wireframe/mechanic, but only as a
    clearly-marked **PROPOSAL** (prefix the section `PROPOSAL (draft for your

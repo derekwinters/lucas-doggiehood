@@ -31,7 +31,8 @@ Input schema (stdin):
     "issues": [
       {"number": 109, "state": "open", "labels": ["in-progress"],
        "milestone": "v0.4", "is_epic": false, "is_dashboard": false,
-       "has_open_pr": false, "prose_deps": [178]}
+       "has_open_pr": false, "prose_deps": [178],
+       "has_analysis_comment": false, "handback_label_adds": 0}
     ],
     "merged_commit_body_refs": [56, 54, 189, 222],
     "deliverables_present": {"58": true}
@@ -47,11 +48,14 @@ Output schema (stdout):
     "flag_done":               [{"number": 56, "reason": "..."}],
     "flag_orphaned_ready":     [{"number": 300}],
     "flag_prose_dep":          [{"number": 178, "refs": [109]}],
-    "flag_orphaned_analysis":  [{"number": 570}]
+    "flag_orphaned_analysis":  [{"number": 570}],
+    "flag_stuck_triage":       [{"number": 684,
+                                "handback_state": "needs-clarification",
+                                "handbacks": 3}]
   }
 
 ``strip_labels``, ``requeue`` and ``requeue_triage`` are the auto-fixes
-(applied by the gatekeeper); the four ``flag_*`` lists are surfaced read-only
+(applied by the gatekeeper); the five ``flag_*`` lists are surfaced read-only
 on the dashboard. Every list is sorted by issue number.
 
 ``requeue_triage`` / ``flag_orphaned_analysis`` catch the non-atomic reactive-
@@ -60,6 +64,11 @@ hand-back state label as two separate writes, so a partial failure can leave a
 state label with no analysis (``requeue_triage`` re-queues it to ``ai-triage``)
 or an analysis with no state label (``flag_orphaned_analysis`` flags it — the
 intended state is ambiguous). ``has_analysis_comment`` per issue drives both.
+
+``flag_stuck_triage`` (#710) is the BOUND on ``requeue_triage``: past
+``MAX_UNRECOGNIZED_HANDBACKS`` hand-backs with no analysis the sweep can see,
+re-queuing has demonstrably not healed anything, so the auto-fix stops and the
+issue is flagged instead. ``handback_label_adds`` per issue drives it.
 """
 
 import json
@@ -91,6 +100,22 @@ FLAG_DONE_REASON = "work landed on main (merged commit body / deliverables) but 
 # post-approval `ready-for-work`/`in-progress` states.
 TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
 
+# The structural stop on `requeue_triage` (issue #710). `requeue_triage` is an
+# unattended auto-fix, so a `has_analysis_signature` that cannot see an issue's
+# analysis re-fires triage on that issue every cron sweep, forever — twice now
+# (#100/#643 → #654, then #683/#684 → #710), each time one marker-phrasing
+# variant later. Widening the recognizer fixes the known variant; this bound is
+# what stops the NEXT one from churning. Once an issue has been handed back this
+# many times WITHOUT the sweep ever recognizing an analysis, the auto-fix stops
+# and `flag_stuck_triage` surfaces it on the dashboard instead.
+#
+# **Invariant — the sweep never re-queues one issue unboundedly.** A recognizer
+# gap must degrade to a flag a human sees, never to unattended churn.
+#
+# N = 3 is the flap count actually observed on #684 before #710 was filed — a
+# real, already-seen threshold rather than a guessed one.
+MAX_UNRECOGNIZED_HANDBACKS = 3
+
 # A triage-authored analysis comment identifies itself with one of the two
 # hand-back shapes `triage-issue/SKILL.md` defines: a `## Build checklist`
 # heading (the bug / spec-feature / `/propose` routes) or the `❓ Needs from
@@ -108,29 +133,73 @@ TRIAGE_HANDBACK_LABELS = ["pending-approval", "needs-clarification"]
 # horizontal whitespace may sit in the gaps — never arbitrary prose — and the
 # `❓` anchor stays required, so a bare mention of the phrase is still not a
 # signature.
+#
+# The marker is ALSO matched as a Markdown HEADING with no trailing colon
+# (issue #710) — `## ❓ Needs from Derek/Lucas` — which is how triage wrote it on
+# #683 and #684, and which the colon-requiring form above missed exactly the way
+# #654's literal-substring form missed the bolded one. A heading is a structural
+# element, so no colon is needed to keep it unambiguous; the `❓` anchor is still
+# required and the heading must be the whole line, so a prose mention (or a
+# heading merely naming the phrase) is still not a signature.
 _ANALYSIS_HEADING_RE = re.compile(r"(?im)^[ \t]*#{1,6}[ \t]+build checklist[ \t]*$")
 _EMPHASIS = r"[ \t]*[*_]*[ \t]*"
 _NEEDS_CLARIFICATION_RE = re.compile(
     r"❓" + _EMPHASIS + r"Needs from Derek/Lucas" + _EMPHASIS + r":")
+_NEEDS_CLARIFICATION_HEADING_RE = re.compile(
+    r"(?im)^[ \t]*#{1,6}" + _EMPHASIS + r"❓" + _EMPHASIS
+    + r"Needs from Derek/Lucas" + _EMPHASIS + r":?[ \t]*$")
 
 
 def has_analysis_signature(text):
     """True iff ``text`` carries a triage-authored analysis signature.
 
     The signature is a ``## Build checklist`` heading (any heading level,
-    case-insensitive) OR the ``❓ Needs from Derek/Lucas:`` marker — the two
+    case-insensitive) OR the ``❓ Needs from Derek/Lucas`` marker — the two
     hand-back comment shapes ``triage-issue/SKILL.md`` produces. The marker is
-    matched tolerantly of Markdown emphasis around its text (issue #654), so the
-    bolded form triage actually writes — ``❓ **Needs from Derek/Lucas:**`` —
-    counts, as do the italic/underscore variants and a colon outside the
-    emphasis run. A plain comment that merely mentions the word "checklist" in
-    prose does not match (the heading form is required), and neither does the
-    marker phrase without its ``❓`` anchor.
+    recognized in both shapes triage actually writes:
+
+    * **inline**, with a required colon and tolerant of Markdown emphasis around
+      the text (issue #654) — ``❓ **Needs from Derek/Lucas:**`` and its
+      italic/underscore variants, colon inside or outside the emphasis run;
+    * **as a heading** of any level, with the colon optional (issue #710) —
+      ``## ❓ Needs from Derek/Lucas`` — since the heading itself is what makes
+      the line unambiguous.
+
+    A plain comment that merely mentions the word "checklist" in prose does not
+    match (the heading form is required), and neither does the marker phrase
+    without its ``❓`` anchor, in prose or in a heading.
     """
     text = text or ""
     if _NEEDS_CLARIFICATION_RE.search(text):
         return True
+    if _NEEDS_CLARIFICATION_HEADING_RE.search(text):
+        return True
     return bool(_ANALYSIS_HEADING_RE.search(text))
+
+
+def count_handback_label_adds(events):
+    """How many times ``events`` hands the issue back to Derek.
+
+    Counts the ``labeled`` timeline events that add a hand-back state label
+    (``pending-approval`` / ``needs-clarification``) — one per completed triage
+    run. Pure events-in / int-out; the paginated timeline read that feeds it
+    lives in ``fetch_state``. Malformed entries are ignored.
+
+    Hand-back ADDS are counted rather than ``ai-triage`` re-adds deliberately
+    (issue #710): ``ai-triage`` is also added by ``/admit``, ``/revise``,
+    ``/redo`` and the blocker-revisit sweep, and a single label ``PUT`` emits its
+    ``labeled``/``unlabeled`` events with identical timestamps in no guaranteed
+    order, so a hand-back → ``ai-triage`` *pairing* cannot be reconstructed
+    reliably. The hand-back add needs no pairing and no author attribution.
+    """
+    count = 0
+    for e in events or []:
+        if not isinstance(e, dict) or e.get("event") != "labeled":
+            continue
+        label = e.get("label") or {}
+        if label.get("name") in TRIAGE_HANDBACK_LABELS:
+            count += 1
+    return count
 
 
 def _is_done(number, body_refs, deliverables):
@@ -169,6 +238,7 @@ def process(data, events_only=False):
     flag_orphaned_ready = []
     flag_prose_dep = []
     flag_orphaned_analysis = []
+    flag_stuck_triage = []
 
     for issue in data.get("issues", []):
         # Excluded throughout the pipeline: epics, the dashboard issue, parked.
@@ -212,6 +282,7 @@ def process(data, events_only=False):
         # neither self-heals under the rules above.
         has_analysis = issue.get("has_analysis_comment", False)
         handback = [l for l in TRIAGE_HANDBACK_LABELS if l in labels]
+        handbacks = issue.get("handback_label_adds", 0) or 0
         if handback and not has_analysis and not events_only:
             # Rule (a) — the #569 shape: a hand-back state label is set but no
             # analysis comment was ever posted, so there is no plan for Derek to
@@ -220,8 +291,23 @@ def process(data, events_only=False):
             # Cron-only, like `requeue`: on the event path a just-set
             # `pending-approval` can momentarily precede the analysis comment's
             # visibility, and requeuing it there would churn a healthy triage.
-            requeue_triage.append({"number": number, "from": handback[0],
-                                   "to": "ai-triage"})
+            #
+            # ...BOUNDED (#710). Past `MAX_UNRECOGNIZED_HANDBACKS` hand-backs
+            # with no analysis the sweep can see, the auto-fix has demonstrably
+            # not healed anything — re-firing it again only reposts another
+            # near-duplicate comment. Stop and FLAG instead, leaving the issue's
+            # current label alone, so the cause (almost always a recognizer that
+            # cannot see the hand-back's marker) is visible on the dashboard
+            # rather than churning silently. The count degrades to 0 when the
+            # timeline read fails, which keeps the healing auto-fix as the
+            # default.
+            if handbacks >= MAX_UNRECOGNIZED_HANDBACKS:
+                flag_stuck_triage.append({"number": number,
+                                          "handback_state": handback[0],
+                                          "handbacks": handbacks})
+            else:
+                requeue_triage.append({"number": number, "from": handback[0],
+                                       "to": "ai-triage"})
         if has_analysis and not any(l in labels for l in PIPELINE_STATE_LABELS):
             # Rule (b) — the residual #570 shape: a full analysis comment exists
             # but no pipeline-state label at all, so the issue is invisible to
@@ -246,6 +332,7 @@ def process(data, events_only=False):
         "flag_orphaned_ready": sorted(flag_orphaned_ready, key=by_num),
         "flag_prose_dep": sorted(flag_prose_dep, key=by_num),
         "flag_orphaned_analysis": sorted(flag_orphaned_analysis, key=by_num),
+        "flag_stuck_triage": sorted(flag_stuck_triage, key=by_num),
     }
 
 
@@ -390,6 +477,25 @@ def _issue_has_analysis_comment(repo, number, token):
                if isinstance(c, dict))
 
 
+def _issue_handback_label_adds(repo, number, token):
+    """How many times issue ``#number`` has been handed back to Derek.
+
+    Pages the issue's event timeline (``GET /repos/{repo}/issues/{n}/timeline``)
+    and counts its hand-back label adds via the pure
+    ``count_handback_label_adds``. I/O only, not exercised by the unit tests
+    (same split as the rest of this fetch layer). Any HTTP error degrades safely
+    to ``0`` — the same direction as ``_issue_has_analysis_comment``'s ``False``:
+    an unreadable timeline must never let the ``flag_stuck_triage`` guard
+    suppress the healing ``requeue_triage`` auto-fix.
+    """
+    try:
+        events = _paginate(
+            "/repos/%s/issues/%d/timeline" % (repo, number), token)
+    except urllib.error.HTTPError:
+        return 0
+    return count_handback_label_adds(events)
+
+
 def prose_deps_in(body, native_refs=()):
     """Issue numbers referenced as a dependency **only in prose** in ``body``.
 
@@ -469,6 +575,15 @@ def fetch_state(repo, token):
         # closed ones are skipped.
         has_analysis = (_issue_has_analysis_comment(repo, i["number"], token)
                         if i["state"] == "open" else False)
+        # `handback_label_adds` (#710) feeds the `flag_stuck_triage` bound on
+        # `requeue_triage`. Only fetched for an OPEN issue that is actually in a
+        # hand-back state with no analysis the sweep can see — the single branch
+        # that consults it — so the extra timeline read costs nothing on a
+        # healthy board.
+        needs_count = (i["state"] == "open" and not has_analysis
+                       and any(l in labels for l in TRIAGE_HANDBACK_LABELS))
+        handback_adds = (_issue_handback_label_adds(repo, i["number"], token)
+                         if needs_count else 0)
         issues.append({
             "number": i["number"],
             "state": i["state"],
@@ -480,6 +595,7 @@ def fetch_state(repo, token):
             "prose_deps": prose_deps_in(i.get("body") or "",
                                         native_refs=native_refs),
             "has_analysis_comment": has_analysis,
+            "handback_label_adds": handback_adds,
         })
 
     return {

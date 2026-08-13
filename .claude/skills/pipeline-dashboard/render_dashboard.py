@@ -327,14 +327,16 @@ def _reconcile_section(a, repo, rec):
     """Read-only "⚠️ Reconcile" section — board state drifted from reality.
 
     Lists the *flag* findings from the reconciliation sweep (issue #246):
-    merged-but-open issues to close, orphaned ready-for-work, and prose-only
-    dependency references. The safe auto-fixes (stale-label strips, requeues)
-    are applied by the gatekeeper routine, not shown as pending here; their
-    counts are noted so the sweep's activity is visible.
+    merged-but-open issues to close, orphaned ready-for-work, prose-only
+    dependency references, and triage loops the sweep has stopped auto-requeuing
+    (issue #710). The safe auto-fixes (stale-label strips, requeues) are applied
+    by the gatekeeper routine, not shown as pending here; their counts are noted
+    so the sweep's activity is visible.
     """
     done = rec.get("flag_done", [])
     orphaned = rec.get("orphaned_ready", [])
     prose = rec.get("prose_dep", [])
+    stuck = rec.get("stuck_triage", [])
     fixed = rec.get("auto_fixed") or {}
 
     a("## ⚠️ Reconcile — board drifted from reality")
@@ -371,7 +373,23 @@ def _reconcile_section(a, repo, rec):
             a("| %s | %s | %s |"
               % (_issue_link(repo, it["number"]), it["title"], refs))
         a("")
-    if not (done or orphaned or prose):
+    if stuck:
+        # Issue #710. The auto-requeue is bounded, and the bound has to be
+        # visible: an invisible stop is the old silent churn with fewer
+        # comments. Almost always the cause is a hand-back comment whose marker
+        # the sweep's recognizer cannot see.
+        a("**🔁 Triage stuck in a loop** — handed back repeatedly with no "
+          "analysis the sweep can recognize; auto-requeue **stopped**, these "
+          "need a look:")
+        a("")
+        a("| Issue | Summary | Stuck in | Hand-backs |")
+        a("| - | - | - | - |")
+        for it in stuck:
+            a("| %s | %s | `%s` | %s |"
+              % (_issue_link(repo, it["number"]), it["title"],
+                 it.get("handback_state", ""), it.get("handbacks", "")))
+        a("")
+    if not (done or orphaned or prose or stuck):
         a("_✅ Nothing to reconcile — every issue's labels match reality._")
         a("")
 
@@ -727,10 +745,15 @@ def _reconcile_block(repo, token, issues):
 
     prose = [{"number": f["number"], "title": titles.get(f["number"], ""),
               "refs": f.get("refs", [])} for f in findings["flag_prose_dep"]]
+    stuck = [{"number": f["number"], "title": titles.get(f["number"], ""),
+              "handback_state": f.get("handback_state", ""),
+              "handbacks": f.get("handbacks", 0)}
+             for f in findings.get("flag_stuck_triage", [])]
     return {
         "flag_done": rows(findings["flag_done"]),
         "orphaned_ready": rows(findings["flag_orphaned_ready"]),
         "prose_dep": prose,
+        "stuck_triage": stuck,
         "auto_fixed": {"strip_labels": len(findings["strip_labels"]),
                        "requeue": len(findings["requeue"])},
     }

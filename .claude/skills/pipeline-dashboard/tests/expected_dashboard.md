@@ -118,6 +118,12 @@ _Detected by the reconciliation sweep. Auto-fixes (stale-label strips, requeues)
 | - | - | - |
 | [#178](https://github.com/derekwinters/lucas-doggiehood/issues/178) | Depends on the tile grid in prose | [#109](https://github.com/derekwinters/lucas-doggiehood/issues/109) |
 
+**🔁 Triage stuck in a loop** — handed back repeatedly with no analysis the sweep can recognize; auto-requeue **stopped**, these need a look:
+
+| Issue | Summary | Stuck in | Hand-backs |
+| - | - | - | - |
+| [#684](https://github.com/derekwinters/lucas-doggiehood/issues/684) | Mechanical gate for agent development | `needs-clarification` | 3 |
+
 _Sweep auto-fixed this run: 2 stale-label strip(s), 1 requeue(s)._
 
 ---

@@ -276,6 +276,18 @@ class TestRender(unittest.TestCase):
         # Auto-fix activity note.
         self.assertIn("2 stale-label strip(s), 1 requeue(s)", self.body)
 
+    def test_reconcile_section_lists_stuck_triage(self):
+        # Issue #710: when the sweep stops auto-requeuing an issue it can never
+        # heal, the stop has to be VISIBLE — an invisible stop is just the old
+        # silent churn with fewer comments. The flag names the issue, the state
+        # it is stuck in, and how many hand-backs it took to get there.
+        self.assertIn("Triage stuck in a loop", self.body)
+        self.assertIn(
+            "[#684](https://github.com/derekwinters/lucas-doggiehood/issues/684)",
+            self.body,
+        )
+        self.assertIn("`needs-clarification`", self.body)
+
     def test_reconcile_empty_shows_clean_message(self):
         state = load_state()
         state["reconcile"] = {}

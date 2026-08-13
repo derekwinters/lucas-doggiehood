@@ -49,6 +49,25 @@ class TestAnalysisCommentTimes(unittest.TestCase):
                      "created_at": FRESH}]
         self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
 
+    def test_heading_form_needs_marker_counts_as_analysis(self):
+        # Issue #710: triage also writes the marker as a HEADING with no colon
+        # (`## ❓ Needs from Derek/Lucas`) — the shape on #683 and #684. The
+        # repair path shares reconcile's recognizer, so a re-fire landing on one
+        # of those comments must repair the label move, not repost a duplicate.
+        comments = [{"body": "## ❓ Needs from Derek/Lucas\n\n**Primary…**",
+                     "created_at": FRESH}]
+        self.assertEqual(triage_repair.analysis_comment_times(comments), [FRESH])
+
+    def test_heading_form_re_fire_is_repair_end_to_end(self):
+        comments = [
+            {"body": "/admit", "created_at": READMIT},
+            {"body": "## Triage — stopping here\n\n## ❓ Needs from Derek/Lucas"
+                     "\n\nWhich gate do you want?", "created_at": FRESH},
+        ]
+        times = triage_repair.analysis_comment_times(comments)
+        self.assertTrue(triage_repair.is_partial_write_repair(
+            ["ai-triage"], times, READMIT))
+
     def test_no_analysis_comments_empty(self):
         comments = [{"body": "/admit", "created_at": READMIT},
                     {"body": "LGTM", "created_at": FRESH}]

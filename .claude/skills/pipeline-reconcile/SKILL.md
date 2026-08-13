@@ -63,6 +63,9 @@ findings).
 | **Merged-but-open** (incl. bundled squash) | open, work **is** on `main` (merged-commit-body ref or deliverables present) | **flag** → `flag_done`; surfaced on the dashboard for Derek to close, *not* auto-closed |
 | **Orphaned ready** (stretch) | open, `ready-for-work`, **no milestone** | **flag** → `flag_orphaned_ready` |
 | **Prose-only dependency** | open, body mentions `depends on #N` / `blocked by #N` in prose with no matching structured `Blocked by:` / `Depends on:` line for that number (`reconcile.prose_deps_in`, #248) | **flag** → `flag_prose_dep` |
+| **Triaged, no plan** | open, `pending-approval`/`needs-clarification` with **no** triage-authored analysis comment (`reconcile.has_analysis_signature`), the #569 half of the non-atomic hand-off (#582) | **auto-fix** → `requeue_triage` (state label → `ai-triage`), **bounded** — see below |
+| **Plan, no state** | open, carries a triage analysis comment but **none** of the pipeline-state labels (the residual #570 shape, #582) | **flag** → `flag_orphaned_analysis` (which hand-back state was intended is ambiguous) |
+| **Triage stuck in a loop** | the same condition as **Triaged, no plan**, once the issue has been handed back `MAX_UNRECOGNIZED_HANDBACKS` (3) times without the sweep ever recognizing an analysis (#710) | **flag** → `flag_stuck_triage`; the auto-fix **stops** and the issue's label is left alone |
 
 Why this split: the two auto-fixes are **safe and unambiguous** — a closed issue
 must not keep a pipeline-state label, and a stalled issue with no work on `main`
@@ -76,6 +79,19 @@ re-pick loop where the builder kept picking up already-done work.
 
 `type:epic` issues, the dashboard issue (#193), and `parked` issues are excluded
 throughout, matching the rest of the pipeline.
+
+**Invariant — the sweep never re-queues one issue unboundedly** (#710).
+`requeue_triage` is unattended, so a `has_analysis_signature` that cannot see an
+issue's hand-back comment re-fires triage on that issue every cron sweep,
+forever — and triage then posts another near-duplicate comment for a question
+nobody has answered. That has happened twice (#100/#643 → #654, then
+#683/#684 → #710), one marker-phrasing variant apart each time. After
+`MAX_UNRECOGNIZED_HANDBACKS` = 3 hand-backs the sweep still cannot see an
+analysis for — the flap count actually observed on #684 — the auto-fix stops and
+`flag_stuck_triage` surfaces the issue on the dashboard instead. Widening the
+recognizer fixes the *known* phrasing; this bound is what keeps the *next* one
+from churning. A recognizer gap must degrade to a flag a human sees, never to
+unattended churn.
 
 ## Procedure (in the gatekeeper routine, after command processing)
 
@@ -109,9 +125,13 @@ throughout, matching the rest of the pipeline.
    python3 .claude/skills/pipeline-reconcile/reconcile.py --live --events-only
    ```
 
-   Returns `strip_labels`, `requeue`, `flag_done`, `flag_orphaned_ready`,
-   `flag_prose_dep` — each a list sorted by issue number. `requeue` is always
-   `[]` when `--events-only` (or `process(..., events_only=True)`) is used.
+   Returns `strip_labels`, `requeue`, `requeue_triage`, `flag_done`,
+   `flag_orphaned_ready`, `flag_prose_dep`, `flag_orphaned_analysis`,
+   `flag_stuck_triage` — each a list sorted by issue number. `requeue`,
+   `requeue_triage` and `flag_stuck_triage` are always `[]` when
+   `--events-only` (or `process(..., events_only=True)`) is used;
+   `flag_stuck_triage` is gated with the auto-fix it replaces because both are
+   branches of the same rule.
 
 3. **Apply the auto-fixes** with the GitHub MCP tools — and only these:
    - `strip_labels`: remove exactly the named labels from each closed issue.
@@ -145,7 +165,14 @@ board. `TestProseDepDetection` pins `prose_deps_in` (#248): prose-only
 `depends on #N` / `blocked by #N` is flagged, a matching structured
 `Blocked by:` / `Depends on:` line (or a native relationship, via the
 `native_refs=` path) clears it, and a bare `#N` that is not a dependency phrase
-is never flagged. `TestMergeBlockers` (#321) pins the canonical
+is never flagged. `TestAnalysisSignature` pins what counts as a triage-authored
+analysis, including the real #100, #683 and #684 hand-back bodies as verbatim
+regression fixtures (`tests/fixtures/`) — the bolded inline marker (#654) and
+the heading form `## ❓ Needs from Derek/Lucas` (#710) both count, while the
+phrase without its `❓` anchor still does not. `TestStuckTriageGuard` and
+`TestHandbackLabelAdds` (#710) pin the bound: requeue below three hand-backs,
+`flag_stuck_triage` at or above it, and a missing/unreadable count degrading to
+the healing auto-fix. `TestMergeBlockers` (#321) pins the canonical
 `merge_blockers` rule — text-line `Blocked by:` ∪ native `blocked_by`, de-duped
 and sorted — that every reader shares. `TestEventsOnlyMode`
 (#319) pins the cron-only `requeue` gate: `events_only=True` (and its CLI
