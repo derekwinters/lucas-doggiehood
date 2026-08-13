@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -18,15 +17,14 @@ namespace Doggiehood.Core.Tests.World
     /// <b>Invariant — every lot with a house has yard trees in EVERY session, not
     /// only the one it was built in.</b>
     ///
-    /// Two ways that can silently break, both closed here. The picks could come
-    /// back EMPTY (<c>SelectFront</c>/<c>SelectBack</c> cap at
+    /// The way that can silently break: the picks come back EMPTY.
+    /// <c>SelectFront</c>/<c>SelectBack</c> cap at
     /// <c>Math.Min(desired, candidates.Count)</c>, so a yard whose candidate
-    /// generation is fully clipped yields zero trees and nothing complains), or
-    /// they could come back DIFFERENT once the house exists (building adds the
-    /// front walkway and the backyard fence to the live network, which the yard's
-    /// obstacle set reads) — a reload would then move a lot's trees. The sweep
-    /// below runs every lotted <see cref="TileType"/> through a real unlock →
-    /// build → re-derive cycle and rejects both.
+    /// generation is fully clipped yields zero trees and nothing complains —
+    /// which is how bare yards reached a playtest. The sweeps below run every
+    /// lotted <see cref="TileType"/> through a real unlock → build → save/reload
+    /// cycle and reject a bare yard at each stage, plus pin that a reload
+    /// re-derives a built lot's yard unchanged.
     ///
     /// Complements <c>OpenSpaceTreesTests</c>, which pins the same
     /// never-bare rule for UNBUILT lots on the tile-only resolvers; this file is
