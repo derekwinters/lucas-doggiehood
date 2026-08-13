@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.0...v0.15.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* request the emulator build profile on Unity's command line ([#732](https://github.com/derekwinters/lucas-doggiehood/issues/732)) ([7e53e8b](https://github.com/derekwinters/lucas-doggiehood/commit/7e53e8bbf3accd5d9509d82c264681a501c75918)), closes [#731](https://github.com/derekwinters/lucas-doggiehood/issues/731)
+
 ## [0.15.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.14.0...v0.15.0) (2026-08-13)
 
 
