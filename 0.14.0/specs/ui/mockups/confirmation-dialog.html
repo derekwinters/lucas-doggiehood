@@ -6,7 +6,7 @@
 <title>Confirmation Dialog — Wireframe (1:1 @ 1920×1200)</title>
 <style>
   :root{
-    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0;
+    --ink:#2E2A26; --cream:#FFF3D9; --panel:#FFFDF7; --coral:#FF7A5C; --leaf:#58C06A; --gold:#FFC23C; --sky:#6EC6E0; --disabled:#D8D2C6;
     --bg:#F2EDE3; --bg-2:#FBF8F1; --text:#2E2A26; --muted:#857C6E; --hair:#D9D0BF; --accent:#C4623F; --stage:#E7DFCE;
   }
   @media (prefers-color-scheme: dark){ :root{ --bg:#211E1B; --bg-2:#2A2622; --text:#F2ECE0; --muted:#A9A093; --hair:#3D3730; --accent:#FF9A76; --stage:#322D28; } }
@@ -46,6 +46,9 @@
   .cc-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:16px;height:96px;padding:0 40px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 8px 0 var(--ink);font-size:36px;color:var(--ink);}
   .btn-no{background:var(--cream);}
   .btn-yes{background:var(--leaf);}
+  /* #690 — the spend can't succeed: Yes takes the shared Disabled role tint and is not pressable.
+     The cost token stays, so the player still sees the price they're short of. */
+  .btn-yes.is-disabled{background:var(--disabled);cursor:not-allowed;}
   /* optional cost group inside the Yes button — coin token + amount */
   .cost{display:inline-flex;align-items:center;gap:8px;}
   .cost .coin{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;background:var(--gold);border:5px solid var(--ink);font-size:22px;color:var(--ink);}
@@ -74,6 +77,7 @@
     amount</b> so the price is unmistakable. First consumer: the map-expansion zone unlock (<a href="#">#343</a>),
     shown here with placeholder copy.</p>
   <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. The title/body copy and the 100-coin cost are placeholders — real text and amount are passed in by the caller.</p>
+  <p class="scalenote" style="color:var(--muted);font-weight:500;">State 1 — <b>the spend the player can afford</b>: a live, leaf-tinted Yes.</p>
 
   <div class="viewer">
     <div class="screen" role="img" aria-label="Landscape tablet with a dimmed neighborhood behind a centered confirmation card asking 'Unlock this area?' with a No button and a Yes button showing a 100-coin cost">
@@ -87,6 +91,25 @@
         <div class="actions">
           <button class="cc-btn btn-no rounded">No</button>
           <button class="cc-btn btn-yes rounded">Yes <span class="cost"><span class="coin rounded">¢</span>100</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="scalenote" style="margin-top:26px;">State 2 — <b>the spend the player can’t afford (#690)</b>. Same card, same constants, same coin token: only the <b>Yes</b> button changes, to the shared Disabled tint (<code>#D8D2C6</code>) and non-pressable. <b>No</b> and the scrim still dismiss.</p>
+
+  <div class="viewer">
+    <div class="screen" role="img" aria-label="The same confirmation card asking 'Build a house here?' with the No button unchanged and the Yes button greyed out and unpressable, still showing its 50-coin cost">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="lock rounded">🔒</div>
+      <div class="scrim"></div>
+      <div class="card">
+        <h2 class="title rounded">Build a house here?</h2>
+        <p class="body rounded">Spend coins to build a house on this lot.</p>
+        <div class="actions">
+          <button class="cc-btn btn-no rounded">No</button>
+          <button class="cc-btn btn-yes is-disabled rounded" disabled>Yes <span class="cost"><span class="coin rounded">¢</span>50</span></button>
         </div>
       </div>
     </div>
@@ -116,6 +139,7 @@
       <p class="note"><b>Scrim</b> (full-screen dim; tapping it = <b>cancel</b> = No) · <b>Title</b> (dynamic) · <b>Body</b> (dynamic) · <b>Action row</b> (two equal-width pill buttons).</p>
       <p class="note"><b>Dynamic text:</b> title and body are set by the caller; the card grows vertically with the body length. Messages are meant to be short (one question + a sentence), so no scrolling — keep copy tight.</p>
       <p class="note"><b>Buttons:</b> always <b>No</b> (neutral/cream, left, the safe default) and <b>Yes</b> (positive/<b>leaf</b>, right) — labels stay literal Yes/No for a kids' game. The confirm is <b>always leaf</b>. When the action has a coin cost, <b>Yes shows a coin token + amount</b> after the word (a `CostCoinDiameterPx` gold token + tabular number, `IconGapPx` from the label); a cost-free confirmation shows just “Yes”. Both reuse the shared <b>PillButton</b> (#173).</p>
+      <p class="note"><b>Disabled Yes (#690):</b> when the caller says the spend <b>can't succeed</b> — the wallet won't cover it — the dialog still opens, but <b>Yes</b> takes the shared <b>Disabled</b> role tint (<code>#D8D2C6</code>) and is <b>non-interactable</b>, the same greying an unaffordable quest gift pill (#186) and house-upgrade button (#294) already use. <b>The cost token stays on Yes</b> so the player sees the price they're short of, and <b>No</b> + the scrim still dismiss — greying the confirm never greys the way out (#329). Affordability is resolved <b>once, at open</b> (matching the quest pills), and it comes from <b>Core</b> — the house build passes <code>HouseBuildOffer.IsAffordable</code>, never a Unity-side wallet comparison. <b>Invariant:</b> a spend button is never pressable when the spend cannot succeed. Nothing about the layout changes.</p>
       <p class="note"><b>Reusable:</b> one overlay any screen raises. First use is the zone-unlock confirm (#343, tap the lock icon → this dialog with the zone cost on Yes → <code>TryUnlockNextZone()</code>); later spend confirms (house build/upgrade) reuse it by passing their own copy + amount.</p>
     </div>
   </div>
