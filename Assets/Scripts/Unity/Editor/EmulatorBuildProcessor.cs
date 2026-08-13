@@ -64,14 +64,20 @@ namespace Doggiehood.Unity.Editor
         private const string PlayerSettingsSingletonName = "PlayerSettings";
 
         /// <summary>
-        /// Unity's audio engine is what spins on the reported Waydroid host
-        /// (#705): a per-thread profile of the hung emulator APK showed
+        /// Unity's audio engine is the leading suspect for the spin on the
+        /// reported Waydroid host (#705): a per-thread profile showed
         /// `FMOD stream thr` and `AudioTrack` pinned at ~100% CPU with
         /// `UnityMain` blocked behind them, while `UnityGfxDeviceW` slept. The
         /// project ships no audio assets at all, so the emulator variant gives
         /// the whole subsystem up rather than let it spin against a virtual
         /// audio HAL. Emulator-only — the device build keeps audio on, ready
         /// for the clips that land later.
+        ///
+        /// UNCONFIRMED (#706/#707): that profile was captured from the **device**
+        /// APK, not an emulator build — every release through v0.14.0 shipped an
+        /// `-emulator.apk` that was a byte-for-byte copy of the ARM64 device APK,
+        /// so the trace shows an arm64 build under translation. Only a trace from
+        /// a verified emulator build can confirm this mitigation.
         /// </summary>
         private const bool EmulatorDisablesUnityAudio = true;
 
