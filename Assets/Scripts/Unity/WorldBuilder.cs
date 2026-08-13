@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Cameras;
@@ -125,6 +126,18 @@ namespace Doggiehood.Unity
         /// landscaping (#170) — one per lot, holding its selected front and
         /// back yard trees.</summary>
         public const string YardLandscapingNamePrefix = "Yard - ";
+
+        /// <summary>#702: what <see cref="RenderYardPicks"/> logs when a lot's
+        /// yard comes back with no picks at all. Every lot is meant to carry
+        /// trees in every session, so a bare yard is a defect, not a valid
+        /// outcome — but the selectors cap at
+        /// <c>Math.Min(desired, candidates.Count)</c>, so a yard whose candidate
+        /// generation is fully clipped used to render zero trees and return
+        /// without a word. That silence is why the reported bug survived all the
+        /// way to a playtest. Formatted with the lot's house id.</summary>
+        public const string BareYardWarningFormat =
+            "Yard landscaping: lot {0} selected no trees, so its yard renders bare. "
+            + "Every lot is meant to carry yard trees in every session (#702).";
 
         /// <summary>Graybox-fallback yard prop height (#170) — only ever
         /// built when neither the tree-large nor tree-small kit piece can
@@ -806,6 +819,17 @@ namespace Doggiehood.Unity
         /// pick instantiates its matching tree-large/tree-small model; when
         /// a piece can't be loaded it falls back to one simple primitive
         /// marker per pick (same pattern as the walkways/fences).
+        ///
+        /// #702: this loop covers the four STARTING lots and only those, which is
+        /// correct rather than the gap it can look like. The origin FourWay's lots
+        /// are seeded from <see cref="NeighborhoodLayout"/> and are deliberately
+        /// NOT emitted by <see cref="GameState.LotsForUnlockedTile"/> (#607),
+        /// while every frontier lot is emitted there and never appears in
+        /// <see cref="NeighborhoodLayout.HouseLots"/> — so this loop and
+        /// <see cref="BuildEmptyLots"/> partition the world's lots exactly: none
+        /// rendered twice, none left out (pinned in <c>YardTreeCoverageTests</c>).
+        /// The four starting lots always carry houses, so this loop never had a
+        /// buildable-state gate to remove.
         /// </summary>
         private static void BuildYardLandscaping(Transform parent)
         {
@@ -827,8 +851,7 @@ namespace Doggiehood.Unity
         /// </summary>
         public static void BuildYardLandscaping(Transform parent, HouseLot lot)
         {
-            RenderYardPicks(parent, lot,
-                YardLandscaping.FrontTreesFor(lot).Concat(YardLandscaping.BackTreesFor(lot)).ToList());
+            RenderYardPicks(parent, lot, YardLandscaping.TreesFor(lot));
         }
 
         /// <summary>
@@ -864,15 +887,37 @@ namespace Doggiehood.Unity
         public static void BuildYardLandscaping(Transform parent, HouseLot lot, TileType tileType,
             WalkNetwork network)
         {
-            RenderYardPicks(parent, lot,
-                YardLandscaping.FrontTreesFor(lot, tileType, network)
-                    .Concat(YardLandscaping.BackTreesFor(lot, tileType, network)).ToList());
+            RenderYardPicks(parent, lot, YardLandscaping.TreesFor(lot, tileType, network));
         }
 
-        private static void RenderYardPicks(Transform parent, HouseLot lot, List<YardTreePlacement> picks)
+        /// <summary>
+        /// The single seam every yard render goes through: one
+        /// "<see cref="YardLandscapingNamePrefix"/>N" container per lot holding
+        /// its already-selected picks. Which trees a lot gets is Core's call
+        /// (<see cref="YardLandscaping.TreesFor(HouseLot)"/>); all this does is
+        /// put them in the scene.
+        ///
+        /// #702: an empty pick list is a DEFECT, not a quiet no-op. It used to
+        /// return in silence, so a lot that rendered zero trees looked exactly
+        /// like a lot that had not been asked to render — which is how bare
+        /// yards reached a playtest instead of a test run. It still renders
+        /// nothing (inventing a tree would put one somewhere illegal), but it
+        /// now says so. The regression guard proper is Core-side
+        /// (<c>YardTreeCoverageTests</c> sweeps every lotted tile type, built and
+        /// unbuilt), so CI fails long before this warning could fire; this is the
+        /// runtime backstop for a case that sweep can't reach.
+        ///
+        /// Public so an EditMode test can drive the bare-yard branch directly —
+        /// no real lot's geometry can be starved on demand — the same
+        /// test-reachability reason <see cref="BuildEmptyLot(Transform, HouseLot)"/>
+        /// is public.
+        /// </summary>
+        public static void RenderYardPicks(Transform parent, HouseLot lot, IReadOnlyList<YardTreePlacement> picks)
         {
             if (picks.Count == 0)
             {
+                Debug.LogWarning(string.Format(
+                    CultureInfo.InvariantCulture, BareYardWarningFormat, lot.HouseId));
                 return;
             }
 
@@ -1075,8 +1120,8 @@ namespace Doggiehood.Unity
         /// Renders a freshly unlocked frontier tile into the live world
         /// (#373/#453): regrows the base grass plane to cover the newly extended
         /// map extent, renders the tile's road surfaces from the tile catalog
-        /// geometry, drops its buildable empty-lot markers (with pre-baked yard
-        /// trees), and renders its open-space trees. The single entry point
+        /// geometry, drops its buildable empty-lot markers, pre-bakes every one of
+        /// its lots' yard trees, and renders its open-space trees. The single entry point
         /// <see cref="ExpansionUnlockDirector"/> calls on a confirmed unlock, so
         /// the new tile appears as real neighborhood — grass under it and roads
         /// along it — instead of markers floating over void. The coordinate-keyed
@@ -1098,13 +1143,21 @@ namespace Doggiehood.Unity
                     // facing via the live network, not the Z-sign fallback —
                     // matching the yard trees below (#461).
                     BuildEmptyLot(root, lot, state.WalkNetwork);
-                    // #434: pre-place the lot's yard trees at unlock too, so a
-                    // freshly unlocked tile's empty lots show trees + foundation
-                    // — matching the initial-build path (BuildEmptyLots).
-                    // #461: orient them to the real street-ward facing via the
-                    // live network, not the Z-sign fallback.
-                    BuildYardLandscaping(root, lot, tileType, state.WalkNetwork);
                 }
+
+                // #434: pre-place the lot's yard trees at unlock, so a freshly
+                // unlocked tile's empty lots show trees + foundation.
+                // #461: orient them to the real street-ward facing via the live
+                // network, not the Z-sign fallback.
+                // #702: keyed on the LOT, not on whether a house stands on it —
+                // the same shape BuildEmptyLots takes. A freshly unlocked tile
+                // has no houses on it yet, so today this renders exactly what the
+                // buildable-gated version did; the point is that the never-bare
+                // rule now holds at this site by construction rather than by an
+                // argument about when the method happens to be called. The
+                // foundation slab keeps its gate — a built lot has a real house
+                // mesh and wants no marker under it.
+                BuildYardLandscaping(root, lot, tileType, state.WalkNetwork);
             }
 
             BuildTileOpenSpaceTrees(root, coordinate, tileType);

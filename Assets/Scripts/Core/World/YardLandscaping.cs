@@ -517,6 +517,40 @@ namespace Doggiehood.Core.World
             return SelectBack(BackCandidatesFor(lot, tileType, network), SeedFor(lot, BackSelectionSeedSalt));
         }
 
+        /// <summary>
+        /// #702: a lot's WHOLE yard — its front picks followed by its back picks
+        /// — as one list. The render layer used to compose those two halves
+        /// itself at each of its call sites, which left "what counts as this
+        /// lot's trees" as a decision outside Core; keeping it here gives the
+        /// yard a single seam that the never-bare invariant can be asserted
+        /// against (a lot with a house has yard trees in every session, not only
+        /// the one it was built in).
+        /// </summary>
+        public static IReadOnlyList<YardTreePlacement> TreesFor(HouseLot lot)
+        {
+            return Combine(FrontTreesFor(lot), BackTreesFor(lot));
+        }
+
+        /// <summary>#702: <see cref="TreesFor(HouseLot)"/> for a frontier lot,
+        /// resolved through the live map-spanning <paramref name="network"/> —
+        /// the form every unlocked tile's lots render through, built or
+        /// not.</summary>
+        public static IReadOnlyList<YardTreePlacement> TreesFor(
+            HouseLot lot, TileType tileType, WalkNetwork network)
+        {
+            return Combine(
+                FrontTreesFor(lot, tileType, network), BackTreesFor(lot, tileType, network));
+        }
+
+        private static IReadOnlyList<YardTreePlacement> Combine(
+            IReadOnlyList<YardTreePlacement> front, IReadOnlyList<YardTreePlacement> back)
+        {
+            var trees = new List<YardTreePlacement>(front.Count + back.Count);
+            trees.AddRange(front);
+            trees.AddRange(back);
+            return trees;
+        }
+
         private static List<YardTreeCandidate> GenerateCandidates(
             LotRect region, int maxCount, Func<GridPoint, bool> isBlocked, Random rng)
         {
