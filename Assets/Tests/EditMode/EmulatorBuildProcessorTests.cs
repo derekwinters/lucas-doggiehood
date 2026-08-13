@@ -144,11 +144,16 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void ApplyIfRequested_DisablesUnityAudio_WhenEmulatorBuildRequested()
         {
-            // #705: the reporter's per-thread profile of the hung emulator APK
-            // showed `FMOD stream thr` and `AudioTrack` — Unity's audio engine —
-            // pinned at ~100% CPU while the render thread slept. The game ships
-            // no audio assets at all, so the emulator variant gives the whole
-            // subsystem up rather than let it spin against a virtual audio HAL.
+            // #705: the reporter's per-thread profile showed `FMOD stream thr`
+            // and `AudioTrack` — Unity's audio engine — pinned at ~100% CPU
+            // while the render thread slept. The game ships no audio assets at
+            // all, so the emulator variant gives the whole subsystem up rather
+            // than let it spin against a virtual audio HAL.
+            //
+            // That trace came from the DEVICE APK, not an emulator build
+            // (#706/#707) — v0.14.0's `-emulator.apk` was a byte-for-byte copy
+            // of the ARM64 device APK — so the mitigation stays unconfirmed
+            // until a verified emulator build is profiled.
             SeedDeviceDefaults();
             RequestEmulatorBuild();
 
