@@ -46,6 +46,34 @@ A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't
 7. If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.
 8. If the issue would touch a UI screen's **structure** (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in [`docs/specs/ui/`](../specs/ui/index.md), stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the [UI Design Process](ui-design-process.md). See its [gate](ui-design-process.md#the-gate).
 
+## Two gates before work starts
+
+*[#684](https://github.com/derekwinters/lucas-doggiehood/issues/684)*
+
+Two things are supposed to precede any code: **a triaged, approved issue**, and — for anything wide — **Derek's confirmation of the approach**. Both used to be norms an agent chose to follow at exactly the moment it was most tempted not to, and both failed repeatedly: an agent handed a screenshot of a bug diagnosed it and pushed a branch with no issue at all, and an agent told to add one `CLAUDE.md` rule renumbered the whole list and rewrote 24 cross-references across 13 files without ever putting the approach up for review. They are different failures — the first is *building with no mandate*, the second is *picking a high-churn approach to work that was genuinely asked for* — so each has its own gate. They are [CLAUDE.md](#claudemd) rules #13 and #14.
+
+**The verification bar for both, taken from the issue:** an agent handed a bug report with no issue, and an agent asked for a small change to a shared file, both **demonstrably** stop and hand back — not merely by policy.
+
+### Gate A — the mechanical issue gate
+
+The first gate is enforced by a `PreToolUse` hook, `.claude/hooks/issue_gate.py`, wired in `.claude/settings.json`. Text alone had already failed more than once, so this one denies the tool call rather than asking the agent to reconsider.
+
+- **What it blocks.** `Edit`, `Write` and `MultiEdit` whose target is under `Assets/**`, `CoreTests/**`, `ProjectSettings/**` or `Packages/**` — the game code, its tests, and the build configuration.
+- **What it never blocks.** Every other path (`docs/**`, `.claude/**`, `CLAUDE.md`, `.github/**`), every read-only tool, and issue filing. Triage, diagnosis and investigation are unaffected, which is what makes the gate safe to leave on: the correct response to a bug with no issue — investigate, then file it — is fully available.
+- **How an edit is authorized.** The session sets `DOGGIEHOOD_APPROVED_ISSUE` to the issue number it is building. The hook does **not** trust that number on its own: it looks the issue up live via the GitHub API (`GITHUB_TOKEN`, the same auth pattern as the [pipeline](issue-pipeline.md) scripts) and allows the edit only if that issue currently carries `ready-for-work` or `in-progress`. An agent that invents a number is denied exactly like one that sets nothing, because an untriaged, `ai-triage` or `pending-approval` issue carries neither label.
+
+**Invariant — the gate passes only on a *post-approval* label state.** Both accepted labels sit after `/approve` in the pipeline's state machine, and `in-progress` is only ever reachable *from* `ready-for-work`. Accepting `in-progress` is not a loosening: the pipeline's labels are mutually exclusive, and `pipeline-dev` and `milestone-orchestration` both move an issue to `in-progress` **before** any code is written, so a `ready-for-work`-only check would deny every automated build — including the runs that deliver the milestones.
+
+Because of that, the two builder skills set `DOGGIEHOOD_APPROVED_ISSUE` for the single issue they are about to build, immediately before invoking `doggiehood-dev`, and clear or replace it when that issue is done. That plumbing is asserted by a test, since without it the gate denies every automated build.
+
+**When the live check can't run** — no token, or the API is unreachable — the hook **fails open** and allows the edit. This is deliberate: fail-closed would halt all development during a GitHub outage, and the failure the gate mainly exists to catch (code written with no issue at all) is denied *without* any network call, since the variable is simply unset. The gate is a guardrail against an agent's judgement lapsing mid-flow, not a security boundary against a determined actor.
+
+### Gate B — the wide-change confirmation threshold
+
+Whether a change is "wide" is a judgement call rather than a path glob, so this gate is a rule rather than a hook — but with a concrete, checkable threshold instead of a vague "confirm first". **Before making a change that touches more than 5 files, or that touches `CLAUDE.md`, any `docs/engineering/**` page, or `.claude/settings.json`, or that renames/renumbers something across 3 or more files: state the approach and its blast radius, and wait for explicit confirmation.**
+
+The point isn't the file count on its own — it's that a narrow request never authorizes a wide implementation of it. When a contained approach and a churny one both satisfy what was asked, the choice goes to Derek before the first edit, not into the diff. The threshold is sized to catch the motivating case exactly (13 files, and two of the named shared files) while leaving ordinary single-file docs and spec edits unblocked. A direct consequence: new `CLAUDE.md` rules are **appended**, never inserted, so adding one can't drag a repo-wide renumbering behind it.
+
 ## The plain-English lead
 
 *[#545](https://github.com/derekwinters/lucas-doggiehood/issues/545)*

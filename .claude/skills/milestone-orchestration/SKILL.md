@@ -88,7 +88,15 @@ For each issue in the resolved order, **serially**:
    already merged, this branch contains them — no rebase or merge of siblings is
    needed or allowed.
 
-2. **Build the issue with `doggiehood-dev`.** Hand the single issue number to the
+2. **Build the issue with `doggiehood-dev`.** First, **name the approved issue
+   to the mechanical issue gate** (CLAUDE.md rule #13): export
+   `DOGGIEHOOD_APPROVED_ISSUE=<NN>` for this one issue immediately before the
+   agent starts, and clear/replace it when the issue is done. Without it, the
+   `PreToolUse` hook (`.claude/hooks/issue_gate.py`) denies every edit to
+   `Assets/**`, `CoreTests/**`, `ProjectSettings/**` and `Packages/**`. The
+   gate accepts an issue at `ready-for-work` **or** `in-progress`, so it
+   passes both before and after the label move below.
+   Then hand the single issue number to the
    agent; it works the issue's build checklist test-first, defaults new logic to
    Core, commits with a Conventional Commit message, and reconciles the
    `docs/specs` it touches. Mark the issue `in-progress`.

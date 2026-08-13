@@ -2,14 +2,16 @@ name: pipeline-tests
 
 # Unit tests for the deterministic pipeline skill scripts (command parser,
 # queue selector, dashboard renderer, reconcile rules, and `triage-issue`'s
-# re-fire repair detection). Pure Python, stdlib only — no Unity, no pip deps.
-# See docs/engineering/issue-pipeline.md.
+# re-fire repair detection) plus the `PreToolUse` issue gate in
+# `.claude/hooks/` (#684). Pure Python, stdlib only — no Unity, no pip deps.
+# See docs/engineering/issue-pipeline.md and docs/engineering/agent-workflow.md.
 
 on:
   pull_request:
     paths:
       - ".claude/skills/pipeline-*/**"
       - ".claude/skills/triage-issue/**"
+      - ".claude/hooks/**"
       - ".github/workflows/pipeline-tests.yml"
   push:
     branches:
@@ -17,6 +19,7 @@ on:
     paths:
       - ".claude/skills/pipeline-*/**"
       - ".claude/skills/triage-issue/**"
+      - ".claude/hooks/**"
       - ".github/workflows/pipeline-tests.yml"
 
 permissions:
@@ -39,3 +42,6 @@ jobs:
             echo "== $suite =="
             python3 -m unittest discover -s ".claude/skills/$suite/tests"
           done
+
+      - name: Run agent hook unit tests
+        run: python3 -m unittest discover -s .claude/hooks/tests
