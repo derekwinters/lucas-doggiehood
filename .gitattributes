@@ -40,6 +40,11 @@
 *.ttf binary
 *.otf binary
 
+# Android binary XML (AXML). Test fixtures under .github/scripts/tests are
+# real AndroidManifest.xml blobs pulled from shipped APKs — EOL-normalizing
+# one would corrupt its string pool and break the parser they pin (#706).
+*.axml binary
+
 # Archives / misc binaries
 *.zip binary
 *.7z binary

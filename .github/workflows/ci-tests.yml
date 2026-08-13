@@ -24,6 +24,9 @@ on:
       - ".github/workflows/ci-tests.yml"
       - ".github/scripts/verify_editmode_results.py"
       - ".github/scripts/tests/test_verify_editmode_results.py"
+      - ".github/scripts/verify_emulator_build_variant.py"
+      - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/tests/fixtures/**"
   push:
     branches:
       - main
@@ -35,6 +38,9 @@ on:
       - ".github/workflows/ci-tests.yml"
       - ".github/scripts/verify_editmode_results.py"
       - ".github/scripts/tests/test_verify_editmode_results.py"
+      - ".github/scripts/verify_emulator_build_variant.py"
+      - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/tests/fixtures/**"
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -71,6 +77,12 @@ jobs:
       # geometry-lint). Pure Python, stdlib only — no Unity, no license needed.
       - name: Unit-test the EditMode results gate
         run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_editmode_results.py"
+
+      # The release job runs this gate too (and re-tests it there before
+      # trusting it), but only at release time — running its tests on every PR
+      # is what stops a broken gate from being discovered mid-release (#706).
+      - name: Unit-test the emulator build gate
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_emulator_build_variant.py"
 
       - name: Check for Unity license secret
         id: license

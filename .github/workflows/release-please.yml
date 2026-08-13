@@ -73,6 +73,17 @@ jobs:
           restore-keys: |
             unity-library-android-
 
+      # Unity's Bee/Tundra player build is incremental and keys its cache off
+      # on-disk content, not live PlayerSettings. Two variant builds sharing
+      # one Library therefore serve the second from the first's compiled
+      # player — which is exactly how v0.14.0 shipped an "emulator" APK that
+      # was a byte-for-byte copy of the device APK (#706). Clearing the player
+      # build state before *each* build makes that impossible in either
+      # direction, including across a restored Library cache.
+      - name: Reset the incremental Android player build (device)
+        if: steps.license.outputs.present == 'true'
+        run: sudo rm -rf Library/Bee
+
       - name: Build Android release APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -88,10 +99,9 @@ jobs:
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
 
-      - name: Attach APK to the release
+      - name: Name the device APK
         if: steps.license.outputs.present == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           APK="$(find build/Android -name '*.apk' | head -n 1)"
@@ -100,15 +110,18 @@ jobs:
             exit 1
           fi
           sudo mv "$APK" "doggiehood-${TAG}.apk"
-          gh release upload "$TAG" "doggiehood-${TAG}.apk" --clobber
+
+      - name: Reset the incremental Android player build (emulator)
+        if: steps.license.outputs.present == 'true'
+        run: sudo rm -rf Library/Bee
 
       # Second, emulator-targeted variant (#648). EmulatorBuildProcessor
       # flips the ABI to x86_64-only and pins the emulator-safe graphics
       # profile (Vulkan→GLES3, no wide colour gamut, no multithreaded
-      # rendering) for this run only, then restores them — the device APK
-      # built above stays ARM64-only with the committed defaults. Built into
-      # its own buildsPath so the two APKs can never be confused. Debug
-      # signing, same as every other build.
+      # rendering) plus a disabled audio engine for this run only, then
+      # restores them — the device APK built above stays ARM64-only with the
+      # committed defaults. Built into its own buildsPath so the two APKs can
+      # never be confused. Debug signing, same as every other build.
       - name: Build Android emulator APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -126,10 +139,9 @@ jobs:
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
 
-      - name: Attach emulator APK to the release
+      - name: Name the emulator APK
         if: steps.license.outputs.present == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           APK="$(find build-emulator/Android -name '*.apk' | head -n 1)"
@@ -138,4 +150,29 @@ jobs:
             exit 1
           fi
           sudo mv "$APK" "doggiehood-${TAG}-emulator.apk"
+
+      # The gate's own decision logic is unit-tested before it is trusted,
+      # same posture as the EditMode results gate and the geometry lint.
+      - name: Unit-test the emulator build gate
+        if: steps.license.outputs.present == 'true'
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_emulator_build_variant.py"
+
+      # Nothing is uploaded until both APKs are proven to be different builds
+      # carrying the right applicationId and ABIs — a release page must never
+      # serve a mislabelled asset (#706).
+      - name: Verify the emulator APK is a real emulator build
+        if: steps.license.outputs.present == 'true'
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          python3 .github/scripts/verify_emulator_build_variant.py \
+            "doggiehood-${TAG}.apk" "doggiehood-${TAG}-emulator.apk"
+
+      - name: Attach both APKs to the release
+        if: steps.license.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          gh release upload "$TAG" "doggiehood-${TAG}.apk" --clobber
           gh release upload "$TAG" "doggiehood-${TAG}-emulator.apk" --clobber
