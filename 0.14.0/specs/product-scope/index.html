@@ -1343,6 +1343,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#saved-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      Saved state
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#audience" class="md-nav__link">
     <span class="md-ellipsis">
       Audience
@@ -1742,6 +1751,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#saved-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      Saved state
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#audience" class="md-nav__link">
     <span class="md-ellipsis">
       Audience
@@ -1789,6 +1807,29 @@
 <p>No ads, no in-app purchases, no store monetization plans. This is a free personal project. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/41">#41</a>)</p>
 <h2 id="connectivity">Connectivity<a class="headerlink" href="#connectivity" title="Permanent link">&para;</a></h2>
 <p>Fully offline. No account system, no backend. Progress is saved locally on the device only. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/42">#42</a>)</p>
+<h2 id="saved-state">Saved state<a class="headerlink" href="#saved-state" title="Permanent link">&para;</a></h2>
+<p><em>Added by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/704">#704</a> so "is this persisted?" has one authoritative answer.</em></p>
+<p>"Progress is saved locally" means the whole neighborhood, not a subset of it. The save is a single local text file (<code>SaveStore</code>, serialized by <code>Doggiehood.Core.World.SaveCodec</code>) — no accounts, no backend, nothing else on the device.</p>
+<p><strong>Invariant — the neighborhood is durable.</strong> Anything the player earned, spent, or was given — every dog living in the neighborhood, every offered or accepted quest, every coin — survives closing the app. Only <em>presentation</em> is session-only: positions, animations, and in-flight view objects.</p>
+<p><strong>Durable</strong> (in the save):</p>
+<ul>
+<li>Coins, onboarding completion, and the one-time onboarding reward-chain step (plus its upgrade-target house)</li>
+<li>The map: every player-unlocked tile with its type, in unlock order (green-space tiles are re-derived, not stored)</li>
+<li>Every built house — level, occupancy, rolled art variant — and each unbuilt lot's pre-assigned variant</li>
+<li>Every dog that has moved in: name, breed, personality, house, puppy flag, coat. (The 8 starting dogs are recreated on load, exactly like the 4 starting houses.)</li>
+<li>Every uncompleted quest, in full: type, status, delivery phase, its dog, its subject, the dialogue that was rolled for it, the hidden item's position, the cost already fronted, the afflicted house, and a decoration request's options</li>
+<li>Pacing state: the refresh clock, the last rotation stamp, the fractional trickle accumulator</li>
+<li>The move-in pity counter and the unconsumed easter-egg-name / reserved-breed reserves</li>
+<li>Placed items and yard decorations</li>
+</ul>
+<p><strong>Deliberately session-only</strong> (rebuilt each launch, and <em>correct</em> not to persist):</p>
+<ul>
+<li>Where a dog is standing, which way it faces, its pose and its wander target — presentation, re-derived from the walk network on spawn</li>
+<li>In-flight view objects: the delivery truck on its route, and the delivered package on the doorstep, which is scene-only by design (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/703">#703</a>) and asserted so in Core tests</li>
+<li>The authored target map and everything derived from it (the unlock frontier, the walk network, camera reach) — fixed design data, re-supplied on every launch</li>
+<li>Dog happiness, which is flavor only and gates nothing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/47">#47</a>)</li>
+</ul>
+<p><strong>Format compatibility.</strong> The save is a line-per-record key/value format and the loader acts only on keys it knows, so adding a record type is backward- <em>and</em> forward-compatible: an older save simply lacks the newer lines and each takes a defined absent-value default, and a save written by a newer build still opens in an older one. New fields are therefore added without a schema version bump; anything that genuinely cannot be defaulted needs a documented migration instead (the one so far: a pre-#704 save's house recorded as occupied with no residents is re-vacated on load, so it re-enters the move-in pool rather than staying permanently unfillable).</p>
 <h2 id="audience">Audience<a class="headerlink" href="#audience" title="Permanent link">&para;</a></h2>
 <p>All-ages/family. The game aims to be cozy and simple enough for a family to play together, without being designed around any one specific age bracket. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/43">#43</a>)</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
@@ -1796,6 +1837,8 @@
 <li>[ ] No ad SDK, IAP SDK, or monetization code paths exist anywhere in the project</li>
 <li>[ ] No network calls exist anywhere in the project — the app functions with no connectivity at all</li>
 <li>[ ] Save data is local-only (device storage), with no account/login flow</li>
+<li>[x] Everything the player earned, spent, or was given survives a relaunch; only presentation is session-only — see <a href="#saved-state">Saved state</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/704">#704</a>)</li>
+<li>[x] The app saves on backgrounding and on quit, and on an interval while it runs, so a session is never rolled back (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/704">#704</a>)</li>
 </ul>
 
 
