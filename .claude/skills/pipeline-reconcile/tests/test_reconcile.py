@@ -60,6 +60,20 @@ def numbers(findings):
     return [f["number"] for f in findings]
 
 
+FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+def fixture(name):
+    """Verbatim body of a real GitHub comment, byte-for-byte from the API.
+
+    Kept as files rather than inline literals (issue #710) because the real
+    hand-back comments run to several KB; copying them verbatim is what makes
+    them regression fixtures rather than paraphrases.
+    """
+    with open(os.path.join(FIXTURES, name), encoding="utf-8") as fh:
+        return fh.read()
+
+
 class TestClosedStaleLabels(unittest.TestCase):
     def test_closed_with_stale_labels_strips_exactly_those(self):
         # A closed issue still carrying pipeline-state labels -> strip only the
@@ -554,6 +568,62 @@ class TestAnalysisSignature(unittest.TestCase):
         self.assertTrue(
             reconcile.has_analysis_signature(ISSUE_100_FLAPPING_ANALYSIS))
 
+    # --- heading form of the marker (issue #710) ---------------------------
+    def test_heading_form_marker_matches(self):
+        # The shape triage actually wrote on #683 and #684: the marker is a
+        # Markdown HEADING with no trailing colon, which neither the emphasis-
+        # tolerant inline marker nor the `## Build checklist` heading saw.
+        self.assertTrue(reconcile.has_analysis_signature(
+            "## ❓ Needs from Derek/Lucas\n\n**Primary question…**"))
+
+    def test_heading_form_any_level_and_optional_colon(self):
+        for text in [
+            "# ❓ Needs from Derek/Lucas",
+            "###### ❓ Needs from Derek/Lucas",
+            "## ❓ Needs from Derek/Lucas:",          # colon, still a heading
+            "##❓ Needs from Derek/Lucas",            # no space after the hashes
+            "## ❓ **Needs from Derek/Lucas**",       # emphasised heading text
+            "## **❓ Needs from Derek/Lucas**",       # emphasis outside the ❓
+            "  ## ❓ Needs from Derek/Lucas  ",       # indented / trailing space
+        ]:
+            self.assertTrue(reconcile.has_analysis_signature(text), text)
+
+    def test_issue_683_heading_comment_matches(self):
+        # Regression fixture: the real #683 hand-back body. Its ONLY signature
+        # is the heading-form marker — the ask route never emits a
+        # `## Build checklist`, so a colon-requiring recognizer saw no analysis
+        # and `requeue_triage` re-fired triage on it every cron sweep.
+        body = fixture("issue_683_heading_analysis.md")
+        self.assertNotIn("Build checklist", body)
+        self.assertIn("## ❓ Needs from Derek/Lucas", body)
+        self.assertTrue(reconcile.has_analysis_signature(body))
+
+    def test_issue_684_heading_comment_matches(self):
+        body = fixture("issue_684_heading_analysis.md")
+        self.assertNotIn("Build checklist", body)
+        self.assertTrue(reconcile.has_analysis_signature(body))
+
+    def test_issue_684_markerless_retriage_still_unrecognizable(self):
+        # #684's short "still waiting on your ruling" re-triage notes carry NO
+        # marker at all, so no recognizer can see them. That is precisely why
+        # widening the regex alone is not enough and `flag_stuck_triage` exists
+        # (issue #710) — this asserts the residual gap, it is not a wish.
+        body = fixture("issue_684_markerless_retriage.md")
+        self.assertFalse(reconcile.has_analysis_signature(body))
+
+    def test_heading_form_still_requires_the_emoji(self):
+        # Widening to headings must not drop the `❓` anchor: a heading that
+        # merely names the phrase is not a hand-back signature.
+        for text in ["## Needs from Derek/Lucas",
+                     "## Needs from Derek/Lucas: answered offline"]:
+            self.assertFalse(reconcile.has_analysis_signature(text), text)
+
+    def test_heading_form_requires_a_heading_not_prose(self):
+        # A prose line that happens to contain the words, with no `#` heading
+        # marker and no colon, is still not a signature.
+        self.assertFalse(reconcile.has_analysis_signature(
+            "Nothing here ❓ Needs from Derek/Lucas was ever asked"))
+
     def test_marker_still_requires_the_emoji(self):
         # Widening for emphasis must not drop the `❓` anchor: the bare phrase in
         # prose (or in a heading about the marker) is not a hand-back signature.
@@ -682,6 +752,144 @@ class TestTriageHandoffDrift(unittest.TestCase):
         ]))
         self.assertEqual(out["requeue_triage"], [])
         self.assertEqual(out["flag_orphaned_analysis"], [])
+
+
+class TestHandbackLabelAdds(unittest.TestCase):
+    """`count_handback_label_adds(events)` (issue #710): how many times an issue
+    has been handed back to `pending-approval` / `needs-clarification`, counted
+    from its label timeline. Pure events-in / int-out; the paginated timeline
+    read that feeds it lives in `fetch_state`.
+
+    Deliberately counts the hand-back ADDS, not the `ai-triage` re-adds: a
+    hand-back is one per triage run, whereas `ai-triage` is also added by
+    `/admit`, `/revise`, `/redo` and the blocker-revisit sweep, and a single
+    label PUT emits its `labeled`/`unlabeled` events with identical timestamps
+    in no guaranteed order.
+    """
+
+    @staticmethod
+    def ev(event, label, at="2026-08-10T12:00:00Z"):
+        return {"event": event, "label": {"name": label}, "created_at": at}
+
+    def test_counts_each_handback_add(self):
+        events = [
+            self.ev("labeled", "ai-triage"),
+            self.ev("unlabeled", "ai-triage"),
+            self.ev("labeled", "needs-clarification"),
+            self.ev("labeled", "ai-triage"),
+            self.ev("unlabeled", "needs-clarification"),
+            self.ev("labeled", "needs-clarification"),
+        ]
+        self.assertEqual(reconcile.count_handback_label_adds(events), 2)
+
+    def test_counts_both_handback_states(self):
+        events = [self.ev("labeled", "needs-clarification"),
+                  self.ev("labeled", "pending-approval")]
+        self.assertEqual(reconcile.count_handback_label_adds(events), 2)
+
+    def test_unlabeled_and_other_events_ignored(self):
+        events = [
+            self.ev("unlabeled", "needs-clarification"),
+            self.ev("labeled", "ready-for-work"),
+            self.ev("labeled", "type:bug"),
+            {"event": "commented", "created_at": "2026-08-10T12:00:00Z"},
+            {"event": "milestoned", "created_at": "2026-08-10T12:00:00Z"},
+        ]
+        self.assertEqual(reconcile.count_handback_label_adds(events), 0)
+
+    def test_empty_and_malformed(self):
+        self.assertEqual(reconcile.count_handback_label_adds([]), 0)
+        self.assertEqual(reconcile.count_handback_label_adds(
+            [{"event": "labeled"}, {"event": "labeled", "label": None}, None]), 0)
+
+
+class TestStuckTriageGuard(unittest.TestCase):
+    """`flag_stuck_triage` (issue #710): the structural stop on `requeue_triage`.
+
+    `requeue_triage` is an unattended auto-fix, so a recognizer that cannot see
+    an issue's analysis re-fires triage on it every cron sweep, forever (#100,
+    #643 → #654 → #683, #684). The guard bounds that: after
+    `MAX_UNRECOGNIZED_HANDBACKS` hand-backs the sweep still cannot see an
+    analysis for, it stops auto-requeuing and flags the issue instead, so the
+    NEXT recognizer gap degrades to visible noise once rather than churning.
+    """
+
+    def test_threshold_is_three(self):
+        self.assertEqual(reconcile.MAX_UNRECOGNIZED_HANDBACKS, 3)
+
+    def test_requeues_below_the_threshold(self):
+        for count in (0, 1, 2):
+            out = run(payload([
+                issue(684, labels=["needs-clarification"],
+                      has_analysis_comment=False,
+                      handback_label_adds=count)]))
+            self.assertEqual(numbers(out["requeue_triage"]), [684], count)
+            self.assertEqual(out["flag_stuck_triage"], [], count)
+
+    def test_flags_instead_of_requeueing_at_the_threshold(self):
+        # #684's real flap count: three hand-backs, none of them recognizable.
+        out = run(payload([
+            issue(684, labels=["needs-clarification"],
+                  has_analysis_comment=False, handback_label_adds=3)]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(numbers(out["flag_stuck_triage"]), [684])
+        self.assertEqual(out["flag_stuck_triage"][0]["handback_state"],
+                         "needs-clarification")
+        self.assertEqual(out["flag_stuck_triage"][0]["handbacks"], 3)
+
+    def test_flags_above_the_threshold_too(self):
+        out = run(payload([
+            issue(684, labels=["pending-approval"], has_analysis_comment=False,
+                  handback_label_adds=9)]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(out["flag_stuck_triage"][0]["handback_state"],
+                         "pending-approval")
+
+    def test_missing_count_defaults_to_requeue(self):
+        # Safe degrade: `fetch_state` reports 0 when the timeline read fails, so
+        # an absent count must never suppress the healing auto-fix.
+        out = run(payload([
+            issue(569, labels=["pending-approval"], has_analysis_comment=False)]))
+        self.assertEqual(numbers(out["requeue_triage"]), [569])
+        self.assertEqual(out["flag_stuck_triage"], [])
+
+    def test_recognized_analysis_never_flags(self):
+        # The guard is reached only from the drift branch: an issue whose
+        # analysis IS recognized is healthy no matter how often it was handed
+        # back (a normal /revise loop hands back repeatedly).
+        out = run(payload([
+            issue(683, labels=["needs-clarification"], has_analysis_comment=True,
+                  handback_label_adds=7)]))
+        self.assertEqual(out["requeue_triage"], [])
+        self.assertEqual(out["flag_stuck_triage"], [])
+
+    def test_stuck_flag_is_cron_only_like_the_requeue_it_replaces(self):
+        # Both branches of the same rule share the event-path caution (#319,
+        # #582): on a `labeled` event the just-set hand-back label can precede
+        # the analysis comment's visibility, so neither branch fires there.
+        data = payload([
+            issue(684, labels=["needs-clarification"],
+                  has_analysis_comment=False, handback_label_adds=3)])
+        self.assertEqual(
+            reconcile.process(data, events_only=True)["flag_stuck_triage"], [])
+        self.assertEqual(
+            numbers(reconcile.process(data, events_only=False)["flag_stuck_triage"]),
+            [684])
+
+    def test_closed_issue_never_flagged_stuck(self):
+        out = run(payload([
+            issue(684, state="closed", labels=["needs-clarification"],
+                  has_analysis_comment=False, handback_label_adds=5)]))
+        self.assertEqual(out["flag_stuck_triage"], [])
+
+    def test_findings_sorted_by_number(self):
+        out = run(payload([
+            issue(700, labels=["needs-clarification"],
+                  has_analysis_comment=False, handback_label_adds=4),
+            issue(684, labels=["pending-approval"],
+                  has_analysis_comment=False, handback_label_adds=4),
+        ]))
+        self.assertEqual(numbers(out["flag_stuck_triage"]), [684, 700])
 
 
 if __name__ == "__main__":
