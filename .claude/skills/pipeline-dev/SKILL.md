@@ -79,6 +79,14 @@ dashboard issue.
    - **Create a fresh branch** for that one issue off the latest `main`
      (e.g. `pipeline/issue-NN-YYYYMMDD`). One issue per branch — never batch
      several issues onto a shared branch.
+   - **Name the approved issue to the mechanical issue gate** (CLAUDE.md rule
+     #13): export `DOGGIEHOOD_APPROVED_ISSUE=<NN>` for that one issue
+     immediately before the agent starts, and clear/replace it when the issue
+     is done. Without it, the `PreToolUse` hook
+     (`.claude/hooks/issue_gate.py`) denies every edit to `Assets/**`,
+     `CoreTests/**`, `ProjectSettings/**` and `Packages/**`. The gate accepts
+     an issue at `ready-for-work` **or** `in-progress`, so it passes both
+     before and after the label move below.
    - Run the `doggiehood-dev` agent on that single issue, committing onto its
      branch with a Conventional Commit message. Mark the issue `in-progress`.
    - If the agent cannot make it pass (tests red, blocked, or it flags a
