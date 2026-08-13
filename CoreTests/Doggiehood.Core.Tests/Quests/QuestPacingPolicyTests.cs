@@ -32,13 +32,15 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void ShouldRefresh_IsTrue_WhenNeverRotated()
+        public void ShouldRefresh_IsFalse_WhenNoWaitIsRunning()
         {
+            // #704: the clock starts when the board drops below target, not at
+            // "never rotated". A game with nothing waiting refreshes nothing.
             var policy = new QuestPacingPolicy();
             var state = GameState.CreateNew();
 
-            Assert.That(state.LastRotationUtc, Is.Null, "precondition: no rotation recorded yet");
-            Assert.That(policy.ShouldRefresh(DateTime.UtcNow, state), Is.True);
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.Null, "precondition: no wait is running");
+            Assert.That(policy.ShouldRefresh(DateTime.UtcNow, state), Is.False);
         }
 
         [Test]
@@ -47,7 +49,7 @@ namespace Doggiehood.Core.Tests.Quests
             var policy = new QuestPacingPolicy();
             var state = GameState.CreateNew();
             var start = new DateTime(2026, 7, 29, 0, 0, 0, DateTimeKind.Utc);
-            state.RecordRotationUtc(start);
+            state.RecordQuestRefreshTimerStart(start);
 
             var atInterval = start + EconomyNumbers.RefreshInterval;
             Assert.That(policy.ShouldRefresh(atInterval, state), Is.True, "exactly at the interval refreshes");
@@ -60,10 +62,30 @@ namespace Doggiehood.Core.Tests.Quests
             var policy = new QuestPacingPolicy();
             var state = GameState.CreateNew();
             var start = new DateTime(2026, 7, 29, 0, 0, 0, DateTimeKind.Utc);
-            state.RecordRotationUtc(start);
+            state.RecordQuestRefreshTimerStart(start);
 
             var justUnder = start + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1);
             Assert.That(policy.ShouldRefresh(justUnder, state), Is.False);
+        }
+
+        [Test]
+        public void IsBoardBelowTarget_IsWhatStartsAndStopsTheWait()
+        {
+            // #704: a full board is waiting for nothing, so no clock runs
+            // against it — that is what stopped relaunches from banking
+            // refreshes the player never waited for.
+            var policy = new QuestPacingPolicy();
+            var state = GameState.CreateNew();
+            Assert.That(policy.IsBoardBelowTarget(state), Is.True, "an empty board is short");
+
+            var rng = new Random(1);
+            while (state.Quests.ActiveQuests.Count() < policy.TargetActiveCount(state))
+            {
+                state.Quests.GiveQuestTo(
+                    state.Dogs.First(d => !d.HasActiveQuest), QuestType.LostItem, rng);
+            }
+
+            Assert.That(policy.IsBoardBelowTarget(state), Is.False, "a board at target is not");
         }
 
         [Test]

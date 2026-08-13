@@ -140,7 +140,7 @@ namespace Doggiehood.Core.Quests
         {
             if (state.RewardChain.IsComplete)
             {
-                MaybeStartNewDay(nowUtc, rng);
+                TickPacing(nowUtc, rng);
                 return;
             }
 
@@ -176,25 +176,66 @@ namespace Doggiehood.Core.Quests
             SeedBatch(pacing.TargetActiveCount(state), moveInRng);
         }
 
-        /// <summary>#310/#543: the recurring refresh boundary. Asks
-        /// <see cref="QuestPacingPolicy.ShouldRefresh"/> whether the hourly UTC
-        /// cadence has been crossed and, if so, runs one <see cref="StartNewDay"/>
-        /// trickle top-up and records the instant. Purely a boundary
-        /// <em>check</em> — nothing is removed and no quest can fail (economy.md
-        /// #28). Elapsed time only decides <em>whether</em> to refresh, never
-        /// <em>how many</em> to add: away 1 hour or 4 days is one top-up (the
-        /// accumulator advances a single hour's worth, never per missed hour), so
-        /// there is no catch-up flood. <paramref name="nowUtc"/> is a UTC instant
-        /// (<c>DateTime.UtcNow</c> in production).</summary>
-        public void MaybeStartNewDay(DateTime nowUtc, Random rng)
+        /// <summary>#310/#543/#704: the recurring refresh boundary, and the
+        /// only place the refresh clock is maintained. Three things happen
+        /// here, in order:
+        /// <list type="number">
+        /// <item>a board at <see cref="QuestPacingPolicy.TargetActiveCount"/>
+        /// stops (clears) the clock — it is waiting for nothing;</item>
+        /// <item>a board that has just dropped below target starts the clock at
+        /// <paramref name="nowUtc"/> — that drop, not the last rotation, is what
+        /// begins the hour (#704);</item>
+        /// <item>a clock that has run its
+        /// <see cref="EconomyNumbers.RefreshInterval"/> runs one
+        /// <see cref="StartNewDay"/> trickle top-up, records the instant, and
+        /// restarts the clock if the board is still short.</item>
+        /// </list>
+        ///
+        /// <para>Purely a boundary <em>check</em> — nothing is removed and no
+        /// quest can fail (economy.md #28). Elapsed time only decides
+        /// <em>whether</em> to top up, never <em>how many</em> to add: away 1
+        /// hour or 4 days is one top-up (the accumulator advances a single
+        /// hour's worth, never per missed hour), so there is no catch-up flood
+        /// and relaunching is never a shortcut.</para>
+        ///
+        /// <para>#704: this is also the seam the Unity layer polls on a timer
+        /// while the app is open, not only at launch — before that the hourly
+        /// cadence was effectively "per app launch", and a long session
+        /// received no new quests at all. Returns whether anything changed, so
+        /// the caller saves only when it did. <paramref name="nowUtc"/> is a UTC
+        /// instant (<c>DateTime.UtcNow</c> in production).</para></summary>
+        public bool TickPacing(DateTime nowUtc, Random rng)
         {
+            if (!pacing.IsBoardBelowTarget(state))
+            {
+                if (!state.QuestRefreshTimerStartedUtc.HasValue)
+                {
+                    return false;
+                }
+
+                state.RecordQuestRefreshTimerStart(null);
+                return true;
+            }
+
+            if (!state.QuestRefreshTimerStartedUtc.HasValue)
+            {
+                state.RecordQuestRefreshTimerStart(nowUtc);
+                return true;
+            }
+
             if (!pacing.ShouldRefresh(nowUtc, state))
             {
-                return;
+                return false;
             }
 
             StartNewDay(rng);
             state.RecordRotationUtc(nowUtc);
+            // The next hour is measured from this top-up, so a board that is
+            // still short waits another full interval rather than firing again
+            // immediately — and a board that filled up stops waiting entirely.
+            state.RecordQuestRefreshTimerStart(
+                pacing.IsBoardBelowTarget(state) ? nowUtc : (DateTime?)null);
+            return true;
         }
 
         /// <summary>#457: the Debug-tab "Refresh quests now" seam. Runs the same
@@ -212,6 +253,11 @@ namespace Doggiehood.Core.Quests
         {
             StartNewDay(rng);
             state.RecordRotationUtc(nowUtc);
+            // #704: restart the wait from this forced refresh exactly as
+            // TickPacing does after a natural one, so the debug button can't
+            // leave a stale clock that fires again a moment later.
+            state.RecordQuestRefreshTimerStart(
+                pacing.IsBoardBelowTarget(state) ? nowUtc : (DateTime?)null);
         }
 
         /// <summary>Hourly trickle top-up (#26, #310, #543): tops up toward the

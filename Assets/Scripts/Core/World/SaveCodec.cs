@@ -215,6 +215,21 @@ namespace Doggiehood.Core.World
                     .Append('\n');
             }
 
+            // #704: the UTC instant the quest board dropped below its target —
+            // the start of the wait for the next trickle top-up. Persisted so
+            // the wait is measured in elapsed time and never restarted by a
+            // relaunch (a relaunch is never a reset and never a shortcut).
+            // Omitted entirely while the board is full, since nothing is being
+            // waited for; a legacy save with no line seeds it from rotatedUtc=
+            // on load, so a returning player's time away still counts.
+            if (state.QuestRefreshTimerStartedUtc.HasValue)
+            {
+                builder.Append("questTimerUtc=")
+                    .Append(state.QuestRefreshTimerStartedUtc.Value.ToUniversalTime()
+                        .ToString("O", CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
             // #543: the persisted fractional quest-pacing accumulator (the
             // leftover fraction of a quest carried between hourly trickle
             // refreshes). Round-tripped like the move-in pity counter so cadence
@@ -258,6 +273,7 @@ namespace Doggiehood.Core.World
 
             var state = GameState.CreateNew();
             var sawRewardChain = false;
+            var sawQuestTimer = false;
 
             foreach (var line in saved.Split('\n'))
             {
@@ -317,6 +333,13 @@ namespace Doggiehood.Core.World
                 else if (key == "rotatedUtc")
                 {
                     state.RecordRotationUtc(DateTime.Parse(
+                        value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                }
+                else if (key == "questTimerUtc")
+                {
+                    // #704: restore the start of the wait for the next top-up.
+                    sawQuestTimer = true;
+                    state.RecordQuestRefreshTimerStart(DateTime.Parse(
                         value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
                 }
                 else if (key == "questPacingAcc")
@@ -459,6 +482,16 @@ namespace Doggiehood.Core.World
             if (!sawRewardChain && state.OnboardingComplete)
             {
                 state.RestoreRewardChainStep(OnboardingRewardStep.Done);
+            }
+
+            // #704 legacy migration: a pre-#704 save has no refresh-timer line,
+            // and its board loads empty (quests weren't persisted). Seed the
+            // wait from the last rotation stamp — the closest thing that save
+            // has to "when the board was last served" — so the player's time
+            // away still counts instead of the hour restarting at the upgrade.
+            if (!sawQuestTimer && state.LastRotationUtc.HasValue)
+            {
+                state.RecordQuestRefreshTimerStart(state.LastRotationUtc);
             }
 
             // #704 legacy migration: a pre-#704 save persisted a filled house as

@@ -944,6 +944,24 @@ namespace Doggiehood.Core.World
             LastRotationUtc = nowUtc;
         }
 
+        /// <summary>#704: the UTC instant the quest board dropped below its
+        /// population-scaled target — the start of the wait for the next
+        /// trickle top-up — or null while the board is full (nothing is being
+        /// waited for, so no clock runs). Persisted through
+        /// <see cref="SaveCodec"/> so the wait is measured in elapsed time and
+        /// never restarted by a relaunch. Maintained in one place,
+        /// <see cref="Quests.QuestManager.TickPacing"/>, which the app polls
+        /// while it is open as well as at launch.</summary>
+        public DateTime? QuestRefreshTimerStartedUtc { get; private set; }
+
+        /// <summary>#704: records (or clears, with null) the start of the wait
+        /// for the next top-up. Caller passes a UTC instant — never a local
+        /// time. Also the restore path used by <see cref="SaveCodec"/>.</summary>
+        public void RecordQuestRefreshTimerStart(DateTime? startedUtc)
+        {
+            QuestRefreshTimerStartedUtc = startedUtc;
+        }
+
         /// <summary>#543: the persisted fractional quest-pacing accumulator — the
         /// leftover fraction of a quest carried between hourly refreshes by the
         /// error-diffusion trickle
