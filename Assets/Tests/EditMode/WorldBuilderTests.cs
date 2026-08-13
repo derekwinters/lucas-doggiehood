@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Doggiehood.Core.Art;
 using Doggiehood.Core.Debugging;
@@ -10,6 +11,7 @@ using Doggiehood.Unity;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.TestTools;
 
 namespace Doggiehood.Unity.EditModeTests
 {
@@ -545,13 +547,23 @@ namespace Doggiehood.Unity.EditModeTests
         /// the "no phantom crosswalk over the closed edge" fix.</summary>
         private static GameState WithTeeTileUnlocked()
         {
+            var state = WithTeeTileTargeted();
+            Assert.That(state.TryUnlockTile(TeeTileCoordinate), Is.True, "the test needs the Tee tile unlocked");
+            return state;
+        }
+
+        /// <summary>The same three-way tile as <see cref="WithTeeTileUnlocked"/>
+        /// but still LOCKED, with the unlock already funded — the starting point
+        /// for the in-session unlock → build → relaunch cycle (#702), which has to
+        /// begin from a world built before the tile existed.</summary>
+        private static GameState WithTeeTileTargeted()
+        {
             var target = new TileMap(new TileCoordinate(0, 0), TileType.FourWay);
             target.Place(TeeTileCoordinate, TileType.TeeSouth);
 
             var state = GameState.CreateNew();
             state.SetTargetMap(target);
             state.Wallet.Deposit(Doggiehood.Core.Expansion.TileUnlock.Cost(state.Map.Tiles.Count));
-            Assert.That(state.TryUnlockTile(TeeTileCoordinate), Is.True, "the test needs the Tee tile unlocked");
             return state;
         }
 
@@ -1001,6 +1013,131 @@ namespace Doggiehood.Unity.EditModeTests
                 .ToList();
             Assert.That(yards.Count, Is.EqualTo(1), $"lot {lot.HouseId}: exactly one yard container, no duplicates");
             Assert.That(yards[0].childCount, Is.GreaterThan(0), "the built house keeps its yard trees");
+        }
+
+        [Test]
+        public void UnlockThenBuildThenRelaunch_LeavesExactlyOneNonEmptyYardPerLot()
+        {
+            // #702, the reported bug end to end. The player's actual sequence:
+            // launch into a world without the tile, unlock it mid-session (the
+            // trees are pre-baked into the live scene right then), build a house
+            // on one of its lots, quit, and launch again. The relaunch replays
+            // from GameState alone with no memory of the pre-bake, and that replay
+            // is where the built lot's trees used to vanish — the pre-bake is
+            // SCENE state, never save state.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var session = WithTeeTileTargeted();
+            root = WorldBuilder.Build(session);
+
+            Assert.That(YardsFor(FrontierHouseId.For(TeeTileCoordinate, Quadrant.SouthEast)), Is.Empty,
+                "precondition: the world starts before the tile is unlocked, so it has no yards on it");
+
+            Assert.That(session.TryUnlockTile(TeeTileCoordinate), Is.True, "the tile unlocks mid-session");
+            WorldBuilder.RenderUnlockedTile(root.transform, session, TeeTileCoordinate);
+
+            var lots = session.LotsForUnlockedTile(TeeTileCoordinate);
+            Assert.That(lots.Count, Is.EqualTo(4), "precondition: a 3-way carries four lots");
+            foreach (var lot in lots)
+            {
+                AssertExactlyOneNonEmptyYard(lot, "at unlock");
+            }
+
+            // The mid-session build. ExpansionDirector.ConfirmBuild deliberately
+            // does NOT re-render the yard (#434 — that would duplicate the
+            // container), so the scene simply keeps the trees it pre-baked above;
+            // not calling it here is exactly that behaviour.
+            var built = lots[0];
+            session.Wallet.Deposit(HouseBuildNumbers.Cost(session.PlayerBuiltHouseCount));
+            Assert.That(session.TryBuildHouse(built.HouseId), Is.True, "the house builds mid-session");
+            AssertExactlyOneNonEmptyYard(built, "after the mid-session build");
+
+            // The relaunch.
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(session);
+
+            foreach (var lot in lots)
+            {
+                AssertExactlyOneNonEmptyYard(lot, "after the relaunch");
+            }
+
+            Assert.That(session.IsLotBuildable(built.HouseId), Is.False,
+                "sanity: the relaunched world is the one carrying the built house");
+        }
+
+        [Test]
+        public void RenderUnlockedTile_RendersAYardForEveryLot_NotJustTheBuildableOnes()
+        {
+            // #702: the yard render is keyed on the LOT, never on whether a house
+            // stands on it. On the real unlock path every lot of a just-appeared
+            // tile is buildable, so this changes nothing today — which is the
+            // point: the never-bare rule holds here by construction rather than by
+            // an argument about when the method is called, so a future caller that
+            // re-renders an already-built tile can't quietly reopen the bug. The
+            // foundation slab keeps its gate: a built lot has a real house mesh
+            // and wants no marker under it.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var unlocked = WithTeeTileUnlocked();
+            var lots = unlocked.LotsForUnlockedTile(TeeTileCoordinate);
+            var built = lots[0];
+            unlocked.Wallet.Deposit(HouseBuildNumbers.Cost(unlocked.PlayerBuiltHouseCount));
+            Assert.That(unlocked.TryBuildHouse(built.HouseId), Is.True, "the test needs one lot already built");
+
+            root = new GameObject("RenderUnlockedTileHost");
+            WorldBuilder.RenderUnlockedTile(root.transform, unlocked, TeeTileCoordinate);
+
+            foreach (var lot in lots)
+            {
+                AssertExactlyOneNonEmptyYard(lot, "rendered by RenderUnlockedTile");
+            }
+
+            var slabs = Children()
+                .Where(t => t.name == WorldBuilder.EmptyLotNamePrefix + built.HouseId)
+                .ToList();
+            Assert.That(slabs, Is.Empty,
+                $"lot {built.HouseId}: the built lot gets no foundation slab — its house mesh stands there");
+        }
+
+        [Test]
+        public void RenderYardPicks_WithNoPicks_WarnsRatherThanQuietlyRenderingABareYard()
+        {
+            // #702: an empty pick list is a defect, not a valid outcome. It used
+            // to return in silence, so a lot rendering zero trees was
+            // indistinguishable from a lot nobody asked to render — which is how
+            // bare yards got as far as a playtest instead of a test run. Driven
+            // directly because no real lot's geometry can be starved on demand.
+            var lot = FrontierEditModeWorld.FirstTileLots()[0];
+            var host = new GameObject("BareYardHost");
+            try
+            {
+                LogAssert.Expect(LogType.Warning, string.Format(
+                    CultureInfo.InvariantCulture, WorldBuilder.BareYardWarningFormat, lot.HouseId));
+
+                WorldBuilder.RenderYardPicks(host.transform, lot, new List<YardTreePlacement>());
+
+                Assert.That(host.transform.childCount, Is.EqualTo(0),
+                    "it still renders nothing — inventing a tree would put one somewhere illegal");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        private List<Transform> YardsFor(int houseId)
+        {
+            return Children().Where(t => t.name == WorldBuilder.YardLandscapingNamePrefix + houseId).ToList();
+        }
+
+        private void AssertExactlyOneNonEmptyYard(HouseLot lot, string stage)
+        {
+            var yards = YardsFor(lot.HouseId);
+            Assert.That(yards.Count, Is.EqualTo(1),
+                $"lot {lot.HouseId} ({lot.Quadrant}), {stage}: exactly one yard container — "
+                + "not zero (the lot renders bare) and not two (a duplicated pre-bake)");
+            Assert.That(yards[0].childCount, Is.GreaterThan(0),
+                $"lot {lot.HouseId} ({lot.Quadrant}), {stage}: the yard actually holds trees");
         }
 
         [Test]
