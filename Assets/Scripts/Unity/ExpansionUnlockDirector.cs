@@ -117,28 +117,13 @@ namespace Doggiehood.Unity
                 buildDirector.WireLots();
             }
 
-            GrowCameraBoundsToMap();
+            // #373: the just-extended map is a new live extent, so the camera's
+            // reach is re-derived from it — through the one shared seam every
+            // trigger uses (#691), not a copy of it, so an unlock and a launch
+            // can never drift apart.
+            CameraReach.SyncToLiveMap(state);
             Sync();
             SaveStore.Save(state);
-        }
-
-        /// <summary>Recomputes the live camera rig's pan bounds from the newly
-        /// extended map (#373) so <c>Pan</c>/<c>FocusOn</c> can reach the just
-        /// unlocked tile. The decision lives in Core
-        /// (<see cref="Doggiehood.Core.Cameras.CameraController.RecomputeBoundsFromMap"/>);
-        /// this only feeds it the live <see cref="GameState.Map"/> and re-applies
-        /// the result to the rig. Tolerates no rig (mirrors how the rest of the
-        /// scene wiring degrades gracefully when one isn't present).</summary>
-        private void GrowCameraBoundsToMap()
-        {
-            var rig = Object.FindFirstObjectByType<CameraRig>();
-            if (rig == null)
-            {
-                return;
-            }
-
-            rig.Controller.RecomputeBoundsFromMap(state.Map);
-            rig.ApplyConfiguration();
         }
     }
 }
