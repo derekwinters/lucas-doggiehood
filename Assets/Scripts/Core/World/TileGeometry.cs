@@ -12,6 +12,20 @@ namespace Doggiehood.Core.World
     /// </summary>
     public static class TileGeometry
     {
+        // #700: the two seed salts an open-space quadrant's cluster draws from —
+        // one for its candidate points, one for the selection (count, kind and
+        // per-tree scale), mirroring YardLandscaping's per-lot salts.
+        private const int OpenSpaceCandidateSeedSalt = 0;
+        private const int OpenSpaceSelectionSeedSalt = 1;
+
+        // Odd multiplier that mixes the salt into the per-quadrant key, the same
+        // way YardLandscaping.SeedFor mixes a lot's HouseId.
+        private const int SeedSaltMultiplier = 397;
+
+        // A tile with exactly one roaded edge is a dead end (a cul-de-sac): its
+        // single arm terminates in a paved bulb at the tile centre.
+        private const int DeadEndRoadEdgeCount = 1;
+
         /// <summary>The tile's center in world-space meters.</summary>
         public static GridPoint CenterOf(TileCoordinate coordinate)
         {
@@ -52,50 +66,122 @@ namespace Doggiehood.Core.World
         }
 
         /// <summary>
-        /// The world-space positions of a tile's open-space-with-trees
-        /// quadrants (<see cref="TileLotCatalog.TreeQuadrantsFor"/>) - each
-        /// type's local tree offsets shifted by the tile's own
-        /// <see cref="CenterOf"/>. Every quadrant with no kept house lot gets a
-        /// tree (#614): cul-de-sacs' two bulb-side quadrants (#385), a bend's
-        /// cupped corner AND its diagonal opposite, and all four of a twin
-        /// bend's quadrants; full-lot types (FourWay/Straight*/Tee*) and the
-        /// out-of-scope GreenSpace park return an empty list. Each candidate is
-        /// cleared against the tile's own roads (<see cref="LotBounds.RoadsFor"/>/
-        /// <see cref="LotBounds.ClearRoadCorridors"/>) so a tree never lands in
-        /// the bend's road arc; a quadrant with no clean grass left is skipped
-        /// rather than force-placed (<see cref="OpenSpaceTreeHasClearGrass"/>).
+        /// Every open-space tree a tile plants, across all of its
+        /// open-space-with-trees quadrants (<see cref="TileLotCatalog.TreeQuadrantsFor"/>):
+        /// the flattened union of <see cref="OpenSpaceTreesFor"/> per quadrant.
+        /// Every quadrant with no kept house lot is planted (#614) — cul-de-sacs'
+        /// two bulb-side quadrants (#385) and a bend's cupped corner AND its
+        /// diagonal opposite; full-lot types (FourWay/Straight*/Tee*) and the
+        /// out-of-scope GreenSpace park return an empty list (a full-lot type's
+        /// unbuilt quadrants show their PREDETERMINED house's yard trees
+        /// instead, #434/#461).
+        ///
+        /// <para><b>Invariant (#700):</b> an open-space quadrant is planted with
+        /// a CLUSTER — at least <see cref="YardLandscaping.OpenSpaceSelectMin"/>
+        /// spaced trees — never a single one, which read as bare grass in
+        /// playtesting.</para>
         /// </summary>
-        public static IReadOnlyList<GridPoint> TreeWorldPositionsFor(TileType type, TileCoordinate coordinate)
+        public static IReadOnlyList<YardTreePlacement> TreeWorldPositionsFor(
+            TileType type, TileCoordinate coordinate)
         {
-            var center = CenterOf(coordinate);
-            var roads = LotBounds.RoadsFor(coordinate, type);
-            var positions = new List<GridPoint>();
+            var placements = new List<YardTreePlacement>();
             foreach (var entry in TileLotCatalog.TreeQuadrantsFor(type))
             {
-                var position = new GridPoint(center.X + entry.Value.X, center.Z + entry.Value.Z);
-                if (OpenSpaceTreeHasClearGrass(QuadrantWorldBounds(coordinate, entry.Key), position, roads))
-                {
-                    positions.Add(position);
-                }
+                placements.AddRange(OpenSpaceTreesFor(type, coordinate, entry.Key));
             }
 
-            return positions;
+            return placements;
         }
 
         /// <summary>
-        /// Whether an open-space tree at <paramref name="position"/> still has
-        /// clean grass inside <paramref name="quadrantBounds"/> once the tile's
-        /// <paramref name="roads"/> corridors are cleared (#614). False when the
-        /// quadrant is all pavement — the cupped corner of a bend the road arc
-        /// leaves no room in — so the caller skips the tree rather than forcing
-        /// it into the road; the diagonal-opposite quadrant (which borders no
-        /// roaded edge) always keeps its clean grass and its tree.
+        /// The cluster of open-space trees planted in ONE
+        /// <paramref name="quadrant"/> of the tile at
+        /// <paramref name="coordinate"/> (#700): rejection-sampled inside the
+        /// quadrant's road-cleared grass (<see cref="OpenSpaceGrassFor"/>) with
+        /// the same <see cref="YardLandscaping"/> machinery a house yard uses —
+        /// <see cref="YardLandscaping.OpenSpaceSelectMin"/>..<see cref="YardLandscaping.OpenSpaceSelectMax"/>
+        /// picks, mutually spaced by <see cref="YardLandscaping.MinSpacing"/>,
+        /// each with its own #458 size variance. Seeded per (coordinate,
+        /// quadrant), so a tile renders identically across sessions and saves.
+        /// A quadrant that holds a house lot — or whose grass the tile's roads
+        /// leave no room in — plants nothing.
         /// </summary>
-        public static bool OpenSpaceTreeHasClearGrass(
-            LotRect quadrantBounds, GridPoint position, IReadOnlyList<Road> roads)
+        public static IReadOnlyList<YardTreePlacement> OpenSpaceTreesFor(
+            TileType type, TileCoordinate coordinate, Quadrant quadrant)
         {
-            var clear = LotBounds.ClearRoadCorridors(quadrantBounds, roads);
-            return clear.Width > 0f && clear.Depth > 0f && clear.Contains(position);
+            if (!TileLotCatalog.TreeQuadrantsFor(type).ContainsKey(quadrant))
+            {
+                return new List<YardTreePlacement>();
+            }
+
+            var grass = OpenSpaceGrassFor(type, coordinate, quadrant);
+            var candidates = YardLandscaping.GenerateOpenSpaceCandidates(
+                grass, PavementFor(type, coordinate),
+                SeedFor(coordinate, quadrant, OpenSpaceCandidateSeedSalt));
+            return YardLandscaping.SelectOpenSpace(
+                candidates, SeedFor(coordinate, quadrant, OpenSpaceSelectionSeedSalt));
+        }
+
+        /// <summary>
+        /// The clean grass an open-space <paramref name="quadrant"/> offers:
+        /// its <see cref="QuadrantWorldBounds"/> with the tile's own road
+        /// corridors cleared (<see cref="LotBounds.RoadsFor"/>/
+        /// <see cref="LotBounds.ClearRoadCorridors"/>, #614) — so a tree can
+        /// never land in the bend's road arc, and a quadrant the roads leave no
+        /// room in yields a collapsed rect that plants nothing rather than
+        /// forcing a tree onto pavement.
+        /// </summary>
+        public static LotRect OpenSpaceGrassFor(TileType type, TileCoordinate coordinate, Quadrant quadrant)
+        {
+            return LotBounds.ClearRoadCorridors(
+                QuadrantWorldBounds(coordinate, quadrant), LotBounds.RoadsFor(coordinate, type));
+        }
+
+        /// <summary>
+        /// Every paved region of the tile at <paramref name="coordinate"/> an
+        /// open-space tree must stand clear of (#700): one corridor rect per
+        /// road (<see cref="LotBounds.RoadsFor"/>) reaching
+        /// <see cref="LotBounds.StreetCorridorInset"/> either side of its
+        /// centerline — road, verge and sidewalk — plus, for a DEAD-END type
+        /// (a single roaded edge, i.e. a cul-de-sac), the bulb at the tile
+        /// centre. The bulb matters because the stub's <see cref="Road"/> extent
+        /// stops at the tile centre while the paved turnaround keeps going
+        /// (<see cref="WorldDimensions.CulDeSacBulbRadius"/>), so the per-edge
+        /// corridor trim alone cannot see it — scattering a cluster across a
+        /// whole quadrant would otherwise drop trees onto it.
+        /// </summary>
+        private static IReadOnlyList<LotRect> PavementFor(TileType type, TileCoordinate coordinate)
+        {
+            var pavement = new List<LotRect>();
+            foreach (var road in LotBounds.RoadsFor(coordinate, type))
+            {
+                pavement.Add(CorridorRect(road));
+            }
+
+            if (TileCatalog.Get(type).RoadEdges.Count == DeadEndRoadEdgeCount)
+            {
+                var center = CenterOf(coordinate);
+                var radius = WorldDimensions.CulDeSacBulbRadius;
+                pavement.Add(new LotRect(
+                    center.X - radius, center.X + radius, center.Z - radius, center.Z + radius));
+            }
+
+            return pavement;
+        }
+
+        /// <summary>The paved corridor of one <paramref name="road"/> as a rect:
+        /// <see cref="LotBounds.StreetCorridorInset"/> either side of its
+        /// centerline, over its own finite extent.</summary>
+        private static LotRect CorridorRect(Road road)
+        {
+            var halfWidth = LotBounds.StreetCorridorInset;
+            return road.Orientation == StreetOrientation.NorthSouth
+                ? new LotRect(
+                    road.Center.X - halfWidth, road.Center.X + halfWidth,
+                    road.Center.Z - road.HalfLength, road.Center.Z + road.HalfLength)
+                : new LotRect(
+                    road.Center.X - road.HalfLength, road.Center.X + road.HalfLength,
+                    road.Center.Z - halfWidth, road.Center.Z + halfWidth);
         }
 
         /// <summary>The world-space bounds of one <paramref name="quadrant"/> of
@@ -104,7 +190,7 @@ namespace Doggiehood.Core.World
         /// quadrant, centred on the tile — the same tiling
         /// <see cref="LotBounds.QuadrantBounds"/> produces, keyed by coordinate
         /// rather than a house lot.</summary>
-        private static LotRect QuadrantWorldBounds(TileCoordinate coordinate, Quadrant quadrant)
+        public static LotRect QuadrantWorldBounds(TileCoordinate coordinate, Quadrant quadrant)
         {
             var center = CenterOf(coordinate);
             // The quadrant is a TileSize/2-per-side rect; its half-extent (used
@@ -115,6 +201,17 @@ namespace Doggiehood.Core.World
             var centerX = center.X + signX * half;
             var centerZ = center.Z + signZ * half;
             return new LotRect(centerX - half, centerX + half, centerZ - half, centerZ + half);
+        }
+
+        /// <summary>The deterministic seed for one (coordinate, quadrant)
+        /// cluster (#700). <see cref="FrontierHouseId.For"/> is already an
+        /// injective, pure function of exactly that pair — no two tile-quadrants
+        /// on the map share a value — so it is the natural stable key here, the
+        /// same way a house lot seeds its yard trees from its own
+        /// <see cref="HouseLot.HouseId"/>.</summary>
+        private static int SeedFor(TileCoordinate coordinate, Quadrant quadrant, int salt)
+        {
+            return unchecked(FrontierHouseId.For(coordinate, quadrant) * SeedSaltMultiplier + salt);
         }
 
         private static (float SignX, float SignZ) SignsFor(Quadrant quadrant)

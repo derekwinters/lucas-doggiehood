@@ -94,6 +94,24 @@ namespace Doggiehood.Core.World
         /// <summary>Maximum back trees actually shown.</summary>
         public const int BackSelectMax = 5;
 
+        /// <summary>Candidate points generated in ONE open-space quadrant
+        /// (#700). Sized like <see cref="BackCandidateCount"/> relative to its
+        /// selection range: a generous pool so the rejection sampler can spread
+        /// <see cref="OpenSpaceSelectMax"/> picks around a whole quadrant
+        /// without the selection collapsing onto whatever it happened to
+        /// find.</summary>
+        public const int OpenSpaceCandidateCount = 8;
+
+        /// <summary>Minimum trees planted in an open-space quadrant (#700).
+        /// Never one: an empty lot with a single tree in it read as bare grass
+        /// in playtesting (Derek and Lucas, v0.14).</summary>
+        public const int OpenSpaceSelectMin = 2;
+
+        /// <summary>Maximum trees planted in an open-space quadrant (#700) —
+        /// the small-cluster ceiling, mirroring the back yard's 3-5
+        /// range.</summary>
+        public const int OpenSpaceSelectMax = 4;
+
         /// <summary>Chance a front yard shows its occasional second tree
         /// rather than the common single tree. Decision (#170): a plain
         /// minority-of-the-time reading of "1 most of the time, 2
@@ -239,6 +257,69 @@ namespace Doggiehood.Core.World
             }
 
             return GenerateCandidates(backYard, BackCandidateCount, IsBlocked, new Random(seed));
+        }
+
+        /// <summary>
+        /// Up to <see cref="OpenSpaceCandidateCount"/> candidate points inside
+        /// <paramref name="region"/>, mutually spaced by
+        /// <see cref="MinSpacing"/> (#700). An open-space quadrant holds no
+        /// house, no walkway and no fence, so the region itself — already
+        /// cleared of the tile's roads by the caller — is the only constraint.
+        /// Pure: same region + same seed, same candidates.
+        /// </summary>
+        public static IReadOnlyList<YardTreeCandidate> GenerateOpenSpaceCandidates(LotRect region, int seed)
+        {
+            return GenerateOpenSpaceCandidates(region, Array.Empty<LotRect>(), seed);
+        }
+
+        /// <summary>
+        /// <see cref="GenerateOpenSpaceCandidates(LotRect, int)"/> with explicit
+        /// obstacles: every candidate also keeps <see cref="TreeFootprintRadius"/>
+        /// clear of each rect in <paramref name="pavement"/> (#700). An open-space
+        /// quadrant borders the tile's own roads, and a dead-end tile's bulb is
+        /// paved ground the per-edge corridor trim can't see — so the caller
+        /// passes those paved regions here rather than relying on the sampling
+        /// region's edges alone.
+        /// </summary>
+        public static IReadOnlyList<YardTreeCandidate> GenerateOpenSpaceCandidates(
+            LotRect region, IReadOnlyList<LotRect> pavement, int seed)
+        {
+            if (pavement == null)
+            {
+                throw new ArgumentNullException(nameof(pavement));
+            }
+
+            bool IsBlocked(GridPoint point)
+            {
+                foreach (var paved in pavement)
+                {
+                    if (DistanceToRect(point, paved) < TreeFootprintRadius)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            return GenerateCandidates(region, OpenSpaceCandidateCount, IsBlocked, new Random(seed));
+        }
+
+        /// <summary>
+        /// Picks a uniformly random count between <see cref="OpenSpaceSelectMin"/>
+        /// and <see cref="OpenSpaceSelectMax"/> (inclusive) from
+        /// <paramref name="candidates"/>, deterministically for
+        /// <paramref name="seed"/>, capped by availability like
+        /// <see cref="SelectBack"/> — and drawing each pick's #458 per-tree
+        /// <see cref="YardTreePlacement.Scale"/> from the same seeded stream, so
+        /// open-space trees vary in size exactly like yard trees (#700).
+        /// </summary>
+        public static IReadOnlyList<YardTreePlacement> SelectOpenSpace(
+            IReadOnlyList<YardTreeCandidate> candidates, int seed)
+        {
+            var rng = new Random(seed);
+            var desired = OpenSpaceSelectMin + rng.Next(OpenSpaceSelectMax - OpenSpaceSelectMin + 1);
+            return Select(candidates, Math.Min(desired, candidates.Count), rng);
         }
 
         /// <summary>
