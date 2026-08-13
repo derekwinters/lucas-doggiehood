@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Doggiehood.Core.Quests;
 using Doggiehood.Core.World;
@@ -54,7 +53,7 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void AnAcceptedLostItemQuest_HasItsHiddenItemInTheWorldAfterARelaunch()
         {
-            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(1));
+            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new System.Random(1));
             Assert.That(state.Quests.Accept(quest), Is.True, "precondition: the search is underway");
             state = SaveCodec.Load(SaveCodec.Save(state));
 
@@ -71,7 +70,7 @@ namespace Doggiehood.Unity.EditModeTests
         {
             // The item appears when the search starts, not when the quest is
             // merely offered — a relaunch must not leak the hiding place.
-            state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(2));
+            state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new System.Random(2));
             state = SaveCodec.Load(SaveCodec.Save(state));
 
             Relaunch();
@@ -82,7 +81,7 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void RefreshingLostItems_IsIdempotent()
         {
-            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new Random(3));
+            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.LostItem, new System.Random(3));
             state.Quests.Accept(quest);
             Relaunch();
             var spawned = Object.FindObjectsByType<LostItemView>(FindObjectsSortMode.None).Length;
@@ -96,7 +95,7 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void AnAcceptedPestControlQuest_HasItsBugsBackAfterARelaunch()
         {
-            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.PestControl, new Random(4));
+            var quest = state.Quests.GiveQuestTo(state.Dogs[0], QuestType.PestControl, new System.Random(4));
             state.Quests.Accept(quest);
             state = SaveCodec.Load(SaveCodec.Save(state));
 
