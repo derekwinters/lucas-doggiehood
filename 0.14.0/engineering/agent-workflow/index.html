@@ -1583,6 +1583,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#two-gates-before-work-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two gates before work starts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two gates before work starts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gate-a-the-mechanical-issue-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate A — the mechanical issue gate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-b-the-wide-change-confirmation-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate B — the wide-change confirmation threshold
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-plain-english-lead" class="md-nav__link">
     <span class="md-ellipsis">
       The plain-English lead
@@ -1829,6 +1862,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#two-gates-before-work-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two gates before work starts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two gates before work starts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gate-a-the-mechanical-issue-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate A — the mechanical issue gate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-b-the-wide-change-confirmation-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate B — the wide-change confirmation threshold
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-plain-english-lead" class="md-nav__link">
     <span class="md-ellipsis">
       The plain-English lead
@@ -1941,6 +2007,23 @@ vocabulary, routines, and stage behavior.</p>
 <li>If something in the issue conflicts with the docs, or a decision is missing entirely, stop and flag it rather than guessing — that's a design gap to resolve back in GitHub, then reflected here.</li>
 <li>If the issue would touch a UI screen's <strong>structure</strong> (adding, removing, or repositioning a panel/overlay/screen's regions) and no approved wireframe exists for it in <a href="../../specs/ui/"><code>docs/specs/ui/</code></a>, stop and flag it — do not implement, not even graybox. Same posture as the docs-conflict rule above: finish the wireframe first via the <a href="../ui-design-process/">UI Design Process</a>. See its <a href="../ui-design-process/#the-gate">gate</a>.</li>
 </ol>
+<h2 id="two-gates-before-work-starts">Two gates before work starts<a class="headerlink" href="#two-gates-before-work-starts" title="Permanent link">&para;</a></h2>
+<p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/684">#684</a></em></p>
+<p>Two things are supposed to precede any code: <strong>a triaged, approved issue</strong>, and — for anything wide — <strong>Derek's confirmation of the approach</strong>. Both used to be norms an agent chose to follow at exactly the moment it was most tempted not to, and both failed repeatedly: an agent handed a screenshot of a bug diagnosed it and pushed a branch with no issue at all, and an agent told to add one <code>CLAUDE.md</code> rule renumbered the whole list and rewrote 24 cross-references across 13 files without ever putting the approach up for review. They are different failures — the first is <em>building with no mandate</em>, the second is <em>picking a high-churn approach to work that was genuinely asked for</em> — so each has its own gate. They are <a href="#claudemd">CLAUDE.md</a> rules #13 and #14.</p>
+<p><strong>The verification bar for both, taken from the issue:</strong> an agent handed a bug report with no issue, and an agent asked for a small change to a shared file, both <strong>demonstrably</strong> stop and hand back — not merely by policy.</p>
+<h3 id="gate-a-the-mechanical-issue-gate">Gate A — the mechanical issue gate<a class="headerlink" href="#gate-a-the-mechanical-issue-gate" title="Permanent link">&para;</a></h3>
+<p>The first gate is enforced by a <code>PreToolUse</code> hook, <code>.claude/hooks/issue_gate.py</code>, wired in <code>.claude/settings.json</code>. Text alone had already failed more than once, so this one denies the tool call rather than asking the agent to reconsider.</p>
+<ul>
+<li><strong>What it blocks.</strong> <code>Edit</code>, <code>Write</code> and <code>MultiEdit</code> whose target is under <code>Assets/**</code>, <code>CoreTests/**</code>, <code>ProjectSettings/**</code> or <code>Packages/**</code> — the game code, its tests, and the build configuration.</li>
+<li><strong>What it never blocks.</strong> Every other path (<code>docs/**</code>, <code>.claude/**</code>, <code>CLAUDE.md</code>, <code>.github/**</code>), every read-only tool, and issue filing. Triage, diagnosis and investigation are unaffected, which is what makes the gate safe to leave on: the correct response to a bug with no issue — investigate, then file it — is fully available.</li>
+<li><strong>How an edit is authorized.</strong> The session sets <code>DOGGIEHOOD_APPROVED_ISSUE</code> to the issue number it is building. The hook does <strong>not</strong> trust that number on its own: it looks the issue up live via the GitHub API (<code>GITHUB_TOKEN</code>, the same auth pattern as the <a href="../issue-pipeline/">pipeline</a> scripts) and allows the edit only if that issue currently carries <code>ready-for-work</code> or <code>in-progress</code>. An agent that invents a number is denied exactly like one that sets nothing, because an untriaged, <code>ai-triage</code> or <code>pending-approval</code> issue carries neither label.</li>
+</ul>
+<p><strong>Invariant — the gate passes only on a <em>post-approval</em> label state.</strong> Both accepted labels sit after <code>/approve</code> in the pipeline's state machine, and <code>in-progress</code> is only ever reachable <em>from</em> <code>ready-for-work</code>. Accepting <code>in-progress</code> is not a loosening: the pipeline's labels are mutually exclusive, and <code>pipeline-dev</code> and <code>milestone-orchestration</code> both move an issue to <code>in-progress</code> <strong>before</strong> any code is written, so a <code>ready-for-work</code>-only check would deny every automated build — including the runs that deliver the milestones.</p>
+<p>Because of that, the two builder skills set <code>DOGGIEHOOD_APPROVED_ISSUE</code> for the single issue they are about to build, immediately before invoking <code>doggiehood-dev</code>, and clear or replace it when that issue is done. That plumbing is asserted by a test, since without it the gate denies every automated build.</p>
+<p><strong>When the live check can't run</strong> — no token, or the API is unreachable — the hook <strong>fails open</strong> and allows the edit. This is deliberate: fail-closed would halt all development during a GitHub outage, and the failure the gate mainly exists to catch (code written with no issue at all) is denied <em>without</em> any network call, since the variable is simply unset. The gate is a guardrail against an agent's judgement lapsing mid-flow, not a security boundary against a determined actor.</p>
+<h3 id="gate-b-the-wide-change-confirmation-threshold">Gate B — the wide-change confirmation threshold<a class="headerlink" href="#gate-b-the-wide-change-confirmation-threshold" title="Permanent link">&para;</a></h3>
+<p>Whether a change is "wide" is a judgement call rather than a path glob, so this gate is a rule rather than a hook — but with a concrete, checkable threshold instead of a vague "confirm first". <strong>Before making a change that touches more than 5 files, or that touches <code>CLAUDE.md</code>, any <code>docs/engineering/**</code> page, or <code>.claude/settings.json</code>, or that renames/renumbers something across 3 or more files: state the approach and its blast radius, and wait for explicit confirmation.</strong></p>
+<p>The point isn't the file count on its own — it's that a narrow request never authorizes a wide implementation of it. When a contained approach and a churny one both satisfy what was asked, the choice goes to Derek before the first edit, not into the diff. The threshold is sized to catch the motivating case exactly (13 files, and two of the named shared files) while leaving ordinary single-file docs and spec edits unblocked. A direct consequence: new <code>CLAUDE.md</code> rules are <strong>appended</strong>, never inserted, so adding one can't drag a repo-wide renumbering behind it.</p>
 <h2 id="the-plain-english-lead">The plain-English lead<a class="headerlink" href="#the-plain-english-lead" title="Permanent link">&para;</a></h2>
 <p><em><a href="https://github.com/derekwinters/lucas-doggiehood/issues/545">#545</a></em></p>
 <p><strong>Every triage analysis, implementation note, and PR body opens with a direct, plain-English summary — two or three sentences, before any class names, file paths, or TDD detail.</strong> What's wrong (or what we want), and what we're changing about it, in words that are easy to skim.</p>
