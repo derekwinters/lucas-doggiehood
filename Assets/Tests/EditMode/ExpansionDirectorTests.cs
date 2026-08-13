@@ -213,9 +213,139 @@ namespace Doggiehood.Unity.EditModeTests
 
             Assert.That(state.Houses.Any(h => h.Id == houseId), Is.False,
                 "Core TryBuildHouse rejects the unaffordable build; no house is added");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(0),
+                "#690 defence in depth: a disabled Yes that is somehow invoked still spends nothing");
             Assert.That(worldRoot.GetComponentsInChildren<EmptyLotView>().Select(v => v.HouseId),
                 Does.Contain(houseId), "the marker survives a failed build");
             Assert.That(worldRoot.GetComponentsInChildren<HouseView>().Any(h => h.HouseId == houseId), Is.False);
+        }
+
+        [Test]
+        public void TappingALotThePlayerCannotAfford_OpensTheDialog_WithYesGreyedOutAndUnpressable()
+        {
+            // #690: the reported bug — an unaffordable build used to offer a
+            // normal, pressable Yes that silently did nothing.
+            DrainWalletToJustBelowTheBuildCost();
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+
+            lotView.OnTapped();
+
+            Assert.That(dialog.IsOpen, Is.True,
+                "the dialog still opens so the player can see the price");
+            Assert.That(dialog.YesButton.interactable, Is.False, "Yes is not pressable");
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Disabled,
+                "Yes greys out like an unaffordable quest pill");
+        }
+
+        [Test]
+        public void TappingALotThePlayerCanAfford_OpensTheDialog_WithALiveLeafYes()
+        {
+            // Regression guard: an affordable build is completely unchanged.
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+
+            lotView.OnTapped();
+
+            Assert.That(dialog.YesButton.interactable, Is.True);
+            AssertColor(dialog.YesButtonImage.color, CandyChromeUgui.Leaf,
+                "an affordable build keeps the positive/leaf confirm");
+        }
+
+        [Test]
+        public void TheUnaffordableDialog_StillShowsTheCostThePlayerIsShortOf()
+        {
+            DrainWalletToJustBelowTheBuildCost();
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+
+            lotView.OnTapped();
+
+            Assert.That(dialog.CostGroup.activeSelf, Is.True);
+            Assert.That(dialog.CostAmountLabel.text,
+                Is.EqualTo(HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount).ToString()));
+        }
+
+        [Test]
+        public void TheUnaffordableDialog_IsNeverATrap_NoAndTheScrimStillDismiss()
+        {
+            // #329 guard: greying Yes must never grey the way out.
+            DrainWalletToJustBelowTheBuildCost();
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+
+            lotView.OnTapped();
+            dialog.NoButton.onClick.Invoke();
+            Assert.That(dialog.IsOpen, Is.False, "No dismisses the unaffordable prompt");
+
+            lotView.OnTapped();
+            dialog.ScrimRect.GetComponent<Button>().onClick.Invoke();
+            Assert.That(dialog.IsOpen, Is.False, "the scrim dismisses the unaffordable prompt");
+        }
+
+        [Test]
+        public void InvokingConfirmWhileYesIsDisabled_BuildsNothing_AndLeavesTheWalletUntouched()
+        {
+            // #690 defence in depth: a disabled button must not merely LOOK
+            // disabled — Core stays the sole authority on the spend.
+            DrainWalletToJustBelowTheBuildCost();
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+            var houseId = lotView.HouseId;
+            var coinsBefore = state.Wallet.Coins;
+
+            lotView.OnTapped();
+            Assert.That(dialog.YesButton.interactable, Is.False);
+            dialog.YesButton.onClick.Invoke();
+
+            Assert.That(state.Houses.Any(h => h.Id == houseId), Is.False, "no house is built");
+            Assert.That(state.Wallet.Coins, Is.EqualTo(coinsBefore), "the wallet is untouched");
+            Assert.That(worldRoot.GetComponentsInChildren<EmptyLotView>().Select(v => v.HouseId),
+                Does.Contain(houseId), "the foundation slab survives");
+        }
+
+        [Test]
+        public void TheYesEnabledState_TracksCoresHouseBuildOfferIsAffordable_AtEveryBalance()
+        {
+            // #690 guard: the dialog's enabled state comes from Core's answer,
+            // not a Unity-side wallet comparison. Sweeping the balance across the
+            // exact boundary (cost - 1, cost, cost + 1) pins the two together.
+            var lotView = worldRoot.GetComponentsInChildren<EmptyLotView>().First();
+            var houseId = lotView.HouseId;
+            var cost = HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount);
+
+            foreach (var balance in new[] { 0, cost - 1, cost, cost + 1 })
+            {
+                SetWallet(balance);
+                var expected = HouseBuildOffer.Resolve(state, houseId).Value.IsAffordable;
+
+                lotView.OnTapped();
+
+                Assert.That(dialog.YesButton.interactable, Is.EqualTo(expected),
+                    "Yes must agree with HouseBuildOffer.IsAffordable at a balance of " + balance);
+                AssertColor(dialog.YesButtonImage.color,
+                    expected ? CandyChromeUgui.Leaf : CandyChromeUgui.Disabled,
+                    "the Yes tint must follow Core's affordability at a balance of " + balance);
+
+                dialog.Cancel();
+            }
+        }
+
+        /// <summary>Leaves the wallet one coin short of the current build cost —
+        /// the exact boundary the bug lives on.</summary>
+        private void DrainWalletToJustBelowTheBuildCost()
+        {
+            SetWallet(HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount) - 1);
+        }
+
+        private void SetWallet(int coins)
+        {
+            state.Wallet.TrySpend(state.Wallet.Coins);
+            state.Wallet.Deposit(coins);
+        }
+
+        private static void AssertColor(Color actual, Color expected, string what)
+        {
+            var a = (Color32)actual;
+            var e = (Color32)expected;
+            Assert.That(a.r, Is.EqualTo(e.r), what + " red");
+            Assert.That(a.g, Is.EqualTo(e.g), what + " green");
+            Assert.That(a.b, Is.EqualTo(e.b), what + " blue");
         }
     }
 }
