@@ -77,10 +77,13 @@ namespace Doggiehood.Unity.EditModeTests
 
             // A camera rig whose pan bounds cover the unlocked map, so a
             // FocusOn on the frontier house lands exactly rather than clamping.
+            // #691: this used to hand-call RecomputeBoundsFromMap, compensating
+            // in test setup for a recompute production never did at launch.
+            // Production now runs the same sync on every launch, so the setup
+            // goes through that shipped seam instead of its own workaround.
             cameraHost = new GameObject("camera", typeof(Camera));
             rig = cameraHost.AddComponent<CameraRig>();
-            rig.Controller.RecomputeBoundsFromMap(state.Map);
-            rig.ApplyConfiguration();
+            CameraReach.SyncToLiveMap(state);
 
             director = new GameObject("welcome-director").AddComponent<WelcomePopupDirector>();
             director.transform.SetParent(worldRoot.transform);

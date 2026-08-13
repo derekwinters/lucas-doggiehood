@@ -10,12 +10,9 @@ namespace Doggiehood.Unity
         {
             var state = SaveStore.LoadOrCreate();
 
-            // #453 (Decision A): supply Core the authored target neighborhood
-            // (docs/tools/map-data.json, staged under Resources/) BEFORE anything
-            // reads GameState.UnlockableFrontier — otherwise the frontier is
-            // empty and no expansion locks appear. Rejected authoring coordinates
-            // are logged by the loader, not silently dropped.
-            MapDataLoader.Apply(state);
+            // #453/#691: finish restoring the world's map, then re-derive the
+            // camera's reach from it — in that order (see the method).
+            RestoreMapAndCameraReach(state);
 
             var root = WorldBuilder.Build(state);
             DogSpawner.SpawnDogs(state, root.transform);
@@ -177,6 +174,35 @@ namespace Doggiehood.Unity
                     .Init(state, rig, presenter,
                         () => houseProfile.IsOpen || dogProfile.IsOpen);
             }
+        }
+
+        /// <summary>
+        /// The two halves of "restore the world we launched into", in the order
+        /// they have to happen.
+        ///
+        /// <para>#453 (Decision A): supply Core the authored target neighborhood
+        /// (docs/tools/map-data.json, staged under Resources/) BEFORE anything
+        /// reads <see cref="GameState.UnlockableFrontier"/> — otherwise the
+        /// frontier is empty and no expansion locks appear. Rejected authoring
+        /// coordinates are logged by the loader, not silently dropped. That same
+        /// call is where #539's green-space activation pass runs, so it can place
+        /// further tiles onto <see cref="GameState.Map"/>.</para>
+        ///
+        /// <para>#691: only THEN sync the camera's reach, so its pan bounds and
+        /// its maximum zoom-out cover the restored save's road tiles and every
+        /// auto-activated green space alike. Nothing about the reach is
+        /// persisted and <see cref="CameraRig"/> rebuilds its controller from the
+        /// starting intersection on every scene load, so without this call each
+        /// launch was clamped to the origin tile's [-42, +42] m and a
+        /// <c>MaxZoom</c> of 54 however large the saved neighborhood was — until
+        /// an unlock happened to grow them for that session only. It also un-pins
+        /// the #165 Home fly-to and #518/#604's "Say hi!", which focus through
+        /// these same bounds.</para>
+        /// </summary>
+        private static void RestoreMapAndCameraReach(GameState state)
+        {
+            MapDataLoader.Apply(state);
+            CameraReach.SyncToLiveMap(state);
         }
 
         /// <summary>
