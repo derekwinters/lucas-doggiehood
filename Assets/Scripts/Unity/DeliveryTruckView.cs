@@ -659,6 +659,11 @@ namespace Doggiehood.Unity
 
             // #471: make the delivered package routable/tappable — it previously
             // carried no IInteractable, so TapRouter swallowed taps on it.
+            // #703: PackageView also owns the box's short visible beat and then
+            // removes it. The package is parented to the world root above so it
+            // can outlive the truck (deliberate); nothing here destroys it, and
+            // nothing here should — a truck that is torn down mid-beat must not
+            // be able to strand a permanent tap-swallowing cube at the door.
             package.AddComponent<PackageView>();
 
             HasDelivered = true;

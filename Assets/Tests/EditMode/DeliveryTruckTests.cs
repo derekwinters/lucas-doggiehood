@@ -754,5 +754,222 @@ namespace Doggiehood.Unity.EditModeTests
                 TapRouter.IsPointerOverUi = previousPointerOverUi;
             }
         }
+
+        // ---------------------------------------------------------------
+        // #703: the delivered package is TRANSIENT — it shows for a short
+        // beat and then removes itself, so no white cube piles up in a
+        // doorway swallowing every later tap on that door.
+        // ---------------------------------------------------------------
+
+        /// <summary>Drives a freshly spawned truck to <paramref name="door"/> and
+        /// returns the package it drops there.</summary>
+        private static PackageView DeliverAPackage(GameObject root, Vector3 door)
+        {
+            var truck = DeliveryTruckView.Spawn(root.transform);
+            truck.DeliverTo(door, OriginMap(), OriginNetwork(), () => { });
+
+            for (var step = 0; step < 2000 && !truck.HasDelivered; step++)
+            {
+                truck.Tick(0.05f);
+            }
+
+            var package = root.transform.Find("Package");
+            Assert.That(package, Is.Not.Null, "package left at the door");
+            return package.GetComponent<PackageView>();
+        }
+
+        /// <summary>Steps a package's own beat by <paramref name="seconds"/>, in
+        /// frame-sized slices, stopping if it removes itself along the way.</summary>
+        private static void TickPackage(PackageView package, float seconds)
+        {
+            const float frame = 0.05f;
+            for (var elapsed = 0f; elapsed < seconds && package != null; elapsed += frame)
+            {
+                package.Tick(frame);
+            }
+        }
+
+        [Test]
+        public void DroppedPackage_IsStillAtTheDoor_BeforeItsBeatElapses()
+        {
+            // #703 guard: the beat must have a visible front half — a fix that
+            // removes the box instantly (or never drops one) fails here.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var package = DeliverAPackage(root, new Vector3(14f, 0f, 14f));
+
+                TickPackage(package, DeliveredPackageLifetime.VisibleSeconds / 2f);
+
+                Assert.That(package != null, Is.True, "the package must still be there mid-beat");
+                Assert.That(root.transform.Find("Package"), Is.Not.Null,
+                    "the dropped package is visible while its beat runs");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void DroppedPackage_IsGone_OnceItsBeatElapses()
+        {
+            // #703: the box never disappeared at all — one cube per delivery
+            // stayed in the doorway for the rest of the session.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var package = DeliverAPackage(root, new Vector3(14f, 0f, 14f));
+
+                TickPackage(package, DeliveredPackageLifetime.VisibleSeconds * 2f);
+
+                Assert.That(root.transform.Find("Package"), Is.Null,
+                    "no package GameObject may remain at the door after its beat");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Package_OutlivesItsTruck_ButStillRemovesItselfWhenTheBeatElapses()
+        {
+            // #703: the package is parented to the world root, not the truck, so
+            // the truck's teardown can neither take it with it nor strand it —
+            // the lifetime is owned by the package.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var truck = DeliveryTruckView.Spawn(root.transform);
+                truck.DeliverTo(new Vector3(14f, 0f, 14f), OriginMap(), OriginNetwork(), () => { });
+
+                for (var step = 0; step < 2000 && !truck.HasDelivered; step++)
+                {
+                    truck.Tick(0.05f);
+                }
+
+                var package = root.transform.Find("Package").GetComponent<PackageView>();
+                TickPackage(package, DeliveredPackageLifetime.VisibleSeconds / 2f);
+
+                // The truck vanishes mid-beat (its route ends, it is torn down).
+                Object.DestroyImmediate(truck.gameObject);
+                Assert.That(package != null, Is.True, "the package outlives the truck that dropped it");
+
+                TickPackage(package, DeliveredPackageLifetime.VisibleSeconds);
+
+                Assert.That(root.transform.Find("Package"), Is.Null,
+                    "a package whose truck is gone still removes itself when its beat elapses");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TwoDeliveriesToTheSameDoor_LeaveTheDoorwayClear()
+        {
+            // #703: repeat deliveries to the same house stacked cubes at the
+            // same point. After both beats the doorway must be empty.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var door = new Vector3(14f, 0f, 14f);
+
+                var first = DeliverAPackage(root, door);
+                TickPackage(first, DeliveredPackageLifetime.VisibleSeconds * 2f);
+
+                var second = DeliverAPackage(root, door);
+                TickPackage(second, DeliveredPackageLifetime.VisibleSeconds * 2f);
+
+                Assert.That(root.GetComponentsInChildren<PackageView>(), Is.Empty,
+                    "two deliveries to one house leave no package behind");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void ConcurrentPackages_EachRunTheirOwnBeat()
+        {
+            // #600/#703: more than one delivery can be in flight, so two packages
+            // can sit at two doors at once. One package's beat must not remove
+            // the other's, and each must go when its own beat elapses.
+            var root = new GameObject("truck-test-root");
+            try
+            {
+                var first = DeliverAPackage(root, new Vector3(14f, 0f, 14f));
+                first.name = "Package A";
+                var second = DeliverAPackage(root, new Vector3(-14f, 0f, 14f));
+                second.name = "Package B";
+
+                TickPackage(first, DeliveredPackageLifetime.VisibleSeconds * 2f);
+
+                Assert.That(first == null, Is.True, "the first package's own beat removed it");
+                Assert.That(second != null, Is.True,
+                    "one delivery's beat must not remove another delivery's package");
+
+                TickPackage(second, DeliveredPackageLifetime.VisibleSeconds * 2f);
+
+                Assert.That(root.GetComponentsInChildren<PackageView>(), Is.Empty,
+                    "each package goes when its own beat elapses");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void AfterItsBeat_ATapAtTheDoor_NoLongerResolvesToAPackage()
+        {
+            // #703 invariant — nothing inert blocks a tap. Hiding the cube's
+            // renderer while leaving its collider would satisfy "the box is
+            // gone" on screen and still eat every tap on that doorway, so this
+            // asserts through a real TapRouter raycast rather than renderer
+            // state. Mirrors RouteTap_AtThePackage_RoutesToItsOnTapped's rig.
+            var previousPointerOverUi = TapRouter.IsPointerOverUi;
+            TapRouter.IsPointerOverUi = TapRouter.DefaultIsPointerOverUi;
+
+            var root = new GameObject("truck-test-root");
+            var camGo = new GameObject("tap-cam", typeof(Camera));
+            var texture = new RenderTexture(1920, 1080, 0);
+            try
+            {
+                var package = DeliverAPackage(root, new Vector3(14f, 0f, 14f));
+
+                // Isolate the doorway away from any other world colliders.
+                package.transform.position = new Vector3(0f, 0f, 600f);
+                var doorway = package.transform.position;
+
+                var cam = camGo.GetComponent<Camera>();
+                cam.orthographic = true;
+                cam.orthographicSize = 12f;
+                cam.targetTexture = texture;
+                cam.transform.position = doorway + new Vector3(0f, 24f, -24f);
+                cam.transform.LookAt(doorway);
+                Physics.SyncTransforms();
+
+                Assert.That(TapRouter.RouteTap(cam, cam.WorldToScreenPoint(doorway)), Is.True,
+                    "while its beat runs the package is a real tap target");
+
+                TickPackage(package, DeliveredPackageLifetime.VisibleSeconds * 2f);
+                Physics.SyncTransforms();
+
+                Assert.That(TapRouter.RouteTap(cam, cam.WorldToScreenPoint(doorway)), Is.False,
+                    "after removal a tap at the doorway must not resolve to a PackageView");
+            }
+            finally
+            {
+                camGo.GetComponent<Camera>().targetTexture = null;
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(camGo);
+                Object.DestroyImmediate(root);
+                TapRouter.IsPointerOverUi = previousPointerOverUi;
+            }
+        }
     }
 }
