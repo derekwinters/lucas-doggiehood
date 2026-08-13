@@ -365,8 +365,12 @@ namespace Doggiehood.Core.Quests
                     break;
             }
 
+            // #701: dialogue is selected by type AND subject, so a subject whose
+            // resolution mechanic differs from its type's default (the fence,
+            // which installs in place with no delivery leg) never inherits the
+            // type's default promise.
             var quest = new Quest(nextQuestId++, type, dog.Name, item,
-                QuestTemplates.For(type).Render(dog, item, rng), hidden, cost, targetHouse);
+                QuestTemplates.For(type, item).Render(dog, item, rng), hidden, cost, targetHouse);
             quests.Add(quest);
             dog.GiveQuest();
             return quest;

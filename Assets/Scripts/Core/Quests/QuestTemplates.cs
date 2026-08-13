@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Economy;
 
 namespace Doggiehood.Core.Quests
 {
@@ -92,6 +93,51 @@ namespace Doggiehood.Core.Quests
                 { Personality.Athletic, new[] { "{dog} stretches. \"Still need that {item} for training. Close?\"" } },
             });
 
+        /// <summary>#701: the fence's own "Buy something" pools. The fence is
+        /// the one Gift subject with no delivery leg (#318) — accepting installs
+        /// it on the lot right away — so it must not inherit the generic
+        /// <see cref="BuyGift"/> pools, whose closers promise a delivery truck
+        /// and a walk home and whose openers frame the subject as a portable
+        /// handed-over gift. First-draft placeholder text like every other pool
+        /// here; the writing pass is #100.</summary>
+        private static readonly QuestTemplate BuyFence = new QuestTemplate(
+            new[]
+            {
+                "{dog} looks out across the yard. \"Any chance we could get a {item} put in around my yard?\"",
+                "{dog} paces the edge of the lawn. \"A {item} right along here would be just the thing.\"",
+                "{dog} eyes the wide-open backyard. \"This yard could really use a {item} around it.\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} huffs at the open yard. \"Anyone can just wander through here. Put up a {item}.\"" } },
+                { Personality.Excited, new[] { "{dog} zooms along the yard's edge! \"A {item}! All the way around my yard! Can we?! Can we?!\"" } },
+                { Personality.Shy, new[] { "{dog} peeks out from the porch. \"I'd feel safer with a {item} around the yard... if that's okay.\"" } },
+                { Personality.Brave, new[] { "{dog} paces the property line. \"A {item} would secure this yard properly. Can you have one put up?\"" } },
+                { Personality.Adventurous, new[] { "{dog} trots the perimeter. \"I've mapped my whole yard — a {item} would mark the edge of it perfectly!\"" } },
+                { Personality.Athletic, new[] { "{dog} pulls up from a lap. \"With a {item} around the yard I could run my laps loose. What do you say?\"" } },
+            },
+            new[]
+            {
+                "\"It goes straight up around the yard — nothing to wait on!\"",
+                "\"I'll be right here in the yard, watching it go up!\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>(),
+            new[]
+            {
+                "{dog} looks along the edge of the lawn. \"Still thinking about that {item} for my yard?\"",
+                "{dog} paces the property line. \"Any word on getting my {item} put up?\"",
+                "{dog} gazes at the wide-open yard. \"It's still awfully open out here — how's that {item} coming?\"",
+            },
+            new Dictionary<Personality, IReadOnlyList<string>>
+            {
+                { Personality.Grumpy, new[] { "{dog} huffs at the open yard. \"Still no {item}. Still anyone's shortcut.\"" } },
+                { Personality.Excited, new[] { "{dog} zooms along the yard's edge! \"Is my {item} going up yet?! Is it?!\"" } },
+                { Personality.Shy, new[] { "{dog} peeks out from the porch. \"Um... any news on the {item} for the yard?\"" } },
+                { Personality.Brave, new[] { "{dog} paces the property line. \"Status on the {item}? The yard is still unsecured.\"" } },
+                { Personality.Adventurous, new[] { "{dog} trots the perimeter. \"The edge of my yard is still unmarked — how's the {item}?\"" } },
+                { Personality.Athletic, new[] { "{dog} pulls up from a lap. \"Still running my laps on-leash — any progress on the {item}?\"" } },
+            });
+
         private static readonly QuestTemplate PestControl = new QuestTemplate(
             new[]
             {
@@ -167,6 +213,23 @@ namespace Doggiehood.Core.Quests
                 { Personality.Adventurous, new[] { "{dog} flops down. \"Still craving that {item} to rest on after a trek.\"" } },
                 { Personality.Athletic, new[] { "{dog} finishes a lap. \"Recovery {item} for the yard — close, coach?\"" } },
             });
+
+        /// <summary>#701: the subject-aware template lookup — the seam that
+        /// keeps a quest's dialogue matching the mechanic that quest actually
+        /// runs (docs/specs/quests/quest-content.md). Only a subject whose
+        /// mechanic differs from its type's default gets its own pools (today:
+        /// the fence, which installs in place instead of being delivered);
+        /// every other subject falls through to <see cref="For(QuestType)"/>.
+        /// </summary>
+        public static QuestTemplate For(QuestType type, string itemName)
+        {
+            if (type == QuestType.BuyGift && itemName == ItemCatalog.FenceItemName)
+            {
+                return BuyFence;
+            }
+
+            return For(type);
+        }
 
         public static QuestTemplate For(QuestType type)
         {
