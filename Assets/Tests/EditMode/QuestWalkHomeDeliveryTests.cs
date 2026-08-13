@@ -1,4 +1,5 @@
 using System.Linq;
+using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Decorations;
 using Doggiehood.Core.Dogs;
 using Doggiehood.Core.Economy;
