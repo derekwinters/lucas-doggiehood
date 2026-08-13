@@ -272,6 +272,75 @@ namespace Doggiehood.Core.World
             return found;
         }
 
+        /// <summary>
+        /// #677: the nearest point on the nearest walk EDGE to
+        /// <paramref name="point"/> — the paved place a dog standing there should
+        /// step onto, as opposed to <see cref="NearestNode"/>'s nearest graph
+        /// vertex, which can be many metres away with open ground in between. A
+        /// dog mid-edge projects onto its own position; a dog off the network (out
+        /// on a yard decoration, say) projects perpendicularly onto the closest
+        /// pavement, the shortest possible step back on. False only when the
+        /// network carries no edges at all.
+        /// </summary>
+        public bool TryProjectOntoNearestEdge(GridPoint point, out GridPoint foot, out WalkEdge edge)
+        {
+            foot = point;
+            edge = default;
+            var bestDistance = float.MaxValue;
+            var found = false;
+
+            foreach (var candidate in edges)
+            {
+                var projected = ProjectOntoSegment(point, candidate.A, candidate.B);
+                var dx = projected.X - point.X;
+                var dz = projected.Z - point.Z;
+                var distance = dx * dx + dz * dz;
+
+                if (!found || distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    foot = projected;
+                    edge = candidate;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// #677: true when the straight line from <paramref name="from"/> to
+        /// <paramref name="to"/> stays on paved surface — i.e. both ends fall
+        /// inside ONE edge's footprint (within half that edge's
+        /// <see cref="WalkEdge.Width"/> of its segment), which for that convex
+        /// footprint puts the whole line inside it too. The checkable form of the
+        /// "a dog walking home never leaves the walk network" invariant: a route
+        /// whose every consecutive pair satisfies this never crosses a yard, open
+        /// ground, or the roadway off a crosswalk. Test-facing, like
+        /// <see cref="IsFullyConnected"/>.
+        /// </summary>
+        public bool SegmentStaysOnPavement(GridPoint from, GridPoint to)
+        {
+            foreach (var edge in edges)
+            {
+                var halfWidth = edge.Width / 2f;
+                if (IsWithin(from, edge, halfWidth) && IsWithin(to, edge, halfWidth))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsWithin(GridPoint point, WalkEdge edge, float halfWidth)
+        {
+            var foot = ProjectOntoSegment(point, edge.A, edge.B);
+            var dx = point.X - foot.X;
+            var dz = point.Z - foot.Z;
+            return dx * dx + dz * dz <= halfWidth * halfWidth;
+        }
+
         /// <summary>The graph node nearest an arbitrary point — used to
         /// snap loosely-known positions (e.g. a dog's current transform)
         /// onto the network.</summary>
@@ -348,8 +417,36 @@ namespace Doggiehood.Core.World
         /// </summary>
         public IReadOnlyList<GridPoint> FindPath(GridPoint from, GridPoint to)
         {
-            var start = NearestNode(from);
-            var goal = NearestNode(to);
+            return FindPathBetween(NearestNode(from), NearestNode(to));
+        }
+
+        /// <summary>
+        /// #677: the STRICT shortest path — both endpoints must already BE nodes of
+        /// this graph, and it throws rather than accept anything else. The snapping
+        /// <see cref="FindPath"/> is right for a destination that is deliberately
+        /// off-graph (a yard decoration) and wrong for one that must be exact: a
+        /// dog's own front door. Silently snapping a door lookup miss to the
+        /// nearest node is what routed a dog to a sidewalk in the middle of the
+        /// street and then sat it down there as though it had arrived. Returns an
+        /// empty list when the two nodes are real but not connected.
+        /// </summary>
+        public IReadOnlyList<GridPoint> FindPathBetween(GridPoint start, GridPoint goal)
+        {
+            if (!adjacency.ContainsKey(start))
+            {
+                throw new ArgumentException(
+                    $"({start.X}, {start.Z}) is not a node of this walk network, so no exact path can start "
+                    + "there. Project onto the network first (TryProjectOntoNearestEdge) rather than "
+                    + "silently substituting the nearest node.", nameof(start));
+            }
+
+            if (!adjacency.ContainsKey(goal))
+            {
+                throw new ArgumentException(
+                    $"({goal.X}, {goal.Z}) is not a node of this walk network, so no exact path can end there. "
+                    + "A destination that must be exact — a dog's own front door — must never be substituted.",
+                    nameof(goal));
+            }
 
             var distances = new Dictionary<GridPoint, float> { [start] = 0f };
             var previous = new Dictionary<GridPoint, GridPoint>();

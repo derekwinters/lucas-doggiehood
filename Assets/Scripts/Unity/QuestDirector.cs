@@ -251,10 +251,14 @@ namespace Doggiehood.Unity
         /// gating roll and the route both live in Core
         /// (<see cref="Doggiehood.Core.Decorations.RestBehavior.TryBeginApproach"/>);
         /// this layer only hands the returned approach to the dog's view to
-        /// walk. Dogs already en route are skipped.</summary>
-        private void TickRestApproaches()
+        /// walk. Dogs already en route are skipped. #677: the route is planned
+        /// over the LIVE map-spanning network, so a dog on an unlocked tile walks
+        /// over to its comfort item along real sidewalks instead of beelining
+        /// toward the origin tile; and one dog's failure can't stop the others'.
+        /// Called by Update at runtime and directly by EditMode tests.</summary>
+        public void TickRestApproaches()
         {
-            var network = NeighborhoodLayout.WalkNetwork;
+            var network = State.WalkNetwork;
             foreach (var view in Object.FindObjectsByType<DogView>(FindObjectsSortMode.None))
             {
                 if (view.IsApproachingRest)
@@ -262,29 +266,70 @@ namespace Doggiehood.Unity
                     continue;
                 }
 
-                var position = new GridPoint(view.transform.position.x, view.transform.position.z);
-                var approach = Doggiehood.Core.Decorations.RestBehavior.TryBeginApproach(
-                    view.Dog, State, position, network, restRng);
-                if (approach != null)
+                try
                 {
-                    view.BeginRestApproach(approach);
+                    var position = new GridPoint(view.transform.position.x, view.transform.position.z);
+                    var approach = Doggiehood.Core.Decorations.RestBehavior.TryBeginApproach(
+                        view.Dog, State, position, network, restRng);
+                    if (approach != null)
+                    {
+                        view.BeginRestApproach(approach);
+                    }
+                }
+                catch (System.Exception failure)
+                {
+                    Debug.LogException(failure);
                 }
             }
         }
 
         /// <summary>Advances every heading-home quest's walk; called by
-        /// Update at runtime and directly by EditMode tests.</summary>
+        /// Update at runtime and directly by EditMode tests.
+        ///
+        /// #677: each quest's step is isolated. Nothing here used to catch, so one
+        /// unroutable delivery threw out of Update every frame and took
+        /// <see cref="TickTrucks"/> and the rest approaches down with it — every
+        /// later delivery in the session was broken too, and any truck already on
+        /// the road simply stopped. One quest's failure now stays that quest's
+        /// failure, and that quest fails safely (<see cref="AbandonDelivery"/>)
+        /// rather than retrying forever.</summary>
         public void Tick(float deltaTime)
         {
             foreach (var quest in State.Quests.ActiveQuests.ToList())
             {
-                if (quest.DeliveryPhase == DeliveryPhase.HeadingHome)
+                if (quest.DeliveryPhase != DeliveryPhase.HeadingHome)
+                {
+                    continue;
+                }
+
+                try
                 {
                     WalkDogHome(quest, deltaTime);
+                }
+                catch (System.Exception failure)
+                {
+                    Debug.LogException(failure);
+                    AbandonDelivery(quest);
                 }
             }
 
             TickTrucks(deltaTime);
+        }
+
+        /// <summary>#677: this quest's delivery can't be carried out — the walk
+        /// home couldn't be planned, or the truck couldn't be routed to the door.
+        /// Core resolves it safely (the paid-for item still arrives and the dog
+        /// goes back to wandering instead of waiting for a truck that will never
+        /// come); this layer drops the cached route, shows any delivered
+        /// decoration, and saves.</summary>
+        private void AbandonDelivery(Quest quest)
+        {
+            homeRoutes.Remove(quest.Id);
+            homeRouteProgress.Remove(quest.Id);
+
+            State.Quests.FailDelivery(quest);
+            RefreshDecorations();
+            SaveStore.Save(State);
         }
 
         /// <summary>#600: advances every active delivery truck, holding each one
@@ -316,14 +361,22 @@ namespace Doggiehood.Unity
                     continue;
                 }
 
-                float? leaderAlong = null;
-                if (truck.IsDriving)
+                // #677: one truck's failure must not stop the others driving.
+                try
                 {
-                    leaderAlong = RoadTraffic.ImmediateLeaderAlong(
-                        truck.CurrentSegmentKey, truck.TravelSign, truck.CurrentAlong, snapshot);
-                }
+                    float? leaderAlong = null;
+                    if (truck.IsDriving)
+                    {
+                        leaderAlong = RoadTraffic.ImmediateLeaderAlong(
+                            truck.CurrentSegmentKey, truck.TravelSign, truck.CurrentAlong, snapshot);
+                    }
 
-                truck.Tick(deltaTime, leaderAlong);
+                    truck.Tick(deltaTime, leaderAlong);
+                }
+                catch (System.Exception failure)
+                {
+                    Debug.LogException(failure);
+                }
             }
         }
 
@@ -365,14 +418,12 @@ namespace Doggiehood.Unity
             homeRoutes.Remove(quest.Id);
             homeRouteProgress.Remove(quest.Id);
 
+            // #677: the dog is standing on the last waypoint of a route that can
+            // only end at its own front door, so this is the one place it may be
+            // reported home — never a sidewalk the destination got snapped to.
             State.Quests.NotifyDogArrivedHome(quest);
 
-            // #600: register the truck in the director-owned set so it is ticked
-            // with awareness of any truck ahead of it (car-following), rather than
-            // self-ticking blind to the others.
-            var truck = DeliveryTruckView.Spawn(worldRoot);
-            activeTrucks.Add(truck);
-            truck.DeliverTo(target, State.Map, State.WalkNetwork, () =>
+            Dispatch(target, () =>
             {
                 State.Quests.DeliverPackage(quest);
                 RefreshDecorations();
@@ -380,13 +431,58 @@ namespace Doggiehood.Unity
             });
         }
 
+        /// <summary>#677: how a delivery is dispatched once its dog is at its
+        /// door. Production spawns the real truck; an EditMode test substitutes a
+        /// dispatch that fails, to prove one failed delivery is contained and its
+        /// dog is never left stranded in the waiting pose. Leave null for the
+        /// production behavior.</summary>
+        public System.Action<Vector3, System.Action> DeliveryDispatcher { get; set; }
+
+        private void Dispatch(Vector3 door, System.Action onDelivered)
+        {
+            if (DeliveryDispatcher != null)
+            {
+                DeliveryDispatcher(door, onDelivered);
+                return;
+            }
+
+            var truck = DeliveryTruckView.Spawn(worldRoot);
+            try
+            {
+                truck.DeliverTo(door, State.Map, State.WalkNetwork, onDelivered);
+            }
+            catch
+            {
+                // #677: an undrivable route leaves no half-spawned truck parked in
+                // the world (or in the ticked set) — clean up, then let the caller
+                // contain the failure.
+                if (Application.isPlaying)
+                {
+                    Destroy(truck.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(truck.gameObject);
+                }
+
+                throw;
+            }
+
+            // #600: register the truck in the director-owned set so it is ticked
+            // with awareness of any truck ahead of it (car-following), rather than
+            // self-ticking blind to the others.
+            activeTrucks.Add(truck);
+        }
+
         /// <summary>
-        /// Core computes the actual route (#106, #128): shortest path over
-        /// the sidewalk/crosswalk/front-walkway network from the dog's
-        /// current position to its house's FRONT DOOR — the lot-side node
-        /// of the lot's front walkway (the walkway replaced the old
-        /// lot-center driveway stub, so "home" is now the actual door).
-        /// Computed once per quest and cached — this layer only walks it.
+        /// Core computes the actual route (#106, #128, #677): shortest path over
+        /// the LIVE map-spanning sidewalk/crosswalk/front-walkway network
+        /// (<see cref="GameState.WalkNetwork"/>) from the dog's current position to
+        /// its house's FRONT DOOR — the lot-side node of the lot's front walkway.
+        /// <see cref="WalkHomeRoute"/> owns every decision, including refusing to
+        /// substitute a destination; this layer only walks the waypoints, and
+        /// contains the failure if there is no route. Computed once per quest and
+        /// cached.
         /// </summary>
         private List<Vector3> GetOrComputeRoute(Quest quest, DogView view)
         {
@@ -395,18 +491,9 @@ namespace Doggiehood.Unity
                 return existing;
             }
 
-            var network = NeighborhoodLayout.WalkNetwork;
-            var lot = NeighborhoodLayout.GetHouseLot(view.Dog.HouseId);
-            var home = network.TryGetFrontWalkway(view.Dog.HouseId, out var walkway)
-                ? walkway.A // the front door
-                : lot.Position; // no walkway to arrive by — lot center fallback
-
             var start = new GridPoint(view.transform.position.x, view.transform.position.z);
-            var waypoints = network.FindPath(start, home);
-
-            var route = waypoints.Count > 0
-                ? waypoints.Select(p => new Vector3(p.X, 0f, p.Z)).ToList()
-                : new List<Vector3> { new Vector3(home.X, 0f, home.Z) };
+            var planned = WalkHomeRoute.Plan(State, view.Dog.HouseId, start);
+            var route = planned.Waypoints.Select(p => new Vector3(p.X, 0f, p.Z)).ToList();
 
             homeRoutes[quest.Id] = route;
             homeRouteProgress[quest.Id] = 0;
