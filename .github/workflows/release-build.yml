@@ -1,8 +1,10 @@
 name: release-build
 
-# Backfill path: build the final APK for an already-published release tag and
-# attach it to that release as doggiehood-vX.Y.Z.apk. Debug signing, same as
-# all MVP builds.
+# Backfill path: build both final APKs for an already-published release tag and
+# attach them to that release as doggiehood-vX.Y.Z.apk (device) and
+# doggiehood-vX.Y.Z-emulator.apk (#648). Debug signing, same as all MVP builds.
+# Both assets are verified as genuinely distinct builds before either is
+# uploaded (#706).
 #
 # Automated releases no longer trigger this workflow. A release published by
 # release-please's GITHUB_TOKEN never fires a `release: published` event
@@ -69,6 +71,13 @@ jobs:
           restore-keys: |
             unity-library-android-
 
+      # Clearing Unity's incremental player build state before each variant is
+      # what keeps the two builds genuinely distinct — see the same steps in
+      # release-please.yml and issue #706.
+      - name: Reset the incremental Android player build (device)
+        if: steps.license.outputs.present == 'true'
+        run: sudo rm -rf Library/Bee
+
       - name: Build Android release APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -84,10 +93,9 @@ jobs:
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
 
-      - name: Attach APK to the release
+      - name: Name the device APK
         if: steps.license.outputs.present == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
           APK="$(find build/Android -name '*.apk' | head -n 1)"
@@ -96,4 +104,60 @@ jobs:
             exit 1
           fi
           sudo mv "$APK" "doggiehood-${TAG}.apk"
+
+      - name: Reset the incremental Android player build (emulator)
+        if: steps.license.outputs.present == 'true'
+        run: sudo rm -rf Library/Bee
+
+      # The backfill builds *both* release assets, so re-running it for a tag
+      # is enough to replace a bad emulator asset — v0.14.0's is currently a
+      # copy of the device APK (#706), and this is the path that fixes it.
+      - name: Build Android emulator APK
+        if: steps.license.outputs.present == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          DOGGIEHOOD_EMULATOR_BUILD: "true"
+        with:
+          targetPlatform: Android
+          buildName: Doggiehood
+          buildsPath: build-emulator
+          versioning: Custom
+          version: ${{ steps.version.outputs.name }}
+          androidVersionCode: ${{ steps.version.outputs.code }}
+          androidExportType: androidPackage
+
+      - name: Name the emulator APK
+        if: steps.license.outputs.present == 'true'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          APK="$(find build-emulator/Android -name '*.apk' | head -n 1)"
+          if [ -z "$APK" ]; then
+            echo "::error::Emulator build completed but no APK found under build-emulator/Android"
+            exit 1
+          fi
+          sudo mv "$APK" "doggiehood-${TAG}-emulator.apk"
+
+      - name: Unit-test the emulator build gate
+        if: steps.license.outputs.present == 'true'
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_emulator_build_variant.py"
+
+      - name: Verify the emulator APK is a real emulator build
+        if: steps.license.outputs.present == 'true'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 .github/scripts/verify_emulator_build_variant.py \
+            "doggiehood-${TAG}.apk" "doggiehood-${TAG}-emulator.apk"
+
+      - name: Attach both APKs to the release
+        if: steps.license.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
           gh release upload "$TAG" "doggiehood-${TAG}.apk" --clobber
+          gh release upload "$TAG" "doggiehood-${TAG}-emulator.apk" --clobber
