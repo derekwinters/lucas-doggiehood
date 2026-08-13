@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.15.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.14.0...v0.15.0) (2026-08-13)
+
+
+### Features
+
+* gate code edits on an approved issue and require confirmation for wide changes ([#730](https://github.com/derekwinters/lucas-doggiehood/issues/730)) ([58bdaac](https://github.com/derekwinters/lucas-doggiehood/commit/58bdaac3780b18e1ca85a89b9dca85ef54ee5d93)), closes [#684](https://github.com/derekwinters/lucas-doggiehood/issues/684)
+
+
+### Bug Fixes
+
+* acknowledge a bought gift when its dog is re-tapped ([#727](https://github.com/derekwinters/lucas-doggiehood/issues/727)) ([8ad122c](https://github.com/derekwinters/lucas-doggiehood/commit/8ad122cb335239c6f2d356f6c73ec847bbcac0d5)), closes [#708](https://github.com/derekwinters/lucas-doggiehood/issues/708)
+* clear the delivered package from the doorway after its beat ([#721](https://github.com/derekwinters/lucas-doggiehood/issues/721)) ([6206406](https://github.com/derekwinters/lucas-doggiehood/commit/62064063d81eab62952c5f59689b7abc84973267)), closes [#703](https://github.com/derekwinters/lucas-doggiehood/issues/703)
+* give the emulator build variant a disabled Unity audio engine ([#724](https://github.com/derekwinters/lucas-doggiehood/issues/724)) ([2dd7da6](https://github.com/derekwinters/lucas-doggiehood/commit/2dd7da60c3b99e19b1a3c772eb33fc6898bb2c3d)), closes [#705](https://github.com/derekwinters/lucas-doggiehood/issues/705) [#707](https://github.com/derekwinters/lucas-doggiehood/issues/707)
+* give the fence its own dialogue instead of the delivery-truck promise ([#718](https://github.com/derekwinters/lucas-doggiehood/issues/718)) ([a8cc349](https://github.com/derekwinters/lucas-doggiehood/commit/a8cc349351cfe03955176a17a517c3700c18d819)), closes [#701](https://github.com/derekwinters/lucas-doggiehood/issues/701)
+* grey out the build-a-house Yes the player can't afford ([#714](https://github.com/derekwinters/lucas-doggiehood/issues/714)) ([76d583c](https://github.com/derekwinters/lucas-doggiehood/commit/76d583c03f84b7c875748026e62603ab27bc4ce5)), closes [#690](https://github.com/derekwinters/lucas-doggiehood/issues/690)
+* key every lot's yard trees to the lot, never to its buildable state ([#720](https://github.com/derekwinters/lucas-doggiehood/issues/720)) ([4d8deb4](https://github.com/derekwinters/lucas-doggiehood/commit/4d8deb4a6984802078657018bc9f226cec97e6ed)), closes [#702](https://github.com/derekwinters/lucas-doggiehood/issues/702)
+* match the camera's reach to the map a save was loaded with ([#715](https://github.com/derekwinters/lucas-doggiehood/issues/715)) ([cba891c](https://github.com/derekwinters/lucas-doggiehood/commit/cba891c8429d8bbe7b7a42223b9eecd82df2e370)), closes [#691](https://github.com/derekwinters/lucas-doggiehood/issues/691)
+* persist the live neighborhood so a relaunch is never a reset ([#723](https://github.com/derekwinters/lucas-doggiehood/issues/723)) ([c1bc7ae](https://github.com/derekwinters/lucas-doggiehood/commit/c1bc7ae5ae934c783b056f35c14a5ce47ac5fb46)), closes [#704](https://github.com/derekwinters/lucas-doggiehood/issues/704)
+* **pipeline:** stop needs-clarification issues flapping back to triage ([#728](https://github.com/derekwinters/lucas-doggiehood/issues/728)) ([9aaec3f](https://github.com/derekwinters/lucas-doggiehood/commit/9aaec3fbe53cdee86d511219ed61b3e4f2ae4b7d)), closes [#710](https://github.com/derekwinters/lucas-doggiehood/issues/710)
+* plant a cluster of trees in every open-space quadrant ([#717](https://github.com/derekwinters/lucas-doggiehood/issues/717)) ([7801976](https://github.com/derekwinters/lucas-doggiehood/commit/780197631c29fae08e4ea52f6aa8d133ccd8e520)), closes [#700](https://github.com/derekwinters/lucas-doggiehood/issues/700)
+* reach every visible tap target as the map grows ([#713](https://github.com/derekwinters/lucas-doggiehood/issues/713)) ([2c06835](https://github.com/derekwinters/lucas-doggiehood/commit/2c06835a696fecab280d1ebf8dab98e4e729b3f8)), closes [#680](https://github.com/derekwinters/lucas-doggiehood/issues/680)
+* walk a buy-gift dog home over the live network to its own door ([#711](https://github.com/derekwinters/lucas-doggiehood/issues/711)) ([2fc9355](https://github.com/derekwinters/lucas-doggiehood/commit/2fc935503d456233b8a00ef9baac7c80ca8f806e)), closes [#677](https://github.com/derekwinters/lucas-doggiehood/issues/677)
+
 ## [0.14.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.13.0...v0.14.0) (2026-08-08)
 
 
