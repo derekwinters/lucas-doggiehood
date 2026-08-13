@@ -78,23 +78,26 @@ namespace Doggiehood.Core.Tests.World
         }
 
         [Test]
-        public void TreeWorldPositionsFor_OffsetsTheTypesTreeQuadrantsByTheTilesCenter()
+        public void TreeWorldPositionsFor_PlantsEachTreeQuadrantsCluster_InsideThatQuadrant()
         {
             // #385: a cul-de-sac's two bulb-side quadrants render as open space
-            // with trees; their world positions are the local tree offsets
-            // shifted by the tile's center.
+            // with trees. #700: each of those quadrants gets a CLUSTER of trees
+            // rather than one at the corner offset — every tree lands inside its
+            // own quadrant's world bounds, shifted by the tile's center.
             var coordinate = new TileCoordinate(0, 1);
-            var center = TileGeometry.CenterOf(coordinate);
-            var localTrees = TileLotCatalog.TreeQuadrantsFor(TileType.CulDeSacSouth).Values.ToList();
+            var treeQuadrants = TileLotCatalog.TreeQuadrantsFor(TileType.CulDeSacSouth).Keys.ToList();
+            Assert.That(treeQuadrants.Count, Is.EqualTo(2), "precondition: two bulb-side tree quadrants");
 
             var worldTrees = TileGeometry.TreeWorldPositionsFor(TileType.CulDeSacSouth, coordinate);
 
-            Assert.That(worldTrees.Count, Is.EqualTo(localTrees.Count));
-            Assert.That(worldTrees.Count, Is.EqualTo(2));
-            for (int i = 0; i < worldTrees.Count; i++)
+            Assert.That(worldTrees.Count, Is.GreaterThan(treeQuadrants.Count),
+                "the tile plants more than one tree per open-space quadrant");
+            foreach (var quadrant in treeQuadrants)
             {
-                Assert.That(worldTrees[i].X, Is.EqualTo(center.X + localTrees[i].X));
-                Assert.That(worldTrees[i].Z, Is.EqualTo(center.Z + localTrees[i].Z));
+                var bounds = TileGeometry.QuadrantWorldBounds(coordinate, quadrant);
+                var inQuadrant = worldTrees.Count(t => bounds.Contains(t.Position));
+                Assert.That(inQuadrant, Is.GreaterThanOrEqualTo(YardLandscaping.OpenSpaceSelectMin),
+                    $"{quadrant}: its cluster lands inside its own quadrant bounds");
             }
         }
 
@@ -113,66 +116,49 @@ namespace Doggiehood.Core.Tests.World
         public void TreeWorldPositionsFor_Bend_PlantsBothDroppedQuadrantsClearOfTheRoad()
         {
             // #614: a bend drops the cupped corner AND its diagonal opposite; both
-            // become open space with trees. The cupped-corner tree is kept clear
-            // of the bend's road via the tile-aware clearance; the
-            // diagonal-opposite quadrant borders neither roaded edge and is
-            // unaffected, keeping its exact corner offset.
+            // become open space with trees. #700: each gets a cluster, and every
+            // tree in it is kept clear of the bend's road via the tile-aware
+            // clearance (LotBounds.RoadsFor/ClearRoadCorridors).
             const TileType type = TileType.TurnNE;
             var coordinate = new TileCoordinate(2, 3);
-            var center = TileGeometry.CenterOf(coordinate);
-            float d = NeighborhoodLayout.LotDistanceFromCenter;
 
-            var positions = TileGeometry.TreeWorldPositionsFor(type, coordinate);
+            var placements = TileGeometry.TreeWorldPositionsFor(type, coordinate);
 
-            Assert.That(positions.Count, Is.EqualTo(2));
-
-            var diagonal = new GridPoint(center.X - d, center.Z - d);
-            Assert.That(positions.Any(p => Approximately(p, diagonal)), Is.True,
-                "the diagonal-opposite quadrant always gets a tree at the corner offset");
-
-            var cupped = new GridPoint(center.X + d, center.Z + d);
-            Assert.That(positions.Any(p => Approximately(p, cupped)), Is.True,
-                "the cupped corner gets a tree (it has clean grass beyond the arc)");
+            Assert.That(TileGeometry.OpenSpaceTreesFor(type, coordinate, Quadrant.NorthEast),
+                Is.Not.Empty, "the cupped corner is planted (it has clean grass beyond the arc)");
+            Assert.That(TileGeometry.OpenSpaceTreesFor(type, coordinate, Quadrant.SouthWest),
+                Is.Not.Empty, "the diagonal-opposite quadrant is planted");
 
             var roads = LotBounds.RoadsFor(coordinate, type);
-            foreach (var road in roads)
+            foreach (var placement in placements)
             {
-                Assert.That(road.Contains(cupped), Is.False,
-                    "the cupped-corner tree never lands on the tile's road");
+                foreach (var road in roads)
+                {
+                    Assert.That(road.Contains(placement.Position), Is.False,
+                        "an open-space tree never lands on the tile's road");
+                }
             }
         }
 
         [Test]
-        public void OpenSpaceTreeHasClearGrass_IsTrue_WhenTheQuadrantHasGrassClearOfRoads()
+        public void OpenSpaceGrassFor_TrimsTheQuadrantBackFromTheTilesRoads()
         {
-            var quadrant = new LotRect(0f, 15f, 0f, 15f);
-            var position = new GridPoint(7.5f, 7.5f);
+            // #614/#700: the plantable grass of an open-space quadrant is its full
+            // quadrant bounds pulled back off every road corridor it borders — the
+            // region the cluster is rejection-sampled inside, so no tree can be
+            // generated onto pavement in the first place.
+            const TileType type = TileType.TurnNE;
+            var coordinate = new TileCoordinate(2, 3);
 
-            Assert.That(
-                TileGeometry.OpenSpaceTreeHasClearGrass(quadrant, position, System.Array.Empty<Road>()),
-                Is.True);
-        }
+            var bounds = TileGeometry.QuadrantWorldBounds(coordinate, Quadrant.NorthEast);
+            var grass = TileGeometry.OpenSpaceGrassFor(type, coordinate, Quadrant.NorthEast);
 
-        [Test]
-        public void OpenSpaceTreeHasClearGrass_IsFalse_WhenRoadsLeaveNoCleanGrass()
-        {
-            // #614: a narrow quadrant bordered by a road on each side — both edges
-            // inset by StreetCorridorInset collapse the clean-grass rect, so the
-            // tree is skipped rather than force-placed into the road.
-            var quadrant = new LotRect(0f, 5f, 0f, 30f);
-            var position = new GridPoint(2.5f, 15f);
-            var roads = new[]
-            {
-                new Road(StreetOrientation.NorthSouth, new GridPoint(0f, 15f), 15f),
-                new Road(StreetOrientation.NorthSouth, new GridPoint(5f, 15f), 15f),
-            };
-
-            Assert.That(TileGeometry.OpenSpaceTreeHasClearGrass(quadrant, position, roads), Is.False);
-        }
-
-        private static bool Approximately(GridPoint a, GridPoint b)
-        {
-            return Math.Abs(a.X - b.X) < 0.001f && Math.Abs(a.Z - b.Z) < 0.001f;
+            Assert.That(bounds.Contains(grass), Is.True, "the grass never reaches outside its quadrant");
+            Assert.That(grass.Width, Is.LessThan(bounds.Width),
+                "the cupped corner borders the bend's road on its X edge, so the grass is trimmed");
+            Assert.That(grass.Depth, Is.LessThan(bounds.Depth),
+                "and on its Z edge");
+            Assert.That(grass.Width, Is.GreaterThan(0f), "clean grass is left to plant in");
         }
     }
 }

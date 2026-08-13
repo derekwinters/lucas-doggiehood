@@ -764,17 +764,21 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(container, Is.Not.Null, "the cul-de-sac tile (0,1) gets an open-space-trees container");
 
             var expected = TileGeometry.TreeWorldPositionsFor(TileType.CulDeSacSouth, new TileCoordinate(0, 1));
-            Assert.That(expected.Count, Is.EqualTo(2), "precondition: two bulb-side tree quadrants");
-            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per dropped bulb-side quadrant");
+            var treeQuadrantCount = TileLotCatalog.TreeQuadrantsFor(TileType.CulDeSacSouth).Count;
+            Assert.That(expected.Count,
+                Is.GreaterThanOrEqualTo(treeQuadrantCount * YardLandscaping.OpenSpaceSelectMin),
+                "precondition (#700): two bulb-side tree quadrants, each planted with a cluster");
+            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per Core placement");
 
             var treeXZ = container.Cast<Transform>()
                 .Select(t => new Vector2(t.position.x, t.position.z))
                 .ToList();
-            foreach (var position in expected)
+            foreach (var placement in expected)
             {
                 Assert.That(treeXZ.Any(p =>
-                        Mathf.Abs(p.x - position.X) < 0.001f && Mathf.Abs(p.y - position.Z) < 0.001f),
-                    Is.True, $"a tree renders at bulb-side quadrant ({position.X}, {position.Z})");
+                        Mathf.Abs(p.x - placement.Position.X) < 0.001f
+                        && Mathf.Abs(p.y - placement.Position.Z) < 0.001f),
+                    Is.True, $"a tree renders at ({placement.Position.X}, {placement.Position.Z})");
             }
 
             // The trees never overlap a buildable lot marker (the kept lots).
@@ -808,14 +812,15 @@ namespace Doggiehood.Unity.EditModeTests
 
         // #614: every quadrant with no kept house lot renders open-space trees,
         // not just cul-de-sacs. A bend (TurnSE) drops its cupped corner and the
-        // diagonal opposite (2 trees). One rendered tree per Core tree-quadrant
-        // world position, in the same per-tile "OpenSpaceTree - col,row"
-        // container the cul-de-sac path uses. Pinned on the primitive fallback so
-        // the per-tile object count is deterministic. (#583 removed the twin-bend
+        // diagonal opposite — and since #700 each of those two quadrants is
+        // planted with a CLUSTER, not one lonely tree. One rendered tree per Core
+        // placement, in the same per-tile "OpenSpaceTree - col,row" container the
+        // cul-de-sac path uses. Pinned on the primitive fallback so the per-tile
+        // object count is deterministic. (#583 removed the twin-bend
         // OpposingTurns types, which used to cover the all-four-quadrants case.)
         [TestCase(TileType.TurnSE, 2)]
         public void Build_RendersOpenSpaceTreesOnEveryDroppedQuadrant_ForBends(
-            TileType type, int expectedTreeCount)
+            TileType type, int expectedTreeQuadrants)
         {
             Object.DestroyImmediate(root);
             WorldBuilder.ForcePrimitiveFallback = true;
@@ -827,17 +832,28 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(container, Is.Not.Null, "the tile (0,1) gets an open-space-trees container");
 
             var expected = TileGeometry.TreeWorldPositionsFor(type, TeeTileCoordinate);
-            Assert.That(expected.Count, Is.EqualTo(expectedTreeCount), "precondition: one tree per dropped quadrant");
-            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per dropped quadrant");
+            Assert.That(expected.Count,
+                Is.GreaterThanOrEqualTo(expectedTreeQuadrants * YardLandscaping.OpenSpaceSelectMin),
+                "precondition (#700): each dropped quadrant is planted with a cluster");
+            Assert.That(container.childCount, Is.EqualTo(expected.Count), "one rendered tree per Core placement");
 
             var treeXZ = container.Cast<Transform>()
                 .Select(t => new Vector2(t.position.x, t.position.z))
                 .ToList();
-            foreach (var position in expected)
+            foreach (var placement in expected)
             {
                 Assert.That(treeXZ.Any(p =>
-                        Mathf.Abs(p.x - position.X) < 0.001f && Mathf.Abs(p.y - position.Z) < 0.001f),
-                    Is.True, $"a tree renders at dropped quadrant ({position.X}, {position.Z})");
+                        Mathf.Abs(p.x - placement.Position.X) < 0.001f
+                        && Mathf.Abs(p.y - placement.Position.Z) < 0.001f),
+                    Is.True, $"a tree renders at ({placement.Position.X}, {placement.Position.Z})");
+            }
+
+            foreach (var quadrant in TileLotCatalog.TreeQuadrantsFor(type).Keys)
+            {
+                var bounds = TileGeometry.QuadrantWorldBounds(TeeTileCoordinate, quadrant);
+                var planted = treeXZ.Count(p => bounds.Contains(new GridPoint(p.x, p.y)));
+                Assert.That(planted, Is.GreaterThanOrEqualTo(YardLandscaping.OpenSpaceSelectMin),
+                    $"{quadrant}: an open-space quadrant is never left with a single tree");
             }
         }
 
@@ -892,12 +908,14 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void BuildTileOpenSpaceTrees_StayAtTheFixedBaseScale_VariabilityScopedToYardTrees()
+        public void BuildTileOpenSpaceTrees_ScaleEachTree_ByItsOwnPlacementScale()
         {
-            // #458 regression guard: cul-de-sac open-space trees construct a
-            // YardTreePlacement with no lot/seed context, so Scale defaults to
-            // YardTreePlacement.BaselineScale (1.0) and they render at the flat
-            // UniformScale — the size variability is scoped to yard trees only.
+            // #700 (superseding #458's "open-space trees stay at the flat
+            // baseline"): open-space trees are now seeded per (tile coordinate,
+            // quadrant), so each pick carries its own Scale in [1.0, 1.25] and
+            // renders at UniformScale * placement.Scale — exactly like a yard
+            // tree. They were pinned at the baseline only because they had no
+            // seed context to draw from, and that reason is gone.
             Object.DestroyImmediate(root);
             var state = WithFirstZoneUnlocked();
             root = WorldBuilder.Build(state);
@@ -905,17 +923,84 @@ namespace Doggiehood.Unity.EditModeTests
             var container = root.transform.Cast<Transform>()
                 .FirstOrDefault(t => t.name == WorldBuilder.OpenSpaceTreeNamePrefix + "0,1");
             Assert.That(container, Is.Not.Null, "the cul-de-sac tile (0,1) gets an open-space-trees container");
-            Assert.That(container.childCount, Is.GreaterThan(0), "it renders open-space trees");
 
-            foreach (Transform tree in container)
+            var placements = TileGeometry.TreeWorldPositionsFor(TileType.CulDeSacSouth, new TileCoordinate(0, 1));
+            Assert.That(container.childCount, Is.EqualTo(placements.Count), "one rendered tree per Core placement");
+
+            var trees = container.Cast<Transform>().ToList();
+            for (var i = 0; i < trees.Count; i++)
             {
-                Assert.That(tree.localScale.x, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
-                    "open-space tree X stays at the fixed base UniformScale");
-                Assert.That(tree.localScale.y, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
-                    "open-space tree Y stays at the fixed base UniformScale");
-                Assert.That(tree.localScale.z, Is.EqualTo(YardLandscaping.UniformScale).Within(0.001f),
-                    "open-space tree Z stays at the fixed base UniformScale");
+                var expected = YardLandscaping.UniformScale * placements[i].Scale;
+                Assert.That(trees[i].localScale.x, Is.EqualTo(expected).Within(0.001f),
+                    $"open-space tree {i}: X = UniformScale * placement.Scale");
+                Assert.That(trees[i].localScale.y, Is.EqualTo(expected).Within(0.001f),
+                    $"open-space tree {i}: Y = UniformScale * placement.Scale");
+                Assert.That(trees[i].localScale.z, Is.EqualTo(expected).Within(0.001f),
+                    $"open-space tree {i}: Z = UniformScale * placement.Scale");
             }
+
+            Assert.That(
+                placements.Any(p => p.Scale > YardTreePlacement.BaselineScale + 0.001f), Is.True,
+                "at least one open-space tree renders larger than the baseline — sizes really vary");
+        }
+
+        [Test]
+        public void Build_OnAThreeWayTile_RendersEveryUnbuiltLotsSlabAndItsPredeterminedYardTrees()
+        {
+            // #700 (the 3-way half of the playtest report): a TeeSouth keeps all
+            // four quadrants as house lots, so it has NO open-space quadrant —
+            // what keeps it from reading as an empty field is #434/#461's rule
+            // that an unlocked-but-unbuilt lot already renders its predetermined
+            // house's foundation slab AND yard trees. Pinned here on a full-lot
+            // tile type, which the existing coverage never exercised.
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithTeeTileUnlocked();
+            root = WorldBuilder.Build(state);
+
+            Assert.That(TileGeometry.TreeWorldPositionsFor(TileType.TeeSouth, TeeTileCoordinate), Is.Empty,
+                "precondition: a 3-way has no open-space quadrant — all four are house lots");
+
+            var lots = state.LotsForUnlockedTile(TeeTileCoordinate);
+            Assert.That(lots.Count, Is.EqualTo(4), "precondition: a 3-way carries four buildable lots");
+
+            foreach (var lot in lots)
+            {
+                var slab = root.transform.Cast<Transform>()
+                    .FirstOrDefault(t => t.name == WorldBuilder.EmptyLotNamePrefix + lot.HouseId);
+                Assert.That(slab, Is.Not.Null, $"lot {lot.HouseId}: the unbuilt plot renders its foundation slab");
+
+                var yard = root.transform.Cast<Transform>()
+                    .FirstOrDefault(t => t.name == WorldBuilder.YardLandscapingNamePrefix + lot.HouseId);
+                Assert.That(yard, Is.Not.Null,
+                    $"lot {lot.HouseId}: the unbuilt plot renders its predetermined yard trees");
+                Assert.That(yard.childCount, Is.GreaterThan(0), $"lot {lot.HouseId}: the yard is not empty");
+            }
+        }
+
+        [Test]
+        public void Build_OnAThreeWayTile_KeepsOneYardPerLot_AfterItsHouseIsBuilt()
+        {
+            // #700: the trees belong to the LOT, not the house on it — "trees
+            // should be on the lot before a house, and should be there after a
+            // house is built" (Derek). A full world build of a save whose 3-way
+            // lot is already built renders exactly one "Yard - N" container for
+            // it: not zero (the pre-#700 unbuilt-only gate dropped a built lot's
+            // trees on every relaunch) and not two (#434's no-duplicate rule).
+            Object.DestroyImmediate(root);
+            WorldBuilder.ForcePrimitiveFallback = true;
+            var state = WithTeeTileUnlocked();
+            var lot = state.LotsForUnlockedTile(TeeTileCoordinate)[0];
+            state.Wallet.Deposit(HouseBuildNumbers.Cost(state.PlayerBuiltHouseCount));
+            Assert.That(state.TryBuildHouse(lot.HouseId), Is.True, "the test needs the house built");
+
+            root = WorldBuilder.Build(state);
+
+            var yards = root.transform.Cast<Transform>()
+                .Where(t => t.name == WorldBuilder.YardLandscapingNamePrefix + lot.HouseId)
+                .ToList();
+            Assert.That(yards.Count, Is.EqualTo(1), $"lot {lot.HouseId}: exactly one yard container, no duplicates");
+            Assert.That(yards[0].childCount, Is.GreaterThan(0), "the built house keeps its yard trees");
         }
 
         [Test]

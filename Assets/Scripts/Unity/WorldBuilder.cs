@@ -48,7 +48,8 @@ namespace Doggiehood.Unity
         /// (#385): the dropped bulb-side quadrants of a cul-de-sac render as
         /// open space with trees. One container per tile that has any, holding
         /// one tree per <see cref="TileGeometry.TreeWorldPositionsFor"/>
-        /// position. Suffixed with the tile's grid coordinate so each tile's
+        /// placement — a small cluster per open-space quadrant since #700.
+        /// Suffixed with the tile's grid coordinate so each tile's
         /// trees stay a distinct scene object, matching the ZoneRoad pattern.</summary>
         public const string OpenSpaceTreeNamePrefix = "OpenSpaceTree - ";
 
@@ -940,9 +941,10 @@ namespace Doggiehood.Unity
         /// One graybox marker (#57) per lot on every unlocked frontier tile
         /// (#453) that has no house on it yet (GameState.IsLotBuildable) — the
         /// "empty lot" tap targets ExpansionDirector wires up to
-        /// GameState.TryBuildHouse. Locked tiles and lots that already have a
-        /// house get nothing. Iterates the unlocked frontier coordinates
-        /// (superseding the retired per-zone loop).
+        /// GameState.TryBuildHouse — PLUS every such lot's predetermined yard
+        /// trees, built or not (#434/#700). Locked tiles get nothing. Iterates
+        /// the unlocked frontier coordinates (superseding the retired per-zone
+        /// loop).
         /// </summary>
         private static void BuildEmptyLots(Transform parent, GameState state)
         {
@@ -959,18 +961,25 @@ namespace Doggiehood.Unity
                         // the eventual build resolves — the same network the yard
                         // trees below already take (#461).
                         BuildEmptyLot(parent, lot, state.WalkNetwork);
-                        // #434: an unlocked-but-unbuilt lot also renders the
-                        // predetermined house's yard trees, so the plot reads as
-                        // a real home-to-be. The trees are deterministic per lot
-                        // (YardLandscaping), so rendering them now and NOT
-                        // re-rendering them when the house is built (see
-                        // ExpansionDirector.ConfirmBuild) leaves no duplicates.
-                        // #461: thread the live map-spanning network so the
-                        // pre-baked trees orient to the house's real street-ward
-                        // facing (the predetermined per-tile facing), matching the
-                        // orientation the eventual build resolves.
-                        BuildYardLandscaping(parent, lot, tileType, state.WalkNetwork);
                     }
+
+                    // #434: an unlocked lot renders the predetermined house's
+                    // yard trees, so the plot reads as a real home-to-be. The
+                    // trees are deterministic per lot (YardLandscaping), so
+                    // rendering them here and NOT re-rendering them when the
+                    // house is built (see ExpansionDirector.ConfirmBuild) leaves
+                    // no duplicates.
+                    // #700 (Derek's design standard): they render whether or not
+                    // the house is up — "trees should be on the lot before a
+                    // house, and should be there after a house is built". Under
+                    // the earlier unbuilt-only branch a built frontier house lost
+                    // its yard trees on the next full world build (a relaunch or
+                    // save load), which read as bare lots in playtesting.
+                    // #461: thread the live map-spanning network so the trees
+                    // orient to the house's real street-ward facing (the
+                    // predetermined per-tile facing), matching the orientation
+                    // the eventual build resolves.
+                    BuildYardLandscaping(parent, lot, tileType, state.WalkNetwork);
                 }
             }
         }
@@ -1122,16 +1131,17 @@ namespace Doggiehood.Unity
         }
 
         /// <summary>Renders one placed tile's open-space trees into a single
-        /// "OpenSpaceTree - col,row" container - one tree per Core tree-quadrant
-        /// world position. A tile type with no tree quadrants (full-lot
-        /// FourWay/Straight*/Tee* and the GreenSpace park) renders nothing, same
-        /// as the loop. Reuses the shared tree renderer
-        /// (<see cref="BuildYardTree"/>) so open-space trees and yard trees stay
-        /// one art path.</summary>
+        /// "OpenSpaceTree - col,row" container - one tree per Core placement,
+        /// i.e. a whole cluster per open-space quadrant since #700. A tile type
+        /// with no tree quadrants (full-lot FourWay/Straight*/Tee* and the
+        /// GreenSpace park) renders nothing, same as the loop. Reuses the shared
+        /// tree renderer (<see cref="BuildYardTree"/>) so open-space trees and
+        /// yard trees stay one art path — including each pick's kind and #458
+        /// size variance, which Core now decides for open-space trees too.</summary>
         private static void BuildTileOpenSpaceTrees(Transform parent, TileCoordinate coordinate, TileType type)
         {
-            var positions = TileGeometry.TreeWorldPositionsFor(type, coordinate);
-            if (positions.Count == 0)
+            var placements = TileGeometry.TreeWorldPositionsFor(type, coordinate);
+            if (placements.Count == 0)
             {
                 return;
             }
@@ -1140,9 +1150,9 @@ namespace Doggiehood.Unity
             container.transform.SetParent(parent);
             container.transform.position = Vector3.zero;
 
-            for (var i = 0; i < positions.Count; i++)
+            for (var i = 0; i < placements.Count; i++)
             {
-                BuildYardTree(container.transform, new YardTreePlacement(positions[i], YardTreeKind.TreeLarge), i);
+                BuildYardTree(container.transform, placements[i], i);
             }
         }
 

@@ -124,9 +124,12 @@ namespace Doggiehood.Core.World
         /// whole-tile <see cref="TileType.GreenSpace"/> park (#539) is the one
         /// exception: it holds no lots, so a naive "no lot ⇒ trees" rule would
         /// plant on all four of its quadrants, but it is a separate park tile
-        /// (out of scope for #614) and stays bare. World-space placement clears
-        /// each tree of the tile's roads and skips any quadrant with no clean
-        /// grass — see <see cref="TileGeometry.TreeWorldPositionsFor"/>.</summary>
+        /// (out of scope for #614) and stays bare. This is the set of PLANTED
+        /// quadrants only — how many trees each one gets and where they stand is
+        /// world-space placement's decision: a cluster of
+        /// <see cref="YardLandscaping.OpenSpaceSelectMin"/>..<see cref="YardLandscaping.OpenSpaceSelectMax"/>
+        /// spaced trees on the quadrant's road-cleared grass (#700), see
+        /// <see cref="TileGeometry.OpenSpaceTreesFor"/>.</summary>
         public static IReadOnlyDictionary<Quadrant, GridPoint> TreeQuadrantsFor(TileType type)
         {
             if (type == TileType.GreenSpace)
