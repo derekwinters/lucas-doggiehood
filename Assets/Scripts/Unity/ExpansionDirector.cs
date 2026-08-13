@@ -76,7 +76,16 @@ namespace Doggiehood.Unity
         /// the confirmation dialog; a null offer (the lot isn't buildable) is a
         /// no-op that never opens the dialog — mirroring how
         /// <see cref="ExpansionUnlockDirector.OnUnlockRequested"/> early-returns
-        /// on a null unlock offer. Only Yes performs the build.</summary>
+        /// on a null unlock offer. Only Yes performs the build.
+        ///
+        /// <para>#690: the offer answers BOTH halves of the question, so both are
+        /// passed on — the cost the dialog shows on Yes, and whether the wallet
+        /// can actually cover it. An unaffordable lot still opens the dialog (the
+        /// price is the point of showing it), but Yes is presented greyed out and
+        /// unpressable instead of as a live button whose only outcome is nothing
+        /// happening. The affordability answer is Core's
+        /// (<see cref="HouseBuildOffer.IsAffordable"/>); this layer never compares
+        /// the wallet itself.</para></summary>
         private void OnLotTapped(int houseId)
         {
             var offer = HouseBuildOffer.Resolve(State, houseId);
@@ -85,15 +94,25 @@ namespace Doggiehood.Unity
                 return;
             }
 
-            dialog.Open(BuildTitle, BuildBody, () => ConfirmBuild(houseId), cost: offer.Value.Cost);
+            dialog.Open(BuildTitle, BuildBody, () => ConfirmBuild(houseId), cost: offer.Value.Cost,
+                confirmEnabled: offer.Value.IsAffordable);
         }
 
         /// <summary>Yes: builds the house through the single Core entry point. On
         /// success the marker is replaced by the real house visual and the world
         /// is saved; on rejection (occupied, locked zone, insufficient balance)
-        /// nothing changes — Core is the sole authority on the spend, and the
-        /// currency HUD reads the wallet live, so an untouched balance is itself
-        /// the rejection feedback.</summary>
+        /// nothing changes — Core is the sole authority on the spend.
+        ///
+        /// <para>#690: an unaffordable build should never reach here, because the
+        /// dialog's Yes is greyed out and unpressable when
+        /// <see cref="HouseBuildOffer.IsAffordable"/> is false. This early return
+        /// is defence in depth, not the player-facing feedback — the earlier
+        /// reasoning that "an untouched balance is itself the rejection feedback"
+        /// was wrong: for a young player an unchanged number in the HUD is
+        /// indistinguishable from a dead button, which is exactly what Derek hit
+        /// in playtest. Rejection is now shown BEFORE the press. The gate stays
+        /// Core's either way — a disabled button is presentation, never the
+        /// authority.</para></summary>
         private void ConfirmBuild(int houseId)
         {
             if (!State.TryBuildHouse(houseId))
