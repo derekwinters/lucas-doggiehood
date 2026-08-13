@@ -35,7 +35,7 @@ namespace Doggiehood.Core.World
 
         /// <summary>#704: fields on a <c>dog=</c> line
         /// (houseId|breed|personality|isPuppy|coat|name). Also the split cap, so
-        /// the trailing name field absorbs the rest of the line verbatim.</summary>
+        /// the trailing name field absorbs the rest of the line.</summary>
         private const int DogFieldCount = 6;
 
         /// <summary>#704: fields on a <c>quest=</c> line — id, type, status,
@@ -133,9 +133,9 @@ namespace Doggiehood.Core.World
             // house each household filled stayed persisted as occupied —
             // leaving a house with no residents that could never take another
             // move-in. Enums are stored by name (like rewardChain) so they
-            // survive a reordering; the name comes LAST so it is the whole rest
-            // of the line and needs no escaping. Emitted AFTER house= so every
-            // resident's house exists by the time the line is replayed.
+            // survive a reordering, and the name is escaped like any other free
+            // text. Emitted AFTER house= so every resident's house exists by the
+            // time the line is replayed.
             foreach (var dog in state.MovedInDogs)
             {
                 builder.Append("dog=")
@@ -144,7 +144,7 @@ namespace Doggiehood.Core.World
                     .Append(dog.Personality.ToString()).Append('|')
                     .Append(dog.IsPuppy ? "1" : "0").Append('|')
                     .Append(dog.Coat.ToString()).Append('|')
-                    .Append(dog.Name)
+                    .Append(SaveFieldCodec.Escape(dog.Name))
                     .Append('\n');
             }
 
@@ -422,7 +422,7 @@ namespace Doggiehood.Core.World
                         && Enum.TryParse(parts[4], out Dogs.CoatColor coat))
                     {
                         state.RestoreDog(new Dogs.Dog(
-                            parts[5],
+                            SaveFieldCodec.Unescape(parts[5]),
                             dogBreed,
                             personality,
                             int.Parse(parts[0], CultureInfo.InvariantCulture),
