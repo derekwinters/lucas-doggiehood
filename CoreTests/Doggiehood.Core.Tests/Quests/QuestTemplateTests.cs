@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Doggiehood.Core.Dogs;
+using Doggiehood.Core.Economy;
 using Doggiehood.Core.Quests;
 using NUnit.Framework;
 
@@ -212,6 +213,117 @@ namespace Doggiehood.Core.Tests.Quests
                 template.Render(b, "bug spray", new Random(2));
                 template.Render(a, "bug spray", new Random(3));
             });
+        }
+
+        [Test]
+        public void FenceSubject_DrawsItsOwnPools_PromisingNoDeliveryAndNoPortableGift()
+        {
+            // #701: the fence's "Buy something" quest has no delivery leg
+            // (#318), so selecting its dialogue by QuestType alone promised a
+            // truck that never comes and framed a lot fixture as a portable
+            // gift. The subject-aware seam gives it its own pools; no line of
+            // any kind (opener, closer, reminder) may carry the delivery or
+            // portable-gift framing, for any personality.
+            var fence = QuestTemplates.For(QuestType.BuyGift, ItemCatalog.FenceItemName);
+
+            Assert.That(fence, Is.Not.SameAs(QuestTemplates.For(QuestType.BuyGift)),
+                "the fence subject draws its own pools, not the generic BuyGift pools");
+
+            var rng = new Random(701);
+            foreach (var dog in FenceRoster())
+            {
+                for (var i = 0; i < 50; i++)
+                {
+                    var text = string.Join("\n", fence.Render(dog, ItemCatalog.FenceItemName, rng))
+                        + "\n" + fence.RenderReminder(dog, ItemCatalog.FenceItemName, rng);
+                    var lowered = text.ToLowerInvariant();
+
+                    foreach (var phrase in ForbiddenFencePhrases)
+                    {
+                        Assert.That(lowered, Does.Not.Contain(phrase),
+                            $"{dog.Personality} fence line promised \"{phrase}\": {text}");
+                    }
+
+                    Assert.That(text, Does.Not.Contain("{dog}").And.Not.Contain("{item}"));
+                }
+            }
+        }
+
+        [Test]
+        public void EveryNonFenceSubject_StillDrawsTheUnchangedTypeDefaultPools()
+        {
+            // #701 regression: the fence seam is subject-scoped — every other
+            // Gift subject (and every other quest type, whatever the subject)
+            // keeps rendering from exactly the pools it did before.
+            var rng = new Random(2025);
+            foreach (QuestType type in Enum.GetValues(typeof(QuestType)))
+            {
+                var template = QuestTemplates.For(type);
+                foreach (var item in SubjectsOtherThanTheGiftFence(type))
+                {
+                    Assert.That(QuestTemplates.For(type, item), Is.SameAs(template),
+                        $"{type}/{item} should still use the type's default template");
+
+                    foreach (var dog in FenceRoster())
+                    {
+                        var openers = FilledCandidatePool(template.DefaultOpeners, template.FlavoredOpeners, dog, item);
+                        var closers = FilledCandidatePool(template.DefaultClosers, template.FlavoredClosers, dog, item);
+
+                        for (var i = 0; i < 20; i++)
+                        {
+                            var lines = QuestTemplates.For(type, item).Render(dog, item, rng);
+
+                            Assert.That(openers, Does.Contain(lines[0]), $"{type}/{item}/{dog.Personality} opener");
+                            Assert.That(closers, Does.Contain(lines[1]), $"{type}/{item}/{dog.Personality} closer");
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void FenceTemplate_CarriesTheSamePoolShapeAsEveryOtherTemplate()
+        {
+            // #189 Model 2 / #472: the fence pools are a template like any
+            // other — non-empty opener, closer and reminder defaults.
+            var fence = QuestTemplates.For(QuestType.BuyGift, ItemCatalog.FenceItemName);
+
+            Assert.That(fence.DefaultOpeners, Is.Not.Empty, "fence default openers");
+            Assert.That(fence.DefaultClosers, Is.Not.Empty, "fence default closers");
+            Assert.That(fence.DefaultReminders, Is.Not.Empty, "fence default reminders");
+        }
+
+        /// <summary>#701: framings the fence dialogue must never use — the
+        /// delivery truck and walk-home promise it does not run, and the
+        /// portable-handed-over-gift wording for what is a lot fixture.</summary>
+        private static readonly string[] ForbiddenFencePhrases =
+        {
+            "delivery truck",
+            "head home",
+            "next adventure",
+            "training's better",
+        };
+
+        private static IEnumerable<Dog> FenceRoster()
+        {
+            var houseId = 1;
+            foreach (Personality personality in Enum.GetValues(typeof(Personality)))
+            {
+                yield return new Dog($"Test-{personality}", Breed.GermanShepherd, personality, houseId++, false);
+            }
+        }
+
+        private static IEnumerable<string> SubjectsOtherThanTheGiftFence(QuestType type)
+        {
+            foreach (var item in ItemCatalog.Items)
+            {
+                if (type == QuestType.BuyGift && item.Name == ItemCatalog.FenceItemName)
+                {
+                    continue;
+                }
+
+                yield return item.Name;
+            }
         }
 
         private static IEnumerable<QuestType> AllQuestTypes()

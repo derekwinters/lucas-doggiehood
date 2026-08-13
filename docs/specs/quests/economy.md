@@ -106,6 +106,10 @@ Quests are authored as reusable **templates**, not hand-written per dog. Each qu
 
 New quest types (mechanics) beyond the existing set stay deferred to a later version — this section is only about line variety within the existing types, not new mechanics.
 
+**Templates are selected by type *and* subject** ([#701](https://github.com/derekwinters/lucas-doggiehood/issues/701)). Almost every subject speaks with its type's template. A subject whose **resolution mechanic differs from its type's default** carries its own pools instead — today only the fence, a "Buy something" purchase that installs in place with no delivery leg ([#318](https://github.com/derekwinters/lucas-doggiehood/issues/318)). This is not a new quest type or a new mechanic: it is the same type, rendered with lines that describe what it actually does, per the [dialogue-matches-mechanic invariant](quest-content.md#2-buy-something). A new subject-level exception is expected to bring its own pools with it rather than reuse the type's.
+
+> **How the spec is changing (#701).** Authoring used to say each **quest type** has a dialogue template, chosen by type alone → it now says a template is chosen by **type and subject**, with a subject whose mechanic differs from its type's default carrying its own pools → because the fence is a "Buy something" quest with no delivery leg, and inheriting the type's pool had it promising a delivery truck that never comes and describing a lot fixture as a portable gift. Type-alone selection had no seam for a mechanic exception at all, so the wrong promise was already on screen before the engine's fence special-case ran.
+
 ### Line variety: pooled openers/closers, uniform random ("Model 2")
 
 For both the opener and the closer, each quest type holds two pools:
@@ -132,6 +136,7 @@ This generalizes what earlier drafts did with a single default line and a single
 - [ ] No quest has a timer, expiration, or fail state anywhere in the system
 - [ ] A quest template data structure exists with slots for dog name, personality-flavored line variant, and item/subject
 - [ ] At least the 3 v1.0 quest types (see [Quest Content](quest-content.md)) are expressed as templates, not hard-coded per-dog text
+- [ ] Template selection is by quest type **and** subject — a subject whose resolution mechanic differs from its type's default (today the fence) renders from its own pools, and every other subject still renders from the unchanged type template ([#701](https://github.com/derekwinters/lucas-doggiehood/issues/701))
 - [x] Opener and closer lines are drawn from a default pool ∪ per-personality pool, uniform-random per string, via an injectable RNG — no anti-repeat memory or per-dog persisted state ([#189](https://github.com/derekwinters/lucas-doggiehood/issues/189))
 - [x] All quest subject pools (and decoration-request options) are queries over one tagged item catalog — no per-type parallel item lists; every Gift/Decoration-eligible entry costs 30-50 coins, find-only entries carry no cost ([#190](https://github.com/derekwinters/lucas-doggiehood/issues/190))
 - [x] Purchasable-quest cost tiers are gated by total dog population — `QuestCostTiers.EligibleCostTiers(dogCount)` is monotonic (starter-only at 1, +mid at 5, +premium at 10), the pacing seam's `EligibleSubjectPool` excludes catalog entries above the population-eligible ceiling, and LostItem/PestControl are unaffected; no new persisted state ([#317](https://github.com/derekwinters/lucas-doggiehood/issues/317))

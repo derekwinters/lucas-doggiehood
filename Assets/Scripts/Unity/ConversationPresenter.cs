@@ -232,8 +232,11 @@ namespace Doggiehood.Unity
                 {
                     currentQuest = acceptedQuest;
                     isReminder = true;
+                    // #701: subject-aware selection here too, so the reminder is
+                    // drawn from the same pools the opener/closer came from and
+                    // never re-promises a mechanic this quest doesn't run.
                     var reminderLine = Doggiehood.Core.Quests.QuestTemplates
-                        .For(acceptedQuest.Type)
+                        .For(acceptedQuest.Type, acceptedQuest.ItemName)
                         .RenderReminder(dog, acceptedQuest.ItemName, reminderRng);
                     Current = new Conversation(new[] { reminderLine }, ConversationEnding.Accept);
                     ShowView();

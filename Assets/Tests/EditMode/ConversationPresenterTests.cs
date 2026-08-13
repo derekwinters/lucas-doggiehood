@@ -343,7 +343,9 @@ namespace Doggiehood.Unity.EditModeTests
         private static System.Collections.Generic.HashSet<string> ReminderPool(
             Doggiehood.Core.Dogs.Dog dog, Quest quest)
         {
-            var template = QuestTemplates.For(quest.Type);
+            // #701: the pool the presenter draws from is the subject-aware one,
+            // so this oracle stays correct if a subject ever carries its own.
+            var template = QuestTemplates.For(quest.Type, quest.ItemName);
             var raw = new System.Collections.Generic.List<string>(template.DefaultReminders);
             if (template.FlavoredReminders.TryGetValue(dog.Personality, out var flavored))
             {

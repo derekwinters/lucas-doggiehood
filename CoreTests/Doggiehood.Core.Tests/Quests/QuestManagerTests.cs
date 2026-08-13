@@ -874,6 +874,24 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
+        public void FenceQuestDialogue_NeverPromisesADeliveryTruckOrAWalkHome()
+        {
+            // #701: the fence is the one Gift subject with no delivery leg
+            // (#318) — accepting installs it in place. Its dialogue is baked at
+            // give time, so it must be selected by subject, not just by type:
+            // a quest's dialogue never promises a mechanic that quest doesn't
+            // run (docs/specs/quests/quest-content.md).
+            var (_, quest, _) = ReadyFenceQuest();
+
+            var dialogue = string.Join("\n", quest.DialogueLines).ToLowerInvariant();
+
+            Assert.That(dialogue, Does.Not.Contain("delivery truck"),
+                $"the fence has no delivery truck, but said: {dialogue}");
+            Assert.That(dialogue, Does.Not.Contain("head home"),
+                $"the fence has no walk-home leg, but said: {dialogue}");
+        }
+
+        [Test]
         public void QuestSchema_HasNoExpiryOrFailFields()
         {
             // #28: structurally no timers/fail states. (Invariant guard.)
