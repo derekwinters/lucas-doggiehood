@@ -28,6 +28,21 @@ namespace Doggiehood.Core.Debugging
             toggles[name] = initialValue;
         }
 
+        /// <summary>#692: every registered toggle name, in a stable ordinal
+        /// order. A <see cref="Dictionary{TKey,TValue}"/> has no guaranteed
+        /// enumeration order, so this sorts — a bug-report snapshot
+        /// (<see cref="Doggiehood.Core.Diagnostics.DiagnosticReport"/>) must
+        /// render the same bytes twice from the same state.</summary>
+        public IReadOnlyList<string> Names
+        {
+            get
+            {
+                var names = new List<string>(toggles.Keys);
+                names.Sort(StringComparer.Ordinal);
+                return names;
+            }
+        }
+
         /// <summary>True if the named toggle is registered.</summary>
         public bool Contains(string name)
         {
