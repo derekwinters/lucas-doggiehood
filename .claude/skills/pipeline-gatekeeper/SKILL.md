@@ -265,7 +265,9 @@ without a model in the loop:
   secrets) so the analysis routine runs for that one issue immediately instead
   of waiting for the 7:00 AM backstop. `build_fire_request` is the pure,
   unit-tested half; a missing secret or a network error is a clean no-op — the
-  label move already happened. See `docs/engineering/issue-pipeline.md`.
+  label move already happened. The log records **that** a session was created,
+  never **which** — a session link is private and this repository's Actions
+  logs are not (#735). See `docs/engineering/issue-pipeline.md`.
 - **`run_comment_event.py`** — the `gatekeeper-comment.yml` entry point: reads
   `GITHUB_EVENT_PATH`, re-checks the owner-gate in-script (defense-in-depth),
   fetches live open milestones, then wires `fetch_comment_event` →

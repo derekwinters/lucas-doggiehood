@@ -68,10 +68,32 @@ class TestInterpretFireResponse(unittest.TestCase):
                     b'"session_01X", "claude_code_session_url": '
                     b'"https://claude.ai/code/session_01X"}')
 
-    def test_real_routine_fire_is_success_and_returns_session_url(self):
+    def test_real_routine_fire_is_success_and_never_returns_the_session_url(self):
+        """#735 — a session link is private and this repository is public.
+
+        The `claude_code_session_url` check is what makes success truthful, so
+        it stays; carrying the link back out of that check is what published
+        it to anyone reading the Actions log.
+        """
         ok, detail = fire_routine.interpret_fire_response(200, self.ROUTINE_FIRE)
         self.assertTrue(ok)
-        self.assertIn("https://claude.ai/code/session_01X", detail)
+        self.assertNotIn("claude.ai", detail or "")
+        self.assertNotIn("session_01X", detail or "")
+
+    def test_a_failing_body_carrying_a_session_link_is_redacted(self):
+        """#735 — the leak that survives deleting the success path.
+
+        The failure detail is built from the raw response body, so a response
+        that fails *after* a session was created carries the link into the log
+        through this branch instead.
+        """
+        body = (b'{"type": "routine_fire", "claude_code_session_url": '
+                b'"https://claude.ai/code/session_01X", "error": "timeout"}')
+        ok, detail = fire_routine.interpret_fire_response(503, body)
+        self.assertFalse(ok)
+        self.assertNotIn("claude.ai", detail)
+        self.assertNotIn("session_01X", detail)
+        self.assertIn("503", detail)
 
     def test_2xx_without_session_url_is_not_success(self):
         # e.g. AI_TRIAGE_URL pointed at a page that returned a 200 HTML body.
