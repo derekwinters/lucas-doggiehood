@@ -1,0 +1,13 @@
+# The Doggiehood release signing certificate, SHA-256 over the DER-encoded
+# cert — the same value `keytool -list -v` prints as `SHA256:` and apksigner
+# prints as "certificate SHA-256 digest". Pinned here by #630 so a release APK
+# signed by any other key fails the release job before it is uploaded.
+#
+# This is PUBLIC data: it ships inside every APK. The keystore and its
+# passwords are the secrets (#629, Actions secrets ANDROID_KEYSTORE_BASE64 /
+# ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_ALIAS_PASSWORD).
+#
+# It must never change. A different fingerprint here means a different signing
+# key, and Android will not install a differently-signed APK over an installed
+# one — every player would have to uninstall first, wiping their save.
+b7c799ea85dd9a31426b9a432e6a468b43c318857f68ce79fb91bdb1125e3a16

@@ -26,6 +26,9 @@ on:
       - ".github/scripts/tests/test_verify_editmode_results.py"
       - ".github/scripts/verify_emulator_build_variant.py"
       - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/verify_release_signature.py"
+      - ".github/scripts/tests/test_verify_release_signature.py"
+      - ".github/release-cert-sha256.txt"
       - ".github/scripts/tests/fixtures/**"
   push:
     branches:
@@ -40,6 +43,9 @@ on:
       - ".github/scripts/tests/test_verify_editmode_results.py"
       - ".github/scripts/verify_emulator_build_variant.py"
       - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/verify_release_signature.py"
+      - ".github/scripts/tests/test_verify_release_signature.py"
+      - ".github/release-cert-sha256.txt"
       - ".github/scripts/tests/fixtures/**"
 
 concurrency:
@@ -83,6 +89,14 @@ jobs:
       # is what stops a broken gate from being discovered mid-release (#706).
       - name: Unit-test the emulator build gate
         run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_emulator_build_variant.py"
+
+      # Same reasoning for the release-signature gate (#630): it decides
+      # whether a release may be published, and it also pins the wiring —
+      # that both release workflows still hand the keystore to every build
+      # step, and that no pull_request-triggered workflow can reach it. A PR
+      # that breaks either fails here, not months later at release time.
+      - name: Unit-test the release signature gate
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_release_signature.py"
 
       - name: Check for Unity license secret
         id: license

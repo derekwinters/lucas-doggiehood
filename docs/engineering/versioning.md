@@ -70,6 +70,8 @@ deterministic.
 
 Android's `versionCode` (a plain incrementing integer, separate from the human-readable `versionName`) is derived at build time as `git rev-list --count main` — deterministic and always increasing, independent of CI run-number state. ([#81](https://github.com/derekwinters/lucas-doggiehood/issues/81))
 
+A rising `versionCode` is only half of what makes an upgrade work. Android also refuses to install a new APK over an installed one whose **signing certificate** differs, so every release artifact is signed with the one stable release key and verified against a pinned certificate before it is published ([#630](https://github.com/derekwinters/lucas-doggiehood/issues/630); see [Release signing](ci-cd.md#release-signing-and-in-place-upgrades)). That is what carries the save-compatibility guarantee ([#628](https://github.com/derekwinters/lucas-doggiehood/issues/628)) onto a real device: a save format that survives an upgrade is only useful if the upgrade itself installs in place.
+
 ## Docs versioning
 
 This documentation site is deployed with [mike](https://github.com/jimporter/mike), tagged to the same version as the app (from the `VERSION` file / release tags) so historical doc versions stay browsable alongside the current one. See [CI/CD](ci-cd.md) for the publish workflow.
