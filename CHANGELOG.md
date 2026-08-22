@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.1...v0.16.0) (2026-08-22)
+
+
+### Features
+
+* sign release APKs with the stable release keystore ([#737](https://github.com/derekwinters/lucas-doggiehood/issues/737)) ([6f9782c](https://github.com/derekwinters/lucas-doggiehood/commit/6f9782cdb8ccdbf09cdd58262f8a026226e3a073)), closes [#630](https://github.com/derekwinters/lucas-doggiehood/issues/630)
+
 ## [0.15.1](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.0...v0.15.1) (2026-08-13)
 
 
