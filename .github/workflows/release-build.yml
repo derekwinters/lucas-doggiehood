@@ -2,9 +2,12 @@ name: release-build
 
 # Backfill path: build both final APKs for an already-published release tag and
 # attach them to that release as doggiehood-vX.Y.Z.apk (device) and
-# doggiehood-vX.Y.Z-emulator.apk (#648). Debug signing, same as all MVP builds.
-# Both assets are verified as genuinely distinct builds before either is
-# uploaded (#706).
+# doggiehood-vX.Y.Z-emulator.apk (#648). Both are signed with the stable
+# release keystore (#630) — the same certificate every release carries, which
+# is what lets a new version install over the old one instead of forcing an
+# uninstall that wipes the save. Both assets are verified as genuinely
+# distinct builds (#706) and as correctly signed (#630) before either is
+# uploaded.
 #
 # Automated releases no longer trigger this workflow. A release published by
 # release-please's GITHUB_TOKEN never fires a `release: published` event
@@ -52,6 +55,22 @@ jobs:
             echo "::warning title=Release APK skipped::UNITY_LICENSE secret is not configured, so no APK was attached to the release."
           fi
 
+      # A release must never be built without the release key. The
+      # UNITY_LICENSE check above warns and skips, because no APK is a
+      # tolerable outcome; a *debug-signed* APK is not — it installs fine,
+      # looks correct, and quietly makes every future upgrade impossible. So
+      # this one fails the job outright (#630).
+      - name: Check for the release keystore secret
+        if: steps.license.outputs.present == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "::error title=Release keystore missing::The release signing secrets are not configured (#629). Refusing to build a release APK that would fall back to debug signing and break in-place upgrades."
+            exit 1
+          fi
+
       - name: Compute version
         if: steps.license.outputs.present == 'true'
         id: version
@@ -92,6 +111,16 @@ jobs:
           version: ${{ steps.version.outputs.name }}
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
+          # Sign with the stable release key (#630). Without these inputs Unity
+          # falls back to Android's debug key and produces an APK that can
+          # never be installed over an existing release — the upgrade would
+          # force an uninstall and wipe the player's save. The keystore itself
+          # is an encrypted secret (#629); nothing is committed.
+          androidKeystoreName: doggiehood-release.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          androidKeyaliasName: ${{ secrets.ANDROID_KEY_ALIAS }}
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
 
       - name: Name the device APK
         if: steps.license.outputs.present == 'true'
@@ -136,6 +165,16 @@ jobs:
           version: ${{ steps.version.outputs.name }}
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
+          # Sign with the stable release key (#630). Without these inputs Unity
+          # falls back to Android's debug key and produces an APK that can
+          # never be installed over an existing release — the upgrade would
+          # force an uninstall and wipe the player's save. The keystore itself
+          # is an encrypted secret (#629); nothing is committed.
+          androidKeystoreName: doggiehood-release.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          androidKeyaliasName: ${{ secrets.ANDROID_KEY_ALIAS }}
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
 
       - name: Name the emulator APK
         if: steps.license.outputs.present == 'true'
@@ -159,6 +198,23 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           python3 .github/scripts/verify_emulator_build_variant.py \
+            "doggiehood-${TAG}.apk" "doggiehood-${TAG}-emulator.apk"
+
+      # The gate's own decision logic is unit-tested before it is trusted,
+      # same posture as the emulator gate above.
+      - name: Unit-test the release signature gate
+        if: steps.license.outputs.present == 'true'
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_release_signature.py"
+
+      # Nothing is uploaded until both assets are proven to carry the pinned
+      # release certificate. A debug-signed asset that reaches the release
+      # page cannot be taken back once someone installs it (#630).
+      - name: Verify the release signature
+        if: steps.license.outputs.present == 'true'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 .github/scripts/verify_release_signature.py \
             "doggiehood-${TAG}.apk" "doggiehood-${TAG}-emulator.apk"
 
       - name: Attach both APKs to the release
