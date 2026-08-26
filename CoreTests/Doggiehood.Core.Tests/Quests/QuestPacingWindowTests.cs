@@ -30,6 +30,8 @@ namespace Doggiehood.Core.Tests.Quests
         private const int DogsForTargetSeven = 21;
         private const int DogsForTargetTwelve = 100;
 
+        private static readonly DateTime T0 = new DateTime(2026, 8, 26, 0, 0, 0, DateTimeKind.Utc);
+
         [TearDown]
         public void RestoreDefaults()
         {
@@ -122,6 +124,33 @@ namespace Doggiehood.Core.Tests.Quests
                     Assert.That(cumulative[refreshes - 1], Is.EqualTo(target),
                         $"{intervalMinutes} min interval, target {target}: exactly the target after one window");
                 }
+            }
+        }
+
+        [Test]
+        public void TheBoardReachesTarget_OnePacingWindowAfterItDropsBelow_AtEveryInterval()
+        {
+            // The invariant itself, at board level rather than in the pure
+            // accumulator: whatever the interval, one pacing window after the
+            // clock starts the board is exactly at target — and not before.
+            foreach (var intervalMinutes in new[] { 15, 60, 120 })
+            {
+                TuningConfig.Active.RefreshIntervalMinutes = intervalMinutes;
+
+                var state = StateWithDogs(DogsForTargetFive);
+                var target = new QuestPacingPolicy().TargetActiveCount(state);
+                var window = TimeSpan.FromHours(EconomyNumbers.PacingWindowHours);
+                state.RecordQuestRefreshTimerStart(T0);
+
+                var justShort = state.Quests.ActiveQuests.Count();
+                state.Quests.TickPacing(T0 + window - EconomyNumbers.RefreshInterval, new Random(1));
+                Assert.That(state.Quests.ActiveQuests.Count(), Is.LessThan(target),
+                    $"{intervalMinutes} min: one interval short of the window is still short of target");
+
+                state.Quests.TickPacing(T0 + window, new Random(2));
+                Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                    $"{intervalMinutes} min: the window closes on a full board");
+                Assert.That(justShort, Is.LessThan(target), "precondition: the board started short");
             }
         }
 
