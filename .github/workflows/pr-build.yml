@@ -74,6 +74,16 @@ jobs:
           restore-keys: |
             unity-library-android-
 
+      # The .debug applicationId suffix (#80) is requested with
+      # `customParameters`, NOT with a step `env:` entry (#734). unity-builder
+      # does not run Unity in this step's process — it runs it inside a Docker
+      # container and forwards only a fixed allowlist of variables, so
+      # `DOGGIEHOOD_DEBUG_BUILD: "true"` (what this step used to carry) was set
+      # on the runner and never inside the container: the hook no-op'd and
+      # every PR APK shipped the bare release id, which would replace a release
+      # install rather than sit beside it. `customParameters` is forwarded as
+      # CUSTOM_PARAMETERS and appended verbatim to the unity-editor command
+      # line, which is where DebugApplicationIdBuildProcessor now reads it.
       - name: Build Android debug APK
         if: steps.license.outputs.present == 'true'
         uses: game-ci/unity-builder@v4
@@ -81,16 +91,34 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          # Applies the .debug applicationId suffix (#80) so this build can
-          # install side-by-side with a release build on the same device.
-          DOGGIEHOOD_DEBUG_BUILD: "true"
         with:
           targetPlatform: Android
           buildName: Doggiehood
+          customParameters: -doggiehoodDebugBuild
           versioning: Custom
           version: ${{ steps.version.outputs.name }}
           androidVersionCode: ${{ steps.version.outputs.code }}
           androidExportType: androidPackage
+
+      # The gate's own decision logic is unit-tested before it is trusted, same
+      # posture as the emulator and release-signature gates.
+      - name: Unit-test the debug applicationId gate
+        if: steps.license.outputs.present == 'true'
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_debug_application_id.py"
+
+      # Nothing is uploaded until the APK is proven to carry the .debug id.
+      # #734 went unnoticed for as long as it did precisely because nothing
+      # ever checked; a silent no-op now fails the job instead of shipping a
+      # mislabelled APK.
+      - name: Verify the debug applicationId suffix applied
+        if: steps.license.outputs.present == 'true'
+        run: |
+          APK="$(find build/Android -name '*.apk' | head -n 1)"
+          if [ -z "$APK" ]; then
+            echo "::error::Build completed but no APK found under build/Android"
+            exit 1
+          fi
+          python3 .github/scripts/verify_debug_application_id.py "$APK"
 
       - name: Upload APK artifact
         if: steps.license.outputs.present == 'true'

@@ -26,6 +26,8 @@ on:
       - ".github/scripts/tests/test_verify_editmode_results.py"
       - ".github/scripts/verify_emulator_build_variant.py"
       - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/verify_debug_application_id.py"
+      - ".github/scripts/tests/test_verify_debug_application_id.py"
       - ".github/scripts/verify_release_signature.py"
       - ".github/scripts/tests/test_verify_release_signature.py"
       - ".github/release-cert-sha256.txt"
@@ -43,6 +45,8 @@ on:
       - ".github/scripts/tests/test_verify_editmode_results.py"
       - ".github/scripts/verify_emulator_build_variant.py"
       - ".github/scripts/tests/test_verify_emulator_build_variant.py"
+      - ".github/scripts/verify_debug_application_id.py"
+      - ".github/scripts/tests/test_verify_debug_application_id.py"
       - ".github/scripts/verify_release_signature.py"
       - ".github/scripts/tests/test_verify_release_signature.py"
       - ".github/release-cert-sha256.txt"
@@ -89,6 +93,13 @@ jobs:
       # is what stops a broken gate from being discovered mid-release (#706).
       - name: Unit-test the emulator build gate
         run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_emulator_build_variant.py"
+
+      # And the same for the debug-suffix build gate (#734). pr-build.yml and
+      # rc-build.yml run it before uploading their APK, but only when a PR
+      # touches the app; running its tests here means a change to the gate
+      # itself is still covered.
+      - name: Unit-test the debug applicationId gate
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_debug_application_id.py"
 
       # Same reasoning for the release-signature gate (#630): it decides
       # whether a release may be published, and it also pins the wiring —
