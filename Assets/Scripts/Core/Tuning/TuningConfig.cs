@@ -71,7 +71,7 @@ namespace Doggiehood.Core.Tuning
         /// refresh <c>TimeSpan</c>, so
         /// <see cref="Doggiehood.Core.Economy.EconomyNumbers.RefreshIntervalMinutes"/>
         /// clamps a degenerate override at the config edge.</summary>
-        public int RefreshIntervalMinutes = 60;
+        public int RefreshIntervalMinutes = 15;
 
         /// <summary>#543: window (hours) the population-scaled active-quest
         /// target is spread over — the per-refresh trickle amount is

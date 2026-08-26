@@ -48,31 +48,35 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void TickPacing_RefreshesOnBoundary_AndRecordsTimestamp()
         {
-            // 18 dogs -> target 6 -> 1.0/hr, so a single hourly boundary adds a
-            // whole quest (the #543 rate at target 6 is exactly one per hour).
+            // 18 dogs -> target 6 -> 0.375 per refresh, so a single boundary
+            // only delivers a whole quest once the carried fraction has built
+            // up. Start it just under a whole quest to isolate the boundary
+            // itself from the accumulator's normal quiet refreshes.
             var state = StateWithDogs(18);
+            state.RecordQuestPacingAccumulator(0.9d);
             // #704: the clock runs from the moment the board dropped below
-            // target (here: it is empty), so arm it an hour before the boundary.
+            // target (here: it is empty), so arm it one interval before.
             state.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval);
 
             state.Quests.TickPacing(T0, new Random(1));
 
-            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0), "a 1.0/hr refresh adds a quest");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0), "the boundary delivers the pending quest");
             Assert.That(state.LastRotationUtc, Is.EqualTo(T0), "the refresh records its UTC instant");
         }
 
         [Test]
         public void TickPacing_UnderInterval_IsNoOp()
         {
-            var state = StateWithDogs(18); // 1.0/hr so the first boundary adds a quest
+            var state = StateWithDogs(18);
+            state.RecordQuestPacingAccumulator(0.9d); // so the first boundary delivers
             state.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval); // #704: arm the wait
             state.Quests.TickPacing(T0, new Random(1));
             var countAfterFirst = state.Quests.ActiveQuests.Count();
 
-            state.Quests.TickPacing(T0 + TimeSpan.FromMinutes(30), new Random(2));
+            state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1), new Random(2));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(countAfterFirst),
-                "a call under the 1h interval must not add quests");
+                "a call under one whole interval must not add quests");
             Assert.That(state.LastRotationUtc, Is.EqualTo(T0), "an under-interval no-op leaves the timestamp alone");
         }
 
@@ -84,7 +88,8 @@ namespace Doggiehood.Core.Tests.Quests
 
             var rng = new Random(5);
             var now = T0;
-            for (var i = 0; i < 12; i++)
+            // One extra boundary because the first tick only starts the clock.
+            for (var i = 0; i <= EconomyNumbers.RefreshesPerPacingWindow; i++)
             {
                 state.Quests.TickPacing(now, rng);
                 Assert.That(state.Quests.ActiveQuests.Count(), Is.LessThanOrEqualTo(target),
@@ -159,10 +164,11 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // Soft-lock guard: 0 coins + every active quest costs coins to
             // accept is a dead end. Two paid quests already active; the single
-            // top-up slot is forced to a free type. 18 dogs -> 1.0/hr so the
-            // boundary actually adds a quest (#543 — a quiet hour that adds
-            // nothing has no slot to force).
+            // top-up slot is forced to a free type. The accumulator starts just
+            // under a whole quest so the boundary actually adds one (#543 — a
+            // quiet refresh that adds nothing has no slot to force).
             var state = StateWithDogs(18);
+            state.RecordQuestPacingAccumulator(0.9d);
             state.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval); // #704: arm the wait
             state.Quests.GiveQuestTo(state.Dogs[0], QuestType.BuyGift, new Random(1));
             state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(2));
@@ -207,8 +213,11 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(loaded.LastRotationUtc, Is.EqualTo(instant), "the exact UTC instant survives save/load");
             Assert.That(loaded.LastRotationUtc.Value.Kind, Is.EqualTo(DateTimeKind.Utc), "and stays UTC");
-            Assert.That(new QuestPacingPolicy().ShouldRefresh(instant + TimeSpan.FromMinutes(30), loaded), Is.False,
-                "so the 1h boundary still holds after a reload");
+            Assert.That(
+                new QuestPacingPolicy().ShouldRefresh(
+                    instant + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1), loaded),
+                Is.False,
+                "so the refresh boundary still holds after a reload");
         }
 
         [Test]
@@ -224,12 +233,14 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void ForceRefresh_TopsUp_EvenWhenTheCadenceGateWouldBlock()
         {
-            // A rotation just happened, so ShouldRefresh is false under the 1h
-            // window — yet the forced refresh must add quests anyway (skip the
-            // timer). 18 dogs -> 1.0/hr so a single forced tick adds a quest.
+            // A rotation just happened, so ShouldRefresh is false inside the
+            // interval — yet the forced refresh must add quests anyway (skip the
+            // timer). The accumulator starts just under a whole quest so the
+            // single forced tick delivers one.
             var state = StateWithDogs(18);
+            state.RecordQuestPacingAccumulator(0.9d);
             state.RecordRotationUtc(T0);
-            var justAfter = T0 + TimeSpan.FromMinutes(30);
+            var justAfter = T0 + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1);
             Assert.That(new QuestPacingPolicy().ShouldRefresh(justAfter, state), Is.False,
                 "precondition: the natural cadence gate would block a refresh here");
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(0), "precondition: no active quests yet");
@@ -237,22 +248,25 @@ namespace Doggiehood.Core.Tests.Quests
             state.Quests.ForceRefresh(justAfter, new Random(1));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
-                "the forced refresh tops up even inside the 8h window");
+                "the forced refresh tops up even inside the refresh interval");
         }
 
         [Test]
-        public void ForceRefresh_RecordsThePassedInstant_RestartingTheEightHourWindow()
+        public void ForceRefresh_RecordsThePassedInstant_RestartingTheRefreshWindow()
         {
             var state = GameState.CreateNew();
             state.RecordRotationUtc(T0);
-            var forcedAt = T0 + TimeSpan.FromMinutes(30);
+            var forcedAt = T0 + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1);
 
             state.Quests.ForceRefresh(forcedAt, new Random(1));
 
             Assert.That(state.LastRotationUtc, Is.EqualTo(forcedAt),
                 "the forced refresh records its instant, same as a natural rotation");
-            Assert.That(new QuestPacingPolicy().ShouldRefresh(forcedAt + TimeSpan.FromMinutes(30), state), Is.False,
-                "so the 1h window restarts from the forced refresh");
+            Assert.That(
+                new QuestPacingPolicy().ShouldRefresh(
+                    forcedAt + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1), state),
+                Is.False,
+                "so the wait restarts from the forced refresh");
         }
 
         [Test]
@@ -265,7 +279,8 @@ namespace Doggiehood.Core.Tests.Quests
             var target = Target(state);
             var rng = new Random(5);
             var now = T0;
-            for (var i = 0; i < 12 && state.Quests.ActiveQuests.Count() < target; i++)
+            for (var i = 0; i <= EconomyNumbers.RefreshesPerPacingWindow
+                && state.Quests.ActiveQuests.Count() < target; i++)
             {
                 state.Quests.TickPacing(now, rng);
                 now += EconomyNumbers.RefreshInterval;

@@ -9,10 +9,11 @@ using NUnit.Framework;
 namespace Doggiehood.Core.Tests.Quests
 {
     /// <summary>
-    /// #543: quests trickle in hourly via a persisted fractional accumulator
-    /// (error diffusion) rather than an 8h all-or-nothing batch. These cover
-    /// the QuestManager-side wiring — the accumulator is advanced and persisted
-    /// on <see cref="GameState"/> at each hourly boundary, survives a
+    /// #543: quests trickle in on a recurring boundary via a persisted
+    /// fractional accumulator (error diffusion) rather than an 8h
+    /// all-or-nothing batch. These cover the QuestManager-side wiring — the
+    /// accumulator is advanced and persisted on
+    /// <see cref="GameState"/> at each refresh boundary, survives a
     /// <see cref="SaveCodec"/> round-trip (legacy saves default to 0.0), and the
     /// existing headroom / free-dog clamp and free-quest guarantee still hold
     /// when fed the accumulator-derived amount.
@@ -39,22 +40,24 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void HourlyBoundary_PersistsTheLeftoverFraction_OnGameState()
+        public void RefreshBoundary_PersistsTheLeftoverFraction_OnGameState()
         {
-            // #624: 8 dogs -> target 5 (floor) -> 1.25/hr. The first boundary adds
+            // #624/#743: 8 dogs -> target 5 (floor) -> 1.25/hr, delivered as
+            // 0.3125 every 15 minutes. An hour's worth of refreshes adds
             // floor(1.25)=1 whole quest and carries 0.25 on the accumulator; the
-            // second adds floor(0.25+1.25)=1 and carries 0.5 — the remainder lives
-            // on GameState between calls.
+            // next hour's adds floor(0.25+1.25)=1 and carries 0.5 — the
+            // remainder lives on GameState between calls.
+            var anHour = TimeSpan.FromHours(1); // four refreshes at the shipping cadence
             var state = StateWithDogs(8);
-            // #704: the hourly clock starts when the board drops below target —
-            // an empty board here — so arm it an hour before the boundary.
-            state.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval);
+            // #704: the clock starts when the board drops below target — an
+            // empty board here — so arm it an hour before the boundary.
+            state.RecordQuestRefreshTimerStart(T0 - anHour);
 
             state.Quests.TickPacing(T0, new Random(1));
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(1), "1.25/hr adds one quest the first hour");
             Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.25).Within(1e-9), "the 0.25 remainder is banked");
 
-            state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(2));
+            state.Quests.TickPacing(T0 + anHour, new Random(2));
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(2), "the second hour adds another whole quest");
             Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.5).Within(1e-9), "the carried 0.25 + 1.25 leaves 0.5");
         }
@@ -63,7 +66,7 @@ namespace Doggiehood.Core.Tests.Quests
         public void QuestPacingAccumulator_RoundTripsThroughSaveCodec()
         {
             var state = StateWithDogs(8);
-            state.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval); // #704: arm the wait
+            state.RecordQuestRefreshTimerStart(T0 - TimeSpan.FromHours(1)); // #704: arm the wait
             state.Quests.TickPacing(T0, new Random(1)); // #624: banks 0.25 (1.25/hr)
             Assert.That(state.QuestPacingAccumulator, Is.EqualTo(0.25).Within(1e-9), "precondition: a pending fraction");
 
@@ -95,7 +98,8 @@ namespace Doggiehood.Core.Tests.Quests
             var target = new QuestPacingPolicy().TargetActiveCount(state);
             var now = T0;
 
-            for (var i = 0; i < 12; i++)
+            // One extra boundary because the first tick only starts the clock.
+            for (var i = 0; i <= EconomyNumbers.RefreshesPerPacingWindow; i++)
             {
                 state.Quests.TickPacing(now, new Random(i));
                 Assert.That(state.Quests.ActiveQuests.Count(), Is.LessThanOrEqualTo(target),
@@ -109,7 +113,7 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void TopUp_IsClampedByFreeDogs_WhenFewerDogsThanTheHourlyAmount()
         {
-            // Only 2 quest-free dogs but a 2.0/hr rate that would add 2+; the
+            // Only 2 quest-free dogs but a rate that would add more; the
             // free-dog clamp keeps the add within the available dogs and never
             // double-assigns a dog already holding a quest.
             var state = StateWithDogs(100); // 2.0/hr

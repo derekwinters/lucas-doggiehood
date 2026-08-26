@@ -188,17 +188,17 @@ namespace Doggiehood.Core.Tests.Quests
             var state = WaitingSince(DogsForTargetTwelve, T0);
             var halfAnInterval = TimeSpan.FromTicks(EconomyNumbers.RefreshInterval.Ticks / 2);
 
-            state.Quests.TickPacing(T0 + Intervals(1) + halfAnInterval, new Random(5));
+            state.Quests.TickPacing(T0 + Intervals(2) + halfAnInterval, new Random(5));
             var afterFirst = state.Quests.ActiveQuests.Count();
 
-            Assert.That(afterFirst, Is.GreaterThan(0), "precondition: the first interval paid out");
-            Assert.That(state.QuestRefreshTimerStartedUtc, Is.EqualTo(T0 + Intervals(1)),
-                "the clock re-anchors to the boundary it consumed, keeping the half-interval");
+            Assert.That(afterFirst, Is.GreaterThan(0), "precondition: the elapsed intervals paid out");
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.EqualTo(T0 + Intervals(2)),
+                "the clock re-anchors to the last boundary it consumed, keeping the half-interval");
 
-            state.Quests.TickPacing(T0 + Intervals(2), new Random(6));
+            state.Quests.TickPacing(T0 + Intervals(3), new Random(6));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(afterFirst),
-                "the carried half-interval means the second payout is due on schedule");
+                "the carried half-interval means the next payout is due on schedule, not half an interval late");
         }
 
         [Test]
