@@ -1502,6 +1502,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sharing-a-report-off-the-device-695" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sharing a report off the device (#695)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sharing a report off the device (#695)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-seam-and-why-it-sits-where-it-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      The seam, and why it sits where it does
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fileprovider-plug-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      The FileProvider plug-in
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-only-a-device-can-confirm" class="md-nav__link">
+    <span class="md-ellipsis">
+      What only a device can confirm
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#privacy" class="md-nav__link">
     <span class="md-ellipsis">
       Privacy
@@ -1781,6 +1823,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sharing-a-report-off-the-device-695" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sharing a report off the device (#695)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sharing a report off the device (#695)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-seam-and-why-it-sits-where-it-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      The seam, and why it sits where it does
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fileprovider-plug-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      The FileProvider plug-in
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-only-a-device-can-confirm" class="md-nav__link">
+    <span class="md-ellipsis">
+      What only a device can confirm
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#privacy" class="md-nav__link">
     <span class="md-ellipsis">
       Privacy
@@ -1822,8 +1906,8 @@
 
 
 <h1 id="bug-reports-diagnostics">Bug reports &amp; diagnostics<a class="headerlink" href="#bug-reports-diagnostics" title="Permanent link">&para;</a></h1>
-<p><em>Covers: the on-device </em><em>bug report</em><em> snapshot (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/692">#692</a>) — what it contains, the two rules it is built to, where the file lands, and why none of it leaves the device on its own. The two buttons that produce it are specified in <a href="../../specs/ui/settings/#debug-sub-tabs-716">Settings menu</a>; this page is the payload.</em></p>
-<p>When something goes wrong on the tablet there is otherwise no way to get the game's state off the device, so a nuanced bug ("the truck did a weird thing after I unlocked that tile") has to be described from memory. The <strong>Settings → Debug → Reports</strong> sub-tab snapshots everything the game knows about itself into one plain-text document, and then either copies it to the clipboard (<strong>Copy bug report</strong>) or writes it to a file (<strong>Save bug report</strong>).</p>
+<p><em>Covers: the on-device </em><em>bug report</em><em> snapshot (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/692">#692</a>) — what it contains, the two rules it is built to, where the file lands, and why none of it leaves the device on its own — plus how it </em><em>gets off the device</em><em> when the player asks it to (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/695">#695</a>). The three buttons that produce it are specified in <a href="../../specs/ui/settings/#debug-sub-tabs-716">Settings menu</a>; this page is the payload and the plumbing.</em></p>
+<p>When something goes wrong on the tablet there is otherwise no way to get the game's state off the device, so a nuanced bug ("the truck did a weird thing after I unlocked that tile") has to be described from memory. The <strong>Settings → Debug → Reports</strong> sub-tab snapshots everything the game knows about itself into one plain-text document, and then copies it to the clipboard (<strong>Copy bug report</strong>), writes it to a file (<strong>Save bug report</strong>), or hands that file to the Android share sheet (<strong>Share bug report</strong>).</p>
 <p>The value is the payload, not the button: the snapshot has to be complete enough to <em>reproduce</em> the bug.</p>
 <h2 id="where-the-work-lives">Where the work lives<a class="headerlink" href="#where-the-work-lives" title="Permanent link">&para;</a></h2>
 <table>
@@ -1859,6 +1943,26 @@
 <td><code>Doggiehood.Unity.BugReportFile</code> / <code>BugReportCopy</code></td>
 <td>Unity</td>
 <td>The disk boundary and the toast copy.</td>
+</tr>
+<tr>
+<td><code>Doggiehood.Core.Diagnostics.BugReportSummary</code></td>
+<td>Core</td>
+<td>The one-line summary a shared report travels with — build, device, timestamp — capped and flattened so it can never become a body of text.</td>
+</tr>
+<tr>
+<td><code>Doggiehood.Core.Diagnostics.FileProviderAuthority</code></td>
+<td>Core</td>
+<td>The <code>content://</code> authority rule, derived from the application id. Read by both the manifest and the runtime, so the two cannot disagree.</td>
+</tr>
+<tr>
+<td><code>Doggiehood.Unity.IBugReportShareTarget</code></td>
+<td>Unity</td>
+<td>The seam between "the file is written" and "the OS is offering it".</td>
+</tr>
+<tr>
+<td><code>Doggiehood.Unity.AndroidShareTarget</code></td>
+<td>Unity</td>
+<td>The JNI half — deliberately zero-logic, because it is the one piece no test can reach.</td>
 </tr>
 </tbody>
 </table>
@@ -1927,18 +2031,55 @@
 <p><strong>Invariant — a diagnostic report never silently omits a system.</strong> Every section header, and every named sub-list inside a section, is emitted on <strong>every</strong> report, an empty one printing <code>(none)</code> — so a missing system reads as "there were none" rather than as "this build forgot to capture it". A snapshot that quietly drops a system is worse than no snapshot, because it is trusted. A Core reflection test also fails the suite if a <code>TuningConfig</code> field is missing from <code>TUNING</code>, so the report cannot drift as new tunables land.</p>
 <p><strong>Invariant — a diagnostic report is read-only.</strong> Generating one never mutates <code>GameState</code>, <code>TuningConfig</code>, the save file, or any toggle: rendering twice from the same state produces byte-identical output, and nothing about the world moves. Snapshotting a bug must not change the bug.</p>
 <h2 id="where-a-saved-report-lands">Where a saved report lands<a class="headerlink" href="#where-a-saved-report-lands" title="Permanent link">&para;</a></h2>
-<p><code>Application.persistentDataPath/bug-reports/bugreport-&lt;yyyyMMdd-HHmmss&gt;.txt</code> — beside the local save file, in the app's own storage. The timestamp runs to the second, so two reports taken in one session never collide and the newest is obvious in a listing. On Android that is the app-private external files directory; pulling it off the device today means a file manager or <code>adb</code>, which is exactly the friction <a href="https://github.com/derekwinters/lucas-doggiehood/issues/695">#695</a> removes with the share sheet.</p>
+<p><code>Application.persistentDataPath/bug-reports/bugreport-&lt;yyyyMMdd-HHmmss&gt;.txt</code> — beside the local save file, in the app's own storage. The timestamp runs to the second, so two reports taken in one session never collide and the newest is obvious in a listing. On Android that is the app-private external files directory. Pulling it off the device by hand means a file manager or <code>adb</code>; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/695">#695</a>'s share sheet removes that friction, and shares this exact file rather than writing a second one.</p>
 <p>Nothing prunes the folder: reports are small and rare, and silently deleting the evidence a player just captured would be the wrong default.</p>
+<h2 id="sharing-a-report-off-the-device-695">Sharing a report off the device (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/695">#695</a>)<a class="headerlink" href="#sharing-a-report-off-the-device-695" title="Permanent link">&para;</a></h2>
+<p><strong>Share bug report</strong> writes the same timestamped file <strong>Save bug report</strong> produces — there is one file-writing path, not two — and then hands <em>that file</em> to Android's standard share sheet. The player picks the destination app. This is the way a report is expected to travel; clipboard and file stay as the fallbacks.</p>
+<p><strong>Invariant — a shared bug report is never silently truncated.</strong> The report travels as a <strong>file attachment</strong> (<code>EXTRA_STREAM</code>), never as message body text. <code>EXTRA_TEXT</code> (and the subject) carry only a short summary line — app version, device, timestamp — so that if a receiving app drops the attachment entirely, the recipient can still see which build it came from and ask for the file. The obvious implementation puts the report in <code>EXTRA_TEXT</code> and is one line of code, but a report is tens of kilobytes and a receiving app is free to trim a long text extra (SMS certainly will). A report that arrives with its <code>LOG</code> section quietly cut off is worse than one that never sent, because nobody can tell it happened.</p>
+<h3 id="the-seam-and-why-it-sits-where-it-does">The seam, and why it sits where it does<a class="headerlink" href="#the-seam-and-why-it-sits-where-it-does" title="Permanent link">&para;</a></h3>
+<p>JNI cannot run in EditMode, so the Unity layer splits and only the thin end is untestable:</p>
+<table>
+<thead>
+<tr>
+<th>Above the seam — tested</th>
+<th>Below the seam — device only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rendering the snapshot, writing the file, composing the summary (<code>BugReportSummary</code>), deriving the authority (<code>FileProviderAuthority</code>), wiring the row, choosing the platform's target, raising the toast</td>
+<td>Building the <code>ACTION_SEND</code> intent, <code>FileProvider.getUriForFile</code>, <code>createChooser</code>, <code>startActivity</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>IBugReportShareTarget</code> has a single method, <code>Share(filePath, summary)</code>. EditMode asserts the whole path above it against a fake target that records what it was handed — that the file written is the file shared, that the summary names the build/device/time, and that it is emphatically <em>not</em> the report. <code>AndroidShareTarget</code> below it has no branches and no formatting: everything that could be decided differently was decided above.</p>
+<p>Off Android there is no share sheet, so <code>BugReportShareTargets.ForThisPlatform()</code> returns no target and the row falls back to <strong>Save bug report</strong>'s behaviour and toast. That choice is made on <code>Application.platform</code> at runtime, not on a <code>UNITY_ANDROID</code> compile symbol — with the Android build target selected that symbol is defined <em>in the Editor too</em>, which would hand the Editor a share sheet that does not exist.</p>
+<h3 id="the-fileprovider-plug-in">The FileProvider plug-in<a class="headerlink" href="#the-fileprovider-plug-in" title="Permanent link">&para;</a></h3>
+<p>Handing out a <code>file://</code> URI throws <code>FileUriExposedException</code> on modern Android, so the file is exposed through a <code>FileProvider</code>. That needs a manifest declaration and an XML resource, both of which live in a hand-authored Android <strong>Library Project</strong> plug-in:</p>
+<div class="highlight"><pre><span></span><code>Assets/Plugins/Android/doggiehood-share.androidlib/
+  build.gradle                       # com.android.library + namespace + androidx.core
+  src/main/AndroidManifest.xml       # the &lt;provider&gt; declaration
+  src/main/res/xml/file_paths.xml    # what the provider may serve
+</code></pre></div>
+<p>Two deliberate choices there, both load-bearing:</p>
+<ul>
+<li><strong>A library plug-in, not a custom main manifest.</strong> <code>Assets/Plugins/Android/AndroidManifest.xml</code> <em>replaces</em> Unity's own generated manifest wholesale — get one element wrong and the game stops launching, on device, where the suite cannot see it. A library manifest is <strong>merged</strong> by Gradle, so it can only add. It is also the only option that works at all: Unity does not support Android resources outside a library project, and <code>file_paths.xml</code> is a resource.</li>
+<li><strong>The authority is derived, never typed.</strong> The manifest uses Gradle's <code>${applicationId}</code> placeholder and the runtime uses <code>FileProviderAuthority.For(Application.identifier)</code> — the same rule, one build step apart. Two apps cannot share an authority string, so hard-coding <code>com.derekwinters.doggiehood.fileprovider</code> would break the side-by-side <code>.debug</code> build (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/80">#80</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/734">#734</a>) — exactly the build Lucas is most likely to be running when he hits a bug.</li>
+</ul>
+<p><code>file_paths.xml</code> grants the <code>bug-reports/</code> folder and nothing else — never the storage root, so the share sheet can read the one report the player just captured, not the save file beside it. It names <strong>both</strong> the external and internal files roots because <code>Application.persistentDataPath</code> is the app's external files dir by default and its internal one when the Write Permission player setting is Internal; only one is ever live, and which is a player setting rather than something this code picks.</p>
+<p>Per <a href="../unity-serialization/">Hand-authoring Unity serialized assets</a>, every element, attribute and <code>.meta</code> above is pinned by text assertions in <code>Assets/Tests/EditMode/BugReportShareProviderTests.cs</code>, including the negative ones: the library manifest declares no <code>&lt;activity&gt;</code>, never claims the launcher, carries no <code>package=</code> attribute (AGP 8+ takes the namespace from <code>build.gradle</code>), and no custom main manifest exists to override Unity's.</p>
+<h3 id="what-only-a-device-can-confirm">What only a device can confirm<a class="headerlink" href="#what-only-a-device-can-confirm" title="Permanent link">&para;</a></h3>
+<p>The suite proves the file is written, the right path and summary cross the seam, the toast fires, the fallback holds, and the manifest says exactly what it should. CI additionally builds a real debug APK, so a broken Gradle module or malformed manifest fails there. <strong>None of that proves the intent resolves.</strong> That the share sheet actually opens, that the chooser lists apps, and that the receiving app can read the <code>content://</code> URI are only observable on real hardware — a wrong authority or an unserved path fails silently at that last step. That check is a physical one and is tracked separately for Derek.</p>
 <h2 id="privacy">Privacy<a class="headerlink" href="#privacy" title="Permanent link">&para;</a></h2>
 <p>The game has <strong>no accounts, no network calls and no location data</strong> (<a href="../../specs/product-scope/">product scope</a>), so there is nothing personal in the snapshot to leak. The only device-identifying values are the <strong>device model</strong> and <strong>OS version</strong>, which are exactly what makes an Android-specific bug diagnosable in the first place.</p>
-<p>A report goes only where the player sends it: the clipboard, or a file in the app's own storage. Nothing here opens a socket — the clipboard and file destinations were chosen in #692 precisely because they need no credentials, no network and no manifest change. #695 adds a <em>player-initiated</em> share; it does not add an automatic upload, and no issue should.</p>
+<p>A report goes only where the player sends it: the clipboard, a file in the app's own storage, or an app they pick themselves from the share sheet. Nothing here opens a socket — the clipboard and file destinations were chosen in #692 precisely because they need no credentials, no network and no manifest change, and #695's share hands a file to the OS rather than sending anything. It is <em>player-initiated</em>: it is not an automatic upload, and no issue should make it one (<a href="../../specs/product-scope/#connectivity">product scope</a>).</p>
 <h2 id="adding-to-the-report">Adding to the report<a class="headerlink" href="#adding-to-the-report" title="Permanent link">&para;</a></h2>
 <p>Add a section, or a line to one, in <code>DiagnosticReport</code> — with a Core test for it. Two rules follow from the invariants above:</p>
 <ul>
 <li>Emit the header (and any named sub-list) unconditionally; print <code>(none)</code> when there is nothing to say.</li>
 <li>Read, never write. Anything that would advance a clock, roll a die, or lazily initialize state does not belong in a report — read the persisted fact instead, or report that it is unavailable.</li>
 </ul>
-<p>A debug affordance whose job is to get state <em>off the device</em> is a section here, not a new Debug row: the snapshot is the one place that grows.</p>
+<p>A debug affordance whose job is to expose <em>more of the game's state</em> is a section here, not a new Debug row: the snapshot is the one place that grows. A new <strong>way for that snapshot to travel</strong> is a different thing and does get a row — that is what <a href="https://github.com/derekwinters/lucas-doggiehood/issues/695">#695</a>'s share sheet is — but <strong>Reports</strong> is full at three rows now, so the next one needs a new sub-tab and therefore a wireframe decision.</p>
 
 
 
