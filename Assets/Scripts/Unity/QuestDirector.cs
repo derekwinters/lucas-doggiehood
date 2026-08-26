@@ -73,6 +73,10 @@ namespace Doggiehood.Unity
 
             WireHouses();
             RefreshDecorations();
+            // #740: a delivered pool is a permanent yard object derived from
+            // the persisted PlacedItem, so a relaunch puts it back the same way
+            // the decorations above are re-derived.
+            RefreshPools();
             RefreshBugSwarms();
             // #704: quests now survive a relaunch, so an accepted find-it quest
             // needs its hidden item put back in the world — the swarms and
@@ -219,6 +223,35 @@ namespace Doggiehood.Unity
                 {
                     DecorationView.Spawn(decoration, worldRoot);
                 }
+            }
+        }
+
+        /// <summary>#740: ensures every house with a delivered pool has one in
+        /// its yard — spawning one for a pool restored from the save at Init
+        /// and for a new delivery as it lands, with no scene reload.
+        /// Idempotent (a yard that already has its pool is skipped), so Init
+        /// and any later re-sync just converge, mirroring
+        /// <see cref="RefreshDecorations"/>. A house whose back yard has no
+        /// legal spot renders nothing — that call is
+        /// <see cref="WorldBuilder.BuildPool"/>'s, shared with the world-build
+        /// path so both agree.</summary>
+        public void RefreshPools()
+        {
+            var existing = Object.FindObjectsByType<PoolView>(FindObjectsSortMode.None)
+                .Select(view => view.HouseId)
+                .ToHashSet();
+
+            foreach (var house in State.Houses)
+            {
+                if (existing.Contains(house.Id))
+                {
+                    continue;
+                }
+
+                // Whether this house HAS a pool (the persisted PlacedItem) and
+                // where it goes are both BuildPool's call, shared with the
+                // world-build path so the two can't disagree.
+                WorldBuilder.BuildPool(worldRoot, State.GetHouseLot(house.Id), State);
             }
         }
 
@@ -399,6 +432,7 @@ namespace Doggiehood.Unity
 
             State.Quests.FailDelivery(quest);
             RefreshDecorations();
+            RefreshPools();
             SaveStore.Save(State);
         }
 
@@ -497,6 +531,7 @@ namespace Doggiehood.Unity
             {
                 State.Quests.DeliverPackage(quest);
                 RefreshDecorations();
+                RefreshPools();
                 SaveStore.Save(State);
             });
         }

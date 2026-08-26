@@ -291,6 +291,7 @@ namespace Doggiehood.Unity
             BuildWalkways(root.transform, state);
             BuildFences(root.transform, state);
             BuildYardLandscaping(root.transform);
+            BuildPools(root.transform, state);
             BuildEmptyLots(root.transform, state);
             BuildUnlockedTileRoads(root.transform, state);
             BuildOpenSpaceTrees(root.transform, state);
@@ -719,6 +720,52 @@ namespace Doggiehood.Unity
             {
                 BuildFence(parent, state.GetHouseLot(house.Id), state);
             }
+        }
+
+        /// <summary>
+        /// #740: one backyard pool for every built house that has received one,
+        /// iterating <see cref="GameState.Houses"/> and resolving each lot via
+        /// <see cref="GameState.GetHouseLot"/> — the same shape
+        /// <see cref="BuildFences"/> takes, so a house on an unlocked zone gets
+        /// its pool too. A yard that never received a pool renders nothing.
+        /// </summary>
+        private static void BuildPools(Transform parent, GameState state)
+        {
+            foreach (var house in state.Houses)
+            {
+                BuildPool(parent, state.GetHouseLot(house.Id), state);
+            }
+        }
+
+        /// <summary>
+        /// #740: renders just one lot's delivered pool — the single-lot form of
+        /// <see cref="BuildPools"/>, shared with
+        /// <see cref="QuestDirector.RefreshPools"/> so a pool that lands
+        /// mid-session and one restored from the save are built identically.
+        ///
+        /// Visibility derives from the persisted
+        /// <see cref="Doggiehood.Core.World.PlacedItem"/>
+        /// (<see cref="PoolPlacement.HasPool"/>), the same mechanism the
+        /// purchased fence uses — so a delivered pool survives save/load with
+        /// no new save state. WHERE it goes is Core's call
+        /// (<see cref="PoolPlacement.TryPositionFor"/>); when no legal spot
+        /// fits in that back yard, Core reports no placement and this renders
+        /// NOTHING rather than a pool overlapping the house, a tree or the
+        /// fence line.
+        /// </summary>
+        public static void BuildPool(Transform parent, HouseLot lot, GameState state)
+        {
+            if (!PoolPlacement.HasPool(lot.HouseId, state))
+            {
+                return;
+            }
+
+            if (!PoolPlacement.TryPositionFor(lot, state, out var position))
+            {
+                return;
+            }
+
+            PoolView.Spawn(lot.HouseId, position, parent);
         }
 
         /// <summary>
