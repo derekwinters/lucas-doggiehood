@@ -370,7 +370,7 @@ namespace Doggiehood.Core.Diagnostics
             // pacing question, and the pacing numbers are tunable.
             Pair(builder, "lastRotationUtc", Timestamp(state.LastRotationUtc));
             Pair(builder, "refreshTimerStartedUtc", Timestamp(state.QuestRefreshTimerStartedUtc));
-            Pair(builder, "refreshIntervalHours", Integer(tuning.RefreshIntervalHours));
+            Pair(builder, "refreshIntervalMinutes", Integer(tuning.RefreshIntervalMinutes));
             Pair(builder, "pacingWindowHours", Integer(tuning.PacingWindowHours));
             Pair(builder, "questPacingAccumulator",
                 state.QuestPacingAccumulator.ToString("R", CultureInfo.InvariantCulture));

@@ -28,9 +28,9 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(state.Quests.ActiveQuests, Is.Empty);
 
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             var target = new QuestPacingPolicy().TargetActiveCount(state);
@@ -61,10 +61,13 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void BeginInitialQuests_AfterOnboarding_RunsTheNormalRotation()
         {
-            // #312/#543: once onboarding is complete the seam is just the normal
-            // hourly trickle rotation — no more single-lost-item suppression. A
-            // 3.0/hr population (100 dogs) adds the per-hour trickle amount (3),
-            // distinguishing the rotation from the pre-onboarding single seed.
+            // #312/#543/#743: once onboarding is complete the seam is just the
+            // normal trickle rotation — no more single-lost-item suppression. A
+            // 3.0/hr population (100 dogs) trickles 0.75 per 15-minute refresh,
+            // so the single call advances the accumulator by exactly one
+            // refresh's worth instead of planting the tutorial's lone lost item,
+            // and a full pacing window of refreshes fills the board to target.
+            var pacing = new QuestPacingPolicy();
             for (var seed = 0; seed < 10; seed++)
             {
                 var state = NewState();
@@ -77,33 +80,46 @@ namespace Doggiehood.Core.Tests.Quests
 
                 state.Quests.BeginInitialQuests(new System.Random(seed));
 
-                // #624: perHour = 12/4 = 3, so one trickle tick assigns exactly 3 dogs.
-                Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.EqualTo(3), $"seed {seed}");
+                Assert.That(state.QuestPacingAccumulator,
+                    Is.EqualTo(pacing.PerRefreshRate(state)).Within(1e-9),
+                    $"seed {seed}: the trickle rotation ran, not the pre-onboarding seed");
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest),
+                    Is.EqualTo((int)Math.Floor(pacing.PerRefreshRate(state))),
+                    $"seed {seed}: exactly one refresh's worth of whole quests");
+
+                for (var refresh = 1; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
+                {
+                    state.Quests.StartNewDay(new System.Random(seed * 100 + refresh));
+                }
+
+                Assert.That(state.Dogs.Count(d => d.HasActiveQuest),
+                    Is.EqualTo(pacing.TargetActiveCount(state)),
+                    $"seed {seed}: a full pacing window fills the board");
             }
         }
 
         [Test]
         public void NewDay_TricklesQuestsUpTowardTheTarget()
         {
-            // #26/#543/#624: the rotation trickles quests in hourly (target/4 per
-            // hour) rather than a 2-4 batch; over a full pacing window it fills
-            // the neighborhood up to its population target, and no single hour
-            // ever floods more than one hour's worth (ceil of the per-hour rate)
-            // at the 1.25/hr floor rate.
+            // #26/#543/#624/#743: the rotation trickles quests in on every
+            // refresh boundary rather than a 2-4 batch; over a full pacing
+            // window it fills the neighborhood up to its population target, and
+            // no single refresh ever floods more than one refresh's worth (ceil
+            // of the per-refresh rate).
             for (var seed = 0; seed < 10; seed++)
             {
                 var state = NewState();
                 var pacing = new QuestPacingPolicy();
                 var target = pacing.TargetActiveCount(state);
-                var maxPerHour = (int)Math.Ceiling(pacing.PerHourRate(state));
+                var maxPerRefresh = (int)Math.Ceiling(pacing.PerRefreshRate(state));
 
-                for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+                for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
                 {
                     var before = state.Dogs.Count(d => d.HasActiveQuest);
-                    state.Quests.StartNewDay(new System.Random(seed * 100 + hour));
+                    state.Quests.StartNewDay(new System.Random(seed * 100 + refresh));
                     var added = state.Dogs.Count(d => d.HasActiveQuest) - before;
-                    Assert.That(added, Is.LessThanOrEqualTo(maxPerHour),
-                        $"seed {seed}: never a catch-up flood beyond one hour's trickle");
+                    Assert.That(added, Is.LessThanOrEqualTo(maxPerRefresh),
+                        $"seed {seed}: never a flood beyond one refresh's trickle");
                 }
 
                 Assert.That(state.Dogs.Count(d => d.HasActiveQuest), Is.EqualTo(target), $"seed {seed}");
@@ -212,9 +228,9 @@ namespace Doggiehood.Core.Tests.Quests
             // #543: fill the neighborhood over a pacing window first, since a
             // single hourly tick may trickle in nothing.
             var state = NewState();
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             var held = state.Quests.ActiveQuests.First();

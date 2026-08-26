@@ -212,11 +212,12 @@ namespace Doggiehood.Core.Tests.Decorations
                     dog.SetHappinessForFlavor(happiness);
                 }
 
-                // #543: quests trickle in hourly, so drive a full pacing window
-                // of boundaries to fill the neighborhood up to its target.
-                for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+                // #543/#743: quests trickle in on each refresh boundary, so
+                // drive a full pacing window of them to fill the neighborhood
+                // up to its target.
+                for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
                 {
-                    state.Quests.StartNewDay(new System.Random(7 + hour));
+                    state.Quests.StartNewDay(new System.Random(7 + refresh));
                 }
 
                 Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(0));

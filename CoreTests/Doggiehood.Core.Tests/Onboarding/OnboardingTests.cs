@@ -11,13 +11,14 @@ namespace Doggiehood.Core.Tests.Onboarding
         private static GameState StateWithQuests()
         {
             var state = GameState.CreateNew();
-            // #543/#624: a single rotation now trickles in a fraction of the
-            // target per hour (8 dogs -> 1.25/hr), so drive a full pacing window of
-            // hourly boundaries to fill the neighborhood up to its target and
-            // have active quests to target in onboarding.
-            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            // #543/#624/#743: a single rotation now trickles in a fraction of
+            // the target per refresh (8 dogs -> 0.3125 per 15 minutes), so drive
+            // a full pacing window of refresh boundaries to fill the
+            // neighborhood up to its target and have active quests to target in
+            // onboarding.
+            for (var refresh = 0; refresh < Doggiehood.Core.Economy.EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             return state;
@@ -164,9 +165,14 @@ namespace Doggiehood.Core.Tests.Onboarding
 
             Assert.That(onboarding.CurrentStep, Is.EqualTo(OnboardingStep.Done));
             Assert.That(state.OnboardingComplete, Is.True);
+            // #626: a paid type is reimbursed at cost × markup, a free type pays
+            // the flat payout — the target dog's quest may be either, so the
+            // expectation follows its type rather than assuming a free one.
+            var expectedQuestPayout = quest.Cost.HasValue
+                ? Doggiehood.Core.Economy.EconomyNumbers.PaidQuestPayout(quest.Cost.Value) - quest.Cost.Value
+                : Doggiehood.Core.Economy.EconomyNumbers.QuestPayout;
             Assert.That(state.Wallet.Coins - before,
-                Is.EqualTo(Doggiehood.Core.Economy.EconomyNumbers.QuestPayout - (quest.Cost ?? 0)
-                    + OnboardingRewardChainNumbers.RewardPerStep));
+                Is.EqualTo(expectedQuestPayout + OnboardingRewardChainNumbers.RewardPerStep));
         }
 
         [Test]

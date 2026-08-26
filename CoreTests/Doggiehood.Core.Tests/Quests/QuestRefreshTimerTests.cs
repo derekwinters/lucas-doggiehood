@@ -82,55 +82,72 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void TheTopUp_FiresOneHourAfterTheTimerStarted_AndNotBefore()
         {
+            // 8 dogs -> target 5 -> 1.25/hr, so an hour's worth of 15-minute
+            // refreshes (#743) is what tips a whole quest in.
+            var anHour = TimeSpan.FromHours(1);
             var state = StateWithAFullBoard();
             CompleteOneQuest(state);
             var below = state.Quests.ActiveQuests.Count();
             state.Quests.TickPacing(T0, new Random(5));
 
-            state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1), new Random(6));
+            state.Quests.TickPacing(T0 + anHour - TimeSpan.FromMinutes(1), new Random(6));
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(below), "not a minute early");
 
-            state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(7));
+            state.Quests.TickPacing(T0 + anHour, new Random(7));
             Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(below),
                 "an hour after the slot opened, the trickle tops it up");
         }
 
         [Test]
-        public void AwayOneHourOrFourDays_IsStillExactlyOneTopUp()
+        public void AwayFourDays_PaysOutMoreThanAwayOneInterval()
         {
-            var away1h = StateWithAFullBoard();
+            // #743 reverses this test's original ruling ("away 1 hour or 4 days
+            // is one top-up"): elapsed time now decides how MANY intervals pay
+            // out, not merely whether one does. Three open slots make the
+            // difference visible — a single interval's trickle cannot refill
+            // them, four days' worth can.
+            var awayOneInterval = StateWithAFullBoard();
             var away4d = StateWithAFullBoard();
-            foreach (var state in new[] { away1h, away4d })
+            foreach (var state in new[] { awayOneInterval, away4d })
             {
+                CompleteOneQuest(state);
+                CompleteOneQuest(state);
                 CompleteOneQuest(state);
                 state.Quests.TickPacing(T0, new Random(8));
             }
 
-            away1h.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(9));
+            awayOneInterval.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(9));
             away4d.Quests.TickPacing(T0 + TimeSpan.FromDays(4), new Random(9));
 
-            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(away1h.Quests.ActiveQuests.Count()),
-                "elapsed time decides whether to top up, never how much — no catch-up flood");
+            Assert.That(awayOneInterval.Quests.ActiveQuests.Count(),
+                Is.LessThan(Target(awayOneInterval)),
+                "precondition: one interval cannot refill three slots");
+            Assert.That(away4d.Quests.ActiveQuests.Count(),
+                Is.GreaterThan(awayOneInterval.Quests.ActiveQuests.Count()),
+                "the time away counts — every interval due while closed pays out");
+            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(Target(away4d)),
+                "and it stops at a full board");
         }
 
         [Test]
         public void TheTimerRestarts_WhenTheTopUpLeavesTheBoardStillBelowTarget()
         {
-            // 8 dogs -> target 5 at 1.25/hr, so one hourly top-up adds a single
-            // quest and cannot refill a board with several slots open.
+            // 8 dogs -> target 5 at 1.25/hr, so an hour's worth of trickle adds
+            // a single quest and cannot refill a board with several slots open.
+            var anHour = TimeSpan.FromHours(1);
             var state = StateWithAFullBoard();
             CompleteOneQuest(state);
             CompleteOneQuest(state);
             CompleteOneQuest(state);
             state.Quests.TickPacing(T0, new Random(10));
 
-            var firedAt = T0 + EconomyNumbers.RefreshInterval;
+            var firedAt = T0 + anHour;
             state.Quests.TickPacing(firedAt, new Random(11));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.LessThan(Target(state)),
-                "precondition: one trickle tick can't refill three slots");
+                "precondition: an hour of trickle can't refill three slots");
             Assert.That(state.QuestRefreshTimerStartedUtc, Is.EqualTo(firedAt),
-                "the next hour is measured from this top-up, not from the original drop");
+                "the next wait is measured from the boundary this top-up consumed");
         }
 
         [Test]
@@ -141,7 +158,7 @@ namespace Doggiehood.Core.Tests.Quests
             state.Quests.TickPacing(T0, new Random(12));
             Assert.That(state.QuestRefreshTimerStartedUtc, Is.Not.Null, "precondition: a clock is running");
 
-            state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(13));
+            state.Quests.TickPacing(T0 + TimeSpan.FromHours(1), new Random(13));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(Target(state)),
                 "precondition: the top-up refilled the single open slot");
@@ -197,9 +214,9 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(reloaded.QuestRefreshTimerStartedUtc, Is.EqualTo(T0),
                 "the old rotation stamp becomes the start of the wait");
-            reloaded.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(17));
+            reloaded.Quests.TickPacing(T0 + TimeSpan.FromHours(1), new Random(17));
             Assert.That(reloaded.Quests.ActiveQuests.Count(), Is.GreaterThan(0),
-                "so the first launch after the upgrade is not penalised an extra hour");
+                "so the first launch after the upgrade is not penalised an extra wait");
         }
 
         [Test]
@@ -213,7 +230,7 @@ namespace Doggiehood.Core.Tests.Quests
             var below = state.Quests.ActiveQuests.Count();
 
             state.Quests.TickQuests(T0, new Random(22));
-            state.Quests.TickQuests(T0 + EconomyNumbers.RefreshInterval, new Random(23));
+            state.Quests.TickQuests(T0 + TimeSpan.FromHours(1), new Random(23));
 
             Assert.That(state.Quests.ActiveQuests.Count(), Is.GreaterThan(below),
                 "an hour of play refills the slot, exactly as an hour away would");
@@ -249,7 +266,7 @@ namespace Doggiehood.Core.Tests.Quests
             Assert.That(state.Quests.TickPacing(T0 + TimeSpan.FromMinutes(1), new Random(20)), Is.False,
                 "waiting is not");
             Assert.That(state.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(21)), Is.True,
-                "and the top-up is");
+                "and the boundary crossing is");
         }
     }
 }

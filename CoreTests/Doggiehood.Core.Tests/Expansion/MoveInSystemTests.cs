@@ -392,18 +392,25 @@ namespace Doggiehood.Core.Tests.Expansion
             // cap, so the whole neighborhood never all holds quests at once.
             // Eligibility means the moved-in dog is in the same free-dog pool
             // the top-up draws from — so with quests being completed (freeing
-            // slots) each day it is eventually selected, exactly like any
-            // starting dog. Fund the wallet for the BuyGift acceptance cost.
+            // slots) it is eventually selected, exactly like any starting dog.
+            // #743: counted in refresh boundaries rather than hours, so the
+            // finer 15-minute cadence samples the same forty hours of rotation
+            // rather than a quarter of them. Fund the wallet for the BuyGift
+            // acceptance cost.
+            const int hoursOfRotation = 40;
+            var refreshesPerHour = Doggiehood.Core.Economy.EconomyNumbers.MinutesPerHour
+                / Doggiehood.Core.Economy.EconomyNumbers.RefreshIntervalMinutes;
             state.Wallet.Deposit(1000);
             var everGotAQuest = false;
-            for (var day = 0; day < 40 && !everGotAQuest; day++)
+            for (var refresh = 0; refresh < hoursOfRotation * refreshesPerHour && !everGotAQuest; refresh++)
             {
-                state.Quests.StartNewDay(new Random(day));
+                state.Quests.StartNewDay(new Random(refresh));
                 everGotAQuest = newDog.HasActiveQuest;
                 CompleteAllActiveQuests(state);
             }
 
-            Assert.That(everGotAQuest, Is.True, "new dog was never included in any daily rotation across 40 days");
+            Assert.That(everGotAQuest, Is.True,
+                $"new dog was never included in any rotation across {hoursOfRotation} hours");
         }
 
         /// <summary>Resolves every currently-active quest through its real

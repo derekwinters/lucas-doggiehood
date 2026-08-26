@@ -36,12 +36,12 @@ namespace Doggiehood.Unity.EditModeTests
         public void CreateFixture()
         {
             state = GameState.CreateNew();
-            // #543: quests trickle in hourly, so drive a full pacing window of
-            // boundaries to fill the neighborhood and have an active quest to
-            // target here.
-            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            // #543/#743: quests trickle in on each refresh boundary, so drive a
+            // full pacing window of them to fill the neighborhood and have an
+            // active quest to target here.
+            for (var refresh = 0; refresh < Doggiehood.Core.Economy.EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             targetDog = state.Dogs.First(d => d.HasActiveQuest);

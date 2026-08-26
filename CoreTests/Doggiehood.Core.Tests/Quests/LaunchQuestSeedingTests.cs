@@ -93,15 +93,16 @@ namespace Doggiehood.Core.Tests.Quests
             Assert.That(state.LastRotationUtc, Is.Null,
                 "the release itself does not stamp the rotation clock");
 
-            // Drive a full pacing window of subsequent hourly launches; the
-            // recurring rotation continues from the seeded state without ever
-            // exceeding the target (no double-seeding).
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            // Drive a full pacing window of subsequent launches; the recurring
+            // rotation continues from the seeded state without ever exceeding
+            // the target (no double-seeding).
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
                 state.Quests.EnsureQuestsForLaunch(
-                    NowUtc + TimeSpan.FromHours(hour), new Random(hour));
+                    NowUtc + TimeSpan.FromTicks(EconomyNumbers.RefreshInterval.Ticks * refresh),
+                    new Random(refresh));
                 Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
-                    $"hour {hour}: recurring rotation never exceeds the already-met target");
+                    $"refresh {refresh}: recurring rotation never exceeds the already-met target");
             }
 
             // #704: a board sitting at target is waiting for nothing, so the

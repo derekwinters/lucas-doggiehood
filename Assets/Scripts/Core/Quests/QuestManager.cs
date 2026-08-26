@@ -197,6 +197,13 @@ namespace Doggiehood.Core.Quests
             SeedBatch(pacing.TargetActiveCount(state), moveInRng);
         }
 
+        /// <summary>#743: how long until the next quest actually lands, or null
+        /// when the board is at target and nothing is pending — the pacing
+        /// seam's <see cref="QuestPacingPolicy.TimeUntilNextQuest"/>, surfaced
+        /// here so the HUD countdown (#683) is pure view work with no Core
+        /// arithmetic of its own.</summary>
+        public TimeSpan? TimeUntilNextQuest => pacing.TimeUntilNextQuest(state);
+
         /// <summary>#310/#543/#704: the recurring refresh boundary, and the
         /// only place the refresh clock is maintained. Three things happen
         /// here, in order:
@@ -206,21 +213,35 @@ namespace Doggiehood.Core.Quests
         /// <item>a board that has just dropped below target starts the clock at
         /// <paramref name="nowUtc"/> — that drop, not the last rotation, is what
         /// begins the hour (#704);</item>
-        /// <item>a clock that has run its
-        /// <see cref="EconomyNumbers.RefreshInterval"/> runs one
-        /// <see cref="StartNewDay"/> trickle top-up, records the instant, and
-        /// restarts the clock if the board is still short.</item>
+        /// <item>a clock that has run at least one
+        /// <see cref="EconomyNumbers.RefreshInterval"/> pays out <em>every</em>
+        /// interval that elapsed (<see cref="StartNewDay(long, Random)"/>),
+        /// records the instant, and re-anchors the clock to the last
+        /// fully-consumed boundary if the board is still short.</item>
         /// </list>
         ///
         /// <para>Purely a boundary <em>check</em> — nothing is removed and no
-        /// quest can fail (economy.md #28). Elapsed time only decides
-        /// <em>whether</em> to top up, never <em>how many</em> to add: away 1
-        /// hour or 4 days is one top-up (the accumulator advances a single
-        /// hour's worth, never per missed hour), so there is no catch-up flood
-        /// and relaunching is never a shortcut.</para>
+        /// quest can fail (economy.md #28).</para>
+        ///
+        /// <para>#743: <b>time spent away counts.</b> Every refresh interval
+        /// that elapsed since the clock started pays out exactly once, whether
+        /// the app was open for it or closed — away four hours is four
+        /// intervals, not one. (This reverses #704's "away 1 hour or 4 days is
+        /// one top-up" rule, on Derek's ruling.) The intervals are advanced in
+        /// ONE accumulator step rather than a loop, which is provably the same
+        /// number and costs the same for a four-month absence as a four-hour
+        /// one. There is still no catch-up flood and relaunching is still never
+        /// a shortcut: one pacing window's worth of refreshes accrues exactly
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/>, so a long absence
+        /// lands on a full board and stops — no max-offline constant needed.</para>
+        ///
+        /// <para>The clock re-anchors to <c>timerStart + intervals × interval</c>,
+        /// not to <paramref name="nowUtc"/>, so the partial interval the player
+        /// returned in the middle of is neither swallowed here nor paid twice on
+        /// the next tick.</para>
         ///
         /// <para>#704: this is also the seam the Unity layer polls on a timer
-        /// while the app is open, not only at launch — before that the hourly
+        /// while the app is open, not only at launch — before that the refresh
         /// cadence was effectively "per app launch", and a long session
         /// received no new quests at all. Returns whether anything changed, so
         /// the caller saves only when it did. <paramref name="nowUtc"/> is a UTC
@@ -244,35 +265,65 @@ namespace Doggiehood.Core.Quests
                 return true;
             }
 
-            if (!pacing.ShouldRefresh(nowUtc, state))
+            var timerStartedUtc = state.QuestRefreshTimerStartedUtc.Value;
+            var elapsedIntervals = pacing.ElapsedRefreshIntervals(nowUtc, state);
+            if (elapsedIntervals <= 0L)
             {
                 return false;
             }
 
-            StartNewDay(rng);
+            StartNewDay(elapsedIntervals, rng);
             state.RecordRotationUtc(nowUtc);
-            // The next hour is measured from this top-up, so a board that is
-            // still short waits another full interval rather than firing again
-            // immediately — and a board that filled up stops waiting entirely.
+            // Re-anchor to the last boundary this top-up actually consumed, so
+            // the remainder of the current interval carries: a board that is
+            // still short waits out only what is left of it, and a board that
+            // filled up stops waiting entirely.
+            var consumedThroughUtc = timerStartedUtc
+                + TimeSpan.FromTicks(EconomyNumbers.RefreshInterval.Ticks * elapsedIntervals);
             state.RecordQuestRefreshTimerStart(
-                pacing.IsBoardBelowTarget(state) ? nowUtc : (DateTime?)null);
+                pacing.IsBoardBelowTarget(state) ? consumedThroughUtc : (DateTime?)null);
             return true;
         }
 
-        /// <summary>#457: the Debug-tab "Refresh quests now" seam. Runs the same
-        /// <see cref="StartNewDay"/> top-up and rotation-timestamp record as
-        /// <see cref="MaybeStartNewDay"/>, but <em>unconditionally</em> — skipping
-        /// the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence gate — so a
-        /// tester can trigger the new-quest randomization without waiting out the
-        /// hourly timer. Recording <paramref name="nowUtc"/> also restarts that
-        /// hourly window, so a forced refresh matches a natural one exactly except for
-        /// <em>when</em> it is allowed to fire. Still purely additive (headroom-
-        /// bounded, never removing or failing a quest — economy.md #28).
+        /// <summary>#457/#743: the Debug-tab "Refresh quests now" seam — one
+        /// press <b>fills the board</b>. It advances the pacing accumulator by a
+        /// whole pacing window's worth of refreshes
+        /// (<see cref="EconomyNumbers.RefreshesPerPacingWindow"/>) through
+        /// <see cref="StartNewDay(long, Random)"/>, <em>unconditionally</em> —
+        /// skipping the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence
+        /// gate — so a tester gets the new-quest randomization immediately
+        /// rather than waiting the window out.
+        ///
+        /// <para><b>Why a window and not one refresh (#743).</b> This used to run
+        /// a single <see cref="StartNewDay(Random)"/> top-up, and its contract
+        /// read "a forced refresh matches a natural one exactly except for
+        /// <em>when</em> it is allowed to fire." That held only while a natural
+        /// refresh reliably delivered a whole quest. At the 15-minute cadence
+        /// the per-refresh amount is below one quest at <em>every</em> shipping
+        /// target (a sixteenth of 5..12), so a single forced refresh added
+        /// nothing on the first press and the button looked broken. It now
+        /// differs from a natural refresh in <em>how much</em> as well as
+        /// <em>when</em>: it delivers what waiting out a full pacing window
+        /// would have — which, by the window-is-the-ceiling rule, is a board at
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/>. Derek's call,
+        /// 2026-08-26.</para>
+        ///
+        /// <para>Still purely additive and still bounded by
+        /// <see cref="SeedBatch"/>'s <c>min(requested, target − activeCount,
+        /// freeDogs)</c> clamp, so it fills <em>up to</em> the target and stops:
+        /// it can never exceed the cap, double-book a dog, leave an all-paid
+        /// active set, or remove/fail a quest (economy.md #28). A second
+        /// consecutive press on a full board is a no-op.</para>
+        ///
+        /// <para>Recording <paramref name="nowUtc"/> restarts the wait from this
+        /// forced refresh exactly as <see cref="TickPacing"/> does after a
+        /// natural one — and since a filled board is waiting for nothing, the
+        /// usual #704 rule applies and the clock stops outright.
         /// <paramref name="nowUtc"/> is a UTC instant (<c>DateTime.UtcNow</c> in
-        /// production).</summary>
+        /// production).</para></summary>
         public void ForceRefresh(DateTime nowUtc, Random rng)
         {
-            StartNewDay(rng);
+            StartNewDay(EconomyNumbers.RefreshesPerPacingWindow, rng);
             state.RecordRotationUtc(nowUtc);
             // #704: restart the wait from this forced refresh exactly as
             // TickPacing does after a natural one, so the debug button can't
@@ -298,13 +349,28 @@ namespace Doggiehood.Core.Quests
         /// one added quest is forced to a free type.</summary>
         public void StartNewDay(Random rng)
         {
-            var wholeThisHour = pacing.AdvanceAccumulator(
-                state.QuestPacingAccumulator, state, out var remainder);
+            StartNewDay(1L, rng);
+        }
+
+        /// <summary>#743: the same trickle top-up as
+        /// <see cref="StartNewDay(Random)"/>, for
+        /// <paramref name="intervals"/> refresh intervals at once — the shape a
+        /// return from an absence takes. The accumulator is advanced by all of
+        /// them in a single floored step (provably the same total as
+        /// <paramref name="intervals"/> separate steps, and O(1) however long
+        /// the absence), and the resulting whole quests go through the same
+        /// headroom/free-dog/one-free-quest caps, so catching up fills the board
+        /// <em>up to</em> <see cref="QuestPacingPolicy.TargetActiveCount"/> and
+        /// stops.</summary>
+        public void StartNewDay(long intervals, Random rng)
+        {
+            var wholeThisRefresh = pacing.AdvanceAccumulator(
+                state.QuestPacingAccumulator, intervals, state, out var remainder);
             // Persist the carried fraction up front so it survives even when the
             // clamp below reduces the actual add (the accumulator never banks a
             // flood — the remainder is always < 1).
             state.RecordQuestPacingAccumulator(remainder);
-            SeedBatch(wholeThisHour, rng);
+            SeedBatch(wholeThisRefresh, rng);
         }
 
         /// <summary>#579: the shared batch-assignment step behind both the

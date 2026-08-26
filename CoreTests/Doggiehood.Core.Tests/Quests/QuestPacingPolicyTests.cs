@@ -89,13 +89,14 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void RefreshInterval_IsOneHour()
+        public void RefreshInterval_IsTheTunedMinuteCadence()
         {
-            // #543: quests now trickle in hourly instead of an 8h batch — the
-            // cadence is every hour, and the per-hour amount is derived from the
-            // target spread over PacingWindowHours (see PerHourRate).
-            Assert.That(EconomyNumbers.RefreshInterval, Is.EqualTo(TimeSpan.FromHours(1)));
-            Assert.That(EconomyNumbers.RefreshIntervalHours, Is.EqualTo(1));
+            // #543 replaced the 8h all-or-nothing batch with a recurring
+            // trickle; #743 moved that cadence off whole hours, so the span is
+            // built from the minutes value (QuestPacingWindowTests pins the
+            // shipping 15-minute number itself).
+            Assert.That(EconomyNumbers.RefreshInterval,
+                Is.EqualTo(TimeSpan.FromMinutes(EconomyNumbers.RefreshIntervalMinutes)));
         }
 
         [Test]
@@ -108,83 +109,92 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void PerHourRate_IsTargetOverThePacingWindow()
+        public void PerRefreshRate_IsTargetOverThePacingWindow()
         {
-            // #624: perHour = target / 4.0. Representative targets fall out of
-            // the population-scaled clamp with the raised floor of 5:
-            // 8 dogs -> 5 (floor), 12 -> 5 (floor), 18 -> 6, 100 -> 12 (ceiling).
+            // #624/#743: perRefresh = target × interval / window — a sixteenth
+            // of the target every 15 minutes over the 4h window, i.e. the same
+            // 1.5 / 3.0 / 1.25 per HOUR as before, delivered in four slices.
+            // Representative targets fall out of the population-scaled clamp
+            // with the raised floor of 5: 8 dogs -> 5 (floor), 12 -> 5 (floor),
+            // 18 -> 6, 100 -> 12 (ceiling).
             var policy = new QuestPacingPolicy();
 
-            Assert.That(policy.PerHourRate(StateWithDogs(18)), Is.EqualTo(1.5).Within(1e-9), "target 6 -> 1.5/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(100)), Is.EqualTo(3.0).Within(1e-9), "target 12 -> 3.0/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(8)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(12)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(18)), Is.EqualTo(0.375).Within(1e-9), "target 6 -> 1.5/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(100)), Is.EqualTo(0.75).Within(1e-9), "target 12 -> 3.0/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(8)), Is.EqualTo(0.3125).Within(1e-9), "target 5 (floor) -> 1.25/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(12)), Is.EqualTo(0.3125).Within(1e-9), "target 5 (floor) -> 1.25/hr");
         }
 
         [Test]
         public void AdvanceAccumulator_CarriesTheFractionalRemainder_AcrossBoundaries()
         {
-            // #624: a 1.25/hr target (target 5 floor over the 4h window) adds a
-            // whole quest each hour and, on the fourth hour, the carried
-            // 0.25 + 0.25 + 0.25 remainder tips a second whole quest in — never a
-            // fractional quest, the leftover fraction is carried forward.
+            // #624/#743: a 1.25/hr target (target 5 floor over the 4h window) at
+            // the 15-minute cadence adds 0.3125 per refresh. Most refreshes add
+            // nothing; the carried fraction tips a whole quest in on every
+            // fourth one and then, once the leftover has built up, on every
+            // third — never a fractional quest, and exactly 5 over the window.
             var policy = new QuestPacingPolicy();
-            var state = StateWithDogs(8); // target 5 (floor) -> 1.25/hr
+            var state = StateWithDogs(8); // target 5 (floor) -> 0.3125 per refresh
 
             var acc = 0.0;
-            var addedPerHour = new System.Collections.Generic.List<int>();
-            for (var hour = 0; hour < 4; hour++)
+            var addedPerRefresh = new System.Collections.Generic.List<int>();
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                addedPerHour.Add(policy.AdvanceAccumulator(acc, state, out acc));
+                addedPerRefresh.Add(policy.AdvanceAccumulator(acc, state, out acc));
             }
 
-            Assert.That(addedPerHour, Is.EqualTo(new[] { 1, 1, 1, 2 }),
-                "1.25/hr trickles a quest each hour, the carried fraction adding a second on the fourth");
+            Assert.That(addedPerRefresh,
+                Is.EqualTo(new[] { 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1 }),
+                "the leftover fraction is carried forward, never dropped and never doubled");
+            Assert.That(addedPerRefresh.Sum(), Is.EqualTo(5), "exactly the target over one pacing window");
         }
 
         [Test]
         public void AdvanceAccumulator_FractionalRate_NeverAddsAFractionalOrBursts()
         {
-            // #624: a 1.5/hr target (target 6) fills to target over the 4h window
-            // via error diffusion — never a fractional quest and never a burst
-            // above ceil(1.5)=2 in a single hour.
+            // #624/#743: a 1.5/hr target (target 6) fills to target over the 4h
+            // window via error diffusion — never a fractional quest and never a
+            // burst above ceil(perRefresh) in a single refresh.
             var policy = new QuestPacingPolicy();
-            var state = StateWithDogs(18); // target 6 -> 1.5/hr
+            var state = StateWithDogs(18); // target 6 -> 0.375 per refresh
 
             var acc = 0.0;
-            var addedPerHour = new System.Collections.Generic.List<int>();
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            var addedPerRefresh = new System.Collections.Generic.List<int>();
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                addedPerHour.Add(policy.AdvanceAccumulator(acc, state, out acc));
+                addedPerRefresh.Add(policy.AdvanceAccumulator(acc, state, out acc));
             }
 
-            Assert.That(addedPerHour, Has.All.LessThanOrEqualTo(2), "never a fractional or flood add");
-            Assert.That(addedPerHour.Sum(), Is.EqualTo(6), "fills exactly to target over the pacing window");
+            Assert.That(addedPerRefresh,
+                Has.All.LessThanOrEqualTo((int)Math.Ceiling(policy.PerRefreshRate(state))),
+                "never a fractional or flood add");
+            Assert.That(addedPerRefresh.Sum(), Is.EqualTo(6), "fills exactly to target over the pacing window");
         }
 
         [Test]
         public void AdvanceAccumulator_LongRunRate_ConvergesToTargetOverThePacingWindow()
         {
-            // #624: over the long run the whole quests added per hour equal the
-            // fractional rate target/4 — no drift, no lost fraction.
+            // #624: over the long run the whole quests added equal the fractional
+            // per-refresh rate times the refresh count — no drift, no lost
+            // fraction, whatever the granularity.
             var policy = new QuestPacingPolicy();
 
             foreach (var dogCount in new[] { 8, 12, 18, 100 })
             {
                 var state = StateWithDogs(dogCount);
-                var rate = policy.PerHourRate(state);
-                const int hours = 6000;
+                var rate = policy.PerRefreshRate(state);
+                const int refreshes = 6000;
 
                 var acc = 0.0;
                 var total = 0;
-                for (var hour = 0; hour < hours; hour++)
+                for (var refresh = 0; refresh < refreshes; refresh++)
                 {
                     total += policy.AdvanceAccumulator(acc, state, out acc);
                 }
 
-                // Long-run total is within one whole quest of rate*hours.
-                Assert.That(total, Is.EqualTo((int)Math.Round(rate * hours)).Within(1),
-                    $"long-run rate for {dogCount} dogs converges to target/4");
+                // Long-run total is within one whole quest of rate*refreshes.
+                Assert.That(total, Is.EqualTo((int)Math.Round(rate * refreshes)).Within(1),
+                    $"long-run rate for {dogCount} dogs converges to target/4 per window");
             }
         }
 

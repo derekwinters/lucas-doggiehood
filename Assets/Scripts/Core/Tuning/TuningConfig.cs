@@ -61,13 +61,24 @@ namespace Doggiehood.Core.Tuning
         /// (toy 30 -> 45, pool 50 -> 75, fence 100 -> 150).</summary>
         public double PaidQuestMarkup = 1.5;
 
-        /// <summary>#543: hours between quest-rotation refresh boundary checks.</summary>
-        public int RefreshIntervalHours = 1;
+        /// <summary>#543/#743: <b>minutes</b> between quest-rotation refresh
+        /// boundary checks. #743 moved this off whole hours so the trickle can
+        /// arrive in sub-hour chunks — the interval is granularity only, and
+        /// the amount each refresh adds scales with it
+        /// (<c>target × RefreshIntervalMinutes / (PacingWindowHours × 60)</c>),
+        /// so the board still fills in exactly one pacing window whatever this
+        /// is set to. Must stay above zero: it sits in a divisor and in the
+        /// refresh <c>TimeSpan</c>, so
+        /// <see cref="Doggiehood.Core.Economy.EconomyNumbers.RefreshIntervalMinutes"/>
+        /// clamps a degenerate override at the config edge.</summary>
+        public int RefreshIntervalMinutes = 15;
 
         /// <summary>#543: window (hours) the population-scaled active-quest
-        /// target is spread over — the per-hour trickle rate is
-        /// <c>target / PacingWindowHours</c>. #624: shortened 6 -> 4 to lift
-        /// the early quest rate off its floor (target/4 instead of target/6).</summary>
+        /// target is spread over — the per-refresh trickle amount is
+        /// <c>target × RefreshIntervalMinutes / (PacingWindowHours × 60)</c>.
+        /// #624: shortened 6 -> 4 to lift the early quest rate off its floor
+        /// (target/4 instead of target/6). Must stay above zero for the same
+        /// divisor reason as the interval above.</summary>
         public int PacingWindowHours = 4;
 
         /// <summary>#310: divisor of the population-scaled concurrent-quest cap
