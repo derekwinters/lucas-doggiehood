@@ -66,6 +66,11 @@
   .verk{font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);opacity:.6;}
   .verv{font-size:44px;color:var(--ink);border:5px dashed var(--accent);border-radius:18px;padding:10px 22px;display:inline-block;}
 
+  /* Debug pane sub-tab bar (#716) */
+  .subbar{display:flex;gap:16px;height:72px;margin-bottom:20px;}
+  .subtab{flex:1;display:flex;align-items:center;justify-content:center;border-radius:24px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);background:var(--cream);font-size:36px;color:var(--ink);}
+  .subtab.active{background:var(--coral);}
+
   /* Debug pane rows */
   .drow{display:flex;align-items:center;height:96px;padding:0 30px;background:var(--panel);border:5px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink);margin-bottom:20px;}
   .drow .dl{font-size:34px;color:var(--ink);}
@@ -77,6 +82,7 @@
   .knob{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:999px;background:var(--panel);border:4px solid var(--ink);}
   .toggle.on .knob{right:5px;} .toggle.off .knob{left:5px;}
   .action{display:inline-flex;align-items:center;gap:12px;height:72px;padding:0 34px;border-radius:999px;border:6px solid var(--ink);box-shadow:0 6px 0 var(--ink);background:var(--gold);font-size:30px;color:var(--ink);flex:0 0 auto;}
+  .action.tune{background:var(--sky);}
   .ghost{opacity:.45;}
   .ghost .dl{font-style:italic;}
 
@@ -106,9 +112,9 @@
   <h1 class="rounded">Settings menu</h1>
   <p class="lede">An in-game settings menu: a left <b>sidebar of tabs</b> with a content pane, opened from a gear on the HUD.
     MVP tabs are <b>About</b> (shows the app version) and a hidden <b>Debug</b> tab, revealed only after tapping the version
-    label 10× within 10s — the classic Android developer-options gesture. Debug hosts on-device toggles (first: show/hide
-    backyard fences, #152).</p>
-  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Two states: default (Debug hidden) and Debug unlocked. Field values are placeholders.</p>
+    label 10× within 10s — the classic Android developer-options gesture. Debug hosts on-device toggles, split across its own
+    <b>sub-tab bar</b> — General / Visuals &amp; Tools / Reports — so no group outgrows the pane (#716).</p>
+  <p class="scalenote">Shown 1:1 at the true 1920×1200 reference. Three states: default (Debug hidden), Debug unlocked on <b>General</b>, and the same pane switched to <b>Visuals &amp; Tools</b>. Field values are placeholders.</p>
 
   <div class="viewer">
     <div class="caption">STATE 1 — default · Debug tab hidden · gear entry point (HUD top-left)</div>
@@ -139,7 +145,7 @@
       <div class="cel" style="left:690px;top:706px;"><span class="num">2</span><span class="txt">version = 10-tap unlock target</span></div>
     </div>
 
-    <div class="caption">STATE 2 — Debug unlocked · Debug tab active · fence toggle + future actions</div>
+    <div class="caption">STATE 2 — Debug unlocked · Debug tab active · Debug sub-tab bar on <b>General</b> (#716)</div>
     <div class="screen" role="img" aria-label="Same Settings panel after unlocking. Sidebar now has About and a revealed Debug tab, Debug active. Content pane lists debug toggles: Show backyard fences (on), and placeholder future actions.">
       <div class="sky"></div><div class="ground"></div><div class="road"></div>
       <div class="house h1"></div><div class="house h2"></div>
@@ -155,6 +161,11 @@
             <div class="tab active rounded"><span class="ic">🐞</span> Debug <span class="lock">🔓</span></div>
           </div>
           <div class="pane">
+            <div class="subbar">
+              <div class="subtab active rounded">General</div>
+              <div class="subtab rounded">Visuals &amp; Tools</div>
+              <div class="subtab rounded">Reports</div>
+            </div>
             <div class="drow">
               <div>
                 <div class="dl rounded">Show backyard fences</div>
@@ -171,15 +182,62 @@
               <div class="grow"></div>
               <div class="action rounded">+100</div>
             </div>
-            <div class="drow ghost">
-              <div><div class="dl rounded">future toggle…</div></div>
+            <div class="drow">
+              <div>
+                <div class="dl rounded">Refresh quests now</div>
+                <div class="sub rounded">Force new-quest randomization (#457)</div>
+              </div>
               <div class="grow"></div>
-              <div class="toggle off"><div class="knob"></div></div>
+              <div class="action rounded">Go</div>
             </div>
           </div>
         </div>
       </div>
       <div class="cel" style="left:300px;top:470px;"><span class="num">3</span><span class="txt">Debug tab appears only once unlocked</span></div>
+      <div class="cel" style="left:700px;top:118px;"><span class="num">4</span><span class="txt">sub-tab bar: 72px tall, 16px gaps, 24px corners (#716)</span></div>
+    </div>
+
+    <div class="caption">STATE 3 — same pane, <b>Visuals &amp; Tools</b> sub-tab selected · only that group's rows are on screen (#716)</div>
+    <div class="screen" role="img" aria-label="The same unlocked Settings panel with the Debug sub-tab bar switched to Visuals and Tools. Only that group's two rows show: Show debug element colors and Tune balance.">
+      <div class="sky"></div><div class="ground"></div><div class="road"></div>
+      <div class="house h1"></div><div class="house h2"></div>
+      <div class="gear rounded">⚙️</div>
+      <div class="chip"><div class="coin"></div><div class="bal rounded">10</div></div>
+      <div class="scrim"></div>
+      <div class="panel">
+        <div class="close rounded">✕</div>
+        <h2 class="ptitle rounded">Settings</h2>
+        <div class="pbody">
+          <div class="rail">
+            <div class="tab rounded"><span class="ic">ℹ️</span> About</div>
+            <div class="tab active rounded"><span class="ic">🐞</span> Debug <span class="lock">🔓</span></div>
+          </div>
+          <div class="pane">
+            <div class="subbar">
+              <div class="subtab rounded">General</div>
+              <div class="subtab active rounded">Visuals &amp; Tools</div>
+              <div class="subtab rounded">Reports</div>
+            </div>
+            <div class="drow">
+              <div>
+                <div class="dl rounded">Show debug element colors</div>
+                <div class="sub rounded">Paint ground vs. backstop distinctly (#611)</div>
+              </div>
+              <div class="grow"></div>
+              <div class="toggle off"><div class="knob"></div></div>
+            </div>
+            <div class="drow">
+              <div>
+                <div class="dl rounded">Tune balance…</div>
+                <div class="sub rounded">Live sliders over TuningConfig (#622)</div>
+              </div>
+              <div class="grow"></div>
+              <div class="action tune rounded">Open</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cel" style="left:700px;top:430px;"><span class="num">5</span><span class="txt">3 rows max per sub-tab — computed from the 524px pane, not eyeballed</span></div>
     </div>
   </div>
 
@@ -202,6 +260,13 @@
         <tr><td>ToggleTrackHeightPx</td><td class="val">56</td><td>debug switch track</td></tr>
         <tr><td>ToggleKnobPx</td><td class="val">44</td><td>debug switch knob</td></tr>
         <tr><td>DebugRowHeightPx</td><td class="val">96</td><td>each debug toggle/action row</td></tr>
+        <tr><td>DebugRowGapPx</td><td class="val">20</td><td>between stacked debug rows</td></tr>
+        <tr><td>DebugActionWidthPx</td><td class="val">200</td><td>gold action pill width</td></tr>
+        <tr><td>DebugActionHeightPx</td><td class="val">72</td><td>debug action pill height</td></tr>
+        <tr><td>DebugSubTabHeightPx</td><td class="val">72</td><td>each Debug sub-tab pill (#716)</td></tr>
+        <tr><td>DebugSubTabGapPx</td><td class="val">16</td><td>between sub-tab pills (#716)</td></tr>
+        <tr><td>DebugSubTabRadiusPx</td><td class="val">24</td><td>sub-tab pill corners (#716)</td></tr>
+        <tr><td>DebugSubTabBarGapPx</td><td class="val">20</td><td>sub-tab bar → first row (#716)</td></tr>
         <tr><td>GearButtonSizePx</td><td class="val">88</td><td>HUD settings entry point</td></tr>
         <tr><td>GearMarginPx</td><td class="val">32</td><td>gear inset from HUD corner</td></tr>
         <tr><td>CloseButtonSizePx</td><td class="val">72</td><td>close (✕), top-right</td></tr>
@@ -212,16 +277,18 @@
       <h2>Regions</h2>
       <p class="note"><b>Title</b> (Settings) · <b>Sidebar</b> (tab rail: About, + Debug when unlocked) · <b>Content pane</b> (active tab's body) · <b>Close</b> (top-right ✕). Entry: a <b>gear</b> in the HUD's top-right corner (coins chip moved inboard, to its left).</p>
       <p class="note"><b>About:</b> app name + a <b>"Designed by Lucas"</b> tagline line + tappable <b>version</b> label (also the debug-unlock target).</p>
-      <p class="note"><b>Debug</b> (hidden until unlocked): a list of on-device toggles/actions. First toggle <b>Show backyard fences</b> drives <code>WorldBuilder.ForceFencesVisible</code> (#152). Room for more (e.g. <b>Add coins</b>, #286).</p>
+      <p class="note"><b>Debug</b> (hidden until unlocked): on-device toggles/actions, split across the pane’s own <b>sub-tabs</b> — <b>General</b> (Show backyard fences · Add coins · Refresh quests now) · <b>Visuals &amp; Tools</b> (Show debug element colors · Tune balance…) · <b>Reports</b> (Copy / Save bug report, #692). One group shows at a time (#716).</p>
+      <p class="note"><b>Capacity (#716):</b> the Debug pane is 524px tall (820 − 152 title band − 48 bottom padding − 2×48 pane inset). The bar costs 72 + 20 = 92px, leaving 432px; at a 96 + 20 = 116px row pitch that is <b>3 rows per sub-tab</b>. Derived in <code>Doggiehood.Core.Ui.SettingsDebugPaneMetrics</code>, never typed.</p>
       <h2 style="margin-top:22px;">Design decisions (approved)</h2>
       <p class="q"><b>① Entry point:</b> a <b>gear button in the HUD's top-right corner (furthest right)</b>, with the <b>currency chip moved just inboard, to the gear's left</b>. This nudges the currency-chip placement, so the HUD wireframe (#174) is flagged to reconcile — the gear takes the corner.</p>
       <p class="q"><b>② Sidebar vs bottom tabs:</b> <b>sidebar only</b> — the game is landscape-locked (#22/#256), so there's no portrait case to design a bottom-tab variant for.</p>
+      <p class="q"><b>④ Debug pane past five rows (#716):</b> <b>sub-tabs on the Debug pane</b> — named groups behind a small bar at the top of the pane, rather than scrolling the pane, growing the panel, shrinking the rows, or doubling actions onto one row. <b>Invariant:</b> every Debug row renders fully inside the Settings panel; each group’s capacity is computed inside the pane’s own box, so one row too many fails the suite instead of floating over the scrim.</p>
       <p class="q"><b>③ Debug unlock persistence:</b> <b>resets each session</b> — the Debug tab ships hidden and is re-hidden on every launch; re-tap the version 10× to reveal. (Persisting across launches is a one-flag change if you'd rather unlock once.)</p>
     </div>
   </div>
 
   <footer>
-    Opens from a HUD gear · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200 · establishes the "debug affordances live in the Debug tab" standard (#219). Constants born here (#161); EditMode tests assert the built menu against them.
+    Opens from a HUD gear · reuses <a href="#">Shared UI Components (#173)</a> · reference resolution 1920×1200 · establishes the "debug affordances live in the Debug tab" standard (#219). Constants born here (#161); EditMode tests assert the built menu against them. Debug sub-tabs added by #716.
     <br><span class="status">Approved (Derek, 2026-07-25) (#218)</span>
   </footer>
 </div>

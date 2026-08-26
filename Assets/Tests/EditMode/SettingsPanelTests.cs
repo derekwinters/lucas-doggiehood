@@ -2,6 +2,7 @@ using System.Linq;
 using System.Reflection;
 using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Economy;
+using Doggiehood.Core.Ui;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -446,18 +447,20 @@ namespace Doggiehood.Unity.EditModeTests
         // --- #611: Debug-tab "Show debug element colors" toggle ---
 
         [Test]
-        public void DebugPane_RendersADebugColorsRow_BelowTheRefreshQuestsRow()
+        public void DebugPane_RendersADebugColorsRow_FirstOnTheVisualsAndToolsSubTab()
         {
-            // #611: the fourth Debug-tab row, stacked one row-and-gap below the
-            // Refresh quests row using the existing DebugRowHeightPx/DebugRowGapPx
-            // constants — no invented layout values.
+            // #611 built this as the fourth row of a flat list; #716 regrouped the
+            // pane into sub-tabs, so it is now the first row of Visuals & Tools —
+            // still at the existing DebugRowHeightPx/DebugRowGapPx metrics.
             Assert.That(panel.DebugColorsRowRect, Is.Not.Null,
                 "the Debug pane lists a Show debug element colors toggle row (#611)");
             Assert.That(panel.DebugColorsRowRect.sizeDelta.y, Is.EqualTo(SettingsPanel.DebugRowHeightPx),
                 "the row reuses the approved debug-row height — no new constant");
-            Assert.That(panel.DebugColorsRowRect.anchoredPosition.y,
-                Is.EqualTo(-3f * (SettingsPanel.DebugRowHeightPx + SettingsPanel.DebugRowGapPx)),
-                "it stacks three rows-and-gaps below the fence toggle, inventing no new layout");
+            Assert.That(panel.DebugColorsRowRect.parent,
+                Is.EqualTo(panel.SubTabGroupRect(DebugSubTab.VisualsAndTools)),
+                "the roster puts it on the Visuals & Tools sub-tab (#716)");
+            Assert.That(panel.DebugColorsRowRect.anchoredPosition.y, Is.EqualTo(0f),
+                "it is the first row of its sub-tab, so it sits at the top of that list");
         }
 
         [Test]
@@ -507,8 +510,9 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void DebugColorsRow_IsGatedBehindTheDebugUnlock_LikeTheOtherRows()
         {
-            Assert.That(panel.DebugColorsRowRect.parent, Is.EqualTo(panel.RefreshQuestsRowRect.parent),
-                "the debug-colors row shares the Debug pane, so it is gated identically");
+            Assert.That(panel.DebugColorsRowRect.parent.parent, Is.EqualTo(panel.DebugPaneRect),
+                "the debug-colors row shares the Debug pane (via its #716 sub-tab row list), "
+                + "so it is gated identically");
             Assert.That(panel.DebugColorsRowRect.gameObject.activeInHierarchy, Is.False,
                 "it stays hidden until the Debug tab is unlocked, like the existing rows");
         }
@@ -679,7 +683,7 @@ namespace Doggiehood.Unity.EditModeTests
         // ---------------------------------------------------------------
 
         [Test]
-        public void TuneBalanceRow_IsTheFifthDebugRowAtTheSharedRowMetrics()
+        public void TuneBalanceRow_IsADebugRowAtTheSharedRowMetrics()
         {
             UnlockDebug();
 
@@ -689,7 +693,10 @@ namespace Doggiehood.Unity.EditModeTests
                 Is.EqualTo(new Vector2(SettingsPanel.DebugActionWidthPx, SettingsPanel.DebugActionHeightPx)),
                 "the entry row is a Debug action row like Add coins / Refresh quests now");
 
-            // Stacked one row below the #611 debug-colors switch (order 4).
+            // #716: stacked one row below the #611 debug-colors switch, both on
+            // the Visuals & Tools sub-tab.
+            Assert.That(panel.TuneBalanceRowRect.parent,
+                Is.EqualTo(panel.SubTabGroupRect(DebugSubTab.VisualsAndTools)));
             Assert.That(panel.TuneBalanceRowRect.anchoredPosition.y,
                 Is.LessThan(panel.DebugColorsRowRect.anchoredPosition.y));
         }
@@ -788,6 +795,13 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
 
             panel.DebugTabRect.GetComponent<Button>().onClick.Invoke();
+
+            // #716: the Debug pane opens on General, so the row also needs its own
+            // sub-tab selected — it is still reachable, just one tap further in.
+            Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False,
+                "the Debug pane opens on the General sub-tab");
+
+            panel.SubTabRect(DebugSubTab.VisualsAndTools).GetComponent<Button>().onClick.Invoke();
 
             Assert.That(panel.TuneBalanceRowRect.gameObject.activeInHierarchy, Is.True);
             Assert.That(panel.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.True);

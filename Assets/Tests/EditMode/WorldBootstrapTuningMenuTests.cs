@@ -2,6 +2,7 @@ using System.Reflection;
 using Doggiehood.Core.Cameras;
 using Doggiehood.Core.Debugging;
 using Doggiehood.Core.Tuning;
+using Doggiehood.Core.Ui;
 using Doggiehood.Core.World;
 using Doggiehood.Unity;
 using NUnit.Framework;
@@ -136,13 +137,24 @@ namespace Doggiehood.Unity.EditModeTests
             Assert.That(settings.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
             Assert.That(overlay.IsOpen, Is.False);
 
-            // The tenth tap unlocks the tab; selecting it exposes the row, and
-            // only then does the entry pill actually open the panel.
+            // The tenth tap unlocks the tab; selecting it, then the sub-tab the
+            // row lives on, exposes the row, and only then does the entry pill
+            // actually open the panel.
             settings.TapVersion(DebugUnlockGesture.TapsToUnlock * 0.2);
             Assert.That(settings.DebugTabVisible, Is.True);
             Assert.That(overlay.IsOpen, Is.False, "revealing the tab does not open the tuning panel");
 
             settings.DebugTabRect.GetComponent<Button>().onClick.Invoke();
+
+            // #716: the pane opens on General, and Tune balance… lives on
+            // Visuals & Tools. The sub-tab is navigation *behind* the unlock,
+            // not a second gate — so the row is still unreachable here, and the
+            // unlock remains the only thing standing between a shipping player
+            // and the balance sliders.
+            Assert.That(settings.ActiveDebugSubTab, Is.EqualTo(DebugSubTab.General));
+            Assert.That(settings.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.False);
+
+            settings.SubTabRect(DebugSubTab.VisualsAndTools).GetComponent<Button>().onClick.Invoke();
             Assert.That(settings.TuneBalanceButtonRect.gameObject.activeInHierarchy, Is.True);
 
             settings.TuneBalanceButtonRect.GetComponent<Button>().onClick.Invoke();

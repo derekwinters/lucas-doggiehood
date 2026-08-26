@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Doggiehood.Core.Debugging;
+using Doggiehood.Core.Ui;
 using Doggiehood.Core.World;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,6 +30,13 @@ namespace Doggiehood.Unity
     /// (docs/specs/ui/shared-components.md) — with the wireframe layout unchanged.
     /// The chrome is procedural and device-safe (no raster art; only the
     /// always-included <c>UI/Default</c> shader plus the bundled font, #291).
+    ///
+    /// The Debug pane itself is sub-tabbed (#716): a horizontal bar of
+    /// <see cref="DebugSubTabRoster"/> groups across the top of the pane, one
+    /// group's rows on screen at a time. It replaced a flat list that fit exactly
+    /// five rows and already had five, so a sixth would have rendered off the
+    /// panel over the scrim. Each group's capacity is computed by the engine-free
+    /// <see cref="SettingsDebugPaneMetrics"/>, never counted by eye.
     /// </summary>
     public sealed class SettingsPanel : MonoBehaviour
     {
@@ -54,6 +63,18 @@ namespace Doggiehood.Unity
         public const float DebugRowGapPx = 20f;       // mockup .drow margin-bottom
         public const float DebugActionWidthPx = 200f; // graybox width for the gold action pill
         public const float DebugActionHeightPx = 72f; // mockup .action height
+
+        // --- #716: the Debug pane's own sub-tab bar ---
+        // The Debug pane was a single flat list that fit exactly five rows — and
+        // it had five, so the next one hung off the panel over the scrim. The
+        // approved wireframe splits the rows into named groups behind a small
+        // horizontal bar at the top of the pane. Every value below is reused from
+        // a metric this pane already uses; none is invented
+        // (docs/specs/ui/settings.md, #161).
+        public const float DebugSubTabHeightPx = DebugActionHeightPx; // the pill height the pane already uses
+        public const float DebugSubTabGapPx = TabGapPx;               // the outer tab gap, one level in
+        public const float DebugSubTabRadiusPx = TabRadiusPx;         // the outer tab shape, one level in
+        public const float DebugSubTabBarGapPx = DebugRowGapPx;       // one row-gap above the first row
 
         // Type sizes read off the mockup CSS (#161 — no inline literals).
         private const int TitleFontSizePx = 52;
@@ -96,17 +117,25 @@ namespace Doggiehood.Unity
         private const string RefreshQuestsRowLabelText = "Refresh quests now";
         private const string RefreshQuestsRowSubtitleText = "Force new-quest randomization, skip the hourly timer (#457)";
         private const string RefreshQuestsGlyph = "Go";
-        // #611: the fourth Debug-tab row — a toggle (like the fence switch) that
+        // #611: the debug-colours row — a toggle (like the fence switch) that
         // paints the ground and camera backstop in loud, distinct debug colours.
+        // #716 groups it onto the Visuals & Tools sub-tab.
         private const string DebugColorsRowLabelText = "Show debug element colors";
         private const string DebugColorsRowSubtitleText = "Paint ground vs. backstop distinctly to find the seam (#611)";
-        // #622: the fifth Debug-tab row — the entry point to the balance tuning
+        // #622: the tuning-menu row — the entry point to the balance tuning
         // menu (docs/specs/ui/debug-tuning-menu.md). Built like every other
         // Debug row, in every build, behind the 10-tap unlock alone (#656).
         // ASCII-only pill glyph for the same bundled-font reason as Add coins.
         private const string TuneBalanceRowLabelText = "Tune balance…";
         private const string TuneBalanceRowSubtitleText = "Live sliders over TuningConfig (#622)";
         private const string TuneBalanceGlyph = "Open";
+
+        /// <summary>#716: each neighbouring pair of sub-tab pills shares one
+        /// <see cref="DebugSubTabGapPx"/>, so each pill gives up half of it.</summary>
+        private const float SubTabGapShare = 0.5f;
+
+        /// <summary>#716: the sub-tab the Debug pane opens on.</summary>
+        private const DebugSubTab DefaultDebugSubTab = DebugSubTab.General;
 
         /// <summary>#291: the bundled UI font, loaded from a Resources folder so
         /// it ships in the Android build. Runtime-built UGUI cannot rely on
@@ -161,7 +190,17 @@ namespace Doggiehood.Unity
         private RectTransform debugTabRect;
         private RectTransform closeButtonRect;
         private RectTransform aboutPaneRect;
+        private RectTransform contentPaneRect;
         private RectTransform debugPaneRect;
+        private RectTransform debugSubTabBarRect;
+        private readonly Dictionary<DebugSubTab, RectTransform> subTabRects =
+            new Dictionary<DebugSubTab, RectTransform>();
+        private readonly Dictionary<DebugSubTab, RectTransform> subTabGroupRects =
+            new Dictionary<DebugSubTab, RectTransform>();
+        private readonly Dictionary<string, RectTransform> debugRowRects =
+            new Dictionary<string, RectTransform>();
+        private readonly List<string> builtDebugRowKeys = new List<string>();
+        private DebugSubTab activeDebugSubTab = DefaultDebugSubTab;
         private RectTransform fenceToggleRect;
         private Image fenceToggleImage;
         private RectTransform fenceKnobRect;
@@ -219,6 +258,70 @@ namespace Doggiehood.Unity
 
         public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
+
+        /// <summary>The stage surface both tab bodies are built inside.</summary>
+        public RectTransform ContentPaneRect => contentPaneRect;
+
+        /// <summary>#716: the Debug tab's body — the box every Debug row must
+        /// render inside.</summary>
+        public RectTransform DebugPaneRect => debugPaneRect;
+
+        /// <summary>#716: the horizontal sub-tab bar at the top of the Debug
+        /// pane.</summary>
+        public RectTransform DebugSubTabBarRect => debugSubTabBarRect;
+
+        /// <summary>#716: the Debug sub-tab currently showing its rows.</summary>
+        public DebugSubTab ActiveDebugSubTab => activeDebugSubTab;
+
+        /// <summary>#716: the row keys this panel actually builds today — the
+        /// roster's <see cref="DebugSubTabRoster.BuiltRows"/>.</summary>
+        public IReadOnlyList<string> BuiltDebugRowKeys => builtDebugRowKeys;
+
+        /// <summary>
+        /// #716: the Debug pane's geometry, as engine-free Core arithmetic fed by
+        /// this panel's own named constants. The flat list's fifth row only fit by
+        /// spending the panel's incidental bottom margin, which is why capacity is
+        /// computed strictly inside the pane's own box rather than eyeballed.
+        /// </summary>
+        public static SettingsDebugPaneMetrics DebugPaneMetrics =>
+            new SettingsDebugPaneMetrics(
+                panelHeightPx: SettingsPanelHeightPx,
+                bodyTopInsetPx: BodyTopInset(),
+                panelPaddingPx: SettingsPanelPaddingPx,
+                paneInsetPx: SettingsPanelPaddingPx,
+                rowHeightPx: DebugRowHeightPx,
+                rowGapPx: DebugRowGapPx,
+                subTabHeightPx: DebugSubTabHeightPx,
+                subTabBarGapPx: DebugSubTabBarGapPx);
+
+        /// <summary>#716: how many Debug rows one sub-tab may hold. Derived, never
+        /// typed — a group holding one row too many fails the suite instead of
+        /// floating a button over the scrim.</summary>
+        public static int DebugSubTabRowCapacity => DebugPaneMetrics.RowCapacity;
+
+        /// <summary>#716: one sub-tab's pill in the bar.</summary>
+        public RectTransform SubTabRect(DebugSubTab tab)
+        {
+            RectTransform rect;
+            return subTabRects.TryGetValue(tab, out rect) ? rect : null;
+        }
+
+        /// <summary>#716: one sub-tab's row list — the container its rows stack
+        /// inside, and the container #692's bug-report rows build into.</summary>
+        public RectTransform SubTabGroupRect(DebugSubTab tab)
+        {
+            RectTransform rect;
+            return subTabGroupRects.TryGetValue(tab, out rect) ? rect : null;
+        }
+
+        /// <summary>#716: the built row for one <see cref="DebugSubTabRoster"/>
+        /// key, or <c>null</c> for a row the roster places but this layer does not
+        /// build yet (#692's bug-report rows).</summary>
+        public RectTransform DebugRowRect(string rowKey)
+        {
+            RectTransform rect;
+            return debugRowRects.TryGetValue(rowKey, out rect) ? rect : null;
+        }
 
         /// <summary>Whether the panel is currently shown.</summary>
         public bool IsOpen => content != null && content.activeSelf;
@@ -498,6 +601,7 @@ namespace Doggiehood.Unity
         {
             var pane = CreateImage("ContentPane", parent, PaneColor);
             var rect = pane.rectTransform;
+            contentPaneRect = rect;
             rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
@@ -540,18 +644,120 @@ namespace Doggiehood.Unity
             debugPaneRect.offsetMin = new Vector2(SettingsPanelPaddingPx, SettingsPanelPaddingPx);
             debugPaneRect.offsetMax = new Vector2(-SettingsPanelPaddingPx, -SettingsPanelPaddingPx);
 
-            BuildFenceRow(debugPaneRect);
-            BuildAddCoinsRow(debugPaneRect);
-            BuildRefreshQuestsRow(debugPaneRect);
-            BuildDebugColorsRow(debugPaneRect);
-            BuildTuneBalanceRow(debugPaneRect);
+            BuildDebugSubTabBar(debugPaneRect);
+
+            // Rows go into their sub-tab's row list, in the order the engine-free
+            // roster assigns them (#716) — the panel never re-decides the grouping.
+            BuildFenceRow(RowListFor(DebugSubTabRoster.ShowBackyardFencesRow));
+            BuildAddCoinsRow(RowListFor(DebugSubTabRoster.AddCoinsRow));
+            BuildRefreshQuestsRow(RowListFor(DebugSubTabRoster.RefreshQuestsRow));
+            BuildDebugColorsRow(RowListFor(DebugSubTabRoster.ShowDebugElementColorsRow));
+            BuildTuneBalanceRow(RowListFor(DebugSubTabRoster.TuneBalanceRow));
+
+            SelectDebugSubTab(DefaultDebugSubTab);
 
             debugPaneRect.gameObject.SetActive(false);
         }
 
+        /// <summary>#716: the sub-tab bar across the top of the Debug pane, plus
+        /// one row-list container per sub-tab starting
+        /// <see cref="DebugSubTabBarGapPx"/> below it. Only the active sub-tab's
+        /// container is enabled, so an inactive group's rows are neither visible
+        /// nor tappable.</summary>
+        private void BuildDebugSubTabBar(RectTransform parent)
+        {
+            debugSubTabBarRect = CreateRect("DebugSubTabBar", parent);
+            debugSubTabBarRect.anchorMin = new Vector2(0f, 1f);
+            debugSubTabBarRect.anchorMax = new Vector2(1f, 1f);
+            debugSubTabBarRect.pivot = new Vector2(0.5f, 1f);
+            debugSubTabBarRect.sizeDelta = new Vector2(0f, DebugSubTabHeightPx);
+            debugSubTabBarRect.anchoredPosition = Vector2.zero;
+
+            var order = DebugSubTabRoster.Order;
+            for (var i = 0; i < order.Count; i++)
+            {
+                var tab = order[i];
+                subTabRects[tab] = BuildDebugSubTabPill(debugSubTabBarRect, tab, i, order.Count);
+                subTabGroupRects[tab] = BuildDebugSubTabRowList(parent, tab);
+            }
+        }
+
+        /// <summary>#716: one sub-tab pill. The pills split the bar into equal
+        /// shares, each giving up half of the shared
+        /// <see cref="DebugSubTabGapPx"/> to its neighbour, so no per-pill width
+        /// constant is invented.</summary>
+        private RectTransform BuildDebugSubTabPill(RectTransform bar, DebugSubTab tab, int index, int count)
+        {
+            var label = DebugSubTabRoster.LabelOf(tab);
+            var pillImage = CreateImage("SubTab-" + label, bar, TabColor);
+            var rect = pillImage.rectTransform;
+            rect.anchorMin = new Vector2(index / (float)count, 0f);
+            rect.anchorMax = new Vector2((index + 1) / (float)count, 1f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = new Vector2(index == 0 ? 0f : DebugSubTabGapPx * SubTabGapShare, 0f);
+            rect.offsetMax = new Vector2(index == count - 1 ? 0f : -DebugSubTabGapPx * SubTabGapShare, 0f);
+            // Same pill chrome as the outer sidebar tabs, one level in: Ink
+            // outline + hard shadow at DebugSubTabRadiusPx corners (#298/#716).
+            CandyChromeUgui.ApplyRounded(pillImage, TabColor, DebugSubTabRadiusPx, withShadow: true);
+
+            var text = CreateLabel("Label", rect, label, TabFontSizePx, TextAnchor.MiddleCenter);
+            Stretch(text.rectTransform);
+
+            var selected = tab;
+            pillImage.gameObject.AddComponent<Button>().onClick.AddListener(
+                () => SelectDebugSubTab(selected));
+            return rect;
+        }
+
+        /// <summary>#716: one sub-tab's row list — a full-width container whose
+        /// top edge sits <see cref="DebugSubTabBarGapPx"/> below the bar, so rows
+        /// inside it keep stacking from their own order 0.</summary>
+        private static RectTransform BuildDebugSubTabRowList(RectTransform parent, DebugSubTab tab)
+        {
+            var rect = CreateRect("SubTabRows-" + DebugSubTabRoster.LabelOf(tab), parent);
+            Stretch(rect);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = new Vector2(0f, -(DebugSubTabHeightPx + DebugSubTabBarGapPx));
+            return rect;
+        }
+
+        /// <summary>#716: shows one sub-tab's rows and hides every other group's,
+        /// tinting the pills with the same active/inactive roles as the outer
+        /// sidebar tabs.</summary>
+        public void SelectDebugSubTab(DebugSubTab tab)
+        {
+            activeDebugSubTab = tab;
+
+            foreach (var candidate in DebugSubTabRoster.Order)
+            {
+                var group = SubTabGroupRect(candidate);
+                if (group != null)
+                {
+                    group.gameObject.SetActive(candidate == tab);
+                }
+
+                Paint(SubTabRect(candidate), candidate == tab ? TabActiveColor : TabColor);
+            }
+        }
+
+        /// <summary>#716: the row-list container the roster assigns
+        /// <paramref name="rowKey"/> to.</summary>
+        private RectTransform RowListFor(string rowKey)
+        {
+            return SubTabGroupRect(DebugSubTabRoster.GroupOf(rowKey));
+        }
+
+        /// <summary>#716: records a built row against its roster key so the
+        /// grouping can be asserted — none dropped, none duplicated.</summary>
+        private void RegisterDebugRow(string rowKey, RectTransform rect)
+        {
+            debugRowRects[rowKey] = rect;
+            builtDebugRowKeys.Add(rowKey);
+        }
+
         /// <summary>Creates one full-width debug row, stacked from the top of
-        /// the Debug pane by <paramref name="order"/> (0 = fence toggle,
-        /// 1 = add-coins, …), each separated by <see cref="DebugRowGapPx"/>.</summary>
+        /// its sub-tab's row list by <paramref name="order"/> (0 = the group's
+        /// first row), each separated by <see cref="DebugRowGapPx"/>.</summary>
         private static RectTransform CreateDebugRow(RectTransform parent, string name, int order)
         {
             var image = CreateImage(name, parent, RowColor);
@@ -570,6 +776,7 @@ namespace Doggiehood.Unity
         private void BuildFenceRow(RectTransform parent)
         {
             var rect = CreateDebugRow(parent, "FenceRow", order: 0);
+            RegisterDebugRow(DebugSubTabRoster.ShowBackyardFencesRow, rect);
 
             var label = CreateLabel("Label", rect, FenceRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
@@ -607,6 +814,7 @@ namespace Doggiehood.Unity
         private void BuildAddCoinsRow(RectTransform parent)
         {
             addCoinsRowRect = CreateDebugRow(parent, "AddCoinsRow", order: 1);
+            RegisterDebugRow(DebugSubTabRoster.AddCoinsRow, addCoinsRowRect);
 
             var label = CreateLabel("Label", addCoinsRowRect, AddCoinsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
@@ -632,16 +840,17 @@ namespace Doggiehood.Unity
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(AddCoins);
         }
 
-        /// <summary>#457: the third Debug-tab row — a "Refresh quests now" action
-        /// pill styled exactly like <see cref="BuildAddCoinsRow"/> (same
+        /// <summary>#457: the "Refresh quests now" action pill, styled exactly
+        /// like <see cref="BuildAddCoinsRow"/> (same
         /// <see cref="DebugActionWidthPx"/>/<see cref="DebugActionHeightPx"/> Gold
-        /// pill), stacked one row below Add coins via the existing
+        /// pill), stacked one row below Add coins on the #716 General sub-tab via the existing
         /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> constants
         /// (#161 — no new named layout values). Wired to the Core forced-refresh
         /// seam so the hourly timer can be skipped for playtesting.</summary>
         private void BuildRefreshQuestsRow(RectTransform parent)
         {
             refreshQuestsRowRect = CreateDebugRow(parent, "RefreshQuestsRow", order: 2);
+            RegisterDebugRow(DebugSubTabRoster.RefreshQuestsRow, refreshQuestsRowRect);
 
             var label = CreateLabel("Label", refreshQuestsRowRect, RefreshQuestsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
@@ -666,16 +875,17 @@ namespace Doggiehood.Unity
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(RefreshQuests);
         }
 
-        /// <summary>#611: the fourth Debug-tab row — a "Show debug element colors"
-        /// switch built exactly like <see cref="BuildFenceRow"/> (same
+        /// <summary>#611: the "Show debug element colors" switch — built exactly
+        /// like <see cref="BuildFenceRow"/> (same
         /// <see cref="ToggleTrackWidthPx"/>/<see cref="ToggleTrackHeightPx"/> track
-        /// and knob), stacked one row below Refresh quests via the existing
+        /// and knob), first on the #716 Visuals &amp; Tools sub-tab, via the existing
         /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> constants
         /// (#161 — no new named layout values). Wired to the diagnostic seam so
         /// the ground and camera backstop paint in loud, distinct debug colours.</summary>
         private void BuildDebugColorsRow(RectTransform parent)
         {
-            debugColorsRowRect = CreateDebugRow(parent, "DebugColorsRow", order: 3);
+            debugColorsRowRect = CreateDebugRow(parent, "DebugColorsRow", order: 0);
+            RegisterDebugRow(DebugSubTabRoster.ShowDebugElementColorsRow, debugColorsRowRect);
 
             var label = CreateLabel("Label", debugColorsRowRect, DebugColorsRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
@@ -707,8 +917,8 @@ namespace Doggiehood.Unity
             SyncToggleVisual(debugColorsToggleImage, debugColorsKnobRect, DebugColorsToggleOn);
         }
 
-        /// <summary>#622: the fifth Debug-tab row — the "Tune balance…" entry
-        /// point to the balance tuning menu. Structurally an action row like
+        /// <summary>#622: the "Tune balance…" entry row for the balance tuning
+        /// menu, second on the #716 Visuals &amp; Tools sub-tab. Structurally an action row like
         /// <see cref="BuildAddCoinsRow"/> (same
         /// <see cref="DebugActionWidthPx"/>/<see cref="DebugActionHeightPx"/>
         /// pill, stacked by the shared
@@ -719,7 +929,8 @@ namespace Doggiehood.Unity
         /// Debug tab's 10-tap unlock is its only gate.</summary>
         private void BuildTuneBalanceRow(RectTransform parent)
         {
-            tuneBalanceRowRect = CreateDebugRow(parent, "TuneBalanceRow", order: 4);
+            tuneBalanceRowRect = CreateDebugRow(parent, "TuneBalanceRow", order: 1);
+            RegisterDebugRow(DebugSubTabRoster.TuneBalanceRow, tuneBalanceRowRect);
 
             var label = CreateLabel("Label", tuneBalanceRowRect, TuneBalanceRowLabelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
             AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
