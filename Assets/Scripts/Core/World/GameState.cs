@@ -108,8 +108,13 @@ namespace Doggiehood.Core.World
         /// on this rather than raw <c>Map.Tiles.Count</c> so the free auto-placed
         /// green spaces — which also live in <c>Map.Tiles</c> — never inflate the
         /// price of the next road unlock. With no green space placed this equals
-        /// <c>Map.Tiles.Count</c>, so pre-#539 behavior is unchanged.</summary>
-        private int RoadTileCount
+        /// <c>Map.Tiles.Count</c>, so pre-#539 behavior is unchanged.
+        /// <para>#692: readable, so the bug-report snapshot
+        /// (<see cref="Diagnostics.DiagnosticReport"/>) can quote the next
+        /// unlock's real price through the same seam the unlock charges, instead
+        /// of re-deriving the road/green-space split and drifting from it.</para>
+        /// </summary>
+        public int RoadTileCount
         {
             get
             {
