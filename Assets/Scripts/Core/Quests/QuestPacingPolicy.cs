@@ -222,6 +222,43 @@ namespace Doggiehood.Core.Quests
             return whole;
         }
 
+        /// <summary>#743: how long until the next <em>real</em> quest arrives —
+        /// <c>ceil((1 − accumulator) / <see cref="PerRefreshRate"/>)</c> refresh
+        /// intervals. Null when the board is at
+        /// <see cref="TargetActiveCount"/>: nothing is pending, so there is
+        /// nothing honest to show.
+        ///
+        /// <para><b>Why not "time to the next refresh".</b> Most refreshes add
+        /// zero quests at a small target (11 of 16 at the floor over a 4h
+        /// window) — that is normal accumulator behavior, but a countdown
+        /// pointing at the next <em>boundary</em> would hit zero four times an
+        /// hour while a quest appeared once. This counts boundaries until the
+        /// carried fraction actually tips a whole quest in, so the number never
+        /// lies.</para>
+        ///
+        /// <para>Always at least one whole interval and always a whole multiple
+        /// of one, because a quest can only ever arrive on a boundary. This is
+        /// game-rules arithmetic, not drawing: #683 paints it and carries no
+        /// Core logic of its own. Pure — reads
+        /// <see cref="GameState.QuestPacingAccumulator"/> and nothing else, and
+        /// never a wall clock.</para></summary>
+        public TimeSpan? TimeUntilNextQuest(GameState state)
+        {
+            if (!IsBoardBelowTarget(state))
+            {
+                return null;
+            }
+
+            var pending = 1d - state.QuestPacingAccumulator;
+            var refreshes = (long)Math.Ceiling(pending / PerRefreshRate(state));
+            if (refreshes < 1L)
+            {
+                refreshes = 1L;
+            }
+
+            return TimeSpan.FromTicks(EconomyNumbers.RefreshInterval.Ticks * refreshes);
+        }
+
         /// <summary>#317: the population-gated purchasable subject pool for a
         /// quest type — every <see cref="ItemCatalog"/> entry tagged
         /// <paramref name="tag"/> whose cost falls in a tier eligible at the

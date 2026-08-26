@@ -197,6 +197,13 @@ namespace Doggiehood.Core.Quests
             SeedBatch(pacing.TargetActiveCount(state), moveInRng);
         }
 
+        /// <summary>#743: how long until the next quest actually lands, or null
+        /// when the board is at target and nothing is pending — the pacing
+        /// seam's <see cref="QuestPacingPolicy.TimeUntilNextQuest"/>, surfaced
+        /// here so the HUD countdown (#683) is pure view work with no Core
+        /// arithmetic of its own.</summary>
+        public TimeSpan? TimeUntilNextQuest => pacing.TimeUntilNextQuest(state);
+
         /// <summary>#310/#543/#704: the recurring refresh boundary, and the
         /// only place the refresh clock is maintained. Three things happen
         /// here, in order:
