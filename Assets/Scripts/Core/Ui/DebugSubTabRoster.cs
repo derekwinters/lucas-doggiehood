@@ -30,6 +30,9 @@ namespace Doggiehood.Core.Ui
     /// were the original occupants; that issue built them, so nothing is pending
     /// today and <see cref="BuiltRows"/> is every row. The mechanism stays for
     /// the next row that lands structure-first.</para>
+    ///
+    /// <para>#695 added <see cref="ShareBugReportRow"/> alongside its Unity half,
+    /// which takes <b>Reports</b> to its full three-row capacity.</para>
     /// </summary>
     public static class DebugSubTabRoster
     {
@@ -46,6 +49,7 @@ namespace Doggiehood.Core.Ui
         public const string TuneBalanceRow = "tune-balance";
         public const string CopyBugReportRow = "copy-bug-report";
         public const string SaveBugReportRow = "save-bug-report";
+        public const string ShareBugReportRow = "share-bug-report";
 
         private static readonly DebugSubTab[] TabOrder =
         {
@@ -67,10 +71,16 @@ namespace Doggiehood.Core.Ui
             TuneBalanceRow,
         };
 
+        /// <summary>The Reports group, now <b>full</b>: three rows is exactly
+        /// <see cref="SettingsDebugPaneMetrics.RowCapacity"/> for today's
+        /// constants (#695). The next reporting affordance does not go here —
+        /// per docs/specs/ui/settings.md a full group's fix is a new sub-tab,
+        /// which is a wireframe decision, not a code one.</summary>
         private static readonly string[] ReportsRows =
         {
             CopyBugReportRow,
             SaveBugReportRow,
+            ShareBugReportRow,
         };
 
         /// <summary>Rows placed by the wireframe whose Unity half has not landed
