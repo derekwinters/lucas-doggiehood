@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  #695: the FileProvider a shared bug report's content:// URI is issued by.
+
+  This is an Android *library* manifest, merged into Unity's generated manifest
+  by the Gradle manifest merger. It deliberately is NOT
+  Assets/Plugins/Android/AndroidManifest.xml: that file REPLACES Unity's own main
+  manifest wholesale, so one wrong element there stops the game launching on
+  device, where no test can see it. A library manifest can only add. Unity also
+  does not support Android resources outside a library project, and file_paths.xml
+  is a resource - see docs/engineering/bug-reports.md.
+
+  Nothing here is guessed. The layout (<name>.androidlib/src/main/...) follows
+  Unity's own Android Library plug-in example; the provider element follows
+  Android's FileProvider contract. Per CLAUDE.md rule #6 every attribute below is
+  pinned by an EditMode text assertion in BugReportShareProviderTests.
+
+  android:authorities is Gradle's ${applicationId} placeholder, never a literal
+  id, so the side-by-side .debug build (#80/#734) gets its own authority for
+  free - two apps cannot share one. The runtime derives the same string through
+  Doggiehood.Core.Diagnostics.FileProviderAuthority.
+
+  No namespace/package attribute: AGP 8+ takes the library namespace from
+  build.gradle instead.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>

@@ -329,10 +329,11 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TheReportsSubTab_BuildsBothBugReportRows()
+        public void TheReportsSubTab_BuildsEveryBugReportRow()
         {
             // #716 delivered the structure; #692 built Copy/Save bug report into
-            // it, so the group the rows were placed in is now populated.
+            // it and #695 added Share, so the group the rows were placed in is now
+            // populated — and full.
             Assert.That(panel.SubTabGroupRect(DebugSubTab.Reports), Is.Not.Null);
             Assert.That(DebugSubTabRoster.RowsIn(DebugSubTab.Reports).Count,
                 Is.LessThanOrEqualTo(SettingsPanel.DebugSubTabRowCapacity),

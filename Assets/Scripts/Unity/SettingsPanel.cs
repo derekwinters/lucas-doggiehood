@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Doggiehood.Core.Debugging;
+using Doggiehood.Core.Diagnostics;
 using Doggiehood.Core.Ui;
 using Doggiehood.Core.World;
 using UnityEngine;
@@ -138,6 +139,9 @@ namespace Doggiehood.Unity
         private const string SaveBugReportRowLabelText = "Save bug report";
         private const string SaveBugReportRowSubtitleText = "Same snapshot to a file on this device (#692)";
         private const string SaveBugReportGlyph = "Save";
+        private const string ShareBugReportRowLabelText = "Share bug report";
+        private const string ShareBugReportRowSubtitleText = "Same snapshot to the Android share sheet (#695)";
+        private const string ShareBugReportGlyph = "Share";
 
         /// <summary>#716: each neighbouring pair of sub-tab pills shares one
         /// <see cref="DebugSubTabGapPx"/>, so each pill gives up half of it.</summary>
@@ -227,6 +231,8 @@ namespace Doggiehood.Unity
         private RectTransform copyBugReportButtonRect;
         private RectTransform saveBugReportRowRect;
         private RectTransform saveBugReportButtonRect;
+        private RectTransform shareBugReportRowRect;
+        private RectTransform shareBugReportButtonRect;
         private Text versionLabel;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
@@ -264,6 +270,19 @@ namespace Doggiehood.Unity
         /// if none has been saved this session.</summary>
         public string LastSavedBugReportPath { get; private set; }
 
+        /// <summary>#695: where a shared bug report is handed to the OS. Set from
+        /// <see cref="BugReportShareTargets.ForThisPlatform"/> at
+        /// <see cref="Init"/>, and replaceable so EditMode can assert the whole
+        /// path above the seam against a fake target.</summary>
+        public IBugReportShareTarget ShareTarget { get; set; }
+
+        /// <summary>#695: the file the last "Share bug report" tap handed to the
+        /// share sheet, or null if none has been shared this session.</summary>
+        public string LastSharedBugReportPath { get; private set; }
+
+        /// <summary>#695: the one-line summary that travelled beside it.</summary>
+        public string LastSharedBugReportSummary { get; private set; }
+
         /// <summary>#692: the report the last "Copy bug report" tap put on the
         /// clipboard, or null if none has been copied this session. Recorded
         /// because the clipboard itself is not readable everywhere the game runs
@@ -297,6 +316,11 @@ namespace Doggiehood.Unity
         public RectTransform CopyBugReportRowRect => copyBugReportRowRect;
 
         public RectTransform CopyBugReportButtonRect => copyBugReportButtonRect;
+
+        /// <summary>#695: the "Share bug report" Debug row and its action pill.</summary>
+        public RectTransform ShareBugReportRowRect => shareBugReportRowRect;
+
+        public RectTransform ShareBugReportButtonRect => shareBugReportButtonRect;
 
         /// <summary>#692: the "Save bug report" Debug row and its action pill.</summary>
         public RectTransform SaveBugReportRowRect => saveBugReportRowRect;
@@ -403,6 +427,10 @@ namespace Doggiehood.Unity
         public void Init(GameState state, string version)
         {
             this.state = state;
+            // #695: whatever this platform can offer a bug report to — an Android
+            // share sheet on the tablet, and nothing in the Editor, where the row
+            // falls back to Save bug report's behaviour.
+            ShareTarget = BugReportShareTargets.ForThisPlatform();
             gesture = new DebugUnlockGesture();
             toggles = new DebugToggleRegistry();
             toggles.Register(FenceToggleKey, WorldBuilder.ForceFencesVisible);
@@ -702,6 +730,7 @@ namespace Doggiehood.Unity
             BuildTuneBalanceRow(RowListFor(DebugSubTabRoster.TuneBalanceRow));
             BuildCopyBugReportRow(RowListFor(DebugSubTabRoster.CopyBugReportRow));
             BuildSaveBugReportRow(RowListFor(DebugSubTabRoster.SaveBugReportRow));
+            BuildShareBugReportRow(RowListFor(DebugSubTabRoster.ShareBugReportRow));
 
             SelectDebugSubTab(DefaultDebugSubTab);
 
@@ -1035,6 +1064,22 @@ namespace Doggiehood.Unity
                 SaveBugReport);
         }
 
+        /// <summary>#695: the "Share bug report" row — third and last on the
+        /// Reports sub-tab, which this row takes to its full
+        /// <see cref="DebugSubTabRowCapacity"/>. Built exactly like the Copy and
+        /// Save rows above it.</summary>
+        private void BuildShareBugReportRow(RectTransform parent)
+        {
+            shareBugReportRowRect = CreateDebugRow(parent, "ShareBugReportRow", order: 2);
+            RegisterDebugRow(DebugSubTabRoster.ShareBugReportRow, shareBugReportRowRect);
+            shareBugReportButtonRect = BuildActionRowBody(
+                shareBugReportRowRect,
+                ShareBugReportRowLabelText,
+                ShareBugReportRowSubtitleText,
+                ShareBugReportGlyph,
+                ShareBugReport);
+        }
+
         /// <summary>The shared body of a one-shot Debug action row: label,
         /// subtitle, and a gold action pill at the row's right edge. Returns the
         /// pill's rect.</summary>
@@ -1088,6 +1133,39 @@ namespace Doggiehood.Unity
             LastSavedBugReportPath = BugReportFile.Write(ComposeBugReport(), DateTime.UtcNow);
             ToastRequested?.Invoke(
                 BugReportCopy.Saved(System.IO.Path.GetFileName(LastSavedBugReportPath)));
+        }
+
+        /// <summary>#695: the "Share bug report" action — writes the same
+        /// timestamped file the Save row does, then hands <i>that file</i> to the
+        /// OS share sheet with a short summary line beside it, so a report can
+        /// reach Derek without a USB cable.
+        ///
+        /// <para><b>Invariant — a shared bug report is never silently
+        /// truncated.</b> The report is handed over as the file; the summary is a
+        /// one-line label (see <see cref="BugReportSummary"/>). The game still
+        /// makes no network call of its own — it hands a file to the OS and the
+        /// player picks the destination app (docs/specs/product-scope.md).</para>
+        ///
+        /// <para>Where the OS has no share sheet — the Editor, a desktop build —
+        /// there is no target, and the row falls back to the Save row's
+        /// behaviour and toast rather than throwing.</para></summary>
+        public void ShareBugReport()
+        {
+            var now = DateTime.UtcNow;
+            var path = BugReportFile.Write(ComposeBugReport(), now);
+            LastSavedBugReportPath = path;
+            var fileName = System.IO.Path.GetFileName(path);
+
+            if (ShareTarget == null)
+            {
+                ToastRequested?.Invoke(BugReportCopy.Saved(fileName));
+                return;
+            }
+
+            LastSharedBugReportSummary = BugReportSummary.Line(BugReportBuilder.Environment(now));
+            LastSharedBugReportPath = path;
+            ShareTarget.Share(path, LastSharedBugReportSummary);
+            ToastRequested?.Invoke(BugReportCopy.Sharing(fileName));
         }
 
         /// <summary>The snapshot both rows deliver. The bootstrap-supplied

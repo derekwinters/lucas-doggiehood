@@ -12,6 +12,10 @@ No ads, no in-app purchases, no store monetization plans. This is a free persona
 
 Fully offline. No account system, no backend. Progress is saved locally on the device only. ([#42](https://github.com/derekwinters/lucas-doggiehood/issues/42))
 
+**Invariant — the game never makes a network call.** Nothing in this project opens a socket, contacts a server, or uploads anything, in any build. There is exactly one way data leaves the device, and the player starts it by hand: the Settings → Debug → Reports **Share bug report** row writes a [bug report](../engineering/bug-reports.md) to local storage and hands *that file* to the Android share sheet. What happens next is the operating system's and the chosen app's: the player picks the destination, and that app does whatever sending it does. The game has no recipient, no address and no upload of its own, and nothing is ever offered in the background or without a tap. ([#693](https://github.com/derekwinters/lucas-doggiehood/issues/693) / [#695](https://github.com/derekwinters/lucas-doggiehood/issues/695))
+
+> **How the spec is changing (#695).** This page used to say only *"fully offline"* and leave it there, which read as "nothing ever leaves the device by any route" → it now keeps that rule exactly as strict for the **game** — still no network call, anywhere — and states the one narrow, player-initiated exception explicitly: a bug report can be handed to the **OS share sheet** as a file, with the player choosing the destination app → because a report Lucas cannot send without a USB cable is a report Derek never sees ([#693](https://github.com/derekwinters/lucas-doggiehood/issues/693) chose this over an in-app uploader for exactly that reason). The carve-out is deliberately narrow: handing a file to the OS is not the app going online, and it does not open the door to uploads, telemetry, accounts or crash reporting — those stay out of scope.
+
 ## Saved state
 
 *Added by [#704](https://github.com/derekwinters/lucas-doggiehood/issues/704) so "is this persisted?" has one authoritative answer.*

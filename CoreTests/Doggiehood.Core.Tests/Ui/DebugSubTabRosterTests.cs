@@ -65,6 +65,7 @@ namespace Doggiehood.Core.Tests.Ui
             {
                 DebugSubTabRoster.CopyBugReportRow,
                 DebugSubTabRoster.SaveBugReportRow,
+                DebugSubTabRoster.ShareBugReportRow,
             }));
         }
 
@@ -116,24 +117,45 @@ namespace Doggiehood.Core.Tests.Ui
         }
 
         [Test]
-        public void TheSevenRows_DoNotFitInASingleFlatList_WhichIsWhySubTabsExist()
+        public void EveryRow_DoesNotFitInASingleFlatList_WhichIsWhySubTabsExist()
         {
             Assert.That(ApprovedPane().Fits(DebugSubTabRoster.AllRows.Count), Is.False,
-                "seven rows in one list is exactly the overflow #716 was filed for");
+                "the whole roster in one list is exactly the overflow #716 was filed for");
         }
 
         [Test]
-        public void TheBugReportRows_AreBuiltRowsNow_BecauseTheirUnityHalfLandedWith692()
+        public void Invariant_TheReportsSubTab_IsNowFull_SoAFourthRowNeedsAWireframeDecision()
         {
-            // #716 placed these two and marked them pending; #692 built them, so
-            // nothing is pending any more.
+            // #695's Share bug report row is the Reports group's third and last:
+            // the pane shows exactly ApprovedPane().RowCapacity rows. This is
+            // asserted rather than left as a comment because the next reporting
+            // affordance must NOT be squeezed in here — per
+            // docs/specs/ui/settings.md, a full group's fix is a new sub-tab,
+            // which is a wireframe decision (CLAUDE.md rule #8), not a code one.
+            var metrics = ApprovedPane();
+
+            Assert.That(DebugSubTabRoster.RowsIn(DebugSubTab.Reports).Count,
+                Is.EqualTo(metrics.RowCapacity),
+                "Reports is at capacity");
+            Assert.That(metrics.Fits(DebugSubTabRoster.RowsIn(DebugSubTab.Reports).Count + 1), Is.False,
+                "a fourth Reports row would hang off the Debug pane");
+        }
+
+        [Test]
+        public void TheBugReportRows_AreBuiltRowsNow_BecauseTheirUnityHalfLandedWith692And695()
+        {
+            // #716 placed the first two and marked them pending; #692 built them
+            // and #695 added the third built alongside its Unity half, so nothing
+            // is pending any more.
             Assert.That(DebugSubTabRoster.PendingRows, Is.Empty,
                 "every placed Debug row now has a Unity half");
             Assert.That(DebugSubTabRoster.IsPending(DebugSubTabRoster.CopyBugReportRow), Is.False);
             Assert.That(DebugSubTabRoster.IsPending(DebugSubTabRoster.SaveBugReportRow), Is.False);
+            Assert.That(DebugSubTabRoster.IsPending(DebugSubTabRoster.ShareBugReportRow), Is.False);
 
             Assert.That(DebugSubTabRoster.BuiltRows, Contains.Item(DebugSubTabRoster.CopyBugReportRow));
             Assert.That(DebugSubTabRoster.BuiltRows, Contains.Item(DebugSubTabRoster.SaveBugReportRow));
+            Assert.That(DebugSubTabRoster.BuiltRows, Contains.Item(DebugSubTabRoster.ShareBugReportRow));
         }
 
         [Test]

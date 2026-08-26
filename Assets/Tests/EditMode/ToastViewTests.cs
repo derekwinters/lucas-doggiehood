@@ -179,13 +179,13 @@ namespace Doggiehood.Unity.EditModeTests
                 ToastCopy.OnboardingStep(OnboardingRewardStep.ExpandMap, reward),
                 ToastCopy.OnboardingStep(OnboardingRewardStep.BuildHouse, reward),
 
-                // #692: the two Debug bug-report confirmations. They share the
-                // lane, so they share the one-line budget — the copied line is
-                // measured at an absurd size and the saved line with a real
-                // timestamped filename, each its worst case.
+                // #692/#695: the three Debug bug-report confirmations. They share
+                // the lane, so they share the one-line budget — the copied line is
+                // measured at an absurd size, and the saved and shared lines with
+                // a real timestamped filename, each its worst case.
                 BugReportCopy.Copied(BugReportSizeForFitGuardChars),
-                BugReportCopy.Saved(BugReportFile.FileNameFor(
-                    new System.DateTime(2026, 12, 31, 23, 59, 59, System.DateTimeKind.Utc))),
+                BugReportCopy.Saved(WorstCaseReportFileName()),
+                BugReportCopy.Sharing(WorstCaseReportFileName()),
             };
         }
 
@@ -193,6 +193,15 @@ namespace Doggiehood.Unity.EditModeTests
         /// figures of characters is far past any real snapshot, so the measured
         /// "Bug report copied (N KB)" line is a worst case.</summary>
         private const int BugReportSizeForFitGuardChars = 999999;
+
+        /// <summary>#692/#695: a real timestamped report file name, at the widest
+        /// digits the format can produce, so the file-naming lines are measured
+        /// at their worst case rather than at a friendly example.</summary>
+        private static string WorstCaseReportFileName()
+        {
+            return BugReportFile.FileNameFor(
+                new System.DateTime(2026, 12, 31, 23, 59, 59, System.DateTimeKind.Utc));
+        }
 
         [Test]
         public void EveryApprovedToastLine_FitsOnOneLineWithinTheContentBudget()
