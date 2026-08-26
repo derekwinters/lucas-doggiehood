@@ -52,6 +52,20 @@ namespace Doggiehood.Core.Tests.Economy
         }
 
         [Test]
+        public void Pool_IsNamedByAConstant_NotABareLiteral()
+        {
+            // #740: the pool's catalog name is shared so Core world code (the
+            // pool-visibility gate, PoolPlacement.HasPool) keys off the same
+            // string as the catalog entry rather than duplicating the literal
+            // (#161) — the same named-constant treatment FenceItemName and
+            // PuppyItemName already got.
+            var pool = ItemCatalog.Get(ItemCatalog.PoolItemName);
+
+            Assert.That(ItemCatalog.PoolItemName, Is.EqualTo("pool"));
+            Assert.That(pool.IsEligibleFor(ItemEligibility.Gift), Is.True);
+        }
+
+        [Test]
         public void FindOnlyItems_HaveNoCost()
         {
             // e.g. "puppy" — you find it, you don't buy it.

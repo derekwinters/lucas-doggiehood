@@ -68,6 +68,21 @@ namespace Doggiehood.Core.Art
         public const string YardLandscapingFallbackHex = "#2F8F3F";
 
         /// <summary>
+        /// Outer shell of the graybox backyard pool a delivered "pool" gift
+        /// leaves in a yard (#740) — Derek: "a gray outer surface". A neutral
+        /// mid-gray, so the blue interior is what the eye lands on.
+        /// </summary>
+        public const string PoolShellHex = "#9AA0A6";
+
+        /// <summary>
+        /// Interior ("water") surface of the graybox backyard pool (#740) —
+        /// Derek: "blue interior that is slightly lower than the rest of the
+        /// cylinder". Bright and saturated in the spirit of the rest of this
+        /// palette, and clearly distinct from the neutral shell.
+        /// </summary>
+        public const string PoolWaterHex = "#2FA8E6";
+
+        /// <summary>
         /// Map-expansion lock indicator tint when the wallet covers the
         /// next zone's unlock cost (#178, docs/specs/expansion.md
         /// "Expansion indicator" — Derek, 2026-07-18: "Gold icon if
