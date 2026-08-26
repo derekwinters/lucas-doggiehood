@@ -341,7 +341,21 @@ namespace Doggiehood.Core.Quests
 
             foreach (var assignment in assignments)
             {
-                GiveQuestTo(assignment.Dog, assignment.Type, rng);
+                // #742: a dog whose house can take no more gifts is handed a free
+                // type instead of a BuyGift it could only be offered by repeating
+                // something that house already has. Resolved here, at the moment
+                // the quest is created, so a housemate assigned earlier in this
+                // same batch is already accounted for. The board still fills to
+                // its target (#579), and substituting only ever ADDS a free type,
+                // so the always-one-free-quest invariant (#310) still holds.
+                var type = assignment.Type;
+                if (type == QuestType.BuyGift
+                    && OfferableGiftSubjectsFor(assignment.Dog).Count == 0)
+                {
+                    type = FreeQuestTypes[rng.Next(FreeQuestTypes.Length)];
+                }
+
+                GiveQuestTo(assignment.Dog, type, rng);
             }
         }
 
@@ -437,6 +451,11 @@ namespace Doggiehood.Core.Quests
             return quest;
         }
 
+        /// <summary>Creates one quest of <paramref name="type"/> for
+        /// <paramref name="dog"/>. #742: returns null — creating nothing and
+        /// leaving the dog free — for a <see cref="QuestType.BuyGift"/> whose
+        /// per-house subject pool is empty, i.e. when the only way to satisfy the
+        /// request would be to offer the house something it already has.</summary>
         public Quest GiveQuestTo(Dog dog, QuestType type, Random rng)
         {
             string item;
@@ -474,7 +493,21 @@ namespace Doggiehood.Core.Quests
                     // #317: the purchasable subject pool is population-gated
                     // through the pacing seam — pricier gift entries only enter
                     // the candidate set as the neighborhood grows.
-                    var giftItems = pacing.EligibleSubjectPool(ItemEligibility.Gift, state);
+                    // #742: narrowed to what THIS dog's house may still be
+                    // offered, so nobody is handed a second one of something
+                    // that house already owns.
+                    var giftItems = OfferableGiftSubjectsFor(dog);
+                    if (giftItems.Count == 0)
+                    {
+                        // #742: this house already has (or has coming) every gift
+                        // it could be offered. Nothing may be handed out twice, so
+                        // no quest is created at all and the dog stays free for one
+                        // it can actually be given. The rotation never reaches this
+                        // — SeedBatch substitutes a free type first — so it only
+                        // answers a direct request for the impossible.
+                        return null;
+                    }
+
                     item = giftItems[rng.Next(giftItems.Count)];
                     cost = ItemCatalog.Get(item).Cost;
                     break;
@@ -738,6 +771,73 @@ namespace Doggiehood.Core.Quests
             return quest.Cost.HasValue
                 ? EconomyNumbers.PaidQuestPayout(quest.Cost.Value)
                 : EconomyNumbers.QuestPayout;
+        }
+
+        /// <summary>#742: the Gift subjects <paramref name="dog"/>'s house may
+        /// still be offered — the population-gated pool
+        /// (<see cref="QuestPacingPolicy.EligibleSubjectPool"/>) minus every item
+        /// that house already has or has coming
+        /// (<see cref="HouseAlreadyHasOrExpects"/>).
+        ///
+        /// <para><b>Invariant — a house never owns more than one of the same
+        /// purchasable Gift item.</b> A delivered gift is permanent world state
+        /// (<see cref="GameState.PlacedItems"/>), so a house that already has a
+        /// pool is never offered a second pool to buy. The rule is the general
+        /// one — never re-offer something already owned — rather than a per-item
+        /// carve-out, so it holds for the fence
+        /// (<see cref="ItemCatalog.FenceItemName"/>) exactly as it does for the
+        /// pool.</para></summary>
+        private IReadOnlyList<string> OfferableGiftSubjectsFor(Dog dog)
+        {
+            return pacing.EligibleSubjectPool(ItemEligibility.Gift, state)
+                .Where(name => !HouseAlreadyHasOrExpects(dog.HouseId, name))
+                .ToList();
+        }
+
+        /// <summary>#742: whether <paramref name="houseId"/> already has
+        /// <paramref name="itemName"/> — either owned outright (a
+        /// delivered/installed purchase recorded in
+        /// <see cref="GameState.PlacedItems"/>, read exactly as
+        /// <see cref="Doggiehood.Core.World.LotFence.IsFenced"/> reads it) or
+        /// still coming: an in-flight <see cref="QuestType.BuyGift"/> quest for
+        /// that item on any of the house's dogs, offered or accepted but not yet
+        /// delivered (<see cref="ActiveQuests"/>). The in-flight half matters
+        /// because an accepted purchase records nothing until the truck arrives,
+        /// so ownership alone would still let a second identical offer onto the
+        /// board. Keyed on the HOUSE, not the asking dog — housemates share
+        /// one yard.</summary>
+        private bool HouseAlreadyHasOrExpects(int houseId, string itemName)
+        {
+            foreach (var placed in state.PlacedItems)
+            {
+                if (placed.HouseId == houseId && placed.ItemName == itemName)
+                {
+                    return true;
+                }
+            }
+
+            foreach (var quest in ActiveQuests)
+            {
+                if (quest.Type == QuestType.BuyGift
+                    && quest.ItemName == itemName
+                    && HouseOf(quest) == houseId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>#742: the house a quest's dog lives in, or null when no dog
+        /// on the roster answers to its name (the same tolerant lookup
+        /// <see cref="RestoreQuest"/> uses, rather than
+        /// <see cref="FindDog"/>'s throwing one — a stale quest must not break
+        /// quest generation).</summary>
+        private int? HouseOf(Quest quest)
+        {
+            var dog = state.Dogs.FirstOrDefault(d => d.Name == quest.DogName);
+            return dog == null ? (int?)null : dog.HouseId;
         }
 
         private Dog FindDog(Quest quest)

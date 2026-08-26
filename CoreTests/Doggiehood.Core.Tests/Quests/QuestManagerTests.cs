@@ -479,12 +479,15 @@ namespace Doggiehood.Core.Tests.Quests
             // population-gated pool, which at the starting population excludes
             // the Premium-tier fence — so the observed draws must equal that
             // gated pool, not the full Gift-eligible catalog slice.
-            var state = NewState();
-            var expected = new QuestPacingPolicy().EligibleSubjectPool(ItemEligibility.Gift, state);
+            var expected = new QuestPacingPolicy().EligibleSubjectPool(ItemEligibility.Gift, NewState());
             var observed = new HashSet<string>();
 
+            // #742: a fresh state per draw — a house is never offered a gift it
+            // already has coming, so repeated draws against ONE state would
+            // measure the exclusion rule rather than the pool it draws from.
             for (var seed = 0; seed < 200; seed++)
             {
+                var state = NewState();
                 var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
                 observed.Add(quest.ItemName);
             }
@@ -510,10 +513,11 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // Find-only items (e.g. "puppy") carry no cost and must never be
             // selectable for a purchase-driven quest type.
-            var state = NewState();
-
+            // #742: a fresh state per draw, so the per-house exclusion rule never
+            // narrows what this test is measuring.
             for (var seed = 0; seed < 200; seed++)
             {
+                var state = NewState();
                 var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
                 Assert.That(quest.ItemName, Is.Not.EqualTo("puppy"));
             }
@@ -524,12 +528,14 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // #317: BuyGift subjects come through the population-gated seam,
             // never a catalog entry outside the population-eligible bands.
-            var state = NewState();
             var eligible = new QuestPacingPolicy()
-                .EligibleSubjectPool(ItemEligibility.Gift, state);
+                .EligibleSubjectPool(ItemEligibility.Gift, NewState());
 
+            // #742: a fresh state per draw, so the per-house exclusion rule never
+            // narrows what this test is measuring.
             for (var seed = 0; seed < 200; seed++)
             {
+                var state = NewState();
                 var quest = state.Quests.GiveQuestTo(state.Dogs[1], QuestType.BuyGift, new Random(seed));
                 Assert.That(eligible, Does.Contain(quest.ItemName), $"seed {seed}");
             }
@@ -889,6 +895,184 @@ namespace Doggiehood.Core.Tests.Quests
                 $"the fence has no delivery truck, but said: {dialogue}");
             Assert.That(dialogue, Does.Not.Contain("head home"),
                 $"the fence has no walk-home leg, but said: {dialogue}");
+        }
+
+        /// <summary>#742: a roster grown to the premium population gate, so the
+        /// 100-coin fence is genuinely inside the population-gated Gift subject
+        /// pool and an exclusion test on it is not vacuous. Mirrors the
+        /// population setup <see cref="ReadyFenceQuest"/> already uses.</summary>
+        private static GameState PremiumPopulationState()
+        {
+            var state = NewState();
+            for (var i = state.Dogs.Count; i < QuestCostTiers.PremiumPopulationGate; i++)
+            {
+                state.AddDog(new Dog($"extra-{i}", Breed.GermanShepherd, Personality.Brave, 1, false));
+            }
+
+            return state;
+        }
+
+        [Test]
+        public void BuyGift_NeverOffersAnItemTheHouseAlreadyOwns()
+        {
+            // #742: a delivered gift is permanent world state (GameState.PlacedItems),
+            // so re-offering it would let one house be handed a second pool to buy.
+            // The Gift subject pool is filtered per-house against what that house
+            // already owns before the random pick — the general "never re-offer
+            // something already owned" rule, not a pool-only carve-out.
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var state = NewState();
+                var dog = state.Dogs[1];
+                state.AddPlacedItem(dog.HouseId, ItemCatalog.PoolItemName);
+
+                var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(quest.ItemName, Is.Not.EqualTo(ItemCatalog.PoolItemName),
+                    $"seed {seed}: the house already owns a pool");
+            }
+        }
+
+        [Test]
+        public void BuyGift_NeverOffersAFenceToAHouseThatAlreadyHasOne()
+        {
+            // #742: the same already-owned rule closes the identical gap for the
+            // fence — a house whose completed fence purchase is recorded in
+            // PlacedItems (the source LotFence.IsFenced reads) is never offered a
+            // second fence to buy.
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var state = PremiumPopulationState();
+                var dog = state.Dogs[0];
+                state.AddPlacedItem(dog.HouseId, ItemCatalog.FenceItemName);
+
+                var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(quest.ItemName, Is.Not.EqualTo(ItemCatalog.FenceItemName),
+                    $"seed {seed}: the house already has a fence");
+            }
+        }
+
+        [Test]
+        public void BuyGift_NeverOffersASecondQuestForAnItemAlreadyOffered()
+        {
+            // #742: an offered-but-not-yet-accepted BuyGift quest is a purchase
+            // already in flight. Putting a second identical offer on the board
+            // would let one house buy two pools — the same broken outcome as
+            // re-offering a delivered one, just reached a step earlier.
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var state = NewState();
+                var dog = state.Dogs[1];
+                var first = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+                Assert.That(first.Status, Is.EqualTo(QuestStatus.Available), $"seed {seed}");
+
+                var second = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(second.ItemName, Is.Not.EqualTo(first.ItemName),
+                    $"seed {seed}: '{first.ItemName}' is already offered to this house");
+            }
+        }
+
+        [Test]
+        public void BuyGift_NeverOffersASecondQuestForAnItemAcceptedButNotYetDelivered()
+        {
+            // #742: an accepted BuyGift quest is paid for but its item has not
+            // landed yet, so nothing is in PlacedItems to exclude it. The house
+            // still has that item coming, so it is not offered again either.
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var state = NewState();
+                state.Wallet.Deposit(1000); // funds the acceptance cost
+                var dog = state.Dogs[1];
+                var first = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(state.Quests.Accept(first), Is.True, $"seed {seed}");
+                Assert.That(first.Status, Is.EqualTo(QuestStatus.Accepted),
+                    $"seed {seed}: accepted, still out for delivery");
+
+                var second = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(second.ItemName, Is.Not.EqualTo(first.ItemName),
+                    $"seed {seed}: '{first.ItemName}' is already on its way to this house");
+            }
+        }
+
+        [Test]
+        public void InFlightGiftExclusion_IsPerHouse_NotPerDog()
+        {
+            // #742: the rule is about the HOUSE, not the dog that asked — Zeus
+            // and Nala share house 1, so a pool already in flight for one of them
+            // must not be offered again through the other.
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var state = NewState();
+                var dog = state.Dogs[1];
+                var houseMate = state.Dogs[0];
+                Assert.That(houseMate.HouseId, Is.EqualTo(dog.HouseId), "same house");
+
+                var first = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(seed));
+                var second = state.Quests.GiveQuestTo(houseMate, QuestType.BuyGift, new Random(seed));
+
+                Assert.That(second.ItemName, Is.Not.EqualTo(first.ItemName),
+                    $"seed {seed}: '{first.ItemName}' is already in flight for this house");
+            }
+        }
+
+        /// <summary>#742: records every Gift-eligible catalog item as already
+        /// owned by every house, so no house can be offered another one — the
+        /// saturated end state the per-house filter has to degrade gracefully
+        /// at.</summary>
+        private static void GiveEveryHouseEveryGift(GameState state)
+        {
+            foreach (var house in state.Houses)
+            {
+                foreach (var name in ItemCatalog.NamesEligibleFor(ItemEligibility.Gift))
+                {
+                    state.AddPlacedItem(house.Id, name);
+                }
+            }
+        }
+
+        [Test]
+        public void BuyGift_ForAHouseThatOwnsEveryGift_OffersNothingRatherThanRepeating()
+        {
+            // #742: filtering can empty the pool. The one thing that must never
+            // happen is handing the house a duplicate anyway, so an impossible
+            // BuyGift request yields no quest at all — and leaves the dog free
+            // for a quest it can actually be given.
+            var state = NewState();
+            GiveEveryHouseEveryGift(state);
+            var dog = state.Dogs[1];
+
+            var quest = state.Quests.GiveQuestTo(dog, QuestType.BuyGift, new Random(1));
+
+            Assert.That(quest, Is.Null);
+            Assert.That(dog.HasActiveQuest, Is.False, "an unofferable quest never books the dog");
+            Assert.That(state.Quests.ActiveQuests, Is.Empty);
+        }
+
+        [Test]
+        public void Rotation_StillFillsToTarget_WhenEveryHouseOwnsEveryGift()
+        {
+            // #742: the rotation must not lose a quest slot to the per-house
+            // filter — a dog whose house can take no more gifts is handed a
+            // different kind of quest instead, so the board still fills to its
+            // population target (#579) and nobody is offered a duplicate.
+            for (var seed = 0; seed < 20; seed++)
+            {
+                var state = NewState();
+                GiveEveryHouseEveryGift(state);
+                var manager = new QuestManager(state, new Random(seed));
+                var target = new QuestPacingPolicy().TargetActiveCount(state);
+
+                manager.ReleaseInitialRotation();
+
+                Assert.That(manager.ActiveQuests.Count(), Is.EqualTo(target),
+                    $"seed {seed}: the board still fills to its target");
+                Assert.That(manager.ActiveQuests.Any(q => q.Type == QuestType.BuyGift), Is.False,
+                    $"seed {seed}: no house can take another gift, so none is offered");
+            }
         }
 
         [Test]
