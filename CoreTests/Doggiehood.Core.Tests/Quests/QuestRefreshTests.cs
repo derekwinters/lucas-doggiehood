@@ -11,10 +11,11 @@ namespace Doggiehood.Core.Tests.Quests
     /// <summary>
     /// #310: the policy-driven refresh boundary on <see cref="QuestManager"/>.
     /// The refresh is a top-up toward the population-scaled cap that fires on
-    /// the 8h UTC cadence, is purely additive (never clears/expires/fails a
-    /// quest — economy.md #27/#28), does not simulate missed intervals, and
-    /// guarantees at least one free-type quest so the player is never
-    /// soft-locked at 0 coins.
+    /// the persisted UTC cadence, is purely additive (never clears/expires/fails
+    /// a quest — economy.md #27/#28), pays out every interval that elapsed while
+    /// the game was closed (#743, bounded by the cap rather than by a
+    /// max-offline constant), and guarantees at least one free-type quest so the
+    /// player is never soft-locked at 0 coins.
     /// </summary>
     public class QuestRefreshTests
     {
@@ -125,27 +126,32 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void MissedTime_PerformsExactlyOneTopUp_RegardlessOfElapsedIntervals()
+        public void MissedTime_PaysOutEveryElapsedInterval_StillBoundedByTheBoardCap()
         {
-            // #543: away 1h vs away 4 days must land in the same place: one
-            // hourly top-up (add ceil(perHour) at most), no per-hour catch-up
-            // flood. 100 dogs -> 2.0/hr, so a single boundary adds 2, and 4 days
-            // of missed hours must NOT bank ~192 quests.
-            var away1h = StateWithDogs(100);
+            // #743 reverses #543/#704's "one top-up however long you were away".
+            // Away one interval pays one interval's trickle; away four days pays
+            // every interval that was due in them — which, because one pacing
+            // window's worth already accrues the whole target, lands on a full
+            // board rather than a flood. 100 dogs -> target 12.
+            var awayOneInterval = StateWithDogs(100);
             var away4d = StateWithDogs(100);
             // #704: the wait is measured from when the board dropped below
-            // target — one player away an hour, the other four days.
-            away1h.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval);
+            // target — one player away one interval, the other four days.
+            awayOneInterval.RecordQuestRefreshTimerStart(T0 - EconomyNumbers.RefreshInterval);
             away4d.RecordQuestRefreshTimerStart(T0 - TimeSpan.FromDays(4));
 
-            away1h.Quests.TickPacing(T0, new Random(9));
+            awayOneInterval.Quests.TickPacing(T0, new Random(9));
             away4d.Quests.TickPacing(T0, new Random(9));
 
-            Assert.That(away1h.Quests.ActiveQuests.Count(), Is.LessThanOrEqualTo(Target(away1h)),
-                "one top-up never exceeds the cap");
-            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(away1h.Quests.ActiveQuests.Count()),
-                "the count added is independent of how long the player was away — no catch-up flood");
-            Assert.That(away4d.LastRotationUtc, Is.EqualTo(T0), "the timestamp resets to now, not per missed interval");
+            Assert.That(awayOneInterval.Quests.ActiveQuests.Count(),
+                Is.LessThan(Target(awayOneInterval)),
+                "one interval's trickle cannot fill an empty board on its own");
+            Assert.That(away4d.Quests.ActiveQuests.Count(),
+                Is.GreaterThan(awayOneInterval.Quests.ActiveQuests.Count()),
+                "the longer absence pays out the intervals it was owed");
+            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(Target(away4d)),
+                "and stops at a full board — the cap, not a max-offline constant, is the ceiling");
+            Assert.That(away4d.LastRotationUtc, Is.EqualTo(T0), "the rotation stamp is the instant of the top-up");
         }
 
         [Test]

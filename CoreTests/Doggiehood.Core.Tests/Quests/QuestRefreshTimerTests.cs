@@ -96,21 +96,34 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void AwayOneHourOrFourDays_IsStillExactlyOneTopUp()
+        public void AwayFourDays_PaysOutMoreThanAwayOneInterval()
         {
-            var away1h = StateWithAFullBoard();
+            // #743 reverses this test's original ruling ("away 1 hour or 4 days
+            // is one top-up"): elapsed time now decides how MANY intervals pay
+            // out, not merely whether one does. Three open slots make the
+            // difference visible — a single interval's trickle cannot refill
+            // them, four days' worth can.
+            var awayOneInterval = StateWithAFullBoard();
             var away4d = StateWithAFullBoard();
-            foreach (var state in new[] { away1h, away4d })
+            foreach (var state in new[] { awayOneInterval, away4d })
             {
+                CompleteOneQuest(state);
+                CompleteOneQuest(state);
                 CompleteOneQuest(state);
                 state.Quests.TickPacing(T0, new Random(8));
             }
 
-            away1h.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(9));
+            awayOneInterval.Quests.TickPacing(T0 + EconomyNumbers.RefreshInterval, new Random(9));
             away4d.Quests.TickPacing(T0 + TimeSpan.FromDays(4), new Random(9));
 
-            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(away1h.Quests.ActiveQuests.Count()),
-                "elapsed time decides whether to top up, never how much — no catch-up flood");
+            Assert.That(awayOneInterval.Quests.ActiveQuests.Count(),
+                Is.LessThan(Target(awayOneInterval)),
+                "precondition: one interval cannot refill three slots");
+            Assert.That(away4d.Quests.ActiveQuests.Count(),
+                Is.GreaterThan(awayOneInterval.Quests.ActiveQuests.Count()),
+                "the time away counts — every interval due while closed pays out");
+            Assert.That(away4d.Quests.ActiveQuests.Count(), Is.EqualTo(Target(away4d)),
+                "and it stops at a full board");
         }
 
         [Test]
