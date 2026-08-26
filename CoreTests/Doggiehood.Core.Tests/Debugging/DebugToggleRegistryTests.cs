@@ -110,5 +110,25 @@ namespace Doggiehood.Core.Tests.Debugging
             Assert.That(registry.Contains("fences"), Is.True);
             Assert.That(registry.Contains("nope"), Is.False);
         }
+
+        [Test]
+        public void Names_ListsEveryRegisteredToggle_InAStableOrder()
+        {
+            // #692: the bug-report snapshot renders one line per toggle, and it
+            // must render the same bytes twice from the same state — a
+            // Dictionary's enumeration order guarantees nothing.
+            var registry = new DebugToggleRegistry();
+            registry.Register("show-debug-element-colors", true);
+            registry.Register("show-backyard-fences");
+
+            Assert.That(registry.Names,
+                Is.EqualTo(new[] { "show-backyard-fences", "show-debug-element-colors" }));
+        }
+
+        [Test]
+        public void Names_IsEmptyForAFreshRegistry()
+        {
+            Assert.That(new DebugToggleRegistry().Names, Is.Empty);
+        }
     }
 }

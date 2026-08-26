@@ -129,6 +129,15 @@ namespace Doggiehood.Unity
         private const string TuneBalanceRowLabelText = "Tune balance…";
         private const string TuneBalanceRowSubtitleText = "Live sliders over TuningConfig (#622)";
         private const string TuneBalanceGlyph = "Open";
+        // #692: the two bug-report rows — one-shot actions styled exactly like
+        // Add coins, grouped onto the #716 Reports sub-tab. ASCII-only pill
+        // glyphs for the same bundled-font reason (#291).
+        private const string CopyBugReportRowLabelText = "Copy bug report";
+        private const string CopyBugReportRowSubtitleText = "Whole-game debug snapshot to the clipboard (#692)";
+        private const string CopyBugReportGlyph = "Copy";
+        private const string SaveBugReportRowLabelText = "Save bug report";
+        private const string SaveBugReportRowSubtitleText = "Same snapshot to a file on this device (#692)";
+        private const string SaveBugReportGlyph = "Save";
 
         /// <summary>#716: each neighbouring pair of sub-tab pills shares one
         /// <see cref="DebugSubTabGapPx"/>, so each pill gives up half of it.</summary>
@@ -214,6 +223,10 @@ namespace Doggiehood.Unity
         private RectTransform debugColorsKnobRect;
         private RectTransform tuneBalanceRowRect;
         private RectTransform tuneBalanceButtonRect;
+        private RectTransform copyBugReportRowRect;
+        private RectTransform copyBugReportButtonRect;
+        private RectTransform saveBugReportRowRect;
+        private RectTransform saveBugReportButtonRect;
         private Text versionLabel;
 
         /// <summary>Rebuild hook the bootstrap wires so a fence-toggle flip
@@ -233,6 +246,30 @@ namespace Doggiehood.Unity
         /// sub-panel, it does not navigate away
         /// (docs/specs/ui/debug-tuning-menu.md).</summary>
         public Action TuneBalanceRequested { get; set; }
+
+        /// <summary>#692: supplies the rendered bug-report snapshot. The
+        /// bootstrap wires this so the report can include the things only the
+        /// live scene knows — the buffered log tail and where each dog is
+        /// standing. Left unwired (in a test, or before the bootstrap runs) the
+        /// panel still composes a report from the state it holds.</summary>
+        public Func<string> BugReportProvider { get; set; }
+
+        /// <summary>#692: raised with an already-assembled confirmation line when
+        /// a bug report is copied or saved. The bootstrap wires it to the shared
+        /// toast lane (docs/specs/ui/toast.md); nothing here knows what a toast
+        /// is.</summary>
+        public Action<string> ToastRequested { get; set; }
+
+        /// <summary>#692: the file the last "Save bug report" tap wrote, or null
+        /// if none has been saved this session.</summary>
+        public string LastSavedBugReportPath { get; private set; }
+
+        /// <summary>#692: the report the last "Copy bug report" tap put on the
+        /// clipboard, or null if none has been copied this session. Recorded
+        /// because the clipboard itself is not readable everywhere the game runs
+        /// — a headless <c>-nographics</c> editor has none — so this is what the
+        /// EditMode tests assert the payload against.</summary>
+        public string LastCopiedBugReport { get; private set; }
 
         public RectTransform PanelRect => panelRect;
         public RectTransform ScrimRect => scrimRect;
@@ -255,6 +292,16 @@ namespace Doggiehood.Unity
 
         /// <summary>#622: the "Tune balance…" action pill.</summary>
         public RectTransform TuneBalanceButtonRect => tuneBalanceButtonRect;
+
+        /// <summary>#692: the "Copy bug report" Debug row and its action pill.</summary>
+        public RectTransform CopyBugReportRowRect => copyBugReportRowRect;
+
+        public RectTransform CopyBugReportButtonRect => copyBugReportButtonRect;
+
+        /// <summary>#692: the "Save bug report" Debug row and its action pill.</summary>
+        public RectTransform SaveBugReportRowRect => saveBugReportRowRect;
+
+        public RectTransform SaveBugReportButtonRect => saveBugReportButtonRect;
 
         public RectTransform AboutPaneRect => aboutPaneRect;
         public Text VersionLabel => versionLabel;
@@ -653,6 +700,8 @@ namespace Doggiehood.Unity
             BuildRefreshQuestsRow(RowListFor(DebugSubTabRoster.RefreshQuestsRow));
             BuildDebugColorsRow(RowListFor(DebugSubTabRoster.ShowDebugElementColorsRow));
             BuildTuneBalanceRow(RowListFor(DebugSubTabRoster.TuneBalanceRow));
+            BuildCopyBugReportRow(RowListFor(DebugSubTabRoster.CopyBugReportRow));
+            BuildSaveBugReportRow(RowListFor(DebugSubTabRoster.SaveBugReportRow));
 
             SelectDebugSubTab(DefaultDebugSubTab);
 
@@ -951,6 +1000,108 @@ namespace Doggiehood.Unity
 
             CreateLabel("Glyph", tuneBalanceButtonRect, TuneBalanceGlyph, DebugActionFontSizePx, TextAnchor.MiddleCenter);
             actionImage.gameObject.AddComponent<Button>().onClick.AddListener(OpenTuningMenu);
+        }
+
+        /// <summary>#692: the "Copy bug report" row — first on the #716 Reports
+        /// sub-tab. Structurally an action row like
+        /// <see cref="BuildAddCoinsRow"/> (the same
+        /// <see cref="DebugActionWidthPx"/>/<see cref="DebugActionHeightPx"/>
+        /// gold pill, stacked by the shared
+        /// <see cref="DebugRowHeightPx"/>/<see cref="DebugRowGapPx"/> metrics —
+        /// no new named layout values, #161).</summary>
+        private void BuildCopyBugReportRow(RectTransform parent)
+        {
+            copyBugReportRowRect = CreateDebugRow(parent, "CopyBugReportRow", order: 0);
+            RegisterDebugRow(DebugSubTabRoster.CopyBugReportRow, copyBugReportRowRect);
+            copyBugReportButtonRect = BuildActionRowBody(
+                copyBugReportRowRect,
+                CopyBugReportRowLabelText,
+                CopyBugReportRowSubtitleText,
+                CopyBugReportGlyph,
+                CopyBugReport);
+        }
+
+        /// <summary>#692: the "Save bug report" row — second on the Reports
+        /// sub-tab, built exactly like the Copy row above it.</summary>
+        private void BuildSaveBugReportRow(RectTransform parent)
+        {
+            saveBugReportRowRect = CreateDebugRow(parent, "SaveBugReportRow", order: 1);
+            RegisterDebugRow(DebugSubTabRoster.SaveBugReportRow, saveBugReportRowRect);
+            saveBugReportButtonRect = BuildActionRowBody(
+                saveBugReportRowRect,
+                SaveBugReportRowLabelText,
+                SaveBugReportRowSubtitleText,
+                SaveBugReportGlyph,
+                SaveBugReport);
+        }
+
+        /// <summary>The shared body of a one-shot Debug action row: label,
+        /// subtitle, and a gold action pill at the row's right edge. Returns the
+        /// pill's rect.</summary>
+        private static RectTransform BuildActionRowBody(
+            RectTransform row,
+            string labelText,
+            string subtitleText,
+            string glyph,
+            UnityEngine.Events.UnityAction onClick)
+        {
+            var label = CreateLabel("Label", row, labelText, DebugRowLabelFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(label.rectTransform, KnobInsetPx, DebugRowLabelFontSizePx * 1.3f);
+            label.rectTransform.offsetMin = new Vector2(TabRadiusPx, label.rectTransform.offsetMin.y);
+
+            var subtitle = CreateLabel("Subtitle", row, subtitleText, DebugRowSubtitleFontSizePx, TextAnchor.UpperLeft);
+            AnchorTop(subtitle.rectTransform, DebugRowLabelFontSizePx * 1.4f, DebugRowSubtitleFontSizePx * 1.3f);
+            subtitle.rectTransform.offsetMin = new Vector2(TabRadiusPx, subtitle.rectTransform.offsetMin.y);
+
+            var actionImage = CreateImage("Action", row, ActionColor);
+            var rect = actionImage.rectTransform;
+            rect.anchorMin = new Vector2(1f, 0.5f);
+            rect.anchorMax = new Vector2(1f, 0.5f);
+            rect.pivot = new Vector2(1f, 0.5f);
+            rect.sizeDelta = new Vector2(DebugActionWidthPx, DebugActionHeightPx);
+            rect.anchoredPosition = new Vector2(-KnobInsetPx, 0f);
+            CandyChromeUgui.ApplyPill(actionImage, ActionColor, DebugActionHeightPx, withShadow: true);
+
+            CreateLabel("Glyph", rect, glyph, DebugActionFontSizePx, TextAnchor.MiddleCenter);
+            actionImage.gameObject.AddComponent<Button>().onClick.AddListener(onClick);
+            return rect;
+        }
+
+        /// <summary>#692: the "Copy bug report" action — renders the whole
+        /// snapshot and puts it on the system clipboard, then confirms with the
+        /// report's size. The clipboard is the one destination that also works in
+        /// the Editor, where there is no share sheet (#695).</summary>
+        public void CopyBugReport()
+        {
+            var report = ComposeBugReport();
+            LastCopiedBugReport = report;
+            GUIUtility.systemCopyBuffer = report;
+            ToastRequested?.Invoke(BugReportCopy.Copied(report.Length));
+        }
+
+        /// <summary>#692: the "Save bug report" action — writes the same snapshot
+        /// to a timestamped file under <c>persistentDataPath/bug-reports/</c> and
+        /// confirms with the file name. Local disk only: no network call, ever
+        /// (docs/specs/product-scope.md).</summary>
+        public void SaveBugReport()
+        {
+            LastSavedBugReportPath = BugReportFile.Write(ComposeBugReport(), DateTime.UtcNow);
+            ToastRequested?.Invoke(
+                BugReportCopy.Saved(System.IO.Path.GetFileName(LastSavedBugReportPath)));
+        }
+
+        /// <summary>The snapshot both rows deliver. The bootstrap-supplied
+        /// <see cref="BugReportProvider"/> is preferred because it can reach the
+        /// live scene (the log tail, the dogs' positions); without one the panel
+        /// still reports everything it holds itself.</summary>
+        private string ComposeBugReport()
+        {
+            if (BugReportProvider != null)
+            {
+                return BugReportProvider();
+            }
+
+            return BugReportBuilder.Build(state, toggles, null, null, DateTime.UtcNow);
         }
 
         /// <summary>#622: raises <see cref="TuneBalanceRequested"/> so the

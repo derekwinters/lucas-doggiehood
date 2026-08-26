@@ -25,10 +25,11 @@ namespace Doggiehood.Core.Ui
     /// as arithmetic, including for rows whose Unity half has not been built
     /// yet.</para>
     ///
-    /// <para><see cref="PendingRows"/> is exactly that case: #692's two
-    /// bug-report rows are placed in <see cref="DebugSubTab.Reports"/> here (the
-    /// structure #716 exists to provide) while their buttons are built by #692
-    /// itself. The Unity layer builds <see cref="BuiltRows"/>.</para>
+    /// <para><see cref="PendingRows"/> exists for exactly that case: a row the
+    /// wireframe places before its buttons are built. #692's two bug-report rows
+    /// were the original occupants; that issue built them, so nothing is pending
+    /// today and <see cref="BuiltRows"/> is every row. The mechanism stays for
+    /// the next row that lands structure-first.</para>
     /// </summary>
     public static class DebugSubTabRoster
     {
@@ -72,12 +73,9 @@ namespace Doggiehood.Core.Ui
             SaveBugReportRow,
         };
 
-        /// <summary>#692's rows: placed by this issue, built by that one.</summary>
-        private static readonly string[] Pending =
-        {
-            CopyBugReportRow,
-            SaveBugReportRow,
-        };
+        /// <summary>Rows placed by the wireframe whose Unity half has not landed
+        /// yet. Empty since #692 built the two bug-report rows.</summary>
+        private static readonly string[] Pending = new string[0];
 
         /// <summary>The sub-tabs, left to right along the bar.</summary>
         public static IReadOnlyList<DebugSubTab> Order => TabOrder;
@@ -85,9 +83,9 @@ namespace Doggiehood.Core.Ui
         /// <summary>Every Debug row the wireframe places, in sub-tab order.</summary>
         public static IReadOnlyList<string> AllRows { get; } = BuildAllRows();
 
-        /// <summary>Rows whose Unity half has not landed yet (#692). They still
-        /// occupy their sub-tab in the roster, so the capacity invariant already
-        /// accounts for them.</summary>
+        /// <summary>Rows whose Unity half has not landed yet — empty today
+        /// (#692 built the last two). A pending row still occupies its sub-tab
+        /// here, so the capacity invariant accounts for it before it exists.</summary>
         public static IReadOnlyList<string> PendingRows => Pending;
 
         /// <summary>The rows the Unity layer builds today — every row that is not
