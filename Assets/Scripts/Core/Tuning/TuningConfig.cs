@@ -58,7 +58,7 @@ namespace Doggiehood.Core.Tuning
         /// DecorationRequest / fence) reimburses the fronted item cost times
         /// this factor (<c>round(cost × markup)</c>), so every paid job is net
         /// positive and a bigger stake pays a bigger fee. Default 1.5×
-        /// (toy 30 -> 45, pool 40 -> 60, fence 100 -> 150).</summary>
+        /// (toy 30 -> 45, pool 50 -> 75, fence 100 -> 150).</summary>
         public double PaidQuestMarkup = 1.5;
 
         /// <summary>#543: hours between quest-rotation refresh boundary checks.</summary>

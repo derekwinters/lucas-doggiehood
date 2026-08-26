@@ -66,6 +66,26 @@ namespace Doggiehood.Core.Tests.Economy
         }
 
         [Test]
+        public void Pool_CostsFiftyCoins_WithTheSpecsWorkedPayoutExample()
+        {
+            // #742: docs/specs/quests/economy.md's worked payout example drifted
+            // from this catalog entry — the spec read "pool 40 -> 60 / +20" while
+            // the game charged 50. Derek ruled the code is the correct side, so
+            // the spec now reads "pool 50 -> 75 / +25" and this pins all three
+            // figures the spec quotes, so the two cannot silently diverge again.
+            const int specCost = 50;
+            const int specPayout = 75;
+            const int specNetGain = 25;
+
+            var pool = ItemCatalog.Get(ItemCatalog.PoolItemName);
+
+            Assert.That(pool.Cost, Is.EqualTo(specCost));
+            Assert.That(EconomyNumbers.PaidQuestPayout(pool.Cost.Value), Is.EqualTo(specPayout));
+            Assert.That(EconomyNumbers.PaidQuestPayout(pool.Cost.Value) - pool.Cost.Value,
+                Is.EqualTo(specNetGain), "a paid quest is never a net loss");
+        }
+
+        [Test]
         public void FindOnlyItems_HaveNoCost()
         {
             // e.g. "puppy" — you find it, you don't buy it.

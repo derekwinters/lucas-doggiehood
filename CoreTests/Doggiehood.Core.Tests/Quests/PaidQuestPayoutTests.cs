@@ -46,9 +46,12 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void PaidQuestPayout_IsRoundedCostTimesMarkup()
         {
-            // toy 30 -> 45, pool 40 -> 60, fence 100 -> 150 (issue examples).
+            // The spec's worked examples (docs/specs/quests/economy.md):
+            // toy 30 -> 45, pool 50 -> 75, fence 100 -> 150. #742: the middle one
+            // read "pool 40 -> 60" here too — the same stale figure the spec
+            // carried, against a catalog that has always charged 50.
             Assert.That(EconomyNumbers.PaidQuestPayout(30), Is.EqualTo(45));
-            Assert.That(EconomyNumbers.PaidQuestPayout(40), Is.EqualTo(60));
+            Assert.That(EconomyNumbers.PaidQuestPayout(50), Is.EqualTo(75));
             Assert.That(EconomyNumbers.PaidQuestPayout(100), Is.EqualTo(150));
         }
 
