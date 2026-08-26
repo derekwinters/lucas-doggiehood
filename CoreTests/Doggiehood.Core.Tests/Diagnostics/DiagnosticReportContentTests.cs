@@ -282,7 +282,7 @@ namespace Doggiehood.Core.Tests.Diagnostics
             Assert.That(body, Does.Contain("refreshTimerStartedUtc="),
                 "the refresh timer, so 'no new quests appeared' is diagnosable");
             Assert.That(body, Does.Contain("pacingWindowHours=" + tuning.PacingWindowHours));
-            Assert.That(body, Does.Contain("refreshIntervalHours=" + tuning.RefreshIntervalHours));
+            Assert.That(body, Does.Contain("refreshIntervalMinutes=" + tuning.RefreshIntervalMinutes));
         }
 
         [Test]

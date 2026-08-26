@@ -60,6 +60,10 @@ namespace Doggiehood.Core.Tuning
         private const double PopulationMaxLarge = 100d;
         private const double HoursMin = 1d;
         private const double HoursMax = 24d;
+        // #743 guard 2: the refresh interval sits in a divisor, so its slider
+        // minimum sits above zero; the ceiling is one shipping pacing window.
+        private const double RefreshMinutesMin = 1d;
+        private const double RefreshMinutesMax = 240d;
         private const double CoinsMin = 0d;
         private const double CoinsMaxSmall = 100d;
         private const double CoinsMaxMedium = 200d;
@@ -84,6 +88,7 @@ namespace Doggiehood.Core.Tuning
         private const string NoUnit = "";
         private const string CoinsUnit = "coins";
         private const string HoursUnit = "h";
+        private const string MinutesUnit = "min";
         private const string DogsUnit = "dogs";
         private const string QuestsUnit = "quests";
         private const string TilesUnit = "tiles";
@@ -122,9 +127,9 @@ namespace Doggiehood.Core.Tuning
             Whole(nameof(TuningConfig.PacingWindowHours), "Pacing window", HoursUnit, TuningGroup.Pacing,
                 HoursMin, HoursMax,
                 c => c.PacingWindowHours, (c, v) => c.PacingWindowHours = v),
-            Whole(nameof(TuningConfig.RefreshIntervalHours), "Refresh interval", HoursUnit, TuningGroup.Pacing,
-                HoursMin, HoursMax,
-                c => c.RefreshIntervalHours, (c, v) => c.RefreshIntervalHours = v),
+            Whole(nameof(TuningConfig.RefreshIntervalMinutes), "Refresh interval", MinutesUnit, TuningGroup.Pacing,
+                RefreshMinutesMin, RefreshMinutesMax,
+                c => c.RefreshIntervalMinutes, (c, v) => c.RefreshIntervalMinutes = v),
 
             // ---- Economy ----
             Whole(nameof(TuningConfig.QuestPayout), "Quest reward", CoinsUnit, TuningGroup.Economy,

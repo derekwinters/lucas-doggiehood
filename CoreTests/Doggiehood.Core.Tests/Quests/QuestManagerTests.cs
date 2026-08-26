@@ -95,7 +95,7 @@ namespace Doggiehood.Core.Tests.Quests
                 var state = NewState();
                 var pacing = new QuestPacingPolicy();
                 var target = pacing.TargetActiveCount(state);
-                var maxPerHour = (int)Math.Ceiling(pacing.PerHourRate(state));
+                var maxPerHour = (int)Math.Ceiling(pacing.PerRefreshRate(state));
 
                 for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
                 {

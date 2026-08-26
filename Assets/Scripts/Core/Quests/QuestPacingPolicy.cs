@@ -20,7 +20,7 @@ namespace Doggiehood.Core.Quests
     /// (<see cref="GameState.QuestRefreshTimerStartedUtc"/>), so the hour is
     /// spent waiting for a slot the player actually opened rather than ticking
     /// against a full board. Each hour a fractional amount
-    /// (<see cref="PerHourRate"/>, driven by <see cref="AdvanceAccumulator"/>)
+    /// (<see cref="PerRefreshRate"/>, driven by <see cref="AdvanceAccumulator(double, GameState, out double)"/>)
     /// trickles in, replacing the old 8h all-or-nothing batch. This is a
     /// boundary <em>check</em>, not a
     /// timer/countdown/expiry — nothing is ever removed and no quest can fail,
@@ -92,25 +92,40 @@ namespace Doggiehood.Core.Quests
             return raw;
         }
 
-        /// <summary>#543: the per-hour quest trickle rate — the population-scaled
-        /// <see cref="TargetActiveCount"/> spread over
-        /// <see cref="EconomyNumbers.PacingWindowHours"/>
-        /// (<c>target / window</c>). #624: over a 4h window target 6 is 1.5/hr,
-        /// 12 → 3.0/hr, and the raised floor of 5 → 1.25/hr. This is a fractional rate;
-        /// <see cref="AdvanceAccumulator"/> turns it into whole quests per hour
-        /// without ever creating a fractional quest.</summary>
-        public double PerHourRate(GameState state)
+        /// <summary>#543/#743: how much of the board <b>one refresh</b> adds —
+        /// the population-scaled <see cref="TargetActiveCount"/> spread over
+        /// <see cref="EconomyNumbers.PacingWindowHours"/> and then sliced by the
+        /// refresh interval:
+        /// <c>target × RefreshIntervalMinutes / (PacingWindowHours × 60)</c>.
+        ///
+        /// <para>#743 renamed this off "per hour" and put the interval factor
+        /// back in. The old <c>PerHourRate</c> returned <c>target / window</c>
+        /// yet was added once per refresh <em>boundary</em>, which only read
+        /// correctly because the interval happened to be exactly one hour; at
+        /// the 15-minute cadence that omission would have paid a full quarter
+        /// of the target sixteen times an hour. With the factor restored, one
+        /// pacing window's worth of refreshes accrues exactly the target
+        /// whatever the interval — the interval decides only how granular the
+        /// trickle is.</para>
+        ///
+        /// <para>Over the shipping 4h window a target of 6 is 0.375 per
+        /// 15-minute refresh (1.5/hr), 12 → 0.75 (3.0/hr), and the floor of 5 →
+        /// 0.3125 (1.25/hr). This is a fractional amount;
+        /// <see cref="AdvanceAccumulator(double, GameState, out double)"/> turns
+        /// it into whole quests without ever creating a fractional one.</para></summary>
+        public double PerRefreshRate(GameState state)
         {
-            return TargetActiveCount(state) / (double)EconomyNumbers.PacingWindowHours;
+            return TargetActiveCount(state) * EconomyNumbers.RefreshIntervalMinutes
+                / (double)(EconomyNumbers.PacingWindowHours * EconomyNumbers.MinutesPerHour);
         }
 
         /// <summary>#543: one hourly step of the error-diffusion (Bresenham-style)
-        /// accumulator. Adds <see cref="PerHourRate"/> to
+        /// accumulator. Adds <see cref="PerRefreshRate"/> to
         /// <paramref name="accumulator"/>, returns the whole quests to add this
         /// hour (<c>floor</c> of the sum — 0 on a quiet hour is expected and
         /// fine), and hands back the leftover fraction (&lt; 1) in
         /// <paramref name="remainingAccumulator"/> to carry to the next hour. The
-        /// long-run whole-quest rate equals <see cref="PerHourRate"/>, so (with
+        /// long-run whole-quest rate equals <see cref="PerRefreshRate"/>, so (with
         /// #624's 4h window) a 1.25/hr floor target adds five quests every four
         /// hours and a 1.5/hr target adds six — never a fractional quest. Pure: no state
         /// is read or written here, so the caller
@@ -118,7 +133,7 @@ namespace Doggiehood.Core.Quests
         /// remainder.</summary>
         public int AdvanceAccumulator(double accumulator, GameState state, out double remainingAccumulator)
         {
-            var advanced = accumulator + PerHourRate(state);
+            var advanced = accumulator + PerRefreshRate(state);
             var whole = (int)Math.Floor(advanced);
             remainingAccumulator = advanced - whole;
             return whole;

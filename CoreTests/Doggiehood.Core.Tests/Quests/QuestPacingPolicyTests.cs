@@ -93,9 +93,9 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // #543: quests now trickle in hourly instead of an 8h batch — the
             // cadence is every hour, and the per-hour amount is derived from the
-            // target spread over PacingWindowHours (see PerHourRate).
+            // target spread over PacingWindowHours (see PerRefreshRate).
             Assert.That(EconomyNumbers.RefreshInterval, Is.EqualTo(TimeSpan.FromHours(1)));
-            Assert.That(EconomyNumbers.RefreshIntervalHours, Is.EqualTo(1));
+            Assert.That(EconomyNumbers.RefreshIntervalMinutes, Is.EqualTo(60));
         }
 
         [Test]
@@ -108,17 +108,17 @@ namespace Doggiehood.Core.Tests.Quests
         }
 
         [Test]
-        public void PerHourRate_IsTargetOverThePacingWindow()
+        public void PerRefreshRate_IsTargetOverThePacingWindow()
         {
             // #624: perHour = target / 4.0. Representative targets fall out of
             // the population-scaled clamp with the raised floor of 5:
             // 8 dogs -> 5 (floor), 12 -> 5 (floor), 18 -> 6, 100 -> 12 (ceiling).
             var policy = new QuestPacingPolicy();
 
-            Assert.That(policy.PerHourRate(StateWithDogs(18)), Is.EqualTo(1.5).Within(1e-9), "target 6 -> 1.5/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(100)), Is.EqualTo(3.0).Within(1e-9), "target 12 -> 3.0/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(8)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
-            Assert.That(policy.PerHourRate(StateWithDogs(12)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(18)), Is.EqualTo(1.5).Within(1e-9), "target 6 -> 1.5/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(100)), Is.EqualTo(3.0).Within(1e-9), "target 12 -> 3.0/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(8)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
+            Assert.That(policy.PerRefreshRate(StateWithDogs(12)), Is.EqualTo(1.25).Within(1e-9), "target 5 (floor) -> 1.25/hr");
         }
 
         [Test]
@@ -172,7 +172,7 @@ namespace Doggiehood.Core.Tests.Quests
             foreach (var dogCount in new[] { 8, 12, 18, 100 })
             {
                 var state = StateWithDogs(dogCount);
-                var rate = policy.PerHourRate(state);
+                var rate = policy.PerRefreshRate(state);
                 const int hours = 6000;
 
                 var acc = 0.0;
