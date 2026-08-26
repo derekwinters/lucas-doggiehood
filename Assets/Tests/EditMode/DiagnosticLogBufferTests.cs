@@ -9,10 +9,17 @@ namespace Doggiehood.Unity.EditModeTests
 {
     /// <summary>
     /// #692: the Unity-layer ring buffer behind the bug report's <c>LOG</c>
-    /// section. It subscribes to <c>Application.logMessageReceived</c>, keeps the
-    /// most recent <see cref="DiagnosticNumbers.LogTailSize"/> lines and nothing
-    /// more — never growing without limit — and writes nothing to disk until a
-    /// report is generated.
+    /// section. It hooks <c>Application.logMessageReceived</c> the moment it is
+    /// installed, keeps the most recent
+    /// <see cref="DiagnosticNumbers.LogTailSize"/> lines and nothing more — never
+    /// growing without limit — and writes nothing to disk until a report is
+    /// generated.
+    ///
+    /// <para>The fixture's shared buffer is installed and then deliberately
+    /// <b>unhooked</b>: the record-mechanics tests drive <c>Record</c> directly,
+    /// and an ambient engine log landing in the buffer mid-test would make them
+    /// flaky. The three capture tests each install their own live buffer, so what
+    /// they assert about the log pipe is exact.</para>
     /// </summary>
     public class DiagnosticLogBufferTests
     {
@@ -27,13 +34,21 @@ namespace Doggiehood.Unity.EditModeTests
         {
             host = new GameObject("log-buffer-host");
             buffer = DiagnosticLogBuffer.Install(host);
+            buffer.StopCapturing();
         }
 
         [TearDown]
         public void Cleanup()
         {
+            // Outside play mode nothing calls OnDisable/OnDestroy, so unhook the
+            // log pipe explicitly rather than leaving a dead subscriber behind.
+            buffer.StopCapturing();
             UnityEngine.Object.DestroyImmediate(host);
         }
+
+        // ---------------------------------------------------------------
+        // Ring-buffer mechanics
+        // ---------------------------------------------------------------
 
         [Test]
         public void Install_AddsExactlyOneBuffer_AndIsIdempotent()
@@ -47,7 +62,7 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void AFreshBuffer_HasNoEntries()
         {
-            Assert.That(buffer.Entries, Is.Empty);
+            WithLiveBuffer(live => Assert.That(live.Entries, Is.Empty));
         }
 
         [Test]
@@ -101,6 +116,69 @@ namespace Doggiehood.Unity.EditModeTests
                 "the buffer and the rendered LOG section are sized by one constant (#161)");
         }
 
+        // ---------------------------------------------------------------
+        // Capturing the real log pipe
+        // ---------------------------------------------------------------
+
+        [Test]
+        public void Install_ArmsCaptureImmediately_NotAtSomeLaterLifecycleCallback()
+        {
+            // A plain MonoBehaviour gets no OnEnable at all outside play mode, so
+            // a buffer that waited for one would silently record nothing — and in
+            // the player it would still only start whenever the engine got round
+            // to the callback, which is not what "installed early enough to catch
+            // startup errors" means.
+            WithLiveBuffer(live =>
+            {
+                Assert.That(live.IsCapturing, Is.True, "installed means hooked, right now");
+
+                DiagnosticLogBuffer.Install(live.gameObject);
+
+                Assert.That(live.IsCapturing, Is.True,
+                    "a second install must neither double-subscribe nor unhook");
+            });
+        }
+
+        [Test]
+        public void ARealUnityLogMessage_IsCaptured_ThroughTheSubscribedHandler()
+        {
+            // The buffer is only worth having if it catches what the engine logs
+            // — including the startup errors that are hardest to reproduce.
+            var marker = "doggiehood-log-marker-" + Guid.NewGuid();
+
+            WithLiveBuffer(live =>
+            {
+                Debug.Log(marker);
+
+                Assert.That(live.Entries.Any(entry => entry.Message.Contains(marker)), Is.True,
+                    "the buffer is hooked to Application.logMessageReceived from the moment " +
+                    "Install() returns");
+            });
+        }
+
+        [Test]
+        public void StopCapturing_UnhooksTheLogPipe()
+        {
+            var marker = "doggiehood-log-marker-" + Guid.NewGuid();
+
+            WithLiveBuffer(live =>
+            {
+                live.StopCapturing();
+                var recordedBefore = live.Entries.Count;
+
+                Debug.Log(marker);
+
+                Assert.That(live.IsCapturing, Is.False);
+                Assert.That(live.Entries.Count, Is.EqualTo(recordedBefore),
+                    "an unhooked buffer records nothing");
+                Assert.That(live.Entries.Any(entry => entry.Message.Contains(marker)), Is.False);
+            });
+        }
+
+        // ---------------------------------------------------------------
+        // Installed early enough to matter
+        // ---------------------------------------------------------------
+
         [Test]
         public void WorldBootstrap_InstallsTheBufferBeforeAnyOtherStartupWork()
         {
@@ -124,15 +202,32 @@ namespace Doggiehood.Unity.EditModeTests
                 "that are hardest to reproduce on a tablet");
         }
 
-        [Test]
-        public void ARealUnityLogMessage_IsCaptured_ThroughTheSubscribedHandler()
-        {
-            // The buffer is only worth having if it catches what the engine logs
-            // — including the startup errors that are hardest to reproduce.
-            Debug.Log(TestMessage);
+        // ---------------------------------------------------------------
+        // helpers
+        // ---------------------------------------------------------------
 
-            Assert.That(buffer.Entries.Any(entry => entry.Message.Contains(TestMessage)), Is.True,
-                "the buffer subscribes to Application.logMessageReceived");
+        /// <summary>Runs <paramref name="body"/> against a freshly installed,
+        /// still-hooked buffer on its own host, then unhooks and destroys it —
+        /// so a capture assertion is never contaminated by a line logged before
+        /// the test began.</summary>
+        private static void WithLiveBuffer(Action<DiagnosticLogBuffer> body)
+        {
+            var liveHost = new GameObject("live-log-buffer-host");
+            DiagnosticLogBuffer live = null;
+            try
+            {
+                live = DiagnosticLogBuffer.Install(liveHost);
+                body(live);
+            }
+            finally
+            {
+                if (live != null)
+                {
+                    live.StopCapturing();
+                }
+
+                UnityEngine.Object.DestroyImmediate(liveHost);
+            }
         }
     }
 }

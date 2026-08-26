@@ -159,14 +159,6 @@ namespace Doggiehood.Unity.EditModeTests
         [Test]
         public void TappingCopy_PutsThatReportOnTheSystemClipboard()
         {
-            // The CI editor runs -nographics and has no system clipboard to
-            // round-trip through, so probe first and report inconclusive there
-            // rather than weakening the assertion for the editors that do.
-            if (!SystemClipboardRoundTrips())
-            {
-                Assert.Ignore("this editor has no system clipboard to read back (-nographics)");
-            }
-
             ShowReportsSubTab();
 
             panel.CopyBugReportButtonRect.GetComponent<Button>().onClick.Invoke();
@@ -274,9 +266,10 @@ namespace Doggiehood.Unity.EditModeTests
         public void TheReport_CarriesTheBufferedLogTail()
         {
             var host = new GameObject("log-buffer-host");
+            DiagnosticLogBuffer buffer = null;
             try
             {
-                var buffer = DiagnosticLogBuffer.Install(host);
+                buffer = DiagnosticLogBuffer.Install(host);
                 buffer.Record(LogType.Warning, "the truck did a weird thing", string.Empty);
 
                 var report = BugReportBuilder.Build(
@@ -286,6 +279,13 @@ namespace Doggiehood.Unity.EditModeTests
             }
             finally
             {
+                // Nothing calls OnDestroy outside play mode, so unhook the log
+                // pipe rather than leaving a dead subscriber behind.
+                if (buffer != null)
+                {
+                    buffer.StopCapturing();
+                }
+
                 UnityEngine.Object.DestroyImmediate(host);
             }
         }
@@ -324,22 +324,6 @@ namespace Doggiehood.Unity.EditModeTests
             catch (Exception)
             {
                 // No clipboard here; nothing to put back.
-            }
-        }
-
-        /// <summary>Whether this editor actually has a readable system
-        /// clipboard — it does not under <c>-nographics</c>.</summary>
-        private static bool SystemClipboardRoundTrips()
-        {
-            const string probe = "doggiehood-clipboard-probe";
-            try
-            {
-                GUIUtility.systemCopyBuffer = probe;
-                return GUIUtility.systemCopyBuffer == probe;
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 

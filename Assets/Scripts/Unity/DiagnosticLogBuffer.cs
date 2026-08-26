@@ -29,10 +29,18 @@ namespace Doggiehood.Unity
         public const int Capacity = DiagnosticNumbers.LogTailSize;
 
         private readonly Queue<DiagnosticLogEntry> entries = new Queue<DiagnosticLogEntry>();
+        private bool capturing;
 
-        /// <summary>Adds the buffer to <paramref name="host"/>, or returns the one
-        /// already there. Idempotent, so a second bootstrap pass cannot end up
-        /// double-recording every line.</summary>
+        /// <summary>Adds the buffer to <paramref name="host"/> (or returns the one
+        /// already there) and starts capturing <b>immediately</b>. Idempotent, so
+        /// a second bootstrap pass cannot end up double-recording every line.
+        ///
+        /// <para>Capture is armed here rather than left to <c>OnEnable</c> on
+        /// purpose: "installed early enough to catch startup errors" has to mean
+        /// the log pipe is hooked the instant this returns, not whenever the
+        /// engine next runs a lifecycle callback — and a plain MonoBehaviour gets
+        /// no lifecycle callbacks at all outside play mode, so an editor-hosted
+        /// buffer would silently record nothing.</para></summary>
         public static DiagnosticLogBuffer Install(GameObject host)
         {
             if (host == null)
@@ -41,7 +49,9 @@ namespace Doggiehood.Unity
             }
 
             var existing = host.GetComponent<DiagnosticLogBuffer>();
-            return existing != null ? existing : host.AddComponent<DiagnosticLogBuffer>();
+            var buffer = existing != null ? existing : host.AddComponent<DiagnosticLogBuffer>();
+            buffer.StartCapturing();
+            return buffer;
         }
 
         /// <summary>The buffered tail, oldest first — the order the report emits
@@ -81,14 +91,50 @@ namespace Doggiehood.Unity
             }
         }
 
+        /// <summary>Whether this buffer is currently hooked to the log pipe.</summary>
+        public bool IsCapturing => capturing;
+
+        /// <summary>Hooks the log pipe. Safe to call twice — a doubled
+        /// subscription would record every line twice.</summary>
+        public void StartCapturing()
+        {
+            if (capturing)
+            {
+                return;
+            }
+
+            Application.logMessageReceived += HandleLog;
+            capturing = true;
+        }
+
+        /// <summary>Unhooks the log pipe. Called when the component is disabled
+        /// or destroyed, and callable directly for a host that is torn down
+        /// somewhere those callbacks do not run (the editor outside play
+        /// mode).</summary>
+        public void StopCapturing()
+        {
+            if (!capturing)
+            {
+                return;
+            }
+
+            Application.logMessageReceived -= HandleLog;
+            capturing = false;
+        }
+
         private void OnEnable()
         {
-            Application.logMessageReceived += HandleLog;
+            StartCapturing();
         }
 
         private void OnDisable()
         {
-            Application.logMessageReceived -= HandleLog;
+            StopCapturing();
+        }
+
+        private void OnDestroy()
+        {
+            StopCapturing();
         }
 
         private void HandleLog(string condition, string stackTrace, LogType type)
