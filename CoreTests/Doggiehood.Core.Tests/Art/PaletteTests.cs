@@ -36,6 +36,25 @@ namespace Doggiehood.Core.Tests.Art
             Assert.That(surfaces, Is.Unique);
         }
 
+        [Test]
+        public void PoolGraybox_IsAGrayShellAroundBlueWater()
+        {
+            // #740, Derek: "a gray outer surface, and blue interior". The
+            // graybox pool's two colours are named palette entries (#161), the
+            // same way DecorationView picks its graybox colours.
+            var shell = ColorRgb.Parse(Palette.PoolShellHex);
+            var water = ColorRgb.Parse(Palette.PoolWaterHex);
+
+            Assert.That(shell.Saturation, Is.LessThanOrEqualTo(0.1f),
+                "the outer shell reads as gray, not as a tinted surface");
+
+            Assert.That(water.Hue, Is.InRange(180f, 260f), "the interior reads as blue");
+            Assert.That(water.Saturation, Is.GreaterThanOrEqualTo(0.4f),
+                "the water is saturated enough to read as water against the gray shell");
+
+            Assert.That(Palette.PoolShellHex, Is.Not.EqualTo(Palette.PoolWaterHex));
+        }
+
         // #519 (Derek & Lucas, 2026-08-02): the zone-house tint palette is a
         // CURATED explicit 20-entry list, not the old generated even-18-deg-hue
         // rule — 10 slots kept, the 10 flagged (electric) ones softened, cool

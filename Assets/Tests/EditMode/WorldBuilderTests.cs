@@ -200,6 +200,55 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void DeliveredPool_RendersFromPlacedItems_OnTheNextWorldBuild()
+        {
+            // #740: a completed pool gift records a PlacedItem(houseId, "pool");
+            // pool visibility derives from that persisted state
+            // (PoolPlacement.HasPool) exactly as the purchased fence does, so a
+            // world build shows exactly that house's pool with no new save state.
+            Assert.That(PoolContainerCount(), Is.EqualTo(0), "no pools delivered yet");
+
+            var houseId = state.Houses.First().Id;
+            state.AddPlacedItem(houseId, ItemCatalog.PoolItemName);
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            Assert.That(PoolContainerCount(), Is.EqualTo(1),
+                "exactly the house with a delivered pool renders one");
+            Assert.That(Children().Any(t => t.name == PoolView.NamePrefix + houseId), Is.True,
+                "the pool belongs to that house");
+        }
+
+        [Test]
+        public void DeliveredPool_SitsInItsOwnBackYard_ClearOfTheHouseAndTheFenceLine()
+        {
+            // The #740 yard-item invariant, checked on the rendered object: a
+            // placed yard item never overlaps the house, another yard object or
+            // the fence line, and never sits outside its own back yard.
+            var houseId = state.Houses.First().Id;
+            state.AddPlacedItem(houseId, ItemCatalog.PoolItemName);
+
+            Object.DestroyImmediate(root);
+            root = WorldBuilder.Build(state);
+
+            var pool = Children().Single(t => t.name == PoolView.NamePrefix + houseId);
+            var lot = state.GetHouseLot(houseId);
+            var position = new GridPoint(pool.position.x, pool.position.z);
+
+            Assert.That(LotBounds.BackYard(lot).Contains(position), Is.True,
+                "the rendered pool sits inside its own back yard");
+            Assert.That(HousePlacement.MaxHouseFootprint(lot).DistanceTo(position),
+                Is.GreaterThanOrEqualTo(PoolPlacement.PoolFootprintRadius),
+                "the rendered pool never overlaps the house at any upgrade level");
+        }
+
+        private int PoolContainerCount()
+        {
+            return Children().Count(t => t.name.StartsWith(PoolView.NamePrefix));
+        }
+
+        [Test]
         public void BuildsExactlyFourHouses_AtTheirCoreFrontSetbackPositions()
         {
             // #38: the scene contains exactly 4 houses on the #7 lots —

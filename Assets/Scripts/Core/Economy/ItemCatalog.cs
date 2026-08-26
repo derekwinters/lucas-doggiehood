@@ -64,6 +64,14 @@ namespace Doggiehood.Core.Economy
         /// than duplicating the literal (#161).</summary>
         public const string PuppyItemName = "puppy";
 
+        /// <summary>#740: the catalog name of the backyard pool — a Gift-tagged
+        /// purchase whose delivery leaves a permanent yard object. Shared so
+        /// Core world code (the pool-visibility gate,
+        /// <see cref="Doggiehood.Core.World.PoolPlacement.HasPool"/>) keys off
+        /// the same string as this catalog entry rather than duplicating the
+        /// literal (#161), exactly as <see cref="FenceItemName"/> does.</summary>
+        public const string PoolItemName = "pool";
+
         /// <summary>#318: fence cost — a Premium-tier purchase (100 coins),
         /// above the starter 30-50 gift band. Named rather than a bare literal
         /// (#161).</summary>
@@ -74,7 +82,7 @@ namespace Doggiehood.Core.Economy
             new CatalogItem("toy", ItemEligibility.Lost | ItemEligibility.Gift, 30),
             new CatalogItem("ball", ItemEligibility.Lost | ItemEligibility.Gift, 30),
             new CatalogItem("chew bone", ItemEligibility.Gift, 35),
-            new CatalogItem("pool", ItemEligibility.Gift, 50),
+            new CatalogItem(PoolItemName, ItemEligibility.Gift, 50),
             new CatalogItem("bed", ItemEligibility.Decoration, 40),
             new CatalogItem("cushion", ItemEligibility.Decoration, 30),
             new CatalogItem("blanket", ItemEligibility.Decoration, 30),

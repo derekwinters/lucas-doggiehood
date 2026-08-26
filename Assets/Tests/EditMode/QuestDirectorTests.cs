@@ -295,6 +295,51 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
+        public void RefreshPools_ShowsANewlyDeliveredPool_WithNoSceneReload()
+        {
+            // #740: a delivered pool records a PlacedItem(houseId, "pool") and
+            // the director syncs the scene to it the same idempotent way
+            // RefreshDecorations does — so the pool appears the moment the
+            // delivery lands, and again on every later Init from the save.
+            var houseId = state.Houses.First().Id;
+            var poolName = PoolView.NamePrefix + houseId;
+
+            Assert.That(worldRoot.transform.Cast<Transform>().Any(t => t.name == poolName), Is.False,
+                "a yard that never received a pool shows nothing");
+
+            state.AddPlacedItem(houseId, ItemCatalog.PoolItemName);
+            director.RefreshPools();
+
+            Assert.That(worldRoot.transform.Cast<Transform>().Count(t => t.name == poolName), Is.EqualTo(1),
+                "the delivered pool appears with no scene reload");
+
+            // Idempotent: re-syncing never stacks a second pool on the same yard.
+            director.RefreshPools();
+            Assert.That(Object.FindObjectsByType<PoolView>(FindObjectsSortMode.None)
+                    .Count(v => v.HouseId == houseId),
+                Is.EqualTo(1), "re-syncing never stacks a second pool");
+        }
+
+        [Test]
+        public void Init_RestoresAPoolFromASavedPlacedItem()
+        {
+            // The delivered pool survives save/load with no SaveCodec change:
+            // it is re-derived from the persisted PlacedItem at Init, exactly
+            // as the loaded-save decorations are.
+            var houseId = state.Houses.First().Id;
+            state.AddPlacedItem(houseId, ItemCatalog.PoolItemName);
+
+            var host = new GameObject("relaunched-quest-director-host");
+            host.transform.SetParent(worldRoot.transform);
+            var relaunched = host.AddComponent<QuestDirector>();
+            relaunched.Init(state, worldRoot.transform);
+
+            Assert.That(worldRoot.transform.Cast<Transform>()
+                    .Count(t => t.name == PoolView.NamePrefix + houseId),
+                Is.EqualTo(1), "a saved pool is back in the yard on the next launch");
+        }
+
+        [Test]
         public void AcceptingABugQuest_ShowsABugSwarmOnThatHouse_AndSprayingClearsIt()
         {
             // #53/#157: the bug-problem flow was invisible — nothing marked
