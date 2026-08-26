@@ -123,19 +123,17 @@ namespace Doggiehood.Core.Tests.Ui
         }
 
         [Test]
-        public void TheBugReportRows_AreMarkedPending_BecauseTheirUnityHalfLandsWith692()
+        public void TheBugReportRows_AreBuiltRowsNow_BecauseTheirUnityHalfLandedWith692()
         {
-            Assert.That(DebugSubTabRoster.PendingRows, Is.EquivalentTo(new[]
-            {
-                DebugSubTabRoster.CopyBugReportRow,
-                DebugSubTabRoster.SaveBugReportRow,
-            }));
+            // #716 placed these two and marked them pending; #692 built them, so
+            // nothing is pending any more.
+            Assert.That(DebugSubTabRoster.PendingRows, Is.Empty,
+                "every placed Debug row now has a Unity half");
+            Assert.That(DebugSubTabRoster.IsPending(DebugSubTabRoster.CopyBugReportRow), Is.False);
+            Assert.That(DebugSubTabRoster.IsPending(DebugSubTabRoster.SaveBugReportRow), Is.False);
 
-            foreach (var row in DebugSubTabRoster.PendingRows)
-            {
-                Assert.That(DebugSubTabRoster.AllRows, Contains.Item(row),
-                    "a pending row still has a home in the roster — that is the point");
-            }
+            Assert.That(DebugSubTabRoster.BuiltRows, Contains.Item(DebugSubTabRoster.CopyBugReportRow));
+            Assert.That(DebugSubTabRoster.BuiltRows, Contains.Item(DebugSubTabRoster.SaveBugReportRow));
         }
 
         [Test]
@@ -144,6 +142,8 @@ namespace Doggiehood.Core.Tests.Ui
             Assert.That(DebugSubTabRoster.BuiltRows,
                 Is.EqualTo(DebugSubTabRoster.AllRows.Except(DebugSubTabRoster.PendingRows).ToArray()),
                 "the Unity layer builds exactly the non-pending rows today");
+            Assert.That(DebugSubTabRoster.BuiltRows, Is.EqualTo(DebugSubTabRoster.AllRows.ToArray()),
+                "and with #692 landed, that is every row the wireframe places");
         }
     }
 }

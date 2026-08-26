@@ -237,10 +237,7 @@ namespace Doggiehood.Unity.EditModeTests
                     foreach (var rowKey in DebugSubTabRoster.RowsIn(tab))
                     {
                         var row = panel.DebugRowRect(rowKey);
-                        if (row == null)
-                        {
-                            continue; // placed by #716, built by #692
-                        }
+                        Assert.That(row, Is.Not.Null, rowKey + " is built (#692 built the last two)");
 
                         Assert.That(row.gameObject.activeInHierarchy, Is.EqualTo(expectVisible),
                             rowKey + " visibility must follow the active sub-tab (" +
@@ -263,10 +260,7 @@ namespace Doggiehood.Unity.EditModeTests
             foreach (var rowKey in DebugSubTabRoster.RowsIn(DebugSubTab.VisualsAndTools))
             {
                 var row = panel.DebugRowRect(rowKey);
-                if (row == null)
-                {
-                    continue;
-                }
+                Assert.That(row, Is.Not.Null, rowKey + " is built");
 
                 foreach (var button in row.GetComponentsInChildren<Button>(true))
                 {
@@ -335,13 +329,25 @@ namespace Doggiehood.Unity.EditModeTests
         }
 
         [Test]
-        public void TheReportsSubTab_HasAnEmptyRowListReadyFor692()
+        public void TheReportsSubTab_BuildsBothBugReportRows()
         {
-            // #716 delivers the structure; #692 builds Copy/Save bug report into it.
+            // #716 delivered the structure; #692 built Copy/Save bug report into
+            // it, so the group the rows were placed in is now populated.
             Assert.That(panel.SubTabGroupRect(DebugSubTab.Reports), Is.Not.Null);
             Assert.That(DebugSubTabRoster.RowsIn(DebugSubTab.Reports).Count,
                 Is.LessThanOrEqualTo(SettingsPanel.DebugSubTabRowCapacity),
-                "the incoming bug-report rows already fit the group they were placed in");
+                "the bug-report rows fit the group they were placed in");
+
+            foreach (var rowKey in DebugSubTabRoster.RowsIn(DebugSubTab.Reports))
+            {
+                var row = panel.DebugRowRect(rowKey);
+
+                Assert.That(row, Is.Not.Null, rowKey + " is built by the Unity layer (#692)");
+                Assert.That(row.parent, Is.EqualTo(panel.SubTabGroupRect(DebugSubTab.Reports)));
+            }
+
+            Assert.That(DebugSubTabRoster.PendingRows, Is.Empty,
+                "no Debug row is placed-but-unbuilt any more");
         }
 
         // ---------------------------------------------------------------
