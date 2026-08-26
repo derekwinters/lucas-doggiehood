@@ -34,12 +34,23 @@ token semantics may change under a future dated beta header.
 
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
 
 ROUTINE_BETA = "experimental-cc-routine-2026-04-01"
 ANTHROPIC_VERSION = "2023-06-01"
+
+#: Anything naming a private Claude Code session (#735). Not a credential, but
+#: this repository is public, so a workflow log is world-readable and
+#: permanent, and an identifier published there cannot be unpublished. The bare
+#: session id is matched as well as the URL — the id is the identifying part,
+#: and a link is only that id with a prefix.
+PRIVATE_LINK = re.compile(
+    r"https?://[^\s\"'<>]*claude\.ai[^\s\"'<>]*|session_[A-Za-z0-9_-]+",
+    re.IGNORECASE,
+)
 
 
 def build_fire_request(url, secret, issue_number, repo):
@@ -79,6 +90,14 @@ def interpret_fire_response(status, body):
     a page that returns a 200 HTML body). For any non-success, ``detail`` names
     the HTTP status and a body snippet so the cause is visible in the workflow
     log (a 401's error message, an unexpected 200's body, etc.).
+
+    ``detail`` never carries the session link (#735). The check reads it and
+    reports only that it was there: this repository is public, so the workflow
+    log is a publication, and a value that is never returned cannot later be
+    printed by accident. The snippet is redacted for the same reason — a
+    response that fails *after* a session was created carries the link in its
+    body, so the failure branch would otherwise publish what the success
+    branch no longer does.
     """
     if isinstance(body, (bytes, bytearray)):
         text = body.decode("utf-8", "replace")
@@ -90,8 +109,8 @@ def interpret_fire_response(status, body):
         parsed = None
     if (200 <= status < 300 and isinstance(parsed, dict)
             and parsed.get("claude_code_session_url")):
-        return True, parsed["claude_code_session_url"]
-    snippet = " ".join(text.split())[:300]
+        return True, ""
+    snippet = " ".join(PRIVATE_LINK.sub("<redacted>", text).split())[:300]
     return False, "HTTP %s: %s" % (status, snippet or "(empty body)")
 
 
@@ -103,8 +122,9 @@ def fire(issue_number, repo):
     missing secret (Routine not wired up) or any network error is logged and
     swallowed — the label move has already happened, so a failed fire must
     never fail the gatekeeper. The response is classified by
-    ``interpret_fire_response`` so the log reflects what actually happened: the
-    new session URL on success, or the status + body on failure.
+    ``interpret_fire_response`` so the log reflects what actually happened:
+    that a session was created on success, or the status + redacted body on
+    failure. Never the session link itself (#735).
     """
     req = build_fire_request(
         os.environ.get("AI_TRIAGE_URL"),
@@ -141,8 +161,9 @@ def fire(issue_number, repo):
 
     ok, detail = interpret_fire_response(status, raw)
     if ok:
-        sys.stderr.write("reactive-triage: fired Routine for #%d -> %s\n"
-                         % (issue_number, detail))
+        # That a session was created, never which one (#735).
+        sys.stderr.write("reactive-triage: fired Routine for #%d\n"
+                         % issue_number)
     else:
         # A 2xx that isn't a routine_fire — e.g. AI_TRIAGE_URL is not the /fire
         # endpoint. Do NOT report a false success.

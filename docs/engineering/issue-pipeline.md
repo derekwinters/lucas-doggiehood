@@ -343,10 +343,26 @@ applies.
 - The response is classified by `interpret_fire_response`
   ([#380](https://github.com/derekwinters/lucas-doggiehood/issues/380)) so the
   log is **truthful**, not "2xx ⇒ fired": success requires a real
-  `routine_fire` body carrying a `claude_code_session_url` (logged so the run
-  is one click away), and every other outcome logs the HTTP status + body
-  snippet — a `401`'s error message, or a 2xx that isn't a `routine_fire`
-  (the tell that `AI_TRIAGE_URL` isn't actually the `/fire` endpoint).
+  `routine_fire` body carrying a `claude_code_session_url`, and every other
+  outcome logs the HTTP status + body snippet — a `401`'s error message, or a
+  2xx that isn't a `routine_fire` (the tell that `AI_TRIAGE_URL` isn't actually
+  the `/fire` endpoint).
+- The log says **that** a session was created, never **which**
+  ([#735](https://github.com/derekwinters/lucas-doggiehood/issues/735)). This
+  repository is public, so an Actions log is a publication and a session link
+  published there cannot be unpublished. The check reads the URL and reports a
+  boolean; the failure branch redacts session links out of the body snippet it
+  echoes, because a response that fails *after* creating a session carries the
+  link inside it.
+
+> **How the spec is changing (#735).** This page used to say the session URL
+> was "logged so the run is one click away" — a convenience that quietly
+> published a private link on every successful fire, for the whole life of
+> reactive triage. It now says the log reports only that a session was created.
+> The link saved Derek a lookup in his own account; publishing it cost an
+> irreversible disclosure to anyone reading the log, and that trade is not
+> close. **Invariant — nothing identifying a private session is written to a
+> log, an issue, a pull request, or a commit message.**
 - The POST body's freeform `text` names the repo and issue number. The Routine
   receives it wrapped in an untrusted `<routine-fire-payload>` block, so the
   Routine's prompt must **parse only the integer issue number** out of it and
