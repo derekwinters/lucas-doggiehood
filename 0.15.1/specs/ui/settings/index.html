@@ -1136,6 +1136,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#debug-sub-tabs-716" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug sub-tabs (#716)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debug sub-tabs (#716)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#row-sub-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      Row → sub-tab
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capacity-computed-never-counted-by-eye" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capacity — computed, never counted by eye
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1762,6 +1795,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#debug-sub-tabs-716" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug sub-tabs (#716)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debug sub-tabs (#716)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#row-sub-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      Row → sub-tab
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capacity-computed-never-counted-by-eye" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capacity — computed, never counted by eye
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#notes" class="md-nav__link">
     <span class="md-ellipsis">
       Notes
@@ -1805,7 +1871,7 @@
 <h1 id="settings-menu">Settings menu<a class="headerlink" href="#settings-menu" title="Permanent link">&para;</a></h1>
 <p><em>Wireframe issue: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/218">#218</a>. Implements/covers: the in-game settings menu (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>). Approved: Derek, 2026-07-25 (in-session).</em>
 <em>Mockup: <a href="../mockups/settings.html">mockups/settings.html</a>.</em>
-<em>Status: </em><em>implemented</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>) — Unity <code>SettingsPanel</code> (<code>Assets/Scripts/Unity/SettingsPanel.cs</code>) built under the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/256">#256</a> <code>UiCanvas</code> CanvasScaler; unlock gesture + debug-toggle registry in <code>Doggiehood.Core.Debugging</code>; opened from the <code>HudOverlay</code> gear. </em><em>Candy Cottage restyle</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/298">#298</a>): the graybox chrome is replaced with the shared <a href="../../world/art-style/">Candy Cottage</a> direction — thick Ink outlines, flat hard drop-shadows, rounded panel + pill tabs/close/add-coins action + switch, from the shared palette — drawn procedurally by the UGUI <code>CandyChromeUgui</code> helper (device-safe per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>; layout unchanged).</em></p>
+<em>Status: </em><em>implemented</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>) — Unity <code>SettingsPanel</code> (<code>Assets/Scripts/Unity/SettingsPanel.cs</code>) built under the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/256">#256</a> <code>UiCanvas</code> CanvasScaler; unlock gesture + debug-toggle registry in <code>Doggiehood.Core.Debugging</code>; opened from the <code>HudOverlay</code> gear. </em><em>Candy Cottage restyle</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/298">#298</a>): the graybox chrome is replaced with the shared <a href="../../world/art-style/">Candy Cottage</a> direction — thick Ink outlines, flat hard drop-shadows, rounded panel + pill tabs/close/add-coins action + switch, from the shared palette — drawn procedurally by the UGUI <code>CandyChromeUgui</code> helper (device-safe per <a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>; layout unchanged). </em><em>Debug sub-tabs</em><em> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>): the Debug pane's flat row list is replaced by a sub-tab bar over three named groups, with each group's row capacity computed by the engine-free <code>Doggiehood.Core.Ui.SettingsDebugPaneMetrics</code> and the grouping declared in <code>Doggiehood.Core.Ui.DebugSubTabRoster</code>.</em></p>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>An in-game <strong>Settings menu</strong>, opened from a gear on the HUD: a left <strong>sidebar of tabs</strong> with a content pane. It gives two things — a real settings surface we grow over time (starting with an <strong>About</strong> tab showing the app version) and an <strong>on-device Debug tab</strong>, hidden by default and revealed by tapping the version label 10× within 10s (the Android developer-options gesture), so we can debug on a tablet without the Editor. Reference resolution is 1920×1200 per <a href="../">Overview</a>.</p>
 <h2 id="regions">Regions<a class="headerlink" href="#regions" title="Permanent link">&para;</a></h2>
@@ -1834,6 +1900,11 @@
 <td><a href="../shared-components/">Shared panel chrome</a></td>
 </tr>
 <tr>
+<td>Debug sub-tab bar</td>
+<td>Horizontal strip at the top of the <strong>Debug</strong> pane — <strong>General</strong> · <strong>Visuals &amp; Tools</strong> · <strong>Reports</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)</td>
+<td><a href="../shared-components/#pill-button-pillbutton">PillButton</a>-styled pills</td>
+</tr>
+<tr>
 <td>Close</td>
 <td>Top-right ✕ dismiss affordance</td>
 <td><a href="../shared-components/">Shared panel chrome</a></td>
@@ -1846,7 +1917,7 @@
 </tbody>
 </table>
 <p><strong>About pane:</strong> app name · a <strong>"Designed by Lucas"</strong> tagline line · a tappable <strong>version</strong> label (also the debug-unlock target).
-<strong>Debug pane</strong> (hidden until unlocked): a list of on-device toggles/actions — first is <strong>Show backyard fences</strong> (drives <code>WorldBuilder.ForceFencesVisible</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/152">#152</a>), followed by <strong>Add coins</strong> (a gold <strong>+100</strong> action that grants <code>DebugAddCoinsAmount</code> = 100 coins to the wallet via the Core <code>Wallet.Deposit</code> seam, so neighborhood expansion can be tested without grinding quests, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/286">#286</a>), then <strong>Refresh quests now</strong> (a gold action pill — same <code>DebugActionWidthPx</code>/<code>DebugActionHeightPx</code> size as <strong>Add coins</strong> — that immediately triggers the new-quest randomization via the Core <code>QuestManager.ForceRefresh</code> seam, skipping the hourly refresh timer so quest content can be tested without waiting, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/457">#457</a>), then <strong>Show debug element colors</strong> (a switch — same track/knob as <strong>Show backyard fences</strong> — that drives <code>WorldBuilder.ShowDebugElementColors</code>: when on, the base ground plane and the camera void backstop are painted two loudly-different, obviously-fake <strong>debug colours</strong> — magenta ground vs. cyan backstop, from the Core <code>DebugElementColors</code> seam — instead of the matched <code>Palette.GrassHex</code>, so a playtester can tell which element the bottom-of-screen "border" actually is; it is a <strong>diagnostic-only</strong> switch, <strong>not</strong> a shipped visual, <strong>off by default</strong> and reset each session like the rest of the Debug tab, and toggling it repaints the ground and reconfigures the camera live via the <code>SettingsPanel.DebugColorsRefresh</code> hook, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/611">#611</a>), then <strong>Tune balance…</strong> (an action row that opens the <a href="../debug-tuning-menu/">Debug tuning menu</a> — an overlay of grouped balance sliders over the Core <code>TuningConfig</code>, layered as a centered modal over this Settings panel; it is built exactly like the rows above it, in <strong>every</strong> build, with the 10-tap Debug unlock as its only gate (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/656">#656</a> — reversing the dev-build-only rule #622 originally shipped); its action pill is the same <code>DebugActionWidthPx</code>/<code>DebugActionHeightPx</code> size as <strong>Add coins</strong>, tinted with the tuning wireframe's sky accent and reading <strong>Open</strong>, because it opens a sub-panel rather than performing a one-shot action, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/621">#621</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a>); room for more.</p>
+<strong>Debug pane</strong> (hidden until unlocked): a list of on-device toggles/actions — first is <strong>Show backyard fences</strong> (drives <code>WorldBuilder.ForceFencesVisible</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/152">#152</a>), followed by <strong>Add coins</strong> (a gold <strong>+100</strong> action that grants <code>DebugAddCoinsAmount</code> = 100 coins to the wallet via the Core <code>Wallet.Deposit</code> seam, so neighborhood expansion can be tested without grinding quests, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/286">#286</a>), then <strong>Refresh quests now</strong> (a gold action pill — same <code>DebugActionWidthPx</code>/<code>DebugActionHeightPx</code> size as <strong>Add coins</strong> — that immediately triggers the new-quest randomization via the Core <code>QuestManager.ForceRefresh</code> seam, skipping the hourly refresh timer so quest content can be tested without waiting, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/457">#457</a>), then <strong>Show debug element colors</strong> (a switch — same track/knob as <strong>Show backyard fences</strong> — that drives <code>WorldBuilder.ShowDebugElementColors</code>: when on, the base ground plane and the camera void backstop are painted two loudly-different, obviously-fake <strong>debug colours</strong> — magenta ground vs. cyan backstop, from the Core <code>DebugElementColors</code> seam — instead of the matched <code>Palette.GrassHex</code>, so a playtester can tell which element the bottom-of-screen "border" actually is; it is a <strong>diagnostic-only</strong> switch, <strong>not</strong> a shipped visual, <strong>off by default</strong> and reset each session like the rest of the Debug tab, and toggling it repaints the ground and reconfigures the camera live via the <code>SettingsPanel.DebugColorsRefresh</code> hook, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/611">#611</a>), then <strong>Tune balance…</strong> (an action row that opens the <a href="../debug-tuning-menu/">Debug tuning menu</a> — an overlay of grouped balance sliders over the Core <code>TuningConfig</code>, layered as a centered modal over this Settings panel; it is built exactly like the rows above it, in <strong>every</strong> build, with the 10-tap Debug unlock as its only gate (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/656">#656</a> — reversing the dev-build-only rule #622 originally shipped); its action pill is the same <code>DebugActionWidthPx</code>/<code>DebugActionHeightPx</code> size as <strong>Add coins</strong>, tinted with the tuning wireframe's sky accent and reading <strong>Open</strong>, because it opens a sub-panel rather than performing a one-shot action, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/621">#621</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/622">#622</a>). These rows are <strong>not one flat list</strong> — they are split across the Debug pane's own <strong>sub-tabs</strong>, below (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>).</p>
 <h2 id="anchors-layout-constants">Anchors &amp; layout constants<a class="headerlink" href="#anchors-layout-constants" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1948,6 +2019,26 @@
 <td>Coins granted per <strong>Add coins</strong> tap (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/286">#286</a>)</td>
 </tr>
 <tr>
+<td><code>DebugSubTabHeightPx</code></td>
+<td><code>72</code></td>
+<td>Each Debug <strong>sub-tab</strong> pill — the pill height the pane already uses (<code>DebugActionHeightPx</code>) (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)</td>
+</tr>
+<tr>
+<td><code>DebugSubTabGapPx</code></td>
+<td><code>16</code></td>
+<td>Between sub-tab pills — the outer <code>TabGapPx</code>, one level in (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)</td>
+</tr>
+<tr>
+<td><code>DebugSubTabRadiusPx</code></td>
+<td><code>24</code></td>
+<td>Sub-tab pill corners — the outer <code>TabRadiusPx</code>, same shape one level in (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)</td>
+</tr>
+<tr>
+<td><code>DebugSubTabBarGapPx</code></td>
+<td><code>20</code></td>
+<td>Sub-tab bar → first row — one <code>DebugRowGapPx</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)</td>
+</tr>
+<tr>
 <td><code>GearButtonSizePx</code></td>
 <td><code>88</code></td>
 <td>HUD settings entry point</td>
@@ -1965,6 +2056,71 @@
 </tbody>
 </table>
 <p>The panel <strong>chrome</strong> and the <strong>pill/tab</strong> styling are owned by the shared components (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/173">#173</a>, <a href="../shared-components/">shared-components.md</a>) — not re-specified here; the shared baseline is a thick Ink outline (<code>OutlineThicknessPx</code> = 6), corner radius <code>PanelRadiusPx</code> = 40, and a single flat hard drop-shadow with no blur (<code>ShadowOffsetPx</code> = 8). This page places those components and sizes the panel, sidebar, tabs, version label, debug rows, and gear.</p>
+<h2 id="debug-sub-tabs-716">Debug sub-tabs (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>)<a class="headerlink" href="#debug-sub-tabs-716" title="Permanent link">&para;</a></h2>
+<p>A horizontal <strong>sub-tab bar</strong> sits at the top of the Debug content pane, inside the pane's own padding box, splitting the Debug rows into named groups. Only one group's rows show at a time; tapping a sub-tab swaps the row list beneath the bar. This is nested <em>inside</em> the outer sidebar tab (<strong>About</strong> / <strong>Debug</strong>) — it does not touch the sidebar, and the 10-tap unlock still gates the whole thing.</p>
+<p>The bar is <code>DebugSubTabHeightPx</code> tall and spans the pane's full width; the pills split that width evenly, each giving up half of the shared <code>DebugSubTabGapPx</code> to its neighbour, so no per-pill width constant exists. They wear the same <a href="../shared-components/#pill-button-pillbutton">PillButton</a> chrome as the sidebar tabs at <code>DebugSubTabRadiusPx</code> corners, with the same active-Coral / inactive-Cream role tints. The row list starts <code>DebugSubTabBarGapPx</code> below the bar, and rows inside a group stack from that list's own top at the existing <code>DebugRowHeightPx</code> / <code>DebugRowGapPx</code> metrics. The pane opens on <strong>General</strong>.</p>
+<h3 id="row-sub-tab">Row → sub-tab<a class="headerlink" href="#row-sub-tab" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Sub-tab</th>
+<th>Rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>General</strong></td>
+<td>Show backyard fences · Add coins · Refresh quests now</td>
+</tr>
+<tr>
+<td><strong>Visuals &amp; Tools</strong></td>
+<td>Show debug element colors · Tune balance…</td>
+</tr>
+<tr>
+<td><strong>Reports</strong></td>
+<td>Copy bug report · Save bug report (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/692">#692</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>The grouping is data, not layout: it lives in the engine-free <code>Doggiehood.Core.Ui.DebugSubTabRoster</code>, so "every row is reachable from exactly one sub-tab — none dropped, none duplicated" is arithmetic a test checks rather than a thing to eyeball. #692's two <strong>Reports</strong> rows are <em>placed</em> here by #716 and <em>built</em> by #692; they already count against the capacity below.</p>
+<h3 id="capacity-computed-never-counted-by-eye">Capacity — computed, never counted by eye<a class="headerlink" href="#capacity-computed-never-counted-by-eye" title="Permanent link">&para;</a></h3>
+<p>The Debug pane's own box, at the 1920×1200 reference: <code>SettingsPanelHeightPx</code> 820, less the title band + top padding (152), less the bottom panel padding (48), less the pane's own 48px inset top and bottom → <strong>524px</strong>. The bar costs <code>DebugSubTabHeightPx</code> + <code>DebugSubTabBarGapPx</code> = <strong>92px</strong> off the top before any row starts, leaving 432px; at a row pitch of <code>DebugRowHeightPx</code> + <code>DebugRowGapPx</code> = 116px that is <strong>3 rows per sub-tab</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Rows in a group</th>
+<th>Bottom edge from the pane's top</th>
+<th>Inside the 524px pane?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>92 + 96 = 188</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>2</td>
+<td>188 + 116 = 304</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>3</td>
+<td>304 + 116 = 420</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>4</td>
+<td>420 + 116 = 536</td>
+<td><strong>no</strong> — 12px past the pane</td>
+</tr>
+</tbody>
+</table>
+<p>That number is <strong>derived, never typed</strong>: <code>Doggiehood.Core.Ui.SettingsDebugPaneMetrics</code> computes it from the constants above, so it stays correct if <code>SettingsPanelHeightPx</code> or the row metrics ever change.</p>
+<p><strong>Invariant — every Debug row renders fully inside the Settings panel.</strong> A row that does not fit is not merely tight, it is unreachable; each sub-tab's row capacity is computed from <code>SettingsPanelHeightPx</code> and the pane's own constants (including <code>DebugSubTabHeightPx</code>/<code>DebugSubTabBarGapPx</code>) <strong>strictly inside the Debug pane's own box</strong> — the panel's incidental bottom margin is never spent as capacity — so a group holding one row too many fails the suite instead of floating a button over the scrim.</p>
+<blockquote>
+<p><strong>How the spec is changing (#716).</strong> This page used to describe the Debug pane as a single flat <em>"list of on-device toggles/actions"</em> with room for more, and never said how many rows would actually fit → it now describes a <strong>sub-tabbed</strong> pane: a <code>DebugSubTabHeightPx</code>-tall bar of named groups at the top, one group's rows on screen at a time, and a capacity <strong>computed</strong> from the pane's remaining height → because the flat list ran out of room at exactly five rows, its fifth only fit by quietly spending the panel's bottom margin, and the sixth (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/692">#692</a>'s bug-report rows) had nowhere on screen to go. The old wording had no rule that could have caught that, which is why the invariant above is now stated as a rule about <em>how</em> the pane may work, not just an outcome.</p>
+</blockquote>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Entry-point gear rendering (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/370">#370</a>).</strong> The HUD <strong>gear</strong> (the entry point, drawn by <code>HudOverlay</code>, not the panel) wears the shared <a href="../../world/art-style/">Candy Cottage</a> chrome, matching the neighbouring currency chip: an Ink outline disc with a hard straight-down drop-shadow over a cream fill, and a <strong>procedural</strong> Ink toothed-disc gear icon — no font glyph, no raster art. It previously drew a <code>⚙</code> (U+2699) font glyph on a default IMGUI button, which the bundled <code>DejaVuSans</code> cannot render, so on device it fell back to an unstyled gray box (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). Placement (<code>GearButtonSizePx</code> = 88, <code>GearMarginPx</code> = 32) and behaviour (tap opens Settings) are unchanged; see <a href="../hud/">hud.md</a>.</li>
@@ -1973,7 +2129,7 @@
 <li><strong>The Debug tab is in shipping builds on purpose, for now (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/656">#656</a>, Derek).</strong> Every Debug affordance — including the <strong>Tune balance…</strong> row and the <a href="../debug-tuning-menu/">tuning menu</a> it opens — is built in <strong>every</strong> build (development, release-candidate and the shipping release alike), with the 10-tap unlock as its <strong>only</strong> gate. No Debug row carries a build-configuration gate on top of it; <code>#622</code>'s dev-build-only rule for the tuning row was reversed by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/656">#656</a>. This is deliberate and temporary: the debug menu stays in the game while the balance is still being dialed in on-device, and the <strong>entire</strong> debug menu (tab, gesture, rows, tuning panel) is removed in one later pass once Derek and Lucas are comfortable with the game — that removal gets its own issue at that time. Because the gesture is the only gate, it is asserted directly by EditMode tests rather than assumed.</li>
 <li><strong>Bundled UI font.</strong> This is the game's first runtime-built UGUI (the HUD/onboarding are IMGUI), so its shader and font must be pulled into the build explicitly or the Android build strips them — the panel rendered as a magenta box with invisible text on device (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/291">#291</a>). Fixed by retaining <code>UI/Default</code> in <strong>Always Included Shaders</strong> and bundling <strong>DejaVu Sans</strong> (<code>Assets/UI/Fonts/Resources/DejaVuSans.ttf</code> — deliberately outside the <code>Assets/Art</code> low-poly-scanned tree, loaded via <code>Resources.Load</code>) instead of the Editor-only <code>Resources.GetBuiltinResource</code> lookup. DejaVu covers the ✕ close glyph but not the fullwidth plus, so the <strong>Add coins</strong> action uses a plain ASCII <code>+</code>. See <code>docs/engineering/unity-serialization.md</code>.</li>
 <li><strong>Runtime UGUI input needs an EventSystem.</strong> UGUI pointer input requires <strong>both</strong> a <code>GraphicRaycaster</code> on the canvas (owned by <code>UiCanvas</code>) <strong>and</strong> an active <code>EventSystem</code> with an input module in the scene. Unity only auto-creates an EventSystem from the Editor's menu, never for runtime-built UI, so without one every control in this panel (close ✕, version-tap unlock, scrim tap-to-close, Debug toggles) is inert on device even though the handlers are wired — while the IMGUI HUD gear still opens Settings because it bypasses the EventSystem (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/327">#327</a>). <code>WorldBootstrap</code> therefore ensures exactly one persistent <code>EventSystem</code> + <code>StandaloneInputModule</code> beside the <code>UiCanvas</code> (the classic legacy-input module, matching <code>activeInputHandler: 0</code>), guarded against duplicates in <code>UiEventSystem.Ensure()</code>.</li>
-<li><strong>Standard this sets.</strong> New debug affordances live as <strong>toggles/actions in this Debug tab</strong>, not as temporary code edits (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>).</li>
+<li><strong>Standard this sets.</strong> New debug affordances live as <strong>toggles/actions in this Debug tab</strong>, not as temporary code edits (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/219">#219</a>). Since <a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a> a new row also has to be <strong>placed in a sub-tab</strong> — add it to <code>DebugSubTabRoster</code>, and if its group is full, the fix is a new sub-tab, not a squeezed-in row.</li>
 <li><strong>Future tabs</strong> (audio, save/reset) are out of scope, but the sidebar leaves room for them.</li>
 <li><strong>Reference resolution.</strong> Constants are authored at the 1920×1200 (16:10) reference per <a href="../">Overview</a>; a Unity <code>CanvasScaler</code> scales from this so each px constant has a fixed meaning across tablet sizes.</li>
 <li>Style itself (outlines, flat shadows, pill shapes, rounded type) lives in <a href="../../world/art-style/">Art &amp; UI Style</a>; this page is layout only.</li>
@@ -1983,6 +2139,7 @@
 <li><strong>Entry point</strong> — how Settings opens → <strong>a gear button in the HUD's top-right corner (furthest right)</strong>, with the <strong>currency chip moved just inboard, to the gear's left</strong>. This nudges the currency-chip placement, so the HUD wireframe (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/174">#174</a>) is flagged to reconcile — the gear takes the corner.</li>
 <li><strong>Sidebar vs. bottom tabs on portrait</strong> → <strong>sidebar only.</strong> The game is landscape-locked (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/22">#22</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/256">#256</a>), so there is no portrait case that would need a bottom-tab variant.</li>
 <li><strong>Does the Debug unlock persist across launches?</strong> → <strong>resets each session</strong> (ships hidden, re-hidden every launch; re-tap to reveal). Persisting across launches remains a one-flag change if we later prefer it.</li>
+<li><strong>How does the Debug pane hold more than five rows?</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/716">#716</a>) → <strong>sub-tabs on the Debug pane</strong> — named groups behind a small bar at the top of the pane, rather than scrolling the pane, growing the panel, shrinking the rows, or doubling actions onto one row. No scrollbar region, no taller panel, and the row metric other tabs would share stays put.</li>
 </ol>
 
 
