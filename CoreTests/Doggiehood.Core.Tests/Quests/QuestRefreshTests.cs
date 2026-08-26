@@ -235,10 +235,9 @@ namespace Doggiehood.Core.Tests.Quests
         {
             // A rotation just happened, so ShouldRefresh is false inside the
             // interval — yet the forced refresh must add quests anyway (skip the
-            // timer). The accumulator starts just under a whole quest so the
-            // single forced tick delivers one.
+            // timer). #743: one press advances a whole pacing window, so it
+            // delivers from a cold accumulator with no priming needed.
             var state = StateWithDogs(18);
-            state.RecordQuestPacingAccumulator(0.9d);
             state.RecordRotationUtc(T0);
             var justAfter = T0 + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1);
             Assert.That(new QuestPacingPolicy().ShouldRefresh(justAfter, state), Is.False,
@@ -267,6 +266,39 @@ namespace Doggiehood.Core.Tests.Quests
                     forcedAt + EconomyNumbers.RefreshInterval - TimeSpan.FromMinutes(1), state),
                 Is.False,
                 "so the wait restarts from the forced refresh");
+        }
+
+        [Test]
+        public void ForceRefresh_FillsTheBoardToTarget_InOnePress()
+        {
+            // #743: at the 15-minute cadence a single refresh's trickle is
+            // below one whole quest at EVERY shipping target (a sixteenth of
+            // 5..12), so "one natural refresh, fired early" would add nothing on
+            // the first press and the Debug button would look broken. Derek's
+            // call: one press advances a full pacing window, so it delivers what
+            // waiting out that window would have — a full board.
+            foreach (var dogCount in new[] { 8, 18, 21, 100 })
+            {
+                var state = StateWithDogs(dogCount);
+                var target = Target(state);
+
+                state.Quests.ForceRefresh(T0, new Random(dogCount));
+
+                var active = state.Quests.ActiveQuests.ToList();
+                Assert.That(active.Count, Is.EqualTo(target),
+                    $"{dogCount} dogs: one press fills the board to target {target}");
+                Assert.That(active.Select(q => q.DogName).Distinct().Count(), Is.EqualTo(active.Count),
+                    $"{dogCount} dogs: no dog is double-booked");
+                Assert.That(active.Any(q => IsFree(q.Type)), Is.True,
+                    $"{dogCount} dogs: the always-one-free-quest invariant survives a forced fill");
+
+                // SeedBatch's min(requested, target - activeCount, freeDogs)
+                // clamp still bounds it, so pressing again is a no-op rather
+                // than an error or an overfill.
+                state.Quests.ForceRefresh(T0 + EconomyNumbers.RefreshInterval, new Random(dogCount + 1));
+                Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(target),
+                    $"{dogCount} dogs: a second consecutive press adds nothing");
+            }
         }
 
         [Test]

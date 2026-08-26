@@ -285,20 +285,45 @@ namespace Doggiehood.Core.Quests
             return true;
         }
 
-        /// <summary>#457: the Debug-tab "Refresh quests now" seam. Runs the same
-        /// <see cref="StartNewDay"/> top-up and rotation-timestamp record as
-        /// <see cref="MaybeStartNewDay"/>, but <em>unconditionally</em> — skipping
-        /// the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence gate — so a
-        /// tester can trigger the new-quest randomization without waiting out the
-        /// hourly timer. Recording <paramref name="nowUtc"/> also restarts that
-        /// hourly window, so a forced refresh matches a natural one exactly except for
-        /// <em>when</em> it is allowed to fire. Still purely additive (headroom-
-        /// bounded, never removing or failing a quest — economy.md #28).
+        /// <summary>#457/#743: the Debug-tab "Refresh quests now" seam — one
+        /// press <b>fills the board</b>. It advances the pacing accumulator by a
+        /// whole pacing window's worth of refreshes
+        /// (<see cref="EconomyNumbers.RefreshesPerPacingWindow"/>) through
+        /// <see cref="StartNewDay(long, Random)"/>, <em>unconditionally</em> —
+        /// skipping the <see cref="QuestPacingPolicy.ShouldRefresh"/> cadence
+        /// gate — so a tester gets the new-quest randomization immediately
+        /// rather than waiting the window out.
+        ///
+        /// <para><b>Why a window and not one refresh (#743).</b> This used to run
+        /// a single <see cref="StartNewDay(Random)"/> top-up, and its contract
+        /// read "a forced refresh matches a natural one exactly except for
+        /// <em>when</em> it is allowed to fire." That held only while a natural
+        /// refresh reliably delivered a whole quest. At the 15-minute cadence
+        /// the per-refresh amount is below one quest at <em>every</em> shipping
+        /// target (a sixteenth of 5..12), so a single forced refresh added
+        /// nothing on the first press and the button looked broken. It now
+        /// differs from a natural refresh in <em>how much</em> as well as
+        /// <em>when</em>: it delivers what waiting out a full pacing window
+        /// would have — which, by the window-is-the-ceiling rule, is a board at
+        /// <see cref="QuestPacingPolicy.TargetActiveCount"/>. Derek's call,
+        /// 2026-08-26.</para>
+        ///
+        /// <para>Still purely additive and still bounded by
+        /// <see cref="SeedBatch"/>'s <c>min(requested, target − activeCount,
+        /// freeDogs)</c> clamp, so it fills <em>up to</em> the target and stops:
+        /// it can never exceed the cap, double-book a dog, leave an all-paid
+        /// active set, or remove/fail a quest (economy.md #28). A second
+        /// consecutive press on a full board is a no-op.</para>
+        ///
+        /// <para>Recording <paramref name="nowUtc"/> restarts the wait from this
+        /// forced refresh exactly as <see cref="TickPacing"/> does after a
+        /// natural one — and since a filled board is waiting for nothing, the
+        /// usual #704 rule applies and the clock stops outright.
         /// <paramref name="nowUtc"/> is a UTC instant (<c>DateTime.UtcNow</c> in
-        /// production).</summary>
+        /// production).</para></summary>
         public void ForceRefresh(DateTime nowUtc, Random rng)
         {
-            StartNewDay(rng);
+            StartNewDay(EconomyNumbers.RefreshesPerPacingWindow, rng);
             state.RecordRotationUtc(nowUtc);
             // #704: restart the wait from this forced refresh exactly as
             // TickPacing does after a natural one, so the debug button can't

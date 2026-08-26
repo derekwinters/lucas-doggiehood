@@ -278,21 +278,42 @@ namespace Doggiehood.Core.Tests.Quests
         [Test]
         public void ForceRefresh_LeavesAConsistentClock_AfterACatchUp()
         {
-            // #457's debug "Refresh quests now" runs one top-up and re-anchors
-            // the wait to that instant, so it can neither leave a stale clock
-            // that fires again immediately nor bank a second catch-up.
-            var state = WaitingSince(DogsForTargetTwelve, T0);
+            // #457/#743: "Refresh quests now" now advances a whole pacing
+            // window, so it leaves the board AT target — and a board at target
+            // is waiting for nothing, so #704's rule stops the clock outright
+            // rather than restarting it. The point of this test is unchanged:
+            // the forced refresh can neither leave a stale clock that fires
+            // again immediately nor bank a second catch-up.
+            var state = WaitingSince(DogsForTargetFive, T0);
             var forcedAt = T0 + TimeSpan.FromDays(2);
 
             state.Quests.ForceRefresh(forcedAt, new Random(11));
 
-            Assert.That(state.QuestRefreshTimerStartedUtc, Is.EqualTo(forcedAt),
-                "the wait restarts from the forced refresh");
+            Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(Target(state)),
+                "precondition: one press filled the board");
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.Null,
+                "a filled board is waiting for nothing, so no clock runs");
+            Assert.That(state.LastRotationUtc, Is.EqualTo(forcedAt),
+                "the forced refresh still records its own instant");
             var afterForce = state.Quests.ActiveQuests.Count();
 
-            state.Quests.TickPacing(forcedAt + Intervals(1) - TimeSpan.FromMinutes(1), new Random(12));
+            state.Quests.TickPacing(forcedAt + TimeSpan.FromDays(2), new Random(12));
             Assert.That(state.Quests.ActiveQuests.Count(), Is.EqualTo(afterForce),
-                "and no banked interval fires a moment later");
+                "and no banked interval fires afterwards, however long passes");
+
+            // Once a slot opens — here by a move-in raising the target — the
+            // wait starts fresh from that moment, never from a stale stamp the
+            // forced refresh left behind.
+            for (var i = state.Dogs.Count; i < 18; i++)
+            {
+                state.AddDog(new Dog($"later-{i}", Breed.GermanShepherd, Personality.Brave, 1, false));
+            }
+
+            var slotOpenedAt = forcedAt + TimeSpan.FromDays(3);
+            state.Quests.TickPacing(slotOpenedAt, new Random(13));
+
+            Assert.That(state.QuestRefreshTimerStartedUtc, Is.EqualTo(slotOpenedAt),
+                "the new wait is measured from the drop below target, not from the forced refresh");
         }
 
         [Test]
