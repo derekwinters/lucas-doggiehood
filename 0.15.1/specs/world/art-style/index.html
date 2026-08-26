@@ -704,6 +704,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#yard-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Yard objects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ui-chrome-direction-candy-cottage" class="md-nav__link">
     <span class="md-ellipsis">
       UI chrome direction: "Candy Cottage"
@@ -1783,6 +1792,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#yard-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Yard objects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ui-chrome-direction-candy-cottage" class="md-nav__link">
     <span class="md-ellipsis">
       UI chrome direction: "Candy Cottage"
@@ -1839,6 +1857,8 @@
 <h2 id="delivery-trucks">Delivery trucks<a class="headerlink" href="#delivery-trucks" title="Permanent link">&para;</a></h2>
 <p><strong>Trucks carry standard car colors, assigned per-spawn (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/601">#601</a>).</strong> A delivery truck renders the single Kenney Car Kit "delivery" mesh, tinted with one of a small <strong>curated real-world car spread</strong> — white, black, silver, gray, red, dark blue, dark green (<code>Palette.CarColorHex</code>, settled by Derek 2026-08-05) — so trucks aren't all identical. This is deliberately <strong>not</strong> the broad decorative 20-tint house table (<code>Palette.HouseTintHex</code>); it's the tight, believable spread of colors actual cars come in. The tint is applied the same way houses are — a <strong>material color-multiply</strong> over the model's renderers (<code>DeliveryTruckView</code> mirroring <code>WorldBuilder.ApplyPaletteTint</code>).</p>
 <p>Unlike a house — whose tint is a <strong>deterministic per-id roll</strong> (<code>HouseVariantAssignment.ForHouse</code>) that <code>SaveCodec</code> <strong>persists</strong> — a truck is transient and never saved, so its color is picked <strong>at spawn</strong> from an incrementing spawn seed (<code>Doggiehood.Core.Art.CarColorAssignment</code>, a pure function of that seed so it stays unit-testable), and the pick <strong>avoids the colors currently on the road</strong> so two concurrent trucks don't look alike. Nothing about a truck's color survives its trip off-map; each new truck rolls fresh.</p>
+<h2 id="yard-objects">Yard objects<a class="headerlink" href="#yard-objects" title="Permanent link">&para;</a></h2>
+<p><strong>The backyard pool is a graybox placeholder (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a>).</strong> A delivered <code>pool</code> gift renders as a two-part primitive — a gray open-topped shell with a blue interior surface inset within it and sitting slightly below the rim — sized from the rendered adult dog rather than from hand-picked meters, and coloured from named <code>Palette</code> entries (<code>PoolShellHex</code>, <code>PoolWaterHex</code>) the way <code>DecorationView</code> picks its graybox colours. It is a stand-in in the same spirit as the graybox yard decorations and the lost-item sphere: the real low-poly pool model is a separate art-asset task, like the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/332">toy</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/410">ball</a> meshes. The placement rules and the yard-item invariant it obeys live in <a href="../world/#backyard-pool">World &amp; Neighborhood → Backyard pool</a>.</p>
 <h2 id="ui-chrome-direction-candy-cottage">UI chrome direction: "Candy Cottage"<a class="headerlink" href="#ui-chrome-direction-candy-cottage" title="Permanent link">&para;</a></h2>
 <p>This section owns UI <em>style</em> only. UI <strong>layout</strong> — a screen's regions, anchors, and named size/margin constants — lives in the <a href="../../ui/">UI Wireframes</a> section and follows the <a href="../../../engineering/ui-design-process/">UI Design Process</a> (wireframe approved before any code). The style rules below are pulled forward as the shared baseline on <a href="../../ui/shared-components/">Shared UI Components</a>; every per-screen wireframe references them rather than restating them.</p>
 <p>Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and low-poly toy-shelf look. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>)</p>
@@ -1851,6 +1871,7 @@
 <li>[x] 4 distinct house silhouettes (real kit models, one per house, painted with a distinct kit texture variant per house — the Level-1 mesh r/h/k/q of each house's <a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a> upgrade path, per Derek's 2026-07-25 call resolving the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/122">#122</a> placeholder picks; r/h/q door anchors provisional pending a gallery pass)</li>
 <li>[x] Zone-built houses (id ≥ 5) render a real kit model — a deterministic rolled ladder (one of five) plus a curated-palette color-multiply tint (one of 20), assigned once and persisted across upgrades (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>) — instead of the graybox box</li>
 <li>[x] Delivery trucks render the Car Kit mesh tinted with a curated standard car color (<code>Palette.CarColorHex</code>) picked per-spawn and kept distinct between concurrent trucks — a material color-multiply, not persisted like a house tint (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/601">#601</a>)</li>
+<li>[ ] Backyard pool renders a real low-poly model instead of the graybox gray-shell/blue-interior primitive pair (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a> ships the placeholder; the real mesh is a separate art task)</li>
 <li>[ ] UI components (buttons, chips, dialogue box) use thick dark outlines + flat hard drop-shadows <em>(in progress: the HUD currency chip lands the full chrome — thick Ink outline + hard drop-shadow — in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>; the confirmation dialog <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>, the conversation dialogue box + action/choice buttons <a href="https://github.com/derekwinters/lucas-doggiehood/issues/408">#408</a>, and the <a href="../../ui/house-profile/">house profile</a> + <a href="../../ui/dog-profile/">dog profile</a> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/465">#465</a> now carry it; remaining screens' buttons still to come)</em></li>
 <li>[ ] Currency chip, speech bubble icon, dialogue box, and choice buttons all follow the Candy Cottage direction <em>(currency chip done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>; dialogue box and choice buttons done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/408">#408</a>; the house/dog profiles done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/465">#465</a>; speech bubble icon remains)</em></li>
 <li>[x] Menus/settings screens follow the same UI chrome for consistency <em>(the Settings panel lands the full Candy Cottage chrome — thick Ink outlines, flat hard drop-shadows, rounded panel + pill tabs/close/action and the shared palette — in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/298">#298</a>, via the UGUI <code>CandyChromeUgui</code> helper)</em></li>
