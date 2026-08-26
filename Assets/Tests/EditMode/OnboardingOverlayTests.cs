@@ -39,9 +39,9 @@ namespace Doggiehood.Unity.EditModeTests
             // #543: quests trickle in hourly, so drive a full pacing window of
             // boundaries to fill the neighborhood and have an active quest to
             // target here.
-            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < Doggiehood.Core.Economy.EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             targetDog = state.Dogs.First(d => d.HasActiveQuest);

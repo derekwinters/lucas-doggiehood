@@ -153,7 +153,7 @@ namespace Doggiehood.Core.Tests.Quests
 
             var acc = 0.0;
             var addedPerHour = new System.Collections.Generic.List<int>();
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
                 addedPerHour.Add(policy.AdvanceAccumulator(acc, state, out acc));
             }

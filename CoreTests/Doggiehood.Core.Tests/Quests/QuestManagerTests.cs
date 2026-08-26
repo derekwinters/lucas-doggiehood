@@ -28,9 +28,9 @@ namespace Doggiehood.Core.Tests.Quests
 
             Assert.That(state.Quests.ActiveQuests, Is.Empty);
 
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             var target = new QuestPacingPolicy().TargetActiveCount(state);
@@ -97,10 +97,10 @@ namespace Doggiehood.Core.Tests.Quests
                 var target = pacing.TargetActiveCount(state);
                 var maxPerHour = (int)Math.Ceiling(pacing.PerRefreshRate(state));
 
-                for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+                for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
                 {
                     var before = state.Dogs.Count(d => d.HasActiveQuest);
-                    state.Quests.StartNewDay(new System.Random(seed * 100 + hour));
+                    state.Quests.StartNewDay(new System.Random(seed * 100 + refresh));
                     var added = state.Dogs.Count(d => d.HasActiveQuest) - before;
                     Assert.That(added, Is.LessThanOrEqualTo(maxPerHour),
                         $"seed {seed}: never a catch-up flood beyond one hour's trickle");
@@ -212,9 +212,9 @@ namespace Doggiehood.Core.Tests.Quests
             // #543: fill the neighborhood over a pacing window first, since a
             // single hourly tick may trickle in nothing.
             var state = NewState();
-            for (var hour = 0; hour < EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             var held = state.Quests.ActiveQuests.First();

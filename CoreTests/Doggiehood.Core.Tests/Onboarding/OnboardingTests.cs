@@ -15,9 +15,9 @@ namespace Doggiehood.Core.Tests.Onboarding
             // target per hour (8 dogs -> 1.25/hr), so drive a full pacing window of
             // hourly boundaries to fill the neighborhood up to its target and
             // have active quests to target in onboarding.
-            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < Doggiehood.Core.Economy.EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
-                state.Quests.StartNewDay(new System.Random(1 + hour));
+                state.Quests.StartNewDay(new System.Random(1 + refresh));
             }
 
             return state;

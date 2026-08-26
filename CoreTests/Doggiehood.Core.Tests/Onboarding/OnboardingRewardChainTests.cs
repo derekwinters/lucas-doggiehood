@@ -185,10 +185,12 @@ namespace Doggiehood.Core.Tests.Onboarding
             // (mid-chain no boundary ever added a quest — see the step asserts
             // above).
             var releasedNow = new System.DateTime(2026, 8, 3, 0, 0, 0, System.DateTimeKind.Utc);
-            for (var hour = 0; hour < Doggiehood.Core.Economy.EconomyNumbers.PacingWindowHours; hour++)
+            for (var refresh = 0; refresh < Doggiehood.Core.Economy.EconomyNumbers.RefreshesPerPacingWindow; refresh++)
             {
                 state.Quests.TickPacing(
-                    releasedNow + System.TimeSpan.FromHours(hour), new System.Random(hour));
+                    releasedNow + System.TimeSpan.FromTicks(
+                        Doggiehood.Core.Economy.EconomyNumbers.RefreshInterval.Ticks * refresh),
+                    new System.Random(refresh));
             }
 
             var target = new QuestPacingPolicy().TargetActiveCount(state);
