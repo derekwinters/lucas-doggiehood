@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.16.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.1...v0.16.0) (2026-08-26)
+
+
+### Features
+
+* capture a whole-game bug report to the clipboard or a file ([#745](https://github.com/derekwinters/lucas-doggiehood/issues/745)) ([cb07ae8](https://github.com/derekwinters/lucas-doggiehood/commit/cb07ae88d4acc4c1bc6c870e60243b157dc64a3c)), closes [#692](https://github.com/derekwinters/lucas-doggiehood/issues/692)
+* **quests:** make time away count — every elapsed refresh pays out, on a 15-minute cadence ([#750](https://github.com/derekwinters/lucas-doggiehood/issues/750)) ([1405a87](https://github.com/derekwinters/lucas-doggiehood/commit/1405a870f4e946ee467a0ec2bdb5722970878bb3)), closes [#743](https://github.com/derekwinters/lucas-doggiehood/issues/743)
+* **quests:** never offer a house a gift it already has, and price the pool at 50 in the spec ([#749](https://github.com/derekwinters/lucas-doggiehood/issues/749)) ([3fa5f78](https://github.com/derekwinters/lucas-doggiehood/commit/3fa5f7832850d9963edbc889c0b9223548c94fc5)), closes [#742](https://github.com/derekwinters/lucas-doggiehood/issues/742)
+* share a bug report to the Android share sheet ([#746](https://github.com/derekwinters/lucas-doggiehood/issues/746)) ([1001cc6](https://github.com/derekwinters/lucas-doggiehood/commit/1001cc69caeae138882dfcfa3317ec24aabacfb5)), closes [#695](https://github.com/derekwinters/lucas-doggiehood/issues/695)
+* sign release APKs with the stable release keystore ([#737](https://github.com/derekwinters/lucas-doggiehood/issues/737)) ([6f9782c](https://github.com/derekwinters/lucas-doggiehood/commit/6f9782cdb8ccdbf09cdd58262f8a026226e3a073)), closes [#630](https://github.com/derekwinters/lucas-doggiehood/issues/630)
+* **ui:** split the Settings Debug pane into sub-tabs ([#744](https://github.com/derekwinters/lucas-doggiehood/issues/744)) ([52fcd9d](https://github.com/derekwinters/lucas-doggiehood/commit/52fcd9d0b1e51ec5b5a659dbac86694eea325e7d)), closes [#716](https://github.com/derekwinters/lucas-doggiehood/issues/716)
+* **world:** show a backyard pool when a dog's pool gift is delivered ([#748](https://github.com/derekwinters/lucas-doggiehood/issues/748)) ([1304816](https://github.com/derekwinters/lucas-doggiehood/commit/130481679dd413659d1b0366156aad6f418c5419)), closes [#740](https://github.com/derekwinters/lucas-doggiehood/issues/740)
+
+
+### Bug Fixes
+
+* **pipeline:** never log the session a reactive-triage fire created ([#736](https://github.com/derekwinters/lucas-doggiehood/issues/736)) ([63e2f4a](https://github.com/derekwinters/lucas-doggiehood/commit/63e2f4ae7b4e06ed0aa0b3be1e696399e991a97d)), closes [#735](https://github.com/derekwinters/lucas-doggiehood/issues/735)
+* request the .debug applicationId suffix on Unity's command line ([#747](https://github.com/derekwinters/lucas-doggiehood/issues/747)) ([334b50f](https://github.com/derekwinters/lucas-doggiehood/commit/334b50fc7ed288d50b3442d22aefd34025e49ed4)), closes [#734](https://github.com/derekwinters/lucas-doggiehood/issues/734)
+
 ## [0.15.1](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.0...v0.15.1) (2026-08-13)
 
 
