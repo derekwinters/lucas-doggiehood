@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Doggiehood.Unity
 {
     /// <summary>
-    /// #692: the Unity-side copy for the two bug-report confirmations. Copy stays
+    /// #692/#695: the Unity-side copy for the three bug-report confirmations. Copy stays
     /// out of engine-free Core (rule #2), and stays <b>ASCII-only</b> because the
     /// bundled DejaVu Sans is what actually ships (#291).
     ///
@@ -21,6 +21,13 @@ namespace Doggiehood.Unity
         /// is not widened for copy (#578/#675). The filename itself starts with
         /// "bugreport", so the shorter lead-in loses nothing.</summary>
         private const string SavedPrefix = "Saved: ";
+
+        /// <summary>#695: the share line. Terse for the same reason the saved line
+        /// is — the toast pill's one-line budget is not widened for copy
+        /// (#578/#675) — and phrased as in-progress because handing the report to
+        /// the share sheet is the point at which the player still has to pick an
+        /// app.</summary>
+        private const string SharingPrefix = "Sharing: ";
 
         /// <summary>Bytes per kilobyte, so the size readout is a named
         /// conversion rather than an inline 1024 (#161).</summary>
@@ -48,6 +55,14 @@ namespace Doggiehood.Unity
         public static string Saved(string fileName)
         {
             return SavedPrefix + (fileName ?? string.Empty);
+        }
+
+        /// <summary>#695: "Sharing: bugreport-20260826-180411.txt" — confirms the
+        /// share sheet was launched, and names the report that was handed to
+        /// it.</summary>
+        public static string Sharing(string fileName)
+        {
+            return SharingPrefix + (fileName ?? string.Empty);
         }
     }
 }

@@ -1,0 +1,25 @@
+// #695: the Android Library module that carries the bug-report FileProvider.
+//
+// Shape follows Unity's own Android Library plug-in example (apply plugin +
+// namespace + compileSdk/minSdk read back from the properties Unity generates),
+// kept to the smallest thing that can work: no buildToolsVersion, no targetSdk
+// (removed for library modules in AGP 9, which Unity 6.3 ships), no ndk block.
+//
+// androidx.core is what provides androidx.core.content.FileProvider. A stock
+// Unity Android build does not guarantee it on the classpath, so this module
+// declares it; an `implementation` dependency of a library module is packaged
+// into the consuming APK, which is what makes the provider resolvable at runtime.
+apply plugin: 'com.android.library'
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}
+
+android {
+    namespace "com.derekwinters.doggiehood.share"
+    compileSdk getProperty("unity.compileSdkVersion") as int
+
+    defaultConfig {
+        minSdk getProperty("unity.minSdkVersion") as int
+    }
+}

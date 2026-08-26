@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  #695: exactly what the FileProvider is allowed to hand out - the bug-reports
+  folder written by Doggiehood.Unity.BugReportFile, and nothing else. The storage
+  root is deliberately never granted: a share sheet should be able to read the one
+  report the player just captured, not the save file beside it.
+
+  Both roots are declared because Application.persistentDataPath is the app's
+  external files dir by default and its internal files dir when the Write
+  Permission player setting is Internal. Only one is ever live; naming both means
+  the share keeps working if that setting is ever changed.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="bug-reports-external" path="bug-reports/" />
+    <files-path name="bug-reports-internal" path="bug-reports/" />
+</paths>
