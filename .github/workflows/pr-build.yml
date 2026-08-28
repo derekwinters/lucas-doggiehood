@@ -1,6 +1,7 @@
 name: pr-build
 
-# Builds a debug Android APK for every PR that touches app/build files (#75).
+# Builds a debug Android APK for every PR (#75) — every PR, not only the ones
+# touching app/build files, because "Debug APK" is a required check (#751).
 #   - versionName = VERSION file + short commit SHA, e.g. 0.1.0-a1b2c3d
 #   - versionCode = total commit count (git rev-list --count HEAD) (#81) —
 #     deterministic, strictly increasing as commits land, and independent of
@@ -12,13 +13,13 @@ name: pr-build
 # emits a loud warning instead of failing every PR.
 
 on:
+  # No path filter, deliberately (#751). "Debug APK" is a required status check
+  # on `main`, so it has to report on every PR — including the `.github/**`-
+  # and `docs/**`-only PRs the old `Assets/**`/`Packages/**`/`ProjectSettings/**`
+  # /`VERSION` allowlist excluded, which could never become mergeable. See the
+  # note on `ci-tests.yml` and
+  # `.github/scripts/tests/test_required_checks_reachable.py`.
   pull_request:
-    paths:
-      - "Assets/**"
-      - "Packages/**"
-      - "ProjectSettings/**"
-      - "VERSION"
-      - ".github/workflows/pr-build.yml"
 
 concurrency:
   group: pr-build-${{ github.ref }}
