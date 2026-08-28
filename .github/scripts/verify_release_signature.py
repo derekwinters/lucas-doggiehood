@@ -103,7 +103,11 @@ def normalize_fingerprint(text):
 
 
 def parse_apksigner_certs(text):
-    """The signers described by `apksigner verify --print-certs` output.
+    """The signers described by `apksigner verify --print-certs --verbose`.
+
+    The `--verbose` half of that command line is load-bearing here: it is what
+    makes apksigner emit the `Number of signers:` header this parser requires
+    (#752). Read `print_certs` before changing either.
 
     Raises `MalformedApksignerOutput` when the declared signer count disagrees
     with the blocks actually parsed. That check is the point: this parser reads
@@ -222,10 +226,19 @@ def find_apksigner():
 
 
 def print_certs(apk, apksigner=None):
-    """`apksigner verify --print-certs` output for one APK."""
+    """`apksigner verify --print-certs --verbose` output for one APK.
+
+    `--verbose` is not decoration: apksigner prints the `Number of signers: N`
+    header (along with `Verifies` and the `Verified using vN scheme` lines)
+    only in verbose mode, while `--print-certs` alone emits the signer DN and
+    SHA-256 blocks and nothing else. `parse_apksigner_certs` cross-checks that
+    header against the blocks it parsed, so without the flag every real APK is
+    rejected as malformed output — which is exactly what happened to the
+    v0.16.0 release, shipped with no assets at all (#752).
+    """
     tool = apksigner or find_apksigner()
     result = subprocess.run(
-        [tool, "verify", "--print-certs", apk],
+        [tool, "verify", "--print-certs", "--verbose", apk],
         capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise MalformedApksignerOutput(

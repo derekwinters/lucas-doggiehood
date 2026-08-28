@@ -21,18 +21,36 @@ the keystore never reaches the builder: both release workflows must hand the
 keystore to every release build step and run this gate, and — per Derek's call
 on #630 — neither PR-triggered workflow may reference the keystore at all.
 
-A note on the apksigner samples below: unlike the manifest fixture in
-`test_verify_emulator_build_variant.py`, these are authored from apksigner's
-documented output shape rather than captured from a real run, because no
-Android SDK is available in the agent environment. That is why the parser
-cross-checks the `Number of signers:` header against the blocks it actually
-parsed and raises rather than returning a short list — a format drift fails
-loudly instead of quietly reporting "no signers".
+A note on the apksigner samples below. The single-signer transcripts are
+**captured**, not authored: `fixtures/apksigner-verify-print-certs-verbose.txt`
+and `fixtures/apksigner-verify-print-certs-nonverbose.txt` are the verbatim
+stdout of apksigner 31.0.2 run over a real signed APK, in the two modes this
+gate could have used. That provenance is the whole point of #752. The earlier
+fixtures were authored from apksigner's *documented* shape, and every one of
+them was a verbose transcript while the workflow invoked the tool without
+`--verbose` — so twenty-two green tests certified a gate that could not read a
+single real APK, and the v0.16.0 release shipped with no assets at all. A gate
+that parses another tool's output is only as trustworthy as the realness of
+the output it was tested against.
+
+The captured pair is what pins that now: the verbose transcript is the format
+the fixed invocation asks for and the parser reads, and the non-verbose one is
+the real output that broke the release — kept as a fixture precisely so the
+parser is proven to still reject it. The parser's `Number of signers:`
+cross-check is deliberately untouched by the fix: the invocation was wrong,
+not the reading, and a genuine future format drift must still fail loudly
+rather than quietly report "no signers".
+
+`TWO_SIGNER_OUTPUT` remains hand-authored — a two-key APK is not something
+this repo can produce on demand — and is used only for the multi-signer
+parse/assess cases.
 """
 
 import os
+import subprocess
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -43,22 +61,38 @@ from verify_release_signature import (  # noqa: E402
     assess,
     normalize_fingerprint,
     parse_apksigner_certs,
+    print_certs,
     read_expected_fingerprint,
 )
 
-RELEASE_SHA256 = "b7c799ea85dd9a31426b9a432e6a468b43c318857f68ce79fb91bdb1125e3a16"
-OTHER_SHA256 = "0123456789abcdef" * 4
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
-RELEASE_OUTPUT = """Verifies
-Verified using v1 scheme (JAR signing): true
-Verified using v2 scheme (APK Signature Scheme v2): true
-Verified using v3 scheme (APK Signature Scheme v3): true
-Number of signers: 1
-Signer #1 certificate DN: CN=Doggiehood, O=Derek Winters, C=US
-Signer #1 certificate SHA-256 digest: {0}
-Signer #1 certificate SHA-1 digest: 9f7c1a0b4e2d6f8a1c3b5d7e9f0a2b4c6d8e0f12
-Signer #1 certificate MD5 digest: 2b4c6d8e0f1a3b5c7d9e0f1a2b3c4d5e
-""".format(RELEASE_SHA256)
+
+def _captured(name):
+    with open(os.path.join(FIXTURES, name), encoding="utf-8") as handle:
+        return handle.read()
+
+
+# apksigner 31.0.2's verbatim stdout over a real signed APK, in both modes:
+#   apksigner verify --print-certs [--verbose] signed.apk
+# The verbose one is what the gate now asks for and what the parser reads; the
+# non-verbose one is what it used to ask for, and carries no
+# "Number of signers:" line at all — the v0.16.0 release failure, captured.
+CAPTURED_VERBOSE_OUTPUT = _captured("apksigner-verify-print-certs-verbose.txt")
+CAPTURED_NON_VERBOSE_OUTPUT = _captured("apksigner-verify-print-certs-nonverbose.txt")
+
+# The certificate in that captured transcript. It is a throwaway key generated
+# solely to produce the capture — deliberately NOT the pinned release
+# certificate in `.github/release-cert-sha256.txt`, which no keystore in this
+# environment holds. What these fixtures pin is apksigner's output *shape*;
+# the pinned fingerprint's own correctness is CommittedFingerprintTests' job.
+CAPTURED_SHA256 = "10d315258da7c4c4830814ae6f876e84145f2195cfb077bc0bb04e3df0a61ed8"
+CAPTURED_KEYTOOL_FORM = (
+    "10:D3:15:25:8D:A7:C4:C4:83:08:14:AE:6F:87:6E:84:"
+    "14:5F:21:95:CF:B0:77:BC:0B:B0:4E:3D:F0:A6:1E:D8")
+CAPTURED_DN = "CN=Doggiehood Release, O=Derek Winters, L=Somewhere, C=US"
+
+OTHER_SHA256 = "0123456789abcdef" * 4
 
 DEBUG_OUTPUT = """Verifies
 Verified using v1 scheme (JAR signing): true
@@ -73,13 +107,13 @@ Signer #1 certificate DN: CN=Doggiehood, O=Derek Winters, C=US
 Signer #1 certificate SHA-256 digest: {0}
 Signer #2 certificate DN: CN=Somebody Else, O=Elsewhere, C=US
 Signer #2 certificate SHA-256 digest: {1}
-""".format(RELEASE_SHA256, OTHER_SHA256)
+""".format(CAPTURED_SHA256, OTHER_SHA256)
 
 
 class NormalizeFingerprintTests(unittest.TestCase):
     """keytool and apksigner print the same 32 bytes in different shapes.
 
-    `keytool -list -v` gives `SHA256: B7:C7:...` — colon-separated, uppercase,
+    `keytool -list -v` gives `SHA256: 10:D3:...` — colon-separated, uppercase,
     behind a label. apksigner prints bare lowercase hex. Both are SHA-256 over
     the DER-encoded certificate, so they are directly comparable once written
     the same way; this function is what makes pasting either form into
@@ -87,15 +121,15 @@ class NormalizeFingerprintTests(unittest.TestCase):
     """
 
     def test_accepts_the_keytool_colon_form(self):
-        keytool_form = "B7:C7:99:EA:85:DD:9A:31:42:6B:9A:43:2E:6A:46:8B:43:C3:18:85:7F:68:CE:79:FB:91:BD:B1:12:5E:3A:16"
-        self.assertEqual(normalize_fingerprint(keytool_form), RELEASE_SHA256)
+        self.assertEqual(
+            normalize_fingerprint(CAPTURED_KEYTOOL_FORM), CAPTURED_SHA256)
 
     def test_accepts_apksigners_bare_hex(self):
-        self.assertEqual(normalize_fingerprint(RELEASE_SHA256), RELEASE_SHA256)
+        self.assertEqual(normalize_fingerprint(CAPTURED_SHA256), CAPTURED_SHA256)
 
     def test_accepts_a_leading_sha256_label_and_surrounding_whitespace(self):
-        labelled = "  SHA256: B7:C7:99:EA:85:DD:9A:31:42:6B:9A:43:2E:6A:46:8B:43:C3:18:85:7F:68:CE:79:FB:91:BD:B1:12:5E:3A:16\n"
-        self.assertEqual(normalize_fingerprint(labelled), RELEASE_SHA256)
+        labelled = "  SHA256: {0}\n".format(CAPTURED_KEYTOOL_FORM)
+        self.assertEqual(normalize_fingerprint(labelled), CAPTURED_SHA256)
 
     def test_rejects_a_fingerprint_of_the_wrong_length(self):
         with self.assertRaises(MalformedFingerprint):
@@ -103,7 +137,7 @@ class NormalizeFingerprintTests(unittest.TestCase):
 
     def test_rejects_a_fingerprint_that_is_not_hex(self):
         with self.assertRaises(MalformedFingerprint):
-            normalize_fingerprint("zz" + RELEASE_SHA256[2:])
+            normalize_fingerprint("zz" + CAPTURED_SHA256[2:])
 
     def test_rejects_an_empty_fingerprint(self):
         with self.assertRaises(MalformedFingerprint):
@@ -111,23 +145,23 @@ class NormalizeFingerprintTests(unittest.TestCase):
 
 
 class ParseApksignerCertsTests(unittest.TestCase):
-    def test_reads_the_dn_and_digest_of_a_single_signer(self):
-        signers = parse_apksigner_certs(RELEASE_OUTPUT)
+    def test_reads_the_dn_and_digest_of_a_single_signer_from_a_real_capture(self):
+        signers = parse_apksigner_certs(CAPTURED_VERBOSE_OUTPUT)
         self.assertEqual(len(signers), 1)
         self.assertEqual(signers[0].index, 1)
-        self.assertEqual(signers[0].dn, "CN=Doggiehood, O=Derek Winters, C=US")
-        self.assertEqual(signers[0].sha256, RELEASE_SHA256)
+        self.assertEqual(signers[0].dn, CAPTURED_DN)
+        self.assertEqual(signers[0].sha256, CAPTURED_SHA256)
 
     def test_reads_every_signer(self):
         signers = parse_apksigner_certs(TWO_SIGNER_OUTPUT)
         self.assertEqual([signer.index for signer in signers], [1, 2])
         self.assertEqual(
-            [signer.sha256 for signer in signers], [RELEASE_SHA256, OTHER_SHA256])
+            [signer.sha256 for signer in signers], [CAPTURED_SHA256, OTHER_SHA256])
 
     def test_uppercase_digests_are_normalized(self):
         signers = parse_apksigner_certs(
-            RELEASE_OUTPUT.replace(RELEASE_SHA256, RELEASE_SHA256.upper()))
-        self.assertEqual(signers[0].sha256, RELEASE_SHA256)
+            CAPTURED_VERBOSE_OUTPUT.replace(CAPTURED_SHA256, CAPTURED_SHA256.upper()))
+        self.assertEqual(signers[0].sha256, CAPTURED_SHA256)
 
     def test_reports_no_signers_when_apksigner_found_none(self):
         self.assertEqual(parse_apksigner_certs("Number of signers: 0\n"), [])
@@ -145,23 +179,101 @@ class ParseApksignerCertsTests(unittest.TestCase):
         with self.assertRaises(MalformedApksignerOutput):
             parse_apksigner_certs("Verifies\n")
 
+    def test_real_non_verbose_output_is_rejected_the_way_it_broke_v0_16_0(self):
+        """The parser's format check stays strict — the fix was the flags.
+
+        This is apksigner's genuine `--print-certs` output with no `--verbose`:
+        the signer DN and digest blocks are all there, and the
+        `Number of signers:` header is simply absent. Feeding it to the parser
+        reproduces the exact error that failed the v0.16.0 release job.
+
+        It must keep raising. #752 is fixed by asking apksigner for the format
+        the parser reads, *not* by teaching the parser to accept a header-less
+        one — a loosened parser would swallow a real future format drift, which
+        is the failure this cross-check exists to make loud.
+        """
+        self.assertNotIn("Number of signers:", CAPTURED_NON_VERBOSE_OUTPUT)
+        self.assertIn("certificate SHA-256 digest:", CAPTURED_NON_VERBOSE_OUTPUT)
+        with self.assertRaises(MalformedApksignerOutput) as raised:
+            parse_apksigner_certs(CAPTURED_NON_VERBOSE_OUTPUT)
+        self.assertIn("Number of signers:", str(raised.exception))
+
+    def test_the_captured_verbose_output_carries_the_header_the_parser_needs(self):
+        """The two halves of the fix, pinned against each other.
+
+        The fixture is the output of the very command line `print_certs` now
+        runs, so this asserts the invocation and the parser agree on one
+        format — the pairing nothing checked before #752.
+        """
+        self.assertIn("Number of signers: 1", CAPTURED_VERBOSE_OUTPUT)
+        signers = parse_apksigner_certs(CAPTURED_VERBOSE_OUTPUT)
+        self.assertEqual([signer.sha256 for signer in signers], [CAPTURED_SHA256])
+
+    def test_the_verbose_only_extra_lines_do_not_confuse_the_parser(self):
+        """`--verbose` adds public-key lines; none may read as a certificate."""
+        self.assertIn("Signer #1 public key SHA-256 digest:", CAPTURED_VERBOSE_OUTPUT)
+        signers = parse_apksigner_certs(CAPTURED_VERBOSE_OUTPUT)
+        self.assertEqual(len(signers), 1)
+        self.assertEqual(signers[0].sha256, CAPTURED_SHA256)
+
+
+class ApksignerInvocationTests(unittest.TestCase):
+    """The command line the gate runs must produce the format it parses.
+
+    This is the bug of #752, pinned. `parse_apksigner_certs` requires the
+    `Number of signers:` header, and apksigner prints that header **only**
+    under `--verbose`: `--print-certs` alone emits the signer DN and SHA-256
+    blocks and nothing else. So the gate asked for one format and read
+    another, and failed every real APK it was ever pointed at — the v0.16.0
+    release included, which shipped with no assets at all.
+
+    Twenty-two green tests did not catch it because they all exercised the
+    parser against hand-authored *verbose* transcripts while nothing pinned
+    the invocation. This test is that pin: it asserts the flags, not the
+    parse.
+    """
+
+    def _run_print_certs(self):
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=CAPTURED_VERBOSE_OUTPUT, stderr="")
+        with mock.patch("verify_release_signature.subprocess.run",
+                        return_value=completed) as run:
+            print_certs("doggiehood-v9.9.9.apk", apksigner="/usr/bin/apksigner")
+        self.assertEqual(run.call_count, 1)
+        return list(run.call_args[0][0])
+
+    def test_the_invocation_asks_for_the_verbose_output_the_parser_reads(self):
+        argv = self._run_print_certs()
+        self.assertIn(
+            "--verbose", argv,
+            "apksigner prints 'Number of signers:' only under --verbose, and "
+            "parse_apksigner_certs requires that line — without the flag the "
+            "gate cannot read any real APK (#752): {0}".format(argv))
+
+    def test_the_invocation_still_verifies_and_prints_certs_for_the_apk(self):
+        argv = self._run_print_certs()
+        self.assertEqual(argv[0], "/usr/bin/apksigner")
+        self.assertIn("verify", argv)
+        self.assertIn("--print-certs", argv)
+        self.assertEqual(argv[-1], "doggiehood-v9.9.9.apk")
+
 
 class AssessTests(unittest.TestCase):
     def test_the_expected_certificate_passes(self):
-        verdict = assess(parse_apksigner_certs(RELEASE_OUTPUT), RELEASE_SHA256)
+        verdict = assess(parse_apksigner_certs(CAPTURED_VERBOSE_OUTPUT), CAPTURED_SHA256)
         self.assertTrue(verdict.ok, verdict.reasons)
         self.assertEqual(verdict.reasons, [])
 
     def test_a_different_certificate_fails_and_names_both_fingerprints(self):
         signers = [SignerFacts(index=1, dn="CN=Somebody Else", sha256=OTHER_SHA256)]
-        verdict = assess(signers, RELEASE_SHA256)
+        verdict = assess(signers, CAPTURED_SHA256)
         self.assertFalse(verdict.ok)
         joined = " ".join(verdict.reasons)
         self.assertIn(OTHER_SHA256, joined)
-        self.assertIn(RELEASE_SHA256, joined)
+        self.assertIn(CAPTURED_SHA256, joined)
 
     def test_the_android_debug_certificate_fails_as_a_debug_fallback(self):
-        verdict = assess(parse_apksigner_certs(DEBUG_OUTPUT), RELEASE_SHA256)
+        verdict = assess(parse_apksigner_certs(DEBUG_OUTPUT), CAPTURED_SHA256)
         self.assertFalse(verdict.ok)
         self.assertTrue(
             any("debug" in reason.lower() for reason in verdict.reasons),
@@ -169,18 +281,17 @@ class AssessTests(unittest.TestCase):
             "not merely as a fingerprint mismatch: {0}".format(verdict.reasons))
 
     def test_an_unsigned_apk_fails(self):
-        verdict = assess([], RELEASE_SHA256)
+        verdict = assess([], CAPTURED_SHA256)
         self.assertFalse(verdict.ok)
         self.assertTrue(any("unsigned" in reason.lower() for reason in verdict.reasons))
 
     def test_an_extra_signer_fails_even_when_the_release_key_is_present(self):
-        verdict = assess(parse_apksigner_certs(TWO_SIGNER_OUTPUT), RELEASE_SHA256)
+        verdict = assess(parse_apksigner_certs(TWO_SIGNER_OUTPUT), CAPTURED_SHA256)
         self.assertFalse(verdict.ok)
 
     def test_the_expected_fingerprint_may_be_given_in_keytool_form(self):
         verdict = assess(
-            parse_apksigner_certs(RELEASE_OUTPUT),
-            "B7:C7:99:EA:85:DD:9A:31:42:6B:9A:43:2E:6A:46:8B:43:C3:18:85:7F:68:CE:79:FB:91:BD:B1:12:5E:3A:16")
+            parse_apksigner_certs(CAPTURED_VERBOSE_OUTPUT), CAPTURED_KEYTOOL_FORM)
         self.assertTrue(verdict.ok, verdict.reasons)
 
 
