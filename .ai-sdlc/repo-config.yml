@@ -1,0 +1,65 @@
+# What this repository is, for ai-sdlc.
+#
+# Everything else about the shared process — the skills, the workflows, the
+# specs — is identical in every repository that adopts it. This file is the
+# only place Doggiehood differs from the others.
+#
+# See https://derekwinters.github.io/ai-sdlc/spec/configuration/ for the schema.
+
+# A staged adoption (#759). These three capabilities install alongside the
+# local tooling without either one handling the same event as the other:
+#   hygiene     — the closing-keyword check on every pull request
+#   consistency — the docs gate and the docs build
+#   release     — release-please conventions (depends on hygiene)
+# `substrate` is implied and is not listed.
+#
+# `labels` and `pipeline` are deliberately not here yet — see "Deliberately
+# absent" at the bottom.
+capabilities:
+  - hygiene
+  - consistency
+  - release
+
+# Both markers are present — ProjectSettings/ProjectVersion.txt and mkdocs.yml —
+# and detection would find both. Stated explicitly anyway: a repository that
+# has said what it is does not get second-guessed by a marker file appearing or
+# disappearing.
+profiles:
+  - unity
+  - mkdocs
+
+# No ai-sdlc skills are installed yet, and that is a decision rather than an
+# omission. The skills under .claude/skills/ came from the older ai-skills repo
+# (see .claude/.skills-manifest.json) and several of them are Doggiehood's own
+# pipeline, which `pipeline` would replace. A non-empty list here makes `adopt`
+# write a `skills-update.yml` caller (ADOPT-048), and that path is already taken
+# by the local ai-skills sync, disabled under #325. Choosing the list belongs to
+# the pipeline cutover (#760), in the same change that retires the old sync.
+skills: []
+
+commands:
+  # The Core suite: plain NUnit, no Unity editor, no licence.
+  test: dotnet test CoreTests/Doggiehood.Core.Tests
+
+# Deliberately absent:
+#
+# `labels` (capability) — Doggiehood admits issues to triage with a single
+#   `ai-triage` label rather than ai-sdlc's ai-triage-queued / -running /
+#   -stalled states. Syncing the canonical taxonomy now would create labels
+#   nothing here reads. Mapping or migrating `ai-triage` (the `labels:` key,
+#   CFG-042) is part of the pipeline cutover, #760.
+#
+# `pipeline` (capability) — its callers handle `issue_comment`, `issues` and the
+#   dashboard schedule, which the local gatekeeper-comment.yml,
+#   gatekeeper-sweep.yml and dashboard.yml already handle. Two handlers on one
+#   event race and both write, so the cutover retires the local workflows in the
+#   same change that enables this — #760. Until then `owners`,
+#   `dashboard_issue` (would be 193), `milestone_ordering` and `fire` have
+#   nothing to configure and are left out.
+#
+# `commands.verify` / `commands.spec_validator` — the docs are prose specs with
+#   Build checklists, not AREA-NNN requirement tables, so there is no validator
+#   to name.
+#
+# `bot:` — the default `github-actions` identity; it only matters once the
+#   pipeline drives commands.

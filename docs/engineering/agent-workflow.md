@@ -35,6 +35,8 @@ vocabulary, routines, and stage behavior.
 
 A `CLAUDE.md` at the repo root captures durable conventions so the agent doesn't need to re-derive them each session: the Core/Unity split, the TDD workflow, the Conventional Commit requirement, `VERSION` file usage, and — importantly — where design decisions actually live (this docs site, sourced from GitHub issues).
 
+Its last line imports **`.ai-sdlc/house-rules.md`** — the rules shared by every repository that has adopted [ai-sdlc](https://github.com/derekwinters/ai-sdlc), Derek's shared SDLC framework ([#759](https://github.com/derekwinters/lucas-doggiehood/issues/759)). That file is written by ai-sdlc's `adopt` command and is never hand-edited here; `CLAUDE.md` itself is never rewritten by it, only that one import line appended. Everything Doggiehood-specific stays in `CLAUDE.md`, and where the two differ, `CLAUDE.md` is the repository's own word. Doggiehood has adopted ai-sdlc in stages — so far only its pull-request gates and release conventions (see [CI/CD](ci-cd.md#shared-gates-from-ai-sdlc)); the issue pipeline described below is still Doggiehood's own until the cutover in [#760](https://github.com/derekwinters/lucas-doggiehood/issues/760), so the house rules' line that ai-sdlc "owns this repository's issues, labels, milestones, triage" is not yet true here.
+
 ## How an issue gets worked
 
 1. Pick the next open issue in the current focus milestone, lowest number first (milestones are version-numbered planning scopes — see [Conventions](../intro/conventions.md#milestones-are-version-numbered-scopes)).

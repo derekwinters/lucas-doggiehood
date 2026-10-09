@@ -1,0 +1,28 @@
+# ai-sdlc: derekwinters/ai-sdlc@v0.5.0 hash=f780ccc6d23b0de2
+# Managed by `adopt`. Local edits are preserved but stop this file
+# being updated — `adopt verify` will report it.
+name: docs-gate
+
+# A caller. The logic is in ai-sdlc; this exists because a trigger
+# cannot be centralised — it must be declared in the repository it
+# fires for.
+#
+# Pinned to a commit rather than a tag: a tag can move, and this runs
+# with this repository's token. Upgrade with `adopt apply <version>`,
+# which rewrites both the SHA and the comment.
+#
+# Nothing is checked out here. The action is fetched by the runner,
+# outside this repository's workspace.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: derekwinters/ai-sdlc/.github/actions/docs-gate@9a51041eb76254a2cd7e306ed7ac352a2cf085d6 # v0.5.0

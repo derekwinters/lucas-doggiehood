@@ -93,6 +93,16 @@ Every release asset is signed with one stable, owned release key ([#630](https:/
 
 A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. ([#82](https://github.com/derekwinters/lucas-doggiehood/issues/82))
 
+## Shared gates from ai-sdlc
+
+Three workflows come from [ai-sdlc](https://github.com/derekwinters/ai-sdlc), Derek's shared SDLC framework, adopted here for its `hygiene`, `consistency` and `release` capabilities ([#759](https://github.com/derekwinters/lucas-doggiehood/issues/759)). Each is a thin **caller**: the logic lives in ai-sdlc, and the file here exists only because a `pull_request` trigger has to be declared in the repository it fires for. Each pins ai-sdlc to a **commit SHA** with the version as a trailing comment (`# v0.5.0`), never a tag or `main`, because it runs with this repository's token. The files carry an `# ai-sdlc: … hash=…` header and are written by ai-sdlc's `adopt` command — **don't hand-edit them**; an edited one is never updated again. Change `.ai-sdlc/repo-config.yml` and re-run `adopt apply <version>` instead (the installed version is recorded in `.ai-sdlc/ai-sdlc.pin`, and `.ai-sdlc/adoption.md` lists what is installed).
+
+- **`closing-keyword.yml`** (job `closing-keyword`): fails a PR whose body has no GitHub closing keyword (`Closes #N` / `Fixes` / `Resolves`, outside a code fence) — the CI half of [CLAUDE.md](agent-workflow.md#claudemd) rule #10. The `no-closing-keyword` label is the deliberate escape hatch and makes the check *pass*. It has no release-please exemption, so release PRs fail it today; that has to be solved before it is made a required check.
+- **`docs-gate.yml`** (job `docs-gate`): fails a PR that changes code without changing documentation, unless labelled `skip-docs`. It overlaps the reconciliation gate in `docs-test.yml` (below) but is looser — any `*.md` anywhere counts as documentation, not only `docs/` — and has no release-please branch check (a release PR passes it because `CHANGELOG.md` is Markdown). Both are kept for now; `docs-test.yml`'s `build` is the one `main` requires.
+- **`docs-build.yml`** (check `docs-build / build`): `mkdocs build --strict` on every PR and every push to `main`. It builds and stops; publishing is still `docs-publish.yml`.
+
+Neither new gate is a required check yet. Doggiehood's issue pipeline (`gatekeeper-*`, `dashboard.yml`) is not from ai-sdlc yet either — that cutover is [#760](https://github.com/derekwinters/lucas-doggiehood/issues/760).
+
 ## Geometry/tuning literal check
 
 **`geometry-lint.yml`** enforces the [named-values rule](tech-stack.md#geometry-layout-and-tuning-values-are-named-variables) ([#161](https://github.com/derekwinters/lucas-doggiehood/issues/161)): on any PR touching `Assets/**` (or the check itself), it runs `.github/scripts/check_geometry_literals.py`, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against `.github/scripts/geometry_literals_baseline.txt` so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with `--update-baseline`.

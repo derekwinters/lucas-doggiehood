@@ -52,3 +52,5 @@ Anything an agent cannot complete autonomously — repo settings, secrets, asset
 
 - Don't add monetization, ads, accounts, or network calls — the product is free, offline, local-save-only (`docs/specs/product-scope.md`).
 - Don't invent quest types, personalities, breeds, or mechanics not in the specs — bring new ideas back to Derek and Lucas first.
+
+@.ai-sdlc/house-rules.md
