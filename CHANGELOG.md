@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/derekwinters/lucas-doggiehood/compare/v0.16.0...v0.16.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* **ci:** ask apksigner for the output the signature gate actually reads ([#754](https://github.com/derekwinters/lucas-doggiehood/issues/754)) ([eac7526](https://github.com/derekwinters/lucas-doggiehood/commit/eac7526f166de6c21c7ae52e0149bcfa6b216776)), closes [#752](https://github.com/derekwinters/lucas-doggiehood/issues/752)
+
 ## [0.16.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.15.1...v0.16.0) (2026-08-26)
 
 
