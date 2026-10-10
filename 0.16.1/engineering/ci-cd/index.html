@@ -1589,6 +1589,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shared-gates-from-ai-sdlc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shared gates from ai-sdlc
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#geometrytuning-literal-check" class="md-nav__link">
     <span class="md-ellipsis">
       Geometry/tuning literal check
@@ -1847,6 +1856,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shared-gates-from-ai-sdlc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shared gates from ai-sdlc
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#geometrytuning-literal-check" class="md-nav__link">
     <span class="md-ellipsis">
       Geometry/tuning literal check
@@ -1982,6 +2000,14 @@
 </blockquote>
 <h2 id="commit-linting">Commit linting<a class="headerlink" href="#commit-linting" title="Permanent link">&para;</a></h2>
 <p>A required CI check lints PR titles against Conventional Commits and fails the PR if it doesn't conform, since release-please's version-bump computation depends on them. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/82">#82</a>)</p>
+<h2 id="shared-gates-from-ai-sdlc">Shared gates from ai-sdlc<a class="headerlink" href="#shared-gates-from-ai-sdlc" title="Permanent link">&para;</a></h2>
+<p>Three workflows come from <a href="https://github.com/derekwinters/ai-sdlc">ai-sdlc</a>, Derek's shared SDLC framework, adopted here for its <code>hygiene</code>, <code>consistency</code> and <code>release</code> capabilities (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/759">#759</a>). Each is a thin <strong>caller</strong>: the logic lives in ai-sdlc, and the file here exists only because a <code>pull_request</code> trigger has to be declared in the repository it fires for. Each pins ai-sdlc to a <strong>commit SHA</strong> with the version as a trailing comment (<code># v0.5.0</code>), never a tag or <code>main</code>, because it runs with this repository's token. The files carry an <code># ai-sdlc: … hash=…</code> header and are written by ai-sdlc's <code>adopt</code> command — <strong>don't hand-edit them</strong>; an edited one is never updated again. Change <code>.ai-sdlc/repo-config.yml</code> and re-run <code>adopt apply &lt;version&gt;</code> instead (the installed version is recorded in <code>.ai-sdlc/ai-sdlc.pin</code>, and <code>.ai-sdlc/adoption.md</code> lists what is installed).</p>
+<ul>
+<li><strong><code>closing-keyword.yml</code></strong> (job <code>closing-keyword</code>): fails a PR whose body has no GitHub closing keyword (<code>Closes #N</code> / <code>Fixes</code> / <code>Resolves</code>, outside a code fence) — the CI half of <a href="../agent-workflow/#claudemd">CLAUDE.md</a> rule #10. The <code>no-closing-keyword</code> label is the deliberate escape hatch and makes the check <em>pass</em>. It has no release-please exemption, so release PRs fail it today; that has to be solved before it is made a required check.</li>
+<li><strong><code>docs-gate.yml</code></strong> (job <code>docs-gate</code>): fails a PR that changes code without changing documentation, unless labelled <code>skip-docs</code>. It overlaps the reconciliation gate in <code>docs-test.yml</code> (below) but is looser — any <code>*.md</code> anywhere counts as documentation, not only <code>docs/</code> — and has no release-please branch check (a release PR passes it because <code>CHANGELOG.md</code> is Markdown). Both are kept for now; <code>docs-test.yml</code>'s <code>build</code> is the one <code>main</code> requires.</li>
+<li><strong><code>docs-build.yml</code></strong> (check <code>docs-build / build</code>): <code>mkdocs build --strict</code> on every PR and every push to <code>main</code>. It builds and stops; publishing is still <code>docs-publish.yml</code>.</li>
+</ul>
+<p>Neither new gate is a required check yet. Doggiehood's issue pipeline (<code>gatekeeper-*</code>, <code>dashboard.yml</code>) is not from ai-sdlc yet either — that cutover is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/760">#760</a>.</p>
 <h2 id="geometrytuning-literal-check">Geometry/tuning literal check<a class="headerlink" href="#geometrytuning-literal-check" title="Permanent link">&para;</a></h2>
 <p><strong><code>geometry-lint.yml</code></strong> enforces the <a href="../tech-stack/#geometry-layout-and-tuning-values-are-named-variables">named-values rule</a> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/161">#161</a>): on any PR touching <code>Assets/**</code> (or the check itself), it runs <code>.github/scripts/check_geometry_literals.py</code>, a conservative backstop that flags f-suffixed float literals of magnitude ≥ 3 sitting in method bodies rather than named declarations. It ratchets against <code>.github/scripts/geometry_literals_baseline.txt</code> so pre-existing literals are tolerated while newly introduced ones fail the job; the check's own stdlib-only unit tests run in the same job. Regenerate the baseline as literals get named with <code>--update-baseline</code>.</p>
 <h2 id="test-suites-tests">Test suites (<code>tests</code>)<a class="headerlink" href="#test-suites-tests" title="Permanent link">&para;</a></h2>
