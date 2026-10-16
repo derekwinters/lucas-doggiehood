@@ -46,6 +46,8 @@ this repo can produce on demand — and is used only for the multi-signer
 parse/assess cases.
 """
 
+import contextlib
+import io
 import os
 import subprocess
 import sys
@@ -58,7 +60,10 @@ from verify_release_signature import (  # noqa: E402
     MalformedApksignerOutput,
     MalformedFingerprint,
     SignerFacts,
+    RAW_OUTPUT_BEGIN,
+    RAW_OUTPUT_END,
     assess,
+    main,
     normalize_fingerprint,
     parse_apksigner_certs,
     print_certs,
@@ -217,6 +222,123 @@ class ParseApksignerCertsTests(unittest.TestCase):
         self.assertEqual(signers[0].sha256, CAPTURED_SHA256)
 
 
+# The shape that reached the v0.16.1 release: the `Number of signers:` header
+# is present, but no line matches the signer pattern, so the cross-check fails.
+# Hand-authored — nobody has seen the runner's real output yet, which is
+# exactly what the diagnostics below exist to fix (#764). Only the *failure*
+# matters here, not which unparsed shape produces it.
+UNPARSEABLE_OUTPUT = """Verifies
+Verified using v2 scheme (APK Signature Scheme v2): true
+Number of signers: 1
+Some future signer label: CN=Android Debug, O=Android, C=US
+"""
+
+
+class GateDiagnosticsTests(unittest.TestCase):
+    """When the parser cannot read apksigner, the log must show what it read.
+
+    The v0.16.1 release failed with "apksigner reported 1 signer(s) but 0
+    could be parsed" on both APKs, and nobody could say why: the gate never
+    printed the output it failed on and the run kept no artifacts (#764).
+    apksigner's stdout carries only public certificate data (the same bytes
+    ship inside every APK), so printing it costs nothing and turns the next
+    format drift into a one-run diagnosis.
+    """
+
+    def _run_main(self, argv, output):
+        stdout = io.StringIO()
+        with mock.patch("verify_release_signature.print_certs", return_value=output), \
+                contextlib.redirect_stdout(stdout):
+            code = main(argv)
+        return code, stdout.getvalue()
+
+    def _raw_block(self, log, apk_name):
+        begin = RAW_OUTPUT_BEGIN.format(apk_name)
+        end = RAW_OUTPUT_END.format(apk_name)
+        self.assertIn(begin, log, "no delimited raw apksigner block in:\n" + log)
+        self.assertIn(end, log)
+        return log[log.index(begin) + len(begin):log.index(end)]
+
+    def test_a_parse_failure_prints_the_raw_apksigner_output(self):
+        code, log = self._run_main(
+            ["--expected", CAPTURED_SHA256, "doggiehood-v0.16.1.apk"], UNPARSEABLE_OUTPUT)
+        self.assertEqual(code, 1)
+        self.assertIn("could be parsed", log)
+        self.assertEqual(
+            self._raw_block(log, "doggiehood-v0.16.1.apk").strip(),
+            UNPARSEABLE_OUTPUT.strip())
+
+    def test_a_successful_release_check_does_not_dump_the_raw_output(self):
+        code, log = self._run_main(
+            ["--expected", CAPTURED_SHA256, "doggiehood-v9.9.9.apk"], CAPTURED_VERBOSE_OUTPUT)
+        self.assertEqual(code, 0, log)
+        self.assertNotIn(RAW_OUTPUT_BEGIN.format("doggiehood-v9.9.9.apk"), log)
+
+
+class ParseOnlyModeTests(unittest.TestCase):
+    """`--parse-only` proves the parser on the APKs PR CI actually builds.
+
+    The gate's parser had only ever been tested against transcripts that were
+    not taken from the APKs it gates, and that let two release failures
+    through (#752, #764). PR builds are debug-signed on purpose, so the
+    certificate comparison cannot run there — but the *parse* can, on every
+    PR, against a real Unity-built APK. This mode always logs the raw output
+    (so the real format is on record), fails if the parse fails, and never
+    compares the certificate.
+    """
+
+    def _run_main(self, argv, output):
+        stdout = io.StringIO()
+        with mock.patch("verify_release_signature.print_certs", return_value=output), \
+                contextlib.redirect_stdout(stdout):
+            code = main(argv)
+        return code, stdout.getvalue()
+
+    def test_a_debug_signed_apk_that_parses_passes(self):
+        code, log = self._run_main(["--parse-only", "Doggiehood.apk"], DEBUG_OUTPUT)
+        self.assertEqual(code, 0, log)
+        self.assertNotIn("::error", log)
+
+    def test_the_raw_output_is_always_printed(self):
+        code, log = self._run_main(["--parse-only", "Doggiehood.apk"], DEBUG_OUTPUT)
+        self.assertEqual(code, 0, log)
+        begin = RAW_OUTPUT_BEGIN.format("Doggiehood.apk")
+        end = RAW_OUTPUT_END.format("Doggiehood.apk")
+        self.assertIn(begin, log)
+        self.assertEqual(
+            log[log.index(begin) + len(begin):log.index(end)].strip(),
+            DEBUG_OUTPUT.strip())
+
+    def test_the_parsed_signers_are_reported(self):
+        _, log = self._run_main(["--parse-only", "Doggiehood.apk"], DEBUG_OUTPUT)
+        self.assertIn(OTHER_SHA256, log)
+        self.assertIn("CN=Android Debug", log)
+
+    def test_an_unparseable_output_fails(self):
+        code, log = self._run_main(["--parse-only", "Doggiehood.apk"], UNPARSEABLE_OUTPUT)
+        self.assertEqual(code, 1)
+        self.assertIn("::error", log)
+        self.assertIn("could be parsed", log)
+
+    def test_the_certificate_is_not_compared(self):
+        # An expected fingerprint that does not match must not fail the mode,
+        # and an unreadable --expected-file must not be opened at all.
+        code, log = self._run_main(
+            ["--parse-only", "--expected-file", "/nonexistent/pin.txt", "Doggiehood.apk"],
+            DEBUG_OUTPUT)
+        self.assertEqual(code, 0, log)
+
+    def test_every_apk_is_parsed(self):
+        stdout = io.StringIO()
+        with mock.patch("verify_release_signature.print_certs",
+                        side_effect=[DEBUG_OUTPUT, UNPARSEABLE_OUTPUT]) as certs, \
+                contextlib.redirect_stdout(stdout):
+            code = main(["--parse-only", "a.apk", "b.apk"])
+        self.assertEqual(certs.call_count, 2)
+        self.assertEqual(code, 1)
+        self.assertIn(RAW_OUTPUT_BEGIN.format("b.apk"), stdout.getvalue())
+
+
 class ApksignerInvocationTests(unittest.TestCase):
     """The command line the gate runs must produce the format it parses.
 
@@ -334,6 +456,7 @@ class ReleaseWorkflowSigningTests(unittest.TestCase):
     BUILD_STEPS = ("Build Android release APK", "Build Android emulator APK")
     KEYSTORE_SECRET = "ANDROID_KEYSTORE_BASE64"
     VERIFY_STEP = "Verify the release signature"
+    PR_BUILD_PARSE_STEP = "Prove the release-signature gate parses the built APK"
 
     def _workflow_text(self, workflow):
         path = os.path.join(self.REPO_ROOT, ".github", "workflows", workflow)
@@ -391,6 +514,19 @@ class ReleaseWorkflowSigningTests(unittest.TestCase):
                     self.KEYSTORE_SECRET, self._workflow_text(workflow),
                     "{0} is pull_request-triggered and must never reach the release "
                     "keystore (#630)".format(workflow))
+
+    def test_pr_build_proves_the_gate_parses_the_real_apk(self):
+        # The invariant of #764: the parser reads apksigner output for an APK
+        # this repo's own CI built, on every PR, before any release depends on it.
+        text = self._workflow_text("pr-build.yml")
+        body = self._step_body("pr-build.yml", self.PR_BUILD_PARSE_STEP)
+        self.assertIn("verify_release_signature.py", body)
+        self.assertIn("--parse-only", body)
+        self.assertIn("build/Android", body)
+        self.assertLess(
+            text.index("- name: Build Android debug APK"),
+            text.index("- name: " + self.PR_BUILD_PARSE_STEP),
+            "the parse-only proof must run after the APK is built")
 
 
 if __name__ == "__main__":

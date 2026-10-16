@@ -127,3 +127,24 @@ jobs:
         with:
           name: doggiehood-debug-${{ steps.version.outputs.name }}
           path: build/Android
+
+      # The release-signature gate's parser is proven against the real thing
+      # (#764): apksigner's output for the APK this job just built, on every
+      # PR, so a format the parser cannot read fails here rather than in the
+      # release job — which is how v0.16.0 and v0.16.1 shipped with no APKs.
+      # `--parse-only` always logs the raw output and skips the certificate
+      # comparison, because PR builds are debug-signed on purpose (#75, #630).
+      # It runs after the upload so the APK is kept even when the parse fails.
+      - name: Unit-test the release signature gate
+        if: steps.license.outputs.present == 'true'
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_verify_release_signature.py"
+
+      - name: Prove the release-signature gate parses the built APK
+        if: steps.license.outputs.present == 'true'
+        run: |
+          mapfile -t APKS < <(find build/Android -name '*.apk' | sort)
+          if [ "${#APKS[@]}" -eq 0 ]; then
+            echo "::error::Build completed but no APK found under build/Android"
+            exit 1
+          fi
+          python3 .github/scripts/verify_release_signature.py --parse-only "${APKS[@]}"

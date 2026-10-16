@@ -62,6 +62,12 @@ _SIGNER_LINE = re.compile(
     r"^Signer\s*(?:\([^)]*\)\s*)?#(\d+)\s+certificate\s+(DN|SHA-256 digest):\s*(.*)$")
 _SIGNER_COUNT_LINE = re.compile(r"^Number of signers:\s*(\d+)\s*$")
 
+# Delimits apksigner's raw stdout in the job log, so the exact bytes the parser
+# read can be lifted out verbatim as a fixture (#764). The output carries only
+# public certificate data — the same bytes ship inside every APK.
+RAW_OUTPUT_BEGIN = "----- BEGIN apksigner output for {0} -----"
+RAW_OUTPUT_END = "----- END apksigner output for {0} -----"
+
 _FINGERPRINT_LABEL = re.compile(r"^\s*SHA-?256\s*:", re.IGNORECASE)
 
 
@@ -248,6 +254,53 @@ def print_certs(apk, apksigner=None):
     return result.stdout
 
 
+def print_raw_output(name, output):
+    """apksigner's stdout for one APK, delimited so it can be lifted verbatim."""
+    print(RAW_OUTPUT_BEGIN.format(name))
+    print(output.rstrip("\n"))
+    print(RAW_OUTPUT_END.format(name))
+
+
+def parse_only(apks):
+    """Prove the parser reads each APK's real apksigner output (#764).
+
+    Always logs the raw output and never compares the certificate: PR builds
+    are debug-signed on purpose, so only the *parse* can be proven there.
+    """
+    failed = False
+    for apk in apks:
+        name = os.path.basename(apk)
+        try:
+            output = print_certs(apk)
+        except (MalformedApksignerOutput, OSError) as exc:
+            print("::error title=Release signature parse::{0}: {1}".format(name, exc))
+            failed = True
+            continue
+
+        print_raw_output(name, output)
+        try:
+            signers = parse_apksigner_certs(output)
+        except (MalformedApksignerOutput, MalformedFingerprint) as exc:
+            print("::error title=Release signature parse::{0}: {1}".format(name, exc))
+            failed = True
+            continue
+
+        for signer in signers:
+            print("{0}: signer #{1} {2}\n  DN: {3}".format(
+                name, signer.index, signer.sha256, signer.dn))
+        print("OK: the release-signature gate can read {0}.".format(name))
+
+    if failed:
+        print(
+            "\nThe release-signature gate cannot read apksigner's output for an APK "
+            "this repo built, so it would reject the next release. See issue #764 "
+            "and docs/engineering/ci-cd.md.")
+        return 1
+
+    print("\nOK: the release-signature gate parses every APK given.")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("apk", nargs="+", help="release APK(s) to check")
@@ -257,7 +310,14 @@ def main(argv=None):
     parser.add_argument(
         "--expected", default=None,
         help="the pinned fingerprint itself, overriding --expected-file")
+    parser.add_argument(
+        "--parse-only", action="store_true",
+        help="print and parse apksigner's output without comparing the certificate "
+             "(for debug-signed PR builds, #764)")
     args = parser.parse_args(argv)
+
+    if args.parse_only:
+        return parse_only(args.apk)
 
     try:
         expected = (
@@ -271,9 +331,19 @@ def main(argv=None):
     for apk in args.apk:
         name = os.path.basename(apk)
         try:
-            signers = parse_apksigner_certs(print_certs(apk))
-        except (MalformedApksignerOutput, MalformedFingerprint, OSError) as exc:
+            output = print_certs(apk)
+        except (MalformedApksignerOutput, OSError) as exc:
             print("::error title=Release signature::{0}: {1}".format(name, exc))
+            failed = True
+            continue
+
+        try:
+            signers = parse_apksigner_certs(output)
+        except (MalformedApksignerOutput, MalformedFingerprint) as exc:
+            print("::error title=Release signature::{0}: {1}".format(name, exc))
+            # The output the parser could not read is the only evidence of why,
+            # and it is public certificate data — print it (#764).
+            print_raw_output(name, output)
             failed = True
             continue
 
