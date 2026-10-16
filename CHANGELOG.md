@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.2](https://github.com/derekwinters/lucas-doggiehood/compare/v0.16.1...v0.16.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** log raw apksigner output and prove the signature gate on PR APKs ([#765](https://github.com/derekwinters/lucas-doggiehood/issues/765)) ([c9c04fb](https://github.com/derekwinters/lucas-doggiehood/commit/c9c04fb4e453dd86600a1c9cfc223f701ad478b0))
+
 ## [0.16.1](https://github.com/derekwinters/lucas-doggiehood/compare/v0.16.0...v0.16.1) (2026-08-28)
 
 
