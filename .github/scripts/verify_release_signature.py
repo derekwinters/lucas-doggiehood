@@ -55,11 +55,19 @@ EXPECTED_FINGERPRINT_FILE = os.path.join(
 
 _SHA256_HEX_DIGITS = 64
 
-# apksigner prints "Signer #1 certificate DN: ..." and, when signers differ per
-# SDK range, "Signer (minSdkVersion=24, maxSdkVersion=32) #1 certificate DN:".
-# Both shapes carry the signer index, which is what identifies the block.
+# apksigner labels signer lines in two families:
+#   - legacy: "Signer #1 certificate DN: ...", and, when signers differ per SDK
+#     range, "Signer (minSdkVersion=24, maxSdkVersion=32) #1 certificate DN:";
+#   - per scheme: "V2 Signer: certificate DN: ..." (likewise V3, V3.1, ...),
+#     which is what the CI runner's apksigner actually prints for a Unity-built
+#     APK and which carries no "#N" index at all (#764).
+# A missing index means signer 1. Several schemes describing the same signer
+# merge onto one entry; a disagreement between them is a conflict, not a
+# second signer.
+_DEFAULT_SIGNER_INDEX = 1
 _SIGNER_LINE = re.compile(
-    r"^Signer\s*(?:\([^)]*\)\s*)?#(\d+)\s+certificate\s+(DN|SHA-256 digest):\s*(.*)$")
+    r"^(?:V\d+(?:\.\d+)?\s+)?Signer\s*(?:\([^)]*\)\s*)?(?:#(\d+))?\s*:?\s*"
+    r"certificate\s+(DN|SHA-256 digest):\s*(.*)$")
 _SIGNER_COUNT_LINE = re.compile(r"^Number of signers:\s*(\d+)\s*$")
 
 # Delimits apksigner's raw stdout in the job log, so the exact bytes the parser
@@ -134,12 +142,16 @@ def parse_apksigner_certs(text):
         if not signer_match:
             continue
 
-        index = int(signer_match.group(1))
+        index = int(signer_match.group(1) or _DEFAULT_SIGNER_INDEX)
         field = signer_match.group(2)
         value = signer_match.group(3).strip()
         signer = by_index.setdefault(index, {"dn": "", "sha256": ""})
 
         if field == "DN":
+            if signer["dn"] and signer["dn"] != value:
+                raise MalformedApksignerOutput(
+                    "signer #{0} is reported with two different certificates, "
+                    "DN {1!r} and {2!r}".format(index, signer["dn"], value))
             signer["dn"] = value
         else:
             digest = normalize_fingerprint(value)

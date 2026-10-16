@@ -234,6 +234,84 @@ Some future signer label: CN=Android Debug, O=Android, C=US
 """
 
 
+# apksigner's verbatim stdout for a **Unity-built debug APK**, logged by PR
+# #765's `Debug APK` job (the `Prove the release-signature gate parses the
+# built APK` step) on ubuntu-latest — the first transcript ever taken from an
+# APK this repo's own CI built (#764). The runner's apksigner labels signer
+# lines per signature scheme ("V2 Signer: certificate DN: ...") with no "#N"
+# index, which the parser of v0.16.1 never matched: that is the release failure.
+UNITY_V2_SCHEME_OUTPUT = _captured("apksigner-verify-print-certs-verbose-v2-scheme-unity.txt")
+UNITY_DEBUG_SHA256 = "84b2edff77aa9aa603a27936bda357b7eed8758d42f7341f7cc371804ab92ad2"
+UNITY_DEBUG_DN = "C=US, O=Android, CN=Android Debug"
+
+V2_AND_V3_SAME_CERT_OUTPUT = """Verifies
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Number of signers: 1
+V2 Signer: certificate DN: {dn}
+V2 Signer: certificate SHA-256 digest: {sha}
+V3 Signer: certificate DN: {dn}
+V3 Signer: certificate SHA-256 digest: {sha}
+V3.1 Signer: certificate SHA-256 digest: {sha}
+""".format(dn=UNITY_DEBUG_DN, sha=UNITY_DEBUG_SHA256)
+
+V2_AND_V3_CONFLICTING_CERT_OUTPUT = """Verifies
+Number of signers: 1
+V2 Signer: certificate DN: {dn}
+V2 Signer: certificate SHA-256 digest: {sha}
+V3 Signer: certificate DN: CN=Somebody Else
+V3 Signer: certificate SHA-256 digest: {other}
+""".format(dn=UNITY_DEBUG_DN, sha=UNITY_DEBUG_SHA256, other=OTHER_SHA256)
+
+
+class SchemePrefixedSignerTests(unittest.TestCase):
+    """The format apksigner really prints for a Unity-built APK (#764)."""
+
+    def test_the_unity_built_capture_parses_to_its_one_signer(self):
+        self.assertEqual(
+            parse_apksigner_certs(UNITY_V2_SCHEME_OUTPUT),
+            [SignerFacts(index=1, dn=UNITY_DEBUG_DN, sha256=UNITY_DEBUG_SHA256)])
+
+    def test_the_unity_built_capture_no_longer_fails_the_way_v0_16_1_did(self):
+        try:
+            parse_apksigner_certs(UNITY_V2_SCHEME_OUTPUT)
+        except MalformedApksignerOutput as exc:
+            self.fail("the v0.16.1 release failure, reproduced: {0}".format(exc))
+
+    def test_assessing_the_unity_debug_apk_names_the_debug_certificate(self):
+        verdict = assess(parse_apksigner_certs(UNITY_V2_SCHEME_OUTPUT), CAPTURED_SHA256)
+        self.assertFalse(verdict.ok)
+        self.assertEqual(len(verdict.reasons), 1)
+        self.assertIn("Android debug certificate", verdict.reasons[0])
+
+    def test_several_schemes_describing_one_certificate_are_one_signer(self):
+        self.assertEqual(
+            parse_apksigner_certs(V2_AND_V3_SAME_CERT_OUTPUT),
+            [SignerFacts(index=1, dn=UNITY_DEBUG_DN, sha256=UNITY_DEBUG_SHA256)])
+
+    def test_schemes_that_disagree_on_the_certificate_fail_closed(self):
+        with self.assertRaisesRegex(MalformedApksignerOutput, "two different certificates"):
+            parse_apksigner_certs(V2_AND_V3_CONFLICTING_CERT_OUTPUT)
+
+    def test_a_scheme_prefixed_signer_may_carry_an_index(self):
+        output = (
+            "Number of signers: 2\n"
+            "V2 Signer #1: certificate DN: CN=One\n"
+            "V2 Signer #1: certificate SHA-256 digest: {0}\n"
+            "V2 Signer #2: certificate DN: CN=Two\n"
+            "V2 Signer #2: certificate SHA-256 digest: {1}\n").format(
+                UNITY_DEBUG_SHA256, OTHER_SHA256)
+        self.assertEqual(
+            [(s.index, s.dn, s.sha256) for s in parse_apksigner_certs(output)],
+            [(1, "CN=One", UNITY_DEBUG_SHA256), (2, "CN=Two", OTHER_SHA256)])
+
+    def test_public_key_digests_are_not_mistaken_for_the_certificate(self):
+        signers = parse_apksigner_certs(UNITY_V2_SCHEME_OUTPUT)
+        self.assertNotEqual(
+            signers[0].sha256,
+            "494a8c83916dceef7397fd74faee7e99c9f1551d1c122c23c2f7d97b83407b4d")
+
+
 class GateDiagnosticsTests(unittest.TestCase):
     """When the parser cannot read apksigner, the log must show what it read.
 
