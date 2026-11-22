@@ -1,0 +1,1366 @@
+{
+ "1": {
+  "name": "Side-gable cottage",
+  "scheme": "Sage Cottage",
+  "dims": {
+   "width": 7.5,
+   "depth": 7.0,
+   "wall_height": 3.0,
+   "pitch": 40.0,
+   "addition_center_y": -0.25,
+   "chimney_y": 1.4
+  },
+  "front_y": -3.5,
+  "tris_finished": 1574,
+  "bounds_finished": [
+   -4.75,
+   4.14,
+   -5.1,
+   4.1,
+   7.79
+  ],
+  "tris_framing": 2160,
+  "bounds_framing": [
+   -4.75,
+   3.9,
+   -5.1,
+   4.1,
+   6.87
+  ],
+  "tris_level4_shingle": 3596,
+  "tris_level4_metal": 4172,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.56999969482422,
+   "road_cl_y": -12.0,
+   "quad": [
+    -10.430000305175781,
+    19.56999969482422,
+    -12.0,
+    18.0
+   ],
+   "fence": [
+    -8.430000305175781,
+    11.819999694824219,
+    0.0,
+    16.0
+   ],
+   "composite": [
+    -4.75,
+    8.14,
+    -5.1,
+    7.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.68,
+    "far_side_to_fence": 3.68,
+    "front_to_sidewalk": 1.15,
+    "rear_to_fence": 8.35
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.18000030517578,
+   "road_cl_y": -12.0,
+   "quad": [
+    -16.18000030517578,
+    13.819999694824219,
+    -12.0,
+    18.0
+   ],
+   "fence": [
+    -8.430000305175781,
+    11.819999694824219,
+    0.0,
+    16.0
+   ],
+   "composite": [
+    -4.75,
+    8.14,
+    -5.1,
+    7.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.68,
+    "far_side_to_fence": 3.68,
+    "front_to_sidewalk": 1.15,
+    "rear_to_fence": 8.35
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 30.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    3.75,
+    -0.25,
+    0
+   ],
+   "ATTACH_DECK": [
+    0,
+    3.5,
+    0
+   ]
+  }
+ },
+ "2": {
+  "name": "Ranch",
+  "scheme": "Dove Gray",
+  "dims": {
+   "width": 11.4,
+   "depth": 7.2,
+   "wall_height": 2.8,
+   "pitch": 22.0,
+   "eave": 0.5
+  },
+  "front_y": -3.6,
+  "tris_finished": 1658,
+  "bounds_finished": [
+   -6.33,
+   6.33,
+   -5.25,
+   4.23,
+   6.04
+  ],
+  "tris_framing": 2712,
+  "bounds_framing": [
+   -6.0,
+   6.0,
+   -5.25,
+   4.2,
+   5.17
+  ],
+  "tris_level4_shingle": 3680,
+  "tris_level4_metal": 4016,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.76,
+   "side_road_x": 19.756546020507812,
+   "road_cl_y": -12.1,
+   "quad": [
+    -10.243453979492188,
+    19.756546020507812,
+    -12.1,
+    17.9
+   ],
+   "fence": [
+    -8.243453979492188,
+    12.006546020507812,
+    0.0,
+    15.9
+   ],
+   "composite": [
+    -6.33,
+    10.09,
+    -5.25,
+    7.75
+   ],
+   "clearance": {
+    "road_side_to_fence": 1.92,
+    "far_side_to_fence": 1.92,
+    "front_to_sidewalk": 1.1,
+    "rear_to_fence": 8.15
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 15.99,
+   "side_road_x": -15.993453979492188,
+   "road_cl_y": -12.1,
+   "quad": [
+    -15.993453979492188,
+    14.006546020507812,
+    -12.1,
+    17.9
+   ],
+   "fence": [
+    -8.243453979492188,
+    12.006546020507812,
+    0.0,
+    15.9
+   ],
+   "composite": [
+    -6.33,
+    10.09,
+    -5.25,
+    7.75
+   ],
+   "clearance": {
+    "road_side_to_fence": 1.92,
+    "far_side_to_fence": 1.92,
+    "front_to_sidewalk": 1.1,
+    "rear_to_fence": 8.15
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.6,
+    "pitch": 22.0,
+    "tie_in": 2.6
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 1.9999999999999996,
+    "stair_gap": 0.9000000000000004,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    5.7,
+    -0.1499999999999999,
+    0
+   ],
+   "ATTACH_DECK": [
+    1.9500000000000002,
+    3.6,
+    0
+   ]
+  }
+ },
+ "3": {
+  "name": "Two-storey colonial",
+  "scheme": "Colonial White",
+  "dims": {
+   "width": 8.4,
+   "depth": 7.0,
+   "wall_height": 5.8999999999999995,
+   "pitch": 35.0,
+   "porch_depth": 1.8,
+   "porch_floor": 0.5
+  },
+  "front_y": -5.3,
+  "tris_finished": 2672,
+  "bounds_finished": [
+   -5.2,
+   4.59,
+   -5.94,
+   4.1,
+   10.14
+  ],
+  "tris_framing": 4020,
+  "bounds_framing": [
+   -5.2,
+   4.35,
+   -5.94,
+   4.1,
+   9.28
+  ],
+  "tris_level4_shingle": 4694,
+  "tris_level4_metal": 5318,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.570000171661377,
+   "road_cl_y": -13.8,
+   "quad": [
+    -10.429999828338623,
+    19.570000171661377,
+    -13.8,
+    16.2
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.2
+   ],
+   "composite": [
+    -5.2,
+    8.59,
+    -5.94,
+    7.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.23,
+    "far_side_to_fence": 3.23,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 6.55
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.179999828338623,
+   "road_cl_y": -13.8,
+   "quad": [
+    -16.179999828338623,
+    13.820000171661377,
+    -13.8,
+    16.2
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.2
+   ],
+   "composite": [
+    -5.2,
+    8.59,
+    -5.94,
+    7.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.23,
+    "far_side_to_fence": 3.23,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 6.55
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 30.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    4.2,
+    -0.25,
+    0
+   ],
+   "ATTACH_DECK": [
+    0.4500000000000006,
+    3.5,
+    0
+   ]
+  }
+ },
+ "4": {
+  "name": "Craftsman bungalow",
+  "scheme": "Charcoal Craftsman",
+  "dims": {
+   "width": 8.6,
+   "depth": 10.0,
+   "porch_depth": 2.2,
+   "wall_height": 2.9,
+   "pitch": 26.0,
+   "eave": 0.75,
+   "rake": 0.6,
+   "porch_floor": 0.5,
+   "dormer_y": -1.0,
+   "dormer_width": 2.2,
+   "dormer_inset": 0.5,
+   "dormer_wall": 0.95
+  },
+  "front_y": -5.0,
+  "tris_finished": 2288,
+  "bounds_finished": [
+   -5.3,
+   5.12,
+   -5.64,
+   5.64,
+   6.56
+  ],
+  "tris_framing": 2904,
+  "bounds_framing": [
+   -5.3,
+   4.6,
+   -5.64,
+   5.6,
+   5.91
+  ],
+  "tris_level4_shingle": 4310,
+  "tris_level4_metal": 5318,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.570000171661377,
+   "road_cl_y": -13.5,
+   "quad": [
+    -10.429999828338623,
+    19.570000171661377,
+    -13.5,
+    16.5
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.5
+   ],
+   "composite": [
+    -5.3,
+    8.69,
+    -5.64,
+    9.15
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.13,
+    "far_side_to_fence": 3.13,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 5.35
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.179999828338623,
+   "road_cl_y": -13.5,
+   "quad": [
+    -16.179999828338623,
+    13.820000171661377,
+    -13.5,
+    16.5
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.5
+   ],
+   "composite": [
+    -5.3,
+    8.69,
+    -5.64,
+    9.15
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.13,
+    "far_side_to_fence": 3.13,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 5.35
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.6,
+    "pitch": 26.0,
+    "tie_in": 2.5
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    4.3,
+    1.25,
+    0
+   ],
+   "ATTACH_DECK": [
+    0.5500000000000003,
+    5.0,
+    0
+   ]
+  }
+ },
+ "5": {
+  "name": "Dutch colonial (gambrel)",
+  "scheme": "Coastal Blue",
+  "dims": {
+   "width": 8.4,
+   "depth": 8.0,
+   "wall_height": 2.8,
+   "lower_pitch": 66.0,
+   "lower_run": 1.3,
+   "upper_pitch": 24.0,
+   "eave": 0.2,
+   "rake": 0.3,
+   "dormer_width": 4.6,
+   "dormer_setback": 0.35,
+   "dormer_pitch": 10.0
+  },
+  "front_y": -4.0,
+  "tris_finished": 2134,
+  "bounds_finished": [
+   -5.2,
+   4.54,
+   -5.4,
+   4.6,
+   8.88
+  ],
+  "tris_framing": 3468,
+  "bounds_framing": [
+   -5.2,
+   4.35,
+   -5.4,
+   4.6,
+   8.12
+  ],
+  "tris_level4_shingle": 4156,
+  "tris_level4_metal": 4348,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.570000171661377,
+   "road_cl_y": -12.5,
+   "quad": [
+    -10.429999828338623,
+    19.570000171661377,
+    -12.5,
+    17.5
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    15.5
+   ],
+   "composite": [
+    -5.2,
+    8.59,
+    -5.4,
+    8.15
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.23,
+    "far_side_to_fence": 3.23,
+    "front_to_sidewalk": 1.35,
+    "rear_to_fence": 7.35
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.179999828338623,
+   "road_cl_y": -12.5,
+   "quad": [
+    -16.179999828338623,
+    13.820000171661377,
+    -12.5,
+    17.5
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    15.5
+   ],
+   "composite": [
+    -5.2,
+    8.59,
+    -5.4,
+    8.15
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.23,
+    "far_side_to_fence": 3.23,
+    "front_to_sidewalk": 1.35,
+    "rear_to_fence": 7.35
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 30.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    4.2,
+    0.25,
+    0
+   ],
+   "ATTACH_DECK": [
+    0.4500000000000006,
+    4.0,
+    0
+   ]
+  }
+ },
+ "6": {
+  "name": "Split-level",
+  "scheme": "Navy Saltbox",
+  "dims": {
+   "width": 11.0,
+   "depth": 7.8,
+   "tall_width": 5.0,
+   "tall_wall": 4.7,
+   "tall_pitch": 38.0,
+   "upper_floor": 1.75,
+   "low_setback": 1.6,
+   "low_wall": 2.5,
+   "low_pitch": 18.0
+  },
+  "front_y": -3.9,
+  "tris_finished": 2062,
+  "bounds_finished": [
+   -6.0,
+   5.89,
+   -4.29,
+   4.5,
+   8.23
+  ],
+  "tris_framing": 3932,
+  "bounds_framing": [
+   -5.8,
+   5.65,
+   -4.05,
+   4.5,
+   7.58
+  ],
+  "tris_level4_shingle": 4084,
+  "tris_level4_metal": 4972,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.82,
+   "side_road_x": 19.820746660232544,
+   "road_cl_y": -12.4,
+   "quad": [
+    -10.179253339767456,
+    19.820746660232544,
+    -12.4,
+    17.6
+   ],
+   "fence": [
+    -8.179253339767456,
+    12.070746660232544,
+    0.0,
+    15.6
+   ],
+   "composite": [
+    -6.0,
+    9.89,
+    -4.29,
+    8.05
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.18,
+    "far_side_to_fence": 2.18,
+    "front_to_sidewalk": 2.36,
+    "rear_to_fence": 7.55
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 15.93,
+   "side_road_x": -15.929253339767456,
+   "road_cl_y": -12.4,
+   "quad": [
+    -15.929253339767456,
+    14.070746660232544,
+    -12.4,
+    17.6
+   ],
+   "fence": [
+    -8.179253339767456,
+    12.070746660232544,
+    0.0,
+    15.6
+   ],
+   "composite": [
+    -6.0,
+    9.89,
+    -4.29,
+    8.05
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.18,
+    "far_side_to_fence": 2.18,
+    "front_to_sidewalk": 2.36,
+    "rear_to_fence": 7.55
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 30.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0000000000000004,
+    "stair_gap": 0.9000000000000004,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    5.5,
+    0.1499999999999999,
+    0
+   ],
+   "ATTACH_DECK": [
+    1.75,
+    3.9,
+    0
+   ]
+  }
+ },
+ "7": {
+  "name": "Modern farmhouse",
+  "scheme": "Greige Modern",
+  "dims": {
+   "width": 7.2,
+   "depth": 9.0,
+   "wall_height": 4.6,
+   "pitch": 50.0,
+   "eave": 0.3,
+   "rake": 0.3,
+   "porch_depth": 2.0,
+   "porch_floor": 0.5,
+   "porch_pitch": 14.0,
+   "porch_eave_z": 2.85,
+   "wrap_back_gap": 3.5,
+   "batten_spacing": 0.6
+  },
+  "front_y": -6.5,
+  "tris_finished": 2824,
+  "bounds_finished": [
+   -5.94,
+   4.05,
+   -7.14,
+   5.1,
+   10.13
+  ],
+  "tris_framing": 3840,
+  "bounds_framing": [
+   -5.8,
+   3.9,
+   -7.14,
+   5.1,
+   9.85
+  ],
+  "tris_level4_shingle": 4390,
+  "tris_level4_metal": 5110,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 18.9,
+   "side_road_x": 18.900645971298218,
+   "road_cl_y": -15.0,
+   "quad": [
+    -11.099354028701782,
+    18.900645971298218,
+    -15.0,
+    15.0
+   ],
+   "fence": [
+    -9.099354028701782,
+    11.150645971298218,
+    0.0,
+    13.0
+   ],
+   "composite": [
+    -5.94,
+    7.99,
+    -7.14,
+    8.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.16,
+    "far_side_to_fence": 3.16,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 4.35
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.85,
+   "side_road_x": -16.849354028701782,
+   "road_cl_y": -15.0,
+   "quad": [
+    -16.849354028701782,
+    13.150645971298218,
+    -15.0,
+    15.0
+   ],
+   "fence": [
+    -9.099354028701782,
+    11.150645971298218,
+    0.0,
+    13.0
+   ],
+   "composite": [
+    -5.94,
+    7.99,
+    -7.14,
+    8.65
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.16,
+    "far_side_to_fence": 3.16,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 4.35
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 50.0,
+    "tie_in": 1.1
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    3.6,
+    0.75,
+    0
+   ],
+   "ATTACH_DECK": [
+    -0.1499999999999999,
+    4.5,
+    0
+   ]
+  }
+ },
+ "8": {
+  "name": "Storybook Tudor",
+  "scheme": "Cream & Forest",
+  "dims": {
+   "width": 9.6,
+   "depth": 7.6,
+   "wall_height": 2.7,
+   "pitch": 50.0,
+   "cross_x1": -0.8,
+   "cross_proj": 1.4,
+   "cross_pitch": 58.0
+  },
+  "front_y": -5.199999999999999,
+  "tris_finished": 2118,
+  "bounds_finished": [
+   -5.8,
+   5.19,
+   -6.5,
+   4.4,
+   9.29
+  ],
+  "tris_framing": 3084,
+  "bounds_framing": [
+   -5.8,
+   4.95,
+   -6.5,
+   4.4,
+   8.19
+  ],
+  "tris_level4_shingle": 4140,
+  "tris_level4_metal": 5028,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.570000171661377,
+   "road_cl_y": -13.7,
+   "quad": [
+    -10.429999828338623,
+    19.570000171661377,
+    -13.7,
+    16.3
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.3
+   ],
+   "composite": [
+    -5.8,
+    9.19,
+    -6.5,
+    7.95
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.63,
+    "far_side_to_fence": 2.63,
+    "front_to_sidewalk": 1.45,
+    "rear_to_fence": 6.35
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.179999828338623,
+   "road_cl_y": -13.7,
+   "quad": [
+    -16.179999828338623,
+    13.820000171661377,
+    -13.7,
+    16.3
+   ],
+   "fence": [
+    -8.429999828338623,
+    11.820000171661377,
+    0.0,
+    14.3
+   ],
+   "composite": [
+    -5.8,
+    9.19,
+    -6.5,
+    7.95
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.63,
+    "far_side_to_fence": 2.63,
+    "front_to_sidewalk": 1.45,
+    "rear_to_fence": 6.35
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.5,
+    "pitch": 50.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.9000000000000004,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    4.8,
+    0.04999999999999982,
+    0
+   ],
+   "ATTACH_DECK": [
+    1.0499999999999998,
+    3.8,
+    0
+   ]
+  }
+ },
+ "9": {
+  "name": "Spanish mission",
+  "scheme": "Adobe Tile",
+  "dims": {
+   "width": 10.4,
+   "depth": 7.4,
+   "wall_height": 3.0,
+   "pitch": 18.0,
+   "eave": 0.45,
+   "loggia_width": 4.8,
+   "loggia_depth": 2.0,
+   "arcade_top": 3.35,
+   "arch_spring": 2.25,
+   "parapet_peak": 1.45,
+   "court_wall": 1.15
+  },
+  "front_y": -5.7,
+  "tris_finished": 2498,
+  "bounds_finished": [
+   -5.77,
+   5.77,
+   -6.1,
+   4.3,
+   6.08
+  ],
+  "tris_framing": 3008,
+  "bounds_framing": [
+   -5.5,
+   5.5,
+   -6.1,
+   4.3,
+   5.11
+  ],
+  "tris_level4_shingle": 4520,
+  "tris_level4_metal": 4784,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.78,
+   "side_road_x": 19.782982110977173,
+   "road_cl_y": -14.2,
+   "quad": [
+    -10.217017889022827,
+    19.782982110977173,
+    -14.2,
+    15.8
+   ],
+   "fence": [
+    -8.217017889022827,
+    12.032982110977173,
+    0.0,
+    13.8
+   ],
+   "composite": [
+    -5.77,
+    9.59,
+    -6.1,
+    7.85
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.44,
+    "far_side_to_fence": 2.44,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 5.95
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 15.97,
+   "side_road_x": -15.967017889022827,
+   "road_cl_y": -14.2,
+   "quad": [
+    -15.967017889022827,
+    14.032982110977173,
+    -14.2,
+    15.8
+   ],
+   "fence": [
+    -8.217017889022827,
+    12.032982110977173,
+    0.0,
+    13.8
+   ],
+   "composite": [
+    -5.77,
+    9.59,
+    -6.1,
+    7.85
+   ],
+   "clearance": {
+    "road_side_to_fence": 2.44,
+    "far_side_to_fence": 2.44,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 5.95
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.6,
+    "pitch": 18.0,
+    "tie_in": 1.5
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.0,
+    "stair_gap": 0.9000000000000004,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    5.2,
+    -0.04999999999999982,
+    0
+   ],
+   "ATTACH_DECK": [
+    1.4500000000000002,
+    3.7,
+    0
+   ]
+  }
+ },
+ "10": {
+  "name": "Queen Anne",
+  "scheme": "Buttercream",
+  "dims": {
+   "width": 8.0,
+   "depth": 8.6,
+   "wall_height": 5.8999999999999995,
+   "pitch": 45.0,
+   "eave": 0.35,
+   "rake": 0.35,
+   "turret_r": 1.55,
+   "turret_off": [
+    0.2,
+    -0.2
+   ],
+   "turret_top": 8.7,
+   "turret_roof": 3.9,
+   "porch_depth": 2.0,
+   "porch_floor": 0.5
+  },
+  "front_y": -6.3,
+  "tris_finished": 3080,
+  "bounds_finished": [
+   -5.51,
+   4.48,
+   -6.94,
+   4.9,
+   13.15
+  ],
+  "tris_framing": 4820,
+  "bounds_framing": [
+   -5.5,
+   4.3,
+   -6.94,
+   4.9,
+   12.43
+  ],
+  "tris_level4_shingle": 4670,
+  "tris_level4_metal": 5294,
+  "placement_addition_road_side": {
+   "addition_toward_road": true,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.31541109085083,
+   "road_cl_y": -14.8,
+   "quad": [
+    -10.68458890914917,
+    19.31541109085083,
+    -14.8,
+    15.2
+   ],
+   "fence": [
+    -8.68458890914917,
+    11.56541109085083,
+    0.0,
+    13.2
+   ],
+   "composite": [
+    -5.51,
+    8.39,
+    -6.94,
+    8.45
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.18,
+    "far_side_to_fence": 3.18,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 4.75
+   },
+   "fits": true
+  },
+  "placement_addition_far_side": {
+   "addition_toward_road": false,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.43458890914917,
+   "road_cl_y": -14.8,
+   "quad": [
+    -16.43458890914917,
+    13.56541109085083,
+    -14.8,
+    15.2
+   ],
+   "fence": [
+    -8.68458890914917,
+    11.56541109085083,
+    0.0,
+    13.2
+   ],
+   "composite": [
+    -5.51,
+    8.39,
+    -6.94,
+    8.45
+   ],
+   "clearance": {
+    "road_side_to_fence": 3.18,
+    "far_side_to_fence": 3.18,
+    "front_to_sidewalk": 2.11,
+    "rear_to_fence": 4.75
+   },
+   "fits": true
+  },
+  "pieces": {
+   "addition": {
+    "width": 4.0,
+    "depth": 4.5,
+    "wall_height": 2.7,
+    "pitch": 40.0,
+    "tie_in": 0.0
+   },
+   "deck": {
+    "width": 6.0,
+    "depth": 4.0,
+    "top": 0.6,
+    "rail_height": 0.95,
+    "stair_width": 1.6,
+    "stair_y": 2.000000000000001,
+    "stair_gap": 0.8999999999999999,
+    "stair_treads": 2,
+    "landing_height": 0.08
+   },
+   "patio": {
+    "width": 4.0,
+    "depth": 5.5,
+    "paver": 0.9,
+    "grout": 0.07,
+    "height": 0.08,
+    "border": 0.22
+   }
+  },
+  "attach": {
+   "ATTACH_ADDITION": [
+    4.0,
+    0.5499999999999998,
+    0
+   ],
+   "ATTACH_DECK": [
+    0.25000000000000044,
+    4.3,
+    0
+   ]
+  }
+ }
+}

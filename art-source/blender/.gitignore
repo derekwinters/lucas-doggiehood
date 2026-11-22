@@ -1,0 +1,4 @@
+# Render output (render_base_1.py / render_bases.py default) and the
+# temporary scheme-grid tiles render_base_1.py writes next to itself.
+out/
+_scheme_*.png

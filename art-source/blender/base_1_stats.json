@@ -1,0 +1,85 @@
+{
+ "base-1-finished": 1574,
+ "base-1-framing": 2160,
+ "piece-addition": 606,
+ "piece-deck": 1068,
+ "piece-patio": 348,
+ "bounds_finished": [
+  -4.75,
+  4.14,
+  -5.1,
+  4.1,
+  0.0,
+  7.794
+ ],
+ "bounds_framing": [
+  -4.75,
+  3.9,
+  -5.1,
+  4.1,
+  0.0,
+  6.87
+ ],
+ "placement_addition_road_side": {
+  "addition_toward_road": true,
+  "pivot_s_from_side_road": 19.57,
+  "side_road_x": 19.56999969482422,
+  "quad": [
+   -10.430000305175781,
+   19.56999969482422,
+   -12.0,
+   18.0
+  ],
+  "fence": [
+   -8.430000305175781,
+   11.819999694824219,
+   0.0,
+   16.0
+  ],
+  "composite": [
+   -4.75,
+   8.14,
+   -5.1,
+   7.65
+  ],
+  "clearance": {
+   "road_side_to_fence": 3.68,
+   "far_side_to_fence": 3.68,
+   "front_to_sidewalk": 1.15,
+   "facade_to_sidewalk": 2.75,
+   "rear_to_fence": 8.35
+  },
+  "fits": true
+ },
+ "placement_addition_far_side": {
+  "addition_toward_road": false,
+  "pivot_s_from_side_road": 16.18,
+  "side_road_x": -16.18000030517578,
+  "quad": [
+   -16.18000030517578,
+   13.819999694824219,
+   -12.0,
+   18.0
+  ],
+  "fence": [
+   -8.430000305175781,
+   11.819999694824219,
+   0.0,
+   16.0
+  ],
+  "composite": [
+   -4.75,
+   8.14,
+   -5.1,
+   7.65
+  ],
+  "clearance": {
+   "road_side_to_fence": 3.68,
+   "far_side_to_fence": 3.68,
+   "front_to_sidewalk": 1.15,
+   "facade_to_sidewalk": 2.75,
+   "rear_to_fence": 8.35
+  },
+  "fits": true
+ }
+}
