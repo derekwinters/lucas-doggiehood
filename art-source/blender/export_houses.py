@@ -14,18 +14,14 @@ and the three upgrade pieces on their own, with their default DIMS, in
 base 1's scheme (Sage Cottage):
   piece-addition.glb, piece-deck.glb, piece-patio.glb
 
-Roof-colour fix: a textured roof's material wires the tinted texture into
-Base Color, and the glTF exporter then writes the texture but drops the
-colour multiply (no baseColorFactor). After each export the GLB's JSON chunk
-is patched so every `*_roof` material that has a baseColorTexture also
-carries the scheme's roof colour as baseColorFactor, which is what URP's
-Base Map x Base Color needs on import.
+Roofs: the embedded roof image is the tinted copy for the base's scheme
+(textures/roof_<style>_<HEX>.png), wired straight into the glTF base colour
+with no baseColorFactor, so every roof carries exactly one tint and viewers
+show it as rendered in Blender.
 """
 
 import importlib
-import json
 import os
-import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,61 +36,24 @@ import piece_patio  # noqa: E402
 BASE_COUNT = 10
 LEVELS = (1, 2, 3, 4)
 PIECE_SCHEME = "Sage Cottage"
-GLB_HEADER_LEN = 12
-CHUNK_HEADER_LEN = 8
-GLB_ALIGN = 4
-ROOF_MATERIAL_SUFFIX = "_roof"
-
-
-def patch_roof_color(path, palette):
-    """Add the scheme's roof colour as baseColorFactor on textured roof
-    materials that lack one. Returns the number of materials patched."""
-    with open(path, "rb") as f:
-        data = f.read()
-    json_len = struct.unpack("<I", data[GLB_HEADER_LEN:GLB_HEADER_LEN + 4])[0]
-    json_start = GLB_HEADER_LEN + CHUNK_HEADER_LEN
-    doc = json.loads(data[json_start:json_start + json_len])
-    rest = data[json_start + json_len:]
-    fixed = 0
-    for mat in doc.get("materials", []):
-        pbr = mat.get("pbrMetallicRoughness", {})
-        if (mat.get("name", "").endswith(ROOF_MATERIAL_SUFFIX)
-                and "baseColorTexture" in pbr and "baseColorFactor" not in pbr):
-            pbr["baseColorFactor"] = list(K.hex_rgba(palette["roof"]))
-            mat["pbrMetallicRoughness"] = pbr
-            fixed += 1
-    if not fixed:
-        return 0
-    js = json.dumps(doc, separators=(",", ":")).encode()
-    js += b" " * ((GLB_ALIGN - len(js) % GLB_ALIGN) % GLB_ALIGN)
-    out = data[:GLB_HEADER_LEN] + struct.pack("<I", len(js)) + b"JSON" + js + rest
-    out = out[:8] + struct.pack("<I", len(out)) + out[GLB_HEADER_LEN:]
-    with open(path, "wb") as f:
-        f.write(out)
-    return fixed
-
-
-def export(path, objects, palette):
-    K.export_glb(path, objects)
-    return patch_roof_color(path, palette)
 
 
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    written, patched = [], 0
+    written = []
     for n in range(1, BASE_COUNT + 1):
         base = importlib.import_module("base_house_%d" % n)
         pal = K.scheme_palette(base.RENDER_SCHEME)
         K.reset_scene()
         ob, _ = base.build("framing", palette=pal)
         path = os.path.join(out_dir, "base-%02d-framing.glb" % n)
-        patched += export(path, [ob], pal)
+        K.export_glb(path, [ob])
         written.append(path)
         for lv in LEVELS:
             K.reset_scene()
             objs = S.build_level(base, pal, lv)
             path = os.path.join(out_dir, "base-%02d-level%d.glb" % (n, lv))
-            patched += export(path, S.meshes(objs), pal)
+            K.export_glb(path, S.meshes(objs))
             written.append(path)
     pal = K.scheme_palette(PIECE_SCHEME)
     for nm, mod in (("addition", piece_addition), ("deck", piece_deck), ("patio", piece_patio)):
@@ -103,9 +62,9 @@ def main(out_dir):
         if isinstance(ob, tuple):
             ob = ob[0]
         path = os.path.join(out_dir, "piece-%s.glb" % nm)
-        patched += export(path, [ob], pal)
+        K.export_glb(path, [ob])
         written.append(path)
-    print("exported %d files, patched %d roof materials" % (len(written), patched))
+    print("exported %d files" % len(written))
 
 
 if __name__ == "__main__":
