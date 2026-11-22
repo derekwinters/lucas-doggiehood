@@ -1,6 +1,6 @@
 # Doggiehood — Agent Instructions
 
-Doggiehood is a low-poly Android game about a neighborhood of dogs, built by Derek and his son Lucas with Claude doing implementation.
+Doggiehood is an Android game about a neighborhood of dogs, built by Derek and his son Lucas with Claude doing implementation.
 
 ## The contract
 
