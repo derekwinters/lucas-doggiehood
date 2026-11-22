@@ -18,7 +18,9 @@ Every UI component inherits, from [Art & UI Style](../world/art-style.md):
 - **Chunky pill / rounded shapes** — pill-shaped buttons and chips.
 - **Bold rounded sans-serif type.**
 
-A sticker-book feel, chosen for legibility against the bright/saturated palette and low-poly toy-shelf look.
+A sticker-book feel, chosen for legibility against the bright/saturated palette and toy-shelf look the game had when it was chosen.
+
+> **How the spec is changing ([#798](https://github.com/derekwinters/lucas-doggiehood/issues/798)).** This line used to give the world's **low-poly** look as a reason for the chrome style → it now ties that reason to the look the game had when the style was chosen → because the low-poly rule was retired on [#796](https://github.com/derekwinters/lucas-doggiehood/issues/796); the UI chrome rules themselves are unchanged.
 
 ### Shared baseline constants
 
