@@ -1,0 +1,1249 @@
+{
+ "lamp_post_lantern": {
+  "label": "Lamp post, lantern",
+  "tris": 354,
+  "size_xyz_m": [
+   0.428,
+   0.495,
+   5.014
+  ],
+  "materials": {
+   "DH_Prop_lamp_black": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.023,
+     0.026,
+     0.033,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_lamp_glass": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     1,
+     0.815,
+     0.434,
+     1
+    ],
+    "emissive": true
+   }
+  },
+  "images": [
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3680,
+  "bin_bytes": 25228
+ },
+ "lamp_post_cobra": {
+  "label": "Street light, cobra-head",
+  "tris": 176,
+  "size_xyz_m": [
+   0.4,
+   2.72,
+   6.56
+  ],
+  "materials": {
+   "DH_Prop_concrete": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_pole_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.687,
+     0.708,
+     0.73,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_cobra_grey": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.366,
+     0.392,
+     0.423,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_led_lens": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.905,
+     0.922,
+     1,
+     1
+    ],
+    "emissive": true
+   }
+  },
+  "images": [
+   "../textures/prop_concrete_color.png",
+   "../textures/prop_concrete_normal.png",
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 6666,
+  "bin_bytes": 12320
+ },
+ "stop_sign": {
+  "label": "Stop",
+  "tris": 64,
+  "size_xyz_m": [
+   0.874,
+   0.094,
+   3.174
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3577,
+  "bin_bytes": 4224
+ },
+ "yield_sign": {
+  "label": "Yield",
+  "tris": 34,
+  "size_xyz_m": [
+   0.874,
+   0.094,
+   3.057
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3574,
+  "bin_bytes": 2448
+ },
+ "speed_limit_25": {
+  "label": "Speed limit 25",
+  "tris": 88,
+  "size_xyz_m": [
+   0.701,
+   0.094,
+   3.174
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3599,
+  "bin_bytes": 5648
+ },
+ "slow_dogs_at_play": {
+  "label": "Slow - Dogs at Play",
+  "tris": 132,
+  "size_xyz_m": [
+   1.179,
+   0.094,
+   4.102
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3609,
+  "bin_bytes": 8472
+ },
+ "pedestrian_crossing_ahead": {
+  "label": "Pedestrian crossing",
+  "tris": 64,
+  "size_xyz_m": [
+   1.179,
+   0.094,
+   3.515
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3619,
+  "bin_bytes": 4224
+ },
+ "crosswalk_sign": {
+  "label": "Crosswalk (with arrow)",
+  "tris": 132,
+  "size_xyz_m": [
+   1.179,
+   0.094,
+   3.918
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3602,
+  "bin_bytes": 8472
+ },
+ "dead_end": {
+  "label": "Dead end",
+  "tris": 64,
+  "size_xyz_m": [
+   1.179,
+   0.094,
+   3.515
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3568,
+  "bin_bytes": 4224
+ },
+ "no_parking": {
+  "label": "No parking",
+  "tris": 88,
+  "size_xyz_m": [
+   0.345,
+   0.094,
+   2.829
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3587,
+  "bin_bytes": 5648
+ },
+ "bus_stop_sign": {
+  "label": "Bus stop sign",
+  "tris": 88,
+  "size_xyz_m": [
+   0.529,
+   0.094,
+   3.001
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3590,
+  "bin_bytes": 5648
+ },
+ "bench_park": {
+  "label": "Park bench",
+  "tris": 228,
+  "size_xyz_m": [
+   1.84,
+   0.675,
+   1.019
+  ],
+  "materials": {
+   "DH_Prop_bench_iron": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.024,
+     0.028,
+     0.036,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_bench_wood": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png",
+   "../textures/prop_wood_color.png",
+   "../textures/prop_wood_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3689,
+  "bin_bytes": 15960
+ },
+ "bench_bus": {
+  "label": "Bus-stop bench",
+  "tris": 354,
+  "size_xyz_m": [
+   2.185,
+   0.708,
+   1.044
+  ],
+  "materials": {
+   "DH_Prop_bus_green": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.028,
+     0.112,
+     0.065,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2178,
+  "bin_bytes": 24780
+ },
+ "fire_hydrant": {
+  "label": "Fire hydrant",
+  "tris": 361,
+  "size_xyz_m": [
+   0.483,
+   0.445,
+   0.92
+  ],
+  "materials": {
+   "DH_Prop_hydrant_red": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.565,
+     0.042,
+     0.025,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_hydrant_cap": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.584,
+     0.61,
+     0.638,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3595,
+  "bin_bytes": 25560
+ },
+ "mailbox": {
+  "label": "Mailbox",
+  "tris": 117,
+  "size_xyz_m": [
+   0.227,
+   0.6,
+   1.472
+  ],
+  "materials": {
+   "DH_Prop_post_white": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.905,
+     0.888,
+     0.839,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_mailbox": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.03,
+     0.034,
+     0.042,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_hydrant_cap": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.584,
+     0.61,
+     0.638,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_flag": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.604,
+     0.03,
+     0.022,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 6377,
+  "bin_bytes": 8032
+ },
+ "trash_bin": {
+  "label": "Trash cart",
+  "tris": 130,
+  "size_xyz_m": [
+   0.79,
+   0.922,
+   1.143
+  ],
+  "materials": {
+   "DH_Prop_trash": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.06,
+     0.084,
+     0.068,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_rubber": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.023,
+     0.023,
+     0.025,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_plastic_color.png",
+   "../textures/prop_plastic_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3551,
+  "bin_bytes": 8460
+ },
+ "recycling_bin": {
+  "label": "Recycling cart",
+  "tris": 132,
+  "size_xyz_m": [
+   0.79,
+   0.922,
+   1.143
+  ],
+  "materials": {
+   "DH_Prop_recycle": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.027,
+     0.159,
+     0.527,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_rubber": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.023,
+     0.023,
+     0.025,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png",
+   "../textures/prop_plastic_color.png",
+   "../textures/prop_plastic_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 5093,
+  "bin_bytes": 8600
+ },
+ "dog_waste_station": {
+  "label": "Dog-waste station",
+  "tris": 149,
+  "size_xyz_m": [
+   0.851,
+   0.416,
+   1.794
+  ],
+  "materials": {
+   "DH_Prop_waste_green": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.025,
+     0.156,
+     0.063,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_rubber": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.023,
+     0.023,
+     0.025,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png",
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png",
+   "../textures/prop_plastic_color.png",
+   "../textures/prop_plastic_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 5352,
+  "bin_bytes": 10720
+ },
+ "bike_rack": {
+  "label": "Bike rack",
+  "tris": 288,
+  "size_xyz_m": [
+   1.777,
+   0.75,
+   1.027
+  ],
+  "materials": {
+   "DH_Prop_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2067,
+  "bin_bytes": 20160
+ },
+ "newspaper_box": {
+  "label": "Newspaper box",
+  "tris": 48,
+  "size_xyz_m": [
+   0.605,
+   0.523,
+   1.255
+  ],
+  "materials": {
+   "DH_Prop_news_navy": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.026,
+     0.076,
+     0.262,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png",
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 3688,
+  "bin_bytes": 3424
+ },
+ "utility_pole": {
+  "label": "Utility pole",
+  "tris": 352,
+  "size_xyz_m": [
+   0.74,
+   2.4,
+   10.29
+  ],
+  "materials": {
+   "DH_Prop_pole_wood": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.202,
+     0.127,
+     0.08,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_pole_galv": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.687,
+     0.708,
+     0.73,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_insulator": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.275,
+     0.386,
+     0.323,
+     1
+    ],
+    "emissive": false
+   },
+   "DH_Prop_transformer": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.27,
+     0.296,
+     0.319,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_galv_color.png",
+   "../textures/prop_galv_normal.png",
+   "../textures/prop_paint_color.png",
+   "../textures/prop_paint_normal.png",
+   "../textures/prop_plastic_color.png",
+   "../textures/prop_plastic_normal.png",
+   "../textures/prop_wood_color.png",
+   "../textures/prop_wood_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 7101,
+  "bin_bytes": 25344
+ },
+ "utility_wires": {
+  "label": "Wires, one 30 m span",
+  "tris": 384,
+  "size_xyz_m": [
+   30.003,
+   2.036,
+   4.486
+  ],
+  "materials": {
+   "DH_Prop_wire": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.012,
+     0.012,
+     0.014,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_plastic_color.png",
+   "../textures/prop_plastic_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2195,
+  "bin_bytes": 26880
+ },
+ "manhole_cover": {
+  "label": "Manhole cover (decal)",
+  "tris": 10,
+  "size_xyz_m": [
+   0.759,
+   0.759,
+   0.0
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2062,
+  "bin_bytes": 444
+ },
+ "storm_drain": {
+  "label": "Storm drain (decal)",
+  "tris": 2,
+  "size_xyz_m": [
+   1.058,
+   0.644,
+   0.0
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2026,
+  "bin_bytes": 140
+ },
+ "crosswalk": {
+  "label": "Crosswalk (decal)",
+  "tris": 12,
+  "size_xyz_m": [
+   3.0,
+   5.5,
+   0.0
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 1989,
+  "bin_bytes": 840
+ },
+ "stop_line": {
+  "label": "Stop line (decal)",
+  "tris": 2,
+  "size_xyz_m": [
+   0.4,
+   2.7,
+   0.0
+  ],
+  "materials": {
+   "DH_Prop_labels": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "emissive": false
+   }
+  },
+  "images": [
+   "../textures/prop_labels_color.png",
+   "../textures/prop_labels_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2042,
+  "bin_bytes": 140
+ }
+}
