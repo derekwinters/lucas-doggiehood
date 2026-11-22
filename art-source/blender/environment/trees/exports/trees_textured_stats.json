@@ -1,0 +1,448 @@
+{
+ "tree-maple-large": {
+  "label": "Maple (large)",
+  "tris": 4740,
+  "leaf_tris": 3040,
+  "size_xyz_m": [
+   7.71,
+   7.51,
+   8.57
+  ],
+  "materials": {
+   "DH_Tree_bark": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_maple_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   },
+   "DH_Tree_maple_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   }
+  },
+  "images": [
+   "../textures/bark_normal.png",
+   "../textures/bark_color.png",
+   "../textures/maple_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5154,
+  "bin_bytes": 336920
+ },
+ "tree-maple-small": {
+  "label": "Maple (young)",
+  "tris": 3460,
+  "leaf_tris": 1760,
+  "size_xyz_m": [
+   4.63,
+   4.7,
+   5.37
+  ],
+  "materials": {
+   "DH_Tree_bark": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_maple_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_maple_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_normal.png",
+   "../textures/bark_color.png",
+   "../textures/maple_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5157,
+  "bin_bytes": 247320
+ },
+ "tree-cherry-large": {
+  "label": "Cherry (large)",
+  "tris": 4256,
+  "leaf_tris": 2156,
+  "size_xyz_m": [
+   8.01,
+   8.23,
+   5.68
+  ],
+  "materials": {
+   "DH_Tree_bark_cherry": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_cherry_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_cherry_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_cherry_normal.png",
+   "../textures/bark_cherry_color.png",
+   "../textures/cherry_blossom_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5209,
+  "bin_bytes": 304320
+ },
+ "tree-cherry-small": {
+  "label": "Cherry (young)",
+  "tris": 2900,
+  "leaf_tris": 800,
+  "size_xyz_m": [
+   4.77,
+   4.48,
+   3.5
+  ],
+  "materials": {
+   "DH_Tree_bark_cherry": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_cherry_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_cherry_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_cherry_normal.png",
+   "../textures/bark_cherry_color.png",
+   "../textures/cherry_blossom_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5205,
+  "bin_bytes": 209400
+ },
+ "tree-spruce-large": {
+  "label": "Spruce (large)",
+  "tris": 1593,
+  "leaf_tris": 1494,
+  "size_xyz_m": [
+   6.19,
+   6.19,
+   10.37
+  ],
+  "materials": {
+   "DH_Tree_bark_spruce": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_spruce_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   }
+  },
+  "images": [
+   "../textures/bark_spruce_normal.png",
+   "../textures/bark_spruce_color.png",
+   "../textures/spruce_needle_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 3664,
+  "bin_bytes": 111800
+ },
+ "tree-spruce-small": {
+  "label": "Spruce (young)",
+  "tris": 1233,
+  "leaf_tris": 1134,
+  "size_xyz_m": [
+   3.4,
+   3.4,
+   5.7
+  ],
+  "materials": {
+   "DH_Tree_bark_spruce": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_spruce_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   }
+  },
+  "images": [
+   "../textures/bark_spruce_normal.png",
+   "../textures/bark_spruce_color.png",
+   "../textures/spruce_needle_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 3663,
+  "bin_bytes": 86600
+ },
+ "tree-columnar-large": {
+  "label": "Columnar (large)",
+  "tris": 1760,
+  "leaf_tris": 1660,
+  "size_xyz_m": [
+   2.79,
+   2.9,
+   10.14
+  ],
+  "materials": {
+   "DH_Tree_bark": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_column_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_column_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_normal.png",
+   "../textures/bark_color.png",
+   "../textures/column_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5160,
+  "bin_bytes": 123200
+ },
+ "tree-columnar-small": {
+  "label": "Columnar (young)",
+  "tris": 760,
+  "leaf_tris": 660,
+  "size_xyz_m": [
+   1.69,
+   1.87,
+   6.21
+  ],
+  "materials": {
+   "DH_Tree_bark": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_column_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_column_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_normal.png",
+   "../textures/bark_color.png",
+   "../textures/column_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5149,
+  "bin_bytes": 53200
+ },
+ "tree-street": {
+  "label": "Street tree",
+  "tris": 2961,
+  "leaf_tris": 1760,
+  "size_xyz_m": [
+   5.68,
+   5.68,
+   7.03
+  ],
+  "materials": {
+   "DH_Tree_bark": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_street_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_street_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_normal.png",
+   "../textures/bark_color.png",
+   "../textures/street_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5143,
+  "bin_bytes": 210824
+ },
+ "tree-japanese-maple": {
+  "label": "Japanese maple (yard)",
+  "tris": 2365,
+  "leaf_tris": 1264,
+  "size_xyz_m": [
+   5.08,
+   4.86,
+   2.88
+  ],
+  "materials": {
+   "DH_Tree_bark_spruce": {
+    "alphaMode": "OPAQUE",
+    "alphaCutoff": null,
+    "doubleSided": false,
+    "normalTexture": true,
+    "baseColorFactor": null
+   },
+   "DH_Tree_jmaple_leaves": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": null
+   },
+   "DH_Tree_jmaple_leaves_inner": {
+    "alphaMode": "MASK",
+    "alphaCutoff": null,
+    "doubleSided": true,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.6000000238418579,
+     0.6000000238418579,
+     0.5699999928474426,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/bark_spruce_normal.png",
+   "../textures/bark_spruce_color.png",
+   "../textures/jmaple_leaf_atlas.png"
+  ],
+  "leaf_alpha_mask_double_sided_ok": true,
+  "shared_texture_uris_ok": true,
+  "gltf_bytes": 5206,
+  "bin_bytes": 169104
+ }
+}
