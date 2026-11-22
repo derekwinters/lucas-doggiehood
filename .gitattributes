@@ -23,6 +23,7 @@
 *.blend binary
 *.glb binary
 *.gltf binary
+*.bin binary
 
 # Audio
 *.wav binary
