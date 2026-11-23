@@ -791,6 +791,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../house-design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sidewalks/" class="md-nav__link">
         
   
@@ -1947,6 +1968,9 @@
 </blockquote>
 <p>The constant lives in Core as <code>HousePlacement.KitScale</code> (<code>WorldBuilder.HouseKitScale</code> is the Unity-side alias), and everything downstream — front-setback placement, door world positions, walkway starts, the catalog gallery — derives from it. At ×7 the four starting models' footprints are: building-type-b <strong>12.80×7.98m</strong>, building-type-g <strong>10.15×8.25m</strong>, building-type-k <strong>6.45×7.14m</strong>, building-type-m <strong>10.00×10.00m</strong>. ×8 was rejected at the time because building-type-b would have been 14.6m wide against <a href="https://github.com/derekwinters/lucas-doggiehood/issues/129">#129</a>'s then-current 15m lot-fence square (a 0.5m-margin guard); at ×7 it kept a 1.1m margin. That square is gone — fences were reshaped to house-anchored backyard runs (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/146">#146</a>) and then widened to trace the lot boundary (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/342">#342</a>, see <a href="#backyard-fences">Backyard fences</a>) — but the ×7 decision stands on its own.</p>
 <p><strong>Upgrading re-aligns the house to its street (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/454">#454</a>).</strong> A different footprint depth at each upgrade level would leave a taller mesh sitting at the level-1-calibrated pivot — drifting off the sidewalk — if placement stayed level-blind. So the front-setback pivot (<code>HousePlacement.Position</code>/<code>PositionFor</code>), the shared footprint rect (<code>HousePlacement.HouseFootprint</code>), and the door the front walkway meets are all resolved from the house's <strong>current level's</strong> model (<code>HouseModelCatalog.ForHouse(houseId, level)</code>), keeping the facade exactly <code>FrontSetback</code> from the sidewalk's outer edge at every level and the walkway attached to the door the current mesh actually shows. <code>WalkNetwork.RefreshFrontWalkway(lot, level)</code> re-projects a single lot's walkway edge to the upgraded door, and <code>HouseUpgradeDirector.RefreshHouse</code> runs it alongside the mesh rebuild so mesh, door, and walkway stay in agreement. The <strong>lot</strong> itself never moves — its quadrant <a href="#property-bounds">Property bounds</a> and hand-picked centre are level-invariant, so only the house visual and its walkway re-align. (The level-<em>blind</em> <code>HouseModelCatalog.ForHouse(houseId)</code> overload still resolves the level-1 mesh, and remains in use where no level is in hand — e.g. the house <strong>placement pivot/facing</strong> the backyard-fence boundary rectangle traces around, whose per-level re-centering is #462's territory. The fence's two <strong>connectors</strong> already track the current level as of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/460">#460</a>, and yard trees reserve the max-across-ladder footprint as of <a href="https://github.com/derekwinters/lucas-doggiehood/issues/459">#459</a>.)</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/773">#773</a>).</strong> This section used to place a house from its <strong>current level's</strong> model, re-aligning it at each upgrade so its facade stays <code>FrontSetback</code> (2.75 m) from the sidewalk, from a fixed lot anchor → it now says a house is placed by its <strong>level-4 footprint</strong> (base plus every upgrade piece), centred between the side fences, with the base's declared <strong>front line</strong> <strong>3.75 m</strong> from the sidewalk's outer edge, so nothing moves when a piece is added — see <a href="../house-design/#placement-on-the-lot">House Design → Placement on the lot</a> → because the new houses grow by adding pieces, a fully upgraded house must fit every lot, and Derek asked to push houses back slightly for front landscaping (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/773">#773</a>). The code still places the Kenney houses as described above until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/778">#778</a> and <a href="https://github.com/derekwinters/lucas-doggiehood/issues/789">#789</a> land.</p>
+</blockquote>
 <h2 id="property-bounds">Property bounds<a class="headerlink" href="#property-bounds" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p><strong>Decision (2026-07-20, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/222">#222</a>):</strong> a <strong>property (lot) is one quadrant of a tile</strong>. On the starting FourWay intersection each of the 4 quadrants is a property; that same quadrant size is the standard for every layout — tighter layouts (the deferred <a href="../tile-catalog/#the-15-tile-types">tile catalog</a>) simply fit fewer properties, never a differently-sized one.</p>

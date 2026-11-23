@@ -650,6 +650,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../world/house-design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../world/sidewalks/" class="md-nav__link">
         
   
@@ -2030,6 +2051,9 @@
 <p><strong>Implementation note (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/436">#436</a>) — a move-in is reflected in-game the instant it happens.</strong> The Core mechanism above filled a vacant house but was <strong>invisible during play</strong>: <code>QuestManager.Complete</code> discarded <code>HandleQuestCompleted</code>'s returned household, so the Unity layer never learned a dog had moved in — no <code>DogView</code> appeared and the filled house stayed greyscaled until a full world rebuild. Core now surfaces the event: <code>QuestManager</code> raises <code>public event Action&lt;IReadOnlyList&lt;Dog&gt;&gt; MoveInOccurred</code> from the single <code>Complete</code> funnel, right after <code>HandleQuestCompleted</code>, <strong>only when the returned household is non-empty</strong> — so all three completion paths (delivery, lost-item find, spray) are covered for free. On the Unity side <code>QuestDirector</code> subscribes in <code>Init</code> and, on each move-in, (a) spawns a <code>DogView</code> for every new resident — bound to the filled <code>houseId</code>, tappable and wandering — through the extracted <code>DogSpawner.SpawnDog(state, parent, dog, indexAtHouse)</code> (the per-dog body of the build-time <code>SpawnDogs</code> loop, so the live and build paths share identical house-lookup/stagger/<code>DogView.Init</code> wiring) without touching or duplicating any existing <code>DogView</code>, and (b) drops the filled house's vacancy greyscale (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>) by calling <code>HouseUpgradeDirector.RefreshHouse(houseId)</code> — the same destroy-and-rebuild the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/407">#407</a> upgrade path uses, which re-derives the mesh from the same Core <code>House</code>/<code>HouseLot</code> and so <strong>preserves the house's rolled variant/tint</strong> while the now-occupied flag makes the rebuild pick the normal tint instead of the grey. <code>WorldBootstrap</code> builds the <code>HouseUpgradeDirector</code> up front (moved earlier than #407's original profile-overlay closure) so <code>QuestDirector.Init</code> can hold a reference to it; its rebuild-callback (tap re-wiring) is still configured in <code>BuildHouseProfileOverlay</code>, which runs before any quest can complete. No save-format change <em>at the time</em> — but the claim that <code>SaveCodec</code> already persisted <code>Dogs</code> was wrong: only <code>Houses</code> round-tripped, and <a href="https://github.com/derekwinters/lucas-doggiehood/issues/704">#704</a> added the <code>dog=</code> line that makes a live move-in actually survive a relaunch. #436 itself is purely the immediate on-screen reflection.</p>
 <h2 id="house-leveling">House leveling<a class="headerlink" href="#house-leveling" title="Permanent link">&para;</a></h2>
 <p>Levels 1–4. Decoration slots equal the house level (<strong>1/2/3/4</strong>); upgrade costs are in <a href="#pricing">Pricing</a> (100 / 200 / 400, doubling per step, capped at level 4).</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/773">#773</a>).</strong> This section used to say a house grows by <strong>swapping its Kenney City Kit mesh for the next rung of a per-house ladder</strong> → it now says houses are <strong>Blender bases that grow by adding one upgrade piece per level</strong> on a fixed path (level 2 garage, level 3 deck, level 4 patio), with the same 100/200/400 costs and slots = level, as specified in <a href="../world/house-design/">House Design</a> → because Derek decided to replace the Kenney houses with our own models (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/769">#769</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/770">#770</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/771">#771</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>). The ladder text below still describes what the game renders today; it is retired by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/789">#789</a>.</p>
+</blockquote>
 <p><strong>Per-level visuals — model swap (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a>, Derek 2026-07-25).</strong> Leveling a house up swaps its City Kit Suburban mesh for the next rung of a per-house ladder, so a home visibly grows as it is upgraded. Each ladder is <em>anchored on its Level-1 mesh</em> — the level-1 entry is exactly the as-built mesh <a href="../world/art-style/#house-architecture"><code>HouseStyleTable</code></a> assigns that house, so a level-1 house renders identically to today. The approved L1→L4 ladders:</p>
 <table>
 <thead>
@@ -2096,6 +2120,9 @@
 <p><strong>Decision update (2026-07-16, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/58">#58</a>):</strong> superseded the earlier "for sale sign in the yard" plan. Instead, <strong>the whole house mesh renders greyscaled (desaturated) while vacant</strong> and returns to its normal tinted color the moment a dog moves in. This needs no new art asset — it's a flat desaturated material color multiplied over the existing house mesh (the same technique already used for dog coat tinting), not a sign object placed in the yard. It removed the dependency on sourcing a "for sale" sign 3D asset, so <a href="https://github.com/derekwinters/lucas-doggiehood/issues/154">#154</a> is closed as no longer needed.</p>
 </blockquote>
 <p>Vacancy is Core state (<code>House.IsVacant</code>); the greyscale is purely its visual, with no logic of its own — <code>WorldBuilder</code> reads the flag at build time and picks the flat vacancy tint instead of the house's normal <code>HouseStyleTable</code> coloring, in both the City Kit model path and the graybox fallback.</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/773">#773</a>).</strong> This section used to say a vacant house renders <strong>greyscaled</strong>, a flat desaturated tint over its normal model → it now says a vacant house renders its base's <strong>framing version</strong> (studs, joists and rafters, no walls or roof covering) and becomes the finished house when a dog moves in, with no tint, as specified in <a href="../world/house-design/#build-states">House Design → Build states</a> → because the new houses are built as if under construction until someone moves in (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/767">#767</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/772">#772</a>). Vacancy stays the single source. The greyscale tint above is what the game renders until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/609">#609</a> lands.</p>
+</blockquote>
 <h2 id="build-checklist-for-when-v04-starts">Build checklist (for when <code>v0.4</code> starts)<a class="headerlink" href="#build-checklist-for-when-v04-starts" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[x] Tile grid placement + adjacency validation exists (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/109">#109</a> — build first)</li>
