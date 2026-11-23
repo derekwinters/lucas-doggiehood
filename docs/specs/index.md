@@ -16,6 +16,7 @@ v1.0 — the first complete release — integrates all mainline functionality in
 - [Camera, Navigation & Controls](world/camera-controls.md) — how the player sees and moves
 - [Art & UI Style](world/art-style.md) — palette, architecture, and interface chrome
 - [House Design](world/house-design.md) — bases, build states, upgrade pieces, colour schemes and placement
+- [World Art](world/world-art.md) — lawns, roads, sidewalks, trees, street props and fences
 - [Sidewalks & Walk Network](world/sidewalks.md) — sidewalk placement, crosswalks, and how dogs pathfind
 
 **Dogs**
