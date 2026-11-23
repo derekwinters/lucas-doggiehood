@@ -9,7 +9,7 @@ The world around the houses is being upgraded along with them: textured lawns, r
 
 ## How the models are made
 
-Every world model is a Blender Python script under `art-source/blender/`, built by Claude and reviewed by Derek, using the same pipeline as the houses (conventions **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774) and [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775)). Every model stays within the [art budget](art-style.md#art-budget).
+Every world model is a Blender Python script under `art-source/blender/`, built by Claude and reviewed by Derek, using the same [Blender asset pipeline](../../engineering/blender-pipeline.md) as the houses (conventions **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774) and [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775)). Every model stays within the [art budget](art-style.md#art-budget).
 
 **Textures are shared, not copied.** Each textured set exports as `.gltf` + `.bin` with its images referenced from one shared `textures/` folder, so each texture is stored once. The approved trees ([#816](https://github.com/derekwinters/lucas-doggiehood/issues/816)) and street props ([#821](https://github.com/derekwinters/lucas-doggiehood/issues/821)) are built this way under `art-source/blender/environment/`.
 
