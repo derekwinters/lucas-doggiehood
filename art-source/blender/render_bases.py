@@ -1,5 +1,5 @@
 """Concept renders + GLBs for base houses 1-10, the line-ups and the
-neighbourhood. Usage:
+neighbourhood. Level 2 is the garage (#780, #817). Usage:
 
     python3 art-source/blender/render_bases.py OUT_DIR [--bases 6,7,8,9,10]
         [--only finished,framing,level4close,level4back,glb,
@@ -78,10 +78,10 @@ for n, B in BASES.items():
     K.reset_scene()
     objs = S.build_level(B, pal(B), 4)
     b = S.composite_bounds(objs)
-    r["placement_addition_road_side"] = S.level4_placement(b, B.FRONT_Y, True)
-    r["placement_addition_far_side"] = S.level4_placement(b, B.FRONT_Y, False)
+    r["placement_garage_road_side"] = S.level4_placement(b, B.FRONT_Y, True)
+    r["placement_garage_far_side"] = S.level4_placement(b, B.FRONT_Y, False)
     a, d, p = S.fit_pieces(B)
-    r["pieces"] = {"addition": a, "deck": d, "patio": p}
+    r["pieces"] = {"garage": a, "deck": d, "patio": p}
     r["attach"] = {k: list(v) for k, v in B.attach_locations().items()}
     STATS[n] = r
 with open(os.path.join(HERE, "bases_stats.json"), "w") as f:
@@ -109,12 +109,12 @@ for n in NS:
     if want("level4close"):
         K.reset_scene()
         objs = S.build_level(B, pal(B), 4)
-        P = STATS[n]["placement_addition_road_side"]
+        P = STATS[n]["placement_garage_road_side"]
         ms = S.meshes(objs)
         y_front = P["composite"][2]
         S.street(P["road_cl_y"], walk_xs=[door_x(B)], front_y=y_front, side_road_x=P["side_road_x"])
         half_w = B.DIMS["width"] / 2
-        S.lot_lines(P, half_w, STATS[n]["pieces"]["addition"]["width"])
+        S.lot_lines(P, half_w, STATS[n]["pieces"]["garage"]["width"])
         dog = S.dog_box((door_x(B) + 2.0, y_front - 1.6, 0), yaw_deg=-25)
         hint = S.frame_hint(P["side_road_x"] - 0.5, B.FRONT_Y + 1.5)
         K.setup_render(os.path.join(OUT, "base-%d-level4-close.png" % n), bg=BG)
@@ -126,7 +126,7 @@ for n in NS:
         K.reset_scene()
         objs = S.build_level(B, pal(B), 4)
         ax, ay, _ = B.attach_locations()["ATTACH_ADDITION"]
-        a = STATS[n]["pieces"]["addition"]
+        a = STATS[n]["pieces"]["garage"]
         dog = S.dog_box((ax + a["width"] / 2 + 0.3, ay + a["depth"] / 2 + 2.4, 0.08), yaw_deg=150)
         K.ground_plane(80, BG)
         K.setup_render(os.path.join(OUT, "base-%d-level4-back.png" % n), bg=BG)

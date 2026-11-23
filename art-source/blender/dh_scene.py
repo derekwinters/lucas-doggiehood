@@ -1,6 +1,8 @@
 """Scene helpers shared by the render drivers: fitting the upgrade pieces
 to a base, the level-4 placement rule + clearances, the lot scene, the
-dog stand-in. Every base module exposes DIMS, NAME, RENDER_SCHEME, FRONT_Y,
+dog stand-in, and the garage's driveway (a separate, decorative ground
+object). The level-2 piece is the GARAGE (#780, #817); the concept addition
+module is kept only for comparison. Every base module exposes DIMS, NAME, RENDER_SCHEME, FRONT_Y,
 PIECES, attach_locations() and build(mode, palette=..., name=...)."""
 
 import math
@@ -11,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 import dh_house_kit as K  # noqa: E402
 import piece_addition  # noqa: E402
+import piece_garage  # noqa: E402
 import piece_deck  # noqa: E402
 import piece_patio  # noqa: E402
 
@@ -21,16 +24,30 @@ FENCE_S_ROAD = 7.75
 FENCE_S_FAR = LOT_SIZE - 2.0
 FENCE_D_REAR = LOT_SIZE - 2.0
 SIDEWALK_D = 5.75
-FRONT_D = SIDEWALK_D + 2.75      # FrontSetback: the base's FRONT_Y line sits here
+FRONT_SETBACK = 3.75             # sidewalk outer edge -> the base's FRONT_Y line (was 2.75; +1.0 m, #773)
+FRONT_D = SIDEWALK_D + FRONT_SETBACK   # = 9.5 from the faced road's centreline
+CURB_D = 3.0                     # road half-width: the curb line
+DRIVE_W = 3.0                    # proposed one-car driveway width (#803 Open)
+DRIVE_JOINT = 3.0                # control-joint spacing along the driveway
 DOG = (1.26, 1.50, 1.58)          # Cube Pets adult dog, in-game (w, l, h)
 
 
 def fit_pieces(base):
-    """Per-base piece parameters: addition/deck/patio dims merged with the
+    """Per-base piece parameters: garage/deck/patio dims merged with the
     base's PIECES overrides, plus the deck stair gap and stair position
-    solved so the deck's side stairs land on the patio."""
+    solved so the deck's side stairs land on the patio.
+
+    The garage reuses the base's addition overrides (wall height, pitch,
+    tie-in, solved per base so the roof dies into the main roof) and lowers
+    the pitch so its deeper roof keeps the addition's ridge height; that
+    keeps every solved tie-in valid. PIECES["garage"] overrides win."""
     loc = base.attach_locations()
-    add_d = dict(piece_addition.DIMS, **base.PIECES.get("addition", {}))
+    a_over = base.PIECES.get("addition", {})
+    add_ref = dict(piece_addition.DIMS, **a_over)
+    add_d = dict(piece_garage.DIMS, **{k: v for k, v in a_over.items() if k in ("wall_height", "tie_in")})
+    rise = add_ref["depth"] / 2 * math.tan(math.radians(add_ref["pitch"]))
+    add_d["pitch"] = round(math.degrees(math.atan2(rise, add_d["depth"] / 2)), 2)
+    add_d.update(base.PIECES.get("garage", {}))
     deck_d = dict(piece_deck.DIMS, **base.PIECES.get("deck", {}))
     patio_d = dict(piece_patio.DIMS, **base.PIECES.get("patio", {}))
     patio_d["width"] = add_d["width"]
@@ -55,7 +72,7 @@ def build_level(base, palette, level, mode="finished", name=None):
     house, att = base.build(mode, palette=palette, name=name)
     objs = [house] + att
     if level >= 2:
-        a, a_att = piece_addition.build(palette, d=add_d)
+        a, a_att = piece_garage.build(palette, d=add_d)
         a.location = att[0].location.copy()
         objs += [a] + a_att
     if level >= 3:
@@ -67,6 +84,38 @@ def build_level(base, palette, level, mode="finished", name=None):
         pt.location = att[0].location + a_att[0].location
         objs.append(pt)
     return objs
+
+
+def driveway(base, g_d=None, name="driveway", palette=None):
+    """PROPOSAL (#803 Open): a plain one-car concrete driveway from the
+    garage apron to the curb, as its own object in base-local coordinates
+    (same pivot as the house). It skips the sidewalk, which runs through
+    unchanged, so it is two slabs: front yard and grass verge. Ground
+    decoration only: no walk-network meaning."""
+    if g_d is None:
+        g_d = fit_pieces(base)[0]
+    ax, ay, _ = base.attach_locations()["ATTACH_ADDITION"]
+    cx = ax + g_d["width"] / 2
+    y_apron = ay - g_d["depth"] / 2 - K.SLAB_OVERHANG - g_d["apron"]
+    road_cl = base.FRONT_Y - FRONT_D
+    walk_in, walk_out = road_cl + SIDEWALK_D, road_cl + SIDEWALK_D - 2.0
+    curb = road_cl + CURB_D
+    pal = dict(palette or K.COMMON)
+    pal["drive"] = pal.get("concrete", K.COMMON["concrete"])
+    pal["drive_joint"] = K.darken(pal["drive"], 0.82)
+    m = K.MeshBuilder(name, pal)
+    x0, x1 = cx - DRIVE_W / 2, cx + DRIVE_W / 2
+    z = 0.025
+    for ya, yb in ((walk_in, y_apron), (curb, walk_out)):
+        if yb - ya < 0.05:
+            continue
+        m.box((x0, ya, -0.03), (x1, yb, z), "drive")
+        n = int((yb - ya) / DRIVE_JOINT)
+        for i in range(1, n + 1):
+            yj = ya + (yb - ya) * i / (n + 1)
+            m.box((x0 + 0.03, yj - 0.02, z), (x1 - 0.03, yj + 0.02, z + 0.006), "drive_joint")
+    m.box((cx - 0.02, walk_in, z), (cx + 0.02, y_apron, z + 0.006), "drive_joint")
+    return m.build(), {"x": (x0, x1), "y": (curb, y_apron), "walk": (walk_out, walk_in)}
 
 
 def meshes(objs):

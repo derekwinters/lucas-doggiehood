@@ -37,8 +37,8 @@ Every model is built from scratch from named dimensions. There is no `.blend` fi
 
 - **`dh_house_kit.py`** is the shared kit: shared dimensions (slab, floor, wall, stud, rafter and trim sizes), the 12 colour schemes (`COLOR_SCHEMES`), `scheme_palette()`, a mesh builder, finished and framed walls, roofs, attach points, `tri_count()`, `export_glb()` and the render setup.
 - **`base_house_N.py`** builds one base. Each exposes the same interface: `DIMS`, `NAME`, `RENDER_SCHEME`, `FRONT_Y`, `PIECES`, `attach_locations()` and `build("finished" | "framing", palette=…)`. Both modes come from the same `DIMS`, so the framing and finished versions line up exactly.
-- **`piece_addition.py`, `piece_deck.py`, `piece_patio.py`** build the upgrade pieces, each from its own `DIMS`. (The level-2 piece becomes a garage; its model is Open on [#780](https://github.com/derekwinters/lucas-doggiehood/issues/780).)
-- **`dh_scene.py`** fits the pieces to each base and holds the level-4 placement rule used for the clearance tables.
+- **`piece_garage.py`, `piece_deck.py`, `piece_patio.py`** build the upgrade pieces, each from its own `DIMS`. The garage is the level-2 piece ([#780](https://github.com/derekwinters/lucas-doggiehood/issues/780), [#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)). **`piece_addition.py`** is the superseded concept addition, kept for comparison; `dh_scene.py` still reads its `DIMS` to match each garage's ridge height.
+- **`dh_scene.py`** fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.
 - **Trees** (`environment/trees/`): `dh_tree_tex.py` paints the leaf atlases and bark maps; `dh_trees_tex.py` builds the trees. They reuse the branch helpers in `dh_env.py`.
 - **Street props** (`environment/street-props/`): `dh_prop_tex.py` paints the surface textures and the label atlas; `dh_props.py` builds the props.
 
@@ -64,7 +64,7 @@ Everything exports as **glTF 2.0**. FBX is not used.
 
 | Set | Command (from the repo root) | Writes |
 |---|---|---|
-| Houses | `python3 art-source/blender/export_houses.py art-source/blender/exports` | 53 `.glb` files: `base-NN-framing.glb` and `base-NN-level1.glb` … `level4.glb` for the 10 bases, plus `piece-addition.glb`, `piece-deck.glb`, `piece-patio.glb` |
+| Houses | `python3 art-source/blender/export_houses.py art-source/blender/exports` | 64 `.glb` files: `base-NN-framing.glb`, `base-NN-level1.glb` … `level4.glb` and `driveway-base-NN.glb` for the 10 bases, plus `piece-garage.glb`, `piece-deck.glb`, `piece-patio.glb` and the superseded `piece-addition.glb` |
 | Colour schemes | `python3 art-source/blender/export_colour_schemes.py` | `colour-schemes.json` |
 | Trees | `python3 art-source/blender/environment/trees/export_trees_tex.py art-source/blender/environment/trees/exports` | 10 `.gltf` + `.bin` pairs and `trees_textured_stats.json` |
 | Street props | `python3 art-source/blender/environment/street-props/export_props.py` | 26 `.gltf` + `.bin` pairs and `street_props_stats.json` |
@@ -97,7 +97,7 @@ Rebuilding the tree and prop textures from their generators reproduces the commi
 
 ## Review renders
 
-Each set has render scripts that draw the models at the game camera (orthographic, 45° pitch, yaw −40°), plus close-ups and line-ups for comparison. Examples are `render_base_1.py` and `render_bases.py` for houses, `render_tree_closeup_tex.py` for trees, and `run_sampler.sh` and `render_street_props.py` for props. Each folder's README lists the full set.
+Each set has render scripts that draw the models at the game camera (orthographic, 45° pitch, yaw −40°), plus close-ups and line-ups for comparison. Examples are `render_base_1.py`, `render_bases.py` and `render_garage.py` for houses, `render_tree_closeup_tex.py` for trees, and `run_sampler.sh` and `render_street_props.py` for props. Each folder's README lists the full set.
 
 Renders go to `out/` by default. Only the renders Derek approved are copied into the set's `review/` folder and committed. Renders are not byte-reproducible and are not covered by the reproducibility invariant.
 

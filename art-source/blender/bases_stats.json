@@ -27,77 +27,80 @@
    4.1,
    6.87
   ],
-  "tris_level4_shingle": 3596,
-  "tris_level4_metal": 4172,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 3544,
+  "tris_level4_metal": 4096,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.57,
-   "side_road_x": 19.56999969482422,
-   "road_cl_y": -12.0,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.320000171661377,
+   "road_cl_y": -13.0,
    "quad": [
-    -10.430000305175781,
-    19.56999969482422,
-    -12.0,
-    18.0
+    -10.679999828338623,
+    19.320000171661377,
+    -13.0,
+    17.0
    ],
    "fence": [
-    -8.430000305175781,
-    11.819999694824219,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    16.0
+    15.0
    ],
    "composite": [
     -4.75,
-    8.14,
+    7.64,
     -5.1,
-    7.65
+    8.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.68,
-    "far_side_to_fence": 3.68,
-    "front_to_sidewalk": 1.15,
-    "rear_to_fence": 8.35
+    "road_side_to_fence": 3.93,
+    "far_side_to_fence": 3.93,
+    "front_to_sidewalk": 2.15,
+    "rear_to_fence": 6.6
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.18,
-   "side_road_x": -16.18000030517578,
-   "road_cl_y": -12.0,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.429999828338623,
+   "road_cl_y": -13.0,
    "quad": [
-    -16.18000030517578,
-    13.819999694824219,
-    -12.0,
-    18.0
+    -16.429999828338623,
+    13.570000171661377,
+    -13.0,
+    17.0
    ],
    "fence": [
-    -8.430000305175781,
-    11.819999694824219,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    16.0
+    15.0
    ],
    "composite": [
     -4.75,
-    8.14,
+    7.64,
     -5.1,
-    7.65
+    8.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.68,
-    "far_side_to_fence": 3.68,
-    "front_to_sidewalk": 1.15,
-    "rear_to_fence": 8.35
+    "road_side_to_fence": 3.93,
+    "far_side_to_fence": 3.93,
+    "front_to_sidewalk": 2.15,
+    "rear_to_fence": 6.6
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 30.0,
-    "tie_in": 0.0
+    "pitch": 23.41,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -111,7 +114,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -143,93 +146,96 @@
    "eave": 0.5
   },
   "front_y": -3.6,
-  "tris_finished": 1658,
+  "tris_finished": 1742,
   "bounds_finished": [
    -6.33,
    6.33,
-   -5.25,
+   -5.0,
    4.23,
    6.04
   ],
-  "tris_framing": 2712,
+  "tris_framing": 2880,
   "bounds_framing": [
    -6.0,
    6.0,
-   -5.25,
+   -5.0,
    4.2,
    5.17
   ],
-  "tris_level4_shingle": 3680,
-  "tris_level4_metal": 4016,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 3640,
+  "tris_level4_metal": 3952,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.76,
-   "side_road_x": 19.756546020507812,
-   "road_cl_y": -12.1,
+   "pivot_s_from_side_road": 19.51,
+   "side_road_x": 19.506546020507812,
+   "road_cl_y": -13.1,
    "quad": [
-    -10.243453979492188,
-    19.756546020507812,
-    -12.1,
-    17.9
+    -10.493453979492188,
+    19.506546020507812,
+    -13.1,
+    16.9
    ],
    "fence": [
-    -8.243453979492188,
-    12.006546020507812,
+    -8.493453979492188,
+    11.756546020507812,
     0.0,
-    15.9
+    14.9
    ],
    "composite": [
     -6.33,
-    10.09,
-    -5.25,
-    7.75
+    9.59,
+    -5.0,
+    8.5
    ],
    "clearance": {
-    "road_side_to_fence": 1.92,
-    "far_side_to_fence": 1.92,
-    "front_to_sidewalk": 1.1,
-    "rear_to_fence": 8.15
+    "road_side_to_fence": 2.17,
+    "far_side_to_fence": 2.17,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 6.4
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 15.99,
-   "side_road_x": -15.993453979492188,
-   "road_cl_y": -12.1,
+   "pivot_s_from_side_road": 16.24,
+   "side_road_x": -16.243453979492188,
+   "road_cl_y": -13.1,
    "quad": [
-    -15.993453979492188,
-    14.006546020507812,
-    -12.1,
-    17.9
+    -16.243453979492188,
+    13.756546020507812,
+    -13.1,
+    16.9
    ],
    "fence": [
-    -8.243453979492188,
-    12.006546020507812,
+    -8.493453979492188,
+    11.756546020507812,
     0.0,
-    15.9
+    14.9
    ],
    "composite": [
     -6.33,
-    10.09,
-    -5.25,
-    7.75
+    9.59,
+    -5.0,
+    8.5
    ],
    "clearance": {
-    "road_side_to_fence": 1.92,
-    "far_side_to_fence": 1.92,
-    "front_to_sidewalk": 1.1,
-    "rear_to_fence": 8.15
+    "road_side_to_fence": 2.17,
+    "far_side_to_fence": 2.17,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 6.4
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.6,
-    "pitch": 22.0,
-    "tie_in": 2.6
+    "pitch": 16.86,
+    "tie_in": 2.6,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -243,7 +249,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -292,77 +298,80 @@
    4.1,
    9.28
   ],
-  "tris_level4_shingle": 4694,
-  "tris_level4_metal": 5318,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4642,
+  "tris_level4_metal": 5242,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.57,
-   "side_road_x": 19.570000171661377,
-   "road_cl_y": -13.8,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.320000171661377,
+   "road_cl_y": -14.8,
    "quad": [
-    -10.429999828338623,
-    19.570000171661377,
-    -13.8,
-    16.2
+    -10.679999828338623,
+    19.320000171661377,
+    -14.8,
+    15.2
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.2
+    13.2
    ],
    "composite": [
     -5.2,
-    8.59,
+    8.09,
     -5.94,
-    7.65
+    8.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.23,
-    "far_side_to_fence": 3.23,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 6.55
+    "road_side_to_fence": 3.48,
+    "far_side_to_fence": 3.48,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 4.8
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.18,
-   "side_road_x": -16.179999828338623,
-   "road_cl_y": -13.8,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.429999828338623,
+   "road_cl_y": -14.8,
    "quad": [
-    -16.179999828338623,
-    13.820000171661377,
-    -13.8,
-    16.2
+    -16.429999828338623,
+    13.570000171661377,
+    -14.8,
+    15.2
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.2
+    13.2
    ],
    "composite": [
     -5.2,
-    8.59,
+    8.09,
     -5.94,
-    7.65
+    8.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.23,
-    "far_side_to_fence": 3.23,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 6.55
+    "road_side_to_fence": 3.48,
+    "far_side_to_fence": 3.48,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 4.8
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 30.0,
-    "tie_in": 0.0
+    "pitch": 23.41,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -376,7 +385,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -431,77 +440,80 @@
    5.6,
    5.91
   ],
-  "tris_level4_shingle": 4310,
-  "tris_level4_metal": 5318,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4186,
+  "tris_level4_metal": 5170,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.57,
-   "side_road_x": 19.570000171661377,
-   "road_cl_y": -13.5,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.320000171661377,
+   "road_cl_y": -14.5,
    "quad": [
-    -10.429999828338623,
-    19.570000171661377,
-    -13.5,
-    16.5
+    -10.679999828338623,
+    19.320000171661377,
+    -14.5,
+    15.5
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.5
+    13.5
    ],
    "composite": [
     -5.3,
-    8.69,
+    8.19,
     -5.64,
-    9.15
+    9.9
    ],
    "clearance": {
-    "road_side_to_fence": 3.13,
-    "far_side_to_fence": 3.13,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 5.35
+    "road_side_to_fence": 3.38,
+    "far_side_to_fence": 3.38,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 3.6
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.18,
-   "side_road_x": -16.179999828338623,
-   "road_cl_y": -13.5,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.429999828338623,
+   "road_cl_y": -14.5,
    "quad": [
-    -16.179999828338623,
-    13.820000171661377,
-    -13.5,
-    16.5
+    -16.429999828338623,
+    13.570000171661377,
+    -14.5,
+    15.5
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.5
+    13.5
    ],
    "composite": [
     -5.3,
-    8.69,
+    8.19,
     -5.64,
-    9.15
+    9.9
    ],
    "clearance": {
-    "road_side_to_fence": 3.13,
-    "far_side_to_fence": 3.13,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 5.35
+    "road_side_to_fence": 3.38,
+    "far_side_to_fence": 3.38,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 3.6
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.6,
-    "pitch": 26.0,
-    "tie_in": 2.5
+    "pitch": 20.09,
+    "tie_in": 2.5,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -515,7 +527,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -569,77 +581,80 @@
    4.6,
    8.12
   ],
-  "tris_level4_shingle": 4156,
-  "tris_level4_metal": 4348,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4104,
+  "tris_level4_metal": 4272,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.57,
-   "side_road_x": 19.570000171661377,
-   "road_cl_y": -12.5,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.320000171661377,
+   "road_cl_y": -13.5,
    "quad": [
-    -10.429999828338623,
-    19.570000171661377,
-    -12.5,
-    17.5
+    -10.679999828338623,
+    19.320000171661377,
+    -13.5,
+    16.5
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    15.5
+    14.5
    ],
    "composite": [
     -5.2,
-    8.59,
+    8.09,
     -5.4,
-    8.15
+    8.9
    ],
    "clearance": {
-    "road_side_to_fence": 3.23,
-    "far_side_to_fence": 3.23,
-    "front_to_sidewalk": 1.35,
-    "rear_to_fence": 7.35
+    "road_side_to_fence": 3.48,
+    "far_side_to_fence": 3.48,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 5.6
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.18,
-   "side_road_x": -16.179999828338623,
-   "road_cl_y": -12.5,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.429999828338623,
+   "road_cl_y": -13.5,
    "quad": [
-    -16.179999828338623,
-    13.820000171661377,
-    -12.5,
-    17.5
+    -16.429999828338623,
+    13.570000171661377,
+    -13.5,
+    16.5
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    15.5
+    14.5
    ],
    "composite": [
     -5.2,
-    8.59,
+    8.09,
     -5.4,
-    8.15
+    8.9
    ],
    "clearance": {
-    "road_side_to_fence": 3.23,
-    "far_side_to_fence": 3.23,
-    "front_to_sidewalk": 1.35,
-    "rear_to_fence": 7.35
+    "road_side_to_fence": 3.48,
+    "far_side_to_fence": 3.48,
+    "front_to_sidewalk": 2.35,
+    "rear_to_fence": 5.6
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 30.0,
-    "tie_in": 0.0
+    "pitch": 23.41,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -653,7 +668,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -705,77 +720,80 @@
    4.5,
    7.58
   ],
-  "tris_level4_shingle": 4084,
-  "tris_level4_metal": 4972,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4032,
+  "tris_level4_metal": 4896,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.82,
-   "side_road_x": 19.820746660232544,
-   "road_cl_y": -12.4,
+   "pivot_s_from_side_road": 19.57,
+   "side_road_x": 19.570747137069702,
+   "road_cl_y": -13.4,
    "quad": [
-    -10.179253339767456,
-    19.820746660232544,
-    -12.4,
-    17.6
+    -10.429252862930298,
+    19.570747137069702,
+    -13.4,
+    16.6
    ],
    "fence": [
-    -8.179253339767456,
-    12.070746660232544,
+    -8.429252862930298,
+    11.820747137069702,
     0.0,
-    15.6
+    14.6
    ],
    "composite": [
     -6.0,
-    9.89,
+    9.39,
     -4.29,
-    8.05
+    8.8
    ],
    "clearance": {
-    "road_side_to_fence": 2.18,
-    "far_side_to_fence": 2.18,
-    "front_to_sidewalk": 2.36,
-    "rear_to_fence": 7.55
+    "road_side_to_fence": 2.43,
+    "far_side_to_fence": 2.43,
+    "front_to_sidewalk": 3.36,
+    "rear_to_fence": 5.8
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 15.93,
-   "side_road_x": -15.929253339767456,
-   "road_cl_y": -12.4,
+   "pivot_s_from_side_road": 16.18,
+   "side_road_x": -16.179252862930298,
+   "road_cl_y": -13.4,
    "quad": [
-    -15.929253339767456,
-    14.070746660232544,
-    -12.4,
-    17.6
+    -16.179252862930298,
+    13.820747137069702,
+    -13.4,
+    16.6
    ],
    "fence": [
-    -8.179253339767456,
-    12.070746660232544,
+    -8.429252862930298,
+    11.820747137069702,
     0.0,
-    15.6
+    14.6
    ],
    "composite": [
     -6.0,
-    9.89,
+    9.39,
     -4.29,
-    8.05
+    8.8
    ],
    "clearance": {
-    "road_side_to_fence": 2.18,
-    "far_side_to_fence": 2.18,
-    "front_to_sidewalk": 2.36,
-    "rear_to_fence": 7.55
+    "road_side_to_fence": 2.43,
+    "far_side_to_fence": 2.43,
+    "front_to_sidewalk": 3.36,
+    "rear_to_fence": 5.8
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 30.0,
-    "tie_in": 0.0
+    "pitch": 23.41,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -789,7 +807,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -844,77 +862,80 @@
    5.1,
    9.85
   ],
-  "tris_level4_shingle": 4390,
-  "tris_level4_metal": 5110,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4338,
+  "tris_level4_metal": 5034,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 18.9,
-   "side_road_x": 18.900645971298218,
-   "road_cl_y": -15.0,
+   "pivot_s_from_side_road": 18.65,
+   "side_road_x": 18.650645971298218,
+   "road_cl_y": -16.0,
    "quad": [
-    -11.099354028701782,
-    18.900645971298218,
-    -15.0,
-    15.0
+    -11.349354028701782,
+    18.650645971298218,
+    -16.0,
+    14.0
    ],
    "fence": [
-    -9.099354028701782,
-    11.150645971298218,
+    -9.349354028701782,
+    10.900645971298218,
     0.0,
-    13.0
+    12.0
    ],
    "composite": [
     -5.94,
-    7.99,
+    7.49,
     -7.14,
-    8.65
+    9.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.16,
-    "far_side_to_fence": 3.16,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 4.35
+    "road_side_to_fence": 3.41,
+    "far_side_to_fence": 3.41,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 2.6
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.85,
-   "side_road_x": -16.849354028701782,
-   "road_cl_y": -15.0,
+   "pivot_s_from_side_road": 17.1,
+   "side_road_x": -17.099354028701782,
+   "road_cl_y": -16.0,
    "quad": [
-    -16.849354028701782,
-    13.150645971298218,
-    -15.0,
-    15.0
+    -17.099354028701782,
+    12.900645971298218,
+    -16.0,
+    14.0
    ],
    "fence": [
-    -9.099354028701782,
-    11.150645971298218,
+    -9.349354028701782,
+    10.900645971298218,
     0.0,
-    13.0
+    12.0
    ],
    "composite": [
     -5.94,
-    7.99,
+    7.49,
     -7.14,
-    8.65
+    9.4
    ],
    "clearance": {
-    "road_side_to_fence": 3.16,
-    "far_side_to_fence": 3.16,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 4.35
+    "road_side_to_fence": 3.41,
+    "far_side_to_fence": 3.41,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 2.6
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 50.0,
-    "tie_in": 1.1
+    "pitch": 41.79,
+    "tie_in": 1.1,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -928,7 +949,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -978,77 +999,80 @@
    4.4,
    8.19
   ],
-  "tris_level4_shingle": 4140,
-  "tris_level4_metal": 5028,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4088,
+  "tris_level4_metal": 4952,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.57,
-   "side_road_x": 19.570000171661377,
-   "road_cl_y": -13.7,
+   "pivot_s_from_side_road": 19.32,
+   "side_road_x": 19.320000171661377,
+   "road_cl_y": -14.7,
    "quad": [
-    -10.429999828338623,
-    19.570000171661377,
-    -13.7,
-    16.3
+    -10.679999828338623,
+    19.320000171661377,
+    -14.7,
+    15.3
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.3
+    13.3
    ],
    "composite": [
     -5.8,
-    9.19,
+    8.69,
     -6.5,
-    7.95
+    8.7
    ],
    "clearance": {
-    "road_side_to_fence": 2.63,
-    "far_side_to_fence": 2.63,
-    "front_to_sidewalk": 1.45,
-    "rear_to_fence": 6.35
+    "road_side_to_fence": 2.88,
+    "far_side_to_fence": 2.88,
+    "front_to_sidewalk": 2.45,
+    "rear_to_fence": 4.6
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.18,
-   "side_road_x": -16.179999828338623,
-   "road_cl_y": -13.7,
+   "pivot_s_from_side_road": 16.43,
+   "side_road_x": -16.429999828338623,
+   "road_cl_y": -14.7,
    "quad": [
-    -16.179999828338623,
-    13.820000171661377,
-    -13.7,
-    16.3
+    -16.429999828338623,
+    13.570000171661377,
+    -14.7,
+    15.3
    ],
    "fence": [
-    -8.429999828338623,
-    11.820000171661377,
+    -8.679999828338623,
+    11.570000171661377,
     0.0,
-    14.3
+    13.3
    ],
    "composite": [
     -5.8,
-    9.19,
+    8.69,
     -6.5,
-    7.95
+    8.7
    ],
    "clearance": {
-    "road_side_to_fence": 2.63,
-    "far_side_to_fence": 2.63,
-    "front_to_sidewalk": 1.45,
-    "rear_to_fence": 6.35
+    "road_side_to_fence": 2.88,
+    "far_side_to_fence": 2.88,
+    "front_to_sidewalk": 2.45,
+    "rear_to_fence": 4.6
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.5,
-    "pitch": 50.0,
-    "tie_in": 0.0
+    "pitch": 41.79,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -1062,7 +1086,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -1116,77 +1140,80 @@
    4.3,
    5.11
   ],
-  "tris_level4_shingle": 4520,
-  "tris_level4_metal": 4784,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4396,
+  "tris_level4_metal": 4636,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.78,
-   "side_road_x": 19.782982110977173,
-   "road_cl_y": -14.2,
+   "pivot_s_from_side_road": 19.53,
+   "side_road_x": 19.532982110977173,
+   "road_cl_y": -15.2,
    "quad": [
-    -10.217017889022827,
-    19.782982110977173,
-    -14.2,
-    15.8
+    -10.467017889022827,
+    19.532982110977173,
+    -15.2,
+    14.8
    ],
    "fence": [
-    -8.217017889022827,
-    12.032982110977173,
+    -8.467017889022827,
+    11.782982110977173,
     0.0,
-    13.8
+    12.8
    ],
    "composite": [
     -5.77,
-    9.59,
+    9.09,
     -6.1,
-    7.85
+    8.6
    ],
    "clearance": {
-    "road_side_to_fence": 2.44,
-    "far_side_to_fence": 2.44,
-    "front_to_sidewalk": 2.35,
-    "rear_to_fence": 5.95
+    "road_side_to_fence": 2.69,
+    "far_side_to_fence": 2.69,
+    "front_to_sidewalk": 3.35,
+    "rear_to_fence": 4.2
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 15.97,
-   "side_road_x": -15.967017889022827,
-   "road_cl_y": -14.2,
+   "pivot_s_from_side_road": 16.22,
+   "side_road_x": -16.217017889022827,
+   "road_cl_y": -15.2,
    "quad": [
-    -15.967017889022827,
-    14.032982110977173,
-    -14.2,
-    15.8
+    -16.217017889022827,
+    13.782982110977173,
+    -15.2,
+    14.8
    ],
    "fence": [
-    -8.217017889022827,
-    12.032982110977173,
+    -8.467017889022827,
+    11.782982110977173,
     0.0,
-    13.8
+    12.8
    ],
    "composite": [
     -5.77,
-    9.59,
+    9.09,
     -6.1,
-    7.85
+    8.6
    ],
    "clearance": {
-    "road_side_to_fence": 2.44,
-    "far_side_to_fence": 2.44,
-    "front_to_sidewalk": 2.35,
-    "rear_to_fence": 5.95
+    "road_side_to_fence": 2.69,
+    "far_side_to_fence": 2.69,
+    "front_to_sidewalk": 3.35,
+    "rear_to_fence": 4.2
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.6,
-    "pitch": 18.0,
-    "tie_in": 1.5
+    "pitch": 13.7,
+    "tie_in": 1.5,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -1200,7 +1227,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,
@@ -1258,77 +1285,80 @@
    4.9,
    12.43
   ],
-  "tris_level4_shingle": 4670,
-  "tris_level4_metal": 5294,
-  "placement_addition_road_side": {
+  "tris_level4_shingle": 4618,
+  "tris_level4_metal": 5218,
+  "placement_garage_road_side": {
    "addition_toward_road": true,
-   "pivot_s_from_side_road": 19.32,
-   "side_road_x": 19.31541109085083,
-   "road_cl_y": -14.8,
+   "pivot_s_from_side_road": 19.07,
+   "side_road_x": 19.06541156768799,
+   "road_cl_y": -15.8,
    "quad": [
-    -10.68458890914917,
-    19.31541109085083,
-    -14.8,
-    15.2
+    -10.934588432312012,
+    19.06541156768799,
+    -15.8,
+    14.2
    ],
    "fence": [
-    -8.68458890914917,
-    11.56541109085083,
+    -8.934588432312012,
+    11.315411567687988,
     0.0,
-    13.2
+    12.2
    ],
    "composite": [
     -5.51,
-    8.39,
+    7.89,
     -6.94,
-    8.45
+    9.2
    ],
    "clearance": {
-    "road_side_to_fence": 3.18,
-    "far_side_to_fence": 3.18,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 4.75
+    "road_side_to_fence": 3.43,
+    "far_side_to_fence": 3.43,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 3.0
    },
    "fits": true
   },
-  "placement_addition_far_side": {
+  "placement_garage_far_side": {
    "addition_toward_road": false,
-   "pivot_s_from_side_road": 16.43,
-   "side_road_x": -16.43458890914917,
-   "road_cl_y": -14.8,
+   "pivot_s_from_side_road": 16.68,
+   "side_road_x": -16.68458843231201,
+   "road_cl_y": -15.8,
    "quad": [
-    -16.43458890914917,
-    13.56541109085083,
-    -14.8,
-    15.2
+    -16.68458843231201,
+    13.315411567687988,
+    -15.8,
+    14.2
    ],
    "fence": [
-    -8.68458890914917,
-    11.56541109085083,
+    -8.934588432312012,
+    11.315411567687988,
     0.0,
-    13.2
+    12.2
    ],
    "composite": [
     -5.51,
-    8.39,
+    7.89,
     -6.94,
-    8.45
+    9.2
    ],
    "clearance": {
-    "road_side_to_fence": 3.18,
-    "far_side_to_fence": 3.18,
-    "front_to_sidewalk": 2.11,
-    "rear_to_fence": 4.75
+    "road_side_to_fence": 3.43,
+    "far_side_to_fence": 3.43,
+    "front_to_sidewalk": 3.11,
+    "rear_to_fence": 3.0
    },
    "fits": true
   },
   "pieces": {
-   "addition": {
-    "width": 4.0,
-    "depth": 4.5,
+   "garage": {
+    "width": 3.5,
+    "depth": 6.0,
     "wall_height": 2.7,
-    "pitch": 40.0,
-    "tie_in": 0.0
+    "pitch": 32.18,
+    "tie_in": 0.0,
+    "door_width": 2.6,
+    "door_height": 2.3,
+    "apron": 0.8
    },
    "deck": {
     "width": 6.0,
@@ -1342,7 +1372,7 @@
     "landing_height": 0.08
    },
    "patio": {
-    "width": 4.0,
+    "width": 3.5,
     "depth": 5.5,
     "paver": 0.9,
     "grout": 0.07,

@@ -2,6 +2,8 @@
 
 These are the generator scripts, exports and review renders for the ten base houses and three upgrade pieces of the house design system (epic #767). Derek approved the full set of models and the 12 round-2 colour schemes on 2026-11-21, and #814 locked them in here as **source assets only**. Nothing in this folder is imported by Unity (it is outside `Assets/`), and the game does not use any of it yet. The model, export and import issues of epic #767 start from these files.
 
+**Level 2 is the garage (#817).** Derek approved the garage concept on 2026-11-23. The level-2 piece on every base is now an attached one-car **garage** (`piece_garage.py`, #780) in place of the concept addition. The patio sits behind it at the garage's width. The **ranch** (base 2, #785) no longer has a built-in garage: the old bay is living space, and its garage arrives at level 2 like every other base. The front setback is 3.75 m (#773). The clearance and triangle tables below are the garage numbers. Sections that still describe the addition (the per-base tables under "Bases 2–5" and "Bases 6–10") are the history of the approved concept. The garage reuses each base's `PIECES["addition"]` wall height and `tie_in`, so those overrides still apply. `piece_addition.py` and `piece-addition.glb` are kept for comparison, and `dh_scene.fit_pieces` still derives each garage's roof pitch from the addition's ridge height.
+
 The ten bases are the side-gabled cottage (1), a ranch (2), a two-storey colonial with a porch (3), a craftsman bungalow (4), a Dutch colonial with a gambrel roof (5), a split-level (6), a modern farmhouse (7), a storybook Tudor (8), a Spanish mission (9) and a small Queen Anne Victorian (10). They all use the same three upgrade pieces (addition, deck, patio) and the 12 realistic colour schemes. Everything comes from Blender Python scripts run headless (`pip install bpy==5.3.0`), with no hand modelling.
 
 ## Files
@@ -10,23 +12,33 @@ The ten bases are the side-gabled cottage (1), a ranch (2), a two-storey colonia
 |---|---|
 | `dh_house_kit.py` | Shared helpers: the shared dimensions, **the 12 approved colour schemes (`COLOR_SCHEMES`)**, the superseded round-1 schemes (`COLOR_SCHEMES_BRIGHT`, kept for comparison only), the palette, a mesh builder, finished walls with trimmed openings, framed stud walls, gable infill and gable studs, roof planes (a finished slab, or rafters plus a ridge board, built on the same plane), slab, floor framing, attach points, GLB export and the render setup |
 | `base_house_1.py` … `base_house_10.py` | One script per base. Each exposes the same interface: `DIMS`, `NAME`, `RENDER_SCHEME`, `FRONT_Y` (the line that takes `FrontSetback`), `PIECES` (per-base piece parameters), `attach_locations()` and `build("finished" \| "framing", palette=…)`. Both modes come from one `DIMS` dict |
-| `piece_addition.py`, `piece_deck.py`, `piece_patio.py` | One script per upgrade piece, each parameterized by its own `DIMS` |
-| `dh_scene.py` | Shared scene logic: `fit_pieces()` (per-base piece parameters, solving the deck stair gap and stair position so the stairs land on the patio), `build_level()` (base + first N−1 pieces), `level4_placement()` (the placement rule and four clearances), lot lines, street and the dog stand-in |
+| `piece_garage.py`, `piece_deck.py`, `piece_patio.py` | One script per upgrade piece, each parameterized by its own `DIMS`. The garage is the level-2 piece |
+| `piece_addition.py` | The superseded concept addition, kept for comparison. `dh_scene.fit_pieces` reads its `DIMS` to match each garage's ridge height |
+| `dh_scene.py` | Shared scene logic: `fit_pieces()` (per-base piece parameters, solving the deck stair gap and stair position so the stairs land on the patio), `build_level()` (base + first N−1 pieces), `level4_placement()` (the placement rule and four clearances), `driveway()` (the decorative driveway as its own object), lot lines, street and the dog stand-in |
 | `export_houses.py` | Writes every `.glb` in `exports/` (see below) |
 | `export_colour_schemes.py` | Writes `colour-schemes.json` from `COLOR_SCHEMES` |
 | `colour-schemes.json` | The 12 approved schemes and their slot colours as plain JSON, so later work can read them without Blender. Generated; do not edit by hand |
 | `render_base_1.py` | Builds, exports and renders base 1, the pieces and the colour-scheme grid, and writes `base_1_stats.json` |
-| `render_bases.py` | Renders bases 2–10, the line-ups and the neighbourhood street, and writes `bases_stats.json` (dims, tris, attach points, piece parameters, placement for both addition sides) for all ten bases |
+| `render_bases.py` | Renders bases 2–10, the line-ups and the neighbourhood street, and writes `bases_stats.json` (dims, tris, attach points, piece parameters, placement with the garage on either side) for all ten bases |
+| `render_garage.py` | Renders the garage review views (`review/base-NN-street.png`, `-back.png`, `-closeup.png`) for any set of bases |
 | `base_1_stats.json`, `bases_stats.json` | The measured numbers behind the tables below |
 | `textures/` | Roof textures: the greyscale masks `roof_shingle_mask.png` and `roof_tile_mask.png` (made by `roof_mask()` in the kit), plus the tinted copies `roof_<style>_<HEX>.png` baked for the concept GLBs (made by `tinted_texture()` on first use) |
 | `exports/base-NN-framing.glb` (NN = 01–10) | The framing version of each base alone, in its render scheme |
-| `exports/base-NN-levelL.glb` (L = 1–4) | The finished house at each level, in its render scheme: level 1 is the base, level 2 adds the addition, level 3 the deck, level 4 the patio. Bases carry the `ATTACH_ADDITION` and `ATTACH_DECK` empties |
-| `exports/piece-addition.glb`, `piece-deck.glb`, `piece-patio.glb` | The upgrade pieces on their own, with their default `DIMS`, in Sage Cottage. Each piece's origin is its attach point. The addition carries the `ATTACH_PATIO` empty |
+| `exports/base-NN-levelL.glb` (L = 1–4) | The finished house at each level, in its render scheme: level 1 is the base, level 2 adds the garage, level 3 the deck, level 4 the patio. Bases carry the `ATTACH_ADDITION` and `ATTACH_DECK` empties (the side attach point keeps its concept name; the final name is Open on #778) |
+| `exports/driveway-base-NN.glb` | The decorative one-car driveway for each base on its own, in base-local coordinates (same pivot as the house). It is not baked into the level GLBs |
+| `exports/piece-garage.glb`, `piece-deck.glb`, `piece-patio.glb` | The upgrade pieces on their own, with their default `DIMS`, in Sage Cottage. Each piece's origin is its attach point. The garage carries the `ATTACH_PATIO` empty |
+| `exports/piece-addition.glb` | The superseded concept addition on its own, kept for comparison |
 | `review/color-schemes.png` | **Round 2 (approved):** all 12 colour schemes on the finished level-4 cottage at the game camera angle (orthographic, 45° pitch, from the front-left), labelled with siding and roof swatches |
 | `review/color-neighborhood.png` | Two parallel streets, five houses each: all ten bases, ten different schemes, levels 1–4. Front street: mission/Adobe Tile L2, cottage/Coastal Blue L1, Queen Anne/Dove Gray L4, craftsman/Cedar Lodge L3, farmhouse/Colonial White L1. Back street: colonial/Navy Saltbox L4, Tudor/Cream & Forest L2, ranch/Greige Modern L1, split-level/Red Farmhouse L3, gambrel/Buttercream L2 |
 | `review/lineup-all-finished.png` | All ten at level 1 in two rows (1–5 in front, 6–10 behind), each in its render scheme, dog for scale |
 | `review/lineup-finished.png`, `lineup-framing.png`, `lineup-level4.png` | Bases 1–5 side by side at level 1 (finished, framing) and level 4, each in a different scheme, dog for scale. A flatter 3/4 view (yaw −18°, pitch 30°) so the silhouettes compare |
 | `review/lineup2-finished.png`, `lineup2-framing.png`, `lineup2-level4.png` | Bases 6–10, same views |
+| `review/base-NN-street.png` | **Garage (#817):** level 4 on its lot at the game camera, with street, sidewalk, front walkway, driveway, dashed lot line, white fence line and the dog |
+| `review/base-NN-back.png` | Level 4 from behind: the patio behind the garage, with the deck stairs landing on it |
+| `review/base-NN-closeup.png` | Level 2: the garage and its driveway |
+| `review/contact-street.png`, `contact-back.png`, `contact-closeup.png` | Each garage view for all ten bases on one sheet |
+
+The line-up and neighbourhood renders above predate the garage, so their level-2 to level-4 houses still show the addition. The garage review images are stored at 1000 px wide (the contact sheets at full size) to keep the folder small.
 
 Render schemes per base: 1 Sage Cottage, 2 Dove Gray, 3 Colonial White, 4 Charcoal Craftsman, 5 Coastal Blue, 6 Navy Saltbox, 7 Greige Modern, 8 Cream & Forest, 9 Adobe Tile, 10 Buttercream.
 
@@ -34,9 +46,9 @@ Render schemes per base: 1 Sage Cottage, 2 Dove Gray, 3 Colonial White, 4 Charco
 
 All commands run from the repository root with headless Blender installed as a Python module (`pip install bpy==5.3.0`; the scripts also use Pillow).
 
-- **Exports:** `python3 art-source/blender/export_houses.py art-source/blender/exports` rewrites all 53 `.glb` files in a few seconds. Two runs on the same machine produce byte-identical files.
+- **Exports:** `python3 art-source/blender/export_houses.py art-source/blender/exports` rewrites all 64 `.glb` files in a few seconds. Two runs on the same machine produce byte-identical files.
 - **Colour schemes:** `python3 art-source/blender/export_colour_schemes.py` rewrites `colour-schemes.json`.
-- **Renders:** `python3 art-source/blender/render_base_1.py [out_dir]` for base 1, the pieces and the scheme grid (about 10 minutes on CPU), and `python3 art-source/blender/render_bases.py [out_dir] [--bases 6,7,8,9,10] [--only finished,framing,level4close,level4back,glb,lineup,lineupframing,lineup4,lineup2,lineup2framing,lineup24,lineupall,neighborhood]` for bases 2–10, the line-ups and the street (about 25 minutes per set of five). Both take `--only` for a subset and default to `art-source/blender/out/` (git-ignored). EEVEE needs Mesa's software EGL (`libegl1`, `libgl1-mesa-dri`) in a headless container. The renders write the stats JSON files next to the scripts. Only the review renders listed above are committed.
+- **Renders:** `python3 art-source/blender/render_base_1.py [out_dir]` for base 1, the pieces and the scheme grid (about 10 minutes on CPU), and `python3 art-source/blender/render_bases.py [out_dir] [--bases 6,7,8,9,10] [--only finished,framing,level4close,level4back,glb,lineup,lineupframing,lineup4,lineup2,lineup2framing,lineup24,lineupall,neighborhood]` for bases 2–10, the line-ups and the street (about 25 minutes per set of five). Both take `--only` for a subset and default to `art-source/blender/out/` (git-ignored). EEVEE needs Mesa's software EGL (`libegl1`, `libgl1-mesa-dri`) in a headless container. The renders write the stats JSON files next to the scripts. `python3 art-source/blender/render_garage.py OUT_DIR [--bases 1,2] [--views street,back,closeup]` renders the garage views. Only the review renders listed above are committed.
 
 **Roofs in the exports.** The embedded roof image is the tinted copy for that scheme (`textures/roof_<style>_<HEX>.png`), wired straight into the glTF base colour with no `baseColorFactor`, so each roof carries one tint and viewers show it as rendered (see concern 21).
 
@@ -62,7 +74,7 @@ So the level-1 starters are about 6.5–9 m wide, 6–7 m deep and 5–8 m tall.
 
 **Lot, for a starting corner lot, in house-local coordinates.** Pivot at the centre of the house's wall footprint, front facing −Y:
 - A lot is one tile quadrant, **30 × 30 m** (`WorldDimensions.TileSize` = 60).
-- The front facade sits **8.5 m** from the faced road's centreline. That is road half-width 3 + verge 0.75 + sidewalk 2 + `FrontSetback` 2.75.
+- The front facade sits **8.5 m** from the faced road's centreline. That is road half-width 3 + verge 0.75 + sidewalk 2 + `FrontSetback` 2.75. **Since #773 the setback is 3.75 m**, so the front line sits 9.5 m from the centreline (`FRONT_D` in `dh_scene.py`). The clearance tables below use 3.75 m.
 - The house centre sits **14 m** from the perpendicular road's centreline (`LotDistanceFromCenter`).
 - The backyard fence envelope comes from `LotFence`. On the road side it is 7.75 m off the perpendicular road's centreline, which leaves **6.25 m** from the house centre. On the neighbour side it is 2 m inside the lot edge, which leaves **14 m** from the house centre. At the back it is **19.5 m** behind the facade. Width across is 20.25 m.
 
@@ -83,50 +95,51 @@ So the level-1 starters are about 6.5–9 m wide, 6–7 m deep and 5–8 m tall.
 
 | Piece | Size | Attach point |
 |---|---|---|
-| Addition | 4.0 m out × 4.5 m along the side wall, wall height 2.7 m, 30° gable | `ATTACH_ADDITION` = (+3.75, −0.25, 0). Set back 1 m from the facade |
-| Deck | 6.0 × 4.0 m, surface at 0.60 m (just under the back door), railing in the trim colour. A 3-riser stair leaves the deck's addition-side edge and lands on the patio | `ATTACH_DECK` = (0, +3.5, 0) |
-| Patio | 4.0 × 5.5 m (as wide as the addition), 8 cm tall pavers. It sits directly behind the addition | `ATTACH_PATIO` is on the **addition**: the back edge of its slab, centred on it. Addition-local (2.15, 2.40, 0), which is (+5.90, +2.15, 0) in base space |
+| Garage (level 2, #817) | 3.5 m out × 6.0 m along the side wall (3.06 m clear inside), wall height 2.7 m, gable with its ridge along X and the gable end facing the side fence; 2.6 × 2.3 m sectional door to the street, 0.8 m sloped apron, end-wall window, back door onto the patio. Its pitch is lowered so its ridge matches the addition's (23.4° on base 1) | `ATTACH_ADDITION` = (+3.75, −0.25, 0). It sits 0.25 m behind the facade on base 1 |
+| Addition (superseded) | 4.0 m out × 4.5 m along the side wall, wall height 2.7 m, 30° gable | `ATTACH_ADDITION` = (+3.75, −0.25, 0). Set back 1 m from the facade |
+| Deck | 6.0 × 4.0 m, surface at 0.60 m (just under the back door), railing in the trim colour. A 3-riser stair leaves the deck's garage-side edge and lands on the patio | `ATTACH_DECK` = (0, +3.5, 0) |
+| Patio | 3.5 × 5.5 m (as wide as the garage; its default `DIMS` are still the addition's 4.0 m), 8 cm tall pavers. It sits directly behind the garage | `ATTACH_PATIO` is on the **garage**: the back edge of its slab, centred on it |
 
 ## Placement rule: the lot positions the level-4 house
 
 **Rule (Derek, follow-up to this concept):** the fully upgraded (level-4) house must fit every lot. So the lot positions the **level-4 composite** (base + addition + deck + patio), not the base alone. The base is placed off-centre so the whole composite fits, and **nothing moves when a piece is added**.
 
 **How it is computed** (`level4_placement` in `dh_scene.py`):
-1. Take the composite's bounding box in house-local space. For base 1 that is x −4.75…+8.14 and y −5.10…+7.65. It includes the chimney, the stoop, roof overhangs, the addition's rake and the patio.
+1. Take the composite's bounding box in house-local space. For base 1 with the garage that is x −4.75…+7.64 and y −5.10…+8.40. It includes the chimney, the stoop, roof overhangs, the garage's rake and the patio.
 2. **Across the lot:** centre that box between the two side runs of the backyard-fence envelope. That envelope is 7.75 m to 28 m from the side road's centreline, 20.25 m wide.
-3. **Front to back:** the facade still sits at `FrontSetback`, 8.5 m from the faced road's centreline, exactly as today.
+3. **Front to back:** the facade sits at `FrontSetback`, 9.5 m from the faced road's centreline with the 3.75 m setback (#773; it was 8.5 m at 2.75 m).
 
-**Result for base 1.** The house pivot sits at **19.57 m** from the side road's centreline when the addition faces the road, and at **16.18 m** when it faces the neighbour. Today's fixed `LotDistanceFromCenter` is 14 m.
+**Result for base 1 (garage).** The house pivot sits at **19.32 m** from the side road's centreline when the garage faces the road, and at **16.43 m** when it faces the neighbour. Today's fixed `LotDistanceFromCenter` is 14 m.
 
-**Checked against the tightest starter lot.** All 4 starting lots are corner lots with the same envelope, and the case checked is the addition on the **road side**. The patio now sits behind the addition. Both sides were checked, the addition facing the road and facing the neighbour. The addition keeps its 4.0 × 4.5 m size; no resize was needed.
+**Checked against the tightest starter lot.** All 4 starting lots are corner lots with the same envelope, and the case checked is the garage on the **road side**. The patio sits behind the garage. Both sides were checked, the garage facing the road and facing the neighbour. Values in brackets are the earlier numbers with the addition.
 
 | Side | Clearance |
 |---|---|
-| Road side: addition rake → side fence | **3.68 m** |
-| Neighbour side: chimney → side fence | **3.68 m** |
-| Front: stoop → sidewalk outer edge | **1.15 m** (facade → sidewalk stays 2.75 m) |
-| Rear: patio / deck back edge → rear fence | **8.35 m** (was 4.00 m when the patio sat behind the deck) |
+| Road side: garage rake → side fence | **3.93 m** (3.68) |
+| Neighbour side: chimney → side fence | **3.93 m** (3.68) |
+| Front: stoop → sidewalk outer edge | **2.15 m** (facade → sidewalk 3.75 m) |
+| Rear: patio back edge → rear fence | **6.60 m** (8.35 with the addition and the old 2.75 m setback: the 6 m deep garage moves the patio back 0.75 m, and the setback moves the whole house back 1.0 m) |
 
-The clearances come out the same with the addition on the neighbour side, because the composite is centred across the envelope.
+The clearances come out the same with the garage on the neighbour side, because the composite is centred across the envelope.
 
-**All ten bases on the tightest starter lot** (same rule, level-4 composite centred across the 20.25 m fence envelope; each base's `FRONT_Y` at `FrontSetback`). Every base fits with the addition on **either** side, and the clearances are the same on both sides:
+**All ten bases on the tightest starter lot, with the garage** (same rule, level-4 composite centred across the 20.25 m fence envelope; each base's `FRONT_Y` at the 3.75 m `FrontSetback`). Every base fits with the garage on **either** side, and the clearances are the same on both sides. Values in brackets are the addition's, where they changed for a reason other than the setback:
 
-| Base | Level-4 width × depth | Pivot from side-road CL (addition road side / neighbour side) | Road-side fence | Neighbour-side fence | Front → sidewalk | Rear → fence |
+| Base | Level-4 width × depth | Pivot from side-road CL (garage road side / neighbour side) | Each side fence | Front → sidewalk | Rear → fence | Garage front behind the front line |
 |---|---|---|---|---|---|---|
-| 1 Cottage | 12.89 × 12.75 m | 19.57 / 16.18 m | 3.68 | 3.68 | 1.15 | 8.35 |
-| 2 Ranch | 16.42 × 13.00 m | 19.76 / 15.99 m | **1.92** | **1.92** | 1.10 | 8.15 |
-| 3 Colonial | 13.79 × 13.59 m | 19.57 / 16.18 m | 3.23 | 3.23 | 2.11 | 6.55 |
-| 4 Craftsman | 13.99 × 14.79 m | 19.57 / 16.18 m | 3.13 | 3.13 | 2.11 | **5.35** |
-| 5 Gambrel | 13.79 × 13.55 m | 19.57 / 16.18 m | 3.23 | 3.23 | 1.35 | 7.35 |
-| 6 Split-level | 15.89 × 12.34 m | 19.82 / 15.93 m | 2.18 | 2.18 | 2.36 | 7.55 |
-| 7 Farmhouse | 13.93 × 15.79 m | 18.90 / 16.85 m | 3.16 | 3.16 | 2.11 | **4.35** |
-| 8 Tudor | 14.99 × 14.45 m | 19.57 / 16.18 m | 2.63 | 2.63 | 1.45 | 6.35 |
-| 9 Mission | 15.36 × 13.95 m | 19.78 / 15.97 m | 2.44 | 2.44 | 2.35 | 5.95 |
-| 10 Queen Anne | 13.90 × 15.39 m | 19.32 / 16.43 m | 3.18 | 3.18 | 2.11 | 4.75 |
+| 1 Cottage | 12.39 × 13.50 m | 19.32 / 16.43 m | 3.93 (3.68) | 2.15 | 6.60 | 0.25 |
+| 2 Ranch | 15.92 × 13.50 m | 19.51 / 16.24 m | **2.17** (1.92) | 2.35 | 6.40 | 0.45 |
+| 3 Colonial | 13.29 × 14.34 m | 19.32 / 16.43 m | 3.48 (3.23) | 3.11 | 4.80 | 2.05 (0.25 behind the wall) |
+| 4 Craftsman | 13.49 × 15.54 m | 19.32 / 16.43 m | 3.38 (3.13) | 3.11 | 3.60 | 3.25 (porch front line) |
+| 5 Gambrel | 13.29 × 14.30 m | 19.32 / 16.43 m | 3.48 (3.23) | 2.35 | 5.60 | 1.25 |
+| 6 Split-level | 15.39 × 13.09 m | 19.57 / 16.18 m | 2.43 (2.18) | 3.36 | 5.80 | 1.05 |
+| 7 Farmhouse | 13.43 × 16.54 m | 18.65 / 17.10 m | 3.41 (3.16) | 3.11 | **2.60** | 4.25 (2.25 behind the wall) |
+| 8 Tudor | 14.49 × 15.20 m | 19.32 / 16.43 m | 2.88 (2.63) | 2.45 | 4.60 | 2.25 (0.85 behind the wall) |
+| 9 Mission | 14.86 × 14.70 m | 19.53 / 16.22 m | 2.69 (2.44) | 3.35 | 4.20 | 2.65 (0.65 behind the wall) |
+| 10 Queen Anne | 13.40 × 16.14 m | 19.07 / 16.68 m | 3.43 (3.18) | 3.11 | **3.00** | 3.85 (1.85 behind the wall) |
 
-Front clearance is from the front-most thing (steps, garage apron) to the sidewalk's outer edge. For the colonial and craftsman, `FRONT_Y` is the **porch front**, so their enclosed walls sit a further 1.8 / 2.2 m back from the street than the other bases. The ranch is the widest and the tightest; it still leaves 1.9 m each side. In the second set, the farmhouse and the Queen Anne are the deepest (wrap porch / front porch plus a 9.0 / 8.6 m deep house), leaving 4.35 and 4.75 m behind the patio; the farmhouse's wrap porch also pushes its composite 1.9 m toward −X, so its pivot sits 18.9 m from the side road rather than 19.6 m. Front clearance is measured to the front-most thing; for the farmhouse, Tudor, mission and Queen Anne, `FRONT_Y` is the porch / cross-gable / loggia front, so their main walls sit further back.
+Front clearance is from the front-most thing (steps, porch) to the sidewalk's outer edge. For the colonial, craftsman, farmhouse, Tudor, mission and Queen Anne, `FRONT_Y` is the porch / cross-gable / loggia front, so their main walls sit further back. The ranch is still the widest and the tightest at 2.17 m each side; every base gained 0.25 m per side because the garage is 0.5 m narrower than the addition. The rear clearance shrank by 0.75 m on every base (the garage is 6 m deep against the addition's 4.5 m, so the patio behind it starts further back) and by a further 1.0 m from the deeper setback; the farmhouse is the tightest at 2.60 m. The driveway (48–60 triangles) never reaches the front walkway: the smallest gap is 1.15 m, on the split-level. `bases_stats.json` holds every number.
 
-For comparison, the old rule fails. A pivot at 14 m with the addition on the road side leaves the addition **1.89 m past** the road-side fence line, which is the failure flagged in the first pass.
+For comparison, the old rule fails. A pivot at 14 m with the addition on the road side left the addition **1.89 m past** the road-side fence line, which is the failure flagged in the first pass.
 
 ## Colour schemes, round 2: realistic (current)
 
@@ -183,24 +196,26 @@ Derek asked for more standard, realistic house colours and roofs, so `COLOR_SCHE
 
 Counts by roof style. Shingle and tile roofs are textures, so they cost **fewer** triangles than round 1's raised course lines. Metal seams are geometry. Since bases 2–5 were added, window and door trim no longer has a face buried in the wall (`cull_back` in the kit), which took about 10% off every house and the addition; base 1's numbers below are the new ones.
 
+Level 4 is base + garage + deck + patio (#817). The ranch's finished and framing counts are the rebuilt ranch without its built-in garage (it was 1,658 / 2,712).
+
 | Base | Finished | Framing | Level 4, shingle/tile (base + 3 pieces) | Level 4, metal |
 |---|---|---|---|---|
-| 1 Cottage | 1,574 | 2,160 | **3,596** | 4,172 |
-| 2 Ranch | 1,658 | 2,712 | **3,680** | 4,016 |
-| 3 Colonial | 2,672 | 4,020 | **4,694** | 5,318 |
-| 4 Craftsman | 2,288 | 2,904 | **4,310** | 5,318 |
-| 5 Gambrel | 2,134 | 3,468 | **4,156** | 4,348 |
-| 6 Split-level | 2,062 | 3,932 | **4,084** | 4,972 |
-| 7 Farmhouse | 2,824 (metal, its render scheme) | 3,840 | **4,390** | 5,110 |
-| 8 Tudor | 2,118 | 3,084 | **4,140** | 5,028 |
-| 9 Mission | 2,498 (tile) | 3,008 | **4,520** | 4,784 |
-| 10 Queen Anne | 3,080 (metal, its render scheme) | 4,820 | **4,670** | 5,294 |
+| 1 Cottage | 1,574 | 2,160 | **3,544** | 4,096 |
+| 2 Ranch | 1,742 | 2,880 | **3,640** | 3,952 |
+| 3 Colonial | 2,672 | 4,020 | **4,642** | 5,242 |
+| 4 Craftsman | 2,288 | 2,904 | **4,186** | 5,170 |
+| 5 Gambrel | 2,134 | 3,468 | **4,104** | 4,272 |
+| 6 Split-level | 2,062 | 3,932 | **4,032** | 4,896 |
+| 7 Farmhouse | 2,824 (metal, its render scheme) | 3,840 | **4,338** | 5,034 |
+| 8 Tudor | 2,118 | 3,084 | **4,088** | 4,952 |
+| 9 Mission | 2,498 (tile) | 3,008 | **4,396** | 4,636 |
+| 10 Queen Anne | 3,080 (metal, its render scheme) | 4,820 | **4,618** | 5,218 |
 
-Pieces (shingle / metal): addition 606 / 798, deck 1,068, patio 348. For comparison, a Kenney house is about 770–1,750 triangles.
+Pieces (shingle / metal): garage 626 / 794 at its default `DIMS` (554–866 across the bases, because its pitch is solved per base), deck 1,068, patio 348 at its default 4.0 m width (276 at the garage's 3.5 m). The superseded addition was 606 / 798. For comparison, a Kenney house is about 770–1,750 triangles.
 
-**Budget for bases 6–10** (Derek's target: level 4 at or under the colonial, about 4.7k, with shingle/tile roofs). **All five are under it**: split-level 4,084, farmhouse 4,390, Tudor 4,140, mission 4,520, Queen Anne 4,670 (right at the line). With **metal** roofs every one of them goes over (4,784–5,294), as do the colonial and craftsman: seams are geometry, and the steep or big roofs carry many. Arched openings were cut from 6 to 4 segments per half-circle to bring the mission (which has ten arches) under the line, from 4,848 to 4,520.
+**Budget for bases 6–10** (Derek's target: level 4 at or under the colonial, about 4.7k, with shingle/tile roofs). **All five are under it** with the garage: split-level 4,032, farmhouse 4,338, Tudor 4,088, mission 4,396, Queen Anne 4,618. With **metal** roofs every one of them goes over (4,636–5,218), as do the colonial and craftsman: seams are geometry, and the steep or big roofs carry many. Arched openings were cut from 6 to 4 segments per half-circle to bring the mission (which has ten arches) under the line, from 4,848 to 4,520 with the addition.
 
-**Budget, first set.** Bases 1, 2 and 5 stay within about ±15% of base 1 at level 4. The **colonial is about 30% over** (4,694 vs 3,596), because it has two storeys of shuttered windows (14 windows on the street side and gables). I already dropped one upstairs back window and the back mullions; going further would mean losing shutters on the side walls. The craftsman's metal-roof number is high because its long, deep roof carries many seams. See concern 10.
+**Budget, first set.** Bases 1, 2 and 5 stay within about ±15% of base 1 at level 4. The **colonial is about 30% over** (4,642 vs 3,544 with the garage), because it has two storeys of shuttered windows (14 windows on the street side and gables). I already dropped one upstairs back window and the back mullions; going further would mean losing shutters on the side walls. The craftsman's metal-roof number is high because its long, deep roof carries many seams. See concern 10.
 
 ## Base house 1: the side-gabled cottage
 
@@ -226,10 +241,10 @@ All four follow base 1's conventions: pivot at the centre of the wall footprint,
 | Wall height | 2.8 m | 5.9 m (two 2.8 m storeys + 0.3 m floor platform) | 2.9 m | 2.8 m (upper storey is inside the roof) |
 | Roof | Hip, 22°, 0.5 m eaves | Side gable, 35°; porch shed roof | Front gable, 26°, 0.75 m eaves, 0.6 m rakes, gabled dormer on the −X slope | Gambrel: 66° lower slope over 1.3 m, 24° upper; shed dormer at 10° |
 | Height (incl. chimney) | 6.0 m | 10.1 m | 6.6 m | 8.9 m |
-| Overall bounds (finished) | x ±6.33, y −5.25…4.23 | x −5.2…4.59, y −5.94…4.1 | x −5.3…5.12, y −5.64…5.64 | x −5.2…4.54, y −5.4…4.6 |
+| Overall bounds (finished) | x ±6.33, y −5.0…4.23 | x −5.2…4.59, y −5.94…4.1 | x −5.3…5.12, y −5.64…5.64 | x −5.2…4.54, y −5.4…4.6 |
 | `FRONT_Y` (line at `FrontSetback`) | −3.6 (facade) | −5.3 (**porch front**) | −5.0 (**porch front**) | −4.0 (facade) |
-| Character pieces | Attached one-car garage with sectional door and concrete apron, picture window with flower box, chimney through the roof | Shutters on both floors, square porch columns on bases, brick chimney outside the −X gable | Tapered columns on stone piers, louvred gable vent, knee braces, exposed rafter tails, stone chimney | Shuttered windows with flower boxes, two-window shed dormer, gable windows on both floors, stone chimney |
-| Framing extras | Hip and jack rafters, garage header | Second-floor platform between the storeys, porch rafters on temporary posts | Porch header on temporary posts, dormer framing | Second-floor platform, knuckle purlins, gambrel rafters, dormer framing |
+| Character pieces | Picture window with flower box, chimney through the roof; the old garage bay is living space with two shuttered front windows (#785; its garage is the level-2 piece) | Shutters on both floors, square porch columns on bases, brick chimney outside the −X gable | Tapered columns on stone piers, louvred gable vent, knee braces, exposed rafter tails, stone chimney | Shuttered windows with flower boxes, two-window shed dormer, gable windows on both floors, stone chimney |
+| Framing extras | Hip and jack rafters | Second-floor platform between the storeys, porch rafters on temporary posts | Porch header on temporary posts, dormer framing | Second-floor platform, knuckle purlins, gambrel rafters, dormer framing |
 | Render scheme | Dove Gray | Colonial White | Charcoal Craftsman | Coastal Blue |
 
 **Per-base piece parameters.** The pieces are the same scripts; each base passes only what it needs (`PIECES` in its module, merged by `dh_scene.fit_pieces`):
@@ -301,10 +316,10 @@ Same conventions as bases 1–5 (pivot at the centre of the wall footprint, fron
 7. **The framing has more triangles than the finished house** (e.g. 2,160 vs 1,574 for base 1, 4,020 vs 2,672 for the colonial) because every stud is a box. That is fine for 4–20 houses, but worth knowing.
 8. **Dog size.** As noted above, the in-game dog is 1.58 m tall, not 0.6 m. The stand-in uses the real Cube Pets bounds.
 9. **Rendering setup.** EEVEE needed Mesa's software EGL (`libegl1`, `libgl1-mesa-dri`) installed in the container, because headless `bpy` has no GPU. The GLB export logs a harmless "MeshOptimizer not available" message.
-10. **Triangle budget for the two-storey colonial** is about 30% over base 1 at level 4 (4,694 vs 3,596; table above). Fine for 4–20 houses, but if there is a hard per-house budget, the colonial is the one to trim (side-wall shutters first).
+10. **Triangle budget for the two-storey colonial** is about 30% over base 1 at level 4 (4,642 vs 3,544 with the garage; table above). Fine for 4–20 houses, but if there is a hard per-house budget, the colonial is the one to trim (side-wall shutters first).
 11. **`FRONT_Y` for porch houses.** I put the porch front, not the wall, on the `FrontSetback` line for the colonial and craftsman. The alternative (walls on the line, porch encroaching into the 2.75 m setback) would leave only about 0.3 m to the sidewalk. Whichever is chosen, the catalog needs a declared front line per base (ties into concern 4).
 12. **Additions on eave sides.** The ranch and craftsman additions meet the base under its eave, so their roofs tie into the main slope (`tie_in`). It looks right, but the addition piece is no longer independent of its base: its roof is longer and it uses that base's pitch. The piece specs (#780–#782) should allow per-base addition parameters.
-13. **The ranch garage.** The garage door sits at the finished-floor level, with a sloped concrete apron down to the grass. A garage at slab level would need its own floor, and the game has no cars, so it is decorative only. It's also the one base whose front door is off-centre (x = +0.3), so the front walk has to come from the base, not assume x = 0.
+13. **The ranch garage** (superseded by #785 / #817: the ranch no longer has a built-in garage). The garage door sat at the finished-floor level, with a sloped concrete apron down to the grass. A garage at slab level would need its own floor, and the game has no cars, so it is decorative only. It's also the one base whose front door is off-centre (x = +0.3), so the front walk has to come from the base, not assume x = 0.
 14. **Dormers** are decorative only: there is no upstairs interior. In the framing version the gambrel's lower rafters still run through the dormer opening.
 15. **Metal roofs on the bigger bases** push level 4 over the 4.7k line (bases 3, 4, 6–10: up to 5.3k). If that matters, the seam spacing could widen on large roofs, or metal could become a texture like the shingles.
 16. **The farmhouse's wrap porch** keeps the +X side and the back clear, so the addition and deck attach as usual, but it makes the composite asymmetric (1.9 m extra on −X). The placement rule handles it; the fence connector on −X would hit the porch, not the wall (same family as concern 2).
@@ -313,3 +328,10 @@ Same conventions as bases 1–5 (pivot at the centre of the wall footprint, fron
 19. **Metal seams only on gable roofs.** Hip roofs (ranch, mission) and the porch / wrap-porch roofs built straight from roof planes show metal schemes as a flat colour with no seams. That's why the mission's metal count is low. If metal should read the same everywhere, the seam pass needs to move into `RoofPlane.slab`.
 20. **Half-timber colour** uses the scheme's deck stain (darkened), so every scheme still has a timber colour without adding a 13th slot. On dark-siding schemes (Navy Saltbox, Charcoal Craftsman) the timbers are low-contrast.
 21. **The embedded roof texture is pre-tinted per scheme.** Each GLB carries its scheme's tinted roof image, so its roof colour is fixed. Recolouring roofs at runtime (one material per roof style, Base Map × the scheme hex, as in "How this carries into Unity") would need the greyscale mask from `textures/` instead. That is for #774 to decide.
+22. **Garage: the rear clearance shrinks by 0.75 m on every base** (#817). The garage is 6 m deep against the addition's 4.5 m, so the patio behind it starts 0.75 m further back. The farmhouse now leaves 2.60 m to the rear fence and the Queen Anne 3.00 m. Both still fit. Shortening the patio from 5.5 to 4.75 m would give back the old rear line; the patio size stays as approved.
+23. **Garage: no garage is flush with the front.** The garage centres on the existing side attach point (3.75 m in front of the back wall) and is 6 m deep, so it sits 0.25–4.25 m behind the front line, furthest on the porch-front bases (4.25 m on the farmhouse). Making them flush would mean moving the side attach point forward per base, which moves the patio away from where the deck stairs land. The attach points stay as approved.
+24. **Garage: the ranch kept its 11.4 m length.** Its old garage bay is living space, which keeps the footprint, front line and attach points. Cutting the bay off instead would leave a roughly 7.8 m base that reads as a small hipped box rather than a ranch.
+25. **Garage: side windows are now covered.** On bases 1 and 3–10, a side-wall window (trim and shutters) sits inside the garage's 6 m footprint, where the 4.5 m addition left more of the wall clear. It is invisible from outside, but the model issue may want to move those windows.
+26. **Garage: low roof pitch on two bases.** The mission garage roof is 13.7° and the ranch's 16.9°, because they match the addition's ridge height over a deeper roof. Both read fine in the close-ups, but they are flat.
+27. **Base meshes over the 2,000-triangle backstop.** Bases 3–10 already exceed 2,000 triangles per mesh (approved models, unchanged by the garage work). The garage itself is at most 866.
+28. **The driveway is decoration only.** `driveway-base-NN.glb` is a plain 3.0 m concrete slab centred on the garage door, from the apron to the curb, skipping the sidewalk, which runs through unchanged. It is a separate object so it can change without touching the house exports.
