@@ -812,6 +812,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../world-art/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World Art
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sidewalks/" class="md-nav__link">
         
   
@@ -1996,6 +2017,9 @@
 <p><strong>Decision (2026-07-23, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/243">#243</a>):</strong> the earlier <code>planter</code> kind is <strong>removed entirely</strong> — playtesting showed planters placed in odd, random yard spots, so the whole code path is gone and a planter can never be selected or rendered. Only the two tree meshes remain; the collision spacing (previously keyed off the planter, the widest piece) is re-derived from the larger tree canopy half-extent.</p>
 </blockquote>
 <p>Visually, each pick instantiates its selected <code>tree-large</code>/<code>tree-small</code> Kenney City Kit Suburban model at uniform scale ×5 (matching <code>FenceTiling.Scale</code>, since the trees stand alongside the same backyard fences — Derek tunes both further in the Editor check), <strong>varied per tree by a size multiplier</strong> (<code>YardTreePlacement.Scale</code>) so no two yards read identically. <code>WorldBuilder</code> builds one "Yard - N" container per lot holding its front-then-back picks, falling back to one simple primitive marker per pick (same pattern as the walkways/fences) when a kit piece can't be loaded.</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/800">#800</a>).</strong> This section used to say only that yards get Kenney <code>tree-large</code>/<code>tree-small</code> models → it now says the tree <strong>models</strong> change to the approved textured trees, with the placement rules here unchanged, that there are <strong>no street trees</strong>, and that flower beds, shrubs and hedges are <strong>landscaping items dogs ask for</strong>, not automatic yard dressing — see <a href="../world-art/#trees">World Art → Trees</a> → because Derek approved the textured trees (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/816">#816</a>) and made those calls on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/797">#797</a>. The Kenney trees above are what the game renders until <a href="https://github.com/derekwinters/lucas-doggiehood/issues/811">#811</a> lands.</p>
+</blockquote>
 <p><strong>Invariant — every lot with a house has yard trees in <em>every</em> session, not only the one it was built in</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/702">#702</a>). A lot's trees belong to the <strong>lot</strong>, so which lots get rendered is decided by the lot's own existence on an unlocked tile — <strong>never</strong> by whether the lot is still free to build on. This is a hard rule, not a target outcome: a render path keyed on "this lot has no house yet" is not acceptable even when it puts trees on screen for the session the player is looking at, because the pre-placed trees are <em>scene</em> state and the next launch rebuilds the world from <code>GameState</code> alone. Concretely, the two render loops together cover <strong>every</strong> lot exactly once — <code>WorldBuilder.BuildYardLandscaping(Transform)</code> over the four starting <code>NeighborhoodLayout.HouseLots</code>, and <code>WorldBuilder.BuildEmptyLots</code>/<code>RenderUnlockedTile</code> over every lot of every unlocked tile, built or not (the origin FourWay's lots are deliberately excluded from <code>GameState.LotsForUnlockedTile</code>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/607">#607</a>, so the two loops partition rather than overlap). Only the <strong>foundation slab</strong> stays gated on buildable state — a built lot has a real house mesh and wants no marker under it. The rule extends to the <em>count</em> as well as the render: a lot never selects <strong>zero</strong> trees. <code>SelectFront</code>/<code>SelectBack</code> cap their pick count at <code>Math.Min(desired, candidates.Count)</code>, so a yard whose candidate generation came back empty would render bare and say nothing — every lotted <code>TileType</code> is therefore swept in Core (<code>YardTreeCoverageTests</code>) at both stages, unbuilt and built, and <code>WorldBuilder.RenderYardPicks</code> logs a warning rather than returning silently if an empty pick list ever reaches it.</p>
 <blockquote>
 <p><strong>How the spec is changing (#702).</strong> Yard landscaping used to be specified purely as an outcome — yards get trees, seeded deterministically per lot, "the same lot always lands on the same trees across sessions and builds" — with nothing said about <em>which</em> lots are asked for trees, or when → it now carries the invariant above: a lot's trees follow the <strong>lot</strong>, are rendered for built and unbuilt lots alike, and are never zero → because the outcome-only wording left "render the trees for lots that don't have a house yet" as a technically-conforming reading, and that is exactly what shipped. Every house the player built outside the starting intersection came back <strong>bare</strong> after a relaunch, since its trees had only ever been pre-placed into the live scene at unlock time and no path rebuilt them for a lot that now carried a house. Lucas saw the trees when the tile unlocked and they were gone the next time he opened the game.</p>

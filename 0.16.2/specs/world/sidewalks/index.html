@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../house-design/">
+        <link rel="prev" href="../world-art/">
       
       
         <link rel="next" href="../tile-catalog/">
@@ -657,6 +657,27 @@
   
   <span class="md-ellipsis">
     House Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world-art/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World Art
   </span>
   
 
@@ -2014,6 +2035,7 @@
 <blockquote>
 <p><strong>Decision (2026-08-05, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/581">#581</a>):</strong> the walk network now <strong>curves at plain <code>Turn*</code> bends and cul-de-sac bulb turnarounds to follow the rounded road art</strong>, superseding this page's earlier "the rendered curve of a turn or cul-de-sac is independent of the graph edge" framing for those two cases. A playtest (v0.11) found dogs cutting a straight chord across a bend instead of following the curve. The fix inserts arc waypoints into the graph (see <em>Curved corners</em> below). <strong>Explicitly still straight:</strong> <code>FourWay</code>/<code>Tee</code> box-corner intersection turns stay hard 90° (their crosswalk box is unchanged) — only mid-tile road bends and cul-de-sac turnarounds curve. (The <code>OpposingTurnsNS</code>/<code>OpposingTurnsEW</code> twin bends were left out of scope here and then removed from the catalog entirely by <a href="https://github.com/derekwinters/lucas-doggiehood/issues/583">#583</a>.)</p>
 <p><strong>Decision (2026-07-14, Derek, on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>):</strong> the neighborhood has <strong>no driveways</strong> — front walkways <em>replaced</em> the <code>DrivewayStub</code> edges (<code>WalkEdgeKind.FrontWalkway</code>; the enum member was renamed, not duplicated) as each lot's connection to the sidewalk. A walkway runs from the house's actual <strong>front door</strong> — the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/125">#125</a> catalog door position at the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/127">#127</a> front-setback house position — perpendicular to the street onto the sidewalk, so dogs path to real front doors. It keeps the stub's two contracts: general wander never enters it, and it is the only way on/off a lot. The lot-side node of the connection is therefore the <strong>door</strong>, not the lot center; house lot centers (±14) remain as data anchoring the deferred expansion geometry, but no walk-network edge touches them anymore.</p>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/800">#800</a>).</strong> This decision used to say flatly that the neighborhood has <strong>no driveways</strong> → it now says a house with a garage gets a <strong>decorative driveway</strong> in front of the garage (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>), which is ground decoration only: it is <strong>not</strong> a walk-network edge, and the front walkway stays the only way on or off a lot → because the level-2 upgrade became a garage that faces the street, and Derek confirmed the driveway must not change how dogs reach the door. See <a href="../world-art/#sidewalks-front-walkways-and-driveways">World Art → Sidewalks, front walkways and driveways</a>.</p>
 </blockquote>
 <p>Construction, generically:</p>
 <ol>

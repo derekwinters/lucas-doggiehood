@@ -14,7 +14,7 @@
         <link rel="prev" href="../art-style/">
       
       
-        <link rel="next" href="../sidewalks/">
+        <link rel="next" href="../world-art/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -863,6 +863,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../world-art/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World Art
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -2278,14 +2299,18 @@
 <li><strong>One car.</strong> The garage ships on its own; cars are a separate, later feature that will build on it.</li>
 <li><strong>The door faces the street</strong>, with a <strong>driveway</strong> from the curb across the front yard and sidewalk.</li>
 <li>The patio sits <strong>behind</strong> the garage.</li>
+<li>The driveway is <strong>ground decoration only</strong>, in front of the garage. It adds no walk-network edge; dogs still reach the front door by the front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>). See <a href="../world-art/#sidewalks-front-walkways-and-driveways">World Art</a>.</li>
 </ul>
-<p><strong>Open:</strong> the garage model (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>; the approved concept still shows the old addition, 4.0 m out × 4.5 m along the wall); the exact driveway geometry and how it joins the <a href="../sidewalks/">walk network</a>, which today has no driveways (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>); and re-checking the clearances below with the garage in place of the addition.</p>
+<p><strong>Open:</strong> the garage model (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>; the approved concept still shows the old addition, 4.0 m out × 4.5 m along the wall); the exact driveway geometry (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/803">#803</a>); and re-checking the clearances below with the garage in place of the addition.</p>
 <h3 id="deck-level-3">Deck (level 3)<a class="headerlink" href="#deck-level-3" title="Permanent link">&para;</a></h3>
 <p>A raised wooden deck at the back door: 6.0 × 4.0 m on every base, surface 0.60 m (just under the back door), railing in the trim colour. Its stairs leave the deck's piece-side edge and <strong>land on the patio</strong>. Each base solves the stair position so they do.</p>
 <h3 id="patio-level-4">Patio (level 4)<a class="headerlink" href="#patio-level-4" title="Permanent link">&para;</a></h3>
 <p>Pavers 8 cm tall, directly behind the garage at the garage's patio attach point. In the concept it is as wide as the addition, 4.0 × 5.5 m. Its size with the garage is <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/782">#782</a>).</p>
 <p><strong>Invariant — a piece attaches only at an attach point its house declares.</strong> The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.</p>
 <p><strong>Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.</strong> The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above.</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/800">#800</a>).</strong> This page used to leave open how the garage's driveway joins the walk network → it now says the driveway is ground decoration only and adds no walk-network edge → because Derek confirmed that dogs keep reaching the door by the front walkway.</p>
+</blockquote>
 <h2 id="colour-schemes">Colour schemes<a class="headerlink" href="#colour-schemes" title="Permanent link">&para;</a></h2>
 <p>Every house is painted in one of <strong>12 realistic colour schemes</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/814">#814</a>), defined once as data in <code>art-source/blender/colour-schemes.json</code>. A base and its pieces paint only through the scheme's slots, so pieces always match their house.</p>
 <table>
