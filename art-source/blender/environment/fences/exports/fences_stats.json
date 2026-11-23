@@ -1,0 +1,594 @@
+{
+ "fence_privacy_panel": {
+  "style": "privacy",
+  "kind": "panel",
+  "tris": 376,
+  "size_xyz_m": [
+   2.375,
+   0.054,
+   1.78
+  ],
+  "materials": {
+   "DH_Fence_cedar": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_cedar_color.png",
+   "../textures/fence_cedar_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2067,
+  "bin_bytes": 24144
+ },
+ "fence_privacy_line_post": {
+  "style": "privacy",
+  "kind": "line_post",
+  "tris": 24,
+  "size_xyz_m": [
+   0.113,
+   0.113,
+   1.825
+  ],
+  "materials": {
+   "DH_Fence_cedar": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_cedar_color.png",
+   "../textures/fence_cedar_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2075,
+  "bin_bytes": 1680
+ },
+ "fence_privacy_corner_post": {
+  "style": "privacy",
+  "kind": "corner_post",
+  "tris": 24,
+  "size_xyz_m": [
+   0.164,
+   0.164,
+   1.885
+  ],
+  "materials": {
+   "DH_Fence_cedar": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_cedar_color.png",
+   "../textures/fence_cedar_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2079,
+  "bin_bytes": 1680
+ },
+ "fence_privacy_end_post": {
+  "style": "privacy",
+  "kind": "end_post",
+  "tris": 72,
+  "size_xyz_m": [
+   0.132,
+   0.149,
+   1.825
+  ],
+  "materials": {
+   "DH_Fence_cedar": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_cedar_color.png",
+   "../textures/fence_cedar_normal.png",
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3719,
+  "bin_bytes": 5040
+ },
+ "fence_privacy_gate": {
+  "style": "privacy",
+  "kind": "gate",
+  "tris": 244,
+  "size_xyz_m": [
+   1.183,
+   0.104,
+   1.78
+  ],
+  "materials": {
+   "DH_Fence_cedar": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_cedar_color.png",
+   "../textures/fence_cedar_normal.png",
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3766,
+  "bin_bytes": 16056
+ },
+ "fence_picket_panel": {
+  "style": "picket",
+  "kind": "panel",
+  "tris": 312,
+  "size_xyz_m": [
+   2.375,
+   0.057,
+   1.01
+  ],
+  "materials": {
+   "DH_Fence_white_paint": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.896,
+     0.88,
+     0.823,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_paintwood_color.png",
+   "../textures/fence_paintwood_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2197,
+  "bin_bytes": 20688
+ },
+ "fence_picket_line_post": {
+  "style": "picket",
+  "kind": "line_post",
+  "tris": 28,
+  "size_xyz_m": [
+   0.14,
+   0.14,
+   1.21
+  ],
+  "materials": {
+   "DH_Fence_white_paint": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.896,
+     0.88,
+     0.823,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_paintwood_color.png",
+   "../textures/fence_paintwood_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2206,
+  "bin_bytes": 2088
+ },
+ "fence_picket_corner_post": {
+  "style": "picket",
+  "kind": "corner_post",
+  "tris": 28,
+  "size_xyz_m": [
+   0.165,
+   0.165,
+   1.288
+  ],
+  "materials": {
+   "DH_Fence_white_paint": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.896,
+     0.88,
+     0.823,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_paintwood_color.png",
+   "../textures/fence_paintwood_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2211,
+  "bin_bytes": 2088
+ },
+ "fence_picket_end_post": {
+  "style": "picket",
+  "kind": "end_post",
+  "tris": 76,
+  "size_xyz_m": [
+   0.14,
+   0.16,
+   1.21
+  ],
+  "materials": {
+   "DH_Fence_white_paint": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.896,
+     0.88,
+     0.823,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png",
+   "../textures/fence_paintwood_color.png",
+   "../textures/fence_paintwood_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3865,
+  "bin_bytes": 5448
+ },
+ "fence_picket_gate": {
+  "style": "picket",
+  "kind": "gate",
+  "tris": 228,
+  "size_xyz_m": [
+   1.183,
+   0.107,
+   1.01
+  ],
+  "materials": {
+   "DH_Fence_white_paint": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.896,
+     0.88,
+     0.823,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png",
+   "../textures/fence_paintwood_color.png",
+   "../textures/fence_paintwood_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3898,
+  "bin_bytes": 15384
+ },
+ "fence_splitrail_panel": {
+  "style": "splitrail",
+  "kind": "panel",
+  "tris": 62,
+  "size_xyz_m": [
+   2.375,
+   0.115,
+   1.229
+  ],
+  "materials": {
+   "DH_Fence_split_rail": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_wire": {
+    "alphaMode": "MASK",
+    "doubleSided": true,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_rail_color.png",
+   "../textures/fence_rail_normal.png",
+   "../textures/fence_wire_color.png",
+   "../textures/fence_wire_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3753,
+  "bin_bytes": 3956
+ },
+ "fence_splitrail_line_post": {
+  "style": "splitrail",
+  "kind": "line_post",
+  "tris": 10,
+  "size_xyz_m": [
+   0.161,
+   0.12,
+   1.35
+  ],
+  "materials": {
+   "DH_Fence_split_rail": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_rail_color.png",
+   "../textures/fence_rail_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2076,
+  "bin_bytes": 700
+ },
+ "fence_splitrail_corner_post": {
+  "style": "splitrail",
+  "kind": "corner_post",
+  "tris": 10,
+  "size_xyz_m": [
+   0.193,
+   0.15,
+   1.4
+  ],
+  "materials": {
+   "DH_Fence_split_rail": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_rail_color.png",
+   "../textures/fence_rail_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 2083,
+  "bin_bytes": 700
+ },
+ "fence_splitrail_end_post": {
+  "style": "splitrail",
+  "kind": "end_post",
+  "tris": 58,
+  "size_xyz_m": [
+   0.154,
+   0.18,
+   1.35
+  ],
+  "materials": {
+   "DH_Fence_split_rail": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png",
+   "../textures/fence_rail_color.png",
+   "../textures/fence_rail_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 3715,
+  "bin_bytes": 4060
+ },
+ "fence_splitrail_gate": {
+  "style": "splitrail",
+  "kind": "gate",
+  "tris": 98,
+  "size_xyz_m": [
+   1.204,
+   0.09,
+   1.19
+  ],
+  "materials": {
+   "DH_Fence_split_rail": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_wire": {
+    "alphaMode": "MASK",
+    "doubleSided": true,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "DH_Fence_hardware": {
+    "alphaMode": "OPAQUE",
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.018,
+     0.019,
+     0.023,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/fence_metal_color.png",
+   "../textures/fence_metal_normal.png",
+   "../textures/fence_rail_color.png",
+   "../textures/fence_rail_normal.png",
+   "../textures/fence_wire_color.png",
+   "../textures/fence_wire_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "gltf_bytes": 5477,
+  "bin_bytes": 6860
+ }
+}
