@@ -7,12 +7,16 @@ Needs headless Blender as a Python module (`pip install bpy==5.3.0`).
 For each base house N (1-10), in that base's RENDER_SCHEME:
   base-NN-framing.glb   the framing version of the base alone
   base-NN-level1.glb    the finished base
-  base-NN-level2.glb    + the addition
+  base-NN-level2.glb    + the garage (#780, #817)
   base-NN-level3.glb    + the deck
-  base-NN-level4.glb    + the patio
-and the three upgrade pieces on their own, with their default DIMS, in
-base 1's scheme (Sage Cottage):
-  piece-addition.glb, piece-deck.glb, piece-patio.glb
+  base-NN-level4.glb    + the patio (behind the garage)
+  driveway-base-NN.glb  the decorative driveway on its own (base-local
+                        coordinates, same pivot as the house)
+and the upgrade pieces on their own, with their default DIMS, in base 1's
+scheme (Sage Cottage):
+  piece-garage.glb, piece-deck.glb, piece-patio.glb
+  piece-addition.glb    the superseded concept addition, kept for comparison
+                        (dh_scene still derives each garage's roof pitch from it)
 
 Roofs: the embedded roof image is the tinted copy for the base's scheme
 (textures/roof_<style>_<HEX>.png), wired straight into the glTF base colour
@@ -30,6 +34,7 @@ import bpy  # noqa: E402,F401
 import dh_house_kit as K  # noqa: E402
 import dh_scene as S  # noqa: E402
 import piece_addition  # noqa: E402
+import piece_garage  # noqa: E402
 import piece_deck  # noqa: E402
 import piece_patio  # noqa: E402
 
@@ -55,8 +60,14 @@ def main(out_dir):
             path = os.path.join(out_dir, "base-%02d-level%d.glb" % (n, lv))
             K.export_glb(path, S.meshes(objs))
             written.append(path)
+        K.reset_scene()
+        dw, _ = S.driveway(base, palette=pal)
+        path = os.path.join(out_dir, "driveway-base-%02d.glb" % n)
+        K.export_glb(path, [dw])
+        written.append(path)
     pal = K.scheme_palette(PIECE_SCHEME)
-    for nm, mod in (("addition", piece_addition), ("deck", piece_deck), ("patio", piece_patio)):
+    for nm, mod in (("garage", piece_garage), ("addition", piece_addition),
+                    ("deck", piece_deck), ("patio", piece_patio)):
         K.reset_scene()
         ob = mod.build(pal, name="piece_%s" % nm)
         if isinstance(ob, tuple):

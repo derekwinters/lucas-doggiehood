@@ -1,9 +1,14 @@
 """Base house 2: "Ranch", a wide single-storey ranch.
 
-Long, low hip roof (22 deg) with an attached-garage end at -X (sectional
-garage door + sloped concrete apron), a big picture window, a small brick
-chimney through the roof. The +X side is an EAVE side, so the addition's
-roof runs in (tie_in) until it dies into the main roof slope.
+Long, low hip roof (22 deg), a big picture window, a small brick chimney
+through the roof. Rebuilt for #785 / #817: the built-in garage end at -X is
+gone (that bay is living space now, with a pair of windows in the front and
+a second window on the -X end), and the ranch's garage arrives as its
+level-2 piece on the +X side like every other base. The footprint stays
+11.4 x 7.2 m, so the front line, attach points and deck are unchanged. The
++X side is an EAVE side, so the garage's roof runs in (tie_in) until it dies
+into the main roof slope. The +X wall has no window: the garage covers
+almost all of it from level 2.
 
 build(mode) with mode "finished" or "framing" -> (mesh object, [attach empties]).
 """
@@ -25,7 +30,6 @@ NAME = "Ranch"
 RENDER_SCHEME = "Dove Gray"
 PALETTE = K.scheme_palette(RENDER_SCHEME)
 FRONT_Y = -DIMS["depth"] / 2
-GARAGE_APRON = 1.5
 DOOR_X = -DIMS["width"] / 2 + 6.0      # front door centre (for the front walk)
 DECK_CX, DECK_W = K.deck_layout(DIMS["width"] / 2)
 PIECES = {
@@ -46,13 +50,14 @@ def _walls(d):
     x0, x1, y0, y1 = -W / 2, W / 2, -D / 2, D / 2
     O = K.Opening
     front = K.Wall((x0, y0), (x1, y0), zt, [
-        O("garage", 2.0, 3.0, 2.3),
+        O("window", 1.25, 1.2, 1.2, sill=0.9, shutters=True),
+        O("window", 2.95, 1.2, 1.2, sill=0.9, shutters=True),
         O("window", 4.55, 0.9, 1.1, sill=1.0),
         O("door", 6.0, 1.1, 2.3),
         O("window", 8.15, 2.4, 1.4, sill=0.75, flowerbox=True),
         O("window", 10.3, 1.0, 1.2, sill=0.9),
     ])
-    right = K.Wall((x1, y0), (x1, y1), zt, [O("window", 6.6, 0.9, 1.1, sill=1.0)])
+    right = K.Wall((x1, y0), (x1, y1), zt, [])
     t_door = x1 - DECK_CX
     back = K.Wall((x1, y1), (x0, y1), zt, [
         O("window", 1.0, 1.0, 1.2, sill=0.9),
@@ -60,7 +65,8 @@ def _walls(d):
         O("window", 6.7, 1.2, 1.2, sill=0.9),
         O("window", 9.6, 1.0, 1.0, sill=1.1),
     ])
-    left = K.Wall((x0, y1), (x0, y0), zt, [O("window", 3.6, 1.0, 1.0, sill=1.1)])
+    left = K.Wall((x0, y1), (x0, y0), zt, [O("window", 1.6, 1.0, 1.0, sill=1.1),
+                                          O("window", 3.8, 1.0, 1.0, sill=1.1)])
     return front, right, back, left
 
 
@@ -73,7 +79,6 @@ def build(mode, d=DIMS, palette=PALETTE, name=None):
 
     # --- foundation (identical in both modes) ---------------------------
     K.slab(m, x0, x1, y0, y1)
-    K.wedge_apron(m, x0 + 0.35, x0 + 3.65, y0 - K.SLAB_OVERHANG, GARAGE_APRON, K.FLOOR_Z - 0.03)
     dx = x0 + 6.0
     m.box((dx - 0.9, y0 - 1.0, 0), (dx + 0.9, y0, K.FLOOR_Z - 0.18), "concrete")
     K.steps(m, dx - 0.7, dx + 0.7, y0 - 1.0, K.FLOOR_Z - 0.18, n=1, run=0.4)
@@ -90,7 +95,7 @@ def build(mode, d=DIMS, palette=PALETTE, name=None):
             K.wall_framing(m, w)
         K.hip_roof(m, x0, x1, y0, y1, zt, d["pitch"], "framing", eave=d["eave"])
         K.brace(m, front, 4.9, 7.4)
-        K.brace(m, left, 6.9, 4.4)
+        K.brace(m, left, 6.9, 4.6)
         K.brace(m, right, 0.3, 2.6)
 
     ob = m.build()
