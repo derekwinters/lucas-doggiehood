@@ -1,6 +1,6 @@
 # Doggiehood
 
-Doggiehood is a cozy, low-poly Android game about a neighborhood of dogs — built by [Derek Winters](https://github.com/derekwinters) and his son Lucas, with Claude doing the implementation work.
+Doggiehood is a cozy Android game about a neighborhood of dogs — built by [Derek Winters](https://github.com/derekwinters) and his son Lucas, with Claude doing the implementation work.
 
 You wander the neighborhood from above, spot dogs with something to say, and help them out: find a lost toy, deliver a birthday gift, spray away a bug problem. There's no fail state, no monetization, and no rush — just a small, growing, good-natured place to visit.
 
