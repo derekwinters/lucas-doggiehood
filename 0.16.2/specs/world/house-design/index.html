@@ -2256,7 +2256,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>The ranch changes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>).</strong> The concept ranch has a built-in garage. The base ranch loses it, and its garage arrives as the level-2 piece like on every other base. The ranch model rebuild is <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/785">#785</a>).</p>
+<p><strong>The ranch changes (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>).</strong> The concept ranch has a built-in garage. The base ranch loses it, and its garage arrives as the level-2 piece like on every other base. The rebuilt ranch is in <code>art-source/blender/</code> as a reference asset (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/785">#785</a>). It keeps its 11.4 × 7.2 m footprint: the old garage bay is living space with two front windows, so its front line and attach points are unchanged.</p>
 <h3 id="framing-and-finished-versions">Framing and finished versions<a class="headerlink" href="#framing-and-finished-versions" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Finished:</strong> the complete house: siding, roof covering, trim, windows, doors, chimney and porch.</li>
@@ -2322,11 +2322,15 @@
 <li>The patio sits <strong>behind</strong> the garage.</li>
 <li>The driveway is <strong>ground decoration only</strong>, in front of the garage. It adds no walk-network edge; dogs still reach the front door by the front walkway (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>). See <a href="../world-art/#sidewalks-front-walkways-and-driveways">World Art</a>.</li>
 </ul>
-<p><strong>Open:</strong> the garage model (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>; the approved concept still shows the old addition, 4.0 m out × 4.5 m along the wall); the exact driveway geometry (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/803">#803</a>); and re-checking the clearances below with the garage in place of the addition.</p>
+<p><strong>Built:</strong> the garage model is in <code>art-source/blender/</code> as a reference asset (<code>piece_garage.py</code>, exported as <code>piece-garage.glb</code> and as level 2–4 of every base; <a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>). It is 3.5 m out × 6.0 m along the wall, with a 2.6 × 2.3 m sectional door, a short sloped apron and a back door onto the patio. Its roof keeps each base's tie-in, with its pitch lowered so its ridge matches the concept addition's. It attaches at the existing side attach point, so it sits 0.25–4.25 m behind the front line rather than flush with it.</p>
+<p><strong>Open:</strong> the exact driveway geometry (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/803">#803</a>). The reference assets carry a proposal as a separate object (<code>driveway-base-NN.glb</code>): a plain 3.0 m concrete slab from the garage apron to the curb that skips the sidewalk.</p>
 <h3 id="deck-level-3">Deck (level 3)<a class="headerlink" href="#deck-level-3" title="Permanent link">&para;</a></h3>
 <p>A raised wooden deck at the back door: 6.0 × 4.0 m on every base, surface 0.60 m (just under the back door), railing in the trim colour. Its stairs leave the deck's piece-side edge and <strong>land on the patio</strong>. Each base solves the stair position so they do.</p>
 <h3 id="patio-level-4">Patio (level 4)<a class="headerlink" href="#patio-level-4" title="Permanent link">&para;</a></h3>
-<p>Pavers 8 cm tall, directly behind the garage at the garage's patio attach point. In the concept it is as wide as the addition, 4.0 × 5.5 m. Its size with the garage is <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/782">#782</a>).</p>
+<p>Pavers 8 cm tall, directly behind the garage at the garage's patio attach point. It takes the garage's width and keeps its 5.5 m depth: <strong>3.5 × 5.5 m</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>).</p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>).</strong> This page used to list the garage model, the ranch rebuild and the patio's size with the garage as Open, and its clearances used the concept addition → it now says the garage and the garage-less ranch are built as reference assets, the patio is as wide as the garage (3.5 × 5.5 m), and the clearances below are measured with the garage → because Derek approved the garage concept as shown.</p>
+</blockquote>
 <p><strong>Invariant — a piece attaches only at an attach point its house declares.</strong> The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.</p>
 <p><strong>Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.</strong> The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above.</p>
 <blockquote>
@@ -2414,84 +2418,83 @@
 <th>Level-4 width × depth (m)</th>
 <th>Each side fence</th>
 <th>Front → sidewalk</th>
-<th>Rear → fence (was at 2.75 m)</th>
+<th>Rear → fence</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1 Cottage</td>
-<td>12.89 × 12.75</td>
-<td>3.68</td>
+<td>12.39 × 13.50</td>
+<td>3.93</td>
 <td>2.15</td>
-<td><strong>7.35</strong> (8.35)</td>
+<td>6.60</td>
 </tr>
 <tr>
 <td>2 Ranch</td>
-<td>16.42 × 13.00</td>
-<td>1.92</td>
-<td>2.10</td>
-<td><strong>7.15</strong> (8.15)</td>
+<td>15.92 × 13.50</td>
+<td><strong>2.17</strong></td>
+<td>2.35</td>
+<td>6.40</td>
 </tr>
 <tr>
 <td>3 Colonial</td>
-<td>13.79 × 13.59</td>
-<td>3.23</td>
+<td>13.29 × 14.34</td>
+<td>3.48</td>
 <td>3.11</td>
-<td><strong>5.55</strong> (6.55)</td>
+<td>4.80</td>
 </tr>
 <tr>
 <td>4 Craftsman</td>
-<td>13.99 × 14.79</td>
-<td>3.13</td>
+<td>13.49 × 15.54</td>
+<td>3.38</td>
 <td>3.11</td>
-<td><strong>4.35</strong> (5.35)</td>
+<td>3.60</td>
 </tr>
 <tr>
 <td>5 Dutch colonial</td>
-<td>13.79 × 13.55</td>
-<td>3.23</td>
+<td>13.29 × 14.30</td>
+<td>3.48</td>
 <td>2.35</td>
-<td><strong>6.35</strong> (7.35)</td>
+<td>5.60</td>
 </tr>
 <tr>
 <td>6 Split-level</td>
-<td>15.89 × 12.34</td>
-<td>2.18</td>
+<td>15.39 × 13.09</td>
+<td>2.43</td>
 <td>3.36</td>
-<td><strong>6.55</strong> (7.55)</td>
+<td>5.80</td>
 </tr>
 <tr>
 <td>7 Farmhouse</td>
-<td>13.93 × 15.79</td>
-<td>3.16</td>
+<td>13.43 × 16.54</td>
+<td>3.41</td>
 <td>3.11</td>
-<td><strong>3.35</strong> (4.35)</td>
+<td><strong>2.60</strong></td>
 </tr>
 <tr>
 <td>8 Tudor</td>
-<td>14.99 × 14.45</td>
-<td>2.63</td>
+<td>14.49 × 15.20</td>
+<td>2.88</td>
 <td>2.45</td>
-<td><strong>5.35</strong> (6.35)</td>
+<td>4.60</td>
 </tr>
 <tr>
 <td>9 Mission</td>
-<td>15.36 × 13.95</td>
-<td>2.44</td>
+<td>14.86 × 14.70</td>
+<td>2.69</td>
 <td>3.35</td>
-<td><strong>4.95</strong> (5.95)</td>
+<td>4.20</td>
 </tr>
 <tr>
 <td>10 Queen Anne</td>
-<td>13.90 × 15.39</td>
-<td>3.18</td>
+<td>13.40 × 16.14</td>
+<td>3.43</td>
 <td>3.11</td>
-<td><strong>3.75</strong> (4.75)</td>
+<td>3.00</td>
 </tr>
 </tbody>
 </table>
-<p>"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. Every base still fits, and the tightest rear clearance is the farmhouse at 3.35 m.</p>
-<p>These numbers use the concept <strong>addition</strong> as the level-2 piece. They need re-checking once the garage model exists (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>). Zone and cul-de-sac lots have not been checked yet (<strong>Open</strong>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/778">#778</a>).</p>
+<p>"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. These numbers use the <strong>garage</strong> as the level-2 piece (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>). Every base still fits. The tightest side clearance is the ranch at 2.17 m, and the tightest rear clearance is the farmhouse at 2.60 m. Compared with the concept addition, every base gains 0.25 m per side (the garage is 0.5 m narrower) and loses 0.75 m at the rear (the garage is 1.5 m deeper, so the patio behind it starts further back). Zone and cul-de-sac lots have not been checked yet (<strong>Open</strong>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/778">#778</a>).</p>
 <h2 id="open-items">Open items<a class="headerlink" href="#open-items" title="Permanent link">&para;</a></h2>
 <p>Besides those marked above:</p>
 <ul>

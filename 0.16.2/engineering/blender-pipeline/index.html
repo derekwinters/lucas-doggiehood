@@ -1995,8 +1995,8 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <ul>
 <li><strong><code>dh_house_kit.py</code></strong> is the shared kit: shared dimensions (slab, floor, wall, stud, rafter and trim sizes), the 12 colour schemes (<code>COLOR_SCHEMES</code>), <code>scheme_palette()</code>, a mesh builder, finished and framed walls, roofs, attach points, <code>tri_count()</code>, <code>export_glb()</code> and the render setup.</li>
 <li><strong><code>base_house_N.py</code></strong> builds one base. Each exposes the same interface: <code>DIMS</code>, <code>NAME</code>, <code>RENDER_SCHEME</code>, <code>FRONT_Y</code>, <code>PIECES</code>, <code>attach_locations()</code> and <code>build("finished" | "framing", palette=…)</code>. Both modes come from the same <code>DIMS</code>, so the framing and finished versions line up exactly.</li>
-<li><strong><code>piece_addition.py</code>, <code>piece_deck.py</code>, <code>piece_patio.py</code></strong> build the upgrade pieces, each from its own <code>DIMS</code>. (The level-2 piece becomes a garage; its model is Open on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>.)</li>
-<li><strong><code>dh_scene.py</code></strong> fits the pieces to each base and holds the level-4 placement rule used for the clearance tables.</li>
+<li><strong><code>piece_garage.py</code>, <code>piece_deck.py</code>, <code>piece_patio.py</code></strong> build the upgrade pieces, each from its own <code>DIMS</code>. The garage is the level-2 piece (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>). <strong><code>piece_addition.py</code></strong> is the superseded concept addition, kept for comparison; <code>dh_scene.py</code> still reads its <code>DIMS</code> to match each garage's ridge height.</li>
+<li><strong><code>dh_scene.py</code></strong> fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.</li>
 <li><strong>Trees</strong> (<code>environment/trees/</code>): <code>dh_tree_tex.py</code> paints the leaf atlases and bark maps; <code>dh_trees_tex.py</code> builds the trees. They reuse the branch helpers in <code>dh_env.py</code>.</li>
 <li><strong>Street props</strong> (<code>environment/street-props/</code>): <code>dh_prop_tex.py</code> paints the surface textures and the label atlas; <code>dh_props.py</code> builds the props.</li>
 </ul>
@@ -2027,7 +2027,7 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <tr>
 <td>Houses</td>
 <td><code>python3 art-source/blender/export_houses.py art-source/blender/exports</code></td>
-<td>53 <code>.glb</code> files: <code>base-NN-framing.glb</code> and <code>base-NN-level1.glb</code> … <code>level4.glb</code> for the 10 bases, plus <code>piece-addition.glb</code>, <code>piece-deck.glb</code>, <code>piece-patio.glb</code></td>
+<td>64 <code>.glb</code> files: <code>base-NN-framing.glb</code>, <code>base-NN-level1.glb</code> … <code>level4.glb</code> and <code>driveway-base-NN.glb</code> for the 10 bases, plus <code>piece-garage.glb</code>, <code>piece-deck.glb</code>, <code>piece-patio.glb</code> and the superseded <code>piece-addition.glb</code></td>
 </tr>
 <tr>
 <td>Colour schemes</td>
@@ -2066,7 +2066,7 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 </ul>
 <p>Rebuilding the tree and prop textures from their generators reproduces the committed PNGs byte for byte. Committed PNGs are the generators' own output with no added metadata chunks.</p>
 <h2 id="review-renders">Review renders<a class="headerlink" href="#review-renders" title="Permanent link">&para;</a></h2>
-<p>Each set has render scripts that draw the models at the game camera (orthographic, 45° pitch, yaw −40°), plus close-ups and line-ups for comparison. Examples are <code>render_base_1.py</code> and <code>render_bases.py</code> for houses, <code>render_tree_closeup_tex.py</code> for trees, and <code>run_sampler.sh</code> and <code>render_street_props.py</code> for props. Each folder's README lists the full set.</p>
+<p>Each set has render scripts that draw the models at the game camera (orthographic, 45° pitch, yaw −40°), plus close-ups and line-ups for comparison. Examples are <code>render_base_1.py</code>, <code>render_bases.py</code> and <code>render_garage.py</code> for houses, <code>render_tree_closeup_tex.py</code> for trees, and <code>run_sampler.sh</code> and <code>render_street_props.py</code> for props. Each folder's README lists the full set.</p>
 <p>Renders go to <code>out/</code> by default. Only the renders Derek approved are copied into the set's <code>review/</code> folder and committed. Renders are not byte-reproducible and are not covered by the reproducibility invariant.</p>
 <h2 id="triangle-budget">Triangle budget<a class="headerlink" href="#triangle-budget" title="Permanent link">&para;</a></h2>
 <p>Each export records triangle counts (<code>tri_count()</code> in the kit) in the set's stats JSON and README. The scripts do <strong>not</strong> check them against a limit.</p>
