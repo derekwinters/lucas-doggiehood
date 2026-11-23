@@ -677,6 +677,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#art-direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Art direction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#art-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Art budget
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#color-palette" class="md-nav__link">
     <span class="md-ellipsis">
       Color palette
@@ -1765,6 +1783,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#art-direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Art direction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#art-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Art budget
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#color-palette" class="md-nav__link">
     <span class="md-ellipsis">
       Color palette
@@ -1844,8 +1880,28 @@
 <h1 id="art-ui-style">Art &amp; UI Style<a class="headerlink" href="#art-ui-style" title="Permanent link">&para;</a></h1>
 <p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/64">#64</a> (world/house style), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a> (UI chrome)</em></p>
 <p>The house and world palette below is implemented: the neighborhood renders real <a href="https://kenney.nl/assets/city-kit-suburban">Kenney City Kit Suburban</a> (CC0) models, staged under <code>Assets/Art/Houses/CityKitSuburban/</code>. The UI chrome direction ("Candy Cottage") is still a decided-but-not-yet-implemented spec for the components listed below.</p>
+<h2 id="art-direction">Art direction<a class="headerlink" href="#art-direction" title="Permanent link">&para;</a></h2>
+<p><strong>Clean, stylized 3D with realistic colours and real textures; cozy, not photoreal</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/796">#796</a>). Detail comes from real surface textures (shingles, bark, painted metal, concrete) on moderate geometry, not from polygon count. That is how the approved concept houses (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/814">#814</a>), textured trees (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/816">#816</a>) and street props (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/821">#821</a>) under <code>art-source/blender/</code> are built.</p>
+<p>The world art upgrade moves the game in two steps:</p>
+<ul>
+<li><strong>From Kenney kit textures to Blender models with real surface textures.</strong> World models are written as Blender Python scripts under <code>art-source/blender/</code> and exported from there, replacing the Kenney City Kit Suburban houses described below.</li>
+<li><strong>From the bright, saturated palette to realistic colour schemes.</strong> Houses use the 12 realistic American-suburban schemes approved with the house concepts (<code>art-source/blender/colour-schemes.json</code>), in place of the bright/saturated palette below.</li>
+</ul>
+<p>Until the upgrade lands, the sections below describe what the game ships today. This change covers the world art only; the UI chrome direction ("Candy Cottage") below is unchanged.</p>
+<h2 id="art-budget">Art budget<a class="headerlink" href="#art-budget" title="Permanent link">&para;</a></h2>
+<p>The game has to run smoothly on Android phones, so models are bounded by a <strong>per-scene budget measured on the target device</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/796">#796</a>, option B):</p>
+<ul>
+<li><strong>What is capped:</strong> what is on screen at the default camera — <strong>triangles</strong>, <strong>draw calls</strong> and <strong>texture memory</strong> — on a real phone.</li>
+<li><strong>Backstop:</strong> a <strong>per-mesh sanity cap</strong>, so one runaway model is caught without measuring a whole scene.</li>
+<li><strong>How it is checked:</strong> an EditMode test for the static limits, and a frame-time check on a real phone.</li>
+</ul>
+<p>The concrete numbers are <strong>not set yet</strong>. <a href="https://github.com/derekwinters/lucas-doggiehood/issues/799">#799</a> sets them after measuring on a phone. Until then, <code>ArtBudget.MaxTrianglesPerMesh</code> and the EditMode sweep that enforces it stay as they are.</p>
+<p><strong>Invariant — Every model ships within the art budget; a model over budget is changed, not exempted.</strong></p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/798">#798</a>).</strong> This page used to describe the world only as Kenney kit models in a <strong>bright &amp; saturated</strong> palette under a <strong>low-poly</strong> rule, with the only budget a per-mesh triangle cap → it now states the new direction (<strong>clean, stylized 3D with realistic colours and real textures; cozy, not photoreal</strong>), the move to Blender models with real textures and realistic colour schemes, and a <strong>per-scene art budget measured on the device</strong> with a per-mesh backstop and an invariant that over-budget models are changed, not exempted → because Derek retired the low-poly rule on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/796">#796</a> and chose this direction and budget option B there.</p>
+</blockquote>
 <h2 id="color-palette">Color palette<a class="headerlink" href="#color-palette" title="Permanent link">&para;</a></h2>
-<p><strong>Bright &amp; saturated.</strong> Bold, punchy colors that read clearly at a distance and skew playful rather than naturalistic — not the muted/earthy or soft-pastel alternatives that were considered. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/64">#64</a>)</p>
+<p><strong>Bright &amp; saturated</strong> (the current palette, which the <a href="#art-direction">art direction</a> replaces with realistic colour schemes). Bold, punchy colors that read clearly at a distance and skew playful rather than naturalistic — not the muted/earthy or soft-pastel alternatives that were considered. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/64">#64</a>)</p>
 <p>Environment surfaces (grass, street, sidewalk, crosswalk) carry this palette as hex constants on <code>Doggiehood.Core.Art.Palette</code>. Dog coats carry it as per-breed hex data. Houses carry it through the kit's own hand-painted textures (below), not through Core-owned hex color data.</p>
 <h2 id="house-architecture">House architecture<a class="headerlink" href="#house-architecture" title="Permanent link">&para;</a></h2>
 <p><strong>Real kit models, one per house, painted with the kit's own texture variants.</strong> Each of the 4 starting houses (<a href="../world/">World &amp; Neighborhood</a>) renders as one of the 21 Kenney City Kit Suburban house meshes — chosen so no two starting houses share a model — giving each dog's home its own silhouette, rather than a uniform tract-house look. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/64">#64</a>)</p>
@@ -1858,10 +1914,10 @@
 <p><strong>Trucks carry standard car colors, assigned per-spawn (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/601">#601</a>).</strong> A delivery truck renders the single Kenney Car Kit "delivery" mesh, tinted with one of a small <strong>curated real-world car spread</strong> — white, black, silver, gray, red, dark blue, dark green (<code>Palette.CarColorHex</code>, settled by Derek 2026-08-05) — so trucks aren't all identical. This is deliberately <strong>not</strong> the broad decorative 20-tint house table (<code>Palette.HouseTintHex</code>); it's the tight, believable spread of colors actual cars come in. The tint is applied the same way houses are — a <strong>material color-multiply</strong> over the model's renderers (<code>DeliveryTruckView</code> mirroring <code>WorldBuilder.ApplyPaletteTint</code>).</p>
 <p>Unlike a house — whose tint is a <strong>deterministic per-id roll</strong> (<code>HouseVariantAssignment.ForHouse</code>) that <code>SaveCodec</code> <strong>persists</strong> — a truck is transient and never saved, so its color is picked <strong>at spawn</strong> from an incrementing spawn seed (<code>Doggiehood.Core.Art.CarColorAssignment</code>, a pure function of that seed so it stays unit-testable), and the pick <strong>avoids the colors currently on the road</strong> so two concurrent trucks don't look alike. Nothing about a truck's color survives its trip off-map; each new truck rolls fresh.</p>
 <h2 id="yard-objects">Yard objects<a class="headerlink" href="#yard-objects" title="Permanent link">&para;</a></h2>
-<p><strong>The backyard pool is a graybox placeholder (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a>).</strong> A delivered <code>pool</code> gift renders as a two-part primitive — a gray open-topped shell with a blue interior surface inset within it and sitting slightly below the rim — sized from the rendered adult dog rather than from hand-picked meters, and coloured from named <code>Palette</code> entries (<code>PoolShellHex</code>, <code>PoolWaterHex</code>) the way <code>DecorationView</code> picks its graybox colours. It is a stand-in in the same spirit as the graybox yard decorations and the lost-item sphere: the real low-poly pool model is a separate art-asset task, like the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/332">toy</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/410">ball</a> meshes. The placement rules and the yard-item invariant it obeys live in <a href="../world/#backyard-pool">World &amp; Neighborhood → Backyard pool</a>.</p>
+<p><strong>The backyard pool is a graybox placeholder (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a>).</strong> A delivered <code>pool</code> gift renders as a two-part primitive — a gray open-topped shell with a blue interior surface inset within it and sitting slightly below the rim — sized from the rendered adult dog rather than from hand-picked meters, and coloured from named <code>Palette</code> entries (<code>PoolShellHex</code>, <code>PoolWaterHex</code>) the way <code>DecorationView</code> picks its graybox colours. It is a stand-in in the same spirit as the graybox yard decorations and the lost-item sphere: the real pool model is a separate art-asset task, like the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/332">toy</a>/<a href="https://github.com/derekwinters/lucas-doggiehood/issues/410">ball</a> meshes. The placement rules and the yard-item invariant it obeys live in <a href="../world/#backyard-pool">World &amp; Neighborhood → Backyard pool</a>.</p>
 <h2 id="ui-chrome-direction-candy-cottage">UI chrome direction: "Candy Cottage"<a class="headerlink" href="#ui-chrome-direction-candy-cottage" title="Permanent link">&para;</a></h2>
 <p>This section owns UI <em>style</em> only. UI <strong>layout</strong> — a screen's regions, anchors, and named size/margin constants — lives in the <a href="../../ui/">UI Wireframes</a> section and follows the <a href="../../../engineering/ui-design-process/">UI Design Process</a> (wireframe approved before any code). The style rules below are pulled forward as the shared baseline on <a href="../../ui/shared-components/">Shared UI Components</a>; every per-screen wireframe references them rather than restating them.</p>
-<p>Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and low-poly toy-shelf look. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>)</p>
+<p>Thick dark outlines on all UI chrome, flat hard drop-shadows (no blur), chunky pill-shaped buttons and chips, bold rounded sans-serif type. A sticker-book feel, chosen specifically over a flatter "paper-craft" alternative for its legibility and match with the bright/saturated palette and toy-shelf look the game had when it was chosen. (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/65">#65</a>)</p>
 <p>The "thick dark outline" is a <strong>true constant-width contour stroke</strong> — an even band that follows the rounded contour around every corner — not an offset-copy approximation, whose four shifted stamps read as uneven/flattened corners. See the <a href="../../ui/shared-components/#outline-a-constant-width-contour-band-616">constant-width contour band</a> on Shared UI Components (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/616">#616</a>).</p>
 <p>Applies to: the currency chip, the speech bubble indicator, the dialogue box, decoration/gift choice buttons, and should extend to menus/settings for consistency.</p>
 <p>A reference mockup exists at <a href="https://claude.ai/code/artifact/e3f24c36-85e3-4301-a099-c16c8ecc47f0">this artifact</a>, showing both the chosen "Candy Cottage" direction and the rejected "Flat Paper-Craft" alternative for contrast.</p>
@@ -1871,10 +1927,11 @@
 <li>[x] 4 distinct house silhouettes (real kit models, one per house, painted with a distinct kit texture variant per house — the Level-1 mesh r/h/k/q of each house's <a href="https://github.com/derekwinters/lucas-doggiehood/issues/59">#59</a> upgrade path, per Derek's 2026-07-25 call resolving the <a href="https://github.com/derekwinters/lucas-doggiehood/issues/122">#122</a> placeholder picks; r/h/q door anchors provisional pending a gallery pass)</li>
 <li>[x] Zone-built houses (id ≥ 5) render a real kit model — a deterministic rolled ladder (one of five) plus a curated-palette color-multiply tint (one of 20), assigned once and persisted across upgrades (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/299">#299</a>) — instead of the graybox box</li>
 <li>[x] Delivery trucks render the Car Kit mesh tinted with a curated standard car color (<code>Palette.CarColorHex</code>) picked per-spawn and kept distinct between concurrent trucks — a material color-multiply, not persisted like a house tint (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/601">#601</a>)</li>
-<li>[ ] Backyard pool renders a real low-poly model instead of the graybox gray-shell/blue-interior primitive pair (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a> ships the placeholder; the real mesh is a separate art task)</li>
+<li>[ ] Backyard pool renders a real model instead of the graybox gray-shell/blue-interior primitive pair (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/740">#740</a> ships the placeholder; the real mesh is a separate art task)</li>
 <li>[ ] UI components (buttons, chips, dialogue box) use thick dark outlines + flat hard drop-shadows <em>(in progress: the HUD currency chip lands the full chrome — thick Ink outline + hard drop-shadow — in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>; the confirmation dialog <a href="https://github.com/derekwinters/lucas-doggiehood/issues/343">#343</a>, the conversation dialogue box + action/choice buttons <a href="https://github.com/derekwinters/lucas-doggiehood/issues/408">#408</a>, and the <a href="../../ui/house-profile/">house profile</a> + <a href="../../ui/dog-profile/">dog profile</a> <a href="https://github.com/derekwinters/lucas-doggiehood/issues/465">#465</a> now carry it; remaining screens' buttons still to come)</em></li>
 <li>[ ] Currency chip, speech bubble icon, dialogue box, and choice buttons all follow the Candy Cottage direction <em>(currency chip done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/296">#296</a>; dialogue box and choice buttons done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/408">#408</a>; the house/dog profiles done — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/465">#465</a>; speech bubble icon remains)</em></li>
 <li>[x] Menus/settings screens follow the same UI chrome for consistency <em>(the Settings panel lands the full Candy Cottage chrome — thick Ink outlines, flat hard drop-shadows, rounded panel + pill tabs/close/action and the shared palette — in <a href="https://github.com/derekwinters/lucas-doggiehood/issues/298">#298</a>, via the UGUI <code>CandyChromeUgui</code> helper)</em></li>
+<li>[ ] Art budget values set from on-device measurement (triangles, draw calls and texture memory on screen at the default camera, plus a per-mesh backstop) and enforced by an EditMode test and a phone frame-time check (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/799">#799</a>)</li>
 </ul>
 
 
