@@ -1,10 +1,15 @@
-# Backyard fences (concept round, #806)
+# Backyard fences (approved reference set, #830)
 
-Three fence styles for Derek to choose from. The style is still **Open** on
-[World Art → Fences](../../../../docs/specs/world/world-art.md#fences). Each style has
-the same modular pieces, built so that they can be laid along the five runs `LotFence` traces
-today without changing that geometry. Nothing here is approved, and nothing is imported by
-Unity (it is outside `Assets/`).
+Three backyard fence styles, each built from the same modular pieces so they can be laid along
+the five runs `LotFence` traces today without changing that geometry. Derek reviewed the
+concepts on 2026-11-23 (#806) and approved all three for style and size, and #830 locked them in
+here as **source assets only**. Nothing in this folder is imported by Unity (it is outside
+`Assets/`), so the game still draws today's Kenney fence.
+
+**Which style a lot uses is still Open**, on [#831](https://github.com/derekwinters/lucas-doggiehood/issues/831)
+(see also [World Art → Fences](../../../../docs/specs/world/world-art.md#fences)). Nothing here
+picks one. Exporting the chosen pieces into `Assets/` for the game is #806's remaining work, and
+building fences from them in Unity is #813.
 
 ## Files
 
@@ -18,7 +23,15 @@ fences/
   render_fences.py    review renders to out/, plus self-contained viewer .glb files in out/glb/
   textures/           fence_{cedar,paintwood,rail,wire,metal}_{color,normal}.png, each stored once
   exports/            one .gltf per piece, all pointing at ../textures/
+  review/             the approved review renders (see below)
 ```
+
+`review/` holds `fence-compare.png` (the three styles side by side on the ranch lot at the game
+camera) and, for each style (`privacy`, `picket`, `splitrail`), `fence-<style>-lineup.png` (every
+piece), `fence-<style>-lot.png` (the ranch at level 4, fenced, at the game camera),
+`fence-<style>-connector.png` (the connector meeting the ranch's side wall) and
+`fence-<style>-garage.png` (the connector meeting the garage). They are copied unchanged from
+`render_fences.py`'s output, with no added metadata.
 
 The script imports the committed street-prop builder and materials (`../street-props`), the
 tree modules (`../trees`) and the house kit and `dh_scene.py` (`../..`) by relative path, the
@@ -40,11 +53,11 @@ same way the props do. It does not copy them.
 **Why C.** The game camera looks down into backyards where the dogs play. C is the option you
 can see through (A is not). It is a natural, unpainted material (B is crisp white paint). And a
 split rail lined with welded wire is what dog owners actually put up, because a bare split rail
-doesn't hold a dog. It also keeps today's 1.35 m height, so choosing it needs no height decision.
+doesn't hold a dog. It also keeps today's 1.35 m height.
 
 **Heights.** Today's fence is 1.35 m (Kenney piece × 5). A is 1.83 m because privacy fences are
 6 ft; at that height it blocks the view into the yard from the camera side. B is 1.07 m because
-a picket fence is about 3.5 ft. Either height is Derek's call. Every piece is modelled at real
+a picket fence is about 3.5 ft. Derek approved each style at its own height. Every piece is modelled at real
 size (1 unit = 1 m), so the game would place these models at scale 1, not × 5.
 
 ## Pieces
@@ -117,10 +130,18 @@ side or on the neighbour side, every base-local number is identical, so each bas
    2.41 m to the garage slab, and the farmhouse rear at 2.60 m to the patio. Both match the House
    Design table once you account for eaves.
 
+**Decided since the fit check (Derek, 2026-11-23):**
+
+- A fence is only requested once the house has its garage
+  ([#828](https://github.com/derekwinters/lucas-doggiehood/issues/828)).
+- On the garage side, the connector ends at the garage's outside wall instead of the house's
+  side-wall midpoint ([#829](https://github.com/derekwinters/lucas-doggiehood/issues/829)), which
+  answers problem 1. The other connector (the porch and chimney cases, problems 2 and 3) is still
+  open there and on [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783).
+
 **In the renders, connectors stop at the first thing they meet at 0.45 m** (the side wall, the
-garage end wall or a porch). That is a render choice only, not a proposal. What a connector
-should do at a garage or porch is [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)'s
-open question.
+garage end wall or a porch). This is only to illustrate. It was drawn before #829 and isn't the
+rule for the other connector; #829 and #783 are.
 
 ## Regenerating
 
@@ -135,18 +156,16 @@ python3 art-source/blender/environment/fences/render_fences.py [OUT] [--styles .
 Two runs of the texture and export scripts were compared and are byte-identical. A full render
 of the three styles takes about 6 minutes on CPU EEVEE.
 
-## Open questions for Derek
+## Still open
 
-- **Which style**, or more than one (for example, a choice per lot or a fence the player can buy).
-- **Height** if A or B: 1.83 m or 1.07 m instead of today's 1.35 m. With A, the near runs hide the
-  yard from the game camera.
-- **The connectors at a garage, a porch or a chimney** (#783; the problem list above).
+- **Which style a lot uses** ([#831](https://github.com/derekwinters/lucas-doggiehood/issues/831)).
+- **The no-garage connector at a porch or a chimney** ([#829](https://github.com/derekwinters/lucas-doggiehood/issues/829), [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783); problems 2 and 3 above).
 - **Bay length**: keep 2.375 m (today's FenceTiling count) or use a real 8 ft (2.44 m) bay. The
   second changes FenceTiling's nominal length.
 - **Gates**: whether a fence has one, and where. The front is open today.
 - **Wire visibility (C)**: at game distance the alpha-masked mesh mostly mips away. Keeping it
   visible needs coverage-preserving mipmaps or a coarser texture, the same Unity import question
   the tree leaves have (#776).
-- **For #813**: the models are 1 m units with the good face on −Y, so FenceTiling's × 5 height
-  scale and its 0.475 m model length don't apply as they are. Posts must also be placed separately
-  from panels, at every piece joint.
+- **For the Unity models (#806, #813)**: the models are 1 m units with the good face on −Y, so
+  FenceTiling's × 5 height scale and its 0.475 m model length don't apply as they are. Posts must
+  also be placed separately from panels, at every piece joint.
