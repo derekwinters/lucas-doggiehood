@@ -100,3 +100,4 @@ nav:
   - Tools:
       - Map Builder: tools/index.md
       - Hand-Authoring Unity Serialized Assets: engineering/unity-serialization.md
+      - Blender Asset Pipeline: engineering/blender-pipeline.md

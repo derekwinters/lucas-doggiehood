@@ -11,7 +11,7 @@ The approved concept models, colour schemes and the measurements on this page ar
 
 ## How the models are made
 
-Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). All models are built and approved before any Core or Unity work starts. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
+Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). How the scripts, exports and renders work is on [Blender Asset Pipeline](../../engineering/blender-pipeline.md). All models are built and approved before any Core or Unity work starts. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
 
 Model conventions the concepts already follow:
 
