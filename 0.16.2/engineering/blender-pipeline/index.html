@@ -1,0 +1,2142 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Design contract and engineering docs for Doggiehood">
+      
+      
+      
+      
+        <link rel="prev" href="../unity-serialization/">
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Blender Asset Pipeline - Doggiehood Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#blender-asset-pipeline" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Doggiehood Docs" class="md-header__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Doggiehood Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Blender Asset Pipeline
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../intro/vision/" class="md-tabs__link">
+          
+  
+  Introduction
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../specs/" class="md-tabs__link">
+          
+  
+  Design & Architecture Specs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tech-stack/" class="md-tabs__link">
+          
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../tools/" class="md-tabs__link">
+          
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Doggiehood Docs" class="md-nav__button md-logo" aria-label="Doggiehood Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Doggiehood Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/derekwinters/lucas-doggiehood" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    derekwinters/lucas-doggiehood
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/vision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vision
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/how-to-play/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Play
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Design & Architecture Specs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Design & Architecture Specs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    World
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            World
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/world/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World & Neighborhood
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/camera-controls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Camera, Navigation & Controls
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/art-style/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Art & UI Style
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/house-design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/world-art/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    World Art
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/sidewalks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sidewalks & Walk Network
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/world/tile-catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tile Catalog (Design Reference)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Dogs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Dogs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/dogs/behavior/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Behavior
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/dogs/roster-names/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Roster & Names
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Conversation & Quests
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Conversation & Quests
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/quests/conversation-system/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation System
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/quests/economy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest & Economy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/quests/quest-content/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quest Content
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    UI Wireframes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            UI Wireframes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/shared-components/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shared UI Components
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/hud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HUD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/conversation-panel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conversation Panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/onboarding-overlay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding Overlay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/dog-profile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dog Profile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Settings menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/onboarding-reward/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding reward panel
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/welcome-popup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Welcome pop-up
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/toast/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Toast notification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/debug-tuning-menu/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Debug tuning menu
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/ui/mockups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mockups
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/decorations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Decorations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/expansion/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Neighborhood Expansion (Post-MVP)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/audio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audio
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/onboarding/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Onboarding
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/product-scope/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Product Scope & Constraints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/future-ideas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Future Ideas
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Engineering
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tech Stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input-authority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input Authority
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bug-reports/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bug Reports & Diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui-design-process/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UI Design Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning & Releases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Agent & Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issue-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AI Issue-Management Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Map Builder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unity-serialization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hand-Authoring Unity Serialized Assets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Blender Asset Pipeline
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Blender Asset Pipeline
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-source-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where source lives
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headless-blender" class="md-nav__link">
+    <span class="md-ellipsis">
+      Headless Blender
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generator-scripts-and-shared-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generator scripts and shared modules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-the-models-follow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conventions the models follow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#export-formats-and-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export formats and commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#textures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Textures
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-renders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review renders
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triangle-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Triangle budget
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-an-approved-model-to-unity-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      From an approved model to Unity — Open
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-source-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where source lives
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headless-blender" class="md-nav__link">
+    <span class="md-ellipsis">
+      Headless Blender
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generator-scripts-and-shared-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generator scripts and shared modules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-the-models-follow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conventions the models follow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#export-formats-and-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export formats and commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#textures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Textures
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-renders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review renders
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#triangle-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      Triangle budget
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-an-approved-model-to-unity-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      From an approved model to Unity — Open
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/derekwinters/lucas-doggiehood/edit/main/docs/engineering/blender-pipeline.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="blender-asset-pipeline">Blender Asset Pipeline<a class="headerlink" href="#blender-asset-pipeline" title="Permanent link">&para;</a></h1>
+<p><em>Issues: <a href="https://github.com/derekwinters/lucas-doggiehood/issues/774">#774</a> (this page), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/768">#768</a> (scripted authoring), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a> (one-command export), <a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a> (Unity import)</em></p>
+<p>The game's own 3D models (houses, trees, street props, and later toys, pools and dogs) are generated by <strong>Blender Python scripts</strong> checked into the repo. Nothing is hand-modelled. Claude writes and changes the scripts, Derek reviews the renders, and the exports are regenerated from the scripts with one command per set. This page describes the pipeline as it exists today under <code>art-source/blender/</code>. The step that brings an approved model into Unity does not exist yet and is marked <strong>Open</strong>.</p>
+<p>What the models should look like is in the specs: <a href="../../specs/world/art-style/#art-direction">Art &amp; UI Style → Art direction and Art budget</a>, <a href="../../specs/world/house-design/">House Design</a> and <a href="../../specs/world/world-art/">World Art</a>.</p>
+<h2 id="where-source-lives">Where source lives<a class="headerlink" href="#where-source-lives" title="Permanent link">&para;</a></h2>
+<p>All model source lives in <strong><code>art-source/blender/</code>, outside <code>Assets/</code></strong>, so Unity never imports a script, a review render or an export that hasn't been approved for the game.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>art-source/blender/</code></td>
+<td>The house kit: <code>dh_house_kit.py</code>, <code>dh_scene.py</code>, <code>base_house_1.py</code> … <code>base_house_10.py</code>, <code>piece_*.py</code>, the export and render scripts, <code>colour-schemes.json</code>, roof <code>textures/</code>, <code>exports/</code> and <code>review/</code></td>
+</tr>
+<tr>
+<td><code>art-source/blender/environment/trees/</code></td>
+<td>The textured trees: generators, shared <code>textures/</code>, <code>exports/</code>, <code>review/</code></td>
+</tr>
+<tr>
+<td><code>art-source/blender/environment/street-props/</code></td>
+<td>The street props: generators, shared <code>textures/</code>, <code>exports/</code>, <code>review/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each folder has a <code>README.md</code> with its measurements, triangle counts and open concerns. Render scratch output goes to an <code>out/</code> folder, which <code>art-source/blender/.gitignore</code> ignores at any depth.</p>
+<p><strong>Invariant — source art never lives under <code>Assets/</code>.</strong> Only a model approved for the game is ever imported into <code>Assets/</code>, through the step marked Open below. A model kept as reference only stays in <code>art-source/</code> (<a href="../../specs/world/world-art/">World Art</a>).</p>
+<h2 id="headless-blender">Headless Blender<a class="headerlink" href="#headless-blender" title="Permanent link">&para;</a></h2>
+<p>The scripts run Blender as a <strong>Python module</strong>, with no Blender install and no UI:</p>
+<div class="highlight"><pre><span></span><code>pip install bpy==5.3.0   # pinned; the scripts also use Pillow and numpy
+python3 art-source/blender/export_houses.py art-source/blender/exports
+</code></pre></div>
+<p><code>bpy</code> 5.3.0 bundles Blender 5.3 and its glTF exporter (Khronos glTF Blender I/O 5.3.x). Every script is run with plain <code>python3</code> from the repository root. The render scripts also need EEVEE to start headless; in a container without a GPU that means Mesa's software EGL (<code>libegl1</code>, <code>libgl1-mesa-dri</code>). The exports don't render, so they don't need it.</p>
+<h2 id="generator-scripts-and-shared-modules">Generator scripts and shared modules<a class="headerlink" href="#generator-scripts-and-shared-modules" title="Permanent link">&para;</a></h2>
+<p>Every model is built from scratch from named dimensions. There is no <code>.blend</code> file in the repo, and none is needed: a script is the source of truth.</p>
+<ul>
+<li><strong><code>dh_house_kit.py</code></strong> is the shared kit: shared dimensions (slab, floor, wall, stud, rafter and trim sizes), the 12 colour schemes (<code>COLOR_SCHEMES</code>), <code>scheme_palette()</code>, a mesh builder, finished and framed walls, roofs, attach points, <code>tri_count()</code>, <code>export_glb()</code> and the render setup.</li>
+<li><strong><code>base_house_N.py</code></strong> builds one base. Each exposes the same interface: <code>DIMS</code>, <code>NAME</code>, <code>RENDER_SCHEME</code>, <code>FRONT_Y</code>, <code>PIECES</code>, <code>attach_locations()</code> and <code>build("finished" | "framing", palette=…)</code>. Both modes come from the same <code>DIMS</code>, so the framing and finished versions line up exactly.</li>
+<li><strong><code>piece_addition.py</code>, <code>piece_deck.py</code>, <code>piece_patio.py</code></strong> build the upgrade pieces, each from its own <code>DIMS</code>. (The level-2 piece becomes a garage; its model is Open on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/780">#780</a>.)</li>
+<li><strong><code>dh_scene.py</code></strong> fits the pieces to each base and holds the level-4 placement rule used for the clearance tables.</li>
+<li><strong>Trees</strong> (<code>environment/trees/</code>): <code>dh_tree_tex.py</code> paints the leaf atlases and bark maps; <code>dh_trees_tex.py</code> builds the trees. They reuse the branch helpers in <code>dh_env.py</code>.</li>
+<li><strong>Street props</strong> (<code>environment/street-props/</code>): <code>dh_prop_tex.py</code> paints the surface textures and the label atlas; <code>dh_props.py</code> builds the props.</li>
+</ul>
+<p>The environment scripts import the committed house kit by relative path (<code>../..</code> from <code>trees/</code>, and <code>../trees</code> plus <code>../..</code> from <code>street-props/</code>). No script imports a copy of another folder's modules.</p>
+<p><strong>Determinism.</strong> The generators seed their randomness (for example per tree name, or a fixed seed per texture), so the same script produces the same model every run.</p>
+<h2 id="conventions-the-models-follow">Conventions the models follow<a class="headerlink" href="#conventions-the-models-follow" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Units:</strong> 1 Blender unit = 1 m at in-game size. No scale factor is applied on export.</li>
+<li><strong>Axes:</strong> in Blender the front faces −Y and up is +Z. The exporter converts to glTF's Y-up (<code>export_yup=True</code>), which puts the front at +Z. How that maps onto the game's model yaw is <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a>).</li>
+<li><strong>Transforms are applied on export</strong> (<code>export_apply=True</code>).</li>
+<li><strong>Pivot:</strong> a base pivots at the centre of its wall footprint on the ground; a piece pivots on its attach point; a tree or prop pivots on the ground at its trunk, post base or footprint centre.</li>
+<li><strong>Attach points</strong> are empties named <code>ATTACH_&lt;NAME&gt;</code> (<code>ATTACH_ADDITION</code>, <code>ATTACH_DECK</code>, <code>ATTACH_PATIO</code>), parented to their mesh so they export as glTF nodes.</li>
+<li><strong>Object names:</strong> <code>base_house_&lt;N&gt;_finished</code>, <code>base_house_&lt;N&gt;_framing</code>, <code>piece_&lt;type&gt;</code>, <code>tree_&lt;kind&gt;_&lt;size&gt;</code>, and the prop's key (for example <code>stop_sign</code>).</li>
+<li><strong>Material names</strong> carry their set and slot: <code>DH_&lt;Scheme&gt;_&lt;slot&gt;</code> for houses (for example <code>DH_SageCottage_siding</code>), <code>DH_Tree_*</code> for trees and <code>DH_Prop_*</code> for props. A house paints only through its scheme's slots.</li>
+</ul>
+<p>The final names in <code>Assets/</code> and in the Core part catalog are <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/777">#777</a>).</p>
+<h2 id="export-formats-and-commands">Export formats and commands<a class="headerlink" href="#export-formats-and-commands" title="Permanent link">&para;</a></h2>
+<p>Everything exports as <strong>glTF 2.0</strong>. FBX is not used.</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Command (from the repo root)</th>
+<th>Writes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Houses</td>
+<td><code>python3 art-source/blender/export_houses.py art-source/blender/exports</code></td>
+<td>53 <code>.glb</code> files: <code>base-NN-framing.glb</code> and <code>base-NN-level1.glb</code> … <code>level4.glb</code> for the 10 bases, plus <code>piece-addition.glb</code>, <code>piece-deck.glb</code>, <code>piece-patio.glb</code></td>
+</tr>
+<tr>
+<td>Colour schemes</td>
+<td><code>python3 art-source/blender/export_colour_schemes.py</code></td>
+<td><code>colour-schemes.json</code></td>
+</tr>
+<tr>
+<td>Trees</td>
+<td><code>python3 art-source/blender/environment/trees/export_trees_tex.py art-source/blender/environment/trees/exports</code></td>
+<td>10 <code>.gltf</code> + <code>.bin</code> pairs and <code>trees_textured_stats.json</code></td>
+</tr>
+<tr>
+<td>Street props</td>
+<td><code>python3 art-source/blender/environment/street-props/export_props.py</code></td>
+<td>26 <code>.gltf</code> + <code>.bin</code> pairs and <code>street_props_stats.json</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Houses</strong> export as self-contained <code>.glb</code> files, each in its base's render scheme. A shingle or tile roof embeds the scheme's pre-tinted roof texture (<code>textures/roof_&lt;style&gt;_&lt;HEX&gt;.png</code>) with no <code>baseColorFactor</code>, so the roof carries one tint. Every other house surface is a flat material colour.</p>
+<p><strong>Trees and street props</strong> export as <code>.gltf</code> (JSON) + <code>.bin</code> with <code>export_keep_originals</code>, so the images are <strong>not</strong> embedded. Each <code>.gltf</code> references its textures by relative URI, <code>../textures/&lt;name&gt;.png</code>, and each texture is stored once for the whole set. Export into the set's own <code>exports/</code> folder, next to its <code>textures/</code>, or the relative URIs don't resolve.</p>
+<p><strong>Checks the exports run.</strong> The tree and prop exports read every written <code>.gltf</code> back and <strong>exit non-zero</strong> if a check fails:</p>
+<ul>
+<li>Every image URI is relative and resolves inside the set's <code>textures/</code> folder.</li>
+<li>Trees: every leaf material is <code>alphaMode: MASK</code> and <code>doubleSided</code>.</li>
+<li>Props: every textured material has both a colour and a normal map, and nothing is double-sided.</li>
+</ul>
+<p>The house export has no checks yet. Checks for unapplied transforms, missing <code>ATTACH_*</code> empties, naming and triangle budget, and a single command that exports every set, are <strong>Open</strong> on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>.</p>
+<p><strong>Invariant — every committed model is reproducible from its script in the repo.</strong> Running a set's export command against a clean checkout rewrites its committed files byte for byte. This was verified with two runs of each export on <code>bpy</code> 5.3.0. A different <code>bpy</code> version can change the bytes, so it is pinned.</p>
+<p><strong>Invariant — a textured set stores each texture once.</strong> No <code>.gltf</code> embeds an image, and every image it references lives in its set's <code>textures/</code> folder.</p>
+<h2 id="textures">Textures<a class="headerlink" href="#textures" title="Permanent link">&para;</a></h2>
+<p>All textures are generated by the scripts with Pillow and numpy. No external images are used.</p>
+<ul>
+<li><strong>Houses:</strong> the greyscale masks <code>roof_shingle_mask.png</code> and <code>roof_tile_mask.png</code> (made by <code>roof_mask()</code>), and a tinted copy per roof colour (<code>roof_&lt;style&gt;_&lt;HEX&gt;.png</code>, made on first use by <code>tinted_texture()</code>). The plan for Unity is one mask per roof style with the scheme colour as Base Color. How schemes are applied in Unity, including the roof, is <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a>).</li>
+<li><strong>Trees:</strong> six 1024² leaf, blossom and needle atlases, plus three bark colour maps with their normal maps.</li>
+<li><strong>Street props:</strong> five tileable colour + normal pairs, tinted per material by <code>baseColorFactor</code>, and a 2048² label atlas with its own normal map.</li>
+</ul>
+<p>Rebuilding the tree and prop textures from their generators reproduces the committed PNGs byte for byte. Committed PNGs are the generators' own output with no added metadata chunks.</p>
+<h2 id="review-renders">Review renders<a class="headerlink" href="#review-renders" title="Permanent link">&para;</a></h2>
+<p>Each set has render scripts that draw the models at the game camera (orthographic, 45° pitch, yaw −40°), plus close-ups and line-ups for comparison. Examples are <code>render_base_1.py</code> and <code>render_bases.py</code> for houses, <code>render_tree_closeup_tex.py</code> for trees, and <code>run_sampler.sh</code> and <code>render_street_props.py</code> for props. Each folder's README lists the full set.</p>
+<p>Renders go to <code>out/</code> by default. Only the renders Derek approved are copied into the set's <code>review/</code> folder and committed. Renders are not byte-reproducible and are not covered by the reproducibility invariant.</p>
+<h2 id="triangle-budget">Triangle budget<a class="headerlink" href="#triangle-budget" title="Permanent link">&para;</a></h2>
+<p>Each export records triangle counts (<code>tri_count()</code> in the kit) in the set's stats JSON and README. The scripts do <strong>not</strong> check them against a limit.</p>
+<p>The only enforced limit today is in Unity: <code>ArtBudget.MaxTrianglesPerMesh</code> (2,000), checked by the <code>LowPolyBudgetTests</code> EditMode sweep over the meshes under <code>Assets/Art</code>. Many approved models exceed it; the colonial is 2,672 triangles finished. It is being replaced by the per-scene <a href="../../specs/world/art-style/#art-budget">art budget</a>, whose values <a href="https://github.com/derekwinters/lucas-doggiehood/issues/799">#799</a> sets after measuring on a phone. Until then the cap stays as it is, and no over-cap model can be imported.</p>
+<h2 id="from-an-approved-model-to-unity-open">From an approved model to Unity — Open<a class="headerlink" href="#from-an-approved-model-to-unity-open" title="Permanent link">&para;</a></h2>
+<p>No Blender model has reached <code>Assets/</code> yet. Open questions:</p>
+<ul>
+<li><strong>Where exports go in <code>Assets/</code></strong> and how they are named and loaded (for example under <code>Resources/</code> for load-by-name) — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>.</li>
+<li><strong>The glTF importer.</strong> The project (Unity 6000.3) has no glTF import package in <code>Packages/manifest.json</code> today, and Unity doesn't import glTF without one — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a>.</li>
+<li><strong>Import settings:</strong> scale, axis and yaw, materials and scheme slots, double-sided alpha-clip leaves with coverage-preserving mipmaps, imported normals, read/write, and whether those settings live in committed <code>.meta</code> files. <a href="../unity-serialization/">Hand-Authoring Unity Serialized Assets</a> currently says art model <code>.meta</code> files are <em>not</em> committed, so #776 has to reconcile that — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a>.</li>
+<li><strong>A load check:</strong> an EditMode test that every part in the Core catalog loads by name with its attach points — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/776">#776</a>.</li>
+<li><strong>The art budget values</strong> that imported models must meet — <a href="https://github.com/derekwinters/lucas-doggiehood/issues/799">#799</a>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.top", "content.action.edit", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+    
+  </body>
+</html>

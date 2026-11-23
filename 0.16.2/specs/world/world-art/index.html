@@ -1800,6 +1800,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../engineering/blender-pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Blender Asset Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1945,7 +1966,7 @@
 <p>The game still renders the flat grass colour, the Kenney roads, sidewalks, fences and yard trees described in <a href="../world/">World &amp; Neighborhood</a> and <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> until the implementation issues land (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/808">#808</a>–<a href="https://github.com/derekwinters/lucas-doggiehood/issues/813">#813</a>). No world implementation starts before Derek approves every world model on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/807">#807</a>.</p>
 </div>
 <h2 id="how-the-models-are-made">How the models are made<a class="headerlink" href="#how-the-models-are-made" title="Permanent link">&para;</a></h2>
-<p>Every world model is a Blender Python script under <code>art-source/blender/</code>, built by Claude and reviewed by Derek, using the same pipeline as the houses (conventions <strong>Open</strong> on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/774">#774</a> and <a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>). Every model stays within the <a href="../art-style/#art-budget">art budget</a>.</p>
+<p>Every world model is a Blender Python script under <code>art-source/blender/</code>, built by Claude and reviewed by Derek, using the same <a href="../../../engineering/blender-pipeline/">Blender asset pipeline</a> as the houses (conventions <strong>Open</strong> on <a href="https://github.com/derekwinters/lucas-doggiehood/issues/774">#774</a> and <a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>). Every model stays within the <a href="../art-style/#art-budget">art budget</a>.</p>
 <p><strong>Textures are shared, not copied.</strong> Each textured set exports as <code>.gltf</code> + <code>.bin</code> with its images referenced from one shared <code>textures/</code> folder, so each texture is stored once. The approved trees (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/816">#816</a>) and street props (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/821">#821</a>) are built this way under <code>art-source/blender/environment/</code>.</p>
 <p><strong>Reference-only assets.</strong> Some approved models are kept as source and reference designs for a consistent style, but are not used in the game (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/797">#797</a>). They stay outside <code>Assets/</code>.</p>
 <p><strong>Invariant — reference-only assets never ship in the build.</strong> Only models this page lists as in use are imported under <code>Assets/</code>. A reference-only model is promoted by changing this page first, not by importing it.</p>
