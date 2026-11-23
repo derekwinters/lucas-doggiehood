@@ -98,8 +98,9 @@ Decided on [#817](https://github.com/derekwinters/lucas-doggiehood/issues/817):
 - **One car.** The garage ships on its own; cars are a separate, later feature that will build on it.
 - **The door faces the street**, with a **driveway** from the curb across the front yard and sidewalk.
 - The patio sits **behind** the garage.
+- The driveway is **ground decoration only**, in front of the garage. It adds no walk-network edge; dogs still reach the front door by the front walkway ([#128](https://github.com/derekwinters/lucas-doggiehood/issues/128)). See [World Art](world-art.md#sidewalks-front-walkways-and-driveways).
 
-**Open:** the garage model ([#780](https://github.com/derekwinters/lucas-doggiehood/issues/780); the approved concept still shows the old addition, 4.0 m out × 4.5 m along the wall); the exact driveway geometry and how it joins the [walk network](sidewalks.md), which today has no driveways ([#128](https://github.com/derekwinters/lucas-doggiehood/issues/128)); and re-checking the clearances below with the garage in place of the addition.
+**Open:** the garage model ([#780](https://github.com/derekwinters/lucas-doggiehood/issues/780); the approved concept still shows the old addition, 4.0 m out × 4.5 m along the wall); the exact driveway geometry ([#803](https://github.com/derekwinters/lucas-doggiehood/issues/803)); and re-checking the clearances below with the garage in place of the addition.
 
 ### Deck (level 3)
 
@@ -112,6 +113,8 @@ Pavers 8 cm tall, directly behind the garage at the garage's patio attach point.
 **Invariant — a piece attaches only at an attach point its house declares.** The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.
 
 **Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above.
+
+> **How the spec is changing ([#800](https://github.com/derekwinters/lucas-doggiehood/issues/800)).** This page used to leave open how the garage's driveway joins the walk network → it now says the driveway is ground decoration only and adds no walk-network edge → because Derek confirmed that dogs keep reaching the door by the front walkway.
 
 ## Colour schemes
 
