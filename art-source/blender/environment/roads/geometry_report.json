@@ -1,0 +1,348 @@
+{
+ "constants": {
+  "CrosswalkWidth": 3.0,
+  "CulDeSacBulbRadius": 9.0,
+  "GrassVergeWidth": 0.75,
+  "RoadBendCornerRadius": 5.0,
+  "RoadSurfaceHeight": 0.0,
+  "RoadWidth": 6.0,
+  "SidewalkSurfaceHeight": 0.2,
+  "SidewalkWidth": 2.0,
+  "TileSize": 60.0,
+  "sidewalk_offset": 4.75
+ },
+ "tiles": {
+  "FourWay": {
+   "kind": "fourway",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 8,
+   "walk_crosswalk_edges": 4,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 4,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 684.0,
+    "curb": 32.31,
+    "sidewalk": 415.04
+   }
+  },
+  "StraightNS": {
+   "kind": "straight",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 2,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 0,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 360.0,
+    "curb": 18.0,
+    "sidewalk": 240.0
+   }
+  },
+  "StraightEW": {
+   "kind": "straight",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 2,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 0,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 360.0,
+    "curb": 18.0,
+    "sidewalk": 240.0
+   }
+  },
+  "TurnNE": {
+   "kind": "turn",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 16,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9536,
+   "walk_to_curb_min": 1.5537,
+   "core_crosswalks": 0,
+   "bend_asphalt_radii": [
+    1.999,
+    8.0
+   ],
+   "bend_core_walk_radii": [
+    0.25,
+    9.75
+   ],
+   "core_trees": 294,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 0.298,
+   "areas_m2": {
+    "asphalt": 347.114,
+    "curb": 17.356,
+    "sidewalk": 231.291
+   }
+  },
+  "TurnNW": {
+   "kind": "turn",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 15,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9536,
+   "walk_to_curb_min": 1.5537,
+   "core_crosswalks": 0,
+   "bend_asphalt_radii": [
+    1.999,
+    8.0
+   ],
+   "bend_core_walk_radii": [
+    0.25,
+    9.75
+   ],
+   "core_trees": 298,
+   "core_trees_on_kit_pavement": 2,
+   "core_tree_min_dist_to_pavement": 0.0,
+   "areas_m2": {
+    "asphalt": 347.114,
+    "curb": 17.356,
+    "sidewalk": 231.291
+   }
+  },
+  "TurnSE": {
+   "kind": "turn",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 15,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9536,
+   "walk_to_curb_min": 1.5537,
+   "core_crosswalks": 0,
+   "bend_asphalt_radii": [
+    1.999,
+    8.0
+   ],
+   "bend_core_walk_radii": [
+    0.25,
+    9.75
+   ],
+   "core_trees": 298,
+   "core_trees_on_kit_pavement": 2,
+   "core_tree_min_dist_to_pavement": 0.0,
+   "areas_m2": {
+    "asphalt": 347.114,
+    "curb": 17.356,
+    "sidewalk": 231.291
+   }
+  },
+  "TurnSW": {
+   "kind": "turn",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 15,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9536,
+   "walk_to_curb_min": 1.5537,
+   "core_crosswalks": 0,
+   "bend_asphalt_radii": [
+    1.999,
+    8.0
+   ],
+   "bend_core_walk_radii": [
+    0.25,
+    9.75
+   ],
+   "core_trees": 294,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 0.779,
+   "areas_m2": {
+    "asphalt": 347.114,
+    "curb": 17.356,
+    "sidewalk": 231.291
+   }
+  },
+  "TeeNorth": {
+   "kind": "tee",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 6,
+   "walk_crosswalk_edges": 4,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 3,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 522.0,
+    "curb": 25.155,
+    "sidewalk": 329.92
+   }
+  },
+  "TeeSouth": {
+   "kind": "tee",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 6,
+   "walk_crosswalk_edges": 4,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 3,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 522.0,
+    "curb": 25.155,
+    "sidewalk": 329.92
+   }
+  },
+  "TeeEast": {
+   "kind": "tee",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 6,
+   "walk_crosswalk_edges": 4,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 3,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 522.0,
+    "curb": 25.155,
+    "sidewalk": 329.92
+   }
+  },
+  "TeeWest": {
+   "kind": "tee",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 6,
+   "walk_crosswalk_edges": 4,
+   "walk_clearance_min": 1.0,
+   "walk_to_curb_min": 1.6,
+   "core_crosswalks": 3,
+   "core_trees": 0,
+   "core_trees_on_kit_pavement": 0,
+   "areas_m2": {
+    "asphalt": 522.0,
+    "curb": 25.155,
+    "sidewalk": 329.92
+   }
+  },
+  "CulDeSacNorth": {
+   "kind": "culdesac",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 8,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9627,
+   "walk_to_curb_min": 1.5622,
+   "core_crosswalks": 0,
+   "asphalt_cap_tip": 0.395,
+   "sidewalk_outer_tip": -2.3552,
+   "core_walk_tip": -1.3556,
+   "core_trees": 296,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 5.312,
+   "areas_m2": {
+    "asphalt": 176.345,
+    "curb": 9.652,
+    "sidewalk": 139.906
+   }
+  },
+  "CulDeSacSouth": {
+   "kind": "culdesac",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 8,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9627,
+   "walk_to_curb_min": 1.5622,
+   "core_crosswalks": 0,
+   "asphalt_cap_tip": 0.395,
+   "sidewalk_outer_tip": -2.3552,
+   "core_walk_tip": -1.3556,
+   "core_trees": 296,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 6.558,
+   "areas_m2": {
+    "asphalt": 176.345,
+    "curb": 9.652,
+    "sidewalk": 139.906
+   }
+  },
+  "CulDeSacEast": {
+   "kind": "culdesac",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 8,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9627,
+   "walk_to_curb_min": 1.5622,
+   "core_crosswalks": 0,
+   "asphalt_cap_tip": 0.395,
+   "sidewalk_outer_tip": -2.3552,
+   "core_walk_tip": -1.3556,
+   "core_trees": 298,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 5.239,
+   "areas_m2": {
+    "asphalt": 176.345,
+    "curb": 9.652,
+    "sidewalk": 139.906
+   }
+  },
+  "CulDeSacWest": {
+   "kind": "culdesac",
+   "sections_ok": true,
+   "walk_sidewalk_edges": 8,
+   "walk_crosswalk_edges": 0,
+   "walk_clearance_min": 0.9627,
+   "walk_to_curb_min": 1.5622,
+   "core_crosswalks": 0,
+   "asphalt_cap_tip": 0.395,
+   "sidewalk_outer_tip": -2.3552,
+   "core_walk_tip": -1.3556,
+   "core_trees": 294,
+   "core_trees_on_kit_pavement": 0,
+   "core_tree_min_dist_to_pavement": 4.689,
+   "areas_m2": {
+    "asphalt": 176.345,
+    "curb": 9.652,
+    "sidewalk": 139.906
+   }
+  }
+ },
+ "tile_edge_signatures": 1,
+ "tile_edge_section": {
+  "asphalt": [
+   [
+    -3.0,
+    3.0
+   ]
+  ],
+  "curb": [
+   [
+    -3.15,
+    -3.0
+   ],
+   [
+    3.0,
+    3.15
+   ]
+  ],
+  "sidewalk": [
+   [
+    -5.75,
+    -3.75
+   ],
+   [
+    3.75,
+    5.75
+   ]
+  ]
+ },
+ "block_valid": {
+  "0,1,TeeSouth": true,
+  "-1,0,TeeEast": true,
+  "1,0,TeeWest": true,
+  "0,-1,StraightNS": true,
+  "-1,1,TurnSE": true,
+  "1,1,TurnSW": true,
+  "-1,-1,CulDeSacNorth": true,
+  "1,-1,TurnNE": true
+ },
+ "fails": []
+}
