@@ -1,0 +1,5 @@
+# build output
+bin/
+obj/
+# the repo root ignores *.csproj (Unity-generated); this one is source
+!core_dump.csproj

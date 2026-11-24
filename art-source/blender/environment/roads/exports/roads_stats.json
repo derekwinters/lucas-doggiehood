@@ -1,0 +1,542 @@
+{
+ "road_a_FourWay": {
+  "look": "a",
+  "type": "FourWay",
+  "tris": 982,
+  "verts_gltf": 1952,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4639,
+  "bin_bytes": 99588,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 36,
+   "tris": 982
+  }
+ },
+ "road_a_StraightNS": {
+  "look": "a",
+  "type": "StraightNS",
+  "tris": 486,
+  "verts_gltf": 968,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4662,
+  "bin_bytes": 49380,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 486
+  }
+ },
+ "road_a_StraightEW": {
+  "look": "a",
+  "type": "StraightEW",
+  "tris": 486,
+  "verts_gltf": 968,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4662,
+  "bin_bytes": 49380,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 486
+  }
+ },
+ "road_a_TurnNE": {
+  "look": "a",
+  "type": "TurnNE",
+  "tris": 872,
+  "verts_gltf": 1342,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4676,
+  "bin_bytes": 69652,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 872
+  }
+ },
+ "road_a_TurnNW": {
+  "look": "a",
+  "type": "TurnNW",
+  "tris": 872,
+  "verts_gltf": 1342,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4676,
+  "bin_bytes": 69652,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 872
+  }
+ },
+ "road_a_TurnSE": {
+  "look": "a",
+  "type": "TurnSE",
+  "tris": 872,
+  "verts_gltf": 1342,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4676,
+  "bin_bytes": 69652,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 872
+  }
+ },
+ "road_a_TurnSW": {
+  "look": "a",
+  "type": "TurnSW",
+  "tris": 872,
+  "verts_gltf": 1342,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4676,
+  "bin_bytes": 69652,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 872
+  }
+ },
+ "road_a_TeeNorth": {
+  "look": "a",
+  "type": "TeeNorth",
+  "tris": 748,
+  "verts_gltf": 1488,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4657,
+  "bin_bytes": 75912,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 27,
+   "tris": 748
+  }
+ },
+ "road_a_TeeSouth": {
+  "look": "a",
+  "type": "TeeSouth",
+  "tris": 748,
+  "verts_gltf": 1488,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4657,
+  "bin_bytes": 75912,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 27,
+   "tris": 748
+  }
+ },
+ "road_a_TeeEast": {
+  "look": "a",
+  "type": "TeeEast",
+  "tris": 748,
+  "verts_gltf": 1488,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4654,
+  "bin_bytes": 75912,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 27,
+   "tris": 748
+  }
+ },
+ "road_a_TeeWest": {
+  "look": "a",
+  "type": "TeeWest",
+  "tris": 748,
+  "verts_gltf": 1488,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4654,
+  "bin_bytes": 75912,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 27,
+   "tris": 748
+  }
+ },
+ "road_a_CulDeSacNorth": {
+  "look": "a",
+  "type": "CulDeSacNorth",
+  "tris": 275,
+  "verts_gltf": 495,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   -30
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   -0.245
+  ],
+  "gltf_bytes": 4716,
+  "bin_bytes": 25412,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 275
+  }
+ },
+ "road_a_CulDeSacSouth": {
+  "look": "a",
+  "type": "CulDeSacSouth",
+  "tris": 275,
+  "verts_gltf": 495,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -3.15,
+   0.01,
+   0.245
+  ],
+  "bounds_max": [
+   3.15,
+   0.0145,
+   30
+  ],
+  "gltf_bytes": 4712,
+  "bin_bytes": 25412,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 275
+  }
+ },
+ "road_a_CulDeSacEast": {
+  "look": "a",
+  "type": "CulDeSacEast",
+  "tris": 275,
+  "verts_gltf": 495,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   0.245,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   30,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4709,
+  "bin_bytes": 25412,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 275
+  }
+ },
+ "road_a_CulDeSacWest": {
+  "look": "a",
+  "type": "CulDeSacWest",
+  "tris": 275,
+  "verts_gltf": 495,
+  "primitives": 2,
+  "images": [
+   "../textures/asphalt_fresh_color.png",
+   "../textures/asphalt_fresh_normal.png",
+   "../textures/road_markings_clean_color.png",
+   "../textures/road_markings_clean_normal.png"
+  ],
+  "uris_ok": true,
+  "materials_ok": true,
+  "single_sided": true,
+  "attributes_ok": true,
+  "bounds_ok": true,
+  "bounds_min": [
+   -30,
+   0.01,
+   -3.15
+  ],
+  "bounds_max": [
+   -0.245,
+   0.0145,
+   3.15
+  ],
+  "gltf_bytes": 4713,
+  "bin_bytes": 25412,
+  "counts": {
+   "patches": 0,
+   "cracks": 0,
+   "marks": 2,
+   "tris": 275
+  }
+ }
+}
