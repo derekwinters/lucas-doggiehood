@@ -1,0 +1,17 @@
+{
+ "ground_c_tile_rec": {
+  "look": "c",
+  "approach": "rec",
+  "tris": 800,
+  "verts_gltf": 1600,
+  "images": [
+   "../textures/lawn_c_cells8_color.png",
+   "../textures/lawn_c_cells8_normal.png"
+  ],
+  "uris_ok": true,
+  "material_ok": true,
+  "uv1_ok": true,
+  "gltf_bytes": 2793,
+  "bin_bytes": 88000
+ }
+}
