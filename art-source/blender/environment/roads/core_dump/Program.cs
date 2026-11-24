@@ -30,7 +30,16 @@ class P {
       (-1,1,TileType.TurnSE),(1,1,TileType.TurnSW),(-1,-1,TileType.CulDeSacNorth),(1,-1,TileType.TurnNE)};
     var m = new TileMap(new TileCoordinate(0,0), TileType.FourWay);
     sb.Append(string.Join(",", block.Select(b => { var ok = m.CanPlace(new TileCoordinate(b.c,b.r), b.t); if (ok) m.Place(new TileCoordinate(b.c,b.r), b.t); return $"\"{b.c},{b.r},{b.t}\":{(ok?"true":"false")}"; })));
-    sb.Append("},\"StreetCorridorInset\":" + F(LotBounds.StreetCorridorInset) + "}");
+    sb.Append("},\"starter_walkways\":[");
+    var net0 = NeighborhoodLayout.WalkNetwork;
+    var ws = new List<string>();
+    foreach (var lot in NeighborhoodLayout.HouseLots)
+      if (net0.TryGetFrontWalkway(lot.HouseId, out var w))
+        ws.Add($"[{lot.HouseId},{F(w.A.X)},{F(w.A.Z)},{F(w.B.X)},{F(w.B.Z)},{F(w.Width)}]");
+    sb.Append(string.Join(",", ws));
+    sb.Append("],\"starter_sidewalks\":[");
+    sb.Append(string.Join(",", net0.Edges.Where(e => e.Kind == WalkEdgeKind.Sidewalk).Select(e => $"[{F(e.A.X)},{F(e.A.Z)},{F(e.B.X)},{F(e.B.Z)}]")));
+    sb.Append("],\"StreetCorridorInset\":" + F(LotBounds.StreetCorridorInset) + "}");
     Console.WriteLine(sb.ToString());
   }
 }
