@@ -1,0 +1,1196 @@
+{
+ "tiles@1.5": {
+  "FourWay": {
+   "slabs": 144,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.516,
+    1.516
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 8
+  },
+  "StraightNS": {
+   "slabs": 80,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.5,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.0,
+   "walk_clearance_min": 1.0
+  },
+  "StraightEW": {
+   "slabs": 80,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.5,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.0,
+   "walk_clearance_min": 1.0
+  },
+  "TurnNE": {
+   "slabs": 77,
+   "union_symdiff_m2": 3.01040487580434e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.471,
+    1.531
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 2.941,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.0,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnNW": {
+   "slabs": 77,
+   "union_symdiff_m2": 2.6076338960520993e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.471,
+    1.531
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 2.941,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.0,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnSE": {
+   "slabs": 77,
+   "union_symdiff_m2": 3.1255013076797887e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.471,
+    1.531
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 2.941,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.0,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnSW": {
+   "slabs": 77,
+   "union_symdiff_m2": 2.6076338960520993e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.471,
+    1.531
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 2.941,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.0,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TeeNorth": {
+   "slabs": 112,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.516,
+    2.0
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeSouth": {
+   "slabs": 112,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.516,
+    2.0
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeEast": {
+   "slabs": 112,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.516,
+    2.0
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeWest": {
+   "slabs": 112,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.516,
+    2.0
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "CulDeSacNorth": {
+   "slabs": 47,
+   "union_symdiff_m2": 1.8677254629709451e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.43,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 2.832,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.2001,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacSouth": {
+   "slabs": 47,
+   "union_symdiff_m2": 1.8327479114238307e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.43,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 2.832,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.2001,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacEast": {
+   "slabs": 47,
+   "union_symdiff_m2": 2.061661672952802e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.43,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 2.832,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.2001,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacWest": {
+   "slabs": 47,
+   "union_symdiff_m2": 1.374076319808339e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.43,
+    1.5
+   ],
+   "box_slabs": [],
+   "smallest_m2": 2.832,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.2001,
+   "kink_bisector_err_deg": 0.724
+  }
+ },
+ "borders": {
+  "block@1.5": 10,
+  "starter@1.5": 4,
+  "block@2.0": 10,
+  "starter@2.0": 4
+ },
+ "tiles@2.0": {
+  "FourWay": {
+   "slabs": 112,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    2.021,
+    2.021
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 8
+  },
+  "StraightNS": {
+   "slabs": 60,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    2.0,
+    2.0
+   ],
+   "box_slabs": [],
+   "smallest_m2": 4.0,
+   "walk_clearance_min": 1.0
+  },
+  "StraightEW": {
+   "slabs": 60,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    2.0,
+    2.0
+   ],
+   "box_slabs": [],
+   "smallest_m2": 4.0,
+   "walk_clearance_min": 1.0
+  },
+  "TurnNE": {
+   "slabs": 58,
+   "union_symdiff_m2": 3.370507076260439e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.914,
+    2.083
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 3.664,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.1118,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnNW": {
+   "slabs": 58,
+   "union_symdiff_m2": 4.59394450456314e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.914,
+    2.083
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 3.664,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.1118,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnSE": {
+   "slabs": 58,
+   "union_symdiff_m2": 4.2609087268333525e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.914,
+    2.083
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 3.664,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.1118,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TurnSW": {
+   "slabs": 58,
+   "union_symdiff_m2": 4.59394450456314e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.914,
+    2.083
+   ],
+   "box_slabs": [
+    3.66
+   ],
+   "smallest_m2": 3.664,
+   "walk_clearance_min": 0.9536,
+   "outer_arc_joint_radial_err_deg": 0.1118,
+   "inner_corner_slab_m2": [
+    3.664
+   ]
+  },
+  "TeeNorth": {
+   "slabs": 88,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.875,
+    2.021
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeSouth": {
+   "slabs": 88,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    1.875,
+    2.021
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeEast": {
+   "slabs": 88,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.875,
+    2.021
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "TeeWest": {
+   "slabs": 88,
+   "union_symdiff_m2": 0.0,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    1.875,
+    2.021
+   ],
+   "box_slabs": [
+    0.36,
+    0.36,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    4.0,
+    4.0
+   ],
+   "smallest_m2": 0.36,
+   "walk_clearance_min": 1.0,
+   "landings_one_slab": 6
+  },
+  "CulDeSacNorth": {
+   "slabs": 35,
+   "union_symdiff_m2": 1.1846780943050773e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    2.0,
+    2.001
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.974,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.1494,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacSouth": {
+   "slabs": 35,
+   "union_symdiff_m2": 1.3014888469059335e-16,
+   "overlap_m2": -0.0,
+   "run_slab_m": [
+    2.0,
+    2.001
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.974,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.1494,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacEast": {
+   "slabs": 35,
+   "union_symdiff_m2": 1.2463416392437026e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    2.0,
+    2.001
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.974,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.1494,
+   "kink_bisector_err_deg": 0.724
+  },
+  "CulDeSacWest": {
+   "slabs": 35,
+   "union_symdiff_m2": 1.2873401460094987e-16,
+   "overlap_m2": 0.0,
+   "run_slab_m": [
+    2.0,
+    2.001
+   ],
+   "box_slabs": [],
+   "smallest_m2": 3.974,
+   "walk_clearance_min": 0.9627,
+   "arc_joint_radial_err_deg": 0.1494,
+   "kink_bisector_err_deg": 0.724
+  }
+ },
+ "core_walkways": [
+  {
+   "label": "Core house 1 @1.5",
+   "width": 2.0,
+   "length": 4.535,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 1
+  },
+  {
+   "label": "Core house 2 @1.5",
+   "width": 2.0,
+   "length": 4.353,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 2
+  },
+  {
+   "label": "Core house 3 @1.5",
+   "width": 2.0,
+   "length": 3.7496,
+   "perp_dot": 2.11e-07,
+   "uncovered_m2": 1.1e-07,
+   "overlap_m2": 1.1e-07,
+   "shared_edge_m": 2.0,
+   "house": 3
+  },
+  {
+   "label": "Core house 4 @1.5",
+   "width": 2.0,
+   "length": 4.2998,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 4
+  },
+  {
+   "label": "Core house 1 @2.0",
+   "width": 2.0,
+   "length": 4.535,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 1
+  },
+  {
+   "label": "Core house 2 @2.0",
+   "width": 2.0,
+   "length": 4.353,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 2
+  },
+  {
+   "label": "Core house 3 @2.0",
+   "width": 2.0,
+   "length": 3.7496,
+   "perp_dot": 2.11e-07,
+   "uncovered_m2": 1.1e-07,
+   "overlap_m2": 1.1e-07,
+   "shared_edge_m": 2.0,
+   "house": 3
+  },
+  {
+   "label": "Core house 4 @2.0",
+   "width": 2.0,
+   "length": 4.2998,
+   "perp_dot": 0.0,
+   "uncovered_m2": 0.0,
+   "overlap_m2": 0.0,
+   "shared_edge_m": 2.0,
+   "house": 4
+  }
+ ],
+ "core_setback": [
+  {
+   "house": 1,
+   "door_to_street_cl_m": 10.285,
+   "walkway_m": 4.535
+  },
+  {
+   "house": 2,
+   "door_to_street_cl_m": 10.103,
+   "walkway_m": 4.353
+  },
+  {
+   "house": 3,
+   "door_to_street_cl_m": 9.4996,
+   "walkway_m": 3.7496
+  },
+  {
+   "house": 4,
+   "door_to_street_cl_m": 10.0498,
+   "walkway_m": 4.2998
+  }
+ ],
+ "lot_p1": {
+  "base_1": {
+   "step_width_m": 1.6,
+   "step_mat": "concrete",
+   "walkway_m": 2.2,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.8,
+   "walkway_sidewalk_shared_m": 1.6,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -10.0,
+    -4.2
+   ]
+  },
+  "base_2": {
+   "step_width_m": 1.4,
+   "step_mat": "concrete",
+   "walkway_m": 2.4,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.7,
+   "walkway_sidewalk_shared_m": 1.4,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -10.1,
+    -4.1
+   ]
+  },
+  "base_3": {
+   "step_width_m": 2.2,
+   "step_mat": "concrete",
+   "walkway_m": 3.16,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 1.1,
+   "walkway_sidewalk_shared_m": 2.2,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -11.8,
+    -4.2
+   ]
+  },
+  "base_4": {
+   "step_width_m": 2.0,
+   "step_mat": "concrete",
+   "walkway_m": 3.16,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 1.0,
+   "walkway_sidewalk_shared_m": 2.0,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -11.5,
+    -2.7
+   ]
+  },
+  "base_5": {
+   "step_width_m": 1.6,
+   "step_mat": "concrete",
+   "walkway_m": 2.4,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.8,
+   "walkway_sidewalk_shared_m": 1.6,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -10.5,
+    -3.7
+   ]
+  },
+  "base_6": {
+   "step_width_m": 1.4,
+   "step_mat": "concrete",
+   "walkway_m": 4.0,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.7,
+   "walkway_sidewalk_shared_m": 1.4,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -10.4,
+    -3.8
+   ]
+  },
+  "base_7": {
+   "step_width_m": 2.0,
+   "step_mat": "concrete",
+   "walkway_m": 3.16,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 1.0,
+   "walkway_sidewalk_shared_m": 2.0,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -13.0,
+    -3.2
+   ]
+  },
+  "base_8": {
+   "step_width_m": 1.3,
+   "step_mat": "concrete",
+   "walkway_m": 2.5,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.65,
+   "walkway_sidewalk_shared_m": 1.3,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -11.7,
+    -3.9
+   ]
+  },
+  "base_9": {
+   "step_width_m": 1.8,
+   "step_mat": "stone_a",
+   "walkway_m": 3.4,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.9,
+   "walkway_sidewalk_shared_m": 1.8,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -12.2,
+    -4.0
+   ]
+  },
+  "base_10": {
+   "step_width_m": 1.6,
+   "step_mat": "concrete",
+   "walkway_m": 3.16,
+   "core_centreline_on_walkway": true,
+   "core_centreline_clearance_m": 0.8,
+   "walkway_sidewalk_shared_m": 1.6,
+   "walkway_sidewalk_overlap_m2": 0.0,
+   "drive_widths_m": [
+    3.0
+   ],
+   "garage_door_m": 2.6,
+   "drive_walkway_overlap_m2": 0.0,
+   "drive_sidewalk_overlap_m2": 0.0,
+   "drive_asphalt_overlap_m2": 0.0,
+   "drive_y": [
+    -12.8,
+    -3.4
+   ]
+  }
+ },
+ "alignment_p1": {
+  "base_1": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.411,
+    1.643
+   ],
+   "walkway_slabs": 1,
+   "walkway_slab_m": [
+    2.2,
+    2.2
+   ],
+   "drive_x_lines": [
+    4.0,
+    5.5,
+    7.0
+   ],
+   "apron_x_lines": [
+    4.0,
+    5.5,
+    7.0
+   ],
+   "drive_slab_m": [
+    1.525
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_2": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.4,
+    1.65
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.2,
+    1.2
+   ],
+   "drive_x_lines": [
+    5.95,
+    7.45,
+    8.95
+   ],
+   "apron_x_lines": [
+    5.95,
+    7.45,
+    8.95
+   ],
+   "drive_slab_m": [
+    1.625
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_3": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.5,
+    2.2
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.58,
+    1.58
+   ],
+   "drive_x_lines": [
+    4.45,
+    5.95,
+    7.45
+   ],
+   "apron_x_lines": [
+    4.45,
+    5.95,
+    7.45
+   ],
+   "drive_slab_m": [
+    1.616667
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_4": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.5,
+    2.0
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.58,
+    1.58
+   ],
+   "drive_x_lines": [
+    4.55,
+    6.05,
+    7.55
+   ],
+   "apron_x_lines": [
+    4.55,
+    6.05,
+    7.55
+   ],
+   "drive_slab_m": [
+    1.5125
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_5": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.411,
+    1.825
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.2,
+    1.2
+   ],
+   "drive_x_lines": [
+    4.45,
+    5.95,
+    7.45
+   ],
+   "apron_x_lines": [
+    4.45,
+    5.95,
+    7.45
+   ],
+   "drive_slab_m": [
+    1.35
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_6": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.05,
+    1.69
+   ],
+   "walkway_slabs": 3,
+   "walkway_slab_m": [
+    1.333,
+    1.333
+   ],
+   "drive_x_lines": [
+    5.75,
+    7.25,
+    8.75
+   ],
+   "apron_x_lines": [
+    5.75,
+    7.25,
+    8.75
+   ],
+   "drive_slab_m": [
+    1.283333
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_7": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.425,
+    2.0
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.58,
+    1.58
+   ],
+   "drive_x_lines": [
+    3.85,
+    5.35,
+    6.85
+   ],
+   "apron_x_lines": [
+    3.85,
+    5.35,
+    6.85
+   ],
+   "drive_slab_m": [
+    1.41
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_8": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.3,
+    1.645
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.25,
+    1.25
+   ],
+   "drive_x_lines": [
+    5.05,
+    6.55,
+    8.05
+   ],
+   "apron_x_lines": [
+    5.05,
+    6.55,
+    8.05
+   ],
+   "drive_slab_m": [
+    1.683333
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_9": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.333,
+    1.8
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.7,
+    1.7
+   ],
+   "drive_x_lines": [
+    5.45,
+    6.95,
+    8.45
+   ],
+   "apron_x_lines": [
+    5.45,
+    6.95,
+    8.45
+   ],
+   "drive_slab_m": [
+    1.3625
+   ],
+   "drive_slabs_across": 2
+  },
+  "base_10": {
+   "edges_off_joint": [],
+   "front_slab_exact": {
+    "walk": true,
+    "drive": true
+   },
+   "tiling_err_m2": 5.684341886080802e-14,
+   "sidewalk_run_slab_m": [
+    1.275,
+    1.6
+   ],
+   "walkway_slabs": 2,
+   "walkway_slab_m": [
+    1.58,
+    1.58
+   ],
+   "drive_x_lines": [
+    4.25,
+    5.75,
+    7.25
+   ],
+   "apron_x_lines": [
+    4.25,
+    5.75,
+    7.25
+   ],
+   "drive_slab_m": [
+    1.6625
+   ],
+   "drive_slabs_across": 2
+  }
+ },
+ "heights_m": {
+  "lawn": 0.0,
+  "asphalt": 0.01,
+  "sidewalk_walkway_driveway": 0.012,
+  "curb_band": 0.013,
+  "paint": 0.0145,
+  "core_SidewalkSurfaceHeight": 0.2,
+  "core_RoadSurfaceHeight": 0.0
+ },
+ "fails": []
+}

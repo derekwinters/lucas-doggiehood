@@ -1,0 +1,84 @@
+{
+ "p1": {
+  "FourWay": {
+   "slabs": 144,
+   "tris": 312,
+   "bin_bytes": 25872
+  },
+  "StraightNS": {
+   "slabs": 80,
+   "tris": 168,
+   "bin_bytes": 14128
+  },
+  "StraightEW": {
+   "slabs": 80,
+   "tris": 168,
+   "bin_bytes": 14128
+  },
+  "TurnNE": {
+   "slabs": 77,
+   "tris": 298,
+   "bin_bytes": 19868
+  },
+  "TurnNW": {
+   "slabs": 77,
+   "tris": 298,
+   "bin_bytes": 19868
+  },
+  "TurnSE": {
+   "slabs": 77,
+   "tris": 298,
+   "bin_bytes": 19868
+  },
+  "TurnSW": {
+   "slabs": 77,
+   "tris": 298,
+   "bin_bytes": 19868
+  },
+  "TeeNorth": {
+   "slabs": 112,
+   "tris": 248,
+   "bin_bytes": 20368
+  },
+  "TeeSouth": {
+   "slabs": 112,
+   "tris": 248,
+   "bin_bytes": 20368
+  },
+  "TeeEast": {
+   "slabs": 112,
+   "tris": 248,
+   "bin_bytes": 20288
+  },
+  "TeeWest": {
+   "slabs": 112,
+   "tris": 248,
+   "bin_bytes": 20288
+  },
+  "CulDeSacNorth": {
+   "slabs": 47,
+   "tris": 197,
+   "bin_bytes": 12824
+  },
+  "CulDeSacSouth": {
+   "slabs": 47,
+   "tris": 197,
+   "bin_bytes": 12824
+  },
+  "CulDeSacEast": {
+   "slabs": 47,
+   "tris": 197,
+   "bin_bytes": 12824
+  },
+  "CulDeSacWest": {
+   "slabs": 47,
+   "tris": 197,
+   "bin_bytes": 12824
+  },
+  "lot": {
+   "tris": 16,
+   "bin_bytes": 1632,
+   "materials": 1
+  }
+ }
+}
