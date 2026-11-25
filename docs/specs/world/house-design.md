@@ -32,7 +32,7 @@ A house is one **base** plus zero to three **upgrade pieces**. Each piece sits a
 | Back | every base | on the ground at the back wall's outer face, centred on the back door | Deck (level 3) |
 | Patio | the garage piece | the back edge of the garage's slab, centred on it | Patio (level 4) |
 
-The concept scripts name these `ATTACH_ADDITION`, `ATTACH_DECK` and `ATTACH_PATIO`; each base's coordinates are in `art-source/blender/README.md`. The final names in Core are **Open** ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+The concept scripts name these `ATTACH_ADDITION`, `ATTACH_DECK` and `ATTACH_PATIO`; each base's coordinates are in `art-source/blender/README.md`. In Core they are **Side**, **Back** and **Patio**, the names in the table above ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
 
 **Room for later.** Toys, pools and real dog models will reuse the same Blender pipeline and conventions in their own milestones. This page does not specify any of them.
 
@@ -124,7 +124,7 @@ Pavers 8 cm tall, directly behind the garage at the garage's patio attach point.
 
 **Invariant — a piece attaches only at an attach point its house declares.** The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.
 
-**Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above.
+**Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above. **The driveway is not part of the garage piece's footprint**, so this invariant applies to the garage in full; the driveway is a ground surface owned by [#803](https://github.com/derekwinters/lucas-doggiehood/issues/803) and [#810](https://github.com/derekwinters/lucas-doggiehood/issues/810) ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
 
 > **How the spec is changing ([#800](https://github.com/derekwinters/lucas-doggiehood/issues/800)).** This page used to leave open how the garage's driveway joins the walk network → it now says the driveway is ground decoration only and adds no walk-network edge → because Derek confirmed that dogs keep reaching the door by the front walkway.
 
@@ -193,7 +193,11 @@ All 4 starting lots are corner lots with the same envelope. These are the cleara
 | 9 Mission | 14.86 × 14.70 | 2.69 | 3.35 | 4.20 |
 | 10 Queen Anne | 13.40 × 16.14 | 3.43 | 3.11 | 3.00 |
 
-"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. These numbers use the **garage** as the level-2 piece ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)). Every base still fits. The tightest side clearance is the ranch at 2.17 m, and the tightest rear clearance is the farmhouse at 2.60 m. Compared with the concept addition, every base gains 0.25 m per side (the garage is 0.5 m narrower) and loses 0.75 m at the rear (the garage is 1.5 m deeper, so the patio behind it starts further back). Zone and cul-de-sac lots have not been checked yet (**Open**, [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. These numbers use the **garage** as the level-2 piece ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)). Every base still fits. The tightest side clearance is the ranch at 2.17 m, and the tightest rear clearance is the farmhouse at 2.60 m. Compared with the concept addition, every base gains 0.25 m per side (the garage is 0.5 m narrower) and loses 0.75 m at the rear (the garage is 1.5 m deeper, so the patio behind it starts further back). Zone and cul-de-sac lots have not been measured yet. [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) adds a Core test that every base at level 4 fits every lot kind; if one does not, the build stops and flags it to Derek rather than shrinking or moving anything.
+
+**Core computes each house's placement** from its level-4 footprint, centred between the side fences with its front line at the setback ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)); the Unity issues draw the house at that position.
+
+> **How the spec is changing ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).** The attach-point names in Core and the zone and cul-de-sac lot check used to be Open, and the driveway's relation to the no-sidewalk rule was unstated → Core names the points Side, Back and Patio, a Core test checks every lot kind, the driveway sits outside the garage's footprint, and Core owns the placement calculation → because Derek agreed on 2026-11-24.
 
 ## Open items
 
