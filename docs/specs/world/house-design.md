@@ -152,7 +152,13 @@ Decided on [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789):
 
 - **The four starter houses** stay on **bases 1–4**.
 - **Zone-built houses** roll from **all 10 bases** plus a **random colour scheme**. The pick is made once and kept through upgrades.
-- **Existing saves:** each of today's 5 Kenney ladders maps to one base (ladder 1 → base 1 … ladder 5 → base 5), and a level-N house gets the first N−1 pieces.
+- **Existing saves:** each of today's 5 Kenney ladders maps to one base (ladder 1 → base 1 … ladder 5 → base 5), and a level-N house gets the first N−1 pieces. A house from an existing save gets a colour scheme picked from its house id, so it is the same on every load ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)); #789 may still set the starter houses' schemes on purpose.
+
+**What a save stores ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)).** Each house saves its **base id** and **colour scheme id**, added as new save lines that fall back to a default when missing, like the save's other additive fields. Installed pieces are **not** saved: the path is fixed, so they are derived from the house level, which the save already stores. [#628](https://github.com/derekwinters/lucas-doggiehood/issues/628) folds these lines into the frozen v1.0 schema later.
+
+**Invariant — a house's installed pieces are always derived from its level, never stored separately.** One source of truth means a save can never hold a level and a piece list that disagree.
+
+> **How the spec is changing ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)).** The Build checklist used to say bases, schemes and installed pieces all save and load, and #779 waited on the v1.0 save-format work in #628 → only the base and scheme are saved, pieces come from the level, and #779 adds its lines the existing additive way → because Derek agreed on 2026-11-24; it avoids two records that could disagree and keeps the house switch-over in v0.17.
 
 **Open:**
 
@@ -219,6 +225,6 @@ Besides those marked above:
 - [ ] Each upgrade installs the next piece on the fixed path (garage, deck, patio) at its attach point; costs and slots unchanged ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778))
 - [ ] Houses are placed by their level-4 footprint, centred between the side fences, front line at the 3.75 m setback; nothing moves on upgrade ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778), [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789))
 - [ ] Installed pieces draw in the world and the house-profile thumbnail, with fences, walkway and trees fitting around them ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783))
-- [ ] Bases, schemes and installed pieces save and load ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779))
+- [ ] Bases and schemes save and load, and installed pieces are derived from the level ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779))
 - [ ] Starters on bases 1–4, zone houses rolled from all 10 bases plus a scheme, existing saves mapped, Kenney houses retired ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789))
 - [ ] Every invariant on this page has a test that enforces it
