@@ -1,0 +1,4 @@
+# Written by export_dog.py / export_viewer.py for the web viewer; checked by
+# export_dog.py but not committed (the exports/ glTFs are the source of truth).
+dog-golden-viewer.glb
+viewer/
