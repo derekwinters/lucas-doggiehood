@@ -2,3 +2,6 @@
 # export_dog.py but not committed (the exports/ glTFs are the source of truth).
 dog-golden-viewer.glb
 viewer/
+# Written by motion/export_anim.py for the web viewer (the motion/exports/ glTF
+# is the source of truth).
+motion/viewer/
