@@ -5,13 +5,15 @@
 Houses are our own Blender models. A house is a **base** (the main shell) plus the **upgrade pieces** it has earned, each attached at a named point on the house. A newly built house shows only its **framing**, as if it is still being built, and becomes the **finished** house when a dog moves in. Each upgrade adds the next piece on one fixed path: a **garage**, then a **deck**, then a **patio**.
 
 !!! warning "This is the contract, not yet the code"
-    This page describes the house system being built in epic [#767](https://github.com/derekwinters/lucas-doggiehood/issues/767). The game still renders the Kenney City Kit houses, their per-level model swap and the greyscale vacancy tint described in [Art & UI Style → House architecture](art-style.md#house-architecture) and [Neighborhood Expansion](../expansion.md#house-leveling) until the implementation issues land: build state [#777](https://github.com/derekwinters/lucas-doggiehood/issues/777) and [#609](https://github.com/derekwinters/lucas-doggiehood/issues/609), upgrade pieces [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) and [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), saves [#779](https://github.com/derekwinters/lucas-doggiehood/issues/779), and the switch-over [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789). No implementation starts before Derek approves every model on [#784](https://github.com/derekwinters/lucas-doggiehood/issues/784).
+    This page describes the house system being built in epic [#767](https://github.com/derekwinters/lucas-doggiehood/issues/767). The game still renders the Kenney City Kit houses, their per-level model swap and the greyscale vacancy tint described in [Art & UI Style → House architecture](art-style.md#house-architecture) and [Neighborhood Expansion](../expansion.md#house-leveling) until the implementation issues land: build state [#777](https://github.com/derekwinters/lucas-doggiehood/issues/777) and [#609](https://github.com/derekwinters/lucas-doggiehood/issues/609), upgrade pieces [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) and [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), saves [#779](https://github.com/derekwinters/lucas-doggiehood/issues/779), and the switch-over [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789). No Unity work starts before Derek approves every model on [#784](https://github.com/derekwinters/lucas-doggiehood/issues/784). The Core issues (#777, #778, #779) do not wait for it, because they use only data the approved concepts already fix.
 
 The approved concept models, colour schemes and the measurements on this page are committed as source under `art-source/blender/` ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)); its `README.md` has the full dimensions, triangle counts and concerns.
 
 ## How the models are made
 
-Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). How the scripts, exports and renders work is on [Blender Asset Pipeline](../../engineering/blender-pipeline.md). All models are built and approved before any Core or Unity work starts. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
+Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). How the scripts, exports and renders work is on [Blender Asset Pipeline](../../engineering/blender-pipeline.md). All models are built and approved before any Unity work starts. Core work does not wait on the models.
+
+> **How the spec is changing ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)).** This page used to say no Core or Unity work starts until every model is approved on #784 → it now says only Unity work waits, and the Core issues can go ahead → because Core needs only the base ids, footprints and front lines, which the concepts Derek approved on 2026-11-21 already fix. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
 
 Model conventions the concepts already follow:
 
@@ -74,6 +76,12 @@ Vacancy (`House.IsVacant`) stays the single source; the build state adds no new 
 **Invariant — a vacant house always renders its framing version, never the finished shell or a tint.** This replaces the greyscale vacancy tint ([#58](https://github.com/derekwinters/lucas-doggiehood/issues/58)).
 
 **Invariant — a house's appearance is a pure function of its Core state.** Its base, colour scheme, installed pieces and occupancy decide what it looks like. The view draws what Core resolves and never decides on its own.
+
+**Each base declares its footprint as its wall rectangle** (the "Wall footprint" column above), centred on its pivot, rather than measured mesh bounds, because framing and finished meshes have different bounds ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)). Overhangs, steps, porches and pieces count only in the level-4 footprint used to fit the lot ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+
+**Core's resolved appearance carries the house's colour scheme id** alongside its base, build state and pieces ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)). Which scheme a house gets is decided by [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789).
+
+> **How the spec is changing ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)).** The footprint definition used to be Open between the slab and the wall rectangle, and no Core issue owned the scheme → the declared footprint is now the wall rectangle and #777 carries the scheme id → because Derek agreed on 2026-11-24; the wall rectangle matches the table above and the pivot.
 
 **Invariant — framing and finished versions share one footprint and pivot.** Swapping one for the other never moves the house or changes where its pieces attach.
 
@@ -191,7 +199,6 @@ All 4 starting lots are corner lots with the same envelope. These are the cleara
 
 Besides those marked above:
 
-- **Footprint definition.** Placement, walkway and fence code need a declared footprint per base (the slab or wall rectangle) rather than measured mesh bounds, because framing and finished meshes have different bounds ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777), [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
 - **Fence connectors, walkway and yard trees** around the bigger house, including where the side-fence connector meets a garage or the farmhouse's wrap porch ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
 - **Applying schemes in Unity**, by material slot or by export per scheme, and the roof textures ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 - **Axis convention** between Blender and the game's model yaw ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
