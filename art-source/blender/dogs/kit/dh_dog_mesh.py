@@ -5,11 +5,15 @@ signed distance field on a regular grid, the fields are merged with a smooth
 minimum (so every junction gets a rounded fillet instead of a straight
 intersection line), the merged field is meshed with surface nets, and the
 result is retopologised with QuadriFlow to the triangle budget. All steps are
-deterministic (fixed grid, fixed QuadriFlow seed).
+deterministic (fixed grid, fixed QuadriFlow seed, and QuadriFlow's fresh heap memory pinned to a
+fixed fill; see quadriflow()).
 
 Invariant - parts that meet on the dog's surface are joined by the field's
 smooth minimum, never by intersecting separate meshes.
 """
+import contextlib
+import ctypes
+import ctypes.util
 import math
 
 import bmesh
@@ -113,8 +117,48 @@ def mesh_from(name, verts, faces, collection):
     return ob
 
 
+# glibc mallopt(M_PERTURB, byte): every malloc'd block is filled with (byte ^ 0xFF) and every
+# freed block with byte; 0 turns it off. 0x5A gives a fill of 0xA5 bytes, which read as a float or
+# a double are a tiny negative number (about -3e-16 / -2e-130), i.e. effectively zero.
+M_PERTURB = -6
+QF_HEAP_FILL = 0x5A
+
+
+def _libc_mallopt():
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or None)
+        return libc.mallopt
+    except (OSError, AttributeError):
+        return None
+
+
+@contextlib.contextmanager
+def pinned_heap_fill():
+    """Run the block with every fresh heap block filled with a fixed byte (glibc only).
+
+    Why: Blender's bundled QuadriFlow (5.3.0) reads heap memory it never initialised. A fresh
+    block from the operating system is zero, but a recycled one holds whatever was there before,
+    so now and then the remesh came out slightly different: the same topology with vertices up
+    to about 1.7 cm apart (#894). The proof: with no fill, about 1 run in 5 differs when it is
+    repeated in one process (and about 1 in 36 in fresh processes); with this fill, every run
+    gives the result the zero memory gives, so the committed outputs did not change; with the
+    opposite fill (0xA5 -> 0x5A bytes, huge floats) the result changes and varies. The bug is
+    inside Blender, so the kit pins the memory QuadriFlow sees instead. Elsewhere than glibc
+    (no mallopt) this does nothing and the build may not be byte-identical.
+    """
+    mallopt = _libc_mallopt()
+    if mallopt is None:
+        yield
+        return
+    mallopt(M_PERTURB, QF_HEAP_FILL)
+    try:
+        yield
+    finally:
+        mallopt(M_PERTURB, 0)
+
+
 def quadriflow(ob, faces, seed=1):
-    with bpy.context.temp_override(active_object=ob, object=ob, selected_objects=[ob],
+    with pinned_heap_fill(), bpy.context.temp_override(active_object=ob, object=ob, selected_objects=[ob],
                                    selected_editable_objects=[ob]):
         r = bpy.ops.object.quadriflow_remesh(target_faces=faces, seed=seed, use_mesh_symmetry=False,
                                              use_preserve_sharp=False, use_preserve_boundary=False,

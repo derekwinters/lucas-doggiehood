@@ -8,7 +8,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 
 > **Invariants**
@@ -37,7 +37,19 @@ python3 art-source/blender/dogs/kit/build_breed.py golden-retriever sheet <Walk|
 The breed is a folder name here or a path to any folder holding a `breed.py`. Each step runs in its
 own process and the command exits non-zero at the first failure. The `model` and `motion` steps each
 print **`ALL OK`** when every check passes, and are deterministic: two runs give byte-identical
-textures and exports. Render one sheet or clip per command — EEVEE on lavapipe can crash after
+textures, exports and reports.
+
+> **Invariant — building a breed twice from the same sources gives byte-identical exports,
+> textures and reports, every run and in fresh processes** (#894).
+>
+> One setting holds this up. Blender's bundled QuadriFlow (the body's retopology) reads heap memory
+> it never initialised, so now and then a build came out with the same mesh topology but vertices
+> up to about 1.7 cm apart (1 in 36 fresh-process meshes; 1 of 12 motion rebuilds during #893). The
+> bug is inside Blender, so `quadriflow()` in `kit/dh_dog_mesh.py` pins it: for that one call it
+> sets glibc's `mallopt(M_PERTURB, 0x5A)`, which fills every fresh heap block with `0xA5` bytes
+> (a float or double of effectively zero, the same result zero memory gives, so the committed files
+> did not change), then turns it off. On a system without glibc's `mallopt` this does nothing and
+> rebuilds may differ; `kit/tests/test_rebuild_determinism.py` shows whether they do. Render one sheet or clip per command — EEVEE on lavapipe can crash after
 about 100 frames in one process. The scripts also run on their own, with the breed as the first
 argument (`python3 kit/export_dog.py golden-retriever`).
 
@@ -125,4 +137,15 @@ Nothing it writes stays in the repository.
 
 ```
 python3 art-source/blender/dogs/kit/tests/test_breed_generality.py
+```
+
+`kit/tests/test_rebuild_determinism.py` (about 6 minutes) guards the determinism invariant. It runs
+QuadriFlow 12 times on the same body mesh in one process and requires one result, then copies the
+Golden's `breed.py` into a temporary folder, builds `model` + `motion` there `DH_REBUILDS` times
+(default 2), each in fresh processes, and requires every export, texture and report to match the
+Golden's committed bytes. `DH_REBUILDS=20` is the long proof.
+
+```
+python3 art-source/blender/dogs/kit/tests/test_rebuild_determinism.py
+DH_REBUILDS=20 python3 -m unittest art-source/blender/dogs/kit/tests/test_rebuild_determinism.py -k Golden
 ```
