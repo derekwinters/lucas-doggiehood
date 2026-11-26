@@ -58,6 +58,9 @@ TC = B.TRIM_COLOURS       # the trim palette
 STRAND = {"fine": (0.10, 0.8), "mid": (0.35, 2.0), "clump": (1.1, 3.5), "low": (6.0, 9.0),
           "mix": (0.40, 0.35, 0.35), "normal": 0.40, "contrast": 0.32}
 STRAND.update(getattr(B, "FUR_STRAND", {}))
+# Optional coat pattern: patches laid over the coat's ear/dark channel (a saddle, a mask) or
+# lightening it (an ear's inner face). A breed without FUR_PATCHES bakes exactly as before.
+PATCHES = list(getattr(B, "FUR_PATCHES", []))
 
 # trim palette regions (u0, v0, u1, v1) in UV space
 TRIM = {
@@ -299,8 +302,9 @@ def _dilate(arrs, m, iters):
     return m
 
 
-def fur_masks(P, N, A):
-    """(feather, ear) per texel from authored position, normal and region weights."""
+def fur_masks(P, N, A, low=None):
+    """(feather, ear) per texel from authored position, normal and region weights (low: the coat's
+    low-frequency noise, used only by FUR_PATCHES)."""
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
     nx, ny, nz = N[:, 0], N[:, 1], N[:, 2]
     w = {k: A[:, i] for i, k in enumerate(ATTRS)}
@@ -321,7 +325,46 @@ def fur_masks(P, N, A):
     f += w["paw"] * 0.45
     f += w["tail"] * 0.95 * _smooth(0.0, 0.5, -nz) * (0.2 + 0.8 * _smooth(*MARK["tail_tip_y"], y))
     e += w["ear"] * (1 - 0.25 * _smooth(*MARK["ear_tip_z"], z))
+    if PATCHES:
+        e = _patches(P, N, w, np.clip(e, 0, 1), low)
     return np.clip(f, 0, 1), np.clip(e, 0, 1)
+
+
+def _line_z(line, y):
+    """A (y, z) polyline as z(y), held level past its ends."""
+    ys, zs = zip(*sorted(line))
+    return np.interp(y, ys, zs)
+
+
+def _patches(P, N, w, e, low):
+    """Apply the breed's FUR_PATCHES to the dark channel e. Each patch covers its regions' weights
+    where the surface lies above (or below) a (y, z) line, where y and z ramp over (from, to), within
+    |x| < x_max and where the normal's component n = (axis, from, to) ramps; its edge is `soft` m wide and moved up to
+    `wobble` m by the coat's low-frequency noise. "dark" patches raise e to at least their
+    strength; "light" ones scale e down by their strength."""
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    lo = np.zeros(len(P)) if low is None else low
+    for p in PATCHES:
+        reg = sum(w[r] for r in p["regions"])
+        s = p.get("soft", 0.03)
+        cov = np.ones(len(P))
+        if "line" in p:
+            d = z + p.get("wobble", 0.0) * lo - _line_z(p["line"], y)
+            cov *= _smooth(-s, s, d if p.get("above", True) else -d)
+        for k, c in (("y", y), ("z", z)):
+            if k in p:
+                cov *= _smooth(p[k][0], p[k][1], c)
+        if "x_max" in p:
+            cov *= 1 - _smooth(p["x_max"] - s, p["x_max"] + s, np.abs(x))
+        if "n" in p:
+            ax, n0, n1 = p["n"]
+            cov *= _smooth(n0, n1, N[:, "xyz".index(ax)])
+        cov = np.clip(reg, 0, 1) * cov * p.get("strength", 1.0)
+        if p.get("op", "dark") == "dark":
+            e = np.maximum(e, cov)
+        else:
+            e = e * (1 - cov)
+    return e
 
 
 def bake_fur(texdir, prefix, size, tris):
@@ -351,7 +394,7 @@ def bake_fur(texdir, prefix, size, tris):
     sign[sign == 0] = 1
     Bt = np.cross(N, Tt) * sign[:, None]
     ts = np.stack([(nn * Tt).sum(1), (nn * Bt).sum(1), (nn * N).sum(1)], 1)
-    feather, ear = fur_masks(P, N, A)
+    feather, ear = fur_masks(P, N, A, low)
     img_d = np.full((size, size), 0.5)
     img_f = np.zeros((size, size))
     img_e = np.zeros((size, size))

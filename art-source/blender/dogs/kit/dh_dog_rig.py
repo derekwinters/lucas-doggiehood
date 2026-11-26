@@ -355,6 +355,16 @@ def poses(sit_params=None):
     return P
 
 
+def ear_swing(bone, rx, ry, rz):
+    """An ear rotation scaled by the breed's optional EARS["swing"] (per world axis): the clips
+    and poses are written for hanging ears, and an erect ear points the other way, so (-1, -1, 1)
+    lays it back and flicks it out where a hanging ear swings back and out."""
+    sw = B.EARS.get("swing")
+    if sw is None or not bone.startswith("ear_"):
+        return rx, ry, rz
+    return rx * sw[0], ry * sw[1], rz * sw[2]
+
+
 def apply_pose(arm, parts, name, sit_params=None):
     spec = poses(sit_params)[name]
     for pb in arm.pose.bones:
@@ -367,7 +377,7 @@ def apply_pose(arm, parts, name, sit_params=None):
         pb = arm.pose.bones[bname]
         R = pb.bone.matrix_local.to_3x3()
         Ri = R.inverted()
-        rx, ry, rz = (math.radians(a) for a in d.get("rot", (0, 0, 0)))
+        rx, ry, rz = (math.radians(a) for a in ear_swing(bname, *d.get("rot", (0, 0, 0))))
         Q = (Matrix.Rotation(rz, 3, "Z") @ Matrix.Rotation(ry, 3, "Y") @ Matrix.Rotation(rx, 3, "X"))
         pb.rotation_quaternion = (Ri @ Q @ R).to_quaternion()
         if "loc" in d:

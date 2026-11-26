@@ -342,8 +342,15 @@ def ear_part(q, sx):
         spec = [spec[i] for i in B.EARS["lod_rings"]]
     e, dome = B.LOFT_STYLE["ear"]
     rings = [Ring((sx * x, y, z), w, t, t, e) for x, y, z, w, t in spec]
-    # side axis = forward (width of the ear runs front-to-back)
-    p.loft(rings, q["ear_n"], Y, R, dome=dome)
+    # side axis = forward (width of the ear runs front-to-back) unless the breed sets EARS["side"]
+    # (an erect ear faces forward, so its width runs across). The right ear's side is the left's
+    # mirrored and negated, which keeps its front face on the same UVs as the left's.
+    if "side" in B.EARS:
+        sd = B.EARS["side"]
+        side = Vector(sd) if sx > 0 else Vector((sd[0], -sd[1], -sd[2]))
+    else:
+        side = Y
+    p.loft(rings, q["ear_n"], side, R, dome=dome)
     return p
 
 

@@ -222,9 +222,11 @@ def sit_body(rig, s, s_head=None, s_tail=None):
     rig.set("head", sp["head"]["rot"][0] * s_head)
     rig.set("jaw", JAW)
     # the tail keeps its world angle (counter to the hip tilt), lifted clear of the ground on
-    # the way down, and lands lying on the ground behind
+    # the way down (by SIT_DOWN's optional "tail_lift", degrees: a low-carried tail needs more),
+    # and lands lying on the ground behind
     t1 = sp["tail_1"]["rot"][0]
-    rig.set("tail_1", -th + (t1 + sp["hips"]["rot"][0]) * s_tail + 18 * math.sin(math.pi * s))
+    lift = B.SIT_DOWN.get("tail_lift", 18)
+    rig.set("tail_1", -th + (t1 + sp["hips"]["rot"][0]) * s_tail + lift * math.sin(math.pi * s))
     for b in ("tail_2", "tail_3"):
         rig.set(b, sp[b]["rot"][0] * s_tail)
 
@@ -251,7 +253,8 @@ def make_sit_down(rig):
         s = A.smoother((f - t0) / (t1 - t0))
         sh = A.smoother((f - t0 - 4) / (t1 - t0 + 2))         # head follows a little behind
         # settle: the head finishes with a tiny nod into place
-        sit_body(rig, s, s_head=min(1.0, sh), s_tail=A.smooth((f - t0 - 6) / (t1 - t0 - 4)))
+        lag = B.SIT_DOWN.get("tail_lag", 6)                     # frames the tail trails the hips
+        sit_body(rig, s, s_head=min(1.0, sh), s_tail=A.smooth((f - t0 - lag) / (t1 - t0 - lag + 2)))
         if f > t1:
             rig.set("head", rig.sit_spec["head"]["rot"][0] * sh + 2.5 * math.sin(math.pi * (f - t1) / (N - t1)) ** 2)
         rig.update()

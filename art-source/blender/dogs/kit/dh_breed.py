@@ -41,6 +41,13 @@ REQUIRED = (
 # optional names: a breed may leave these out and gets the kit's default (the Golden's look)
 #   FUR_STRAND   the fur strand look, any of its keys (see STRAND in dh_dog_tex.py): a short coat
 #                sets shorter, less clumped strands and a flatter normal map (../labrador/breed.py)
+#   FUR_PATCHES  dark / light patches over the coat's dark channel: a saddle, a mask
+#                (dh_dog_tex._patches; ../german-shepherd/breed.py)
+# and optional keys inside required fields:
+#   EARS["side"]   the ear loft's side axis (default +Y, a hanging ear); an erect ear's width runs across
+#   EARS["swing"]  multipliers on the clips' ear rotations per world axis (an erect ear: (-x, -y, z))
+#   SIT_DOWN["tail_lift"], SIT_DOWN["tail_lag"]  how far the tail swings clear on the way down
+#                (default 18 deg) and how many frames it trails the hips (default 6)
 _SCALARS = (bool, int, float, str, type(None))
 
 B = None        # the loaded breed module
