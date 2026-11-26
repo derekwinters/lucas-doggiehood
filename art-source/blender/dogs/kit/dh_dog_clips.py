@@ -1,5 +1,6 @@
-"""The motion clips (first pass). Each make_<clip>(rig) bakes one Blender action on the approved
-armature and returns its metadata. All clips are 30 fps, deterministic (pure functions of the
+"""The motion clips (first pass). Each make_<clip>(rig) bakes one Blender action on the breed's
+armature and returns its metadata. Gait timing, speeds and size-dependent heights come from the
+breed (GAITS, SIT_DOWN, PLAY_BOW); the choreography is shared. All clips are 30 fps, deterministic (pure functions of the
 frame number), and in place: the root never travels in X/Y.
 
   Idle       loop   idle breathing, head look, ear twitch, tail sway
@@ -23,6 +24,7 @@ import dh_dog_gait as G
 
 TAU = 2 * math.pi
 JAW = D.JAW_REST_OPEN_DEG
+B = D.B
 
 
 def s1(ph, k=1, off=0.0):
@@ -87,8 +89,9 @@ def make_idle(rig):
 
 
 # =========================================================================== Walk
-WALK_N = 30
-WALK_SPEED = 0.80
+WALK = B.GAITS["Walk"]
+WALK_N = WALK["frames"]
+WALK_SPEED = WALK["speed"]
 
 
 def walk_body(rig, ph):
@@ -110,14 +113,19 @@ def walk_body(rig, ph):
         rig.set(b, (10, 3, 0, 0)[i], 0, (9, 8, 7, 6)[i] * s1(ph, 1, 0.30 + 0.07 * i))
 
 
+def gait(rig, name, g, body):
+    """A dh_dog_gait.Gait from a breed GAITS entry."""
+    opt = {k: g[k] for k in ("reach", "win", "sigma", "k", "land") if k in g}
+    if "suspension" in g:
+        lift, at, width = g["suspension"]
+        opt["extra_z"] = lambda ph: lift * bump(ph, at, width)
+    return G.Gait(rig, name, g["frames"], g["speed"], phase=dict(g["phase"]), duty=dict(g["duty"]),
+                  lift=dict(g["lift"]), roll=dict(g["roll"]), curl=dict(g["curl"]), fold=dict(g["fold"]),
+                  center=dict(g["center"]), body=body, **opt)
+
+
 def walk_gait(rig):
-    return G.Gait(rig, "Walk", WALK_N, WALK_SPEED,
-                  phase={"HL": 0.0, "FL": 0.22, "HR": 0.5, "FR": 0.72},
-                  duty={"HL": 0.62, "HR": 0.62, "FL": 0.64, "FR": 0.64},
-                  lift={"F": 0.075, "H": 0.06}, roll={"F": (28.0, 0.22), "H": (24.0, 0.22)},
-                  curl={"F": 40.0, "H": 18.0}, fold={"F": 30.0, "H": -14.0},
-                  center={"F": -0.02, "H": 0.0}, body=lambda ph: walk_body(rig, ph),
-                  win=1, sigma=1.2, k={"F": 0.85, "H": 0.45})
+    return gait(rig, "Walk", WALK, lambda ph: walk_body(rig, ph))
 
 
 def make_walk(rig):
@@ -126,13 +134,13 @@ def make_walk(rig):
     rig.bake("Walk", WALK_N, g.pose)
     return dict(name="Walk", frames=WALK_N, loop=True, ground_speed=WALK_SPEED, stride_m=g.stride,
                 footfalls={k: v for k, v in g.phase.items()}, duty=g.duty, plants=g.plants(),
-                notes="four-beat lateral-sequence walk; touchdowns LH 0.00, LF 0.22, RH 0.50, RF 0.72 "
-                      "of the cycle; duty 0.62 hind / 0.64 fore")
+                notes=WALK["notes"])
 
 
 # =========================================================================== Run
-RUN_N = 16
-RUN_SPEED = 3.5
+RUN = B.GAITS["Run"]
+RUN_N = RUN["frames"]
+RUN_SPEED = RUN["speed"]
 
 
 def run_body(rig, ph):
@@ -156,15 +164,7 @@ def run_body(rig, ph):
 
 
 def run_gait(rig):
-    return G.Gait(rig, "Run", RUN_N, RUN_SPEED,
-                  phase={"HR": 0.0, "HL": 0.11, "FR": 0.40, "FL": 0.50},
-                  duty={"HR": 0.30, "HL": 0.30, "FR": 0.30, "FL": 0.30},
-                  lift={"F": 0.16, "H": 0.12}, roll={"F": (35.0, 0.3), "H": (30.0, 0.3)},
-                  curl={"F": 75.0, "H": 30.0}, fold={"F": 55.0, "H": -25.0},
-                  center={"F": -0.06, "H": -0.10}, body=lambda ph: run_body(rig, ph),
-                  extra_z=lambda ph: 0.035 * bump(ph, 0.90, 0.30), win=1, sigma=1.0, k={"F": 0.9, "H": 0.6},
-                  land=0.985,
-                  reach={"F": 0.965, "H": 0.95})
+    return gait(rig, "Run", RUN, lambda ph: run_body(rig, ph))
 
 
 def make_run(rig):
@@ -173,8 +173,7 @@ def make_run(rig):
     rig.bake("Run", RUN_N, g.pose)
     return dict(name="Run", frames=RUN_N, loop=True, ground_speed=RUN_SPEED, stride_m=g.stride,
                 footfalls=dict(g.phase), duty=g.duty, plants=g.plants(), zoff=[round(float(z), 3) for z in g.zoff],
-                notes="transverse gallop, right-hind lead: touchdowns RH 0.00, LH 0.11, RF 0.40, LF 0.50; "
-                      "duty 0.30; gathered suspension 0.80-1.00")
+                notes=RUN["notes"])
 
 
 # =========================================================================== registry
@@ -213,10 +212,10 @@ def sit_body(rig, s, s_head=None, s_tail=None):
     th = sp["hips"]["rot"][0] * s
     s_head = s if s_head is None else s_head
     s_tail = s if s_tail is None else s_tail
-    drop = -0.62 * math.sin(math.radians(-th))
+    drop = -B.SIT_DOWN["rock_radius"] * math.sin(math.radians(-th))
     if s >= 1.0:
         drop = sp["root"]["loc"][2]
-    rig.root(0, 0, drop - 0.025 * math.sin(math.pi * s))
+    rig.root(0, 0, drop - B.SIT_DOWN["dip"] * math.sin(math.pi * s))
     rig.set("hips", th)
     rig.set("spine_3", sp["spine_3"]["rot"][0] * s)
     rig.set("neck", sp["neck"]["rot"][0] * s_head)
@@ -241,8 +240,9 @@ def make_sit_down(rig):
     rest = rig.rest
     N = SIT_N
     t0, t1 = 4, 46                     # body progress runs over these frames, then settles
-    steps = {"HL": (0.22, 0.50, 0.035), "HR": (0.34, 0.62, 0.035),
-             "FL": (0.42, 0.68, 0.05), "FR": (0.58, 0.84, 0.05)}
+    hl, fl = B.SIT_DOWN["hind_step_lift"], B.SIT_DOWN["front_step_lift"]
+    steps = {"HL": (0.22, 0.50, hl), "HR": (0.34, 0.62, hl),
+             "FL": (0.42, 0.68, fl), "FR": (0.58, 0.84, fl)}
 
     def pose(f):
         if f >= N:
@@ -404,10 +404,10 @@ def make_play_bow(rig):
             r = rig.rest[leg]
             J0 = rig.joint(A.LEGS[leg][0])
             L = r["L"]
-            ez = 0.115                           # elbow joint height when fully down
+            ez = B.PLAY_BOW["elbow_z"]           # elbow joint height when fully down
             dz = max(0.0, J0.z - ez)
             ey = J0.y + math.sqrt(max(L[0] ** 2 - dz ** 2, 0.0))
-            wz = 0.095
+            wz = B.PLAY_BOW["wrist_z"]
             wy = ey - math.sqrt(max(L[1] ** 2 - (ez - wz) ** 2, 0.0))
             low_d = -70.0                        # pastern turned forward, near horizontal
             a2 = r["ph"][2] + low_d

@@ -1,4 +1,6 @@
-"""Render "before" tiles with the round-3 builder (<DH_DOG_ROUNDS>/round3/scripts; not in the repo).
+"""Golden-only extra: render "before" tiles with the round-3 builder (<DH_DOG_ROUNDS>/round3/scripts;
+not in the repo). The kit's render_dog.py runs it for the joins and chest sheets (breed.py
+RENDER["before"]).
 
   python3 render_round3.py <round3 scripts dir> <out dir> '<json job>'
 job = [[file stem, [box lo, box hi], yaw, pitch, lens (0 = orthographic), [w, h], margin, pose, cut_y], ...];

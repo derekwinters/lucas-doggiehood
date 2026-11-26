@@ -1,6 +1,7 @@
-"""Web-viewer data from the exported default-coat glTF, with the skin applied.
+"""glTF reader for the dog checks, and web-viewer data from a breed's exported first-coat glTF,
+with the skin applied.
 
-  python3 export_viewer.py [root]
+  python3 export_viewer.py <breed>
 
 The web viewer draws plain three.js meshes without skinning, so this bakes the
 glTF's default pose (standing, mouth open 12 deg) into world-space vertices:
@@ -10,10 +11,11 @@ round-1/2 structure: {"scene", "nodes" [{name, t, r, s, mesh, children}],
 "meshes" [[{mat, pos, nrm, uv, tan, idx}]], "materials"}; here one root node
 holds one child node per mesh, all with identity transforms.
 
-Writes <root>/viewer/dog.json and <root>/viewer/tex/: fur_default.jpg,
-fur_light.jpg, fur_dark.jpg (JPEG quality 90), dog_fur_normal.png,
-dog_trim_color.png. Positions and UVs rounded to 4 decimals, normals to 3.
-Run after export_dog.py. viewer/ is git-ignored.
+Writes <breed>/viewer/dog.json and <breed>/viewer/tex/: fur_<coat>.jpg per coat
+(JPEG quality 90), dog_fur_normal.png, dog_trim_color.png. Positions and UVs
+rounded to 4 decimals, normals to 3. Run after export_dog.py. viewer/ is
+git-ignored. Imported on its own (by export_dog.py and export_anim.py) it needs
+no breed.
 """
 import json
 import os
@@ -25,7 +27,6 @@ import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 and __name__ == "__main__" else HERE
 COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 
@@ -126,7 +127,7 @@ def _r(a, n):
     return [float(v) for v in np.round(np.asarray(a, dtype=np.float32).ravel(), n)]
 
 
-def convert(gltf_path):
+def convert(gltf_path, name):
     j, binb = load(gltf_path)
     images = [os.path.splitext(os.path.basename(im["uri"]))[0] for im in j.get("images", [])]
 
@@ -141,7 +142,7 @@ def convert(gltf_path):
         mats.append({"name": m["name"], "color": pbr.get("baseColorFactor", [1, 1, 1, 1]),
                      "map": tex_name(pbr.get("baseColorTexture")), "normal": tex_name(m.get("normalTexture")),
                      "rough": pbr.get("roughnessFactor", 1), "metal": pbr.get("metallicFactor", 1)})
-    meshes, nodes = [], [{"name": "dog_golden", "t": [0, 0, 0], "r": None, "s": None, "mesh": None, "children": []}]
+    meshes, nodes = [], [{"name": name, "t": [0, 0, 0], "r": None, "s": None, "mesh": None, "children": []}]
     by_node = {}
     for ni, p, wp, wn in posed_primitives(j, binb):
         at = p["attributes"]
@@ -157,14 +158,18 @@ def convert(gltf_path):
     return {"scene": [0], "nodes": nodes, "meshes": meshes, "materials": mats}
 
 
-def main(root=ROOT):
+def main(breed):
+    import dh_breed
+    B = dh_breed.use(breed)
+    root = dh_breed.DIR
+    coats = list(B.COATS)
     out = os.path.join(root, "viewer")
     tex = os.path.join(root, "textures")
     os.makedirs(os.path.join(out, "tex"), exist_ok=True)
-    d = convert(os.path.join(root, "exports", "dog_golden_default.gltf"))
+    d = convert(os.path.join(root, "exports", "%s_%s.gltf" % (B.NAME, coats[0])), B.NAME)
     with open(os.path.join(out, "dog.json"), "w") as f:
         json.dump(d, f, separators=(",", ":"))
-    for coat in ("default", "light", "dark"):
+    for coat in coats:
         Image.open(os.path.join(tex, "dog_fur_%s_color.png" % coat)).convert("RGB").save(
             os.path.join(out, "tex", "fur_%s.jpg" % coat), quality=90)
     for f in ("dog_fur_normal.png", "dog_trim_color.png"):
@@ -173,4 +178,6 @@ def main(root=ROOT):
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    main(sys.argv[1])

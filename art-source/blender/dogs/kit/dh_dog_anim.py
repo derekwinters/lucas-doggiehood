@@ -1,7 +1,5 @@
-"""Motion toolkit for the approved round-4 Golden Retriever: pose helpers, a planar leg IK,
-gait foot tracks and the action baker. The clips themselves are in dh_dog_clips.py.
-
-Imports the approved generators from the kit folder, ../ (nothing there is changed or copied).
+"""Motion toolkit for the active breed's dog: pose helpers, a planar leg IK, gait foot tracks and
+the action baker. The clips themselves are in dh_dog_clips.py.
 
 Conventions (as dh_dog_rig.apply_pose): a rotation (rx, ry, rz) in degrees is about the
 WORLD axes at the bone's head, relative to its parent (Q = Rz @ Ry @ Rx, expressed in the
@@ -16,12 +14,13 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MOTION = HERE                   # motion/ holds these scripts beside its exports/ and review/
-ROOT = os.path.dirname(MOTION)  # the kit folder
-APPROVED = ROOT                 # the approved model scripts sit flat in the kit folder
-for _p in (HERE, APPROVED):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
+
+dh_breed.get()
+ROOT = dh_breed.DIR                     # the breed's folder
+MOTION = os.path.join(ROOT, "motion")   # its motion/exports/ and motion/review/
 
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
@@ -79,7 +78,7 @@ def lerp(a, b, t):
 class Rig:
     """The built dog plus pose helpers."""
 
-    def __init__(self, coat="default", lod=False):
+    def __init__(self, coat=None, lod=False):
         bpy.ops.wm.read_factory_settings(use_empty=True)
         sc = bpy.context.scene
         sc.render.fps = FPS
@@ -105,8 +104,8 @@ class Rig:
                                   paw=Vector((x, J[3][0], J[3][1])), toe=Vector((x, J[4][0], J[4][1])))
         self.clamped = []
         self.sit_spec = RG.poses()["sit"]
-        # where each paw meets the ground at rest (skinned mesh): its lowest point (the approved
-        # mesh's left hind paw hovers a few mm; planted targets bring every paw down to z = 0)
+        # where each paw meets the ground at rest (skinned mesh): its lowest point (a paw may
+        # hover a few mm; planted targets bring every paw down to z = 0)
         # and the front edge of its contact patch, the pivot the paw rolls over at toe-off
         self.update()
         import dh_dog_check as K

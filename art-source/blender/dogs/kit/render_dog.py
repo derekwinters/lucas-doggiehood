@@ -1,19 +1,18 @@
-"""Review renders for the Golden Retriever concept, round 4 (EEVEE, headless).
+"""Review renders for a breed's dog (EEVEE, headless).
 
-  python3 render_dog.py <shot> [outdir]       shot = turnaround | gamecam | face | coats | rig | pivots |
-                                                     splash | lod | mouth | hips | joins | all
-Writes <outdir>/<file>.png (default: out/, git-ignored; the committed sheets are in
-review/). Textures must exist (run export_dog.py first). Renders are not
-byte-reproducible.
+  python3 render_dog.py <breed> <shot> [outdir]   shot = turnaround | gamecam | face | coats | rig | pivots |
+                                                         splash | lod | mouth | hips | joins | sit | chest | all
+Writes <outdir>/<file>.png (default: <breed>/out/, git-ignored; the committed sheets are in
+<breed>/review/). Textures must exist (run export_dog.py first). Renders are not
+byte-reproducible. Captions and framing boxes come from the breed's RENDER.
 
-The "before" rows of mouth.png (round 2) and of joins.png and chest.png
-(round 3) are rendered by the earlier rounds' builders, which are not in the
-repository: render_round2.py / render_round3.py run <DH_DOG_ROUNDS>/round2/scripts
-and <DH_DOG_ROUNDS>/round3/scripts. Set DH_DOG_ROUNDS to the design folder that
-holds them; without them those rows are left empty.
+"Before" rows (a breed's earlier design rounds) are optional: RENDER["before"][shot]
+names a script in the breed's folder (e.g. the Golden's render_round2.py /
+render_round3.py) and the folder under <DH_DOG_ROUNDS> holding that round's
+builder, which is not in the repository. Without it those rows are left empty.
 gamecam needs the approved base-1 house and street props from art-source/blender
 (found relative to this folder, or DH_ART). splash needs DH_SPLASH, the path to
-the splash-art golden (dogs/standalone/dog-golden.png), which is not in the repo.
+the breed's splash art, which is not in the repo.
 
 Without a GPU, EEVEE runs on Mesa's lavapipe (Vulkan on the CPU); this script
 points the Vulkan loader at it when VK_ICD_FILENAMES is unset and the file exists.
@@ -27,6 +26,13 @@ if "VK_ICD_FILENAMES" not in os.environ and os.path.exists("/opt/lavapipe/lvp_ic
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    dh_breed.use(sys.argv[1])
+    del sys.argv[1]
 import bpy  # noqa: E402
 from bpy_extras.object_utils import world_to_camera_view  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
@@ -37,12 +43,17 @@ import dh_dog_render as R  # noqa: E402
 import dh_dog_rig as RG  # noqa: E402
 import subprocess  # noqa: E402
 
-ROOT = HERE                     # scripts sit in the kit folder, beside textures/ and exports/
+B = D.B
+RD = B.RENDER
+CAP = RD["captions"]
+ROOT = dh_breed.DIR             # the breed's folder: textures/, exports/, review/
+COAT0 = list(B.COATS)[0]        # the default coat
 OUT = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else os.path.join(ROOT, "out")
 TMP = os.path.join(OUT, "_parts")
 REPO_ART = os.environ.get("DH_ART", os.path.normpath(os.path.join(HERE, "..", "..")))   # art-source/blender
-SPLASH = os.environ.get("DH_SPLASH")           # splash-art golden; not in the repo
-ROUNDS = os.environ.get("DH_DOG_ROUNDS", ROOT)  # holds round2/ and round3/ (earlier builders); not in the repo
+SPLASH = os.environ.get("DH_SPLASH")           # the breed's splash art; not in the repo
+ROUNDS = os.environ.get("DH_DOG_ROUNDS", ROOT)  # holds the earlier rounds' builders; not in the repo
+STAND_IN = (1.26, 1.50, 1.58)                  # today's in-game dog box (dh_scene.DOG), w x l x h
 F1 = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 F2 = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BG = (241, 236, 227)
@@ -62,7 +73,7 @@ def scene(path, res, samples=64, floor_hex=R.FLOOR, **kw):
         R.floor(60, floor_hex)
 
 
-def dog(coat="default", lod=False, at=(0, 0, 0), yaw=0.0, scale=1.0, pose="rest"):
+def dog(coat=COAT0, lod=False, at=(0, 0, 0), yaw=0.0, scale=1.0, pose="rest"):
     parts = D.build(coat, lod=lod, pose=pose)
     arm = D.build.armature
     root = bpy.data.objects.new("dog_root", None)
@@ -87,7 +98,8 @@ def dots(d, cam, res, pts, r=7):
         d.ellipse((x - r, y - r, x + r, y + r), fill=(214, 48, 49), outline=(255, 255, 255), width=2)
 
 
-HEAD_BOX = ((-0.36, -0.76, 1.00), (0.36, -0.12, 1.60))      # world box around the head (rest pose)
+HEAD_BOX = tuple(tuple(c) for c in RD["head_box"])       # world box around the head (rest pose)
+MOUTH_BOX = tuple(tuple(c) for c in RD["mouth_box"])     # world box around the mouth (close-up)
 
 
 def project(cam, res, p):
@@ -155,12 +167,11 @@ def turnaround():
              ("Top of head  %.2f m" % m.get("top_of_head", 0), False),
              ("Top of back  %.2f m" % m.get("back_height", 0), False),
              ("Width incl. ears  %.2f m" % m.get("width_incl_ears", 0), False),
-             ("Stand-in box  1.26 x 1.50 x 1.58 m", False),
+             ("Stand-in box  %.2f x %.2f x %.2f m" % STAND_IN, False),
              ("%d triangles, %d bones" % (st["full"]["total_tris"] if st else 0, st["full"]["bones"] if st else 0), False)]
     for i, (t, bold) in enumerate(lines):
         d.text((x, y + i * 44), t, fill=INK if i < 6 else SUB, font=font(26 if i == 0 else 24, bold))
-    sheet = header(sheet, "Golden Retriever - turnaround (orthographic)",
-                   "Round 4: one continuous skinned body, slimmer chest. Rest pose: standing, mouth open 12 deg. Default coat.")
+    sheet = header(sheet, *CAP["turnaround"])
     sheet.save(os.path.join(OUT, "turnaround.png"))
 
 
@@ -179,7 +190,7 @@ def _import_gltf(path, at=(0, 0, 0), yaw=0.0):
 
 def stand_in_box(at, yaw=0.0):
     """The in-game stand-in (dh_scene.dog_box, DOG = 1.26 x 1.50 x 1.58) as a thin wire cage."""
-    w, l, h = 1.26, 1.50, 1.58
+    w, l, h = STAND_IN
     me = bpy.data.meshes.new("stand_in")
     vs = [(x, y, z) for z in (0, h) for y in (-l / 2, l / 2) for x in (-w / 2, w / 2)]
     es = [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)]
@@ -239,10 +250,9 @@ def gamecam():
     sheet.paste(wide, (0, 0))
     d = ImageDraw.Draw(sheet)
     d.text((20, wide.height + 14), "Same camera, zoomed in: adult, puppy (0.55 scale), blue cage = today's in-game "
-           "box stand-in (1.26 x 1.50 x 1.58 m)", fill=INK, font=font(21, True))
+           "box stand-in (%.2f x %.2f x %.2f m)" % STAND_IN, fill=INK, font=font(21, True))
     sheet.paste(close, (0, wide.height + 60))
-    sheet = header(sheet, "Golden Retriever at the game camera",
-                   "Orthographic, 45 deg pitch, yaw -40. Approved base 1 (level 1), mailbox and hydrant for scale.")
+    sheet = header(sheet, *CAP["gamecam"])
     sheet.save(os.path.join(OUT, "gamecam.png"))
 
 
@@ -254,8 +264,7 @@ def face():
     dog()
     R.camera([R.box_object(*HEAD_BOX)], -35, 8, res, ortho=False, lens=85, margin=1.05)
     R.render()
-    im = header(Image.open(path).convert("RGB"), "Golden Retriever - face, 3/4",
-                "Round-2 mouth on the skinned body (round 4): the head, jaw and neck are one mesh; jaw open 12 deg.")
+    im = header(Image.open(path).convert("RGB"), *CAP["face"])
     im.save(path)
 
 
@@ -264,21 +273,22 @@ def coats():
     path = os.path.join(TMP, "coats.png")
     scene(path, res, samples=64)
     allp = []
-    xs = [-2.5, -0.95, 0.6]
-    for coat, x in zip(("default", "light", "dark"), xs):
+    coats_ = list(B.COATS)
+    xs = [-2.5 + 1.55 * i for i in range(len(coats_))]
+    for coat, x in zip(coats_, xs):
         allp += list(dog(coat, at=(x, 0, 0), yaw=-20).values())
-    pup = dog("default", at=(1.85, -0.1, 0), yaw=-20, scale=0.55)
+    px_ = xs[-1] + 1.25
+    pup = dog(COAT0, at=(px_, -0.1, 0), yaw=-20, scale=0.55)
     allp += list(pup.values())
     cam = R.camera(allp, -30, 10, res, margin=1.14)
     R.render()
     im = Image.open(path).convert("RGB")
     d = ImageDraw.Draw(im)
-    for t, x in zip(("Default (rich gold)", "Light (warm gold)", "Dark (red-gold)", "Puppy, 0.55 scale"),
-                    xs + [1.85]):
+    for t, x in zip([B.COAT_LABELS.get(c, c.capitalize()) for c in coats_] + ["Puppy, 0.55 scale"],
+                    xs + [px_]):
         px, py = project(cam, res, (x, -0.9, 0))
         label(d, px, min(py + 30, res[1] - 40), t)
-    im = header(im, "Coats and puppy",
-                "One mesh: a coat is a material swap (its own fur colour map; normal map shared). Puppy = adult x 0.55.")
+    im = header(im, *CAP["coats"])
     im.save(os.path.join(OUT, "coats-and-puppy.png"))
 
 
@@ -408,7 +418,7 @@ def splash():
     R.render()
     a = Image.open(path).convert("RGB")
     if not SPLASH:
-        sys.exit("splash: set DH_SPLASH to the splash-art golden (dogs/standalone/dog-golden.png)")
+        sys.exit("splash: set DH_SPLASH to the breed's splash art")
     s = Image.open(SPLASH).convert("RGBA")
     s.thumbnail((760, 1200), Image.LANCZOS)
     b = Image.new("RGB", (800, 1300), BG)
@@ -422,9 +432,7 @@ def splash():
     d = ImageDraw.Draw(sheet)
     d.text((20, 16), "3D concept (EEVEE)", fill=INK, font=font(28, True))
     d.text((820, 16), "Splash art (reference)", fill=INK, font=font(28, True))
-    sheet = header(sheet, "3D concept vs splash golden",
-                   "Kept: big dark eyes + catch-light, black nose, open mouth + pink tongue, floppy darker ears, "
-                   "red at the neck, feathered tail.")
+    sheet = header(sheet, *CAP["splash"])
     sheet.save(os.path.join(OUT, "vs-splash.png"))
 
 
@@ -461,34 +469,35 @@ def mouth_tiles(tag, pose):
         scene(path, res, samples=48)
         dog(pose=pose)
         if name == "Close-up":
-            box = R.box_object((-0.2, -0.76, 0.98), (0.2, -0.45, 1.20))
+            box = R.box_object(*MOUTH_BOX)
             R.camera([box], yaw, pitch, res, ortho=False, lens=lens, margin=1.1)
         else:
             R.camera([R.box_object(*HEAD_BOX)], yaw, pitch, res, ortho=False, lens=lens, margin=1.05)
         R.render()
 
 
-def _round2(args):
-    """Run render_round2.py (round-2 builder) with the given job."""
-    r2 = os.path.join(ROUNDS, "round2", "scripts")
-    if not os.path.isdir(r2):
-        return False
-    import json
-    job = {"mouth": [["mouth_round2_%d" % i, HEAD_BOX if n != "Close-up" else ((-0.2, -0.76, 0.98), (0.2, -0.45, 1.20)),
-                      y, p, ln, [400, 340], 1.05 if n != "Close-up" else 1.1] for i, (n, y, p, ln) in enumerate(MOUTH_VIEWS)],
-           "joins": [["join_round2_%d" % i, _join_box(rest_joint(jn), off, half), y, p, 60, [520, 460], 1.0]
-                     for i, (n, jn, off, half, y, p) in enumerate(JOIN_VIEWS)]}[args[0]]
-    subprocess.run([sys.executable, os.path.join(HERE, "render_round2.py"), r2, TMP, json.dumps(job)], check=True)
-    return True
+def before(shot, job):
+    """Render a shot's "before" tiles (stem "<prefix>_before_<i>") with the breed's own script for
+    an earlier design round, if the breed declares one (RENDER["before"][shot]) and that round's
+    builder is under DH_DOG_ROUNDS. job = [[stem, [box lo, box hi], yaw, pitch, lens (0 =
+    orthographic), [w, h], margin, pose, cut_y], ...]. Returns the row label, or None."""
+    spec = RD.get("before", {}).get(shot)
+    if not spec:
+        return None
+    rounds = os.path.join(ROUNDS, spec["rounds"])
+    if os.path.isdir(rounds):
+        import json
+        subprocess.run([sys.executable, os.path.join(ROOT, spec["script"]), rounds, TMP, json.dumps(job)], check=True)
+    return spec["label"]
 
 
 def mouth():
     mouth_tiles("open", "rest")
     mouth_tiles("closed", "closed")
-    _round2(["mouth"])
-    rows = [("open", "Round 3 - open (default pose, jaw 12 deg)"),
-            ("closed", "Round 3 - closed (jaw bone at 0, tongue hidden)"),
-            ("round2", "Round 2 - before (open)")]
+    lab = before("mouth", [["mouth_before_%d" % i, HEAD_BOX if n != "Close-up" else MOUTH_BOX,
+                            y, p, ln, [400, 340], 1.05 if n != "Close-up" else 1.1, "rest", None]
+                           for i, (n, y, p, ln) in enumerate(MOUTH_VIEWS)])
+    rows = [("open", CAP["mouth_rows"][0]), ("closed", CAP["mouth_rows"][1])] + ([("before", lab)] if lab else [])
     W, th, head_h = 1600, 340, 46
     sheet = Image.new("RGB", (W, len(rows) * (th + head_h)), BG)
     d = ImageDraw.Draw(sheet)
@@ -500,9 +509,7 @@ def mouth():
             if os.path.exists(p):
                 sheet.paste(Image.open(p).convert("RGB"), (i * 400, y + head_h))
             d.text((i * 400 + 10, y + head_h + 6), name, fill=SUB, font=font(20, True))
-    sheet = header(sheet, "Mouth - round 3",
-                   "Same mouth as round 2, now cut into the one skin: lips meet at the corners on the hinge, "
-                   "the jaw is skinned to the jaw bone.")
+    sheet = header(sheet, *CAP["mouth"])
     sheet.save(os.path.join(OUT, "mouth.png"))
 
 
@@ -518,7 +525,7 @@ def hips():
         path = os.path.join(TMP, "hips_%s_%d.png" % (pose, yaw))
         scene(path, res, samples=48)
         dog(pose=pose)
-        lo, hi = ((-0.40, 0.05, 0.0), (0.40, 0.95, 1.0)) if pose == "rest" else ((-0.40, -0.10, 0.0), (0.40, 1.25, 0.80))
+        lo, hi = RD["hips_box"][pose]
         cam = R.camera([R.box_object(lo, hi)], yaw, pitch, res, ortho=True, margin=1.06)
         R.render()
         im = Image.open(path).convert("RGB")
@@ -530,22 +537,16 @@ def hips():
     for i, im in enumerate(ims):
         sheet.paste(im, ((i % 2) * 800, (i // 2) * 600))
     d = ImageDraw.Draw(sheet)
-    notes = ["Hind leg rebuilt: the thigh angles forward and down from the hip into a rounded haunch, the stifle (knee) bends,",
-             "the lower thigh angles back to the hock, and the rear foot rises nearly vertically from the paw to the hock.",
-             "Sit (round 4): the hips drop and tilt so the rump rests on the ground; the hock and rear foot lie flat, the front paws",
-             "stay planted. Contact is measured on the skinned mesh and checked at export (see sit.png)."]
+    notes = CAP.get("hips_notes", [])
     for i, t in enumerate(notes):
         d.text((24, 1212 + i * 32), t, fill=INK if i < 2 else SUB, font=font(22))
-    sheet = header(sheet, "Hip study - hind leg (skinned), round 4 sit",
-                   "Red dots = joints: hips, hip, stifle, hock, foot (both legs), tail base.")
+    sheet = header(sheet, *CAP["hips"])
     sheet.save(os.path.join(OUT, "hips.png"))
 
 
 # ---------------------------------------------------------------------------
 # (name, joint the close-up centres on, offset from it, box half size, yaw, pitch)
-JOIN_VIEWS = [("Shoulder", "front_shoulder_L", (0.02, 0.05, -0.12), (0.24, 0.30, 0.34), -72, 6),
-              ("Hip / haunch", "back_hip_L", (0.02, 0.03, -0.16), (0.24, 0.33, 0.38), -118, 8),
-              ("Tail base", "tail_1", (0.0, 0.04, -0.06), (0.22, 0.26, 0.26), -150, 24)]
+JOIN_VIEWS = [tuple(v) for v in RD["join_views"]]
 
 
 def _join_box(centre, off, half):
@@ -570,13 +571,11 @@ def join_tiles(tag, pose):
 
 
 def joins():
-    join_tiles("r4", "rest")
-    join_tiles("r4sit", "sit")
-    _round3([["join_round3_%d" % i, _join_box(rest_joint(jn), off, half), y, p, 60, [520, 460], 1.0, "rest"]
-             for i, (n, jn, off, half, y, p) in enumerate(JOIN_VIEWS)])
-    rows = [("round3", "Before - round 3 (rest)"),
-            ("r4", "After - round 4: slimmer chest, same filleted junctions (rest)"),
-            ("r4sit", "After - round 4, bent (sit): the junctions stay smooth")]
+    join_tiles("rest", "rest")
+    join_tiles("sit", "sit")
+    lab = before("joins", [["join_before_%d" % i, _join_box(rest_joint(jn), off, half), y, p, 60, [520, 460], 1.0,
+                            "rest", None] for i, (n, jn, off, half, y, p) in enumerate(JOIN_VIEWS)])
+    rows = ([("before", lab)] if lab else []) + [("rest", CAP["joins_rows"][0]), ("sit", CAP["joins_rows"][1])]
     W, th, head_h = 1560, 460, 46
     sheet = Image.new("RGB", (W, len(rows) * (th + head_h)), BG)
     d = ImageDraw.Draw(sheet)
@@ -588,8 +587,7 @@ def joins():
             if os.path.exists(p):
                 sheet.paste(Image.open(p).convert("RGB"), (i * 520, y + head_h))
             d.text((i * 520 + 10, y + head_h + 6), name, fill=SUB, font=font(20, True))
-    sheet = header(sheet, "Joins - shoulder, hip / haunch, tail base",
-                   "Same cameras before and after. One skin: the volumes blend with a smooth minimum, then retopologise.")
+    sheet = header(sheet, *CAP["joins"])
     sheet.save(os.path.join(OUT, "joins.png"))
 
 
@@ -600,8 +598,8 @@ def sit():
     tiles = []
     views = [("rest", "Rest - side, camera at ground height", None),
              ("sit", "Sit - side, camera at ground height", None),
-             ("sit", "Sit - hind leg and haunch, ground level", ("back_hock_L", 0.60, 0.55)),
-             ("sit", "Sit - front paws, ground level", ("front_paw_L", 0.45, 0.40))]
+             ("sit", "Sit - hind leg and haunch, ground level", tuple(RD["sit_closeups"]["hind"])),
+             ("sit", "Sit - front paws, ground level", tuple(RD["sit_closeups"]["front"]))]
     meas = {}
     for i, (pose, title, box) in enumerate(views):
         path = os.path.join(TMP, "sit_%d.png" % i)
@@ -613,7 +611,7 @@ def sit():
             j = joints(dog.armature, [box[0]])[box[0]]
             lo, hi = (-0.3, j.y - box[1], 0.0), (0.3, j.y + box[1], box[2])
         else:
-            lo, hi = (-0.4, -0.95, 0.0), (0.4, 1.05, 1.62)
+            lo, hi = RD["body_box"]
         # pitch 0: the camera's optical axis is level, so the floor is seen edge-on as a line
         cam = R.camera([R.box_object((lo[0], lo[1], lo[2] - 0.06), hi)], -90, 0, res, ortho=True, margin=1.08)
         R.render()
@@ -636,43 +634,34 @@ def sit():
              "Full model (shown). export_dog.py checks the full model and the LOD: every part within 1 cm, nothing below -1 cm."]
     for i, t in enumerate(lines):
         d.text((24, 1258 + i * 36), t, fill=INK if i == 1 else SUB, font=font(24, i == 1))
-    sheet = header(sheet, "Sit - ground contact (round 4)",
-                   "Side views from a level camera at ground height; the dark line is the ground plane.")
+    sheet = header(sheet, *CAP["sit"])
     sheet.save(os.path.join(OUT, "sit.png"))
 
 
-def _round3(job):
-    """Run render_round3.py (round-3 builder and textures) with the given job."""
-    r3 = os.path.join(ROUNDS, "round3", "scripts")
-    if not os.path.isdir(r3):
-        return False
-    import json
-    subprocess.run([sys.executable, os.path.join(HERE, "render_round3.py"), r3, TMP, json.dumps(job)], check=True)
-    return True
-
-
-CHEST_VIEWS = [("Front", 0, 4, None), ("Front, section: only y < -0.08 m kept", 0, 0, -0.08),
+CHEST_VIEWS = [("Front", 0, 4, None), ("Front, section: only y < %g m kept" % RD["chest_cut_y"], 0, 0, RD["chest_cut_y"]),
                ("Side", -90, 2, None), ("Front 3/4", -35, 12, None)]
-CHEST_BOX = ((-0.42, -0.85, 0.0), (0.42, 0.30, 1.62))        # front half of the dog, rest pose
+CHEST_BOX = tuple(tuple(c) for c in RD["chest_box"])      # front half of the dog, rest pose
 
 
 def chest():
-    """Round 3 vs round 4 chest: same orthographic cameras. The cut view drops everything behind
-    a plane through the chest, so the haunches (wider than the chest) don't set the outline."""
+    """The chest from the front, in section, from the side and 3/4 (and the breed's earlier round, if
+    it has one): same orthographic cameras. The cut view drops everything behind a plane through
+    the chest, so the haunches (wider than the chest) don't set the outline."""
     res = (600, 600)        # square: Blender's ortho scale spans the longer side
     for i, (n, yaw, pitch, cut) in enumerate(CHEST_VIEWS):
-        scene(os.path.join(TMP, "chest_r4_%d.png" % i), res, samples=48)
+        scene(os.path.join(TMP, "chest_now_%d.png" % i), res, samples=48)
         dog()
         cam = R.camera([R.box_object(*CHEST_BOX)], yaw, pitch, res, ortho=True, margin=1.04)
         if cut is not None:
             cam.data.clip_end = cut - cam.location.y
         R.render()
+    lab = None
     if os.environ.get("DH_SKIP_BEFORE") != "1":
-        _round3([["chest_round3_%d" % i, CHEST_BOX, y, p, 0, list(res), 1.04, "rest", cut]
-                 for i, (n, y, p, cut) in enumerate(CHEST_VIEWS)])
-    rows = [("round3", "Before - round 3"), ("r4", "After - round 4: narrower, shallower chest")]
+        lab = before("chest", [["chest_before_%d" % i, CHEST_BOX, y, p, 0, list(res), 1.04, "rest", cut]
+                               for i, (n, y, p, cut) in enumerate(CHEST_VIEWS)])
+    rows = ([("before", lab)] if lab else []) + [("now", CAP["chest_row"])]
     head_h = 46
-    sheet = Image.new("RGB", (len(CHEST_VIEWS) * res[0], 2 * (res[1] + head_h)), BG)
+    sheet = Image.new("RGB", (len(CHEST_VIEWS) * res[0], len(rows) * (res[1] + head_h)), BG)
     d = ImageDraw.Draw(sheet)
     for r_, (tag, title) in enumerate(rows):
         y = r_ * (res[1] + head_h)
@@ -682,9 +671,7 @@ def chest():
             if os.path.exists(p):
                 sheet.paste(Image.open(p).convert("RGB"), (i * res[0], y + head_h))
             d.text((i * res[0] + 10, y + head_h + 6), n, fill=SUB, font=font(20, True))
-    sheet = header(sheet, "Chest - round 3 vs round 4",
-                   "Same orthographic cameras. Chest 0.60 -> 0.53 m wide at the shoulder, 0.60 -> 0.50 m at the ribs, "
-                   "brisket 3.6 cm higher; head, legs, height and length unchanged.")
+    sheet = header(sheet, *CAP["chest"])
     sheet.save(os.path.join(OUT, "chest.png"))
 
 

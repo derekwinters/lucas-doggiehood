@@ -30,10 +30,12 @@ import dh_dog as D
 import dh_dog_mesh as M
 import dh_dog_shape as S
 
-GRID_H = 0.012                    # field grid spacing (m)
-ORIGIN = np.array([-0.42, -0.92, -0.02])
-EXTENT = (0.84, 2.04, 1.62)
-VOXEL = 0.008                     # manifold clean-up voxel size (m)
+_G = D.B.FIELD_GRID
+GRID_H = _G["h"]                  # field grid spacing (m)
+ORIGIN = np.array(list(_G["origin"]))
+EXTENT = tuple(_G["extent"])
+VOXEL = _G["voxel"]               # manifold clean-up voxel size (m)
+ZONE = D.B.MOUTH_ZONE             # the lip cut stays within this distance below / behind the hinge
 _cache = {}
 
 
@@ -43,7 +45,7 @@ def hinge():
 
 def lip_plane():
     hy, hz = hinge()
-    d = Vector((0, -0.33, -D.LIP_DROP)).normalized()
+    d = Vector((0, -D.LIP_RUN, -D.LIP_DROP)).normalized()
     n = Vector((0, d.z, -d.y))
     if n.z < 0:
         n = -n
@@ -170,7 +172,7 @@ def mouth_cut(part, q):
         return (p - co).dot(no)
 
     def head_zone(c):
-        return c.z > hz - 0.22 and c.y < hy + 0.10
+        return c.z > hz - ZONE["below_hinge"] and c.y < hy + ZONE["behind_hinge"]
 
     # 1. the lip cut, then a cut across it at the hinge (makes the corner vertices)
     _bisect_faces(bm, lambda c: c.y < hy + 0.06 and head_zone(c), co, no)
@@ -184,7 +186,7 @@ def mouth_cut(part, q):
     eps = 1e-5
 
     def on_lip(v):
-        return abs(sd(v.co)) < eps and v.co.y <= hy + eps and v.co.z > hz - 0.22
+        return abs(sd(v.co)) < eps and v.co.y <= hy + eps and v.co.z > hz - ZONE["below_hinge"]
 
     corners = [v for v in bm.verts if on_lip(v) and abs(v.co.y - hy) < eps]
     if len(corners) != 2:
