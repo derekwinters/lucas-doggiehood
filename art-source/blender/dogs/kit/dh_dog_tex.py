@@ -58,8 +58,9 @@ TC = B.TRIM_COLOURS       # the trim palette
 STRAND = {"fine": (0.10, 0.8), "mid": (0.35, 2.0), "clump": (1.1, 3.5), "low": (6.0, 9.0),
           "mix": (0.40, 0.35, 0.35), "normal": 0.40, "contrast": 0.32}
 STRAND.update(getattr(B, "FUR_STRAND", {}))
-# Optional coat pattern: patches laid over the coat's ear/dark channel (a saddle, a mask) or
-# lightening it (an ear's inner face). A breed without FUR_PATCHES bakes exactly as before.
+# Optional coat pattern: patches laid over the coat's ear/dark channel (a saddle, a mask),
+# lightening it (an ear's inner face), or "pale" white markings over the feathering channel (a
+# blaze, white legs, a tail tip). A breed without FUR_PATCHES bakes exactly as before.
 PATCHES = list(getattr(B, "FUR_PATCHES", []))
 
 # trim palette regions (u0, v0, u1, v1) in UV space
@@ -326,7 +327,7 @@ def fur_masks(P, N, A, low=None):
     f += w["tail"] * 0.95 * _smooth(0.0, 0.5, -nz) * (0.2 + 0.8 * _smooth(*MARK["tail_tip_y"], y))
     e += w["ear"] * (1 - 0.25 * _smooth(*MARK["ear_tip_z"], z))
     if PATCHES:
-        e = _patches(P, N, w, np.clip(e, 0, 1), low)
+        f, e = _patches(P, N, w, np.clip(f, 0, 1), np.clip(e, 0, 1), low)
     return np.clip(f, 0, 1), np.clip(e, 0, 1)
 
 
@@ -336,12 +337,14 @@ def _line_z(line, y):
     return np.interp(y, ys, zs)
 
 
-def _patches(P, N, w, e, low):
-    """Apply the breed's FUR_PATCHES to the dark channel e. Each patch covers its regions' weights
-    where the surface lies above (or below) a (y, z) line, where y and z ramp over (from, to), within
+def _patches(P, N, w, f, e, low):
+    """Apply the breed's FUR_PATCHES to the feathering channel f and the dark channel e. Each patch
+    covers its regions' weights where the surface lies above (or below) a (y, z) line, where y and z ramp over (from, to), within
     |x| < x_max and where the normal's component n = (axis, from, to) ramps; its edge is `soft` m wide and moved up to
     `wobble` m by the coat's low-frequency noise. "dark" patches raise e to at least their
-    strength; "light" ones scale e down by their strength."""
+    strength; "light" ones scale e down by their strength; "pale" ones (white markings) raise f
+    to at least their strength and scale e down by it, so the marking shows over a saddle.
+    Returns (f, e); f is unchanged unless a patch is "pale"."""
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
     lo = np.zeros(len(P)) if low is None else low
     for p in PATCHES:
@@ -360,11 +363,15 @@ def _patches(P, N, w, e, low):
             ax, n0, n1 = p["n"]
             cov *= _smooth(n0, n1, N[:, "xyz".index(ax)])
         cov = np.clip(reg, 0, 1) * cov * p.get("strength", 1.0)
-        if p.get("op", "dark") == "dark":
+        op = p.get("op", "dark")
+        if op == "dark":
             e = np.maximum(e, cov)
+        elif op == "pale":
+            f = np.maximum(f, cov)
+            e = e * (1 - cov)
         else:
             e = e * (1 - cov)
-    return e
+    return f, e
 
 
 def bake_fur(texdir, prefix, size, tris):

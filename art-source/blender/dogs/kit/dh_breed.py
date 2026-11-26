@@ -42,7 +42,8 @@ REQUIRED = (
 #   FUR_STRAND   the fur strand look, any of its keys (see STRAND in dh_dog_tex.py): a short coat
 #                sets shorter, less clumped strands and a flatter normal map (../labrador/breed.py)
 #   FUR_PATCHES  dark / light patches over the coat's dark channel: a saddle, a mask
-#                (dh_dog_tex._patches; ../german-shepherd/breed.py)
+#                (dh_dog_tex._patches; ../german-shepherd/breed.py); "pale" patches lay white
+#                markings over the feathering channel and clear the dark one (../beagle/breed.py)
 # and optional keys inside required fields:
 #   EARS["side"]   the ear loft's side axis (default +Y, a hanging ear); an erect ear's width runs across
 #   EARS["swing"]  multipliers on the clips' ear rotations per world axis (an erect ear: (-x, -y, z))
