@@ -38,6 +38,9 @@ REQUIRED = (
     "COATS", "COAT_LABELS", "FUR_FLOW", "FUR_MARKINGS", "TRIM_COLOURS",
     "GAITS", "SIT_DOWN", "PLAY_BOW", "RENDER",
 )
+# optional names: a breed may leave these out and gets the kit's default (the Golden's look)
+#   FUR_STRAND   the fur strand look, any of its keys (see STRAND in dh_dog_tex.py): a short coat
+#                sets shorter, less clumped strands and a flatter normal map (../labrador/breed.py)
 _SCALARS = (bool, int, float, str, type(None))
 
 B = None        # the loaded breed module

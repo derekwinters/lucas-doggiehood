@@ -52,6 +52,12 @@ FLOW = B.FUR_FLOW        # fur flow direction per group (Blender axes), and the 
 COATS = B.COATS
 MARK = B.FUR_MARKINGS     # where feathering and ear colour start / end (authored y or z)
 TC = B.TRIM_COLOURS       # the trim palette
+# The strand look. A breed may set any of these keys in its optional FUR_STRAND field; the defaults
+# are the Golden's long coat. Per noise layer the blur across / along the strands (cm), then the
+# layer mix (fine, mid, clump), the normal-map strength and the strand light/dark contrast.
+STRAND = {"fine": (0.10, 0.8), "mid": (0.35, 2.0), "clump": (1.1, 3.5), "low": (6.0, 9.0),
+          "mix": (0.40, 0.35, 0.35), "normal": 0.40, "contrast": 0.32}
+STRAND.update(getattr(B, "FUR_STRAND", {}))
 
 # trim palette regions (u0, v0, u1, v1) in UV space
 TRIM = {
@@ -89,11 +95,13 @@ def strand_height(around_m, along_m, rng):
     """Height field for soft directional fur, x = around (U), y = along (V)."""
     w, h = max(16, int(round(around_m * PPM))), max(16, int(round(along_m * PPM)))
     px = PPM / 100.0                                       # pixels per cm
-    fine = _norm(_fft_blur(rng.standard_normal((h, w)), 0.10 * px, 0.8 * px))
-    mid = _norm(_fft_blur(rng.standard_normal((h, w)), 0.35 * px, 2.0 * px))
-    clump = _norm(_fft_blur(rng.standard_normal((h, w)), 1.1 * px, 3.5 * px))
-    low = _norm(_fft_blur(rng.standard_normal((h, w)), 6.0 * px, 9.0 * px))
-    return 0.40 * fine + 0.35 * mid + 0.35 * clump, low
+    S = STRAND
+    fine = _norm(_fft_blur(rng.standard_normal((h, w)), S["fine"][0] * px, S["fine"][1] * px))
+    mid = _norm(_fft_blur(rng.standard_normal((h, w)), S["mid"][0] * px, S["mid"][1] * px))
+    clump = _norm(_fft_blur(rng.standard_normal((h, w)), S["clump"][0] * px, S["clump"][1] * px))
+    low = _norm(_fft_blur(rng.standard_normal((h, w)), S["low"][0] * px, S["low"][1] * px))
+    a, b, c = S["mix"]
+    return a * fine + b * mid + c * clump, low
 
 
 def _normal_from_height(hgt, strength):
@@ -121,7 +129,7 @@ def coat_color(mask, coat):
     det, f, e = mask[..., 0:1], mask[..., 1:2], mask[..., 2:3]
     col = main * (1 - f) + feath * f
     col = col * (1 - e) + earc * e
-    shade = 0.84 + 0.32 * det                  # strand light/dark
+    shade = 1.0 - STRAND["contrast"] / 2 + STRAND["contrast"] * det       # strand light/dark
     col = col * shade
     # darker roots read as slightly more saturated: push warm in the dark strands
     col = col + (det - 0.5) * np.array([0.02, 0.0, -0.03])
@@ -337,7 +345,7 @@ def bake_fur(texdir, prefix, size, tris):
         grad += wg[:, None] * g
     detail = np.clip(0.5 + 0.12 * hgt + 0.06 * low, 0, 1)
     gt = grad - N * (grad * N).sum(1, keepdims=True)
-    nn = _unit(N - 0.40 / PPM * gt)
+    nn = _unit(N - STRAND["normal"] / PPM * gt)
     Tt = _unit(Tg - N * (Tg * N).sum(1, keepdims=True))
     sign = np.sign((np.cross(N, Tt) * Bg).sum(1))
     sign[sign == 0] = 1
