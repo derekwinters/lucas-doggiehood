@@ -1,0 +1,430 @@
+"""The motion clips (first pass). Each make_<clip>(rig) bakes one Blender action on the approved
+armature and returns its metadata. All clips are 30 fps, deterministic (pure functions of the
+frame number), and in place: the root never travels in X/Y.
+
+  Idle       loop   idle breathing, head look, ear twitch, tail sway
+  Walk       loop   four-beat lateral-sequence walk (LH, LF, RH, RF)
+  Run        loop   transverse gallop with a gathered suspension
+  SitDown    once   standing -> the approved SIT pose (last frame == dh_dog_rig SIT exactly)
+  SitIdle    loop   in the SIT pose: breathing, head look, ear twitch, tail sweep on the ground
+  TailWag    loop   standing happy wag: whole-rear wiggle, mouth open, panting
+  PlayBow    once   bow down (elbows near the ground, rump up, tail wagging, bounce), back up
+  LieDown    once   SIT -> lying (sphinx) rest   [optional]
+  RestIdle   loop   lying rest loop               [optional]
+"""
+import math
+
+import numpy as np
+from mathutils import Matrix, Quaternion, Vector
+
+import dh_dog as D
+import dh_dog_anim as A
+import dh_dog_gait as G
+
+TAU = 2 * math.pi
+JAW = D.JAW_REST_OPEN_DEG
+
+
+def s1(ph, k=1, off=0.0):
+    return math.sin(TAU * (k * ph - off))
+
+
+def c1(ph, k=1, off=0.0):
+    return math.cos(TAU * (k * ph - off))
+
+
+def bump(ph, at, width):
+    """Periodic smooth pulse (0..1) centred on `at`, `width` = full width (fraction of the loop)."""
+    d = ((ph - at + 0.5) % 1.0) - 0.5
+    x = d / (width / 2)
+    return 0.5 * (1 + math.cos(math.pi * x)) if abs(x) < 1 else 0.0
+
+
+def plant_all(rig, tag, k=0.85):
+    """Keep all four paws at their rest positions (flat)."""
+    for leg, r in rig.rest.items():
+        rig.solve_leg(leg, r["paw0"], 0.0, k=k, tag=tag)
+
+
+# =========================================================================== Idle
+IDLE_N = 120
+
+
+def idle_body(rig, ph, look=1.0):
+    br = s1(ph, 3)                                   # breathing: 3 breaths per 4 s
+    rig.set("spine_2", -0.5 * br)
+    rig.set("spine_3", 0.6 * br)
+    rig.set("neck", -0.3 * br)
+    # head look: left, back to centre, a little right, centre
+    yaw = look * (14 * bump(ph, 0.25, 0.36) - 9 * bump(ph, 0.72, 0.30))
+    tilt = look * (4 * bump(ph, 0.25, 0.36) + 3 * bump(ph, 0.72, 0.30))
+    rig.set("neck", -0.3 * br + 1.5 * s1(ph, 1, 0.1), 0, 0.45 * yaw)
+    rig.set("head", -tilt * 0.5, 0.6 * tilt * (1 if yaw >= 0 else -1), 0.55 * yaw)
+    rig.set("jaw", JAW + 1.0 * br)
+    # ear twitch: left ear flicks twice quickly around 55 %, right ear once at 15 %
+    tw_l = bump(ph, 0.53, 0.05) + 0.7 * bump(ph, 0.585, 0.05)
+    tw_r = bump(ph, 0.14, 0.06)
+    rig.set("ear_L_1", 4 * tw_l, -16 * tw_l, 0)
+    rig.set("ear_L_2", 0, -8 * tw_l, 0)
+    rig.set("ear_R_1", 4 * tw_r, 16 * tw_r, 0)
+    rig.set("ear_R_2", 0, 8 * tw_r, 0)
+    # tail: gentle sway, each segment lagging
+    for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+        rig.set(b, 0.8 * br if i == 0 else 0, 0, (6 - i) * s1(ph, 2, 0.06 * i))
+
+
+def make_idle(rig):
+    def pose(f):
+        ph = f / IDLE_N
+        idle_body(rig, ph)
+        rig.update()
+        plant_all(rig, "Idle f%d" % f)
+    rig.bake("Idle", IDLE_N, pose)
+    return dict(name="Idle", frames=IDLE_N, loop=True, ground_speed=0.0,
+                plants={leg: [(0, IDLE_N)] for leg in A.LEGS},
+                notes="breathing (3 per loop), head looks left then right, left ear double twitch, "
+                      "right ear twitch, tail sway (2 per loop); all four paws planted")
+
+
+# =========================================================================== Walk
+WALK_N = 30
+WALK_SPEED = 0.80
+
+
+def walk_body(rig, ph):
+    # pelvis yaws/rolls toward the hind leg in stance; the shoulders counter-rotate
+    rig.set("hips", 0.0, 2.0 * s1(ph, 1, 0.05), 3.0 * s1(ph, 1, 0.20))
+    rig.set("spine_1", 0, 0, -1.5 * s1(ph, 1, 0.20))
+    rig.set("spine_2", 0, 0, -1.5 * s1(ph, 1, 0.20))
+    rig.set("spine_3", 0.6 * c1(ph, 2, 0.05), -1.5 * s1(ph, 1, 0.45), 0)
+    # head: bobs twice per cycle (a nod against the shoulders' dip), slight counter-yaw
+    rig.set("neck", 2.0 * c1(ph, 2, 0.15), 0, 1.0 * s1(ph, 1, 0.25))
+    rig.set("head", -1.5 * c1(ph, 2, 0.15), 0, 0)
+    rig.set("jaw", JAW)
+    # ears swing a little, lagging the head
+    for s, sg in (("L", -1), ("R", 1)):
+        rig.set("ear_%s_1" % s, 3 * c1(ph, 2, 0.30), sg * 3 * c1(ph, 2, 0.30), 0)
+        rig.set("ear_%s_2" % s, 3 * c1(ph, 2, 0.38), 0, 0)
+    # tail: carried a bit higher, sways once per cycle with a travelling lag
+    for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+        rig.set(b, (10, 3, 0, 0)[i], 0, (9, 8, 7, 6)[i] * s1(ph, 1, 0.30 + 0.07 * i))
+
+
+def walk_gait(rig):
+    return G.Gait(rig, "Walk", WALK_N, WALK_SPEED,
+                  phase={"HL": 0.0, "FL": 0.22, "HR": 0.5, "FR": 0.72},
+                  duty={"HL": 0.62, "HR": 0.62, "FL": 0.64, "FR": 0.64},
+                  lift={"F": 0.075, "H": 0.06}, roll={"F": (28.0, 0.22), "H": (24.0, 0.22)},
+                  curl={"F": 40.0, "H": 18.0}, fold={"F": 30.0, "H": -14.0},
+                  center={"F": -0.02, "H": 0.0}, body=lambda ph: walk_body(rig, ph),
+                  win=1, sigma=1.2, k={"F": 0.85, "H": 0.45})
+
+
+def make_walk(rig):
+    g = walk_gait(rig)
+    g.solve_heights()
+    rig.bake("Walk", WALK_N, g.pose)
+    return dict(name="Walk", frames=WALK_N, loop=True, ground_speed=WALK_SPEED, stride_m=g.stride,
+                footfalls={k: v for k, v in g.phase.items()}, duty=g.duty, plants=g.plants(),
+                notes="four-beat lateral-sequence walk; touchdowns LH 0.00, LF 0.22, RH 0.50, RF 0.72 "
+                      "of the cycle; duty 0.62 hind / 0.64 fore")
+
+
+# =========================================================================== Run
+RUN_N = 16
+RUN_SPEED = 3.5
+
+
+def run_body(rig, ph):
+    f = c1(ph, 1, 0.95)                      # spine: +1 gathered (flexed) .. -1 stretched (extended)
+    pitch = 5.0 * c1(ph, 1, 0.22)            # nose up while the hind legs drive, down on the fore legs
+    rig.set("hips", pitch - 7.0 * f, 0, 1.5 * s1(ph, 1, 0.1))
+    for b in ("spine_1", "spine_2", "spine_3"):
+        rig.set(b, 4.5 * f, 0, 0)
+    front = pitch + 6.5 * f
+    rig.set("neck", -0.55 * front - 4.0, 0, 0)
+    rig.set("head", -0.45 * front + 2.0 * s1(ph, 1, 0.5), 0, 0)
+    rig.set("jaw", JAW + 12 + 4 * s1(ph, 1, 0.3))
+    # ears stream back and flap with the stride
+    for s, sg in (("L", -1), ("R", 1)):
+        rig.set("ear_%s_1" % s, 42 + 14 * s1(ph, 1, 0.55), sg * 10, 0)
+        rig.set("ear_%s_2" % s, 18 + 10 * s1(ph, 1, 0.65), 0, 0)
+    # tail streams out behind, waving with a travelling lag
+    for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+        rig.set(b, (26, 4, -6, -8)[i] + (5, 6, 7, 8)[i] * s1(ph, 1, 0.75 + 0.08 * i), 0,
+                (3, 3, 4, 4)[i] * s1(ph, 1, 0.2 + 0.08 * i))
+
+
+def run_gait(rig):
+    return G.Gait(rig, "Run", RUN_N, RUN_SPEED,
+                  phase={"HR": 0.0, "HL": 0.11, "FR": 0.40, "FL": 0.50},
+                  duty={"HR": 0.30, "HL": 0.30, "FR": 0.30, "FL": 0.30},
+                  lift={"F": 0.16, "H": 0.12}, roll={"F": (35.0, 0.3), "H": (30.0, 0.3)},
+                  curl={"F": 75.0, "H": 30.0}, fold={"F": 55.0, "H": -25.0},
+                  center={"F": -0.06, "H": -0.10}, body=lambda ph: run_body(rig, ph),
+                  extra_z=lambda ph: 0.035 * bump(ph, 0.90, 0.30), win=1, sigma=1.0, k={"F": 0.9, "H": 0.6},
+                  land=0.985,
+                  reach={"F": 0.965, "H": 0.95})
+
+
+def make_run(rig):
+    g = run_gait(rig)
+    g.solve_heights()
+    rig.bake("Run", RUN_N, g.pose)
+    return dict(name="Run", frames=RUN_N, loop=True, ground_speed=RUN_SPEED, stride_m=g.stride,
+                footfalls=dict(g.phase), duty=g.duty, plants=g.plants(), zoff=[round(float(z), 3) for z in g.zoff],
+                notes="transverse gallop, right-hind lead: touchdowns RH 0.00, LH 0.11, RF 0.40, LF 0.50; "
+                      "duty 0.30; gathered suspension 0.80-1.00")
+
+
+# =========================================================================== registry
+ORDER = ["Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow", "LieDown", "RestIdle"]
+
+
+def make(rig, name):
+    fn = {"Idle": make_idle, "Walk": make_walk, "Run": make_run}
+    for k in ORDER:
+        f = globals().get("make_" + k[0].lower() + "".join("_" + c.lower() if c.isupper() else c for c in k[1:]))
+        if f:
+            fn[k] = f
+    return fn[name](rig)
+
+
+# =========================================================================== Sit
+SIT_N = 54
+SIT_HIPS = None
+
+
+def sit_targets(rig):
+    """World paw targets of the approved SIT pose: {leg: (paw joint, paw pitch, lower pitch)}."""
+    rig.reset()
+    rig.apply_spec(rig.sit_spec)
+    rig.update()
+    out = {leg: rig.leg_state(leg) for leg in A.LEGS}
+    rig.reset()
+    rig.update()
+    return out
+
+
+def sit_body(rig, s, s_head=None, s_tail=None):
+    """Body bones at sit progress s (0 standing .. 1 SIT). The root drop follows the hip tilt
+    so the shoulders keep their height (the dog rocks back onto its haunches)."""
+    sp = rig.sit_spec
+    th = sp["hips"]["rot"][0] * s
+    s_head = s if s_head is None else s_head
+    s_tail = s if s_tail is None else s_tail
+    drop = -0.62 * math.sin(math.radians(-th))
+    if s >= 1.0:
+        drop = sp["root"]["loc"][2]
+    rig.root(0, 0, drop - 0.025 * math.sin(math.pi * s))
+    rig.set("hips", th)
+    rig.set("spine_3", sp["spine_3"]["rot"][0] * s)
+    rig.set("neck", sp["neck"]["rot"][0] * s_head)
+    rig.set("head", sp["head"]["rot"][0] * s_head)
+    rig.set("jaw", JAW)
+    # the tail keeps its world angle (counter to the hip tilt), lifted clear of the ground on
+    # the way down, and lands lying on the ground behind
+    t1 = sp["tail_1"]["rot"][0]
+    rig.set("tail_1", -th + (t1 + sp["hips"]["rot"][0]) * s_tail + 18 * math.sin(math.pi * s))
+    for b in ("tail_2", "tail_3"):
+        rig.set(b, sp[b]["rot"][0] * s_tail)
+
+
+def step_path(p0, p1, u, lift):
+    p = p0.lerp(p1, A.smoother(u))
+    p.z += lift * math.sin(math.pi * min(1.0, max(0.0, u)))
+    return p
+
+
+def make_sit_down(rig):
+    tg = sit_targets(rig)
+    rest = rig.rest
+    N = SIT_N
+    t0, t1 = 4, 46                     # body progress runs over these frames, then settles
+    steps = {"HL": (0.22, 0.50, 0.035), "HR": (0.34, 0.62, 0.035),
+             "FL": (0.42, 0.68, 0.05), "FR": (0.58, 0.84, 0.05)}
+
+    def pose(f):
+        if f >= N:
+            rig.apply_spec(rig.sit_spec)
+            return
+        s = A.smoother((f - t0) / (t1 - t0))
+        sh = A.smoother((f - t0 - 4) / (t1 - t0 + 2))         # head follows a little behind
+        # settle: the head finishes with a tiny nod into place
+        sit_body(rig, s, s_head=min(1.0, sh), s_tail=A.smooth((f - t0 - 6) / (t1 - t0 - 4)))
+        if f > t1:
+            rig.set("head", rig.sit_spec["head"]["rot"][0] * sh + 2.5 * math.sin(math.pi * (f - t1) / (N - t1)) ** 2)
+        rig.update()
+        for leg, (a, b, lift) in steps.items():
+            u = (s - a) / (b - a)
+            r = rest[leg]
+            pj1, pd1, ld1 = tg[leg]
+            pj = step_path(r["paw0"], pj1, u, lift)
+            k = A.smoother(u)
+            if leg[0] == "F":
+                rig.solve_leg(leg, pj, pd1 * k, lower_d=ld1 * k, tag="SitDown f%d" % f)
+            else:
+                # the rear foot lowers onto the hock as the haunches go down (follows the body)
+                kh = A.smoother((s - 0.15) / 0.85)
+                rig.solve_leg(leg, pj, pd1 * k, lower_d=ld1 * kh, tag="SitDown f%d" % f)
+
+    rig.bake("SitDown", N, pose, loop=False)
+    return dict(name="SitDown", frames=N, loop=False, ground_speed=0.0,
+                touch={N: ["haunches", "hocks", "hind_feet", "front_paws", "tail"]},
+                notes="standing -> SIT: the hips tilt and the root drops together (shoulders keep "
+                      "their height), hind paws step forward under the body, front paws step back; "
+                      "last frame is dh_dog_rig SIT exactly")
+
+
+SIT_IDLE_N = 90
+
+
+def make_sit_idle(rig):
+    tg = sit_targets(rig)
+    sp = rig.sit_spec
+    N = SIT_IDLE_N
+
+    def pose(f):
+        ph = f / N
+        rig.apply_spec(sp)
+        br = s1(ph, 2)                                  # two breaths per loop
+        rig.set("spine_2", -0.6 * br)
+        rig.set("spine_3", sp["spine_3"]["rot"][0] + 0.8 * br)
+        yaw = 12 * bump(ph, 0.30, 0.34) - 8 * bump(ph, 0.75, 0.26)
+        rig.set("neck", sp["neck"]["rot"][0] - 0.4 * br, 0, 0.45 * yaw)
+        rig.set("head", sp["head"]["rot"][0], 0, 0.55 * yaw)
+        rig.set("jaw", JAW + 1.2 * br)
+        tw = bump(ph, 0.55, 0.05)
+        rig.set("ear_R_1", 4 * tw, 16 * tw, 0)
+        rig.set("ear_R_2", 0, 8 * tw, 0)
+        tl = bump(ph, 0.08, 0.05) + 0.6 * bump(ph, 0.13, 0.04)
+        rig.set("ear_L_1", 3 * tl, -12 * tl, 0)
+        rig.update()
+        # tail: a lazy sweep along the ground (about the vertical through its root)
+        rig.turn_world("tail_1", (0, 0, 1), 10 * s1(ph, 1))
+        rig.update()
+        rig.turn_world("tail_2", (0, 0, 1), 6 * s1(ph, 1, 0.08))
+        rig.update()
+        for leg in ("FL", "FR"):
+            pj, pd, ld = tg[leg]
+            rig.solve_leg(leg, pj, pd, lower_d=ld, tag="SitIdle f%d" % f)
+
+    rig.bake("SitIdle", N, pose)
+    return dict(name="SitIdle", frames=N, loop=True, ground_speed=0.0,
+                plants={leg: [(0, N)] for leg in A.LEGS},
+                touch={0: ["haunches", "hocks", "hind_feet", "front_paws", "tail"],
+                       N // 4: ["haunches", "hocks", "hind_feet", "front_paws", "tail"],
+                       3 * N // 4: ["haunches", "hocks", "hind_feet", "front_paws", "tail"]},
+                notes="the SIT pose with 2 breaths, a head look left then right, ear twitches and a "
+                      "lazy tail sweep along the ground; paws stay planted")
+
+
+# =========================================================================== Tail wag
+WAG_N = 30          # 1 s: three full wags
+
+
+def make_tail_wag(rig):
+    N = WAG_N
+
+    def pose(f):
+        ph = f / N
+        w = s1(ph, 3)                                   # the wag
+        w2 = s1(ph, 3, 0.10)                            # the rear follows a little later
+        # whole-rear wiggle: the hips swing opposite the tail, the chest counters so the head
+        # stays fairly steady; a small bounce on every wag
+        rig.set("hips", 1.2 * c1(ph, 6), 2.5 * w2, -7.0 * w2)
+        rig.set("spine_1", 0, 0, 4.0 * w2)
+        rig.set("spine_2", 0, -1.2 * w2, 2.0 * w2)
+        rig.set("spine_3", -0.8 * c1(ph, 6), 0, 0.6 * w2)
+        rig.root(0, 0, -0.016 - 0.006 * c1(ph, 6))
+        # happy face: mouth open, panting; head tilted a touch; ears back and bouncing
+        rig.set("neck", -4 + 1.5 * c1(ph, 6, 0.1), 0, -1.5 * w2)
+        rig.set("head", 3 + 1.0 * c1(ph, 6, 0.2), 4.0, 0)
+        rig.set("jaw", JAW + 18 + 3.0 * s1(ph, 6))      # max 33 deg: the side webs cover 34
+        for sd, sg in (("L", -1), ("R", 1)):
+            rig.set("ear_%s_1" % sd, 14 + 4 * c1(ph, 6, 0.25), sg * (8 + 3 * c1(ph, 6, 0.25)), 0)
+            rig.set("ear_%s_2" % sd, 6 + 4 * c1(ph, 6, 0.35), 0, 0)
+        # tail: up and wagging hard, each segment lagging (whip)
+        for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+            rig.set(b, (34, 8, 2, 0)[i], 0, (24, 16, 14, 12)[i] * s1(ph, 3, 0.04 * i))
+        rig.update()
+        plant_all(rig, "TailWag f%d" % f)
+
+    rig.bake("TailWag", N, pose)
+    return dict(name="TailWag", frames=N, loop=True, ground_speed=0.0,
+                plants={leg: [(0, N)] for leg in A.LEGS},
+                notes="standing happy wag: 3 wags per second, hips swing opposite the tail with a "
+                      "bounce per wag, mouth open and panting, ears back; paws planted")
+
+
+# =========================================================================== Play bow
+BOW_N = 84          # 2.8 s: down 0.6 s, hold + bounce 1.4 s, up 0.6 s, settle
+
+
+def bow_body(rig, b, ph, bounce):
+    """b = bow amount 0..1; bounce = small chest bounce (degrees)."""
+    rig.set("hips", 27 * b + bounce, 0, 0)
+    rig.set("spine_1", 2 * b)
+    rig.set("spine_2", 5 * b + 0.5 * bounce)
+    rig.set("spine_3", 4 * b)
+    rig.root(0, 0, 0.03 * b)
+    # head up and forward, looking at the playmate; mouth open
+    rig.set("neck", -30 * b - bounce, 0, 0)
+    rig.set("head", -12 * b - 0.5 * bounce, 7 * b, 0)
+    rig.set("jaw", JAW + 14 * b)
+    for sd, sg in (("L", -1), ("R", 1)):
+        rig.set("ear_%s_1" % sd, -6 * b + 3 * bounce, sg * 6 * b, 0)
+        rig.set("ear_%s_2" % sd, 2 * bounce, 0, 0)
+
+
+def make_play_bow(rig):
+    N = BOW_N
+    down0, down1, up0, up1 = 2, 20, 62, 80
+
+    def amount(f):
+        return A.smoother((f - down0) / (down1 - down0)) * (1 - A.smoother((f - up0) / (up1 - up0)))
+
+    def pose(f):
+        ph = f / N
+        b = amount(f)
+        hold = A.smooth((f - down1 + 2) / 6) * (1 - A.smooth((f - up0 + 2) / 6))
+        bounce = -3.0 * hold * math.sin(TAU * (f - down1) / 14.0) ** 2
+        bow_body(rig, b, ph, bounce)
+        # tail high and wagging (faster while bowed)
+        amp = (0.25 + 0.75 * b) * A.smooth(f / 8.0) * (1 - A.smooth((f - (N - 9)) / 8.0))
+        for i, t in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+            rig.set(t, (20, 10, 6, 2)[i] * b, 0, (22, 16, 12, 10)[i] * math.sin(TAU * (f / 10.0 - 0.04 * i)) * amp)
+        rig.update()
+        # hind paws planted
+        for leg in ("HL", "HR"):
+            rig.solve_leg(leg, rig.rest[leg]["paw0"], 0.0, k=0.6, tag="PlayBow f%d" % f)
+        # front: the forearms lie forward along the ground (elbow just above it), paws flat in
+        # front; the paws slap forward on the way down and hop back on the way up
+        for leg in ("FL", "FR"):
+            r = rig.rest[leg]
+            J0 = rig.joint(A.LEGS[leg][0])
+            L = r["L"]
+            ez = 0.115                           # elbow joint height when fully down
+            dz = max(0.0, J0.z - ez)
+            ey = J0.y + math.sqrt(max(L[0] ** 2 - dz ** 2, 0.0))
+            wz = 0.095
+            wy = ey - math.sqrt(max(L[1] ** 2 - (ez - wz) ** 2, 0.0))
+            low_d = -70.0                        # pastern turned forward, near horizontal
+            a2 = r["ph"][2] + low_d
+            pj_bow = Vector((r["x"], wy + L[2] * math.cos(math.radians(a2)), wz + L[2] * math.sin(math.radians(a2))))
+            pj_bow.z = max(pj_bow.z, r["paw0"].z)
+            pj_bow.y = min(pj_bow.y, r["paw0"].y)
+            off = 0.0 if leg == "FL" else 0.04
+            u_dn = A.smoother((f - down0 - 2 - off * 50) / (down1 - down0 - 6))
+            u_up = A.smoother((f - up0 - off * 50) / (up1 - up0 - 4))
+            u = u_dn * (1 - u_up)
+            pj = r["paw0"].lerp(pj_bow, u)
+            hop = math.sin(math.pi * u_dn) if u_up <= 0 else math.sin(math.pi * u_up)
+            pj.z += 0.05 * hop
+            rig.solve_leg(leg, pj, 0.0, lower_d=low_d * u if u > 0 else None, k=0.85, tag="PlayBow f%d" % f)
+
+    rig.bake("PlayBow", N, pose, loop=False)
+    return dict(name="PlayBow", frames=N, loop=False, ground_speed=0.0,
+                plants={"HL": [(0, N)], "HR": [(0, N)]},
+                notes="front end drops (forearms along the ground, elbows just above it), rump up, "
+                      "tail high and wagging, a few chest bounces, then back up to standing")

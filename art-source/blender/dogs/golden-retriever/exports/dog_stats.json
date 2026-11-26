@@ -1,0 +1,388 @@
+{
+ "name": "Golden Retriever (adult) concept, round 4",
+ "units": "metres, Blender axes (front -Y, up +Z); glTF files are Y-up (front +Z)",
+ "files": {
+  "dog_golden_default.gltf": {
+   "tris": 3892,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_default_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25515,
+   "bin_bytes": 166296
+  },
+  "dog-golden-viewer.glb": {
+   "tris": 3892,
+   "errors": [],
+   "bytes": 1748020
+  },
+  "dog_golden_light.gltf": {
+   "tris": 3892,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Light",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_light_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25507,
+   "bin_bytes": 166296
+  },
+  "dog_golden_dark.gltf": {
+   "tris": 3892,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Dark",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_dark_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25503,
+   "bin_bytes": 166296
+  },
+  "dog_golden_lod1.gltf": {
+   "tris": 1430,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_lod1_default_color.png",
+    "../textures/dog_fur_lod1_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25746,
+   "bin_bytes": 75732
+  }
+ },
+ "budget": {
+  "full": 4000,
+  "lod1": 1500
+ },
+ "sit_contact_m": {
+  "full": {
+   "haunches": 0.0016,
+   "hocks": 0.0007,
+   "hind_feet": -0.0,
+   "front_paws": -0.0009,
+   "tail": -0.0,
+   "lowest": -0.0009,
+   "lowest_any_part": -0.0009
+  },
+  "lod1": {
+   "haunches": 0.0031,
+   "hocks": 0.0098,
+   "hind_feet": 0.0034,
+   "front_paws": -0.001,
+   "tail": 0.0039,
+   "lowest": -0.001,
+   "lowest_any_part": -0.001
+  }
+ },
+ "full": {
+  "total_tris": 3892,
+  "size_xyz_m": [
+   0.738,
+   1.944,
+   1.585
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 1560,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 362,
+    "2": 402,
+    "3": 465,
+    "4": 331
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_golden_body",
+    "tris": 3076,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_golden_tongue",
+    "tris": 96,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_golden_ear_L",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_golden_eye_L",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_golden_ear_R",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_golden_eye_R",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_golden_nose",
+    "tris": 80,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_golden_collar",
+    "tris": 176,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "measurements_m": {
+  "nose_to_rump": 1.49,
+  "nose_to_tail_tip": 1.944,
+  "top_of_head": 1.585,
+  "width_incl_ears": 0.738,
+  "back_height": 1.034,
+  "in_game_stand_in_wlh": [
+   1.26,
+   1.5,
+   1.58
+  ]
+ },
+ "lod1": {
+  "total_tris": 1430,
+  "size_xyz_m": [
+   0.738,
+   1.939,
+   1.587
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 508,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 161,
+    "2": 174,
+    "3": 110,
+    "4": 63
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_golden_body_lod1",
+    "tris": 988,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_golden_tongue_lod1",
+    "tris": 48,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_golden_ear_L_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_golden_eye_L_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_golden_ear_R_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_golden_eye_R_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_golden_nose_lod1",
+    "tris": 36,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_golden_collar_lod1",
+    "tris": 110,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "textures": {
+  "dog_fur_dark_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 562626
+  },
+  "dog_fur_default_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 630069
+  },
+  "dog_fur_light_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 654673
+  },
+  "dog_fur_lod1_dark_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 197372
+  },
+  "dog_fur_lod1_default_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 218297
+  },
+  "dog_fur_lod1_light_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 226134
+  },
+  "dog_fur_lod1_mask.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 246530
+  },
+  "dog_fur_lod1_normal.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 296584
+  },
+  "dog_fur_mask.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 713554
+  },
+  "dog_fur_normal.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 926268
+  },
+  "dog_trim_color.png": {
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 6954
+  }
+ },
+ "skeleton": "dog_golden_skeleton.json",
+ "all_checks_ok": true
+}
