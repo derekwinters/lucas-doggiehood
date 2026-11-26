@@ -232,6 +232,16 @@ the clip.
 > **Invariant:** on every frame of every clip, skinned, nothing goes more than 1 cm below the
 > ground, and a planted paw stays within 1 cm of it and slides less than 1 cm against it.
 
+**Tail Wag moves only the tail.** The tail whips side to side three times a second, each segment
+lagging the one before; the body stands still (the hips and spine follow it by about a degree, and
+it does not bounce) while the dog pants with its mouth open and ears back. The kit's invariant
+"the wag lives in the tail" is in `../README.md`.
+
+> **How the spec is changing (#895).** The approved Tail Wag used to wiggle the whole rear: the
+> hips swung ±7° opposite the tail, the spine counter-swayed and the body bounced about 1 cm on
+> every wag → now only the tail moves (a touch wider than before) and the body stands still →
+> because Derek found the body shook far too much: "Mostly just the tail should move."
+
 Lie-down (`LieDown`, `RestIdle`) is not part of this; the kit's `dh_dog_clips.py` lists them as optional
 and does not build them.
 
@@ -262,7 +272,8 @@ the file's own skinned mesh matching Blender's within 2 mm). Two runs give byte-
 It also writes `motion/viewer/dog_anim.json`, a self-contained copy for a web viewer, which is
 git-ignored. `video` and `sheet` (`kit/render_motion.py`) write into `motion/review/` by default; renders are not
 byte-reproducible, and the committed videos and sheets are the approved originals with only the
-C2PA metadata removed (videos remuxed with the stream copied, PNG metadata chunk dropped; see PNG metadata above).
+C2PA metadata removed (videos remuxed with the stream copied, PNG metadata chunk dropped; see PNG metadata above),
+except `tailwag.mp4`, re-rendered for the calmer wag (#895).
 
 **Rough spots** (from `motion-contact.txt`; all within the 1 cm limits):
 
