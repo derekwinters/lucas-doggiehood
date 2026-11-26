@@ -12,6 +12,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
 | `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
+| `beagle/` | The approved Beagle (#905): `breed.py`, its outputs (tricolour default and lemon-and-white light coats), and `render_compare.py` (beside the Lab and the Shepherd) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
