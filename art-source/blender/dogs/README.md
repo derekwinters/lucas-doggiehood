@@ -11,6 +11,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
+| `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
