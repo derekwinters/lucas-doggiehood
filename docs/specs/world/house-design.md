@@ -122,6 +122,8 @@ Pavers 8 cm tall, directly behind the garage at the garage's patio attach point.
 
 > **How the spec is changing ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)).** This page used to list the garage model, the ranch rebuild and the patio's size with the garage as Open, and its clearances used the concept addition → it now says the garage and the garage-less ranch are built as reference assets, the patio is as wide as the garage (3.5 × 5.5 m), and the clearances below are measured with the garage → because Derek approved the garage concept as shown.
 
+**Pieces are fitted per base.** The garage's roof pitch and wall height and the deck's stair position are solved for each base, so each piece is exported once per base (`piece-garage-base-NN.glb` and the same for the deck and patio) rather than as one shared model ([#780](https://github.com/derekwinters/lucas-doggiehood/issues/780)).
+
 **Invariant — a piece attaches only at an attach point its house declares.** The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.
 
 **Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above. **The driveway is not part of the garage piece's footprint**, so this invariant applies to the garage in full; the driveway is a ground surface owned by [#803](https://github.com/derekwinters/lucas-doggiehood/issues/803) and [#810](https://github.com/derekwinters/lucas-doggiehood/issues/810) ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
@@ -130,7 +132,9 @@ Pavers 8 cm tall, directly behind the garage at the garage's patio attach point.
 
 ## Colour schemes
 
-Every house is painted in one of **12 realistic colour schemes** ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)), defined once as data in `art-source/blender/colour-schemes.json`. A base and its pieces paint only through the scheme's slots, so pieces always match their house.
+Every house is painted in one of **12 realistic colour schemes** ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)), defined once as data in `art-source/blender/colour-schemes.json`. A base and its pieces paint only through the scheme's slots, so pieces always match their house. **In the game, exports carry one material per scheme slot and Unity repaints them from the house's scheme**; roofs use a neutral texture tinted by the scheme's roof colour ([#906](https://github.com/derekwinters/lucas-doggiehood/issues/906)).
+
+> **How the spec is changing ([#906](https://github.com/derekwinters/lucas-doggiehood/issues/906)).** How schemes are applied in Unity used to be Open (by material slot or by one export per scheme) → it is now by named material slot, repainted by Unity from `colour-schemes.json` → because Derek agreed on 2026-11-26; one export per scheme would multiply every model by 12.
 
 | Slot | Paints |
 |---|---|
@@ -210,7 +214,6 @@ All 4 starting lots are corner lots with the same envelope. These are the cleara
 Besides those marked above:
 
 - **Fence connectors, walkway and yard trees** around the bigger house, including where the side-fence connector meets a garage or the farmhouse's wrap porch ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
-- **Applying schemes in Unity**, by material slot or by export per scheme, and the roof textures ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 - **Axis convention** between Blender and the game's model yaw ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 
 ## Build checklist
