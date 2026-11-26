@@ -25,7 +25,8 @@ to 1; eyes / nose / collar / tongue parented to their bones; no animations;
 the skinned default pose (computed from the file) stands on the ground and
 matches Blender's own deformed mesh; triangle budget met; in the "sit" pose the
 lowest skinned vertex of the rump/haunches, hocks, hind feet, front paws and tail
-is within 1 cm of z = 0 and nothing goes more than 1 cm below it (printed, and
+is within 1 cm of z = 0 (a tail carried in the sit, SIT_POSE["tail_on_ground"] False, must
+instead be at least 1 cm above it) and nothing goes more than 1 cm below it (printed, and
 stored in dog_stats.json as sit_contact_m).
 Exits non-zero on any failure.
 """
@@ -206,11 +207,7 @@ def sit_contact(parts):
     c["lowest_any_part"] = float(every[:, 2].min())
     RG.apply_pose(arm, parts, "rest")
     c = {k: round(v, 4) for k, v in c.items()}
-    errs = ["sit: %s at z=%+.4f (more than %.0f cm off the ground)" % (k, v, SIT_TOL * 100)
-            for k, v in c.items() if k in RG.CONTACT_GROUPS and abs(v) > SIT_TOL]
-    errs += ["sit: %s at z=%+.4f sinks below the ground" % (k, v)
-             for k, v in c.items() if k.startswith("lowest") and v < -SIT_TOL]
-    return c, errs
+    return c, RG.sit_contact_errors(c, SIT_TOL)
 
 
 def weight_stats(W):

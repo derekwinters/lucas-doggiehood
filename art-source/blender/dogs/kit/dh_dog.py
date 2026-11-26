@@ -440,12 +440,15 @@ def collar_part(q, bvh):
     tilt = (Vector((0, rows[i + 1][0], rows[i + 1][1])) - Vector((0, rows[i - 1][0], rows[i - 1][1]))).normalized()
     b = tilt.cross(X).normalized()
     n = q["collar_seg"]
+    # the rays that find the skin start this far out (the optional COLLAR["ray"]; default 0.6 m):
+    # nearer, so a tail curled over the back is not the first thing they meet
+    out = C.get("ray", 0.6)
     rings, tangents = [], []
     surf = []
     for k in range(n):
         th = 2 * math.pi * k / n
         d = (X * math.cos(th) + b * math.sin(th)).normalized()
-        hit = bvh.ray_cast(c + d * 0.6, -d)[0]
+        hit = bvh.ray_cast(c + d * out, -d)[0]
         if hit is None:
             hit = c + d * 0.2
         surf.append(hit)
@@ -458,7 +461,7 @@ def collar_part(q, bvh):
     p.loft(rings, q["collar_x"], tilt, _remap("collar"), SOFT, closed=True, tangents=tangents)
     th = -math.pi / 2
     d = (X * math.cos(th) + b * math.sin(th)).normalized()
-    hit = bvh.ray_cast(c + d * 0.6, -d)[0] or (c + d * 0.2)
+    hit = bvh.ray_cast(c + d * out, -d)[0] or (c + d * 0.2)
     throat = hit + d * C["tag_out"] + Vector((0, 0, -C["tag_drop"]))
     tr = C["tag_radii"]
     p.ellipsoid(throat, tr[0], tr[1], tr[0], q["tag_n"], 3, d, X, _remap("tag"), GLOSS, e=2.0)

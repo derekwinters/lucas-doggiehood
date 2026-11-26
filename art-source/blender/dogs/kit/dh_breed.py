@@ -44,11 +44,19 @@ REQUIRED = (
 #   FUR_PATCHES  dark / light patches over the coat's dark channel: a saddle, a mask
 #                (dh_dog_tex._patches; ../german-shepherd/breed.py); "pale" patches lay white
 #                markings over the feathering channel and clear the dark one (../beagle/breed.py)
+#   TAIL_SWING   multipliers on the clips' tail rotations per world axis (Idle, Walk, Run, TailWag,
+#                PlayBow and the "wag" test pose; not the sit): a tail curled over the back drops
+#                the lifts that would drive it into the back (../puggle/breed.py)
 # and optional keys inside required fields:
 #   EARS["side"]   the ear loft's side axis (default +Y, a hanging ear); an erect ear's width runs across
 #   EARS["swing"]  multipliers on the clips' ear rotations per world axis (an erect ear: (-x, -y, z))
 #   SIT_DOWN["tail_lift"], SIT_DOWN["tail_lag"]  how far the tail swings clear on the way down
 #                (default 18 deg) and how many frames it trails the hips (default 6)
+#   SIT_POSE["tail_on_ground"]  False: the tail is carried in the sit (a curled tail) instead of
+#                lying on the ground: it leaves the sit's contact groups and must stay 1 cm clear of
+#                the ground; SIT["tail"] is then chosen, not solved (default True)
+#   COLLAR["ray"]  how far out the collar's rays start when they find the skin (default 0.6 m): nearer
+#                when a tail curled over the back would be the first thing they meet
 _SCALARS = (bool, int, float, str, type(None))
 
 B = None        # the loaded breed module

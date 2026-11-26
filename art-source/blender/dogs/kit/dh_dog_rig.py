@@ -348,11 +348,21 @@ def poses(sit_params=None):
             sit["back_%s_%s" % (n, s)] = dict(rot=(d, 0, 0))
     P["sit"] = sit
     P["wag"] = {"jaw": dict(rot=(D.JAW_REST_OPEN_DEG + 20, 0, 0)),
-                "tail_1": dict(rot=(8, 0, 14)), "tail_2": dict(rot=(6, 0, 12)), "tail_3": dict(rot=(5, 0, 10)),
-                "tail_4": dict(rot=(3, 0, 8)),
+                "tail_1": dict(rot=tail_swing("tail_1", 8, 0, 14)), "tail_2": dict(rot=tail_swing("tail_2", 6, 0, 12)),
+                "tail_3": dict(rot=tail_swing("tail_3", 5, 0, 10)), "tail_4": dict(rot=tail_swing("tail_4", 3, 0, 8)),
                 "ear_L_1": dict(rot=(0, -40, 0)), "ear_L_2": dict(rot=(0, -18, 0)),
                 "neck": dict(rot=(0, 0, -6)), "head": dict(rot=(0, 0, -6))}
     return P
+
+
+def tail_swing(bone, rx, ry, rz):
+    """A tail rotation from the clips scaled by the breed's optional TAIL_SWING (per world axis):
+    the clips are written for a tail carried out behind, and a tail curled over the back would be
+    driven into the back by their lifts. Only tail_1..tail_4; without TAIL_SWING, unchanged."""
+    sw = getattr(B, "TAIL_SWING", None)
+    if sw is None or not bone.startswith("tail_"):
+        return rx, ry, rz
+    return rx * sw[0], ry * sw[1], rz * sw[2]
 
 
 def ear_swing(bone, rx, ry, rz):
@@ -396,6 +406,22 @@ CONTACT_GROUPS = {
     "front_paws": ("front_paw_L", "front_paw_R"),
     "tail": ("tail_2", "tail_3", "tail_4"),
 }
+# The groups that must rest on the ground in the sit. A breed whose tail is carried in the sit
+# (SIT_POSE["tail_on_ground"] False: a tail curled over the back) leaves the tail out; the sit
+# check then requires the tail to stay clear of the ground instead.
+TAIL_ON_GROUND = B.SIT_POSE.get("tail_on_ground", True)
+SIT_TOUCH = [g for g in CONTACT_GROUPS if TAIL_ON_GROUND or g != "tail"]
+
+
+def sit_contact_errors(c, tol):
+    """The sit check's failures for measured contacts c ({group: lowest z}, plus "lowest*" keys)."""
+    errs = ["sit: %s at z=%+.4f (more than %.0f cm off the ground)" % (k, v, tol * 100)
+            for k, v in c.items() if k in SIT_TOUCH and abs(v) > tol]
+    if not TAIL_ON_GROUND and "tail" in c and c["tail"] < tol:
+        errs.append("sit: tail at z=%+.4f (carried, but within %.0f cm of the ground)" % (c["tail"], tol * 100))
+    errs += ["sit: %s at z=%+.4f sinks below the ground" % (k, v)
+             for k, v in c.items() if k.startswith("lowest") and v < -tol]
+    return errs
 
 
 def contacts(body, W):
