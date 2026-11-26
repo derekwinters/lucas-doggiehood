@@ -10,6 +10,12 @@ breed per process) and measures, over every frame of the loop:
   - each torso bone's (hips, spine_1-3) peak-to-peak world rotation, in degrees,
   - the root's peak-to-peak height, in metres (the body bounce),
   - tail_1's peak-to-peak world rotation and the tail tip's side-to-side sweep.
+
+The face and breathing are as gentle as standing Idle's (#895 follow-up: "Keep the body movement
+simple, almost as subtle as when it's just standing"). Both clips are baked and, per bone, their
+local rotations compared: the jaw opens no wider and swings no more than in Idle, and no breathing
+or face bone (jaw, neck, head, chest, ears) moves faster per frame than it does in Idle. So no
+fast, heavy panting.
 Nothing is written into the repository.
 """
 import importlib.util
@@ -30,6 +36,10 @@ TORSO_TAIL_FRACTION = 0.05   # ... and at most this fraction of tail_1's own swi
 ROOT_MAX_BOUNCE_M = 0.001    # peak-to-peak root height: no bounce
 TAIL_MIN_DEG = 35.0          # tail_1 still swings at least as hard as before (#895)
 TAIL_TIP_MIN_SWEEP_M = 0.50  # and the tip sweeps wide side to side
+
+FACE = ("jaw", "neck", "head", "spine_2", "spine_3", "ear_L_1", "ear_R_1")
+JAW_TOL_DEG = 0.5            # the jaw opens / swings at most this much more than in Idle
+RATE_TOL_DEG = 0.1           # per frame, a face or breathing bone moves at most this much faster
 
 
 def measure(breed):
@@ -63,9 +73,31 @@ def measure(breed):
                 worst = max(worst, min(d, 360 - d))
         return worst
 
-    return dict(rot_p2p_deg={b: p2p_deg(q) for b, q in rots.items()},
-                root_bounce_m=max(root_z) - min(root_z),
-                tail_tip_sweep_m=max(tip_x) - min(tip_x))
+    def face(clip, frames):
+        """Per FACE bone: local rotation peak to peak, max per-frame change (deg); jaw opening."""
+        act = bpy.data.actions[clip]
+        q = {b: [] for b in FACE}
+        for f in range(frames + 1):
+            rig.play(act, f)
+            for b in FACE:
+                q[b].append(rig.arm.pose.bones[b].rotation_quaternion.copy())
+        rig.arm.animation_data.action = None
+
+        def ang(a, b):
+            d = math.degrees(a.rotation_difference(b).angle)
+            return min(d, 360 - d)
+        jaw = [math.degrees(x.angle) for x in q["jaw"]]
+        return dict(p2p_deg={b: p2p_deg(v) for b, v in q.items()},
+                    rate_deg_per_frame={b: max(ang(v[i], v[i + 1]) for i in range(frames)) for b, v in q.items()},
+                    jaw_open_deg=[min(jaw), max(jaw)])
+
+    out = dict(rot_p2p_deg={b: p2p_deg(q) for b, q in rots.items()},
+               root_bounce_m=max(root_z) - min(root_z),
+               tail_tip_sweep_m=max(tip_x) - min(tip_x),
+               face_wag=face("TailWag", meta["frames"]))
+    idle = C.make_idle(rig)
+    out["face_idle"] = face("Idle", idle["frames"])
+    return out
 
 
 def has_bpy():
@@ -98,6 +130,17 @@ class WagLivesInTheTail(unittest.TestCase):
     def test_tail_still_wags_hard(self):
         self.assertGreaterEqual(self.m["rot_p2p_deg"]["tail_1"], TAIL_MIN_DEG)
         self.assertGreaterEqual(self.m["tail_tip_sweep_m"], TAIL_TIP_MIN_SWEEP_M)
+
+    def test_mouth_no_wider_than_idle(self):
+        wag, idle = self.m["face_wag"], self.m["face_idle"]
+        self.assertLessEqual(wag["jaw_open_deg"][1], idle["jaw_open_deg"][1] + JAW_TOL_DEG)
+        self.assertLessEqual(wag["p2p_deg"]["jaw"], idle["p2p_deg"]["jaw"] + JAW_TOL_DEG)
+
+    def test_face_and_breathing_no_faster_than_idle(self):
+        wag, idle = self.m["face_wag"]["rate_deg_per_frame"], self.m["face_idle"]["rate_deg_per_frame"]
+        for b in FACE:
+            self.assertLessEqual(wag[b], idle[b] + RATE_TOL_DEG,
+                                 "%s moves %.3f deg/frame, Idle %.3f" % (b, wag[b], idle[b]))
 
 
 if __name__ == "__main__":

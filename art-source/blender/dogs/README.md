@@ -155,12 +155,16 @@ DH_REBUILDS=20 python3 -m unittest art-source/blender/dogs/kit/tests/test_rebuil
 > **Invariant — the wag lives in the tail (#895).** During TailWag the torso stays essentially
 > still: only the tail chain swings side to side. The hips and spine may follow with at most a
 > small fraction of the tail's motion (each torso bone under 2° peak to peak, and under 5% of
-> `tail_1`'s swing), and the body does not bounce (the root's height varies by under 1 mm). The
-> happy face (open mouth, panting, ears back) may keep a small head and neck bob.
+> `tail_1`'s swing), and the body does not bounce (the root's height varies by under 1 mm).
+>
+> **Invariant — a wag is not a pant (#895).** During TailWag the face and breathing are as
+> gentle as standing Idle's: the jaw opens no wider and swings no more than in Idle (within 0.5°),
+> and no breathing or face bone (jaw, neck, head, chest, ears) moves faster per frame than in Idle
+> (within 0.1° per frame).
 
-`kit/tests/test_tail_wag.py` (about 20 s, needs `bpy`) bakes TailWag on the Golden's rig and
-enforces this, and that the tail still swings at least as hard as before (`tail_1` over 35° peak
-to peak, the tip sweeping over 0.5 m):
+`kit/tests/test_tail_wag.py` (about 40 s, needs `bpy`) bakes TailWag and Idle on the Golden's rig
+and enforces both invariants. It also checks that the tail still swings at least as hard as
+before (`tail_1` over 35° peak to peak, the tip sweeping over 0.5 m):
 
 ```
 python3 art-source/blender/dogs/kit/tests/test_tail_wag.py

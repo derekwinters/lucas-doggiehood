@@ -234,13 +234,18 @@ the clip.
 
 **Tail Wag moves only the tail.** The tail whips side to side three times a second, each segment
 lagging the one before; the body stands still (the hips and spine follow it by about a degree, and
-it does not bounce) while the dog pants with its mouth open and ears back. The kit's invariant
-"the wag lives in the tail" is in `../README.md`.
+it does not bounce). The face and breathing are as calm as in Idle: one gentle breath a second, the
+mouth as open as Idle's, the head held up and tilted a touch, the ears held back. The kit's
+invariants, "the wag lives in the tail" and "a wag is not a pant", are in `../README.md`.
 
 > **How the spec is changing (#895).** The approved Tail Wag used to wiggle the whole rear: the
 > hips swung ±7° opposite the tail, the spine counter-swayed and the body bounced about 1 cm on
 > every wag → now only the tail moves (a touch wider than before) and the body stands still →
 > because Derek found the body shook far too much: "Mostly just the tail should move."
+> It also used to pant hard: the mouth opened to about 33° and bobbed six times a second with the
+> head, neck and ears → now the mouth, breathing, head and ears move as gently as in Idle →
+> because Derek found it "still panting really heavily" and asked to "keep the body movement
+> simple, almost as subtle as when it's just standing."
 
 Lie-down (`LieDown`, `RestIdle`) is not part of this; the kit's `dh_dog_clips.py` lists them as optional
 and does not build them.

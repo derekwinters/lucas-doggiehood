@@ -150,7 +150,7 @@
    "fps": 30,
    "duration_s": 1.0,
    "ground_speed_mps": 0.0,
-   "notes": "standing happy wag: 3 wags per second, the tail whips side to side while the body stands still (the hips and spine follow by about a degree, no bounce), mouth open and panting, ears back; paws planted",
+   "notes": "standing happy wag: 3 wags per second, the tail whips side to side while the body stands still (the hips and spine follow by about a degree, no bounce), calm breathing and mouth as in Idle, head up, ears back; paws planted",
    "check": {
     "clip": "TailWag",
     "frames": 30,
