@@ -178,6 +178,14 @@ Decided on [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789):
 - **Front to back:** the base's **front line** sits at the front setback.
 - **Nothing moves when a piece is added.** This replaces today's fixed lot anchor (`NeighborhoodLayout.LotDistanceFromCenter` = 14 m) and the per-level re-alignment of [#454](https://github.com/derekwinters/lucas-doggiehood/issues/454).
 
+**A fence needs a garage ([#907](https://github.com/derekwinters/lucas-doggiehood/issues/907)).** The backyard fence quest is only offered to a house with a garage, and an older save with a fenced level-1 house loads that house at level 2 for free ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)). So the piece-side fence connector always ends at the garage's outer wall and the garage forms part of the backyard enclosure; the other connector ends at the side wall, or at the porch edge on the farmhouse ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
+
+**Invariant — a fenced house always has a garage.**
+
+**Invariant — a fence connector ends exactly at the house's current outline, never inside it and never short of it.**
+
+> **How the spec is changing ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), [#907](https://github.com/derekwinters/lucas-doggiehood/issues/907)).** Where the side-fence connector meets a garage or the farmhouse's wrap porch used to be Open, and a fence could be bought for any house → a fence now needs a garage, so the piece-side connector ends at the garage's outer wall, and the other at the side wall or porch edge → because Derek decided on 2026-11-26 that the fence shouldn't exist as a quest request until a garage exists.
+
 **Invariant — a fully upgraded house always fits its lot.** Placement uses the level-4 footprint, so the house fits before any piece is bought and no piece can push it out later.
 
 ### Front line and setback
@@ -213,7 +221,6 @@ All 4 starting lots are corner lots with the same envelope. These are the cleara
 
 Besides those marked above:
 
-- **Fence connectors, walkway and yard trees** around the bigger house, including where the side-fence connector meets a garage or the farmhouse's wrap porch ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
 - **Axis convention** between Blender and the game's model yaw ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 
 ## Build checklist
