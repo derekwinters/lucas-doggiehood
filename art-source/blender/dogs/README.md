@@ -8,8 +8,9 @@ It follows `docs/engineering/blender-pipeline.md`.
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
+| `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
@@ -57,7 +58,8 @@ argument (`python3 kit/export_dog.py golden-retriever`).
 
 1. **Copy** `golden-retriever/breed.py` into a new folder, `dogs/<breed>/breed.py`, and a
    `.gitignore` like the Golden's (it ignores `<name>-viewer.glb`, `viewer/` and `motion/viewer/`).
-2. **Fill in the fields** (all of them are required; the Golden's file documents each one):
+2. **Fill in the fields** (all of them are required, except the optional ones at the end of this
+   list; the Golden's file documents each one):
    - **Names:** `NAME` (object and file stem, `dog_<breed>`), `DISPLAY_NAME`, `STATS_NAME`,
      `MOTION_STATUS`, `MATERIAL_NAMES` (keep the `DH_Dog_` prefix), `MATERIAL_SHADING`.
    - **Budgets:** `BUDGET` (triangles per file, full and LOD), `SKIN_FACES` (the body's
@@ -81,6 +83,11 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      the size-dependent heights in `SIT_DOWN` and `PLAY_BOW`.
    - **Review renders:** `RENDER` (framing boxes, captions, and optional "before" rows from scripts
      kept in the breed's own folder, as the Golden's `render_round2.py` / `render_round3.py`).
+   - **Optional — `FUR_STRAND`** (the fur strand look). Leave it out and the breed gets the
+     Golden's long coat. Set any of its keys to change it: per noise layer (`fine`, `mid`, `clump`,
+     `low`) the blur across / along the strands in cm, `mix` (the fine / mid / clump weights),
+     `normal` (normal-map strength) and `contrast` (strand light/dark). The Labrador's short,
+     smooth coat is the example. `STRAND` in `kit/dh_dog_tex.py` holds the defaults.
 3. **Solve the sit:** run `build_breed.py <breed> solve-sit` and paste the printed `SIT` into
    `breed.py`. Re-run it whenever the shape or the rig changes.
 4. **Build:** run `build_breed.py <breed>`. Both steps must print `ALL OK`. If a check fails,
@@ -148,6 +155,15 @@ Golden's committed bytes. `DH_REBUILDS=20` is the long proof.
 ```
 python3 art-source/blender/dogs/kit/tests/test_rebuild_determinism.py
 DH_REBUILDS=20 python3 -m unittest art-source/blender/dogs/kit/tests/test_rebuild_determinism.py -k Golden
+```
+
+`kit/tests/test_fur_strand.py` (a few seconds, no Blender) checks the optional `FUR_STRAND` field:
+a breed without it gets the old strand constants (so the Golden's textures cannot change), a breed
+with it gets its own values in the strand noise and the strand light/dark, and a partial
+`FUR_STRAND` keeps the other defaults.
+
+```
+python3 art-source/blender/dogs/kit/tests/test_fur_strand.py
 ```
 
 ### Clip invariants
