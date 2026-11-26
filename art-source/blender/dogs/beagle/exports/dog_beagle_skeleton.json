@@ -1,0 +1,835 @@
+{
+ "note": "Bone heads are the joint pivots, metres. 'blender' = Blender axes (front -Y, up +Z); 'gltf' = the exported Y-up axes (front +Z). Bind pose = standing, mouth closed; the files' default pose opens the jaw by jaw_rest_open_deg.",
+ "armature": "dog_beagle_armature",
+ "bone_count": 32,
+ "bones": {
+  "root": {
+   "parent": null,
+   "head_blender": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail_blender": [
+    0.0,
+    0.0,
+    0.3
+   ],
+   "head_gltf": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  },
+  "hips": {
+   "parent": "root",
+   "head_blender": [
+    0.0,
+    0.405,
+    0.52
+   ],
+   "tail_blender": [
+    0.0,
+    0.54,
+    0.552
+   ],
+   "head_gltf": [
+    0.0,
+    0.52,
+    -0.405
+   ]
+  },
+  "spine_1": {
+   "parent": "hips",
+   "head_blender": [
+    0.0,
+    0.405,
+    0.52
+   ],
+   "tail_blender": [
+    0.0,
+    0.1875,
+    0.52
+   ],
+   "head_gltf": [
+    0.0,
+    0.52,
+    -0.405
+   ]
+  },
+  "spine_2": {
+   "parent": "spine_1",
+   "head_blender": [
+    0.0,
+    0.1875,
+    0.52
+   ],
+   "tail_blender": [
+    0.0,
+    -0.0375,
+    0.536
+   ],
+   "head_gltf": [
+    0.0,
+    0.52,
+    -0.1875
+   ]
+  },
+  "spine_3": {
+   "parent": "spine_2",
+   "head_blender": [
+    0.0,
+    -0.0375,
+    0.536
+   ],
+   "tail_blender": [
+    0.0,
+    -0.1613,
+    0.648
+   ],
+   "head_gltf": [
+    0.0,
+    0.536,
+    0.0375
+   ]
+  },
+  "neck": {
+   "parent": "spine_3",
+   "head_blender": [
+    0.0,
+    -0.1613,
+    0.648
+   ],
+   "tail_blender": [
+    0.0,
+    -0.1568,
+    0.7596
+   ],
+   "head_gltf": [
+    0.0,
+    0.648,
+    0.1613
+   ]
+  },
+  "head": {
+   "parent": "neck",
+   "head_blender": [
+    0.0,
+    -0.1568,
+    0.7596
+   ],
+   "tail_blender": [
+    0.0,
+    -0.3667,
+    0.8856
+   ],
+   "head_gltf": [
+    0.0,
+    0.7596,
+    0.1568
+   ]
+  },
+  "jaw": {
+   "parent": "head",
+   "head_blender": [
+    0.0,
+    -0.2912,
+    0.7344
+   ],
+   "tail_blender": [
+    0.0,
+    -0.4885,
+    0.6924
+   ],
+   "head_gltf": [
+    0.0,
+    0.7344,
+    0.2912
+   ]
+  },
+  "tail_1": {
+   "parent": "hips",
+   "head_blender": [
+    0.0,
+    0.508,
+    0.655
+   ],
+   "tail_blender": [
+    0.0,
+    0.5803,
+    0.7577
+   ],
+   "head_gltf": [
+    0.0,
+    0.655,
+    -0.508
+   ]
+  },
+  "tail_2": {
+   "parent": "tail_1",
+   "head_blender": [
+    0.0,
+    0.5803,
+    0.7577
+   ],
+   "tail_blender": [
+    0.0,
+    0.6342,
+    0.8711
+   ],
+   "head_gltf": [
+    0.0,
+    0.7577,
+    -0.5803
+   ]
+  },
+  "tail_3": {
+   "parent": "tail_2",
+   "head_blender": [
+    0.0,
+    0.6342,
+    0.8711
+   ],
+   "tail_blender": [
+    0.0,
+    0.6682,
+    0.992
+   ],
+   "head_gltf": [
+    0.0,
+    0.8711,
+    -0.6342
+   ]
+  },
+  "tail_4": {
+   "parent": "tail_3",
+   "head_blender": [
+    0.0,
+    0.6682,
+    0.992
+   ],
+   "tail_blender": [
+    0.0,
+    0.6775,
+    1.0542
+   ],
+   "head_gltf": [
+    0.0,
+    0.992,
+    -0.6682
+   ]
+  },
+  "ear_L_1": {
+   "parent": "head",
+   "head_blender": [
+    0.218,
+    -0.1986,
+    1.0074
+   ],
+   "tail_blender": [
+    0.281,
+    -0.2436,
+    0.8268
+   ],
+   "head_gltf": [
+    0.218,
+    1.0074,
+    0.1986
+   ]
+  },
+  "ear_L_2": {
+   "parent": "ear_L_1",
+   "head_blender": [
+    0.281,
+    -0.2436,
+    0.8268
+   ],
+   "tail_blender": [
+    0.2705,
+    -0.2659,
+    0.6336
+   ],
+   "head_gltf": [
+    0.281,
+    0.8268,
+    0.2436
+   ]
+  },
+  "front_shoulder_L": {
+   "parent": "spine_3",
+   "head_blender": [
+    0.1445,
+    -0.06,
+    0.52
+   ],
+   "tail_blender": [
+    0.1445,
+    -0.0038,
+    0.3336
+   ],
+   "head_gltf": [
+    0.1445,
+    0.52,
+    0.06
+   ]
+  },
+  "front_elbow_L": {
+   "parent": "front_shoulder_L",
+   "head_blender": [
+    0.1445,
+    -0.0038,
+    0.3336
+   ],
+   "tail_blender": [
+    0.1445,
+    -0.0211,
+    0.1285
+   ],
+   "head_gltf": [
+    0.1445,
+    0.3336,
+    0.0038
+   ]
+  },
+  "front_wrist_L": {
+   "parent": "front_elbow_L",
+   "head_blender": [
+    0.1445,
+    -0.0211,
+    0.1285
+   ],
+   "tail_blender": [
+    0.1445,
+    -0.0384,
+    0.0638
+   ],
+   "head_gltf": [
+    0.1445,
+    0.1285,
+    0.0211
+   ]
+  },
+  "front_paw_L": {
+   "parent": "front_wrist_L",
+   "head_blender": [
+    0.1445,
+    -0.0384,
+    0.0638
+   ],
+   "tail_blender": [
+    0.1445,
+    -0.1428,
+    0.0382
+   ],
+   "head_gltf": [
+    0.1445,
+    0.0638,
+    0.0384
+   ]
+  },
+  "back_hip_L": {
+   "parent": "hips",
+   "head_blender": [
+    0.1562,
+    0.4237,
+    0.52
+   ],
+   "tail_blender": [
+    0.1562,
+    0.3553,
+    0.3211
+   ],
+   "head_gltf": [
+    0.1562,
+    0.52,
+    -0.4237
+   ]
+  },
+  "back_stifle_L": {
+   "parent": "back_hip_L",
+   "head_blender": [
+    0.1562,
+    0.3553,
+    0.3211
+   ],
+   "tail_blender": [
+    0.1562,
+    0.4633,
+    0.1813
+   ],
+   "head_gltf": [
+    0.1562,
+    0.3211,
+    -0.3553
+   ]
+  },
+  "back_hock_L": {
+   "parent": "back_stifle_L",
+   "head_blender": [
+    0.1562,
+    0.4633,
+    0.1813
+   ],
+   "tail_blender": [
+    0.1562,
+    0.4432,
+    0.0723
+   ],
+   "head_gltf": [
+    0.1562,
+    0.1813,
+    -0.4633
+   ]
+  },
+  "back_foot_L": {
+   "parent": "back_hock_L",
+   "head_blender": [
+    0.1562,
+    0.4432,
+    0.0723
+   ],
+   "tail_blender": [
+    0.1562,
+    0.3085,
+    0.0382
+   ],
+   "head_gltf": [
+    0.1562,
+    0.0723,
+    -0.4432
+   ]
+  },
+  "ear_R_1": {
+   "parent": "head",
+   "head_blender": [
+    -0.218,
+    -0.1986,
+    1.0074
+   ],
+   "tail_blender": [
+    -0.281,
+    -0.2436,
+    0.8268
+   ],
+   "head_gltf": [
+    -0.218,
+    1.0074,
+    0.1986
+   ]
+  },
+  "ear_R_2": {
+   "parent": "ear_R_1",
+   "head_blender": [
+    -0.281,
+    -0.2436,
+    0.8268
+   ],
+   "tail_blender": [
+    -0.2705,
+    -0.2659,
+    0.6336
+   ],
+   "head_gltf": [
+    -0.281,
+    0.8268,
+    0.2436
+   ]
+  },
+  "front_shoulder_R": {
+   "parent": "spine_3",
+   "head_blender": [
+    -0.1445,
+    -0.06,
+    0.52
+   ],
+   "tail_blender": [
+    -0.1445,
+    -0.0038,
+    0.3336
+   ],
+   "head_gltf": [
+    -0.1445,
+    0.52,
+    0.06
+   ]
+  },
+  "front_elbow_R": {
+   "parent": "front_shoulder_R",
+   "head_blender": [
+    -0.1445,
+    -0.0038,
+    0.3336
+   ],
+   "tail_blender": [
+    -0.1445,
+    -0.0211,
+    0.1285
+   ],
+   "head_gltf": [
+    -0.1445,
+    0.3336,
+    0.0038
+   ]
+  },
+  "front_wrist_R": {
+   "parent": "front_elbow_R",
+   "head_blender": [
+    -0.1445,
+    -0.0211,
+    0.1285
+   ],
+   "tail_blender": [
+    -0.1445,
+    -0.0384,
+    0.0638
+   ],
+   "head_gltf": [
+    -0.1445,
+    0.1285,
+    0.0211
+   ]
+  },
+  "front_paw_R": {
+   "parent": "front_wrist_R",
+   "head_blender": [
+    -0.1445,
+    -0.0384,
+    0.0638
+   ],
+   "tail_blender": [
+    -0.1445,
+    -0.1428,
+    0.0382
+   ],
+   "head_gltf": [
+    -0.1445,
+    0.0638,
+    0.0384
+   ]
+  },
+  "back_hip_R": {
+   "parent": "hips",
+   "head_blender": [
+    -0.1562,
+    0.4237,
+    0.52
+   ],
+   "tail_blender": [
+    -0.1562,
+    0.3553,
+    0.3211
+   ],
+   "head_gltf": [
+    -0.1562,
+    0.52,
+    -0.4237
+   ]
+  },
+  "back_stifle_R": {
+   "parent": "back_hip_R",
+   "head_blender": [
+    -0.1562,
+    0.3553,
+    0.3211
+   ],
+   "tail_blender": [
+    -0.1562,
+    0.4633,
+    0.1813
+   ],
+   "head_gltf": [
+    -0.1562,
+    0.3211,
+    -0.3553
+   ]
+  },
+  "back_hock_R": {
+   "parent": "back_stifle_R",
+   "head_blender": [
+    -0.1562,
+    0.4633,
+    0.1813
+   ],
+   "tail_blender": [
+    -0.1562,
+    0.4432,
+    0.0723
+   ],
+   "head_gltf": [
+    -0.1562,
+    0.1813,
+    -0.4633
+   ]
+  },
+  "back_foot_R": {
+   "parent": "back_hock_R",
+   "head_blender": [
+    -0.1562,
+    0.4432,
+    0.0723
+   ],
+   "tail_blender": [
+    -0.1562,
+    0.3085,
+    0.0382
+   ],
+   "head_gltf": [
+    -0.1562,
+    0.0723,
+    -0.4432
+   ]
+  }
+ },
+ "skinned_meshes": {
+  "body": "dog_beagle_body",
+  "ear_L": "dog_beagle_ear_L",
+  "ear_R": "dog_beagle_ear_R"
+ },
+ "max_influences": 4,
+ "accessories": {
+  "eye_L": {
+   "object": "dog_beagle_eye_L",
+   "bone": "head"
+  },
+  "eye_R": {
+   "object": "dog_beagle_eye_R",
+   "bone": "head"
+  },
+  "nose": {
+   "object": "dog_beagle_nose",
+   "bone": "head"
+  },
+  "collar": {
+   "object": "dog_beagle_collar",
+   "bone": "neck"
+  },
+  "tongue": {
+   "object": "dog_beagle_tongue",
+   "bone": "jaw"
+  }
+ },
+ "jaw_rest_open_deg": 12.0,
+ "test_poses": {
+  "rest": {
+   "jaw": {
+    "rot": [
+     12.0,
+     0,
+     0
+    ]
+   }
+  },
+  "closed": {
+   "jaw": {
+    "rot": [
+     0,
+     0,
+     0
+    ]
+   },
+   "_hide": [
+    "tongue"
+   ]
+  },
+  "sit": {
+   "jaw": {
+    "rot": [
+     12.0,
+     0,
+     0
+    ]
+   },
+   "root": {
+    "loc": [
+     0,
+     0,
+     -0.317
+    ]
+   },
+   "hips": {
+    "rot": [
+     -43.0212,
+     0,
+     0
+    ]
+   },
+   "spine_3": {
+    "rot": [
+     4,
+     0,
+     0
+    ]
+   },
+   "neck": {
+    "rot": [
+     28,
+     0,
+     0
+    ]
+   },
+   "head": {
+    "rot": [
+     24,
+     0,
+     0
+    ]
+   },
+   "tail_1": {
+    "rot": [
+     179.4375,
+     0,
+     0
+    ]
+   },
+   "tail_2": {
+    "rot": [
+     12,
+     0,
+     0
+    ]
+   },
+   "tail_3": {
+    "rot": [
+     6,
+     0,
+     0
+    ]
+   },
+   "front_shoulder_L": {
+    "rot": [
+     35.0212,
+     0,
+     0
+    ]
+   },
+   "back_hip_L": {
+    "rot": [
+     3.6085424090004494,
+     0,
+     0
+    ]
+   },
+   "back_stifle_L": {
+    "rot": [
+     72.14613893958787,
+     0,
+     0
+    ]
+   },
+   "back_hock_L": {
+    "rot": [
+     -139.2081032578252,
+     0,
+     0
+    ]
+   },
+   "back_foot_L": {
+    "rot": [
+     106.47462190923687,
+     0,
+     0
+    ]
+   },
+   "front_shoulder_R": {
+    "rot": [
+     35.0212,
+     0,
+     0
+    ]
+   },
+   "back_hip_R": {
+    "rot": [
+     3.6085424090004494,
+     0,
+     0
+    ]
+   },
+   "back_stifle_R": {
+    "rot": [
+     72.14613893958787,
+     0,
+     0
+    ]
+   },
+   "back_hock_R": {
+    "rot": [
+     -139.2081032578252,
+     0,
+     0
+    ]
+   },
+   "back_foot_R": {
+    "rot": [
+     106.47462190923687,
+     0,
+     0
+    ]
+   }
+  },
+  "wag": {
+   "jaw": {
+    "rot": [
+     32.0,
+     0,
+     0
+    ]
+   },
+   "tail_1": {
+    "rot": [
+     8,
+     0,
+     14
+    ]
+   },
+   "tail_2": {
+    "rot": [
+     6,
+     0,
+     12
+    ]
+   },
+   "tail_3": {
+    "rot": [
+     5,
+     0,
+     10
+    ]
+   },
+   "tail_4": {
+    "rot": [
+     3,
+     0,
+     8
+    ]
+   },
+   "ear_L_1": {
+    "rot": [
+     0,
+     -40,
+     0
+    ]
+   },
+   "ear_L_2": {
+    "rot": [
+     0,
+     -18,
+     0
+    ]
+   },
+   "neck": {
+    "rot": [
+     0,
+     0,
+     -6
+    ]
+   },
+   "head": {
+    "rot": [
+     0,
+     0,
+     -6
+    ]
+   }
+  }
+ }
+}

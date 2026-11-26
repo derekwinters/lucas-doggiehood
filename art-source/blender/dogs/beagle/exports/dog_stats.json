@@ -1,0 +1,357 @@
+{
+ "name": "Beagle (adult) concept, round 1",
+ "units": "metres, Blender axes (front -Y, up +Z); glTF files are Y-up (front +Z)",
+ "files": {
+  "dog_beagle_default.gltf": {
+   "tris": 3886,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_default_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25368,
+   "bin_bytes": 167044
+  },
+  "dog-beagle-viewer.glb": {
+   "tris": 3886,
+   "errors": [],
+   "bytes": 1878336
+  },
+  "dog_beagle_light.gltf": {
+   "tris": 3886,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Light",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_light_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25360,
+   "bin_bytes": 167044
+  },
+  "dog_beagle_lod1.gltf": {
+   "tris": 1442,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_lod1_default_color.png",
+    "../textures/dog_fur_lod1_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25597,
+   "bin_bytes": 73928
+  }
+ },
+ "budget": {
+  "full": 4000,
+  "lod1": 1500
+ },
+ "sit_contact_m": {
+  "full": {
+   "haunches": -0.0,
+   "hocks": -0.0017,
+   "hind_feet": 0.0009,
+   "front_paws": -0.0002,
+   "tail": 0.0,
+   "lowest": -0.0017,
+   "lowest_any_part": -0.0017
+  },
+  "lod1": {
+   "haunches": 0.0017,
+   "hocks": -0.0066,
+   "hind_feet": 0.0015,
+   "front_paws": 0.0008,
+   "tail": 0.0011,
+   "lowest": -0.0066,
+   "lowest_any_part": -0.0066
+  }
+ },
+ "full": {
+  "total_tris": 3886,
+  "size_xyz_m": [
+   0.617,
+   1.289,
+   1.155
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 1556,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 337,
+    "2": 201,
+    "3": 394,
+    "4": 624
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_beagle_body",
+    "tris": 3070,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_beagle_tongue",
+    "tris": 96,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_beagle_ear_L",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_beagle_eye_L",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_beagle_ear_R",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_beagle_eye_R",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_beagle_nose",
+    "tris": 80,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_beagle_collar",
+    "tris": 176,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "measurements_m": {
+  "nose_to_rump": 1.167,
+  "nose_to_tail_tip": 1.289,
+  "top_of_head": 1.155,
+  "width_incl_ears": 0.617,
+  "back_height": 0.703,
+  "in_game_stand_in_wlh": [
+   1.26,
+   1.5,
+   1.58
+  ]
+ },
+ "lod1": {
+  "total_tris": 1442,
+  "size_xyz_m": [
+   0.617,
+   1.286,
+   1.161
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 515,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 145,
+    "2": 125,
+    "3": 138,
+    "4": 107
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_beagle_body_lod1",
+    "tris": 1000,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_beagle_tongue_lod1",
+    "tris": 48,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_beagle_ear_L_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_beagle_eye_L_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_beagle_ear_R_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_beagle_eye_R_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_beagle_nose_lod1",
+    "tris": 36,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_beagle_collar_lod1",
+    "tris": 110,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "textures": {
+  "dog_fur_default_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 760878
+  },
+  "dog_fur_light_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 778750
+  },
+  "dog_fur_lod1_default_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 273128
+  },
+  "dog_fur_lod1_light_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 266854
+  },
+  "dog_fur_lod1_mask.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 298800
+  },
+  "dog_fur_lod1_normal.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 298357
+  },
+  "dog_fur_mask.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 871813
+  },
+  "dog_fur_normal.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 925081
+  },
+  "dog_trim_color.png": {
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 6956
+  }
+ },
+ "skeleton": "dog_beagle_skeleton.json",
+ "all_checks_ok": true
+}

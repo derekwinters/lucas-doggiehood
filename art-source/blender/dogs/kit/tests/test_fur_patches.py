@@ -1,5 +1,6 @@
-"""The optional FUR_PATCHES breed field lays a pattern (a saddle, a mask) over the coat's dark channel;
-without it a breed gets exactly the masks it got before.
+"""The optional FUR_PATCHES breed field lays a pattern (a saddle, a mask) over the coat's dark channel,
+and with "op": "pale" white markings over its feathering channel; without it a breed gets exactly the
+masks it got before.
 
   python3 art-source/blender/dogs/kit/tests/test_fur_patches.py               (a few seconds)
 
@@ -39,6 +40,8 @@ print("PROBE " + json.dumps({
     "f": dig(f1), "e_mean": float(e1.mean()),
     "z_hi_e_min": float(e1[P[:, 2] > 1.2].min()),
     "z_lo_e": dig(e1[P[:, 2] < 1.0]),
+    "z_hi_f_min": float(f1[P[:, 2] > 1.2].min()), "z_hi_e_max": float(e1[P[:, 2] > 1.2].max()),
+    "z_lo_f": dig(f1[P[:, 2] < 1.0]), "f_mean": float(f1.mean()),
 }))
 '''
 
@@ -77,6 +80,25 @@ class FurPatches(unittest.TestCase):
         base = self.probe(None)
         got = self.probe([{"regions": ("ear",), "op": "light", "strength": 1.0}])
         self.assertLess(got["e_mean"], base["e_mean"])
+
+    def test_pale_patch_raises_the_feathering_channel_and_clears_the_dark_one(self):
+        # "pale" (white markings: a blaze, white legs, a tail tip) raises the feathering channel to
+        # at least the patch's strength and clears the dark channel by the same amount, so white
+        # wins over a saddle; outside the patch nothing changes
+        base = self.probe(None)
+        body = ("body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear")
+        got = self.probe([{"regions": body, "z": (1.0, 1.1), "op": "dark"},
+                          {"regions": body, "z": (1.1, 1.2), "op": "pale"}])
+        self.assertGreater(got["z_hi_f_min"], 0.99, "a full-strength pale patch left texels unwhitened")
+        self.assertLess(got["z_hi_e_max"], 0.01, "a pale patch left the dark channel on")
+        self.assertGreater(got["f_mean"], base["f_mean"])
+        self.assertEqual(got["z_lo_f"], base["z_lo_f"], "a pale patch changed texels outside its z range")
+        self.assertEqual(got["z_lo_e"], base["z_lo_e"], "a pale patch changed texels outside its z range")
+
+    def test_pale_patch_respects_its_strength(self):
+        body = ("body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear")
+        got = self.probe([{"regions": body, "z": (1.1, 1.2), "op": "pale", "strength": 0.5}])
+        self.assertGreaterEqual(got["z_hi_f_min"], 0.5 - 1e-9)
 
     def test_fur_patches_is_not_a_required_field(self):
         sys.path.insert(0, KIT)
