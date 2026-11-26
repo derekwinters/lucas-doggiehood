@@ -1,4 +1,5 @@
-"""Golden Retriever textures, generated with numpy + Pillow (no external images).
+"""Dog textures for the active breed (coats, markings and trim colours from its breed.py),
+generated with numpy + Pillow (no external images).
 
 Round 3: the fur is baked from 3D onto the continuous skin's UVs, so it reads
 the same on both sides of every UV seam and across the leg / neck / tail joins.
@@ -20,7 +21,7 @@ never get stretched across. Regions blend their flow directions by weight.
 The normal map comes from the analytic 3D gradient of the same noise.
 
 Usage: called by dh_dog.build(..., bake=True) (export_dog.py does this);
-python3 dh_dog_tex.py [root] only writes the trim palette.
+python3 dh_dog_tex.py <breed> only writes the trim palette (into <breed>/textures/).
 """
 import os
 import sys
@@ -28,7 +29,12 @@ import sys
 import numpy as np
 from PIL import Image
 
+import dh_breed
+
 HERE = os.path.dirname(os.path.abspath(__file__))
+if __name__ == "__main__" and len(sys.argv) > 1:
+    dh_breed.use(sys.argv[1])
+B = dh_breed.get()
 ATLAS = 1024
 TRIM_PX = 256
 PPM = 520                    # generation density, pixels per metre
@@ -40,20 +46,12 @@ PAD = 6                      # texels of bleed around every UV island
 SKIN_U = 0.84
 ISLANDS = {"ear": ((0.855, 0.010, 0.995, 0.330), (0.42, 0.42))}
 ATTRS = ["body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear"]
-FLOW = {   # fur flow direction per group (Blender axes), and the regions in each group
-    "body": ((0.0, 1.0, -0.35), ("body", "head")),
-    "leg": ((0.0, 0.15, -1.0), ("fleg", "bleg", "thigh", "paw")),
-    "tail": ((0.0, 0.85, -0.5), ("tail",)),
-    "ear": ((0.0, -0.15, -1.0), ("ear",)),
-}
+FLOW = B.FUR_FLOW        # fur flow direction per group (Blender axes), and the regions in each group
 
 # sRGB hex: main coat, feathering (chest, belly, leg backs, tail underside), ears
-COATS = {
-    # round 2: the round-1 Default became Light; Default is a richer gold between it and Dark
-    "default": ("#C4843C", "#E2B472", "#9A5B26"),
-    "light":   ("#D29A50", "#EACB8E", "#AE6F32"),
-    "dark":    ("#9C5424", "#C2814A", "#723A18"),
-}
+COATS = B.COATS
+MARK = B.FUR_MARKINGS     # where feathering and ear colour start / end (authored y or z)
+TC = B.TRIM_COLOURS       # the trim palette
 
 # trim palette regions (u0, v0, u1, v1) in UV space
 TRIM = {
@@ -144,29 +142,29 @@ def build_trim(texdir):
         return (slice(y0, y1), slice(x0, x1)), uu, vv
 
     sl, uu, vv = region("eye")         # v: 0 back, 1 front. Warm dark-brown iris ring, near-black pupil.
-    iris, pupil = _hex("#4A2C1A"), _hex("#140E0B")
+    iris, pupil = _hex(TC["iris"]), _hex(TC["pupil"])
     t = _smooth(0.55, 0.8, vv)[..., None]
-    img[sl] = _hex("#1C1411") * (1 - t) + (iris * (1 - _smooth(0.86, 0.94, vv)[..., None])
+    img[sl] = _hex(TC["eye"]) * (1 - t) + (iris * (1 - _smooth(0.86, 0.94, vv)[..., None])
                                           + pupil * _smooth(0.86, 0.94, vv)[..., None]) * t
     sl, uu, vv = region("shine")
-    img[sl] = _hex("#FFFFFF")
+    img[sl] = _hex(TC["shine"])
     sl, uu, vv = region("nose")         # leather: faint pebbling
     n = _fft_blur(rng.standard_normal(uu.shape), 0.8, 0.8)
-    img[sl] = _hex("#24201F")[None, None] * (0.85 + 0.3 * _norm(n)[..., None] * 0.3)
+    img[sl] = _hex(TC["nose"])[None, None] * (0.85 + 0.3 * _norm(n)[..., None] * 0.3)
     sl, uu, vv = region("tag")
-    img[sl] = _hex("#D6AC45") * (0.9 + 0.15 * vv[..., None])
+    img[sl] = _hex(TC["tag"]) * (0.9 + 0.15 * vv[..., None])
     sl, uu, vv = region("mouth")
-    img[sl] = _hex("#5E2B2C")
-    sl, uu, vv = region("lip")          # black lip skin, as goldens have
-    img[sl] = _hex("#2C2120")
+    img[sl] = _hex(TC["mouth"])
+    sl, uu, vv = region("lip")          # black lip skin
+    img[sl] = _hex(TC["lip"])
     sl, uu, vv = region("tongue")       # u 0.5 = top centre: a soft centre groove
     groove = 1 - 0.22 * np.exp(-((uu - 0.5) / 0.035) ** 2) * _smooth(0.1, 0.5, vv)
-    img[sl] = _hex("#E7848A") * groove[..., None]
+    img[sl] = _hex(TC["tongue"]) * groove[..., None]
     sl, uu, vv = region("collar")       # u around the strap section; stitching near both edges
-    base = _hex("#C3282E")
+    base = _hex(TC["collar"])
     edge = np.exp(-((np.minimum(uu, 1 - uu) - 0.06) / 0.012) ** 2)
     stitch = edge * (np.sin(vv * 2 * np.pi * 40) > 0.2)
-    img[sl] = base * (1 - 0.18 * edge[..., None]) + _hex("#E8B0A8") * 0.35 * stitch[..., None]
+    img[sl] = base * (1 - 0.18 * edge[..., None]) + _hex(TC["stitch"]) * 0.35 * stitch[..., None]
     Image.fromarray((np.clip(img, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB").save(
         os.path.join(texdir, "dog_trim_color.png"))
 
@@ -301,20 +299,20 @@ def fur_masks(P, N, A):
     f = np.zeros(len(P))
     e = np.zeros(len(P))
     belly = 0.95 * _smooth(0.30, 0.80, -nz)
-    bib = 0.90 * _smooth(0.15, 0.65, -ny) * _smooth(-0.12, -0.26, y)
-    rump = 0.35 * _smooth(0.3, 0.8, ny) * _smooth(0.50, 0.60, y)
+    bib = 0.90 * _smooth(0.15, 0.65, -ny) * _smooth(*MARK["bib_y"], y)
+    rump = 0.35 * _smooth(0.3, 0.8, ny) * _smooth(*MARK["rump_y"], y)
     f += w["body"] * np.maximum.reduce([belly, bib, rump])
-    muzzle = 0.80 * _smooth(-0.57, -0.69, y) * (1 - 0.7 * _smooth(0.55, 0.92, nz))
+    muzzle = 0.80 * _smooth(*MARK["muzzle_y"], y) * (1 - 0.7 * _smooth(0.55, 0.92, nz))
     throat = 0.65 * _smooth(0.30, 0.80, -nz)
     f += w["head"] * np.maximum(muzzle, throat)
-    e += w["head"] * 0.22 * _smooth(0.4, 0.8, nz) * _smooth(-0.47, -0.36, y)
+    e += w["head"] * 0.22 * _smooth(0.4, 0.8, nz) * _smooth(*MARK["crown_y"], y)
     legback = 0.90 * _smooth(0.15, 0.60, ny)
-    pale = 0.35 * (1 - _smooth(0.08, 0.26, z))
+    pale = 0.35 * (1 - _smooth(*MARK["pale_z"], z))
     f += (w["fleg"] + w["bleg"]) * np.maximum(legback, pale)
     f += w["thigh"] * 0.90 * _smooth(0.05, 0.55, ny)
     f += w["paw"] * 0.45
-    f += w["tail"] * 0.95 * _smooth(0.0, 0.5, -nz) * (0.2 + 0.8 * _smooth(0.62, 0.76, y))
-    e += w["ear"] * (1 - 0.25 * _smooth(1.20, 1.12, z))
+    f += w["tail"] * 0.95 * _smooth(0.0, 0.5, -nz) * (0.2 + 0.8 * _smooth(*MARK["tail_tip_y"], y))
+    e += w["ear"] * (1 - 0.25 * _smooth(*MARK["ear_tip_z"], z))
     return np.clip(f, 0, 1), np.clip(e, 0, 1)
 
 
@@ -364,5 +362,4 @@ def bake_fur(texdir, prefix, size, tris):
 
 
 if __name__ == "__main__":
-    root = sys.argv[1] if len(sys.argv) > 1 else HERE
-    print("textures ->", build_all(root))
+    print("textures ->", build_all(dh_breed.DIR))

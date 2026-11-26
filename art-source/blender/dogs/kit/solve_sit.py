@@ -1,6 +1,6 @@
-"""Find the sit pose parameters (dh_dog_rig.SIT) by measuring the skinned mesh.
+"""Find a breed's sit pose parameters (SIT in its breed.py) by measuring the skinned mesh.
 
-  python3 solve_sit.py
+  python3 solve_sit.py <breed>
 
 Adjusts, in turn, until every contact group's lowest vertex is within 2 mm of the ground:
   drop       (root down)                 -> the haunches touch
@@ -8,20 +8,27 @@ Adjusts, in turn, until every contact group's lowest vertex is within 2 mm of th
   hock_z / foot_pitch                    -> the hind leg lies on the ground: hock and rear foot touch
   tail       (tail_1)                    -> the tail lies on the ground instead of in it
 The hip tilt (SIT["hips"]) and the stifle height are chosen, not solved.
-Prints the SIT dict to paste into dh_dog_rig.py. Deterministic (fixed start, fixed steps).
+Starts from the breed's current SIT and prints the new SIT dict to paste into its breed.py.
+Deterministic (fixed start, fixed steps).
 """
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    dh_breed.use(sys.argv[1])
 import bpy  # noqa: E402,F401  (loads bmesh / mathutils)
 import dh_dog as D  # noqa: E402
 import dh_dog_rig as RG  # noqa: E402
 
 
 def main():
-    parts = D.build("default")
+    parts = D.build(list(D.T.COATS)[0], materials=False)     # contact needs no textures
     arm, W = D.build.armature, D.build.weights
     p = dict(RG.SIT)
 

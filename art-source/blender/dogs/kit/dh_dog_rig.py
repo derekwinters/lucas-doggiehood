@@ -1,6 +1,6 @@
-"""Armature, skin weights and static test poses for the round-3 dog.
+"""Armature, skin weights and static test poses for the active breed (positions from its breed.py).
 
-32 bones (authored coordinates below; the armature adds OY):
+32 bones (authored coordinates from the breed; the armature adds OY):
   root -> hips -> spine_1 -> spine_2 -> spine_3 -> neck -> head -> jaw, ear_<s>_1 -> ear_<s>_2
   hips -> tail_1 -> tail_2 -> tail_3 -> tail_4
   hips -> back_hip_<s> (thigh) -> back_stifle_<s> (lower thigh) -> back_hock_<s> (rear foot) -> back_foot_<s> (paw)
@@ -34,6 +34,8 @@ TAU = 0.02
 MAX_INF = 4
 HDY = D.HEAD_DY
 J = S.JOINTS
+B = D.B
+SP = B.SPINE
 
 
 def _leg(prefix, names, pts, x, parent):
@@ -47,23 +49,28 @@ def _leg(prefix, names, pts, x, parent):
 def bone_table():
     """[(name, head, tail, parent)] in authored coordinates."""
     hy, hz = K.hinge()
+
+    def ax(yz, head_group=False):
+        return (0, yz[0] + HDY, yz[1]) if head_group else (0, yz[0], yz[1])
+    tb = B.TAIL_BONES
     b = [
         ("root", (0, -D.OY, 0.0), (0, -D.OY, 0.30), None),
-        ("hips", (0, 0.42, 0.80), (0, 0.60, 0.84), "root"),
-        ("spine_1", (0, 0.42, 0.80), (0, 0.13, 0.80), "hips"),
-        ("spine_2", (0, 0.13, 0.80), (0, -0.17, 0.82), "spine_1"),
-        ("spine_3", (0, -0.17, 0.82), (0, -0.335, 0.96), "spine_2"),
-        ("neck", (0, -0.335, 0.96), (0, -0.37 + HDY, 1.15), "spine_3"),
-        ("head", (0, -0.37 + HDY, 1.15), (0, -0.62 + HDY, 1.30), "neck"),
-        ("jaw", (0, hy, hz), (0, -0.78 + HDY, 1.07), "head"),
-        ("tail_1", (0, 0.58, 0.875), (0, 0.70, 0.835), "hips"),
-        ("tail_2", (0, 0.70, 0.835), (0, 0.82, 0.765), "tail_1"),
-        ("tail_3", (0, 0.82, 0.765), (0, 0.95, 0.685), "tail_2"),
-        ("tail_4", (0, 0.95, 0.685), (0, 1.085, 0.64), "tail_3"),
+        ("hips", ax(SP["hips"][0]), ax(SP["hips"][1]), "root"),
+        ("spine_1", ax(SP["spine_1"][0]), ax(SP["spine_1"][1]), "hips"),
+        ("spine_2", ax(SP["spine_2"][0]), ax(SP["spine_2"][1]), "spine_1"),
+        ("spine_3", ax(SP["spine_3"][0]), ax(SP["spine_3"][1]), "spine_2"),
+        ("neck", ax(SP["neck"][0]), ax(SP["neck"][1], True), "spine_3"),
+        ("head", ax(SP["head"][0], True), ax(SP["head"][1], True), "neck"),
+        ("jaw", (0, hy, hz), ax(B.JAW_TIP, True), "head"),
+        ("tail_1", ax(tb[0]), ax(tb[1]), "hips"),
+        ("tail_2", ax(tb[1]), ax(tb[2]), "tail_1"),
+        ("tail_3", ax(tb[2]), ax(tb[3]), "tail_2"),
+        ("tail_4", ax(tb[3]), ax(tb[4]), "tail_3"),
     ]
+    e0, e1, e2 = B.EARS["bones"]
     for sx, s in ((1, "L"), (-1, "R")):
-        b += [("ear_%s_1" % s, (sx * 0.265, -0.40 + HDY, 1.50), (sx * 0.335, -0.465 + HDY, 1.30), "head"),
-              ("ear_%s_2" % s, (sx * 0.335, -0.465 + HDY, 1.30), (sx * 0.314, -0.48 + HDY, 1.115), "ear_%s_1" % s)]
+        b += [("ear_%s_1" % s, (sx * e0[0], e0[1] + HDY, e0[2]), (sx * e1[0], e1[1] + HDY, e1[2]), "head"),
+              ("ear_%s_2" % s, (sx * e1[0], e1[1] + HDY, e1[2]), (sx * e2[0], e2[1] + HDY, e2[2]), "ear_%s_1" % s)]
         fpts = [J["front_shoulder"], J["front_elbow"], J["front_wrist"], J["front_paw"], J["front_toe"]]
         b += [("front_%s_%s" % (n, s), (sx * S.FRONT_X,) + fpts[i], (sx * S.FRONT_X,) + fpts[i + 1],
                "spine_3" if i == 0 else "front_%s_%s" % (("shoulder", "elbow", "wrist")[i - 1], s))
@@ -85,10 +92,8 @@ for _s in "LR":
         "front_pastern_" + _s: "front_wrist_" + _s, "front_paw_" + _s: "front_paw_" + _s,
         "back_thigh_" + _s: "back_hip_" + _s, "back_gaskin_" + _s: "back_stifle_" + _s,
         "back_meta_" + _s: "back_hock_" + _s, "back_paw_" + _s: "back_foot_" + _s})
-TORSO_CHAIN = ([(0.60, 0.84), (0.42, 0.80), (0.13, 0.80), (-0.17, 0.82), (-0.335, 0.96), (-0.335 - 0.0, 1.15)],
-               ["hips", "spine_1", "spine_2", "spine_3", "neck"])
-TAIL_CHAIN = ([(0.58, 0.875), (0.70, 0.835), (0.82, 0.765), (0.95, 0.685), (1.085, 0.64)],
-              ["tail_1", "tail_2", "tail_3", "tail_4"])
+TORSO_CHAIN = ([tuple(p) for p in B.TORSO_CHAIN], ["hips", "spine_1", "spine_2", "spine_3", "neck"])
+TAIL_CHAIN = ([tuple(p) for p in B.TAIL_BONES], ["tail_1", "tail_2", "tail_3", "tail_4"])
 
 
 def _smooth(e0, e1, x):
@@ -212,7 +217,7 @@ def limit(W):
 
 
 def ear_weights(co, s):
-    pts = [(-0.40 + HDY, 1.50), (-0.465 + HDY, 1.30), (-0.48 + HDY, 1.115)]
+    pts = [(e[1] + HDY, e[2]) for e in B.EARS["bones"]]
     w = chain_weights(co[:, 1:3], pts, ["ear_%s_1" % s, "ear_%s_2" % s])
     W = np.zeros((len(co), len(BONE_NAMES)))
     W[:, BONE_NAMES.index("ear_%s_1" % s)] = w[:, 0]
@@ -277,25 +282,24 @@ def _ang(v):
     return math.degrees(math.atan2(v[1], v[0]))
 
 
-# Sit (round 4: it actually sits). The hips tilt by SIT["hips"] about the hip joint and the
+# Sit (the breed's SIT, solved per breed). The hips tilt by SIT["hips"] about the hip joint and the
 # root drops by SIT["drop"], so the underside of the haunches rests on the ground; the front
 # legs are turned back to vertical (SIT["shoulder"] tilts them a little further) so the front paws stay
 # planted. The hind leg is re-solved from targets: stifle centre height, hock centre height
 # (the hock rests on the ground) and the rear foot lying flat forward, paw flat.
-# The values come from scripts/solve_sit.py, which measures the skinned mesh; export_dog.py
-# re-measures the contact heights on every export.
+# The values come from solve_sit.py, which measures the skinned mesh, and are pasted into the
+# breed's breed.py; export_dog.py re-measures the contact heights on every export.
 #
 # Invariant - in the sit pose the haunches, hocks, hind feet and front paws all touch the
 # ground (lowest vertices within 1 cm of z = 0), and nothing goes below it by more than 1 cm.
-SIT = {"hips": -60.7943, "drop": -0.5414, "shoulder": -8.0, "stifle_z": 0.1, "hock_z": 0.0388,
-       "foot_pitch": 15.3206, "tail": 73.6184}
+SIT = dict(B.SIT)
 
 
 def _sit_hind(p=None):
     """Hind-leg rotations for the sit. Returns {bone: x-rotation} (relative, degrees)."""
     p = p or SIT
     th = p["hips"]
-    piv = np.array([0.42, 0.80])
+    piv = np.array(list(SP["hips"][0]))           # the hip tilt pivots about the hips bone's head
 
     def rot(pt, deg, c=piv):
         a = math.radians(deg)
@@ -328,12 +332,14 @@ def _sit_hind(p=None):
 def poses(sit_params=None):
     P = {"rest": {"jaw": dict(rot=(D.JAW_REST_OPEN_DEG, 0, 0))},
          "closed": {"jaw": dict(rot=(0, 0, 0)), "_hide": ["tongue"]}}
+    SP_ = B.SIT_POSE
     sit = {"jaw": dict(rot=(D.JAW_REST_OPEN_DEG, 0, 0)),
            "root": dict(loc=(0, 0, (sit_params or SIT)["drop"])),
            "hips": dict(rot=((sit_params or SIT)["hips"], 0, 0)),
-           "spine_3": dict(rot=(4, 0, 0)), "neck": dict(rot=(28, 0, 0)), "head": dict(rot=(24, 0, 0)),
-           "tail_1": dict(rot=((sit_params or SIT)["tail"], 0, 0)), "tail_2": dict(rot=(12, 0, 0)),
-           "tail_3": dict(rot=(6, 0, 0))}
+           "spine_3": dict(rot=(SP_["spine_3"], 0, 0)), "neck": dict(rot=(SP_["neck"], 0, 0)),
+           "head": dict(rot=(SP_["head"], 0, 0)),
+           "tail_1": dict(rot=((sit_params or SIT)["tail"], 0, 0)), "tail_2": dict(rot=(SP_["tail_2"], 0, 0)),
+           "tail_3": dict(rot=(SP_["tail_3"], 0, 0))}
     sp = sit_params or SIT
     hind = _sit_hind(sp)
     for s in "LR":

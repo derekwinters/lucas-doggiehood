@@ -1,7 +1,10 @@
-"""Golden Retriever (adult) - 3D dog concept for Doggiehood (round 3: one skinned body).
+"""The dog builder of the shared kit (one skinned body), for the active breed (dh_breed).
+
+Every shape, size, colour and name comes from the breed definition (<breed>/breed.py); this
+module and the others in kit/ hold no breed's numbers.
 
 The torso, neck, head, legs and tail are ONE continuous mesh, the "skin"
-(dog_golden_body). It is not modelled directly: the round-2 lofted shapes (plus
+(<NAME>_body). It is not modelled directly: the round-2 lofted shapes (plus
 the new hind leg: thigh/haunch, lower thigh, hock, foot, and a front leg with
 an elbow and a wrist) become signed distance fields that are merged with a
 smooth minimum, so every junction is a rounded fillet. The merged field is
@@ -22,14 +25,16 @@ up +Z, dog's left = +X. Origin on the ground under the middle of the
 nose-to-rump span. Bind pose = standing, mouth closed; the default ("rest")
 pose opens the jaw 12 degrees, as in round 2.
 
-build(coat="default", lod=False) -> dict part -> object (plus "armature")
+build(coat=None, lod=False) -> dict part -> object (plus "armature"); coat None = the breed's first coat
 """
 import math
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
 import bmesh  # noqa: E402
 import numpy as np  # noqa: E402
 import bpy  # noqa: E402
@@ -37,9 +42,11 @@ from mathutils import Matrix, Vector  # noqa: E402
 
 import dh_dog_tex as T  # noqa: E402
 
-ROOT = HERE                     # scripts sit in the kit folder, beside textures/ and exports/
+B = dh_breed.get()
+ROOT = dh_breed.DIR             # the breed's folder: textures/ and exports/ are written there
 TEX_DIR = os.path.join(ROOT, "textures")
-NAME = "dog_golden"
+NAME = B.NAME
+DEFAULT_COAT = list(B.COATS)[0]     # the first coat is the default
 X = Vector((1, 0, 0))
 Y = Vector((0, 1, 0))
 Z = Vector((0, 0, 1))
@@ -47,15 +54,16 @@ Z = Vector((0, 0, 1))
 # --------------------------------------------------------------------------
 # Joint pivots (metres, Blender axes). This is the future skeleton.
 # --------------------------------------------------------------------------
-HEAD_DY = 0.035                # head group (head, jaw, ears, eyes, nose) moved back by this after building
-OY = 0.10                      # authored with the rump at +0.625, nose at -0.833; shifted so the origin is mid-span
-JAW_REST_OPEN_DEG = 12.0
+HEAD_DY = B.HEAD_DY            # head group (head, jaw, ears, eyes, nose) moved back by this after building
+OY = B.OY                      # authored coordinates are shifted by this so the origin is mid-span
+JAW_REST_OPEN_DEG = B.JAW_REST_OPEN_DEG
 
 # --------------------------------------------------------------------------
 # Materials
 # --------------------------------------------------------------------------
 FUR, GLOSS, SOFT = 0, 1, 2
-MAT_NAMES = ["DH_Dog_Fur_%s", "DH_Dog_Gloss", "DH_Dog_Soft"]
+MAT_NAMES = list(B.MATERIAL_NAMES)
+SHADING = B.MATERIAL_SHADING
 
 
 def _srgb_lin(c):
@@ -67,7 +75,8 @@ def _img(path):
     return im
 
 
-def make_materials(coat="default", tex_dir=None, lod=False):
+def make_materials(coat=None, tex_dir=None, lod=False):
+    coat = coat or DEFAULT_COAT
     tex_dir = tex_dir or TEX_DIR
     pre = "dog_fur_lod1" if lod else "dog_fur"
     mats = []
@@ -87,12 +96,12 @@ def make_materials(coat="default", tex_dir=None, lod=False):
     nt.links.new(tn.outputs["Color"], nm.inputs["Color"])
     nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
     m.use_backface_culling = True
-    bsdf.inputs["Roughness"].default_value = 0.82
+    bsdf.inputs["Roughness"].default_value = SHADING["fur"][0]
     if "Specular IOR Level" in bsdf.inputs:
-        bsdf.inputs["Specular IOR Level"].default_value = 0.25
+        bsdf.inputs["Specular IOR Level"].default_value = SHADING["fur"][1]
     mats.append(m)
     trim = os.path.join(tex_dir, "dog_trim_color.png")
-    for name, rough, spec in ((MAT_NAMES[1], 0.30, 0.35), (MAT_NAMES[2], 0.55, 0.35)):
+    for name, (rough, spec) in ((MAT_NAMES[1], SHADING["gloss"]), (MAT_NAMES[2], SHADING["soft"])):
         m = bpy.data.materials.new(name)
         m.use_nodes = True
         nt = m.node_tree
@@ -269,15 +278,16 @@ def _rot_about(p, pivot, axis, deg):
 #
 # Invariant - the mouth corners lie on the jaw hinge axis, and no opening
 # angle up to MOUTH_MAX_OPEN_DEG shows a gap at the sides of the mouth.
-HINGE = (-0.53, 1.12)          # (y, z) of the hinge axis = the mouth corners, authored head coordinates
-LIP_DROP = 0.055               # the lip line falls this much from the corner to the front of the muzzle
-LIP_BAND = 0.013               # dark lip band either side of the lip line
-MOUTH_MAX_OPEN_DEG = 34.0      # side webs cover openings up to this (rest 12 + the 20 deg test pose)
+HINGE = tuple(B.HINGE)         # (y, z) of the hinge axis = the mouth corners, authored head coordinates
+LIP_RUN = B.LIP_RUN            # the lip line runs this far forward from the corner ...
+LIP_DROP = B.LIP_DROP          # ... and falls this much
+LIP_BAND = B.LIP_BAND          # dark lip band either side of the lip line
+MOUTH_MAX_OPEN_DEG = B.MOUTH_MAX_OPEN_DEG    # side webs cover openings up to this (the default pose + tests)
 
 
 def _lip_plane():
     hy, hz = HINGE
-    d = Vector((0, -0.33, -LIP_DROP)).normalized()        # forward along the lip line
+    d = Vector((0, -LIP_RUN, -LIP_DROP)).normalized()     # forward along the lip line
     n = Vector((0, -d.z, d.y)) * -1                      # up, normal to the lip plane
     if n.z < 0:
         n = -n
@@ -302,19 +312,12 @@ def tongue_part(q):
     hy, hz = HINGE
 
     def floor_z(y):
-        return hz - (hy - y) * (LIP_DROP / 0.33)       # the lip plane, closed
+        return hz - (hy - y) * (LIP_DROP / LIP_RUN)    # the lip plane, closed
 
-    tspec = [
-        (-0.565, 0.012, 0.060, 0.016),
-        (-0.640, 0.016, 0.082, 0.020),
-        (-0.730, 0.018, 0.086, 0.021),
-        (-0.810, 0.016, 0.082, 0.019),
-        (-0.855, -0.012, 0.068, 0.016),
-        (-0.874, -0.052, 0.050, 0.014),
-    ]
+    tspec = list(B.TONGUE["rings"])
     if q["lod"]:
-        tspec = [tspec[i] for i in (0, 2, 4, 5)]
-    rings = [Ring((0, y, floor_z(y) + dz), a, t, t, 2.6) for y, dz, a, t in tspec]
+        tspec = [tspec[i] for i in B.TONGUE["lod_rings"]]
+    rings = [Ring((0, y, floor_z(y) + dz), a, t, t, B.TONGUE["e"]) for y, dz, a, t in tspec]
     p.loft(rings, q["tongue_n"], X, _remap("tongue"), mat=SOFT, dome=0.6)
     return p
 
@@ -333,51 +336,49 @@ def _remap(rect_key):
 def ear_part(q, sx):
     p = Part("%s_ear_%s" % (NAME, "L" if sx > 0 else "R"))
     R = T.ISLANDS["ear"][0]
-    # root on the upper side of the skull, hanging beside the cheek, a little forward
-    spec = [
-        (0.262, -0.400, 1.500, 0.070, 0.020),
-        (0.303, -0.425, 1.450, 0.115, 0.030),
-        (0.328, -0.450, 1.370, 0.135, 0.032),
-        (0.337, -0.465, 1.270, 0.130, 0.032),
-        (0.330, -0.475, 1.180, 0.105, 0.028),
-        (0.314, -0.480, 1.115, 0.055, 0.020),
-    ]
+    # root on the upper side of the skull, hanging beside the cheek
+    spec = list(B.EARS["rings"])
     if q["lod"]:
-        spec = [spec[i] for i in (0, 1, 3, 4, 5)]
-    rings = [Ring((sx * x, y, z), w, t, t, 2.2) for x, y, z, w, t in spec]
+        spec = [spec[i] for i in B.EARS["lod_rings"]]
+    e, dome = B.LOFT_STYLE["ear"]
+    rings = [Ring((sx * x, y, z), w, t, t, e) for x, y, z, w, t in spec]
     # side axis = forward (width of the ear runs front-to-back)
-    p.loft(rings, q["ear_n"], Y, R, dome=0.8)
+    p.loft(rings, q["ear_n"], Y, R, dome=dome)
     return p
 
 
 def eye_part(q, sx, head_obj_bvh):
     p = Part("%s_eye_%s" % (NAME, "L" if sx > 0 else "R"))
     # sit the eye on the face: ray from the front onto the head surface
-    o = Vector((sx * 0.150, -1.5, 1.385))
+    E = B.EYES
+    o = Vector((sx * E["ray_x"], -1.5, E["ray_z"]))
     d = Y
     hit, nrm, _, _ = head_obj_bvh.ray_cast(o, d)
-    nrm = (nrm + Vector((0, -0.6, 0))).normalized()
-    c = hit - nrm * 0.008
-    p.ellipsoid(c, 0.058, 0.034, 0.066, q["eye_n"], q["eye_m"], -nrm, Z, _remap("eye"), GLOSS)
+    nrm = (nrm + Vector((0, -E["face_bias"], 0))).normalized()
+    c = hit - nrm * E["inset"]
+    p.ellipsoid(c, *E["radii"], q["eye_n"], q["eye_m"], -nrm, Z, _remap("eye"), GLOSS)
     # catch-light: a small white bead up and toward the outside of the eye
     up = Z - nrm * Z.dot(nrm)
     outward = X * sx - nrm * (X * sx).dot(nrm)
-    hc = c + nrm * 0.026 + up.normalized() * 0.028 + outward.normalized() * 0.016
-    p.ellipsoid(hc, 0.012, 0.010, 0.012, q["shine_n"], q["shine_m"], -nrm, Z, _remap("shine"), GLOSS)
+    so = E["shine_offset"]
+    hc = c + nrm * so[0] + up.normalized() * so[1] + outward.normalized() * so[2]
+    p.ellipsoid(hc, *E["shine_radii"], q["shine_n"], q["shine_m"], -nrm, Z, _remap("shine"), GLOSS)
     return p, c
 
 
 def nose_part(q, head_bvh):
     p = Part("%s_nose" % NAME)
-    hit, nrm, _, _ = head_bvh.ray_cast(Vector((0, -1.5, 1.26)), Y)
-    c = hit + Vector((0, 0.012, 0.006))
+    N = B.NOSE
+    hit, nrm, _, _ = head_bvh.ray_cast(Vector((0, -1.5, N["ray_z"])), Y)
+    c = hit + Vector((0, N["offset"][0], N["offset"][1]))
     # rounded, slightly triangular leather: wider at the top
     rings = []
     m = q["nose_m"]
+    ra, rt, rb = N["radii"]
     for i in range(m):
         ph = math.pi * (i + 0.5) / m
         k = math.sin(ph)
-        rings.append(Ring(c + Vector((0, -math.cos(ph) * 0.040, 0)), 0.084 * k, 0.054 * k, 0.042 * k, 2.4))
+        rings.append(Ring(c + Vector((0, -math.cos(ph) * N["length"], 0)), ra * k, rt * k, rb * k, N["e"]))
     p.loft(rings, q["nose_n"], X, _remap("nose"), GLOSS, tangents=[-Y] * m, dome=0.6)
     return p, c
 
@@ -410,8 +411,8 @@ def tri_count(ob):
 
 
 
-QUALITY[False].update(skin_faces=1500)
-QUALITY[True].update(skin_faces=1500, skin_tris=820)    # LOD: the full retopology, decimated
+QUALITY[False].update(skin_faces=B.SKIN_FACES)
+QUALITY[True].update(skin_faces=B.SKIN_FACES, skin_tris=B.LOD_SKIN_TRIS)    # LOD: the full retopology, decimated
 TEX_SIZE = {False: 1024, True: 512}
 ACCESSORY_BONE = {"eye_L": "head", "eye_R": "head", "nose": "head", "collar": "neck", "tongue": "jaw"}
 REGION_OF = {"torso": "body", "head": "head", "tail": "tail"}
@@ -425,8 +426,9 @@ def collar_part(q, bvh):
     """A strap that hugs the actual skin around the collar loop, plus a tag at the throat."""
     import dh_dog_shape as S
     p = Part("%s_collar" % NAME)
+    C = B.COLLAR
     rows = S.TORSO
-    i = [k for k, r in enumerate(rows) if abs(r[1] - 1.04) < 0.005][0]
+    i = C["ring"]
     c = Vector((0, rows[i][0], rows[i][1]))
     tilt = (Vector((0, rows[i + 1][0], rows[i + 1][1])) - Vector((0, rows[i - 1][0], rows[i - 1][1]))).normalized()
     b = tilt.cross(X).normalized()
@@ -443,14 +445,16 @@ def collar_part(q, bvh):
     for k in range(n):
         th = 2 * math.pi * k / n
         d = (X * math.cos(th) + b * math.sin(th)).normalized()
-        rings.append(Ring(surf[k] + d * (0.022 if q["lod"] else 0.014), 0.034, 0.012, 0.012, 3.0))
+        rings.append(Ring(surf[k] + d * (C["gap_lod"] if q["lod"] else C["gap"]), C["strap"][0], C["strap"][1],
+                          C["strap"][1], C["e"]))
         tangents.append((surf[(k + 1) % n] - surf[k - 1]).normalized())
     p.loft(rings, q["collar_x"], tilt, _remap("collar"), SOFT, closed=True, tangents=tangents)
     th = -math.pi / 2
     d = (X * math.cos(th) + b * math.sin(th)).normalized()
     hit = bvh.ray_cast(c + d * 0.6, -d)[0] or (c + d * 0.2)
-    throat = hit + d * 0.020 + Vector((0, 0, -0.042))
-    p.ellipsoid(throat, 0.038, 0.008, 0.038, q["tag_n"], 3, d, X, _remap("tag"), GLOSS, e=2.0)
+    throat = hit + d * C["tag_out"] + Vector((0, 0, -C["tag_drop"]))
+    tr = C["tag_radii"]
+    p.ellipsoid(throat, tr[0], tr[1], tr[0], q["tag_n"], 3, d, X, _remap("tag"), GLOSS, e=2.0)
     return p, c
 
 
@@ -474,9 +478,10 @@ def _tris_for_bake(ob, attrs, offset, fur_only=True):
     return {"P": np.array(P), "N": np.array(N), "UV": np.array(UV), "A": np.array(A)}
 
 
-def build(coat="default", lod=False, tex_dir=None, collection=None, bake=False, pose="rest"):
+def build(coat=None, lod=False, tex_dir=None, collection=None, bake=False, pose="rest", materials=True):
     """Build the dog. Returns {part: mesh object}; build.armature is the armature.
-    bake=True (re)bakes this quality's fur textures into tex_dir first."""
+    bake=True (re)bakes this quality's fur textures into tex_dir first. materials=False builds
+    without materials (no textures needed: solve_sit.py runs before a new breed's first export)."""
     from mathutils.bvhtree import BVHTree
     import dh_dog_rig as RG
     import dh_dog_skin as K
@@ -494,10 +499,11 @@ def build(coat="default", lod=False, tex_dir=None, collection=None, bake=False, 
     hy, hz = K.hinge()
     builders = {"body": (skin, (0, -OY, 0))}
     tongue = tongue_part(q)
-    builders["tongue"] = (tongue, (0, -0.565 + HEAD_DY, 1.13))
+    builders["tongue"] = (tongue, (0, B.TONGUE["pivot"][0] + HEAD_DY, B.TONGUE["pivot"][1]))
+    ex, ey, ez = B.EARS["bones"][0]
     for sx, s in ((1, "L"), (-1, "R")):
         e = ear_part(q, sx)
-        builders["ear_" + s] = (e, (sx * 0.265, -0.40 + HEAD_DY, 1.50))
+        builders["ear_" + s] = (e, (sx * ex, ey + HEAD_DY, ez))
         ep, ec = eye_part(q, sx, bvh)
         builders["eye_" + s] = (ep, tuple(round(v, 4) for v in ec))
     for key in ("tongue", "ear_L", "ear_R"):
@@ -542,11 +548,12 @@ def build(coat="default", lod=False, tex_dir=None, collection=None, bake=False, 
         et = _tris_for_bake(eob, ea, shift)
         tris = {k: np.concatenate([tris[k], et[k]]) for k in tris}
         build.coverage = T.bake_fur(tex_dir, "dog_fur_lod1" if lod else "dog_fur", TEX_SIZE[bool(lod)], tris)
-    mats = make_materials(coat, tex_dir, lod)
-    for ob in parts.values():
-        for m in mats:
-            ob.data.materials.append(m)
-        _drop_unused_slots(ob)
+    if materials:
+        mats = make_materials(coat, tex_dir, lod)
+        for ob in parts.values():
+            for m in mats:
+                ob.data.materials.append(m)
+            _drop_unused_slots(ob)
     build.armature = arm
     build.pivots = pivots
     build.weights = W

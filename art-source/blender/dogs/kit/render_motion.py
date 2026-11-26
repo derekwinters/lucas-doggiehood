@@ -1,9 +1,11 @@
-"""Review renders for the motion clips (EEVEE, headless; lavapipe when there is no GPU).
+"""Review renders for a breed's motion clips (EEVEE, headless; lavapipe when there is no GPU).
 
-  python3 render_motion.py video <Clip> [outdir]     MP4: 1280x720, 3/4 view, H.264 yuv420p, loops 3x
-                                                      (one-shot clips: 2x, with a short hold)
-  python3 render_motion.py sheet <Clip> [outdir]     side-view contact sheet PNG (locomotion clips)
-  python3 render_motion.py still <Clip> <frame> [out.png]
+  python3 render_motion.py <breed> video <Clip> [outdir]   MP4: 1280x720, 3/4 view, H.264 yuv420p, loops 3x
+                                                            (one-shot clips: 2x, with a short hold)
+  python3 render_motion.py <breed> sheet <Clip> [outdir]   side-view contact sheet PNG (locomotion clips)
+  python3 render_motion.py <breed> still <Clip> <frame> [out.png]
+
+outdir defaults to <breed>/motion/review/.
 
 <Clip> is a clip name from dh_dog_clips (Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow,
 LieDown, RestIdle). Frames are rendered once per clip and the loops are repeated by ffmpeg, so
@@ -21,7 +23,14 @@ if "VK_ICD_FILENAMES" not in os.environ and os.path.exists("/opt/lavapipe/lvp_ic
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import dh_dog_anim as A  # noqa: E402  (puts the approved scripts on the path)
+import dh_breed  # noqa: E402
+
+if __name__ == "__main__":
+    if len(sys.argv) < 4:
+        sys.exit(__doc__)
+    dh_breed.use(sys.argv[1])
+    del sys.argv[1]
+import dh_dog_anim as A  # noqa: E402
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 from bpy_extras.object_utils import world_to_camera_view  # noqa: E402

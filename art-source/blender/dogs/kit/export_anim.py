@@ -1,12 +1,12 @@
-"""Bake every motion clip, check ground contact on the skinned mesh, export, read back.
+"""Bake every motion clip for a breed, check ground contact on the skinned mesh, export, read back.
 
-  python3 export_anim.py            (from anywhere; paths are relative to this file)
+  python3 export_anim.py <breed>    (a folder name under dogs/, or a path to a breed folder)
 
-Writes, under motion/:
-  exports/dog_golden_anim.gltf + .bin   the approved model (default coat), skinned, all clips as named
+Writes, under <breed>/motion/ (<NAME> is the breed's NAME, e.g. dog_golden):
+  exports/<NAME>_anim.gltf + .bin       the breed's model (first coat), skinned, all clips as named
                                         glTF animations (30 fps, sampled every frame), textures by
-                                        relative URI from ../../textures/ (the kit's textures/)
-  exports/dog_golden_anim_clips.json    per clip: frames, duration, loop, ground speed, footfalls, checks
+                                        relative URI from ../../textures/ (the breed's textures/)
+  exports/<NAME>_anim_clips.json        per clip: frames, duration, loop, ground speed, footfalls, checks
   viewer/dog_anim.json                  the same glTF with the buffer and images embedded as base64
                                         data URIs (colour map JPEG 1024, normal map PNG 1024), saved
                                         as .json for a web host that refuses .gltf/.glb (git-ignored)
@@ -32,6 +32,12 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    dh_breed.use(sys.argv[1])
 import dh_dog_anim as A  # noqa: E402
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
@@ -47,7 +53,8 @@ M = A.MOTION
 EXP = os.path.join(M, "exports")
 VIEW = os.path.join(M, "viewer")
 REV = os.path.join(M, "review")
-GLTF = os.path.join(EXP, "dog_golden_anim.gltf")
+GLTF = os.path.join(EXP, "%s_anim.gltf" % D.NAME)
+CLIPS_JSON = "%s_anim_clips.json" % D.NAME
 for d in (EXP, VIEW, REV):
     os.makedirs(d, exist_ok=True)
 
@@ -191,7 +198,7 @@ def main():
         metas.append(m)
         print("baked", name, m["frames"], "frames")
     report, failures, summary, samples = [], [], [], {}
-    report.append("Golden Retriever motion clips - ground contact check (skinned mesh, every frame)")
+    report.append("%s motion clips - ground contact check (skinned mesh, every frame)" % D.B.DISPLAY_NAME)
     report.append("Tolerances: nothing below z = %.3f m; planted paws within %.3f m of z = 0 and sliding "
                   "< %.3f m against the ground (moving +Y at the clip's ground speed)." % (-K.TOL, K.TOL, K.SLIDE_TOL))
     report.append("Blender axes: front -Y, up +Z, metres. 30 fps. Frame N of a loop equals frame 0.")
@@ -245,11 +252,11 @@ def main():
         for a in j["animations"]:
             if a["name"] == m["name"]:
                 a["extras"] = e
-    j.setdefault("asset", {})["extras"] = {"dh_note": "Golden Retriever motion clips, first pass (concept); "
-                                           "in place, root motion out of the clips; 30 fps"}
+    j.setdefault("asset", {})["extras"] = {"dh_note": "%s; in place, root motion out of the clips; 30 fps"
+                                                      % D.B.MOTION_STATUS}
     with open(GLTF, "w") as fh:
         json.dump(j, fh, indent=1)
-    with open(os.path.join(EXP, "dog_golden_anim_clips.json"), "w") as fh:
+    with open(os.path.join(EXP, CLIPS_JSON), "w") as fh:
         json.dump({"fps": A.FPS, "units": "metres; Blender axes front -Y up +Z (glTF: front +Z, up +Y)",
                    "clips": info, "all_checks_ok": not failures}, fh, indent=1)
     vj = viewer_json(j)

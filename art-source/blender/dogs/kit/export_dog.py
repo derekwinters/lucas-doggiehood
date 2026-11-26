@@ -1,14 +1,14 @@
-"""Export the Golden Retriever concept (round 4: one skinned body) and check what was written.
+"""Export a breed's dog (one skinned body) and check what was written.
 
-  python3 export_dog.py [root]        (root defaults to this script's folder)
+  python3 export_dog.py <breed>       (a folder name under dogs/, or a path to a breed folder)
 
-Writes, under <root>:
+Writes, under the breed's folder (<NAME> is the breed's NAME, e.g. dog_golden):
   textures/                            trim palette, then the fur baked onto the full and the LOD unwrap
-  exports/dog_golden_<coat>.gltf+.bin  default, light, dark: the same rigged mesh, each with its coat's fur
-  exports/dog_golden_lod1.gltf+.bin    the ~1,500-triangle LOD (default coat, its own 512 fur atlas)
-  exports/dog_golden_skeleton.json     bones (head, tail, parent), accessory attachments, test poses
+  exports/<NAME>_<coat>.gltf+.bin      one per coat in COATS: the same rigged mesh, each with its coat's fur
+  exports/<NAME>_lod1.gltf+.bin        the LOD (first coat, its own 512 fur atlas)
+  exports/<NAME>_skeleton.json         bones (head, tail, parent), accessory attachments, test poses
   exports/dog_stats.json               triangles per part, sizes, bones, weights, check results
-  dog-golden-viewer.glb                one self-contained file (textures embedded, default coat); checked,
+  <name>-viewer.glb                    one self-contained file (textures embedded, first coat); checked,
                                        then git-ignored
 
 Each file holds the armature (32 joints, one skin), the skinned body and ears,
@@ -35,6 +35,12 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import dh_breed  # noqa: E402
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    dh_breed.use(sys.argv[1])
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 
@@ -43,11 +49,18 @@ import dh_dog_rig as RG  # noqa: E402
 import dh_dog_tex as T  # noqa: E402
 import export_viewer as V  # noqa: E402
 
-ROOT = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else HERE
+B = D.B
+ROOT = dh_breed.DIR
 EXP = os.path.join(ROOT, "exports")
 TEX = os.path.realpath(os.path.join(ROOT, "textures"))
-BUDGET = {"full": 4000, "lod1": 1500}
+BUDGET = dict(B.BUDGET)
+COATS = list(T.COATS)               # the first coat is the default (the LOD and the viewer use it)
+VIEWER_GLB = "%s-viewer.glb" % D.NAME.replace("_", "-")
+SKELETON = "%s_skeleton.json" % D.NAME
 SKINNED = ("body", "ear_L", "ear_R")
+STAND_IN_WLH = [1.26, 1.50, 1.58]     # today's in-game dog box (dh_scene.DOG), for comparison
+SAN = B.SANITY
+MEAS = B.MEASURE
 os.makedirs(EXP, exist_ok=True)
 
 
@@ -220,9 +233,9 @@ def weight_sanity(ob, W):
             errs.append("%s weights on the right side" % n)
         if n.startswith(("front_", "back_")) and n.endswith("_R") and co[m, 0].max() > 0.02:
             errs.append("%s weights on the left side" % n)
-        if n in ("head", "jaw") and co[m, 2].min() < 0.85:
-            errs.append("%s weights below z=0.85" % n)
-        if n.startswith("tail") and co[m, 1].min() < 0.45:
+        if n in ("head", "jaw") and co[m, 2].min() < SAN["head_min_z"]:
+            errs.append("%s weights below z=%g" % (n, SAN["head_min_z"]))
+        if n.startswith("tail") and co[m, 1].min() < SAN["tail_min_y"]:
             errs.append("%s weights in front of the hips" % n)
     return errs
 
@@ -231,17 +244,17 @@ def main():
     T.build_all(ROOT)
     for lod in (False, True):           # bake the fur onto each unwrap
         reset()
-        D.build("default", lod=lod, tex_dir=TEX, bake=True)
+        D.build(COATS[0], lod=lod, tex_dir=TEX, bake=True)
         print("baked %s fur, %.0f%% of the atlas covered" % ("LOD" if lod else "full", 100 * D.build.coverage))
-    stats = {"name": "Golden Retriever (adult) concept, round 4", "units": "metres, Blender axes (front -Y, up +Z); "
+    stats = {"name": B.STATS_NAME, "units": "metres, Blender axes (front -Y, up +Z); "
              "glTF files are Y-up (front +Z)", "files": {}, "budget": BUDGET}
     failures = []
-    for variant in ("default", "light", "dark", "lod1"):
+    for variant in COATS + ["lod1"]:
         reset()
         lod = variant == "lod1"
         sfx = "_lod1" if lod else ""
-        parts = D.build("default" if lod else variant, lod=lod, tex_dir=TEX)
-        path = os.path.join(EXP, "dog_golden_%s.gltf" % variant)
+        parts = D.build(COATS[0] if lod else variant, lod=lod, tex_dir=TEX)
+        path = os.path.join(EXP, "%s_%s.gltf" % (D.NAME, variant))
         export(path, parts)
         errs, tris, posed = check(path, sfx, lod, parts)
         errs += weight_sanity(parts["body"], D.build.weights)
@@ -255,7 +268,7 @@ def main():
             "gltf_bytes": os.path.getsize(path), "bin_bytes": os.path.getsize(path[:-5] + ".bin")}
         print("%-26s %5d tris  %s" % (os.path.basename(path), tris, "OK" if not errs else errs))
         failures += errs
-        if variant == "default" or lod:      # the sit pose must actually sit (all coats share the mesh)
+        if variant == COATS[0] or lod:       # the sit pose must actually sit (all coats share the mesh)
             sit, serr = sit_contact(parts)
             stats.setdefault("sit_contact_m", {})["lod1" if lod else "full"] = sit
             print("  sit contact (lowest skinned vertex, m; 0 = on the ground):",
@@ -263,7 +276,7 @@ def main():
             failures += serr
         bp = blender_posed(parts)
         allp = np.concatenate(list(bp.values()))
-        if variant == "default" or lod:
+        if variant == COATS[0] or lod:
             stats["lod1" if lod else "full"] = {
                 "total_tris": tris,
                 "size_xyz_m": [round(float(v), 3) for v in allp.max(0) - allp.min(0)],
@@ -273,16 +286,18 @@ def main():
                               "skinned": k in SKINNED, "bone": D.ACCESSORY_BONE.get(k),
                               "materials": [m.name for m in o.data.materials]} for k, o in parts.items()},
             }
-        if variant == "default":
+        if variant == COATS[0]:
             body = bp["body"]
             stats["measurements_m"] = {
                 # rump = back of the body beside the tail (the tail is under 0.09 m from the midline)
-                "nose_to_rump": round(float(body[np.abs(body[:, 0]) > 0.10, 1].max() - allp[:, 1].min()), 3),
+                "nose_to_rump": round(float(body[np.abs(body[:, 0]) > MEAS["rump_min_abs_x"], 1].max()
+                                            - allp[:, 1].min()), 3),
                 "nose_to_tail_tip": round(float(allp[:, 1].max() - allp[:, 1].min()), 3),
                 "top_of_head": round(float(allp[:, 2].max()), 3),
                 "width_incl_ears": round(float(allp[:, 0].max() - allp[:, 0].min()), 3),
-                "back_height": round(float(body[(body[:, 1] > 0.0) & (body[:, 1] < 0.6), 2].max()), 3),
-                "in_game_stand_in_wlh": [1.26, 1.50, 1.58],
+                "back_height": round(float(body[(body[:, 1] > MEAS["back_y"][0]) & (body[:, 1] < MEAS["back_y"][1]),
+                                                2].max()), 3),
+                "in_game_stand_in_wlh": STAND_IN_WLH,
             }
             arm = D.build.armature
             bones = {}
@@ -300,22 +315,22 @@ def main():
                     "accessories": {k: {"object": "%s_%s" % (D.NAME, k), "bone": b} for k, b in D.ACCESSORY_BONE.items()},
                     "jaw_rest_open_deg": D.JAW_REST_OPEN_DEG,
                     "test_poses": {k: {b: v for b, v in p.items()} for k, p in RG.poses().items()}}
-            json.dump(skel, open(os.path.join(EXP, "dog_golden_skeleton.json"), "w"), indent=1)
-            glb = os.path.join(ROOT, "dog-golden-viewer.glb")
+            json.dump(skel, open(os.path.join(EXP, SKELETON), "w"), indent=1)
+            glb = os.path.join(ROOT, VIEWER_GLB)
             export(glb, parts, fmt="GLB")
             gerr, gt, _ = check(glb, "", False, parts)
             mb = os.path.getsize(glb) / 1e6
             if mb > 3.0:
                 gerr.append("viewer glb %.2f MB" % mb)
-            stats["files"]["dog-golden-viewer.glb"] = {"tris": gt, "errors": gerr, "bytes": os.path.getsize(glb)}
-            print("%-26s %5d tris  %.2f MB  %s" % ("dog-golden-viewer.glb", gt, mb, "OK" if not gerr else gerr))
+            stats["files"][VIEWER_GLB] = {"tris": gt, "errors": gerr, "bytes": os.path.getsize(glb)}
+            print("%-26s %5d tris  %.2f MB  %s" % (VIEWER_GLB, gt, mb, "OK" if not gerr else gerr))
             failures += gerr
     stats["textures"] = {}
     from PIL import Image
     for f in sorted(os.listdir(TEX)):
         im = Image.open(os.path.join(TEX, f))
         stats["textures"][f] = {"px": list(im.size), "bytes": os.path.getsize(os.path.join(TEX, f))}
-    stats["skeleton"] = "dog_golden_skeleton.json"
+    stats["skeleton"] = SKELETON
     stats["all_checks_ok"] = not failures
     json.dump(stats, open(os.path.join(EXP, "dog_stats.json"), "w"), indent=1)
     print("ALL OK" if not failures else "FAILED")
