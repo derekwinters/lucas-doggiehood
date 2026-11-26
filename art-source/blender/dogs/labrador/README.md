@@ -15,20 +15,21 @@ It is built by the shared dog kit (`../kit/`, see `../README.md`) from this fold
 which holds only what makes a Lab a Lab, and it passes every kit check (`model` and `motion` both
 print `ALL OK`). It follows `docs/engineering/blender-pipeline.md`, like the Golden.
 
-## Coat names (open question)
+## Coat slots (decided, #901)
 
 The game's coat slots are **Default / Light / Dark / Black**, and a Lab has three real colours.
-The files keep the Lab's own names (`dog_labrador_yellow.gltf`, `_black`, `_chocolate`; materials
-`DH_Dog_Fur_Yellow` / `_Black` / `_Chocolate`). Mapping them onto the game's slots is a separate,
-open question for Derek; once it is chosen, renaming them is a change to the `COATS` keys only.
-The round-1 suggestion was:
+Derek chose the mapping (#901):
 
-| Lab coat | Suggested game slot | Why |
-|---|---|---|
-| Yellow | **Default** | The most familiar Lab colour, and closest to the other breeds' default |
-| Chocolate | **Dark** | The darker brown coat |
-| Black | **Black** | It matches the name |
-| (none) | **Light** | No fourth Lab colour: leave Light unused for Labs, add a pale cream yellow, or map Light to Yellow as well |
+| Lab coat | Game slot |
+|---|---|
+| Yellow | **Default** |
+| Chocolate | **Dark** |
+| Black | **Black** |
+
+**The Lab has no Light coat.** The files keep the Lab's own names (`dog_labrador_yellow.gltf`,
+`_black`, `_chocolate`; materials `DH_Dog_Fur_Yellow` / `_Black` / `_Chocolate`). Renaming them to
+the slot names, and wiring the slots in Unity, belong to the later Unity import work (#776); the
+rename is a change to the `COATS` keys only.
 
 ## What makes it a Lab (what changed from the Golden)
 
