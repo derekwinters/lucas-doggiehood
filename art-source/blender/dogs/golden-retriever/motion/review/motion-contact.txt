@@ -101,7 +101,7 @@ TailWag: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
   planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
     FL f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
     FR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
-    HL f  0- 30  paw low -0.0000..+0.0000  slide 0.0001
+    HL f  0- 30  paw low +0.0000..+0.0000  slide 0.0000
     HR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
   loop: last frame vs first 0.0000 deg, root 0.00000 m
   -> OK

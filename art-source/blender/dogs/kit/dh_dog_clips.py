@@ -8,7 +8,7 @@ frame number), and in place: the root never travels in X/Y.
   Run        loop   transverse gallop with a gathered suspension
   SitDown    once   standing -> the approved SIT pose (last frame == dh_dog_rig SIT exactly)
   SitIdle    loop   in the SIT pose: breathing, head look, ear twitch, tail sweep on the ground
-  TailWag    loop   standing happy wag: whole-rear wiggle, mouth open, panting
+  TailWag    loop   standing happy wag: the tail whips; body, breathing and face as calm as Idle
   PlayBow    once   bow down (elbows near the ground, rump up, tail wagging, bounce), back up
   LieDown    once   SIT -> lying (sphinx) rest   [optional]
   RestIdle   loop   lying rest loop               [optional]
@@ -330,31 +330,34 @@ def make_tail_wag(rig):
         ph = f / N
         w = s1(ph, 3)                                   # the wag
         w2 = s1(ph, 3, 0.10)                            # the rear follows a little later
-        # whole-rear wiggle: the hips swing opposite the tail, the chest counters so the head
-        # stays fairly steady; a small bounce on every wag
-        rig.set("hips", 1.2 * c1(ph, 6), 2.5 * w2, -7.0 * w2)
-        rig.set("spine_1", 0, 0, 4.0 * w2)
-        rig.set("spine_2", 0, -1.2 * w2, 2.0 * w2)
-        rig.set("spine_3", -0.8 * c1(ph, 6), 0, 0.6 * w2)
-        rig.root(0, 0, -0.016 - 0.006 * c1(ph, 6))
-        # happy face: mouth open, panting; head tilted a touch; ears back and bouncing
-        rig.set("neck", -4 + 1.5 * c1(ph, 6, 0.1), 0, -1.5 * w2)
-        rig.set("head", 3 + 1.0 * c1(ph, 6, 0.2), 4.0, 0)
-        rig.set("jaw", JAW + 18 + 3.0 * s1(ph, 6))      # max 33 deg: the side webs cover 34
+        br = s1(ph, 1)                                  # one calm breath per loop, as in Idle
+        # the wag lives in the tail (#895): the torso only follows it a touch, the body does
+        # not bounce (the root holds a steady, slightly lowered stance)
+        rig.set("hips", 0, 0.2 * w2, -0.6 * w2)
+        rig.set("spine_1", 0, 0, 0.4 * w2)
+        rig.set("spine_2", -0.5 * br, 0, 0.2 * w2)
+        rig.set("spine_3", 0.6 * br, 0, 0.1 * w2)
+        rig.root(0, 0, -0.016)
+        # calm happy face, as subtle as Idle's: the mouth as open as Idle's and breathing with it,
+        # head up and tilted a touch, ears held back; no panting
+        rig.set("neck", -4 - 0.3 * br, 0, -0.2 * w2)
+        rig.set("head", 3, 4.0, 0)
+        rig.set("jaw", JAW + 1.0 * br)
         for sd, sg in (("L", -1), ("R", 1)):
-            rig.set("ear_%s_1" % sd, 14 + 4 * c1(ph, 6, 0.25), sg * (8 + 3 * c1(ph, 6, 0.25)), 0)
-            rig.set("ear_%s_2" % sd, 6 + 4 * c1(ph, 6, 0.35), 0, 0)
+            rig.set("ear_%s_1" % sd, 14 + 0.5 * br, sg * 8, 0)
+            rig.set("ear_%s_2" % sd, 6, 0, 0)
         # tail: up and wagging hard, each segment lagging (whip)
         for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-            rig.set(b, (34, 8, 2, 0)[i], 0, (24, 16, 14, 12)[i] * s1(ph, 3, 0.04 * i))
+            rig.set(b, (34, 8, 2, 0)[i], 0, (26, 18, 15, 12)[i] * s1(ph, 3, 0.04 * i))
         rig.update()
         plant_all(rig, "TailWag f%d" % f)
 
     rig.bake("TailWag", N, pose)
     return dict(name="TailWag", frames=N, loop=True, ground_speed=0.0,
                 plants={leg: [(0, N)] for leg in A.LEGS},
-                notes="standing happy wag: 3 wags per second, hips swing opposite the tail with a "
-                      "bounce per wag, mouth open and panting, ears back; paws planted")
+                notes="standing happy wag: 3 wags per second, the tail whips side to side while the "
+                      "body stands still (the hips and spine follow by about a degree, no bounce), "
+                      "calm breathing and mouth as in Idle, head up, ears back; paws planted")
 
 
 # =========================================================================== Play bow
