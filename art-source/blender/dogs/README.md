@@ -8,9 +8,10 @@ It follows `docs/engineering/blender-pipeline.md`.
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
+| `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
@@ -88,6 +89,18 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      `low`) the blur across / along the strands in cm, `mix` (the fine / mid / clump weights),
      `normal` (normal-map strength) and `contrast` (strand light/dark). The Labrador's short,
      smooth coat is the example. `STRAND` in `kit/dh_dog_tex.py` holds the defaults.
+   - **Optional — `FUR_PATCHES`** (a coat pattern). A list of patches laid over the coat's dark
+     ("ears") channel: each covers some body regions where the surface is above a `(y, z)` line
+     and/or inside `y` / `z` ramps, `|x| < x_max` and a normal ramp `n`; `"op": "dark"` (default)
+     raises the channel, `"light"` lowers it. Leave it out and the masks are exactly as before.
+     The German Shepherd's black-and-tan saddle and mask are the example (`kit/tests/test_fur_patches.py`).
+   - **Optional keys for erect ears and low tails:** `EARS["side"]` turns the ear's width to run
+     across the head (default: front-to-back, a hanging ear); `EARS["swing"]` scales the clips' ear
+     rotations per world axis, so an erect ear lays back where a hanging ear swings back;
+     `SIT_DOWN["tail_lift"]` (default 18°) and `SIT_DOWN["tail_lag"]` (default 6 frames) keep a
+     low-carried tail clear of the ground during SitDown. Leave them out and the ears and SitDown
+     are exactly as before. The German Shepherd is the example (`kit/tests/test_erect_ears.py`,
+     `kit/tests/test_sit_down_tail.py`).
 3. **Solve the sit:** run `build_breed.py <breed> solve-sit` and paste the printed `SIT` into
    `breed.py`. Re-run it whenever the shape or the rig changes.
 4. **Build:** run `build_breed.py <breed>`. Both steps must print `ALL OK`. If a check fails,
@@ -164,6 +177,26 @@ with it gets its own values in the strand noise and the strand light/dark, and a
 
 ```
 python3 art-source/blender/dogs/kit/tests/test_fur_strand.py
+```
+
+`kit/tests/test_fur_patches.py` (a few seconds, no Blender) checks the optional `FUR_PATCHES`
+field the same way: a breed without it gets the old masks (passing the coat noise changes
+nothing), a dark patch raises only the dark channel and only where it lies, and a light patch
+lowers it.
+
+`kit/tests/test_erect_ears.py` and `kit/tests/test_sit_down_tail.py` (a few seconds each, need
+`bpy` but build no dog: they loft the ears and pose a bare armature) check the optional erect-ear
+and low-tail keys. Without `EARS["side"]` the ears are the old hanging loft; with it the ear's width
+runs across the head and the right ear is the left's mirror image with each texel on the same face
+(front or back) of both ears. `EARS["swing"]` scales the ear rotations of `Rig.set` and
+`apply_pose` per axis and leaves every other bone alone. Without `SIT_DOWN["tail_lift"]` /
+`["tail_lag"]` SitDown's tail lifts 18° and trails the hips by 6 frames as before; with them it
+lifts and trails by the breed's values and still finishes sat on the same frame.
+
+```
+python3 art-source/blender/dogs/kit/tests/test_fur_patches.py
+python3 art-source/blender/dogs/kit/tests/test_erect_ears.py
+python3 art-source/blender/dogs/kit/tests/test_sit_down_tail.py
 ```
 
 ### Clip invariants

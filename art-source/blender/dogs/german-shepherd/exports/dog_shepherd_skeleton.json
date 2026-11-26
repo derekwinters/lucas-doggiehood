@@ -1,0 +1,835 @@
+{
+ "note": "Bone heads are the joint pivots, metres. 'blender' = Blender axes (front -Y, up +Z); 'gltf' = the exported Y-up axes (front +Z). Bind pose = standing, mouth closed; the files' default pose opens the jaw by jaw_rest_open_deg.",
+ "armature": "dog_shepherd_armature",
+ "bone_count": 32,
+ "bones": {
+  "root": {
+   "parent": null,
+   "head_blender": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail_blender": [
+    0.0,
+    0.0,
+    0.3
+   ],
+   "head_gltf": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  },
+  "hips": {
+   "parent": "root",
+   "head_blender": [
+    0.0,
+    0.535,
+    0.8
+   ],
+   "tail_blender": [
+    0.0,
+    0.715,
+    0.82
+   ],
+   "head_gltf": [
+    0.0,
+    0.8,
+    -0.535
+   ]
+  },
+  "spine_1": {
+   "parent": "hips",
+   "head_blender": [
+    0.0,
+    0.535,
+    0.8
+   ],
+   "tail_blender": [
+    0.0,
+    0.245,
+    0.8
+   ],
+   "head_gltf": [
+    0.0,
+    0.8,
+    -0.535
+   ]
+  },
+  "spine_2": {
+   "parent": "spine_1",
+   "head_blender": [
+    0.0,
+    0.245,
+    0.8
+   ],
+   "tail_blender": [
+    0.0,
+    -0.055,
+    0.82
+   ],
+   "head_gltf": [
+    0.0,
+    0.8,
+    -0.245
+   ]
+  },
+  "spine_3": {
+   "parent": "spine_2",
+   "head_blender": [
+    0.0,
+    -0.055,
+    0.82
+   ],
+   "tail_blender": [
+    0.0,
+    -0.22,
+    0.96
+   ],
+   "head_gltf": [
+    0.0,
+    0.82,
+    0.055
+   ]
+  },
+  "neck": {
+   "parent": "spine_3",
+   "head_blender": [
+    0.0,
+    -0.22,
+    0.96
+   ],
+   "tail_blender": [
+    0.0,
+    -0.22,
+    1.15
+   ],
+   "head_gltf": [
+    0.0,
+    0.96,
+    0.22
+   ]
+  },
+  "head": {
+   "parent": "neck",
+   "head_blender": [
+    0.0,
+    -0.22,
+    1.15
+   ],
+   "tail_blender": [
+    0.0,
+    -0.47,
+    1.3
+   ],
+   "head_gltf": [
+    0.0,
+    1.15,
+    0.22
+   ]
+  },
+  "jaw": {
+   "parent": "head",
+   "head_blender": [
+    0.0,
+    -0.38,
+    1.12
+   ],
+   "tail_blender": [
+    0.0,
+    -0.66,
+    1.07
+   ],
+   "head_gltf": [
+    0.0,
+    1.12,
+    0.38
+   ]
+  },
+  "tail_1": {
+   "parent": "hips",
+   "head_blender": [
+    0.0,
+    0.695,
+    0.835
+   ],
+   "tail_blender": [
+    0.0,
+    0.825,
+    0.752
+   ],
+   "head_gltf": [
+    0.0,
+    0.835,
+    -0.695
+   ]
+  },
+  "tail_2": {
+   "parent": "tail_1",
+   "head_blender": [
+    0.0,
+    0.825,
+    0.752
+   ],
+   "tail_blender": [
+    0.0,
+    0.92,
+    0.625
+   ],
+   "head_gltf": [
+    0.0,
+    0.752,
+    -0.825
+   ]
+  },
+  "tail_3": {
+   "parent": "tail_2",
+   "head_blender": [
+    0.0,
+    0.92,
+    0.625
+   ],
+   "tail_blender": [
+    0.0,
+    0.988,
+    0.5
+   ],
+   "head_gltf": [
+    0.0,
+    0.625,
+    -0.92
+   ]
+  },
+  "tail_4": {
+   "parent": "tail_3",
+   "head_blender": [
+    0.0,
+    0.988,
+    0.5
+   ],
+   "tail_blender": [
+    0.0,
+    1.07,
+    0.422
+   ],
+   "head_gltf": [
+    0.0,
+    0.5,
+    -0.988
+   ]
+  },
+  "ear_L_1": {
+   "parent": "head",
+   "head_blender": [
+    0.14,
+    -0.23,
+    1.48
+   ],
+   "tail_blender": [
+    0.183,
+    -0.246,
+    1.645
+   ],
+   "head_gltf": [
+    0.14,
+    1.48,
+    0.23
+   ]
+  },
+  "ear_L_2": {
+   "parent": "ear_L_1",
+   "head_blender": [
+    0.183,
+    -0.246,
+    1.645
+   ],
+   "tail_blender": [
+    0.244,
+    -0.264,
+    1.835
+   ],
+   "head_gltf": [
+    0.183,
+    1.645,
+    0.246
+   ]
+  },
+  "front_shoulder_L": {
+   "parent": "spine_3",
+   "head_blender": [
+    0.165,
+    -0.085,
+    0.8
+   ],
+   "tail_blender": [
+    0.165,
+    -0.007,
+    0.5
+   ],
+   "head_gltf": [
+    0.165,
+    0.8,
+    0.085
+   ]
+  },
+  "front_elbow_L": {
+   "parent": "front_shoulder_L",
+   "head_blender": [
+    0.165,
+    -0.007,
+    0.5
+   ],
+   "tail_blender": [
+    0.165,
+    -0.031,
+    0.17
+   ],
+   "head_gltf": [
+    0.165,
+    0.5,
+    0.007
+   ]
+  },
+  "front_wrist_L": {
+   "parent": "front_elbow_L",
+   "head_blender": [
+    0.165,
+    -0.031,
+    0.17
+   ],
+   "tail_blender": [
+    0.165,
+    -0.055,
+    0.075
+   ],
+   "head_gltf": [
+    0.165,
+    0.17,
+    0.031
+   ]
+  },
+  "front_paw_L": {
+   "parent": "front_wrist_L",
+   "head_blender": [
+    0.165,
+    -0.055,
+    0.075
+   ],
+   "tail_blender": [
+    0.165,
+    -0.2,
+    0.045
+   ],
+   "head_gltf": [
+    0.165,
+    0.075,
+    0.055
+   ]
+  },
+  "back_hip_L": {
+   "parent": "hips",
+   "head_blender": [
+    0.18,
+    0.56,
+    0.8
+   ],
+   "tail_blender": [
+    0.18,
+    0.45,
+    0.485
+   ],
+   "head_gltf": [
+    0.18,
+    0.8,
+    -0.56
+   ]
+  },
+  "back_stifle_L": {
+   "parent": "back_hip_L",
+   "head_blender": [
+    0.18,
+    0.45,
+    0.485
+   ],
+   "tail_blender": [
+    0.18,
+    0.645,
+    0.255
+   ],
+   "head_gltf": [
+    0.18,
+    0.485,
+    -0.45
+   ]
+  },
+  "back_hock_L": {
+   "parent": "back_stifle_L",
+   "head_blender": [
+    0.18,
+    0.645,
+    0.255
+   ],
+   "tail_blender": [
+    0.18,
+    0.617,
+    0.085
+   ],
+   "head_gltf": [
+    0.18,
+    0.255,
+    -0.645
+   ]
+  },
+  "back_foot_L": {
+   "parent": "back_hock_L",
+   "head_blender": [
+    0.18,
+    0.617,
+    0.085
+   ],
+   "tail_blender": [
+    0.18,
+    0.43,
+    0.045
+   ],
+   "head_gltf": [
+    0.18,
+    0.085,
+    -0.617
+   ]
+  },
+  "ear_R_1": {
+   "parent": "head",
+   "head_blender": [
+    -0.14,
+    -0.23,
+    1.48
+   ],
+   "tail_blender": [
+    -0.183,
+    -0.246,
+    1.645
+   ],
+   "head_gltf": [
+    -0.14,
+    1.48,
+    0.23
+   ]
+  },
+  "ear_R_2": {
+   "parent": "ear_R_1",
+   "head_blender": [
+    -0.183,
+    -0.246,
+    1.645
+   ],
+   "tail_blender": [
+    -0.244,
+    -0.264,
+    1.835
+   ],
+   "head_gltf": [
+    -0.183,
+    1.645,
+    0.246
+   ]
+  },
+  "front_shoulder_R": {
+   "parent": "spine_3",
+   "head_blender": [
+    -0.165,
+    -0.085,
+    0.8
+   ],
+   "tail_blender": [
+    -0.165,
+    -0.007,
+    0.5
+   ],
+   "head_gltf": [
+    -0.165,
+    0.8,
+    0.085
+   ]
+  },
+  "front_elbow_R": {
+   "parent": "front_shoulder_R",
+   "head_blender": [
+    -0.165,
+    -0.007,
+    0.5
+   ],
+   "tail_blender": [
+    -0.165,
+    -0.031,
+    0.17
+   ],
+   "head_gltf": [
+    -0.165,
+    0.5,
+    0.007
+   ]
+  },
+  "front_wrist_R": {
+   "parent": "front_elbow_R",
+   "head_blender": [
+    -0.165,
+    -0.031,
+    0.17
+   ],
+   "tail_blender": [
+    -0.165,
+    -0.055,
+    0.075
+   ],
+   "head_gltf": [
+    -0.165,
+    0.17,
+    0.031
+   ]
+  },
+  "front_paw_R": {
+   "parent": "front_wrist_R",
+   "head_blender": [
+    -0.165,
+    -0.055,
+    0.075
+   ],
+   "tail_blender": [
+    -0.165,
+    -0.2,
+    0.045
+   ],
+   "head_gltf": [
+    -0.165,
+    0.075,
+    0.055
+   ]
+  },
+  "back_hip_R": {
+   "parent": "hips",
+   "head_blender": [
+    -0.18,
+    0.56,
+    0.8
+   ],
+   "tail_blender": [
+    -0.18,
+    0.45,
+    0.485
+   ],
+   "head_gltf": [
+    -0.18,
+    0.8,
+    -0.56
+   ]
+  },
+  "back_stifle_R": {
+   "parent": "back_hip_R",
+   "head_blender": [
+    -0.18,
+    0.45,
+    0.485
+   ],
+   "tail_blender": [
+    -0.18,
+    0.645,
+    0.255
+   ],
+   "head_gltf": [
+    -0.18,
+    0.485,
+    -0.45
+   ]
+  },
+  "back_hock_R": {
+   "parent": "back_stifle_R",
+   "head_blender": [
+    -0.18,
+    0.645,
+    0.255
+   ],
+   "tail_blender": [
+    -0.18,
+    0.617,
+    0.085
+   ],
+   "head_gltf": [
+    -0.18,
+    0.255,
+    -0.645
+   ]
+  },
+  "back_foot_R": {
+   "parent": "back_hock_R",
+   "head_blender": [
+    -0.18,
+    0.617,
+    0.085
+   ],
+   "tail_blender": [
+    -0.18,
+    0.43,
+    0.045
+   ],
+   "head_gltf": [
+    -0.18,
+    0.085,
+    -0.617
+   ]
+  }
+ },
+ "skinned_meshes": {
+  "body": "dog_shepherd_body",
+  "ear_L": "dog_shepherd_ear_L",
+  "ear_R": "dog_shepherd_ear_R"
+ },
+ "max_influences": 4,
+ "accessories": {
+  "eye_L": {
+   "object": "dog_shepherd_eye_L",
+   "bone": "head"
+  },
+  "eye_R": {
+   "object": "dog_shepherd_eye_R",
+   "bone": "head"
+  },
+  "nose": {
+   "object": "dog_shepherd_nose",
+   "bone": "head"
+  },
+  "collar": {
+   "object": "dog_shepherd_collar",
+   "bone": "neck"
+  },
+  "tongue": {
+   "object": "dog_shepherd_tongue",
+   "bone": "jaw"
+  }
+ },
+ "jaw_rest_open_deg": 12.0,
+ "test_poses": {
+  "rest": {
+   "jaw": {
+    "rot": [
+     12.0,
+     0,
+     0
+    ]
+   }
+  },
+  "closed": {
+   "jaw": {
+    "rot": [
+     0,
+     0,
+     0
+    ]
+   },
+   "_hide": [
+    "tongue"
+   ]
+  },
+  "sit": {
+   "jaw": {
+    "rot": [
+     12.0,
+     0,
+     0
+    ]
+   },
+   "root": {
+    "loc": [
+     0,
+     0,
+     -0.5414
+    ]
+   },
+   "hips": {
+    "rot": [
+     -60.7943,
+     0,
+     0
+    ]
+   },
+   "spine_3": {
+    "rot": [
+     4,
+     0,
+     0
+    ]
+   },
+   "neck": {
+    "rot": [
+     28,
+     0,
+     0
+    ]
+   },
+   "head": {
+    "rot": [
+     24,
+     0,
+     0
+    ]
+   },
+   "tail_1": {
+    "rot": [
+     92.9265,
+     0,
+     0
+    ]
+   },
+   "tail_2": {
+    "rot": [
+     12,
+     0,
+     0
+    ]
+   },
+   "tail_3": {
+    "rot": [
+     6,
+     0,
+     0
+    ]
+   },
+   "front_shoulder_L": {
+    "rot": [
+     52.7943,
+     0,
+     0
+    ]
+   },
+   "back_hip_L": {
+    "rot": [
+     14.244898341582058,
+     0,
+     0
+    ]
+   },
+   "back_stifle_L": {
+    "rot": [
+     84.89624037759512,
+     0,
+     0
+    ]
+   },
+   "back_hock_L": {
+    "rot": [
+     -133.7088594690839,
+     0,
+     0
+    ]
+   },
+   "back_foot_L": {
+    "rot": [
+     95.36202074990672,
+     0,
+     0
+    ]
+   },
+   "front_shoulder_R": {
+    "rot": [
+     52.7943,
+     0,
+     0
+    ]
+   },
+   "back_hip_R": {
+    "rot": [
+     14.244898341582058,
+     0,
+     0
+    ]
+   },
+   "back_stifle_R": {
+    "rot": [
+     84.89624037759512,
+     0,
+     0
+    ]
+   },
+   "back_hock_R": {
+    "rot": [
+     -133.7088594690839,
+     0,
+     0
+    ]
+   },
+   "back_foot_R": {
+    "rot": [
+     95.36202074990672,
+     0,
+     0
+    ]
+   }
+  },
+  "wag": {
+   "jaw": {
+    "rot": [
+     32.0,
+     0,
+     0
+    ]
+   },
+   "tail_1": {
+    "rot": [
+     8,
+     0,
+     14
+    ]
+   },
+   "tail_2": {
+    "rot": [
+     6,
+     0,
+     12
+    ]
+   },
+   "tail_3": {
+    "rot": [
+     5,
+     0,
+     10
+    ]
+   },
+   "tail_4": {
+    "rot": [
+     3,
+     0,
+     8
+    ]
+   },
+   "ear_L_1": {
+    "rot": [
+     0,
+     -40,
+     0
+    ]
+   },
+   "ear_L_2": {
+    "rot": [
+     0,
+     -18,
+     0
+    ]
+   },
+   "neck": {
+    "rot": [
+     0,
+     0,
+     -6
+    ]
+   },
+   "head": {
+    "rot": [
+     0,
+     0,
+     -6
+    ]
+   }
+  }
+ }
+}

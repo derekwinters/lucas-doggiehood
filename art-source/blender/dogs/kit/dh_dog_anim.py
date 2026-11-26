@@ -136,6 +136,7 @@ class Rig:
         return (R.inverted() @ Q @ R).to_quaternion()
 
     def set(self, bone, rx=0.0, ry=0.0, rz=0.0):
+        rx, ry, rz = RG.ear_swing(bone, rx, ry, rz)       # erect ears (EARS["swing"]); others unchanged
         self.arm.pose.bones[bone].rotation_quaternion = self.q_world(bone, rx, ry, rz)
 
     def set_q(self, bone, q):
