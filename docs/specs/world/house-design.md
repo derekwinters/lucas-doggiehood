@@ -164,10 +164,13 @@ Decided on [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789):
 
 > **How the spec is changing ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)).** The Build checklist used to say bases, schemes and installed pieces all save and load, and #779 waited on the v1.0 save-format work in #628 → only the base and scheme are saved, pieces come from the level, and #779 adds its lines the existing additive way → because Derek agreed on 2026-11-24; it avoids two records that could disagree and keeps the house switch-over in v0.17.
 
+- **Starter schemes:** each starter house uses the scheme its base was approved in: base 1 Sage Cottage, base 2 Dove Gray, base 3 Colonial White, base 4 Charcoal Craftsman ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).
+- **When a zone house is picked:** its base and scheme are rolled **when its tile unlocks**, as today's rule does ([#434](https://github.com/derekwinters/lucas-doggiehood/issues/434)), so the empty lot already knows its house's level-4 footprint for placement and fences. The pick is kept through building and upgrades.
+
+> **How the spec is changing ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).** The starter schemes and the roll timing used to be Open, with #789 saying "chosen once at build" → starters use their approved render schemes, and zone houses roll at tile unlock → because Derek agreed on 2026-11-26; placement needs the footprint before the house is built.
+
 **Open:**
 
-- Which scheme each starter house uses ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).
-- When a zone house's roll happens. Today's rule rolls when the zone unlocks ([#434](https://github.com/derekwinters/lucas-doggiehood/issues/434)), so the empty lot already knows its house; #789 says "chosen once at build".
 - Which side fence the piece side faces on a given lot. Every base fits with its pieces on either side ([#773](https://github.com/derekwinters/lucas-doggiehood/issues/773)).
 
 ## Placement on the lot
