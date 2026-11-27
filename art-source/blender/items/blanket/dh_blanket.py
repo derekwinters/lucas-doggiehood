@@ -1,70 +1,66 @@
-"""The blanket decoration (#413): a soft wool plaid throw lying rumpled on the grass, fringed on
-its two short ends, with its front-right corner folded back over itself so the cream fleece
-reverse shows. Built from the named dimensions below; no randomness except a fixed seed for the
-fringe's small splay, so every run builds the same mesh.
+"""The blanket decoration (#413): a soft wool plaid throw lying gently rumpled on the grass, with
+a cream fleece underside and a short fringe on its two short ends. Kept simple on purpose (Derek,
+2026-11-27): a coarse grid with a few gentle rumples, no folded corner, one-quad tassels.
+
+The size and the colourways live in blanket_spec.py. Every colourway builds the same mesh; only
+the plaid material (and its texture) changes, so one mesh with a swapped material is enough
+in the game (#932).
 
 Coordinates: Blender units = metres at in-game size, front -Y, up +Z, pivot on the ground at the
-centre of the footprint (the graybox slab's centre in DecorationView).
+centre of the footprint.
 
 How it is built:
-  1. A flat grid over the cloth (BODY_W x BODY_D, about CELL metres per quad) with UVs in metres
+  1. A flat grid over the cloth (CLOTH_W x CLOTH_D, about CELL metres per quad) with UVs in metres
      over PLAID_TILE, so the plaid's scale is real.
-  2. Each grid point gets a height above the ground: a few soft ridges (RIDGES) where the throw
-     has bunched up, plus a gentle low ripple. The ridges fade out near the fold.
-  3. The corner beyond FOLD_LINE is folded back over the cloth: it rolls round a half cylinder
-     of radius FOLD_R and lies upside down on top, so its reverse side faces up.
-  4. A Solidify modifier gives the cloth THICK of thickness: the top shell keeps the plaid, the
+  2. Each grid point is lifted by a few soft, low ridges (RIDGES, placed as fractions of the cloth
+     so they follow a size change) plus a gentle ripple.
+  3. A Solidify modifier gives the cloth THICK of thickness: the top shell keeps the plaid, the
      underside and the cut edge get the cream fleece. It is applied before export.
-  5. Fringe: a row of tapered tassels on each short end, lying on the grass, folded with the
-     corner where they hang off it.
+  4. Fringe: one tapered quad per tassel on each short end, lying on the grass. The splay comes
+     from a fixed seed, so every run builds the same mesh.
 
-Object name "blanket"; materials DH_Item_blanket_plaid, DH_Item_blanket_back,
-DH_Item_blanket_fringe.
+Object name "blanket"; materials DH_Item_blanket_plaid_<Colourway>, DH_Item_blanket_back,
+DH_Item_blanket_fringe_<Colourway>.
 """
 import math
 import os
 import random
+import sys
 
 import bmesh
 import bpy
 from mathutils import Vector
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import blanket_spec as S  # noqa: E402
+
 NAME = "blanket"
 
-BODY_W = 1.24               # cloth across (X), fringe excluded
-BODY_D = 0.92               # cloth deep (Y)
-CELL = 0.04                 # target quad size of the cloth grid
+CELL = 0.08                 # target quad size of the cloth grid (gentle rumples need no more)
 THICK = 0.012               # cloth thickness (wool throw)
-RIPPLE_H = 0.007            # amplitude of the gentle all-over ripple
+RIPPLE_H = 0.005            # amplitude of the gentle all-over ripple
 RIPPLE_WAVES = ((2.3, 1.1, 0.4), (1.2, 3.1, 1.9), (3.7, 2.2, 4.1))   # (cycles over W, over D, phase)
 
-# Soft ridges where the throw has bunched: (x0, y0, x1, y1, height, half-width), metres.
+# Soft, low ridges where the throw has settled unevenly: (u0, v0, u1, v1, height m, half-width m),
+# with u, v as fractions of the cloth from its centre (-0.5 .. 0.5), so they scale with the size.
 RIDGES = (
-    (-0.56, 0.32, -0.02, 0.04, 0.046, 0.065),
-    (-0.42, -0.40, 0.06, -0.10, 0.032, 0.050),
-    (0.02, 0.42, 0.44, 0.16, 0.038, 0.060),
-    (-0.20, 0.44, -0.36, 0.12, 0.024, 0.040),
+    (-0.42, 0.30, -0.05, 0.05, 0.022, 0.11),
+    (0.05, -0.35, 0.38, -0.12, 0.018, 0.10),
+    (0.10, 0.38, 0.40, 0.20, 0.016, 0.09),
 )
-RIDGE_FADE = 0.10           # ridges fade to nothing this close to the fold line
+EDGE_SETTLE = 0.06          # ridges fade out this close to the edges, so the hem lies on the grass
 
-# The folded corner: everything beyond the line through these two points (on the right short
-# edge and on the front long edge) folds back over the cloth.
-FOLD_A = (0.62, -0.06)
-FOLD_B = (0.22, -0.46)
-FOLD_R = 0.026              # radius of the roll along the fold
-
-FRINGE_LEN = 0.066          # tassel length past the cloth edge
-FRINGE_PITCH = 0.030        # tassel spacing along the edge
-FRINGE_W0 = 0.016           # tassel width at the cloth
-FRINGE_W1 = 0.005           # ... at the tip
-FRINGE_SEGS = 3             # segments per tassel
-FRINGE_SPLAY_DEG = 9.0      # +- random splay of each tassel in the ground plane
-FRINGE_DROOP = 0.6          # fraction of the cloth's mid-height the tassel loses by its tip
+FRINGE_PITCH = 0.05         # tassel spacing along the edge
+FRINGE_W0 = 0.022           # tassel width at the cloth
+FRINGE_W1 = 0.008           # ... at the tip
+FRINGE_SPLAY_DEG = 8.0      # +- random splay of each tassel in the ground plane
+FRINGE_TUCK = 0.004         # the tassel starts this far under the cloth's cut edge
+FRINGE_TIP_H = 0.002        # tip height above the ground
 FRINGE_SEED = 413
 
 PLAID_TILE = 0.32           # metres per plaid repeat (dh_blanket_tex.PLAID_TILE)
 BACK_TILE = 0.25            # metres per fleece repeat (dh_blanket_tex.BACK_TILE)
-FRINGE_U = 442.5 / 512        # the fringe samples the plaid in the middle of a cream warp stripe
+FRINGE_U = 442.5 / 512      # the fringe samples the plaid in the middle of a light warp stripe
 
 ROUGH_PLAID = 0.92
 ROUGH_BACK = 0.98
@@ -74,68 +70,30 @@ SPECULAR = 0.08
 # ---------------------------------------------------------------------------
 # shape
 # ---------------------------------------------------------------------------
-def _fold_frame():
-    ax, ay = FOLD_A
-    bx, by = FOLD_B
-    tx, ty = bx - ax, by - ay
-    ln = math.hypot(tx, ty)
-    tx, ty = tx / ln, ty / ln
-    nx, ny = ty, -tx                        # unit normal of the line
-    # point it at the corner that folds (+X, -Y)
-    cx, cy = BODY_W / 2, -BODY_D / 2
-    if (cx - ax) * nx + (cy - ay) * ny < 0:
-        nx, ny = -nx, -ny
-    return (ax, ay), (nx, ny)
-
-
-def fold_distance(x, y):
-    """Signed distance of a flat point beyond the fold line (positive = on the folded corner)."""
-    (ax, ay), (nx, ny) = _fold_frame()
-    return (x - ax) * nx + (y - ay) * ny
-
-
 def _ridge(x, y):
     h = 0.0
-    for x0, y0, x1, y1, height, hw in RIDGES:
+    for u0, v0, u1, v1, height, hw in RIDGES:
+        x0, y0, x1, y1 = u0 * S.CLOTH_W, v0 * S.CLOTH_D, u1 * S.CLOTH_W, v1 * S.CLOTH_D
         dx, dy = x1 - x0, y1 - y0
         L2 = dx * dx + dy * dy
         t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / L2))
-        px, py = x0 + t * dx, y0 + t * dy
-        d = math.hypot(x - px, y - py)
-        along = math.sin(math.pi * t)               # fades out at both ends
-        h += height * along * math.exp(-(d / hw) ** 2)
+        d = math.hypot(x - (x0 + t * dx), y - (y0 + t * dy))
+        h += height * math.sin(math.pi * t) * math.exp(-(d / hw) ** 2)
     return h
 
 
 def _ripple(x, y):
     s = 0.0
     for cw, cd, ph in RIPPLE_WAVES:
-        s += math.sin(2 * math.pi * (cw * x / BODY_W + cd * y / BODY_D) + ph)
+        s += math.sin(2 * math.pi * (cw * x / S.CLOTH_W + cd * y / S.CLOTH_D) + ph)
     return RIPPLE_H * (0.5 + 0.5 * s / len(RIPPLE_WAVES))     # 0 .. RIPPLE_H
 
 
 def lift(x, y):
-    """Height of the cloth's mid-surface above the flat (unfolded) position, before folding."""
-    d = fold_distance(x, y)
-    fade = max(0.0, min(1.0, -d / RIDGE_FADE))      # 0 on and beyond the fold line
-    return THICK / 2 + fade * (_ridge(x, y) + _ripple(x, y))
-
-
-def place(x, y, h):
-    """3-D position of the flat point (x, y) raised h along the cloth's up-normal, after folding."""
-    d = fold_distance(x, y)
-    if d <= 0:
-        return Vector((x, y, h))
-    _, (nx, ny) = _fold_frame()
-    fx, fy = x - d * nx, y - d * ny                 # foot on the fold line
-    if d < math.pi * FOLD_R:
-        th = d / FOLD_R
-        s = FOLD_R * math.sin(th) - h * math.sin(th)
-        z = FOLD_R * (1 - math.cos(th)) + h * math.cos(th)
-    else:
-        s = -(d - math.pi * FOLD_R)
-        z = 2 * FOLD_R - h
-    return Vector((fx + s * nx, fy + s * ny, z))
+    """Height of the cloth's mid-surface above the ground."""
+    edge = min(S.CLOTH_W / 2 - abs(x), S.CLOTH_D / 2 - abs(y))
+    settle = max(0.0, min(1.0, edge / EDGE_SETTLE))
+    return THICK / 2 + settle * (_ridge(x, y) + _ripple(x, y))
 
 
 # ---------------------------------------------------------------------------
@@ -164,12 +122,20 @@ def _material(name, color_path, rough, normal_path=None, double_sided=False):
     return mat
 
 
-def materials(tex):
+def material_names(colourway):
+    c = colourway.capitalize()
+    return {"plaid": "DH_Item_blanket_plaid_" + c, "back": "DH_Item_blanket_back",
+            "fringe": "DH_Item_blanket_fringe_" + c}
+
+
+def materials(tex, colourway):
     """tex = dh_blanket_tex.make_all(root)."""
+    n = material_names(colourway)
+    plaid = tex["plaid"][colourway]
     return {
-        "plaid": _material("DH_Item_blanket_plaid", tex["plaid"], ROUGH_PLAID, tex["normal"]),
-        "back": _material("DH_Item_blanket_back", tex["back"], ROUGH_BACK),
-        "fringe": _material("DH_Item_blanket_fringe", tex["plaid"], ROUGH_PLAID, double_sided=True),
+        "plaid": _material(n["plaid"], plaid, ROUGH_PLAID, tex["normal"]),
+        "back": _material(n["back"], tex["back"], ROUGH_BACK),
+        "fringe": _material(n["fringe"], plaid, ROUGH_PLAID, double_sided=True),
     }
 
 
@@ -177,16 +143,16 @@ def materials(tex):
 # mesh
 # ---------------------------------------------------------------------------
 def _cloth(bm, uv, mi_plaid):
-    nx = max(1, round(BODY_W / CELL))
-    ny = max(1, round(BODY_D / CELL))
-    x0, y0 = -BODY_W / 2, -BODY_D / 2
+    nx = max(1, round(S.CLOTH_W / CELL))
+    ny = max(1, round(S.CLOTH_D / CELL))
+    x0, y0 = -S.CLOTH_W / 2, -S.CLOTH_D / 2
     grid = []
     for j in range(ny + 1):
         row = []
         for i in range(nx + 1):
-            x = x0 + BODY_W * i / nx
-            y = y0 + BODY_D * j / ny
-            row.append((bm.verts.new(place(x, y, lift(x, y))), x, y))
+            x = x0 + S.CLOTH_W * i / nx
+            y = y0 + S.CLOTH_D * j / ny
+            row.append((bm.verts.new(Vector((x, y, lift(x, y)))), x, y))
         grid.append(row)
     for j in range(ny):
         for i in range(nx):
@@ -196,45 +162,39 @@ def _cloth(bm, uv, mi_plaid):
             f.smooth = True
             for loop, (_, x, y) in zip(f.loops, cs):
                 loop[uv].uv = (x / PLAID_TILE, y / PLAID_TILE)
-    return grid
 
 
 def _fringe(bm, uv, mi_fringe):
     rng = random.Random(FRINGE_SEED)
-    n = int(BODY_D // FRINGE_PITCH)
+    n = int(S.CLOTH_D // FRINGE_PITCH)
     span = (n - 1) * FRINGE_PITCH
     for side in (-1, 1):
-        xe = side * BODY_W / 2
+        xe = side * S.CLOTH_W / 2
         for k in range(n):
             yc = -span / 2 + k * FRINGE_PITCH
             a = math.radians(rng.uniform(-FRINGE_SPLAY_DEG, FRINGE_SPLAY_DEG))
             dx, dy = side * math.cos(a), math.sin(a)
             px, py = -dy, dx                               # across the tassel
             h0 = lift(xe, yc)
-            rows = []
-            for s in range(FRINGE_SEGS + 1):
-                t = s / FRINGE_SEGS
-                w = FRINGE_W0 + (FRINGE_W1 - FRINGE_W0) * t
-                # start just inside the edge so the tassel tucks under the cut
-                along = -0.004 + (FRINGE_LEN + 0.004) * t
+            ends = []
+            # the tip's outer corner, splay included, ends exactly FRINGE_LEN past the edge
+            tip = (S.FRINGE_LEN - abs(math.sin(a)) * FRINGE_W1 / 2) / math.cos(a)
+            for along, w, h in ((-FRINGE_TUCK, FRINGE_W0, h0), (tip, FRINGE_W1, FRINGE_TIP_H)):
                 cx, cy = xe + dx * along, yc + dy * along
-                h = h0 * (1 - FRINGE_DROOP * t)
-                pts = [(cx - px * w / 2, cy - py * w / 2), (cx + px * w / 2, cy + py * w / 2)]
-                rows.append([(bm.verts.new(place(qx, qy, h)), qy) for qx, qy in pts])
-            for s in range(FRINGE_SEGS):
-                a0, a1 = rows[s]
-                b0, b1 = rows[s + 1]
-                quad = [a0, a1, b1, b0] if side > 0 else [a1, a0, b0, b1]
-                f = bm.faces.new([q[0] for q in quad])
-                f.material_index = mi_fringe
-                f.smooth = True
-                for loop, (_, qy) in zip(f.loops, quad):
-                    loop[uv].uv = (FRINGE_U, yc / PLAID_TILE)
+                ends.append([bm.verts.new(Vector((cx - px * w / 2, cy - py * w / 2, h))),
+                             bm.verts.new(Vector((cx + px * w / 2, cy + py * w / 2, h)))])
+            (a0, a1), (b0, b1) = ends
+            quad = [a0, a1, b1, b0] if side > 0 else [a1, a0, b0, b1]
+            f = bm.faces.new(quad)
+            f.material_index = mi_fringe
+            f.smooth = True
+            for loop in f.loops:
+                loop[uv].uv = (FRINGE_U, yc / PLAID_TILE)
 
 
-def build(tex, collection=None):
-    """Build the blanket object (modifiers applied) from the textures in tex; returns it."""
-    mats = materials(tex)
+def build(tex, colourway=S.DEFAULT, collection=None):
+    """Build the blanket object in one colourway (modifiers applied); returns it."""
+    mats = materials(tex, colourway)
     order = ["plaid", "back", "fringe"]
     bm = bmesh.new()
     uv = bm.loops.layers.uv.new("UVMap")
@@ -264,6 +224,12 @@ def build(tex, collection=None):
     bm.from_mesh(me)
     uv = bm.loops.layers.uv.active
     back_scale = PLAID_TILE / BACK_TILE
+    # Solidify offsets along the normals, so where a rumple slopes at the hem the cut edge
+    # leans out by a fraction of a millimetre: pin it back onto the cloth's outline.
+    hw, hd = S.CLOTH_W / 2, S.CLOTH_D / 2
+    for v in bm.verts:
+        v.co.x = max(-hw, min(hw, v.co.x))
+        v.co.y = max(-hd, min(hd, v.co.y))
     for f in bm.faces:
         if f.material_index == order.index("back"):
             for loop in f.loops:

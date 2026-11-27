@@ -1,54 +1,213 @@
 {
- "bounds_max_m": [
-  0.686,
-  0.4608,
-  0.0706
+ "cloth_m": [
+  2.0,
+  1.4
  ],
- "bounds_min_m": [
-  -0.686,
-  -0.4603,
-  -0.0001
- ],
- "checks": {
-  "centred": true,
-  "embedded": true,
-  "flat": true,
-  "footprint": true,
-  "materials": true,
-  "on_ground": true,
-  "tri_budget": true
- },
- "glb_bytes": 312296,
- "images": [
-  "blanket_back_color",
-  "blanket_plaid_color",
-  "blanket_weave_normal"
- ],
- "materials": {
-  "DH_Item_blanket_back": {
-   "alphaMode": "OPAQUE",
-   "doubleSided": false
+ "colourways": {
+  "green": {
+   "bounds_max_m": [
+    1.06,
+    0.7,
+    0.036
+   ],
+   "bounds_min_m": [
+    -1.06,
+    -0.7,
+    0.0
+   ],
+   "checks": {
+    "centred": true,
+    "embedded": true,
+    "flat": true,
+    "footprint": true,
+    "materials": true,
+    "on_ground": true,
+    "tri_budget": true
+   },
+   "file": "blanket_green.glb",
+   "glb_bytes": 281648,
+   "images": [
+    "blanket_back_color",
+    "blanket_plaid_green_color",
+    "blanket_weave_normal"
+   ],
+   "label": "Green & cream",
+   "materials": {
+    "DH_Item_blanket_back": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    },
+    "DH_Item_blanket_fringe_Green": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    "DH_Item_blanket_plaid_Green": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    }
+   },
+   "size_xyz_m": [
+    2.12,
+    1.4,
+    0.036
+   ],
+   "tris": 2080
   },
-  "DH_Item_blanket_fringe": {
-   "alphaMode": "OPAQUE",
-   "doubleSided": true
+  "navy": {
+   "bounds_max_m": [
+    1.06,
+    0.7,
+    0.036
+   ],
+   "bounds_min_m": [
+    -1.06,
+    -0.7,
+    0.0
+   ],
+   "checks": {
+    "centred": true,
+    "embedded": true,
+    "flat": true,
+    "footprint": true,
+    "materials": true,
+    "on_ground": true,
+    "tri_budget": true
+   },
+   "file": "blanket_navy.glb",
+   "glb_bytes": 277460,
+   "images": [
+    "blanket_back_color",
+    "blanket_plaid_navy_color",
+    "blanket_weave_normal"
+   ],
+   "label": "Navy & blue",
+   "materials": {
+    "DH_Item_blanket_back": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    },
+    "DH_Item_blanket_fringe_Navy": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    "DH_Item_blanket_plaid_Navy": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    }
+   },
+   "size_xyz_m": [
+    2.12,
+    1.4,
+    0.036
+   ],
+   "tris": 2080
   },
-  "DH_Item_blanket_plaid": {
-   "alphaMode": "OPAQUE",
-   "doubleSided": false
+  "purple": {
+   "bounds_max_m": [
+    1.06,
+    0.7,
+    0.036
+   ],
+   "bounds_min_m": [
+    -1.06,
+    -0.7,
+    0.0
+   ],
+   "checks": {
+    "centred": true,
+    "embedded": true,
+    "flat": true,
+    "footprint": true,
+    "materials": true,
+    "on_ground": true,
+    "tri_budget": true
+   },
+   "file": "blanket_purple.glb",
+   "glb_bytes": 283768,
+   "images": [
+    "blanket_back_color",
+    "blanket_plaid_purple_color",
+    "blanket_weave_normal"
+   ],
+   "label": "Grey & purple",
+   "materials": {
+    "DH_Item_blanket_back": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    },
+    "DH_Item_blanket_fringe_Purple": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    "DH_Item_blanket_plaid_Purple": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    }
+   },
+   "size_xyz_m": [
+    2.12,
+    1.4,
+    0.036
+   ],
+   "tris": 2080
+  },
+  "red": {
+   "bounds_max_m": [
+    1.06,
+    0.7,
+    0.036
+   ],
+   "bounds_min_m": [
+    -1.06,
+    -0.7,
+    0.0
+   ],
+   "checks": {
+    "centred": true,
+    "embedded": true,
+    "flat": true,
+    "footprint": true,
+    "materials": true,
+    "on_ground": true,
+    "tri_budget": true
+   },
+   "file": "blanket_red.glb",
+   "glb_bytes": 270856,
+   "images": [
+    "blanket_back_color",
+    "blanket_plaid_red_color",
+    "blanket_weave_normal"
+   ],
+   "label": "Red & green tartan",
+   "materials": {
+    "DH_Item_blanket_back": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    },
+    "DH_Item_blanket_fringe_Red": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    "DH_Item_blanket_plaid_Red": {
+     "alphaMode": "OPAQUE",
+     "doubleSided": false
+    }
+   },
+   "size_xyz_m": [
+    2.12,
+    1.4,
+    0.036
+   ],
+   "tris": 2080
   }
  },
+ "default": "navy",
+ "footprint_m": [
+  2.12,
+  1.4
+ ],
  "name": "blanket",
- "size_xyz_m": [
-  1.3721,
-  0.9211,
-  0.0706
- ],
- "slab_footprint_m": [
-  1.4,
-  1.0
- ],
+ "same_mesh_every_colourway": true,
  "tri_backstop": 6000,
- "tris": 3428,
- "units": "metres, Blender axes (front -Y, up +Z); the glTF file is Y-up (front +Z)"
+ "units": "metres, Blender axes (front -Y, up +Z); the .glb files are Y-up (front +Z)"
 }
