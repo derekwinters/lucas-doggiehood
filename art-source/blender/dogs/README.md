@@ -16,6 +16,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | `french-bulldog/` | The approved French Bulldog (#915): `breed.py`, its outputs (one coat: fawn with a black mask), and `render_compare.py` (beside the Lab and the Shepherd) |
 | `puggle/` | The approved Puggle (#909): `breed.py`, its outputs (fawn default, black and apricot light coats), `render_compare.py` (beside the Beagle and the Lab) and `check_tail.py` (the curled tail stays clear of the back in every clip) |
 | `chihuahua/` | The approved Chihuahua (#914): `breed.py`, its outputs (fawn default and black-and-tan coats), and `render_compare.py` (beside the Beagle and the Lab) |
+| `frenchton/` | The approved Frenchton, French Bulldog x Boston Terrier (#918): `breed.py`, its outputs (black-and-white default, brindle-and-white dark and fawn-and-white light coats), and `render_compare.py` (beside the Beagle and the Puggle) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists

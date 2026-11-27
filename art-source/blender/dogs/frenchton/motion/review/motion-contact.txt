@@ -1,0 +1,125 @@
+Frenchton motion clips - ground contact check (skinned mesh, every frame)
+Tolerances: nothing below z = -0.010 m; planted paws within 0.010 m of z = 0 and sliding < 0.010 m against the ground (moving +Y at the clip's ground speed).
+Blender axes: front -Y, up +Z, metres. 30 fps. Frame N of a loop equals frame 0.
+
+Idle: 120 frames (4.00 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0- 19  min -0.0000  (f9, front_paw_L)
+    f 20- 39  min -0.0000  (f30, front_paw_R)
+    f 40- 59  min -0.0000  (f49, front_paw_L)
+    f 60- 79  min -0.0000  (f70, front_paw_R)
+    f 80- 99  min -0.0000  (f89, front_paw_L)
+    f100-119  min -0.0000  (f110, front_paw_R)
+    f120-120  min -0.0000  (f120, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  0-120  paw low -0.0000..+0.0000  slide 0.0000
+    FR f  0-120  paw low -0.0000..+0.0000  slide 0.0000
+    HL f  0-120  paw low -0.0000..-0.0000  slide 0.0000
+    HR f  0-120  paw low -0.0000..-0.0000  slide 0.0000
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+Walk: 24 frames (0.80 s) at 30 fps, ground speed 0.600 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  3  min -0.0001  (f0, back_foot_R)
+    f  4-  7  min -0.0001  (f5, front_paw_R)
+    f  8- 11  min -0.0001  (f11, back_foot_L)
+    f 12- 15  min -0.0000  (f15, front_paw_L)
+    f 16- 19  min -0.0001  (f17, front_paw_L)
+    f 20- 23  min -0.0001  (f23, back_foot_R)
+    f 24- 24  min -0.0001  (f24, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  6- 17  paw low -0.0001..+0.0004  slide 0.0012
+    FR f  0-  5  paw low -0.0001..+0.0001  slide 0.0005
+    FR f 18- 24  paw low +0.0001..+0.0004  slide 0.0005
+    HL f  0- 11  paw low -0.0001..+0.0002  slide 0.0003
+    HR f 12- 23  paw low -0.0001..+0.0001  slide 0.0004
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+Run: 13 frames (0.43 s) at 30 fps, ground speed 2.560 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  1  min +0.0002  (f1, back_foot_R)
+    f  2-  3  min -0.0000  (f3, back_foot_R)
+    f  4-  5  min -0.0001  (f4, back_foot_L)
+    f  6-  7  min +0.0001  (f7, front_paw_R)
+    f  8-  9  min -0.0000  (f9, front_paw_L)
+    f 10- 11  min +0.0004  (f10, front_paw_L)
+    f 12- 13  min +0.0004  (f13, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  7-  9  paw low -0.0000..+0.0005  slide 0.0009
+    FR f  6-  7  paw low +0.0001..+0.0004  slide 0.0004
+    HL f  2-  4  paw low -0.0001..+0.0004  slide 0.0004
+    HR f  0-  2  paw low +0.0001..+0.0004  slide 0.0005
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+SitDown: 54 frames (1.80 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  8  min -0.0000  (f8, back_foot_L)
+    f  9- 17  min -0.0000  (f10, back_foot_L)
+    f 18- 26  min -0.0013  (f25, back_foot_L)
+    f 27- 35  min -0.0007  (f28, back_foot_R)
+    f 36- 44  min -0.0018  (f44, back_hip_R)
+    f 45- 53  min -0.0020  (f45, back_hip_R)
+    f 54- 54  min -0.0018  (f54, back_hip_R)
+  frame 54 contact (lowest skinned vertex per group): haunches -0.0018  hocks -0.0011  hind_feet -0.0000  front_paws -0.0004  tail +0.0005
+  first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs SIT 0.0000 deg / 0.00000 m
+  -> OK
+
+SitIdle: 90 frames (3.00 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0- 14  min -0.0018  (f0, back_hip_R)
+    f 15- 29  min -0.0018  (f15, back_hip_R)
+    f 30- 44  min -0.0018  (f30, back_hip_R)
+    f 45- 59  min -0.0018  (f45, back_hip_R)
+    f 60- 74  min -0.0018  (f60, back_hip_R)
+    f 75- 89  min -0.0018  (f75, back_hip_R)
+    f 90- 90  min -0.0018  (f90, back_hip_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  0- 90  paw low -0.0000..-0.0000  slide 0.0000
+    FR f  0- 90  paw low -0.0004..-0.0004  slide 0.0000
+    HL f  0- 90  paw low +0.0012..+0.0012  slide 0.0000
+    HR f  0- 90  paw low -0.0000..-0.0000  slide 0.0000
+  frame 0 contact (lowest skinned vertex per group): haunches -0.0018  hocks -0.0011  hind_feet -0.0000  front_paws -0.0004  tail +0.0005
+  frame 22 contact (lowest skinned vertex per group): haunches -0.0018  hocks -0.0011  hind_feet -0.0000  front_paws -0.0004  tail +0.0005
+  frame 67 contact (lowest skinned vertex per group): haunches -0.0018  hocks -0.0011  hind_feet -0.0000  front_paws -0.0004  tail +0.0005
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+TailWag: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  4  min -0.0000  (f3, back_foot_L)
+    f  5-  9  min -0.0000  (f5, back_foot_L)
+    f 10- 14  min -0.0000  (f13, back_foot_L)
+    f 15- 19  min -0.0000  (f15, back_foot_L)
+    f 20- 24  min -0.0000  (f23, back_foot_L)
+    f 25- 29  min -0.0000  (f25, back_foot_L)
+    f 30- 30  min -0.0000  (f30, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  0- 30  paw low +0.0000..+0.0000  slide 0.0000
+    FR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
+    HL f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
+    HR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+PlayBow: 84 frames (2.80 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0- 13  min -0.0001  (f13, back_foot_L)
+    f 14- 27  min -0.0002  (f20, back_foot_L)
+    f 28- 41  min -0.0002  (f34, back_foot_L)
+    f 42- 55  min -0.0002  (f48, back_foot_L)
+    f 56- 69  min -0.0002  (f62, back_foot_L)
+    f 70- 83  min -0.0001  (f70, back_foot_L)
+    f 84- 84  min -0.0000  (f84, back_foot_L)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    HL f  0- 84  paw low -0.0002..-0.0000  slide 0.0003
+    HR f  0- 84  paw low -0.0002..-0.0000  slide 0.0004
+  first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m
+  -> OK
+
+glTF read back (dog_frenchton_anim.gltf): OK
+viewer/dog_anim.json: 2.29 MB (self-contained glTF JSON, buffer + images as data URIs)
+
+ALL OK
