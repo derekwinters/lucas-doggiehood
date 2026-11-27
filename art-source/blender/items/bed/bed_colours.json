@@ -1,0 +1,60 @@
+{
+  "source": "art-source/blender/items/bed/dh_bed.py PALETTE",
+  "generated_by": "art-source/blender/items/bed/export_bed.py",
+  "how_to_tint": "The cover and base maps are neutral grey. Tint a bed by setting the base colour (glTF baseColorFactor) of DH_Item_Bed_Cover to 'cover' and of DH_Item_Bed_Base to 'base'. DH_Item_Bed_Cushion is never tinted. The exported glTF is in the default colour.",
+  "selection": "random: each bed in the game gets a colour picked at random from this palette (decided by Derek on #411; implemented by #932)",
+  "base_darken": 0.7,
+  "default": "Heather Plum",
+  "colours": [
+    {
+      "name": "Heather Plum",
+      "cover": "#6E5B82",
+      "base": "#4D405B"
+    },
+    {
+      "name": "Denim Blue",
+      "cover": "#4A7AAD",
+      "base": "#345579"
+    },
+    {
+      "name": "Dove Grey",
+      "cover": "#A9ADB2",
+      "base": "#76797D"
+    },
+    {
+      "name": "Charcoal",
+      "cover": "#3F4248",
+      "base": "#2C2E32"
+    },
+    {
+      "name": "Rust",
+      "cover": "#B5603A",
+      "base": "#7F4329"
+    },
+    {
+      "name": "Cranberry",
+      "cover": "#8E2F45",
+      "base": "#632130"
+    },
+    {
+      "name": "Mustard",
+      "cover": "#C9A03E",
+      "base": "#8D702B"
+    },
+    {
+      "name": "Dusty Rose",
+      "cover": "#C48A8F",
+      "base": "#896164"
+    },
+    {
+      "name": "Teal",
+      "cover": "#2F7A7E",
+      "base": "#215558"
+    },
+    {
+      "name": "Cocoa",
+      "cover": "#6B4A35",
+      "base": "#4B3425"
+    }
+  ]
+}

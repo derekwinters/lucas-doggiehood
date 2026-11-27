@@ -1,0 +1,88 @@
+{
+ "name": "Dog bed (#411)",
+ "units": "metres, Blender axes (front -Y, up +Z); the glTF file is Y-up (front +Z)",
+ "object": "dog_bed",
+ "tris": 1792,
+ "budget_tris": 6000,
+ "target_tris": 2000,
+ "size_xyz_m": [
+  1.6,
+  1.15,
+  0.3641
+ ],
+ "footprint_m": [
+  1.6,
+  1.15
+ ],
+ "todays_slab_m": [
+  1.4,
+  1.0
+ ],
+ "rest_point_m": [
+  0.0,
+  0.0,
+  0.18
+ ],
+ "rest_area_m": [
+  0.95,
+  0.5
+ ],
+ "bolster_top_m": {
+  "back_and_sides": 0.37,
+  "front": 0.25
+ },
+ "colour": "Heather Plum",
+ "palette": "bed_colours.json (10 colours)",
+ "materials": {
+  "DH_Item_Bed_Cover": {
+   "baseColorFactor": [
+    0.1559,
+    0.1046,
+    0.2232,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  },
+  "DH_Item_Bed_Base": {
+   "baseColorFactor": [
+    0.0742,
+    0.0513,
+    0.1046,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  },
+  "DH_Item_Bed_Cushion": {
+   "baseColorFactor": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  }
+ },
+ "images": [
+  "../textures/bed_cover_color.png",
+  "../textures/bed_cover_normal.png",
+  "../textures/bed_fleece_color.png",
+  "../textures/bed_fleece_normal.png"
+ ],
+ "gltf_bytes": 5601,
+ "bin_bytes": 46496,
+ "checks": {
+  "footprint": [],
+  "pivot": [],
+  "budget": [],
+  "flat_top": [],
+  "gltf": [],
+  "palette": []
+ },
+ "all_checks_ok": true
+}
