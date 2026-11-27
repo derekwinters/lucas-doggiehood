@@ -2054,6 +2054,11 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <td><code>python3 art-source/blender/items/chew-bone/export_chew_bone.py</code></td>
 <td><code>chew_bone.gltf</code> + <code>.bin</code>, its two textures and <code>chew_bone_stats.json</code></td>
 </tr>
+<tr>
+<td>Dog ball</td>
+<td><code>python3 art-source/blender/items/ball/export_ball.py</code></td>
+<td>6 <code>.gltf</code> + <code>.bin</code> pairs, one per felt colour (<code>ball_&lt;colour&gt;</code>, material <code>DH_Item_Ball_&lt;Colour&gt;</code>), and <code>ball_stats.json</code></td>
+</tr>
 </tbody>
 </table>
 <p><strong>Houses</strong> export as self-contained <code>.glb</code> files, each in its base's render scheme. A shingle or tile roof embeds the scheme's pre-tinted roof texture (<code>textures/roof_&lt;style&gt;_&lt;HEX&gt;.png</code>) with no <code>baseColorFactor</code>, so the roof carries one tint. Every other house surface is a flat material colour.</p>
