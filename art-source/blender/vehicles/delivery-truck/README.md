@@ -143,8 +143,9 @@ processes and compares with the committed `.glb` (skipped without `bpy`).
 
 ## Review renders (review/)
 
-Derek's review colours are **white** (`#EDEDED`, the palette's), **dark brown** (`#4A3222`,
-not in the palette) and **dark blue** (`#23366B`, the palette's): `truck_dims.REVIEW_COLORS`.
+Derek's review colours (`truck_dims.REVIEW_COLORS`, darkened after his second look) are
+**white** `#DADAD6`, **dark brown** `#36231A` and **dark blue** `#1A2752`. None of them is
+in `Palette.CarColorHex`.
 
 - `gamecam-<white|dark-brown|dark-blue>-<closed|open>.png`, and all six on
   `gamecam-sheet.png`: the game camera
@@ -186,7 +187,8 @@ run; if a view is missing, render it on its own with `--views`.
    extras beyond the issue's glass, tyre and trim materials.
 4. **Lettering colour.** Off-white with a dark outline, one look for every body colour.
    The other option was dark lettering on a light panel.
-5. **Dark brown is not a game colour yet.** The trucks pick from `Palette.CarColorHex`
-   (white, black, silver, gray, red, dark blue, dark green), and dark brown (`#4A3222`
-   here) is only defined in these scripts for the review. A truck-specific colour set,
-   including dark brown, needs a Core palette change, in #930 or a new issue.
+5. **The truck's colours are not game colours yet.** The trucks pick from
+   `Palette.CarColorHex` (white #EDEDED, black, silver, gray, red, dark blue #23366B, dark
+   green). All three chosen colours (white `#DADAD6`, dark brown `#36231A`, dark blue
+   `#1A2752`) are only defined in these scripts for the review. Using them in the game
+   needs a Core palette entry for each, in #930 or a new issue.

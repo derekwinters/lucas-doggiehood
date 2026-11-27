@@ -174,7 +174,9 @@ def core_car_colors():
 # The seven car colours, for the review renders and the viewer.
 CAR_COLORS = core_car_colors()
 
-# Derek's review colours (#924). White and dark blue are Palette.CarColorHex's; dark brown
-# is NOT in Core's palette yet (it would need a Core change, #930 or a new issue).
-DARK_BROWN = ("dark brown", "#4A3222")
-REVIEW_COLORS = [CAR_COLORS[0], DARK_BROWN, CAR_COLORS[5]]
+# Derek's review colours (#924), darkened after his second look. None of the three is in
+# Core's Palette.CarColorHex (white and dark blue are darker than the palette's #EDEDED and
+# #23366B; dark brown is not there at all): adopting them needs a Core palette change, in
+# #930 or a new issue.
+DARK_BROWN = ("dark brown", "#36231A")
+REVIEW_COLORS = [("white", "#DADAD6"), DARK_BROWN, ("dark blue", "#1A2752")]
