@@ -32,6 +32,14 @@ Starting scope is **comfort items** — dog beds, cushions, blankets. ([#51](htt
 
 Once delivered, the dog periodically decides — on its own, no player tap/trigger, consistent with dogs already behaving autonomously — to walk over to the comfort item and settle onto it. The dog actually paths there over the [walk network](world/sidewalks.md) (sidewalks, crosswalks, its house's front walkway) from wherever it is, then enters the "Rest" pose **on arrival** — it never teleports into the pose. ([#52](https://github.com/derekwinters/lucas-doggiehood/issues/52), [#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) See the "Rest" pose in [Dog Behavior](dogs/behavior.md#animations).
 
+**The blanket model** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). The blanket is a soft wool plaid throw built as a Blender source asset in `art-source/blender/items/blanket/`, outside `Assets/`. It lies gently rumpled on the grass, with a short fringe on its short ends and a cream fleece underside. The cloth is **2.0 × 1.4 m**, big enough for an adult Golden Retriever lying flat. With the fringe it covers a **2.12 × 1.40 m** footprint and stands at most 4 cm tall. It has 2,080 triangles, and its **pivot is on the ground** at the centre of its footprint. That footprint is larger than today's 1.4 × 1.0 m graybox slab. So when [#932](https://github.com/derekwinters/lucas-doggiehood/issues/932) imports the model, it has to reserve the larger footprint, including the pool's clearance around a decoration (`PoolPlacement.DecorationFootprintRadius`, today half the slab's diagonal). Until then, the game still shows the blue graybox slab.
+
+**Blanket colourways** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). The blanket comes in four colourways: navy & blue, red & green tartan, green & cream, and grey & purple. They share one mesh, and only the plaid differs. **A gifted blanket picks one colourway at random when it is delivered** (Derek, 2026-11-27). The pick is game code ([#932](https://github.com/derekwinters/lucas-doggiehood/issues/932)), not part of the asset. How the pick is kept, so the blanket stays the same colour after a relaunch, is for #932 to settle.
+
+> **How the spec is changing (#413).** It used to say the blanket stays inside today's 1.4 × 1.0 m graybox slab, so placement would not change → it now says the cloth is about 2.0 × 1.4 m (a 2.12 × 1.40 m footprint with the fringe), and that the game must reserve that larger footprint → because Derek asked for a bigger blanket that an adult dog can lie flat on.
+
+**Invariant — the blanket never leaves its placement footprint** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). Every vertex of every colourway's export lies inside the 2.12 × 1.40 m footprint, centred on the item's position and on or above the ground. That rectangle is the footprint the game places the blanket by. The export's read-back check and `tests/test_blanket.py` enforce this, and the size lives in one constant (`blanket_spec.py`).
+
 ## Build checklist
 
 - [ ] Decoration requests are scoped to a single dog's own yard; no shared-space decorating exists
@@ -40,4 +48,5 @@ Once delivered, the dog periodically decides — on its own, no player tap/trigg
 - [ ] Decoration requests come from the same quest rotation as other requests, not a separate shop screen
 - [ ] A decoration request presents a small set of item choices (not one named item) for the player to pick from
 - [ ] At least the 3 comfort items (bed, cushion, blanket) exist as deliverable decorations
+- [ ] A gifted blanket gets one of its colourways at random on delivery (#932)
 - [ ] A dog with a comfort decoration periodically and automatically walks over to it via the walk network and uses the "Rest" pose on it on arrival (no teleport into the pose)
