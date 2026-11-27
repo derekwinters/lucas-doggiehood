@@ -1,0 +1,80 @@
+{
+ "name": "Dog bed (#411)",
+ "units": "metres, Blender axes (front -Y, up +Z); the glTF file is Y-up (front +Z)",
+ "object": "dog_bed",
+ "tris": 3072,
+ "budget_tris": 6000,
+ "size_xyz_m": [
+  1.4,
+  1.0,
+  0.34
+ ],
+ "slab_footprint_m": [
+  1.4,
+  1.0
+ ],
+ "rest_point_m": [
+  0.0,
+  0.0,
+  0.17
+ ],
+ "rest_area_m": [
+  0.8,
+  0.4
+ ],
+ "bolster_top_m": {
+  "back_and_sides": 0.34,
+  "front": 0.23
+ },
+ "materials": {
+  "DH_Item_Bed_Cover": {
+   "baseColorFactor": [
+    0.1559,
+    0.1046,
+    0.2232,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  },
+  "DH_Item_Bed_Base": {
+   "baseColorFactor": [
+    0.0704,
+    0.0513,
+    0.0953,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  },
+  "DH_Item_Bed_Cushion": {
+   "baseColorFactor": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "baseColorTexture": true,
+   "normalTexture": true,
+   "doubleSided": false
+  }
+ },
+ "images": [
+  "../textures/bed_cover_color.png",
+  "../textures/bed_cover_normal.png",
+  "../textures/bed_fleece_color.png",
+  "../textures/bed_fleece_normal.png"
+ ],
+ "gltf_bytes": 5551,
+ "bin_bytes": 78752,
+ "checks": {
+  "footprint": [],
+  "pivot": [],
+  "budget": [],
+  "flat_top": [],
+  "gltf": []
+ },
+ "all_checks_ok": true
+}
