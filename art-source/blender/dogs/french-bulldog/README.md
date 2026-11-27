@@ -1,8 +1,10 @@
-# French Bulldog (concept, round 1)
+# French Bulldog (approved, #915)
 
-The fifth per-breed dog model, a **French Bulldog**, built with the shared dog kit for Derek's
-review. It is a concept round: nothing here is approved yet, and nothing here is imported by Unity
-(the folder is outside `Assets/`, like the Golden, the Lab and the Shepherd).
+The fifth per-breed dog model, a **French Bulldog**, built with the shared dog kit. Derek approved
+round 1, and it is kept here as **source assets only** (#915), the same way as the Golden, the
+Labrador, the German Shepherd and the Beagle. Nothing here is imported by Unity, because the folder
+is outside `Assets/`; the game still uses the Cube Pets dog. Importing it depends on the glTF
+importer (#776).
 
 It is meant to read as a Frenchie at the game camera, not a small Lab: large erect **bat ears**
 set high and wide on a broad, flat skull; a **flat face** with a deep stop, a very short, broad,
@@ -19,11 +21,12 @@ which holds only data, and it passes every kit check (`model` and `motion` both 
 tail's SitDown uses `SIT_DOWN["tail_lift"]` / `["tail_lag"]`. It follows
 `docs/engineering/blender-pipeline.md`.
 
-## Coats
+## Coat (decided, #915)
 
-One coat for now, keyed by the game's coat slot: **Default** = fawn with a black mask. The file is
-`dog_frenchie_default.gltf` (material `DH_Dog_Fur_Default`). Derek is still choosing the others
-(brindle as Dark and cream as Light are the likely ones).
+Exactly one, keyed by the game's coat slot (Derek, 2026-11-26): **Default** = fawn with a black
+mask and dark ears. The file is `dog_frenchie_default.gltf` (material `DH_Dog_Fur_Default`). **The
+French Bulldog has no Light, Dark or Black coat.** Wiring the slot in Unity belongs to the later
+Unity import work (#776).
 
 Values are sRGB hex. "Underside" is the kit's feathering channel (chest, belly, insides of the legs);
 "dark" is the kit's ear channel, which `FUR_PATCHES` also uses for the mask.
@@ -35,10 +38,9 @@ Values are sRGB hex. "Underside" is the kit's feathering channel (chest, belly, 
 - **The pattern:** a black mask over the whole short muzzle, up the face around the eyes (the
   forehead and the outer cheeks stay fawn), and back along the lips (flews) to the mouth corners;
   dark ears, with paler inner faces; no darker crown. The rest is fawn, a little paler underneath.
-- **Adding a coat is one more `COATS` entry** (three colours) and a `COAT_LABELS` label; the mask
+- **A coat would be one more `COATS` entry** (three colours) and a `COAT_LABELS` label; the mask
   lives in `FUR_PATCHES`, so it carries over. A brindle would need its stripes as a texture
-  pattern, which the kit cannot paint today (see Rough spots); a cream coat is just three colours
-  (a cream main, a paler underside, and either a cream or a dark mask channel).
+  pattern, which the kit cannot paint today (see Out of scope).
 - **The coat is short, fine and smooth:** the Lab's `FUR_STRAND` (short strands, a flat normal map
   at 0.16) and a fur material with a soft sheen (roughness 0.62, specular 0.40, near the Lab's).
 - **Collar, nose, lips and tongue:** the Golden's trim palette. The iris is a darker brown
@@ -50,11 +52,11 @@ The textures are the kit's set with the Frenchie's coat name: `dog_fur_default_c
 
 ## What makes it a Frenchie
 
-`breed.py` started from the Beagle round 1 (the smaller dog on the Lab's build). The body and legs
+`breed.py` started from the Beagle's round 1 (the smaller dog on the Lab's build). The body and legs
 are mapped down from the Beagle's with explicit factors (listed in its header); the head, ears,
 mouth and tail are new.
 
-| | Labrador (approved) | Beagle (round 1) | French Bulldog |
+| | Labrador (approved) | Beagle (approved) | French Bulldog |
 |---|---|---|---|
 | Overall | 1.58 m tall, 1.46 m nose to rump | 1.16 m tall, 1.17 m nose to rump | **the smallest**: 1.14 m to the ear tips (0.96 m to the skull), 0.89 m nose to rump |
 | Body | long, level | compact, deep chest | **short and stocky**: lengths 0.80× the Beagle's, heights 0.80×, widths kept, so it is as broad as the Beagle (0.50 m across the chest) on a much shorter body. A deep chest that hangs to 0.18 m off the ground, between the front legs; a tucked belly; the back rises a little from the withers (0.57 m) to the croup (0.59 m) |
@@ -74,7 +76,7 @@ over the Frenchie.
 
 Measured by the kit (`exports/dog_stats.json`), the same way for every breed.
 
-| Measure | French Bulldog | Beagle (round 1) | Labrador | German Shepherd |
+| Measure | French Bulldog | Beagle | Labrador | German Shepherd |
 |---|---|---|---|---|
 | Nose to rump | **0.89 m** | 1.17 m | 1.46 m | 1.52 m |
 | Nose to tail tip | **0.92 m** | 1.29 m | 1.85 m | 1.84 m |
@@ -162,7 +164,7 @@ processes, and every texture, export and report matched byte for byte.
 
 ## Kit change
 
-None. The kit is untouched, so the Golden, the Labrador and the German Shepherd cannot change.
+None. The French Bulldog is breed data only, so the other breeds cannot change.
 
 ## Files
 
@@ -196,14 +198,16 @@ python3 art-source/blender/dogs/kit/build_breed.py french-bulldog solve-sit     
 
 No PNG, JPG or MP4 committed may carry C2PA metadata (a `caBX` PNG chunk or an MP4 `uuid` box).
 
-## Rough spots
+## Out of scope (noted at approval)
+
+Derek approved round 1 as is; these are known limits, left for later issues.
+
 
 - **The stub barely shows.** To pass the sit-contact rule the stub leaves the lower rump and hangs
   down, so standing it reads as a small bump under the tail set (`review/hips.png`), and the
   TailWag swing is small (the wag lifts it out behind first, so it shows from behind and the
   side, but it is a short flick, not a sweep; `motion/review/tailwag.mp4`). A higher-set, screw-tail look would need the sit rule to allow
-  a stub that does not reach the ground. **Design question:** is the low, hanging stub fine, or
-  should the kit allow a short tail to sit clear of the ground?
+  a stub that does not reach the ground. A higher-set screw tail would need the sit-contact rule relaxed for stub tails.
 - **No real nose roll or wrinkles.** The muzzle has a slight rise just ahead of the stop, but the
   shape library lofts one ring at a time, so a crease across the face is not possible without a
   new shape (or a normal-map detail).

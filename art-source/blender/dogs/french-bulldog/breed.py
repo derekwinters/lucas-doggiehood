@@ -217,8 +217,8 @@ MEASURE = {"rump_min_abs_x": 0.07, "back_y": (0.0, 0.30)}
 # ----------------------------------------------------------------------------- coat
 # sRGB hex: main coat, "feathering" (the slightly paler underside: chest, belly, insides of the
 # legs), dark channel (the ears, and with FUR_PATCHES the mask). The key is the game's coat slot:
-# Default = fawn with a dark mask. More coats (brindle as Dark, cream as Light) are one more entry
-# each here and in COAT_LABELS.
+# Default = fawn with a dark mask. The French Bulldog has exactly one coat (Derek, 2026-11-26;
+# #915): no Light, Dark or Black.
 COATS = {
     "default": ("#C99A62", "#DDBB8C", "#2A2321"),
 }
