@@ -1,0 +1,51 @@
+{
+ "name": "Backyard dog pool, oval (#741)",
+ "units": "metres, Blender axes (up +Z, pivot on the ground at the centre of the water); the .glb is Y-up",
+ "file": "pool_oval.glb",
+ "tris": 600,
+ "tri_budget": 6000,
+ "verts": 1152,
+ "materials": [
+  "DH_Item_pool_shell",
+  "DH_Item_pool_coping",
+  "DH_Item_pool_upright",
+  "DH_Item_pool_step",
+  "DH_Item_pool_riser",
+  "DH_Item_pool_liner",
+  "DH_Item_pool_floor",
+  "DH_Item_pool_water",
+  "DH_Item_pool_ripple"
+ ],
+ "glb_bytes": 38472,
+ "shape": "oval",
+ "water_m": [
+  6.0,
+  3.0
+ ],
+ "oval_corner_radius_m": 0.45,
+ "rim_outer_m": [
+  6.21,
+  3.21
+ ],
+ "footprint_x_m": [
+  -3.105,
+  3.105
+ ],
+ "footprint_y_m": [
+  -2.36,
+  1.605
+ ],
+ "footprint_size_m": [
+  6.21,
+  3.965
+ ],
+ "bounding_radius_m": 3.3089,
+ "height_m": 1.5844,
+ "water_z_m": 1.3468,
+ "water_below_rim_m": 0.2377,
+ "water_depth_m": 1.2468,
+ "steps": 3,
+ "step_rise_m": 0.3961,
+ "step_tread_m": 0.26,
+ "step_width_m": 0.9
+}
