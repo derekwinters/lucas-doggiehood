@@ -96,9 +96,10 @@ The base is always the cover × 0.70 (`BASE_DARKEN`), like the houses' derived c
   deliberately absent);
 - every base darker than its cover.
 
-**Open: who picks a bed's colour.** At random, per owner, by the player when the bed is delivered,
-or always the default. That is a design decision for Derek and Lucas, and it belongs to #932 or a
-spec change. Nothing here assumes one.
+**In the game, each bed's colour is picked at random from the palette (decided by Derek).** Every
+delivered bed gets one of the 10 colours. #932 implements this. `bed_colours.json` records the rule
+under `selection`. Heather Plum is the default only because the export has to be tinted with
+something.
 
 ## Regenerating
 
@@ -147,7 +148,5 @@ The renders are not committed yet. As the pipeline says, only renders Derek appr
 1. **An adult Lab still nearly fills the bed.** The Lab is 1.46 m from nose to rump, and the bed is
    1.60 × 1.15 m. Lying prone it now fits on the cushion, with its rump against the back bolster and
    its head over the front.
-2. **Colour choice is Open** (see Colours above). Heather Plum is the default only because it is
-   what the export is tinted with. It nods to the graybox bed's purple (`#6C4FC4`).
-3. **Orientation in Unity** is still Open on #776, as it is for every Blender model. The slab's
+2. **Orientation in Unity** is still Open on #776, as it is for every Blender model. The slab's
    long side runs along Unity X, and the bed's long side runs along X too.

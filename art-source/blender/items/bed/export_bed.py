@@ -56,6 +56,8 @@ def palette_doc():
         "how_to_tint": ("The cover and base maps are neutral grey. Tint a bed by setting the base colour "
                         "(glTF baseColorFactor) of DH_Item_Bed_Cover to 'cover' and of DH_Item_Bed_Base to "
                         "'base'. DH_Item_Bed_Cushion is never tinted. The exported glTF is in the default colour."),
+        "selection": "random: each bed in the game gets a colour picked at random from this palette "
+                     "(decided by Derek on #411; implemented by #932)",
         "base_darken": C.BASE_DARKEN,
         "default": BD.DEFAULT_COLOUR,
         "colours": BD.palette(),

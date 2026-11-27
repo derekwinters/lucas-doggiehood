@@ -2,6 +2,7 @@
   "source": "art-source/blender/items/bed/dh_bed.py PALETTE",
   "generated_by": "art-source/blender/items/bed/export_bed.py",
   "how_to_tint": "The cover and base maps are neutral grey. Tint a bed by setting the base colour (glTF baseColorFactor) of DH_Item_Bed_Cover to 'cover' and of DH_Item_Bed_Base to 'base'. DH_Item_Bed_Cushion is never tinted. The exported glTF is in the default colour.",
+  "selection": "random: each bed in the game gets a colour picked at random from this palette (decided by Derek on #411; implemented by #932)",
   "base_darken": 0.7,
   "default": "Heather Plum",
   "colours": [
