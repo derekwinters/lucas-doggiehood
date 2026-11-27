@@ -99,6 +99,23 @@ The backyard fence keeps the geometry `LotFence` traces today ([Backyard fences]
 
 **Open** ([#806](https://github.com/derekwinters/lucas-doggiehood/issues/806), [#813](https://github.com/derekwinters/lucas-doggiehood/issues/813)): the fence style or styles, and how a fence meets a house's upgrade pieces ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
 
+## Backyard pool
+
+The pool a delivered `pool` gift leaves in a back yard ([World & Neighborhood → Backyard pool](world.md#backyard-pool)) has **two approved Blender models** ([#741](https://github.com/derekwinters/lucas-doggiehood/issues/741)), and **the game picks one at random for each pool** ([#926](https://github.com/derekwinters/lucas-doggiehood/issues/926)). Both are open-topped, above-ground pools with one plain wall and three low steps up the outside, one adult dog tall (`PoolPlacement.PoolHeight`), with the water below the rim at `PoolPlacement`'s water height. They are sized by their **water**:
+
+| Pool | Water | Footprint, steps included | Triangles |
+|---|---|---|---:|
+| Round | 5.0 m across | 5.21 × 5.99 m | 914 |
+| Oval | 6.0 × 3.0 m, 0.45 m corners | 6.21 × 3.97 m | 600 |
+
+Full sizes are in `art-source/blender/items/pool/README.md`. Swimming is [#921](https://github.com/derekwinters/lucas-doggiehood/issues/921).
+
+> **How the spec is changing (#741).** It used to say the pool is sized from the rendered adult dog: one dog tall and two dogs wide, the graybox's size ([World & Neighborhood → Backyard pool](world.md#backyard-pool)) → it now says the real pool comes in two approved shapes sized by their water, a 5 m round pool and a 6 × 3 m oval, picked at random per pool, still one dog tall → because Derek reviewed the renders on #741: a pool at the graybox's size, and then one three dogs wide, were both too skinny, and he set the water sizes himself and approved both shapes.
+
+**`PoolPlacement` must be updated before the models go in the game** ([#926](https://github.com/derekwinters/lucas-doggiehood/issues/926)). Its clear space is still the graybox's 2.54 m circle. Each model needs its own footprint kept clear, and the oval needs a **rectangular** clearance (with the pool's yaw), not a circle, because it is 6.21 m long but only 3.97 m deep.
+
+**Invariant — each pool model, steps included, stays within its recorded footprint and never stands taller than `PoolPlacement.PoolHeight`** ([#741](https://github.com/derekwinters/lucas-doggiehood/issues/741)), so the space placement keeps clear always holds the whole pool.
+
 ## Build checklist
 
 - [x] Textured trees committed as source ([#816](https://github.com/derekwinters/lucas-doggiehood/issues/816))
@@ -116,4 +133,6 @@ The backyard fence keeps the geometry `LotFence` traces today ([Backyard fences]
 - [ ] Yard trees render the textured models, placement unchanged; no street trees ([#811](https://github.com/derekwinters/lucas-doggiehood/issues/811))
 - [ ] The six in-use props are placed by the rules above, lamps unlit ([#812](https://github.com/derekwinters/lucas-doggiehood/issues/812))
 - [ ] Fences build from the Blender pieces ([#813](https://github.com/derekwinters/lucas-doggiehood/issues/813))
+- [x] Backyard pool models (round and oval) committed as source, renders approved by Derek ([#741](https://github.com/derekwinters/lucas-doggiehood/issues/741))
+- [ ] Pools render one of the two models at random, with `PoolPlacement` clearing each model's footprint ([#926](https://github.com/derekwinters/lucas-doggiehood/issues/926))
 - [ ] Every invariant on this page has a test that enforces it, including that no reference-only model is under `Assets/`
