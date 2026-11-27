@@ -31,7 +31,18 @@ Every lot gets a **textured lawn**, a tileable grass texture rather than today's
 
 The Kenney road tiles are replaced by a Blender road kit covering every road tile type in the [Tile Catalog](tile-catalog.md). It keeps today's road width (6 m), the sidewalk offsets and the crosswalk positions exactly.
 
-**Open** ([#802](https://github.com/derekwinters/lucas-doggiehood/issues/802)): the asphalt texture, lane paint, curbs and crosswalk markings. The approved street-prop road decals (crosswalk, stop line, manhole cover, storm drain) are reference only.
+**Approved look ([#802](https://github.com/derekwinters/lucas-doggiehood/issues/802)):** look A, "Fresh blacktop", for all 15 road tile types, source in `art-source/blender/environment/roads/`. The approved street-prop road decals (crosswalk, stop line, manhole cover, storm drain) are reference only.
+
+**Road layout rules ([#837](https://github.com/derekwinters/lucas-doggiehood/issues/837)):**
+
+- **Stops.** One Core rule decides which intersection approaches stop: at a **tee**, only the stem (the side street) stops; at a **four-way**, every approach stops (an all-way stop). Stop lines and [stop signs](#street-props) are both placed from that rule, so a stop line always has a sign and a sign always has a stop line.
+- **Cul-de-sacs** keep today's rounded dead end. There is no wide paved turning circle, so the walk network is unchanged.
+- **Intersection corners** stay square.
+- **Paved landings:** crosswalk landings and box corners are paved across the 0.75 m grass verge, so a dog never crosses grass to reach a crosswalk.
+
+**Invariant — a stop line is drawn only where a stop sign stands, and every stop sign has its stop line.**
+
+> **How the spec is changing ([#837](https://github.com/derekwinters/lucas-doggiehood/issues/837)).** The road look was Open, stop signs went on "each side-street approach" with the streets undecided, and the road kit drew a stop line on every approach → the road look is approved, a tee stops only its stem and a four-way is an all-way stop, and stop lines follow the signs → because Derek agreed on 2026-11-26.
 
 ## Sidewalks, front walkways and driveways
 
@@ -65,7 +76,7 @@ Derek approved 26 street props as a reference set ([#821](https://github.com/der
 
 | Prop | Model | Placement |
 |---|---|---|
-| Stop sign | `stop_sign` | One on each side-street approach of every intersection, on the right-hand corner. It is the only sign in the game. |
+| Stop sign | `stop_sign` | One on each stopping approach (a tee's stem, every approach of a four-way; see [Roads](#roads)), on the right-hand corner. It is the only sign in the game. |
 | Lamp post (lantern) | `lamp_post_lantern` | In the grass strip at every intersection corner, plus one at each property line along the block |
 | Mailbox | `mailbox` | One per house, at the curb beside its front walkway |
 | Fire hydrant | `fire_hydrant` | One per block, at a corner in the grass strip |

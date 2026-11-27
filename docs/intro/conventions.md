@@ -40,6 +40,8 @@ That lists every milestone with its state and open/closed counts; fetch the mile
 
 New version milestones (`v0.13`, `v0.14`, …) are spun up as needed — each with its own focus (new functionality, playtest fixes, a larger map expansion) — rather than following a fixed pre-planned ladder.
 
+**v1.0 is stability fixes only.** Every feature lands in a pre-1.0 milestone (`v0.x`), so the first stable release adds no new functionality: only bug fixes, hardening and stability work such as the save-format freeze. A feature found sitting in `v1.0` or later moves to the next `v0.x` milestone (Derek, 2026-11-26).
+
 **Closing a milestone to new work.** When a version is done taking new issues, *freeze* it: mark its GitHub milestone `description` as closed to new issues, and give the next milestone the active scope. Issue analysis proposes a milestone by matching an issue against these live scope descriptions ([pipeline-analysis](../engineering/issue-pipeline.md)), so freezing one and activating the next is what reroutes new intake — **existing approved issues in the frozen milestone stay put and finish**, only new issues are redirected. `/focus` still controls which milestone the nightly builder works from; move it forward once the frozen milestone's ready-for-work queue drains. (This is a soft, description-driven convention, not a hard gate — an owner `/approve` or `/milestone` can still place an issue anywhere.)
 
 Two **non-version** milestones sit alongside these:

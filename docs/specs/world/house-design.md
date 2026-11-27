@@ -5,13 +5,15 @@
 Houses are our own Blender models. A house is a **base** (the main shell) plus the **upgrade pieces** it has earned, each attached at a named point on the house. A newly built house shows only its **framing**, as if it is still being built, and becomes the **finished** house when a dog moves in. Each upgrade adds the next piece on one fixed path: a **garage**, then a **deck**, then a **patio**.
 
 !!! warning "This is the contract, not yet the code"
-    This page describes the house system being built in epic [#767](https://github.com/derekwinters/lucas-doggiehood/issues/767). The game still renders the Kenney City Kit houses, their per-level model swap and the greyscale vacancy tint described in [Art & UI Style → House architecture](art-style.md#house-architecture) and [Neighborhood Expansion](../expansion.md#house-leveling) until the implementation issues land: build state [#777](https://github.com/derekwinters/lucas-doggiehood/issues/777) and [#609](https://github.com/derekwinters/lucas-doggiehood/issues/609), upgrade pieces [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) and [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), saves [#779](https://github.com/derekwinters/lucas-doggiehood/issues/779), and the switch-over [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789). No implementation starts before Derek approves every model on [#784](https://github.com/derekwinters/lucas-doggiehood/issues/784).
+    This page describes the house system being built in epic [#767](https://github.com/derekwinters/lucas-doggiehood/issues/767). The game still renders the Kenney City Kit houses, their per-level model swap and the greyscale vacancy tint described in [Art & UI Style → House architecture](art-style.md#house-architecture) and [Neighborhood Expansion](../expansion.md#house-leveling) until the implementation issues land: build state [#777](https://github.com/derekwinters/lucas-doggiehood/issues/777) and [#609](https://github.com/derekwinters/lucas-doggiehood/issues/609), upgrade pieces [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) and [#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), saves [#779](https://github.com/derekwinters/lucas-doggiehood/issues/779), and the switch-over [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789). No Unity work starts before Derek approves every model on [#784](https://github.com/derekwinters/lucas-doggiehood/issues/784). The Core issues (#777, #778, #779) do not wait for it, because they use only data the approved concepts already fix.
 
 The approved concept models, colour schemes and the measurements on this page are committed as source under `art-source/blender/` ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)); its `README.md` has the full dimensions, triangle counts and concerns.
 
 ## How the models are made
 
-Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). How the scripts, exports and renders work is on [Blender Asset Pipeline](../../engineering/blender-pipeline.md). All models are built and approved before any Core or Unity work starts. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
+Every base and piece is a **Blender Python script** written by Claude and reviewed by Derek ([#768](https://github.com/derekwinters/lucas-doggiehood/issues/768)). How the scripts, exports and renders work is on [Blender Asset Pipeline](../../engineering/blender-pipeline.md). All models are built and approved before any Unity work starts. Core work does not wait on the models.
+
+> **How the spec is changing ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)).** This page used to say no Core or Unity work starts until every model is approved on #784 → it now says only Unity work waits, and the Core issues can go ahead → because Core needs only the base ids, footprints and front lines, which the concepts Derek approved on 2026-11-21 already fix. The pipeline conventions (export format, naming, axis convention, import settings) are **Open** on [#774](https://github.com/derekwinters/lucas-doggiehood/issues/774), [#775](https://github.com/derekwinters/lucas-doggiehood/issues/775) and [#776](https://github.com/derekwinters/lucas-doggiehood/issues/776). Every model stays within the [art budget](art-style.md#art-budget).
 
 Model conventions the concepts already follow:
 
@@ -30,7 +32,7 @@ A house is one **base** plus zero to three **upgrade pieces**. Each piece sits a
 | Back | every base | on the ground at the back wall's outer face, centred on the back door | Deck (level 3) |
 | Patio | the garage piece | the back edge of the garage's slab, centred on it | Patio (level 4) |
 
-The concept scripts name these `ATTACH_ADDITION`, `ATTACH_DECK` and `ATTACH_PATIO`; each base's coordinates are in `art-source/blender/README.md`. The final names in Core are **Open** ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+The concept scripts name these `ATTACH_ADDITION`, `ATTACH_DECK` and `ATTACH_PATIO`; each base's coordinates are in `art-source/blender/README.md`. In Core they are **Side**, **Back** and **Patio**, the names in the table above ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
 
 **Room for later.** Toys, pools and real dog models will reuse the same Blender pipeline and conventions in their own milestones. This page does not specify any of them.
 
@@ -75,6 +77,12 @@ Vacancy (`House.IsVacant`) stays the single source; the build state adds no new 
 
 **Invariant — a house's appearance is a pure function of its Core state.** Its base, colour scheme, installed pieces and occupancy decide what it looks like. The view draws what Core resolves and never decides on its own.
 
+**Each base declares its footprint as its wall rectangle** (the "Wall footprint" column above), centred on its pivot, rather than measured mesh bounds, because framing and finished meshes have different bounds ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)). Overhangs, steps, porches and pieces count only in the level-4 footprint used to fit the lot ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+
+**Core's resolved appearance carries the house's colour scheme id** alongside its base, build state and pieces ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)). Which scheme a house gets is decided by [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789).
+
+> **How the spec is changing ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)).** The footprint definition used to be Open between the slab and the wall rectangle, and no Core issue owned the scheme → the declared footprint is now the wall rectangle and #777 carries the scheme id → because Derek agreed on 2026-11-24; the wall rectangle matches the table above and the pivot.
+
 **Invariant — framing and finished versions share one footprint and pivot.** Swapping one for the other never moves the house or changes where its pieces attach.
 
 ## Upgrade pieces: the fixed path
@@ -114,15 +122,19 @@ Pavers 8 cm tall, directly behind the garage at the garage's patio attach point.
 
 > **How the spec is changing ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)).** This page used to list the garage model, the ranch rebuild and the patio's size with the garage as Open, and its clearances used the concept addition → it now says the garage and the garage-less ranch are built as reference assets, the patio is as wide as the garage (3.5 × 5.5 m), and the clearances below are measured with the garage → because Derek approved the garage concept as shown.
 
+**Pieces are fitted per base.** The garage's roof pitch and wall height and the deck's stair position are solved for each base, so each piece is exported once per base (`piece-garage-base-NN.glb` and the same for the deck and patio) rather than as one shared model ([#780](https://github.com/derekwinters/lucas-doggiehood/issues/780)).
+
 **Invariant — a piece attaches only at an attach point its house declares.** The garage and deck use points their base declares; the patio uses the point the garage declares. A base that does not declare a point cannot take that piece.
 
-**Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above.
+**Invariant — an upgrade piece never extends outside its lot's envelope, and never covers the front walkway, the sidewalk or a neighbour's lot.** The garage's driveway is the one planned crossing of the sidewalk, and its geometry is Open above. **The driveway is not part of the garage piece's footprint**, so this invariant applies to the garage in full; the driveway is a ground surface owned by [#803](https://github.com/derekwinters/lucas-doggiehood/issues/803) and [#810](https://github.com/derekwinters/lucas-doggiehood/issues/810) ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
 
 > **How the spec is changing ([#800](https://github.com/derekwinters/lucas-doggiehood/issues/800)).** This page used to leave open how the garage's driveway joins the walk network → it now says the driveway is ground decoration only and adds no walk-network edge → because Derek confirmed that dogs keep reaching the door by the front walkway.
 
 ## Colour schemes
 
-Every house is painted in one of **12 realistic colour schemes** ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)), defined once as data in `art-source/blender/colour-schemes.json`. A base and its pieces paint only through the scheme's slots, so pieces always match their house.
+Every house is painted in one of **12 realistic colour schemes** ([#814](https://github.com/derekwinters/lucas-doggiehood/issues/814)), defined once as data in `art-source/blender/colour-schemes.json`. A base and its pieces paint only through the scheme's slots, so pieces always match their house. **In the game, exports carry one material per scheme slot and Unity repaints them from the house's scheme**; roofs use a neutral texture tinted by the scheme's roof colour ([#906](https://github.com/derekwinters/lucas-doggiehood/issues/906)).
+
+> **How the spec is changing ([#906](https://github.com/derekwinters/lucas-doggiehood/issues/906)).** How schemes are applied in Unity used to be Open (by material slot or by one export per scheme) → it is now by named material slot, repainted by Unity from `colour-schemes.json` → because Derek agreed on 2026-11-26; one export per scheme would multiply every model by 12.
 
 | Slot | Paints |
 |---|---|
@@ -144,12 +156,21 @@ Decided on [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789):
 
 - **The four starter houses** stay on **bases 1–4**.
 - **Zone-built houses** roll from **all 10 bases** plus a **random colour scheme**. The pick is made once and kept through upgrades.
-- **Existing saves:** each of today's 5 Kenney ladders maps to one base (ladder 1 → base 1 … ladder 5 → base 5), and a level-N house gets the first N−1 pieces.
+- **Existing saves:** each of today's 5 Kenney ladders maps to one base (ladder 1 → base 1 … ladder 5 → base 5), and a level-N house gets the first N−1 pieces. A house from an existing save gets a colour scheme picked from its house id, so it is the same on every load ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)); #789 may still set the starter houses' schemes on purpose.
+
+**What a save stores ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)).** Each house saves its **base id** and **colour scheme id**, added as new save lines that fall back to a default when missing, like the save's other additive fields. Installed pieces are **not** saved: the path is fixed, so they are derived from the house level, which the save already stores. [#628](https://github.com/derekwinters/lucas-doggiehood/issues/628) folds these lines into the frozen v1.0 schema later.
+
+**Invariant — a house's installed pieces are always derived from its level, never stored separately.** One source of truth means a save can never hold a level and a piece list that disagree.
+
+> **How the spec is changing ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)).** The Build checklist used to say bases, schemes and installed pieces all save and load, and #779 waited on the v1.0 save-format work in #628 → only the base and scheme are saved, pieces come from the level, and #779 adds its lines the existing additive way → because Derek agreed on 2026-11-24; it avoids two records that could disagree and keeps the house switch-over in v0.17.
+
+- **Starter schemes:** each starter house uses the scheme its base was approved in: base 1 Sage Cottage, base 2 Dove Gray, base 3 Colonial White, base 4 Charcoal Craftsman ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).
+- **When a zone house is picked:** its base and scheme are rolled **when its tile unlocks**, as today's rule does ([#434](https://github.com/derekwinters/lucas-doggiehood/issues/434)), so the empty lot already knows its house's level-4 footprint for placement and fences. The pick is kept through building and upgrades.
+
+> **How the spec is changing ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).** The starter schemes and the roll timing used to be Open, with #789 saying "chosen once at build" → starters use their approved render schemes, and zone houses roll at tile unlock → because Derek agreed on 2026-11-26; placement needs the footprint before the house is built.
 
 **Open:**
 
-- Which scheme each starter house uses ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789)).
-- When a zone house's roll happens. Today's rule rolls when the zone unlocks ([#434](https://github.com/derekwinters/lucas-doggiehood/issues/434)), so the empty lot already knows its house; #789 says "chosen once at build".
 - Which side fence the piece side faces on a given lot. Every base fits with its pieces on either side ([#773](https://github.com/derekwinters/lucas-doggiehood/issues/773)).
 
 ## Placement on the lot
@@ -159,6 +180,14 @@ Decided on [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789):
 - **Across the lot:** that footprint is centred between the two side runs of the backyard fence.
 - **Front to back:** the base's **front line** sits at the front setback.
 - **Nothing moves when a piece is added.** This replaces today's fixed lot anchor (`NeighborhoodLayout.LotDistanceFromCenter` = 14 m) and the per-level re-alignment of [#454](https://github.com/derekwinters/lucas-doggiehood/issues/454).
+
+**A fence needs a garage ([#907](https://github.com/derekwinters/lucas-doggiehood/issues/907)).** The backyard fence quest is only offered to a house with a garage, and an older save with a fenced level-1 house loads that house at level 2 for free ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779)). So the piece-side fence connector always ends at the garage's outer wall and the garage forms part of the backyard enclosure; the other connector ends at the side wall, or at the porch edge on the farmhouse ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
+
+**Invariant — a fenced house always has a garage.**
+
+**Invariant — a fence connector ends exactly at the house's current outline, never inside it and never short of it.**
+
+> **How the spec is changing ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783), [#907](https://github.com/derekwinters/lucas-doggiehood/issues/907)).** Where the side-fence connector meets a garage or the farmhouse's wrap porch used to be Open, and a fence could be bought for any house → a fence now needs a garage, so the piece-side connector ends at the garage's outer wall, and the other at the side wall or porch edge → because Derek decided on 2026-11-26 that the fence shouldn't exist as a quest request until a garage exists.
 
 **Invariant — a fully upgraded house always fits its lot.** Placement uses the level-4 footprint, so the house fits before any piece is bought and no piece can push it out later.
 
@@ -185,15 +214,16 @@ All 4 starting lots are corner lots with the same envelope. These are the cleara
 | 9 Mission | 14.86 × 14.70 | 2.69 | 3.35 | 4.20 |
 | 10 Queen Anne | 13.40 × 16.14 | 3.43 | 3.11 | 3.00 |
 
-"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. These numbers use the **garage** as the level-2 piece ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)). Every base still fits. The tightest side clearance is the ranch at 2.17 m, and the tightest rear clearance is the farmhouse at 2.60 m. Compared with the concept addition, every base gains 0.25 m per side (the garage is 0.5 m narrower) and loses 0.75 m at the rear (the garage is 1.5 m deeper, so the patio behind it starts further back). Zone and cul-de-sac lots have not been checked yet (**Open**, [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
+"Front → sidewalk" is measured from the front-most thing (steps, stoop or porch front); a base's front line itself is 3.75 m from the sidewalk. These numbers use the **garage** as the level-2 piece ([#817](https://github.com/derekwinters/lucas-doggiehood/issues/817)). Every base still fits. The tightest side clearance is the ranch at 2.17 m, and the tightest rear clearance is the farmhouse at 2.60 m. Compared with the concept addition, every base gains 0.25 m per side (the garage is 0.5 m narrower) and loses 0.75 m at the rear (the garage is 1.5 m deeper, so the patio behind it starts further back). Zone and cul-de-sac lots have not been measured yet. [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778) adds a Core test that every base at level 4 fits every lot kind; if one does not, the build stops and flags it to Derek rather than shrinking or moving anything.
+
+**Core computes each house's placement** from its level-4 footprint, centred between the side fences with its front line at the setback ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)); the Unity issues draw the house at that position.
+
+> **How the spec is changing ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).** The attach-point names in Core and the zone and cul-de-sac lot check used to be Open, and the driveway's relation to the no-sidewalk rule was unstated → Core names the points Side, Back and Patio, a Core test checks every lot kind, the driveway sits outside the garage's footprint, and Core owns the placement calculation → because Derek agreed on 2026-11-24.
 
 ## Open items
 
 Besides those marked above:
 
-- **Footprint definition.** Placement, walkway and fence code need a declared footprint per base (the slab or wall rectangle) rather than measured mesh bounds, because framing and finished meshes have different bounds ([#777](https://github.com/derekwinters/lucas-doggiehood/issues/777), [#778](https://github.com/derekwinters/lucas-doggiehood/issues/778)).
-- **Fence connectors, walkway and yard trees** around the bigger house, including where the side-fence connector meets a garage or the farmhouse's wrap porch ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783)).
-- **Applying schemes in Unity**, by material slot or by export per scheme, and the roof textures ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 - **Axis convention** between Blender and the game's model yaw ([#774](https://github.com/derekwinters/lucas-doggiehood/issues/774)).
 
 ## Build checklist
@@ -208,6 +238,6 @@ Besides those marked above:
 - [ ] Each upgrade installs the next piece on the fixed path (garage, deck, patio) at its attach point; costs and slots unchanged ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778))
 - [ ] Houses are placed by their level-4 footprint, centred between the side fences, front line at the 3.75 m setback; nothing moves on upgrade ([#778](https://github.com/derekwinters/lucas-doggiehood/issues/778), [#789](https://github.com/derekwinters/lucas-doggiehood/issues/789))
 - [ ] Installed pieces draw in the world and the house-profile thumbnail, with fences, walkway and trees fitting around them ([#783](https://github.com/derekwinters/lucas-doggiehood/issues/783))
-- [ ] Bases, schemes and installed pieces save and load ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779))
+- [ ] Bases and schemes save and load, and installed pieces are derived from the level ([#779](https://github.com/derekwinters/lucas-doggiehood/issues/779))
 - [ ] Starters on bases 1–4, zone houses rolled from all 10 bases plus a scheme, existing saves mapped, Kenney houses retired ([#789](https://github.com/derekwinters/lucas-doggiehood/issues/789))
 - [ ] Every invariant on this page has a test that enforces it
