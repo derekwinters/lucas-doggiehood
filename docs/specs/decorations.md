@@ -40,6 +40,14 @@ Once delivered, the dog periodically decides — on its own, no player tap/trigg
 
 **Invariant — the blanket never leaves its placement footprint** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). Every vertex of every colourway's export lies inside the 2.12 × 1.40 m footprint, centred on the item's position and on or above the ground. That rectangle is the footprint the game places the blanket by. The export's read-back check and `tests/test_blanket.py` enforce this, and the size lives in one constant (`blanket_spec.py`).
 
+**The bed model** ([#411](https://github.com/derekwinters/lucas-doggiehood/issues/411)). The dog bed is a padded bolster bed built as a Blender source asset in `art-source/blender/items/bed/`, outside `Assets/`. It has a low padded base, a soft bolster round the rim that dips at the front where a dog steps in, and a flat cream fleece cushion. Its footprint is **1.60 × 1.15 m**, with the long side along X like today's slab. It stands 0.36 m tall at the back and has 1,792 triangles. Its **pivot is on the ground** at the centre of its footprint. A dog lies on the cushion top, **0.18 m** up, at the `ATTACH_REST` point the export carries, over a flat area of at least 0.95 × 0.50 m. The footprint is larger than today's 1.4 × 1.0 m graybox slab. So when [#932](https://github.com/derekwinters/lucas-doggiehood/issues/932) imports the model, it has to reserve the larger footprint, including the pool's clearance around a decoration. Two beds in neighbouring slots (2 m apart) would sit 0.85 m apart instead of 1.0 m. Until then, the game still shows the purple graybox slab.
+
+**Bed colours** ([#411](https://github.com/derekwinters/lucas-doggiehood/issues/411)). The bed comes in ten cover colours: Heather Plum, Denim Blue, Dove Grey, Charcoal, Rust, Cranberry, Mustard, Dusty Rose, Teal and Cocoa. They share one mesh and one set of textures. A colour is just the base colour of the cover and base materials, and the cream cushion never changes. `art-source/blender/items/bed/bed_colours.json` lists the colours and how to apply them. **A gifted bed picks one colour at random when it is delivered** (Derek, 2026-11-27). The pick is game code ([#932](https://github.com/derekwinters/lucas-doggiehood/issues/932)), not part of the asset, and #932 settles how the pick is kept across a relaunch, as for the blanket.
+
+> **How the spec is changing (#411).** It used to say the bed stays inside today's 1.4 × 1.0 m graybox slab, so placement would not change → it now says the bed's footprint is 1.60 × 1.15 m, and that the game must reserve that larger footprint → because Derek asked for a slightly bigger bed so an adult dog fits it better.
+
+**Invariant — the bed never leaves its placement footprint** ([#411](https://github.com/derekwinters/lucas-doggiehood/issues/411)). Every vertex of the bed's export lies inside the 1.60 × 1.15 m footprint, centred on the item's position and on the ground. That rectangle is the footprint the game places the bed by. The export's checks and `tests/test_bed_model.py` enforce this, and the size lives in one place (`check_bed.py`).
+
 ## Build checklist
 
 - [ ] Decoration requests are scoped to a single dog's own yard; no shared-space decorating exists
@@ -49,4 +57,5 @@ Once delivered, the dog periodically decides — on its own, no player tap/trigg
 - [ ] A decoration request presents a small set of item choices (not one named item) for the player to pick from
 - [ ] At least the 3 comfort items (bed, cushion, blanket) exist as deliverable decorations
 - [ ] A gifted blanket gets one of its colourways at random on delivery (#932)
+- [ ] A gifted bed gets one of its ten colours at random on delivery (#932)
 - [ ] A dog with a comfort decoration periodically and automatically walks over to it via the walk network and uses the "Rest" pose on it on arrival (no teleport into the pose)
