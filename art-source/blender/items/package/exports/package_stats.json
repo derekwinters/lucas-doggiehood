@@ -1,0 +1,43 @@
+{
+ "name": "Delivery package (#410)",
+ "units": "metres, Blender axes (front -Y, up +Z); the .glb is Y-up (front +Z)",
+ "pivot": "on the ground at the footprint centre",
+ "size_xyz_m": [
+  0.6,
+  0.5,
+  0.45
+ ],
+ "tris": 88,
+ "budget_tris": 6000,
+ "graybox_m": 0.6,
+ "materials": [
+  "DH_Package_cardboard",
+  "DH_Package_tape",
+  "DH_Package_label"
+ ],
+ "images": [
+  "package_cardboard_color",
+  "package_cardboard_normal",
+  "package_label_color"
+ ],
+ "truck_footprint_m": [
+  4.875,
+  2.25
+ ],
+ "truck_footprint_fit": true,
+ "truck_cargo_bay": "not stated yet (#924); check with package_checks.py --cargo L W H",
+ "glb_bytes": 157956,
+ "checks": {
+  "one_mesh_named_package": true,
+  "materials_prefixed": true,
+  "single_sided": true,
+  "images_embedded": true,
+  "no_animations_or_skins": true,
+  "size_matches_dims": true,
+  "on_the_ground": true,
+  "within_budget": true,
+  "near_graybox": true,
+  "truck_footprint_fit": true
+ },
+ "all_checks_ok": true
+}

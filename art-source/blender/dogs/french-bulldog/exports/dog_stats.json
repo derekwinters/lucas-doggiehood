@@ -1,0 +1,326 @@
+{
+ "name": "French Bulldog (adult) concept, round 1",
+ "units": "metres, Blender axes (front -Y, up +Z); glTF files are Y-up (front +Z)",
+ "files": {
+  "dog_frenchie_default.gltf": {
+   "tris": 3688,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_default_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 24363,
+   "bin_bytes": 154308
+  },
+  "dog-frenchie-viewer.glb": {
+   "tris": 3688,
+   "errors": [],
+   "bytes": 1652264
+  },
+  "dog_frenchie_lod1.gltf": {
+   "tris": 1434,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_lod1_default_color.png",
+    "../textures/dog_fur_lod1_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 24599,
+   "bin_bytes": 72584
+  }
+ },
+ "budget": {
+  "full": 4000,
+  "lod1": 1500
+ },
+ "sit_contact_m": {
+  "full": {
+   "haunches": -0.0017,
+   "hocks": 0.0035,
+   "hind_feet": 0.0046,
+   "front_paws": -0.0003,
+   "tail": 0.0002,
+   "lowest": -0.0017,
+   "lowest_any_part": -0.0017
+  },
+  "lod1": {
+   "haunches": -0.0074,
+   "hocks": -0.0061,
+   "hind_feet": 0.0079,
+   "front_paws": 0.0013,
+   "tail": 0.0007,
+   "lowest": -0.0074,
+   "lowest_any_part": -0.0074
+  }
+ },
+ "full": {
+  "total_tris": 3688,
+  "size_xyz_m": [
+   0.599,
+   0.915,
+   1.136
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 1452,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 318,
+    "2": 102,
+    "3": 281,
+    "4": 751
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_frenchie_body",
+    "tris": 2872,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_frenchie_tongue",
+    "tris": 96,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_frenchie_ear_L",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_frenchie_eye_L",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_frenchie_ear_R",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_frenchie_eye_R",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_frenchie_nose",
+    "tris": 80,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_frenchie_collar",
+    "tris": 176,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "measurements_m": {
+  "nose_to_rump": 0.894,
+  "nose_to_tail_tip": 0.915,
+  "top_of_head": 1.136,
+  "width_incl_ears": 0.599,
+  "back_height": 0.582,
+  "in_game_stand_in_wlh": [
+   1.26,
+   1.5,
+   1.58
+  ]
+ },
+ "lod1": {
+  "total_tris": 1434,
+  "size_xyz_m": [
+   0.597,
+   0.914,
+   1.135
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 509,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 126,
+    "2": 54,
+    "3": 144,
+    "4": 185
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_frenchie_body_lod1",
+    "tris": 992,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_frenchie_tongue_lod1",
+    "tris": 48,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_frenchie_ear_L_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_frenchie_eye_L_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_frenchie_ear_R_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_frenchie_eye_R_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_frenchie_nose_lod1",
+    "tris": 36,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_frenchie_collar_lod1",
+    "tris": 110,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "textures": {
+  "dog_fur_default_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 624732
+  },
+  "dog_fur_lod1_default_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 231356
+  },
+  "dog_fur_lod1_mask.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 292278
+  },
+  "dog_fur_lod1_normal.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 294575
+  },
+  "dog_fur_mask.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 806143
+  },
+  "dog_fur_normal.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 848908
+  },
+  "dog_trim_color.png": {
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 6951
+  }
+ },
+ "skeleton": "dog_frenchie_skeleton.json",
+ "all_checks_ok": true
+}

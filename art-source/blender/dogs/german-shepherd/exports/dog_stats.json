@@ -1,0 +1,357 @@
+{
+ "name": "German Shepherd (adult) concept, round 1",
+ "units": "metres, Blender axes (front -Y, up +Z); glTF files are Y-up (front +Z)",
+ "files": {
+  "dog_shepherd_default.gltf": {
+   "tris": 3860,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_default_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25744,
+   "bin_bytes": 163504
+  },
+  "dog-shepherd-viewer.glb": {
+   "tris": 3860,
+   "errors": [],
+   "bytes": 1741272
+  },
+  "dog_shepherd_black.gltf": {
+   "tris": 3860,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Black",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_black_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25736,
+   "bin_bytes": 163504
+  },
+  "dog_shepherd_lod1.gltf": {
+   "tris": 1408,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_lod1_default_color.png",
+    "../textures/dog_fur_lod1_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25971,
+   "bin_bytes": 71752
+  }
+ },
+ "budget": {
+  "full": 4000,
+  "lod1": 1500
+ },
+ "sit_contact_m": {
+  "full": {
+   "haunches": 0.0008,
+   "hocks": 0.0002,
+   "hind_feet": -0.0005,
+   "front_paws": -0.0,
+   "tail": -0.001,
+   "lowest": -0.001,
+   "lowest_any_part": -0.001
+  },
+  "lod1": {
+   "haunches": -0.0011,
+   "hocks": 0.0051,
+   "hind_feet": -0.0006,
+   "front_paws": -0.0013,
+   "tail": -0.0038,
+   "lowest": -0.0038,
+   "lowest_any_part": -0.0038
+  }
+ },
+ "full": {
+  "total_tris": 3860,
+  "size_xyz_m": [
+   0.697,
+   1.836,
+   1.841
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 1537,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 309,
+    "2": 439,
+    "3": 495,
+    "4": 294
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_shepherd_body",
+    "tris": 3044,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_shepherd_tongue",
+    "tris": 96,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_shepherd_ear_L",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_shepherd_eye_L",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_shepherd_ear_R",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_shepherd_eye_R",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_shepherd_nose",
+    "tris": 80,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_shepherd_collar",
+    "tris": 176,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "measurements_m": {
+  "nose_to_rump": 1.52,
+  "nose_to_tail_tip": 1.836,
+  "top_of_head": 1.841,
+  "width_incl_ears": 0.697,
+  "back_height": 1.053,
+  "in_game_stand_in_wlh": [
+   1.26,
+   1.5,
+   1.58
+  ]
+ },
+ "lod1": {
+  "total_tris": 1408,
+  "size_xyz_m": [
+   0.702,
+   1.828,
+   1.841
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 495,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 146,
+    "2": 185,
+    "3": 116,
+    "4": 48
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_shepherd_body_lod1",
+    "tris": 966,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_shepherd_tongue_lod1",
+    "tris": 48,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_shepherd_ear_L_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_shepherd_eye_L_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_shepherd_ear_R_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_shepherd_eye_R_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_shepherd_nose_lod1",
+    "tris": 36,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_shepherd_collar_lod1",
+    "tris": 110,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "textures": {
+  "dog_fur_black_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 369773
+  },
+  "dog_fur_default_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 604383
+  },
+  "dog_fur_lod1_black_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 133666
+  },
+  "dog_fur_lod1_default_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 222912
+  },
+  "dog_fur_lod1_mask.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 292656
+  },
+  "dog_fur_lod1_normal.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 316373
+  },
+  "dog_fur_mask.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 817811
+  },
+  "dog_fur_normal.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 947793
+  },
+  "dog_trim_color.png": {
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 6954
+  }
+ },
+ "skeleton": "dog_shepherd_skeleton.json",
+ "all_checks_ok": true
+}

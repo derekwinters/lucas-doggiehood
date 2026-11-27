@@ -1,0 +1,53 @@
+{
+ "name": "pest_bug",
+ "tris": {
+  "body": 1356,
+  "wing_L": 76,
+  "wing_R": 76,
+  "total": 1508
+ },
+ "tri_backstop": 6000,
+ "size_xyz_m": [
+  0.451,
+  0.696,
+  0.475
+ ],
+ "units": "metres; Blender axes front -Y up +Z (glTF: front +Z, up +Y)",
+ "pivot": "centre of the thorax",
+ "materials": [
+  "DH_Pest_bug_band_dark",
+  "DH_Pest_bug_band_light",
+  "DH_Pest_bug_body",
+  "DH_Pest_bug_eye_white",
+  "DH_Pest_bug_leg",
+  "DH_Pest_bug_pupil",
+  "DH_Pest_bug_shine",
+  "DH_Pest_bug_wing"
+ ],
+ "clip": {
+  "name": "WingFlap",
+  "frames": 24,
+  "fps": 30,
+  "loop": true,
+  "duration_s": 0.8,
+  "flap_beats": 4,
+  "flap_deg": [
+   -65.0,
+   25.0
+  ],
+  "bob_m": [
+   -0.025,
+   0.025
+  ],
+  "pitch_deg": 4.0,
+  "measured": {
+   "pest_bug_body bob_m": 0.05,
+   "pest_bug_body swing_deg": 8.0,
+   "pest_bug_wing_L swing_deg": 90.0,
+   "pest_bug_wing_R swing_deg": 90.0
+  }
+ },
+ "gltf_bytes": 12469,
+ "bin_bytes": 32728,
+ "checks_ok": true
+}

@@ -1,0 +1,9 @@
+# Written by export_dog.py / export_viewer.py for the web viewer; checked by
+# export_dog.py but not committed (the exports/ glTFs are the source of truth).
+dog-beagle-viewer.glb
+viewer/
+# Written by motion/export_anim.py for the web viewer (the motion/exports/ glTF
+# is the source of truth).
+motion/viewer/
+# Scratch render output
+out/
