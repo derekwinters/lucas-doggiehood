@@ -57,6 +57,7 @@ slab. On the bed it should lie on the cushion at `ATTACH_REST`, 0.18 m up.
 | `bed_colours.json` | The 10-colour palette (name, cover hex, base hex) and how to tint with it, written by `export_bed.py` from `PALETTE` in `dh_bed.py`. Generated; do not edit by hand |
 | `tests/` | `test_bed_checks.py` (the checks, no Blender), `test_bed_palette.py` (the palette rules, and that the export and `bed_colours.json` agree), `test_bed_model.py` (builds the bed and measures it), `test_bed_rebuild.py` (re-exports in fresh processes and requires the committed bytes, the palette included) |
 | `exports/` | `dog_bed.gltf`, `dog_bed.bin`, `bed_stats.json` |
+| `review/` | The approved review renders (see "Committed review renders" below) |
 | `textures/` | `bed_cover_color.png`, `bed_cover_normal.png`, `bed_fleece_color.png`, `bed_fleece_normal.png` |
 
 **Materials.** `DH_Item_Bed_Cover` (the bolster) and `DH_Item_Bed_Base` (the base) share one
@@ -108,7 +109,7 @@ From the repository root, with `pip install bpy==5.3.0` (plus numpy and Pillow):
 ```
 python3 art-source/blender/items/bed/export_bed.py                 # textures, exports, checks (a few seconds)
 python3 -m unittest discover -s art-source/blender/items/bed/tests # 48 tests, a few seconds
-python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet,colours]
+python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet,colours,review]
 python3 art-source/blender/items/bed/export_viewer.py [out.html]
 ```
 
@@ -140,8 +141,23 @@ describes. It is not exported and is not the #933 clip.
 `export_viewer.py`'s viewer has a row of swatch buttons that retint the bed live, starting on
 Heather Plum.
 
-The renders are not committed yet. As the pipeline says, only renders Derek approves are copied into
-`review/` and committed.
+### Committed review renders (`review/`)
+
+Derek approved these renders on #411, and they are committed as the pipeline says. They were made by
+`render_bed.py` and copied with `render_bed.py --only review`, which reads them from `out/`. That step
+stores the single views 1,000 px wide and the two sheets at full size, and writes every PNG fresh,
+with no metadata chunks.
+
+| File | What it shows |
+|---|---|
+| `review/bed-sheet.png` | The review sheet: game camera with the Lab lying on the bed, close-up, turnaround and footprint check |
+| `review/bed-colours.png` | All 10 colours at the game camera on the lawn, labelled with name and hex, plus a row of close-ups |
+| `review/bed-gamecam.png` | The bed beside base 1 at the game camera, then the same camera zoomed in |
+| `review/bed-gamecam-close.png` | The zoomed game-camera view alone |
+| `review/bed-closeup.png` | Perspective 3/4 close-up of the bed alone |
+| `review/bed-closeup-dog.png` | The same close-up with the Labrador lying on it (render-only pose) |
+| `review/bed-turnaround.png` | Front, side, back and 3/4 from above |
+| `review/bed-footprint.png` | Top view: the bed's 1.60 × 1.15 m footprint in black, today's 1.4 × 1.0 m slab in red, `ATTACH_REST` |
 
 ## Open concerns
 

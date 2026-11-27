@@ -14,6 +14,8 @@ the renders import exports/dog_bed.gltf, so they show exactly what was exported.
   footprint    top view with the bed's 1.60 x 1.15 m footprint and, for comparison, today's
                1.4 x 1.0 m graybox slab drawn over the bed, and the measured size
   sheet        the four above on one page (renders any that are missing)
+  review       (only when named) copies the approved renders above from out_dir into review/:
+               single views 1000 px wide, the sheets at full size, no metadata
   colours      every palette colour (dh_bed.PALETTE): the beds side by side at the game camera,
                labelled with name and hex, plus a row of close-ups
 
@@ -393,6 +395,31 @@ def sheet():
         os.path.join(OUT, "sheet.png"))
 
 
+REVIEW = os.path.join(HERE, "review")
+REVIEW_W = 1000                    # single views are stored this wide; the sheets at full size
+REVIEW_FILES = (                   # (render in OUT, committed name, full size?)
+    ("sheet", "bed-sheet", True), ("colours", "bed-colours", True), ("gamecam", "bed-gamecam", False),
+    ("gamecam-close", "bed-gamecam-close", False), ("closeup", "bed-closeup", False),
+    ("closeup-dog", "bed-closeup-dog", False), ("turnaround", "bed-turnaround", False),
+    ("footprint", "bed-footprint", False),
+)
+
+
+def review():
+    """Copy the approved renders from OUT into review/ (the pipeline's convention, as the blanket):
+    single views LANCZOS-scaled to REVIEW_W wide, the sheets at full size, every PNG written fresh
+    with no metadata chunks (no ICC profile, no C2PA). Never copy from anywhere else."""
+    os.makedirs(REVIEW, exist_ok=True)
+    for src, dst, full in REVIEW_FILES:
+        im = Image.open(os.path.join(OUT, src + ".png")).convert("RGB")
+        if not full and im.width > REVIEW_W:
+            im = im.resize((REVIEW_W, round(im.height * REVIEW_W / im.width)), Image.LANCZOS)
+        clean = Image.new("RGB", im.size)
+        clean.paste(im)
+        clean.save(os.path.join(REVIEW, dst + ".png"), optimize=True)
+        print("review/%s.png  %d x %d" % (dst, clean.width, clean.height))
+
+
 if __name__ == "__main__":
     if want("gamecam"):
         gamecam()
@@ -408,4 +435,6 @@ if __name__ == "__main__":
         sheet()
     if want("colours"):
         colours()
+    if ONLY is not None and "review" in ONLY:
+        review()
     print("renders ->", OUT)
