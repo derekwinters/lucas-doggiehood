@@ -1,0 +1,11 @@
+# Generated images stay out of git. `python3 build_title.py` and `python3 build_scene.py`
+# regenerate them; copies of the review images and object PNGs are kept in the project's
+# shared folder instead (see README.md, "What is in git").
+*.png
+review/
+
+# The key images are committed (explicit keep-list):
+!title/doggiehood-title-6000.png
+!title/doggiehood-title-flat-6000.png
+!scene/*.png
+!dogs/*.png
