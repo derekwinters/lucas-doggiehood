@@ -38,8 +38,13 @@ TREAD = 0.34             # step tread depth
 STEP_PAD = 0.18          # steps run this far past the door frame on each side
 PATH_W = 1.1             # front path width
 WING_ROOF_T = 0.22       # wing roof slab thickness
-GAP_MIN = 0.45           # keep a house's back this far in front of the next house's front
-MAILBOX_TOP_K = 0.9      # the measured top includes the flag: the box's top is a little lower
+FRONT_SETBACK = 3.2      # a house's front wall stands this far behind the sidewalk's lawn edge
+LOT_GAP = 1.5            # the least gap between neighbouring houses' footprints along the street
+YARD_TREE = 1.6          # a tree or bush painted inside a house's new footprint moves this far in front of it
+PROP_MARGIN = 0.3
+MAILBOX_H = 1.5          # every mailbox's height, post foot to box top (the near painted ones are ~1.5 m)
+MAILBOX_OFF = 0.45       # a mailbox's post stands this far onto the lawn from the sidewalk
+MAILBOX_GAP = 0.7        # ... and this far from its path, on the camera side
 MAILBOX_BOX_K = 0.27     # box height as a share of the whole mailbox height
 MAILBOX_LEN_K = 1.35     # box length / box height
 SIDEWALK_RAISE = 0.12    # sidewalks and lawns sit this far above the road
@@ -277,20 +282,12 @@ def cyl(mb, cx, cy, z0, z1, r0, r1, m, n=6):
 # The houses
 # --------------------------------------------------------------------------
 def house_depths(cam):
-    """Per house: its front's distance and how deep its blocks may run before the next
-    house along its side of the street."""
+    """Per house: the distance of its front as painted, and its block depths (m)."""
     out = {}
-    for side in "LR":
-        hs = sorted((h for h in SD.HOUSES if h["side"] == side), key=lambda h: SD.depth_of(cam, h["ground"]))
-        for i, h in enumerate(hs):
-            d = SD.depth_of(cam, h["ground"])
-            gap = (SD.depth_of(cam, hs[i + 1]["ground"]) - d) if i + 1 < len(hs) else 99.0
-            dd = dict(SD.DEPTH)
-            dd.update(h.get("depth", {}))
-            room = gap - GAP_MIN
-            dd["gable"] = max(2.5, min(dd["gable"], room - dd["overhang_back"]))
-            dd["wing"] = max(2.5, min(dd["wing"], room - dd["wing_setback"] - dd["overhang_back"]))
-            out[h["key"]] = (d, dd)
+    for h in SD.HOUSES:
+        dd = dict(SD.DEPTH)
+        dd.update(h.get("depth", {}))
+        out[h["key"]] = (SD.depth_of(cam, h["ground"]), dd)
     return out
 
 
@@ -486,13 +483,8 @@ def build_house(h, cam, coll, depth):
         for k in range(n):
             det.box(sx0, sx1, d - (k + 1) * TREAD, d, 0, dz0 - k * rise, M["steps"], front=M["foundation"])
     foot = d - n * TREAD
-    lawn = cam["lawn_l"] if h["side"] == "L" else cam["lawn_r"]
-    door_mid = (dx0 + dx1) / 2
-    pw = min(PATH_W, (sx1 - sx0))
-    pm = mat("path", SD.GROUND_COLOURS["path"])
-    pe = mat("path_edge", SD.GROUND_COLOURS["path_edge"])
-    pa, pb = (door_mid - pw / 2, lawn) if h["side"] == "R" else (lawn, door_mid + pw / 2)
-    det.box(pa, pb, foot - pw, foot, 0, 0.025, pm, front=pe)
+    root["door_foot"] = (((dx0 + dx1) / 2) - ox, foot - oy)
+    root["door_width"] = sx1 - sx0
 
     objs = []
     for nm, mb in (("walls", walls), ("roof", roof), ("details", det)):
@@ -596,34 +588,133 @@ def build_props(cam, coll):
         mb.box(min(Xa, Xb), max(Xa, Xb), Y + 0.03, Y + 0.09, Zt * 0.25, Zt * 0.33, m)
         mb.box(min(Xa, Xb), max(Xa, Xb), Y + 0.03, Y + 0.09, Zt * 0.7, Zt * 0.78, m)
         mb.obj(fz["key"], pc)
+
+
+def mailbox(mb, X, Y, Zt, street):
+    """A rural mailbox on a post, its door toward the street (street = +1 / -1 along X)."""
     G = SD.GROUND_COLOURS
-    for mbx in SD.MAILBOXES:
-        X, Y = ground_pt(cam, *mbx["foot"])
-        _, Zt = SD.unproject(cam, mbx["foot"][0], mbx["top"], Y)
-        Zt *= MAILBOX_TOP_K
+    post = mat("post", G["post"])
+    box = mat("mailbox", G["mailbox"])
+    bh = Zt * MAILBOX_BOX_K
+    bl = bh * MAILBOX_LEN_K
+    bwid = bh * 0.85
+    mb.box(X - 0.07, X + 0.07, Y - 0.07, Y + 0.07, 0, Zt - bh, post)
+    xa, xb = X - bl / 2, X + bl / 2
+    mb.box(xa, xb, Y - bwid / 2, Y + bwid / 2, Zt - bh, Zt - bwid / 2, box)
+    n = 8
+    for i in range(n):
+        a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
+        y0, z0 = Y - bwid / 2 * math.cos(a0), Zt - bwid / 2 + bwid / 2 * math.sin(a0)
+        y1, z1 = Y - bwid / 2 * math.cos(a1), Zt - bwid / 2 + bwid / 2 * math.sin(a1)
+        mb.poly([(xa, y0, z0), (xb, y0, z0), (xb, y1, z1), (xa, y1, z1)], box)
+        mb.poly([(xb, Y, Zt - bwid / 2), (xb, y1, z1), (xb, y0, z0)], box)
+        mb.poly([(xa, Y, Zt - bwid / 2), (xa, y0, z0), (xa, y1, z1)], box)
+    # the flag, on the side of the box away from the street
+    fx = X - street * bl * 0.15
+    mb.box(fx - 0.02, fx + 0.02, Y + bwid / 2, Y + bwid / 2 + 0.04, Zt - bh * 0.6, Zt + bh * 0.45,
+           mat("flag", G["flag"]))
+
+
+# --------------------------------------------------------------------------
+# Facing the street (#935, Derek: houses face the road, as in the game)
+# --------------------------------------------------------------------------
+def local_extent(root):
+    """(min x, max x, min y, max y) of a house in its own frame."""
+    xs, ys = [], []
+    for ch in root.children:
+        if ch.type == "MESH" and not ch.name.endswith("_lot"):
+            for v in ch.data.vertices:
+                xs.append(v.co.x)
+                ys.append(v.co.y)
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+def world_footprint(root):
+    from mathutils import Vector
+    pts = [root.matrix_world @ Vector(c) for c in
+           [(x, y, 0) for x in local_extent(root)[:2] for y in local_extent(root)[2:]]]
+    return (min(p.x for p in pts), max(p.x for p in pts), min(p.y for p in pts), max(p.y for p in pts))
+
+
+def face_street(houses, cam):
+    """Turn every house so its front wall is parallel to the street and its door faces the
+    road, put its front FRONT_SETBACK behind the sidewalk, keep each door at its painted
+    distance along the street, and push houses apart (keeping their order) where their
+    footprints would come closer than LOT_GAP. Returns {key: metres moved along the street}."""
+    moved = {}
+    for side in "LR":
+        street = 1 if side == "L" else -1                 # +X is toward the road from a left house
+        lawn = cam["lawn_l"] if side == "L" else cam["lawn_r"]
+        keys = sorted((h["key"] for h in SD.HOUSES if h["side"] == side), key=lambda k: houses[k].location.y)
+        prev_max = None
+        for k in keys:
+            r = houses[k]
+            r.rotation_euler.z = street * math.pi / 2      # local -Y (the front) -> world +X / -X
+            r.location.x = lawn - street * FRONT_SETBACK
+            x0, x1, _, _ = local_extent(r)
+            # along the street: world y = loc.y + x (left) or loc.y - x (right)
+            lo, hi = (r.location.y + x0, r.location.y + x1) if side == "L" else (r.location.y - x1, r.location.y - x0)
+            shift = 0.0
+            if prev_max is not None and lo < prev_max + LOT_GAP:
+                shift = prev_max + LOT_GAP - lo
+                r.location.y += shift
+            moved[k] = shift
+            prev_max = hi + shift
+    bpy.context.view_layer.update()
+    return moved
+
+
+def build_lots(houses, cam):
+    """Each house's front path (straight from the foot of its steps to the sidewalk) and its
+    mailbox (on the lawn by the sidewalk, on the camera side of the path), parented to it."""
+    from mathutils import Vector
+    pm = mat("path", SD.GROUND_COLOURS["path"])
+    for h in SD.HOUSES:
+        r = houses[h["key"]]
+        side = h["side"]
+        street = 1 if side == "L" else -1
+        lawn = cam["lawn_l"] if side == "L" else cam["lawn_r"]
+        fx, fy = r["door_foot"]
+        foot = r.matrix_world @ Vector((fx, fy, 0))
+        pw = min(PATH_W, r["door_width"])
         mb = MB()
-        post = mat("post", G["post"])
-        box = mat("mailbox", G["mailbox"])
-        bh = Zt * MAILBOX_BOX_K
-        bl = bh * MAILBOX_LEN_K
-        bwid = bh * 0.85
-        mb.box(X - 0.07, X + 0.07, Y - 0.07, Y + 0.07, 0, Zt - bh, post)
-        # box with its door toward the street, a rounded top
-        sg = 1 if X < 0 else -1
-        xa, xb = X - bl / 2, X + bl / 2
-        mb.box(xa, xb, Y - bwid / 2, Y + bwid / 2, Zt - bh, Zt - bwid / 2, box)
-        n = 8
-        for i in range(n):
-            a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
-            y0, z0 = Y - bwid / 2 * math.cos(a0), Zt - bwid / 2 + bwid / 2 * math.sin(a0)
-            y1, z1 = Y - bwid / 2 * math.cos(a1), Zt - bwid / 2 + bwid / 2 * math.sin(a1)
-            mb.poly([(xa, y0, z0), (xb, y0, z0), (xb, y1, z1), (xa, y1, z1)], box)
-            mb.poly([(xb, Y, Zt - bwid / 2), (xb, y1, z1), (xb, y0, z0)], box)
-            mb.poly([(xa, Y, Zt - bwid / 2), (xa, y0, z0), (xa, y1, z1)], box)
-        # flag on the side away from the camera
-        fx = X - sg * bl * 0.15
-        mb.box(fx - 0.02, fx + 0.02, Y + bwid / 2, Y + bwid / 2 + 0.04, Zt - bh * 0.6, Zt + bh * 0.45, mat("flag", G["flag"]))
-        mb.obj(mbx["key"], pc)
+        xa, xb = sorted((foot.x, lawn))
+        mb.box(xa, xb, foot.y - pw / 2, foot.y + pw / 2, 0, 0.025, pm)
+        mailbox(mb, lawn - street * MAILBOX_OFF, foot.y - pw / 2 - MAILBOX_GAP, MAILBOX_H, street)
+        o = mb.obj(f"house_{h['key']}_lot", r.users_collection[0])
+        o.parent = r
+        o.matrix_parent_inverse = r.matrix_world.inverted()
+
+
+def clear_props(houses, cam):
+    """Trees and bushes painted where a house now stands move into its front yard; fences
+    that would cut through a house are dropped. Returns what changed."""
+    from mathutils import Vector
+    feet = {k: world_footprint(r) for k, r in houses.items()}
+    changed = []
+    for o in list(bpy.data.collections["props"].objects):
+        pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
+        x0, x1 = min(p.x for p in pts), max(p.x for p in pts)
+        y0, y1 = min(p.y for p in pts), max(p.y for p in pts)
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        for k, (a, b, c, d) in feet.items():
+            if o.name.startswith("fence"):
+                hit = x1 > a + PROP_MARGIN and x0 < b - PROP_MARGIN and y1 > c + PROP_MARGIN and y0 < d - PROP_MARGIN
+            else:
+                hit = a - PROP_MARGIN < cx < b + PROP_MARGIN and c - PROP_MARGIN < cy < d + PROP_MARGIN
+            if not hit:
+                continue
+            if o.name.startswith("fence"):
+                changed.append(f"{o.name}: dropped (cut through house_{k})")
+                bpy.data.objects.remove(o)
+            else:
+                street = 1 if houses[k].location.x < 0 else -1
+                front = houses[k].location.x
+                dx = front + street * YARD_TREE - cx
+                o.location.x += dx
+                changed.append(f"{o.name}: moved {dx:+.1f} m across the street axis, out of house_{k}")
+            break
+    return changed
 
 
 # --------------------------------------------------------------------------
@@ -657,9 +748,8 @@ def add_light():
     return o
 
 
-def build(mode="render", focal_px=None, toe_in=0.0):
-    """toe_in: 0 keeps every house square to the street; 1 turns each house about its front
-    centre to face the splash camera (hides the street-side walls, bends the street's grid)."""
+def build(mode="render", focal_px=None):
+    """Build the street. Returns (camera dict, {house key: root empty}, notes)."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     MODE["m"] = mode
     _MATS.clear()
@@ -675,10 +765,13 @@ def build(mode="render", focal_px=None, toe_in=0.0):
     for h in SD.HOUSES:
         coll = bpy.data.collections.new(f"house_{h['key']}")
         root.children.link(coll)
-        hroot = build_house(h, cam, coll, depths[h["key"]])
-        if toe_in:
-            hroot.rotation_euler.z = toe_in * math.atan2(-hroot.location.x, hroot.location.y)
-        houses[h["key"]] = hroot
+        houses[h["key"]] = build_house(h, cam, coll, depths[h["key"]])
+    bpy.context.view_layer.update()
+    moved = face_street(houses, cam)
+    build_lots(houses, cam)
+    props = clear_props(houses, cam)
+    NOTES.clear()
+    NOTES.update(moved=moved, props=props)
     camo = add_camera(cam)
     sc.camera = camo
     add_light()
@@ -691,6 +784,9 @@ def build(mode="render", focal_px=None, toe_in=0.0):
     sc.view_settings.view_transform = "Standard"
     sc.view_settings.look = "None"
     return cam, houses
+
+
+NOTES = {}
 
 
 if __name__ == "__main__":

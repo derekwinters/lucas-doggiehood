@@ -124,7 +124,7 @@ def turnaround(out_dir, houses, cam):
                 ob.hide_render = True
                 hidden.append(ob)
         for i, yaw in enumerate(TURN_YAWS):
-            a = math.radians(yaw)
+            a = math.radians(yaw) + root.rotation_euler.z   # yaw 0 looks at the house's front
             p = math.radians(TURN_PITCH)
             d = Vector((math.sin(a) * math.cos(p), -math.cos(a) * math.cos(p), math.sin(p)))
             o.location = centre + d * dist
@@ -137,19 +137,40 @@ def turnaround(out_dir, houses, cam):
     return paths
 
 
+def write_screen_boxes(out_dir, houses, cam):
+    """Where each house lands in the splash frame (px), and what the layout pass changed."""
+    import json
+    boxes = {}
+    for k, root in houses.items():
+        xs, ys = [], []
+        for ob in root.children:
+            if ob.type != "MESH":
+                continue
+            mw = ob.matrix_world
+            for v in ob.data.vertices:
+                p = mw @ v.co
+                if p.y > 0.5:
+                    x, y = SD.project(cam, p.x, p.y, p.z)
+                    xs.append(x)
+                    ys.append(y)
+        boxes[k] = [min(xs), min(ys), max(xs), max(ys)]
+    with open(os.path.join(out_dir, "house_screen_boxes.json"), "w") as f:
+        json.dump({"boxes": boxes, "notes": B.NOTES}, f, indent=1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dir")
     ap.add_argument("--scale", type=float, default=0.5)
     ap.add_argument("--focal", type=float, default=None)
-    ap.add_argument("--toe-in", type=float, default=0.0)
     ap.add_argument("--samples", type=int, default=16)
     ap.add_argument("--only", default="splash,turnaround")
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     only = set(a.only.split(","))
-    cam, houses = B.build("render", a.focal, a.toe_in)
+    cam, houses = B.build("render", a.focal)
     setup_render(a.scale, a.samples)
+    write_screen_boxes(a.out_dir, houses, cam)
     if "splash" in only:
         p = os.path.join(a.out_dir, "splash-render.png")
         render(p)

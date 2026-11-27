@@ -53,7 +53,7 @@ label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted)
 <body>
 <main>
   <h1>Splash street in 3D</h1>
-  <p class="lead">The 11 splash houses rebuilt as real 3D models. Drag to orbit, scroll or pinch to zoom.
+  <p class="lead">The 11 splash houses rebuilt as real 3D models, each facing the street. Drag to orbit, scroll or pinch to zoom.
   "Splash camera" snaps back to the camera solved from the painting.</p>
   <div class="bar">
     <button class="primary" id="splash">Splash camera</button>
@@ -152,10 +152,10 @@ sel.addEventListener("change", () => {
   const box = new THREE.Box3().setFromObject(houses[k]);
   const c = box.getCenter(new THREE.Vector3());
   const r = box.getSize(new THREE.Vector3()).length();
-  const side = c.x < 0 ? 1 : -1;
+  const street = c.x < 0 ? 1 : -1;   // the house's front faces the road (toward x = 0)
   camera.clearViewOffset();
   controls.target.copy(c);
-  camera.position.set(c.x + side * r * 1.0, c.y + r * 0.6, c.z + r * 1.3);
+  camera.position.set(c.x + street * r * 1.1, c.y + r * 0.55, c.z + r * 0.6);
   camera.updateProjectionMatrix();
 });
 document.getElementById("isolate").addEventListener("change", e => showOnly(e.target.checked ? sel.value : ""));

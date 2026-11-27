@@ -6,9 +6,10 @@ Colours are the median of the original's pixels on each surface (lit front faces
 sRGB hex.
 
 The 3D builder (`build_scene.py`) turns each screen-space shape into real geometry by
-back-projecting it through the solved splash camera (`camera()` below): a house's front
-wall is a plane square to the street at the depth where its foot meets the ground, so the
-front of every house lands on its painted outline by construction. Depths the painting
+back-projecting it through the solved splash camera (`camera()` below), which gives each
+house its real size and proportions: its front is measured as painted (facing the viewer).
+The builder then turns every house a quarter turn so its front faces the road, as real and
+game houses do (#935), and places it along its side of the street. Depths the painting
 cannot tell us (how deep a house is, how far its side wing sits back) are the metre values
 in `DEPTH` and per house in `depth`.
 """
@@ -115,14 +116,14 @@ def project(cam, X, Y, Z):
 # Default depths (m) for what the painting does not show
 # --------------------------------------------------------------------------
 DEPTH = {
-    "gable": 1.2,          # how deep the front-gable block (a projecting bay) runs back
-    "wing_inner": "x0",    # where the wing ends toward the street: "x0" (beside the bay only),
-                           # "apex" or "x1" (behind the whole bay; shows more from the splash camera)
+    "gable": 4.0,          # how deep the front-gable block (a projecting bay) runs back
+    "wing_inner": "x0",    # where the wing ends beside the bay: "x0" (beside the bay only),
+                           # "apex" or "x1" (behind the whole bay)
     "wing_setback": 0.6,   # the side wing's front sits this far behind the gable's front
     "wing": 6.0,           # the side wing's depth (its ridge is at the middle)
     "wing_width": 6.0,     # a wing that runs off the image: its width (m)
     "overhang_front": 0.12,
-    "overhang_back": 0.15,
+    "overhang_back": 0.3,
 }
 
 # --------------------------------------------------------------------------
@@ -398,19 +399,6 @@ FENCES = [  # a picket run square to the street: x0..x1 at ground y, picket top 
     dict(key="fence_blue_left", x=(2086, 2190), ground=842, top=737, colour="#d0824c"),
     dict(key="fence_blue_right", x=(2362, 2506), ground=878, top=782, colour="#cb7642"),
     dict(key="fence_green", x=(2700, 2840), ground=1156, top=908, colour="#ba673b"),
-]
-MAILBOXES = [  # post foot (x, y), box top y; box colour
-    dict(key="mailbox_left", foot=(477, 1142), top=812, house="red"),
-    dict(key="mailbox_yellow", foot=(900, 920), top=726, house="yellow"),
-    dict(key="mailbox_far_left_1", foot=(1050, 838), top=695, house="teal"),
-    dict(key="mailbox_far_left_2", foot=(1199, 755), top=663, house="far_salmon"),
-    dict(key="mailbox_far_left_3", foot=(1268, 718), top=649, house="far_rose"),
-    dict(key="mailbox_right", foot=(2460, 1159), top=813, house="green"),
-    dict(key="mailbox_blue", foot=(2060, 929), top=722, house="blue"),
-    dict(key="mailbox_far_right_4", foot=(1888, 832), top=682, house="pink"),
-    dict(key="mailbox_far_right_3", foot=(1806, 785), top=663, house="far_yellow"),
-    dict(key="mailbox_far_right_2", foot=(1736, 744), top=646, house="far_pink"),
-    dict(key="mailbox_far_right_1", foot=(1700, 723), top=638, house="far_blue"),
 ]
 GROUND_COLOURS = dict(
     grass="#8ac02b", grass_far="#a9cf7a", paving="#d8cacd", joint="#b7a9b7", asphalt="#6a6c7e",

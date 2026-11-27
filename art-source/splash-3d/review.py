@@ -82,8 +82,19 @@ def main():
 
     # per-house sheet: original | render, labelled
     tiles = []
+    import json
+    sb = {}
+    p = os.path.join(rdir, "house_screen_boxes.json")
+    if os.path.exists(p):
+        with open(p) as fh:
+            sb = json.load(fh)["boxes"]
     for h in SD.HOUSES:
         box = house_box(h)
+        if h["key"] in sb:
+            # one crop for both: where the house is painted and where the model lands
+            b = sb[h["key"]]
+            box = (int(max(0, min(box[0], b[0] - CROP_PAD))), int(max(0, min(box[1], b[1] - CROP_PAD))),
+                   int(min(SD.W, max(box[2], b[2] + CROP_PAD))), int(min(SD.H, max(box[3], b[3] + CROP_PAD))))
         o = orig.crop(box)
         r = rend.crop(box)
         k = SHEET_H / o.height
