@@ -1980,6 +1980,10 @@
 <td><code>art-source/blender/environment/street-props/</code></td>
 <td>The street props: generators, shared <code>textures/</code>, <code>exports/</code>, <code>review/</code></td>
 </tr>
+<tr>
+<td><code>art-source/blender/items/&lt;item&gt;/</code></td>
+<td>One folder per item (for example the chew bone, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/923">#923</a>): generator, <code>textures/</code>, <code>exports/</code>, <code>review/</code>, <code>tests/</code></td>
+</tr>
 </tbody>
 </table>
 <p>Each folder has a <code>README.md</code> with its measurements, triangle counts and open concerns. Render scratch output goes to an <code>out/</code> folder, which <code>art-source/blender/.gitignore</code> ignores at any depth.</p>
@@ -1999,6 +2003,7 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <li><strong><code>dh_scene.py</code></strong> fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.</li>
 <li><strong>Trees</strong> (<code>environment/trees/</code>): <code>dh_tree_tex.py</code> paints the leaf atlases and bark maps; <code>dh_trees_tex.py</code> builds the trees. They reuse the branch helpers in <code>dh_env.py</code>.</li>
 <li><strong>Street props</strong> (<code>environment/street-props/</code>): <code>dh_prop_tex.py</code> paints the surface textures and the label atlas; <code>dh_props.py</code> builds the props.</li>
+<li><strong>Items</strong> (<code>items/&lt;item&gt;/</code>): <code>items/chew-bone/dh_chew_bone.py</code> builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (<code>dogs/kit/dh_dog_mesh.py</code>), and paints its texture.</li>
 </ul>
 <p>The environment scripts import the committed house kit by relative path (<code>../..</code> from <code>trees/</code>, and <code>../trees</code> plus <code>../..</code> from <code>street-props/</code>). No script imports a copy of another folder's modules.</p>
 <p><strong>Determinism.</strong> The generators seed their randomness (for example per tree name, or a fixed seed per texture), so the same script produces the same model every run.</p>
@@ -2010,7 +2015,7 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <li><strong>Pivot:</strong> a base pivots at the centre of its wall footprint on the ground; a piece pivots on its attach point; a tree or prop pivots on the ground at its trunk, post base or footprint centre.</li>
 <li><strong>Attach points</strong> are empties named <code>ATTACH_&lt;NAME&gt;</code> (<code>ATTACH_ADDITION</code>, <code>ATTACH_DECK</code>, <code>ATTACH_PATIO</code>), parented to their mesh so they export as glTF nodes.</li>
 <li><strong>Object names:</strong> <code>base_house_&lt;N&gt;_finished</code>, <code>base_house_&lt;N&gt;_framing</code>, <code>piece_&lt;type&gt;</code>, <code>tree_&lt;kind&gt;_&lt;size&gt;</code>, and the prop's key (for example <code>stop_sign</code>).</li>
-<li><strong>Material names</strong> carry their set and slot: <code>DH_&lt;Scheme&gt;_&lt;slot&gt;</code> for houses (for example <code>DH_SageCottage_siding</code>), <code>DH_Tree_*</code> for trees and <code>DH_Prop_*</code> for props. A house paints only through its scheme's slots.</li>
+<li><strong>Material names</strong> carry their set and slot: <code>DH_&lt;Scheme&gt;_&lt;slot&gt;</code> for houses (for example <code>DH_SageCottage_siding</code>), <code>DH_Tree_*</code> for trees, <code>DH_Prop_*</code> for props and <code>DH_Item_*</code> for items. A house paints only through its scheme's slots.</li>
 </ul>
 <p>The final names in <code>Assets/</code> and in the Core part catalog are <strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/775">#775</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/777">#777</a>).</p>
 <h2 id="export-formats-and-commands">Export formats and commands<a class="headerlink" href="#export-formats-and-commands" title="Permanent link">&para;</a></h2>
@@ -2043,6 +2048,11 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <td>Street props</td>
 <td><code>python3 art-source/blender/environment/street-props/export_props.py</code></td>
 <td>26 <code>.gltf</code> + <code>.bin</code> pairs and <code>street_props_stats.json</code></td>
+</tr>
+<tr>
+<td>Chew bone</td>
+<td><code>python3 art-source/blender/items/chew-bone/export_chew_bone.py</code></td>
+<td><code>chew_bone.gltf</code> + <code>.bin</code>, its two textures and <code>chew_bone_stats.json</code></td>
 </tr>
 </tbody>
 </table>
