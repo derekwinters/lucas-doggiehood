@@ -1,0 +1,125 @@
+{
+ "name": "Delivery truck (#924)",
+ "units": "metres; glTF axes (Y up, front +Z, truck's left +X). Blender: front -Y, up +Z",
+ "core_footprint_m": {
+  "length": 4.875,
+  "width": 2.25
+ },
+ "height_m": 2.475,
+ "door_open_deg_about_hinge_z_blender": -90.0,
+ "budget_tris": 6000,
+ "per_mesh_cap_tris": 2000,
+ "glb_bytes": 114636,
+ "errors": [],
+ "size_gltf_xyz_m": [
+  2.25,
+  2.475,
+  4.875
+ ],
+ "bounds_gltf_m": {
+  "min": [
+   -1.125,
+   0.0,
+   -2.4375
+  ],
+  "max": [
+   1.125,
+   2.475,
+   2.4375
+  ]
+ },
+ "tris": {
+  "decal_delivery_left": 267,
+  "decal_delivery_right": 267,
+  "door_rear": 72,
+  "wheel_front_left": 208,
+  "wheel_front_right": 208,
+  "wheel_rear_left": 208,
+  "wheel_rear_right": 208,
+  "delivery_truck": 392
+ },
+ "tris_total": 1830,
+ "pivots_gltf_m": {
+  "decal_delivery_left": [
+   1.119,
+   1.66,
+   -0.76
+  ],
+  "decal_delivery_right": [
+   -1.119,
+   1.66,
+   -0.76
+  ],
+  "delivery_truck": [
+   0,
+   0,
+   0
+  ],
+  "door_rear": [
+   0.95,
+   0.55,
+   -2.32
+  ],
+  "wheel_front_left": [
+   0.9,
+   0.42,
+   1.5
+  ],
+  "wheel_front_right": [
+   -0.9,
+   0.42,
+   1.5
+  ],
+  "wheel_rear_left": [
+   0.9,
+   0.42,
+   -1.05
+  ],
+  "wheel_rear_right": [
+   -0.9,
+   0.42,
+   -1.05
+  ]
+ },
+ "materials": {
+  "decal_delivery_left": [
+   "DH_Truck_lettering",
+   "DH_Truck_lettering_outline"
+  ],
+  "decal_delivery_right": [
+   "DH_Truck_lettering",
+   "DH_Truck_lettering_outline"
+  ],
+  "door_rear": [
+   "DH_Truck_body",
+   "DH_Truck_trim"
+  ],
+  "wheel_front_left": [
+   "DH_Truck_hub",
+   "DH_Truck_trim",
+   "DH_Truck_tyre"
+  ],
+  "wheel_front_right": [
+   "DH_Truck_hub",
+   "DH_Truck_trim",
+   "DH_Truck_tyre"
+  ],
+  "wheel_rear_left": [
+   "DH_Truck_hub",
+   "DH_Truck_trim",
+   "DH_Truck_tyre"
+  ],
+  "wheel_rear_right": [
+   "DH_Truck_hub",
+   "DH_Truck_trim",
+   "DH_Truck_tyre"
+  ],
+  "delivery_truck": [
+   "DH_Truck_body",
+   "DH_Truck_glass",
+   "DH_Truck_headlight",
+   "DH_Truck_taillight",
+   "DH_Truck_trim"
+  ]
+ }
+}
