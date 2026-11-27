@@ -16,6 +16,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | `french-bulldog/` | The approved French Bulldog (#915): `breed.py`, its outputs (one coat: fawn with a black mask), and `render_compare.py` (beside the Lab and the Shepherd) |
 | `puggle/` | The approved Puggle (#909): `breed.py`, its outputs (fawn default, black and apricot light coats), `render_compare.py` (beside the Beagle and the Lab) and `check_tail.py` (the curled tail stays clear of the back in every clip) |
 | `chihuahua/` | The approved Chihuahua (#914): `breed.py`, its outputs (fawn default and black-and-tan coats), and `render_compare.py` (beside the Beagle and the Lab) |
+| `frenchton/` | The approved Frenchton, French Bulldog x Boston Terrier (#918): `breed.py`, its outputs (black-and-white default, brindle-and-white dark and fawn-and-white light coats), and `render_compare.py` (beside the Beagle and the Puggle) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
@@ -97,10 +98,13 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      ("ears") channel: each covers some body regions where the surface is above a `(y, z)` line
      and/or inside `y` / `z` ramps, `|x| < x_max` and a normal ramp `n`; `"op": "dark"` (default)
      raises the channel, `"light"` lowers it, and `"pale"` lays a white marking: it raises the
-     feathering (underside) channel and clears the dark one, so the marking shows over a saddle.
-     Leave it out and the masks are exactly as before. The German Shepherd's black-and-tan saddle
-     and mask, and the Beagle's tricolour (saddle, blaze, white muzzle, legs and tail tip), are the
-     examples (`kit/tests/test_fur_patches.py`).
+     feathering (underside) channel and clears the dark one, so the marking shows over a saddle;
+     `"plain"` clears the feathering channel (the kit's paler chest, belly, leg backs and tail
+     underside become the main coat colour) and leaves the dark one alone, so a coat can carry
+     only its own white markings. Leave it out and the masks are exactly as before. The German
+     Shepherd's black-and-tan saddle and mask, the Beagle's tricolour (saddle, blaze, white
+     muzzle, legs and tail tip) and the Frenchton's tuxedo and brindle are the examples
+     (`kit/tests/test_fur_patches.py`).
    - **Optional keys for erect ears and low tails:** `EARS["side"]` turns the ear's width to run
      across the head (default: front-to-back, a hanging ear); `EARS["swing"]` scales the clips' ear
      rotations per world axis, so an erect ear lays back where a hanging ear swings back;
@@ -200,8 +204,9 @@ python3 art-source/blender/dogs/kit/tests/test_fur_strand.py
 `kit/tests/test_fur_patches.py` (a few seconds, no Blender) checks the optional `FUR_PATCHES`
 field the same way: a breed without it gets the old masks (passing the coat noise changes
 nothing), a dark patch raises only the dark channel and only where it lies, a light patch
-lowers it, and a pale patch raises the feathering channel to its strength and clears the dark
-channel, only where it lies.
+lowers it, a pale patch raises the feathering channel to its strength and clears the dark
+channel, only where it lies, and a plain patch scales the feathering channel down by its
+strength, leaves the dark channel alone and can be whitened again by a later pale patch.
 
 `kit/tests/test_erect_ears.py` and `kit/tests/test_sit_down_tail.py` (a few seconds each, need
 `bpy` but build no dog: they loft the ears and pose a bare armature) check the optional erect-ear
