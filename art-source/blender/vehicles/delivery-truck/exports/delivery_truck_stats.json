@@ -9,7 +9,7 @@
  "door_open_deg_about_hinge_z_blender": -90.0,
  "budget_tris": 6000,
  "per_mesh_cap_tris": 2000,
- "glb_bytes": 71540,
+ "glb_bytes": 114636,
  "errors": [],
  "size_gltf_xyz_m": [
   2.25,
@@ -29,6 +29,8 @@
   ]
  },
  "tris": {
+  "decal_delivery_left": 267,
+  "decal_delivery_right": 267,
   "door_rear": 72,
   "wheel_front_left": 208,
   "wheel_front_right": 208,
@@ -36,8 +38,18 @@
   "wheel_rear_right": 208,
   "delivery_truck": 392
  },
- "tris_total": 1296,
+ "tris_total": 1830,
  "pivots_gltf_m": {
+  "decal_delivery_left": [
+   1.119,
+   1.66,
+   -0.76
+  ],
+  "decal_delivery_right": [
+   -1.119,
+   1.66,
+   -0.76
+  ],
   "delivery_truck": [
    0,
    0,
@@ -70,6 +82,14 @@
   ]
  },
  "materials": {
+  "decal_delivery_left": [
+   "DH_Truck_lettering",
+   "DH_Truck_lettering_outline"
+  ],
+  "decal_delivery_right": [
+   "DH_Truck_lettering",
+   "DH_Truck_lettering_outline"
+  ],
   "door_rear": [
    "DH_Truck_body",
    "DH_Truck_trim"

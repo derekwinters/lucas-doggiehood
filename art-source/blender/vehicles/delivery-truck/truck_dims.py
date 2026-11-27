@@ -98,6 +98,10 @@ WINDSCREEN_INSET = 0.07                   # glass stops this far short of every 
 GLASS_T = 0.012
 SIDE_WINDOW = {"z0": 1.45, "z1": 2.08, "rear_y": -0.92, "front_inset": 0.10}
 
+# The lettering stands DECAL_PROUD off the cargo box's sides, so the box is that much
+# narrower than the footprint and the lettering's outer face is the footprint's edge.
+DECAL_PROUD = 0.006
+BOX_HALF_W = HALF_W - DECAL_PROUD
 BOX_FRONT_Y = -0.80
 BOX_REAR_Y = 2.32                         # the rear face the door closes into
 BOX_CHAMFER = 0.10                        # top front edge of the box
@@ -132,6 +136,17 @@ DOOR_HINGE_KNUCKLE = {"size": 0.05, "z": (0.25, 1.45)}    # heights above the do
 # z: rib heights as fractions of the door height
 DOOR_RIB = {"z": (0.33, 0.66), "h": 0.04, "proud": 0.008, "inset": 0.08}
 
+# --- Lettering: "Delivery" on both long sides of the cargo box ----------------------
+# Light lettering with a dark outline, so it reads on light and dark bodies alike. Built
+# from Blender's built-in font (no font file), filled flat, readable from each side.
+LETTERING_TEXT = "Delivery"
+LETTERING_WIDTH = 1.80                    # along the truck, the word's full width
+LETTERING_CENTRE = (0.76, 1.66)           # (y, z) on the box side: mid-box, above the rear arch
+LETTERING_RESOLUTION = 3                  # curve steps per glyph segment
+LETTERING_OUTLINE = 0.06                  # outline width, in font units (the word is ~3.3 wide)
+OUTLINE_PROUD = DECAL_PROUD / 2           # the outline sits under the fill
+DECALS = {"decal_delivery_left": 1, "decal_delivery_right": -1}   # name -> side (+X is left)
+
 # --- Materials: slot -> (hex, roughness) ---------------------------------------
 # body is white so Unity's material colour multiply gives exactly
 # Palette.CarColorHex (#601); everything else is untinted.
@@ -143,6 +158,8 @@ MATERIALS = {
     "hub": ("#B9BDC2", 0.35),
     "headlight": ("#F2EFE2", 0.20),
     "taillight": ("#B3242A", 0.30),
+    "lettering": ("#F7F5EE", 0.50),
+    "lettering_outline": ("#1E2226", 0.50),
 }
 MATERIAL_PREFIX = "DH_Truck_"
 
@@ -156,3 +173,8 @@ def core_car_colors():
 
 # The seven car colours, for the review renders and the viewer.
 CAR_COLORS = core_car_colors()
+
+# Derek's review colours (#924). White and dark blue are Palette.CarColorHex's; dark brown
+# is NOT in Core's palette yet (it would need a Core change, #930 or a new issue).
+DARK_BROWN = ("dark brown", "#4A3222")
+REVIEW_COLORS = [CAR_COLORS[0], DARK_BROWN, CAR_COLORS[5]]

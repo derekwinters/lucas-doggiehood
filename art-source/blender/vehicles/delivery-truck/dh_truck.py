@@ -1,5 +1,5 @@
 """Blender delivery truck (#924): a box delivery truck with a car-colour body,
-four separate wheels and a swinging rear door. No driver or people.
+"Delivery" lettered on both sides, four separate wheels and a swinging rear door. No driver or people.
 
 All numbers are in truck_dims.py. build() returns the root object
 (`delivery_truck`, the body mesh, pivot on the ground at the footprint centre)
@@ -10,6 +10,9 @@ with five children, each with its pivot where it moves:
   door_rear
       origin on the hinge (bottom of the left door post's inner edge, at the
       rear face); the door swings about its local Z axis, open = DOOR_OPEN_DEG
+  decal_delivery_left, decal_delivery_right
+      the word "Delivery" on each long side of the cargo box (static), in its
+      own untinted lettering materials
 
 The body is drawn through one material, DH_Truck_body (white, for Unity's
 colour multiply with Palette.CarColorHex); glass, tyres, trim, hubs and lamps
@@ -24,6 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..")))
 import bpy  # noqa: E402
+import bmesh  # noqa: E402
 import dh_house_kit as K  # noqa: E402
 import truck_dims as D  # noqa: E402
 
@@ -87,7 +91,8 @@ def _glass_quad(m, quad_yz, x, outward):
 
 def build_body():
     m = K.MeshBuilder(NAME, palette())
-    hw = D.HALF_W
+    hw = D.HALF_W                       # mirrors reach the footprint's edge
+    bw = D.BOX_HALF_W                   # the cargo box stops short of it by the lettering's depth
     # cab: hood, windscreen, roof; arch over the front axle
     cab_top = [(D.CAB_FRONT_Y, D.BODY_BOTTOM)] + D.CAB_PROFILE
     pts, mats = _with_arch(cab_top[1:], D.CAB_REAR_Y, D.CAB_FRONT_Y, D.AXLE_FRONT_Y)
@@ -104,11 +109,11 @@ def build_body():
     mats = ["body"] + mats[:-1]
     # the rear face of the solid part is the back wall of the cargo hold
     mats[len(box_top)] = "trim"
-    profile_prism(m, pts, -hw, hw, "body", mats)
+    profile_prism(m, pts, -bw, bw, "body", mats)
 
     # the hold's shell: two door posts, roof, floor sill
-    m.box((D.POST_X, hold_y, D.BODY_BOTTOM), (hw, D.BOX_REAR_Y, D.HEIGHT), "body")
-    m.box((-hw, hold_y, D.BODY_BOTTOM), (-D.POST_X, D.BOX_REAR_Y, D.HEIGHT), "body")
+    m.box((D.POST_X, hold_y, D.BODY_BOTTOM), (bw, D.BOX_REAR_Y, D.HEIGHT), "body")
+    m.box((-bw, hold_y, D.BODY_BOTTOM), (-D.POST_X, D.BOX_REAR_Y, D.HEIGHT), "body")
     m.box((-D.POST_X, hold_y, D.DOOR_TOP), (D.POST_X, D.BOX_REAR_Y, D.HEIGHT), "body")
     m.box((-D.POST_X, hold_y, D.BODY_BOTTOM), (D.POST_X, D.BOX_REAR_Y, D.DOOR_BOTTOM), "trim")
 
@@ -223,6 +228,56 @@ def build_door():
     return m.build()
 
 
+def _text_faces(offset):
+    """The lettering's filled glyphs as triangles in font space (x along the word,
+    y up, centred, facing +Z), at the fitted size. offset > 0 fattens the glyphs
+    (the outline)."""
+    cu = bpy.data.curves.new("_lettering", "FONT")
+    cu.body = D.LETTERING_TEXT
+    cu.align_x, cu.align_y = "CENTER", "CENTER"
+    cu.resolution_u = D.LETTERING_RESOLUTION
+    cu.offset = offset
+    ob = bpy.data.objects.new("_lettering", cu)
+    bpy.context.scene.collection.objects.link(ob)
+    me = bpy.data.meshes.new_from_object(ob.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    faces = [[tuple(me.vertices[i].co) for i in p.vertices] for p in me.polygons]
+    bpy.data.objects.remove(ob)
+    bpy.data.curves.remove(cu)
+    bpy.data.meshes.remove(me)
+    return faces
+
+
+def build_decal(name, side):
+    """'Delivery' for one side of the cargo box, origin on the box side at
+    LETTERING_CENTRE. side = +1 (left, +X) or -1 (right, -X). The word runs toward
+    the reader's right from each side (front to back on the left, back to front on
+    the right) and every face points outward, so it is never mirrored."""
+    fill = _text_faces(0.0)
+    outline = _text_faces(D.LETTERING_OUTLINE)
+    xs = [v[0] for f in fill for v in f]
+    k = D.LETTERING_WIDTH / (max(xs) - min(xs))
+    bm = bmesh.new()
+
+    def put(faces, depth, mi):
+        for f in faces:
+            # font (u, v) -> local (x, y, z): u along +Y on the left side, -Y on the right
+            vs = [bm.verts.new((side * depth, side * u * k, v * k)) for u, v, _ in f]
+            face = bm.faces.new(vs)
+            face.material_index = mi
+    put(outline, D.OUTLINE_PROUD, 0)
+    put(fill, D.DECAL_PROUD, 1)
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    for slot in ("lettering_outline", "lettering"):
+        hexc, _ = D.MATERIALS[slot]
+        me.materials.append(K.material(D.MATERIAL_PREFIX + slot, hexc))
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
 def build():
     """The whole truck at rest (door closed). Returns the root object."""
     body = build_body()
@@ -230,6 +285,10 @@ def build():
         wh = build_wheel(name, 1 if p[0] > 0 else -1)
         wh.parent = body
         wh.location = p
+    for name, side in D.DECALS.items():
+        dec = build_decal(name, side)
+        dec.parent = body
+        dec.location = (side * D.BOX_HALF_W, D.LETTERING_CENTRE[0], D.LETTERING_CENTRE[1])
     door = build_door()
     door.parent = body
     door.location = D.DOOR_HINGE

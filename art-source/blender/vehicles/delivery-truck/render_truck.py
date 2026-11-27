@@ -4,14 +4,16 @@
 
 OUT_DIR defaults to this folder's out/ (git-ignored). Views:
 
-  gamecam     game camera (orthographic, pitch 45, yaw -40) on a straight road tile
+  gamecam     Derek's three review colours (truck_dims.REVIEW_COLORS: white, dark brown,
+              dark blue), door closed and open, at the game camera (orthographic, pitch 45, yaw -40) on a straight road tile
               (approved road kit look A on the approved lawn), the truck in its lane
               (RoadLane.Offset = RoadWidth / 4 right of the centreline) beside the
               approved adult Golden Retriever on the sidewalk:
-              gamecam-white-closed.png, gamecam-white-open.png,
-              gamecam-red-closed.png, gamecam-red-open.png, and gamecam-sheet.png (all four)
+              gamecam-<colour>-closed.png, gamecam-<colour>-open.png, and gamecam-sheet.png (all six)
+  sides       lettering-sides.png: both long sides of each review colour, square on
   colors      the seven Palette.CarColorHex colours, one game-camera tile each: colors.png
-  closeup     closeup-front.png (3/4 front) and closeup-rear-open.png (3/4 rear, door open)
+  closeup     closeup-front.png (3/4 front) and closeup-rear-open.png (3/4 rear, door open),
+              in dark brown
   motion      motion-sheet.png: the door swinging 0 -> open, and a wheel turning
               (lug nuts show the spin), four frames each
 
@@ -39,7 +41,7 @@ import truck_dims as D  # noqa: E402
 
 args = [a for a in sys.argv[1:]]
 OUT = args[0] if args and not args[0].startswith("--") else os.path.join(HERE, "out")
-VIEWS = {"gamecam", "colors", "closeup", "motion"}
+VIEWS = {"gamecam", "sides", "colors", "closeup", "motion"}
 SAMPLES = 32
 for i, a in enumerate(args):
     if a == "--views":
@@ -68,7 +70,11 @@ DOOR_FRAMES = (0.0, -30.0, -60.0, D.DOOR_OPEN_DEG)
 WHEEL_FRAMES = (0.0, 15.0, 30.0, 45.0)    # under 72: five lugs repeat every 72 deg
 STUDIO = K.COMMON["ground_studio"]
 LABEL_H = 54
-WHITE, RED = D.CAR_COLORS[0], D.CAR_COLORS[4]
+WHITE, RED, DARK_BROWN = D.CAR_COLORS[0], D.CAR_COLORS[4], D.DARK_BROWN
+SIDE_RES = (900, 500)
+SIDE_LEFT_YAW = 90.0                    # camera on +X looking at the truck's left side
+SIDE_RIGHT_YAW = -90.0
+SIDE_PITCH = 8.0
 
 
 def _font(size):
@@ -144,14 +150,14 @@ def _road_scene():
 
 def view_gamecam():
     files = []
-    for name, hexc in (WHITE, RED):
+    for name, hexc in D.REVIEW_COLORS:
         for door, label in ((0.0, "closed"), (D.DOOR_OPEN_DEG, "open")):
             _road_scene()
             root = _truck((LANE_X, 0.0, 0.0), hexc, door)
             _import_dog(DOG_AT, DOG_YAW)
             (x0, y0), (x1, y1) = GAMECAM_FRAME
             hint = _hint((x0, y0, 0.0), (x1, y1, D.HEIGHT))
-            p = os.path.join(OUT, "gamecam-%s-%s.png" % (name, label))
+            p = os.path.join(OUT, "gamecam-%s-%s.png" % (name.replace(" ", "-"), label))
             _render(p, GAMECAM_RES, [hint], margin=1.0)
             files.append((p, "%s, door %s" % (name, label)))
             del root
@@ -171,9 +177,24 @@ def view_colors():
     sheet(files, os.path.join(OUT, "colors.png"), cols=4, scale=1.0)
 
 
+def view_sides():
+    """Both long sides of each review colour, orthographic and square on, so the
+    lettering can be read: the left side (camera on +X) and the right (camera on -X)."""
+    files = []
+    for name, hexc in D.REVIEW_COLORS:
+        for label, yaw in (("left side", SIDE_LEFT_YAW), ("right side", SIDE_RIGHT_YAW)):
+            K.reset_scene()
+            K.ground_plane(30, STUDIO)
+            root = _truck(color=hexc)
+            p = os.path.join(TMP, "side_%s_%s.png" % (name.replace(" ", "_"), label.split()[0]))
+            _render(p, SIDE_RES, _all(root), yaw=yaw, pitch=SIDE_PITCH, margin=1.08)
+            files.append((p, "%s, %s" % (name, label)))
+    sheet(files, os.path.join(OUT, "lettering-sides.png"), cols=2, scale=1.0)
+
+
 def view_closeup():
     _road_scene()
-    root = _truck((LANE_X, 0.0, 0.0), RED[1])
+    root = _truck((LANE_X, 0.0, 0.0), DARK_BROWN[1])
     _render(os.path.join(OUT, "closeup-front.png"), CLOSE_RES, _all(root), yaw=-50.0, pitch=18.0,
             margin=1.0, ortho=False, lens=60.0)
     T.set_pose(root, door_deg=D.DOOR_OPEN_DEG)
@@ -216,7 +237,7 @@ def sheet(files, path, cols, scale):
     out.save(path)
 
 
-for v, fn in (("gamecam", view_gamecam), ("colors", view_colors), ("closeup", view_closeup),
+for v, fn in (("gamecam", view_gamecam), ("sides", view_sides), ("colors", view_colors), ("closeup", view_closeup),
               ("motion", view_motion)):
     if v in VIEWS:
         fn()

@@ -29,6 +29,8 @@ TOL = 1e-3
 WHEELS = ("wheel_front_left", "wheel_front_right", "wheel_rear_left", "wheel_rear_right")
 DOOR = "door_rear"
 ROOT = "delivery_truck"
+DECALS = ("decal_delivery_left", "decal_delivery_right")
+LETTERING_MAT = "DH_Truck_lettering"
 BODY_MAT = "DH_Truck_body"
 UNTINTED = ("DH_Truck_glass", "DH_Truck_tyre", "DH_Truck_trim")
 
@@ -93,10 +95,10 @@ class Parts(unittest.TestCase):
         self.g = C.load(GLB)
         self.nodes = C.nodes_by_name(self.g)
 
-    def test_node_set_is_body_four_wheels_and_rear_door_only(self):
-        self.assertEqual(sorted(self.nodes), sorted((ROOT,) + WHEELS + (DOOR,)))
+    def test_node_set_is_body_wheels_door_and_lettering_only(self):
+        self.assertEqual(sorted(self.nodes), sorted((ROOT,) + WHEELS + (DOOR,) + DECALS))
         kids = sorted(self.g["nodes"][i]["name"] for i in self.nodes[ROOT].get("children", []))
-        self.assertEqual(kids, sorted(WHEELS + (DOOR,)))
+        self.assertEqual(kids, sorted(WHEELS + (DOOR,) + DECALS))
 
     def test_wheel_pivots_are_on_their_axles(self):
         for w in WHEELS:
@@ -128,7 +130,7 @@ class Parts(unittest.TestCase):
             self.assertLessEqual(abs(x), width / 2 + TOL)
 
     def test_exports_closed_and_at_rest(self):
-        for n in WHEELS + (DOOR,):
+        for n in WHEELS + (DOOR,) + DECALS:
             self.assertNotIn("rotation", self.nodes[n], n)
             self.assertNotIn("scale", self.nodes[n], n)
 
@@ -163,6 +165,49 @@ class Materials(unittest.TestCase):
 def _sha(path):
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
+
+
+class Lettering(unittest.TestCase):
+    """"Delivery" on both long sides of the cargo box (#924, Derek's review)."""
+
+    def setUp(self):
+        self.g = C.load(GLB)
+
+    def test_one_decal_on_each_long_side_of_the_cargo_box(self):
+        _, width = C.core_footprint()
+        lo, hi = C.node_world_bounds(self.g, "decal_delivery_left")
+        self.assertAlmostEqual(hi[0], width / 2, delta=TOL)          # truck's left is +X
+        self.assertGreater(lo[0], width / 2 - 0.02)
+        lo, hi = C.node_world_bounds(self.g, "decal_delivery_right")
+        self.assertAlmostEqual(lo[0], -width / 2, delta=TOL)
+        self.assertLess(hi[0], -width / 2 + 0.02)
+        for d in DECALS:
+            lo, hi = C.node_world_bounds(self.g, d)
+            self.assertGreater(lo[2], -D.BOX_REAR_Y, d)              # on the cargo box: behind the cab,
+            self.assertLess(hi[2], -D.BOX_FRONT_Y, d)                # ahead of the rear face (glTF Z = -y)
+            self.assertGreater(lo[1], D.AXLE_Z + D.ARCH_RADIUS, d)   # above the wheel arches
+            self.assertLess(hi[1], D.HEIGHT, d)
+
+    def test_lettering_faces_outward_on_each_side(self):
+        # an outward face is what makes the word read correctly (not mirrored) from that side
+        for d, sign in (("decal_delivery_left", 1), ("decal_delivery_right", -1)):
+            normals = C.face_normals_world(self.g, d)
+            self.assertTrue(normals, d)
+            self.assertTrue(all(n[0] * sign > 0.99 for n in normals), d)
+
+    def test_lettering_reads_front_to_back_on_the_left_and_back_to_front_on_the_right(self):
+        # the word starts at the reader's left: toward the cab on the left side, toward the rear
+        # on the right side. The only descender in "Delivery" is the final "y", so the lowest
+        # point of the lettering marks the end of the word.
+        for d, front_first in (("decal_delivery_left", True), ("decal_delivery_right", False)):
+            self.assertEqual(C.word_starts_at_front(self.g, d), front_first, d)
+
+    def test_lettering_has_its_own_untinted_materials(self):
+        used = C.materials_per_node(self.g)
+        for d in DECALS:
+            self.assertIn(LETTERING_MAT, used[d], d)
+            self.assertNotIn(BODY_MAT, used[d], d)
+        self.assertEqual(sorted(n for n, ms in used.items() if LETTERING_MAT in ms), sorted(DECALS))
 
 
 @unittest.skipUnless(importlib.util.find_spec("bpy"), "needs bpy==5.3.0")

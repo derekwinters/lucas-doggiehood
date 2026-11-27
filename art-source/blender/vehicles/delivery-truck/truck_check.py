@@ -5,8 +5,9 @@
 Used by export_truck.py after every export and by tests/. Checks: the footprint
 equals today's truck from Core (#660, #672), every mesh is under ArtBudget's
 per-mesh cap and the whole truck under the #799 budget, the node set and pivots
-match truck_dims, the open door stays inside the width, and only the body and
-door use the tint material. Prints the errors and exits non-zero if any.
+match truck_dims, the open door stays inside the width, only the body and
+door use the tint material, and the lettering faces outward and reads the right
+way on both sides. Prints the errors and exits non-zero if any.
 """
 import json
 import math
@@ -159,6 +160,35 @@ def materials_per_node(g):
     return out
 
 
+def face_normals_world(g, name):
+    """Unit normal of every triangle of a node, in world space (from its winding)."""
+    idx = [i for i, n in enumerate(g["nodes"]) if n["name"] == name][0]
+    out = []
+    for prim in g["meshes"][g["nodes"][idx]["mesh"]]["primitives"]:
+        pos = _world_points(g, idx, accessor(g, prim["attributes"]["POSITION"]))
+        ind = accessor(g, prim["indices"])
+        for t in range(0, len(ind), 3):
+            a, b, c = (pos[ind[t + j]] for j in range(3))
+            u = [b[i] - a[i] for i in range(3)]
+            v = [c[i] - a[i] for i in range(3)]
+            n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
+            ln = math.sqrt(sum(x * x for x in n))
+            if ln > 1e-12:
+                out.append([x / ln for x in n])
+    return out
+
+
+def word_starts_at_front(g, name):
+    """True if the lettering's word begins toward the truck's front (glTF +Z). The
+    only descender in "Delivery" is its last letter, so the lowest point of the
+    lettering is the end of the word."""
+    idx = [i for i, n in enumerate(g["nodes"]) if n["name"] == name][0]
+    pts = _world_points(g, idx, mesh_positions(g, g["nodes"][idx]["mesh"]))
+    zs = [p[2] for p in pts]
+    low = min(pts, key=lambda p: p[1])
+    return low[2] < (min(zs) + max(zs)) / 2
+
+
 def door_open_x(g, open_deg, name="door_rear"):
     """World X of every door vertex with the door swung open_deg about its hinge
     (Blender +Z, which is glTF +Y)."""
@@ -204,7 +234,7 @@ def check(path):
     if sum(tris.values()) > D.BUDGET_TRIS:
         err.append("%d tris > budget %d" % (sum(tris.values()), D.BUDGET_TRIS))
     nodes = nodes_by_name(g)
-    want = {"delivery_truck", "door_rear"} | set(D.WHEEL_PIVOTS)
+    want = {"delivery_truck", "door_rear"} | set(D.WHEEL_PIVOTS) | set(D.DECALS)
     if set(nodes) != want:
         err.append("nodes %s != %s" % (sorted(nodes), sorted(want)))
     else:
@@ -219,6 +249,14 @@ def check(path):
         tinted = sorted(n for n, ms in used.items() if D.MATERIAL_PREFIX + "body" in ms)
         if tinted != ["delivery_truck", "door_rear"]:
             err.append("tint material on %s" % tinted)
+        lettered = sorted(n for n, ms in used.items() if D.MATERIAL_PREFIX + "lettering" in ms)
+        if lettered != sorted(D.DECALS):
+            err.append("lettering material on %s" % lettered)
+        for d, side in D.DECALS.items():
+            if not all(n[0] * side > 0.99 for n in face_normals_world(g, d)):
+                err.append("%s has faces that do not point outward" % d)
+            if word_starts_at_front(g, d) != (side > 0):
+                err.append("%s reads the wrong way" % d)
     return err
 
 
