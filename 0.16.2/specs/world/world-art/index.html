@@ -791,6 +791,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#backyard-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backyard pool
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -1927,6 +1936,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#backyard-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backyard pool
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#build-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       Build checklist
@@ -2056,6 +2074,38 @@
 <h2 id="fences">Fences<a class="headerlink" href="#fences" title="Permanent link">&para;</a></h2>
 <p>The backyard fence keeps the geometry <code>LotFence</code> traces today (<a href="../world/#backyard-fences">Backyard fences</a>), built from modular Blender pieces.</p>
 <p><strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/806">#806</a>, <a href="https://github.com/derekwinters/lucas-doggiehood/issues/813">#813</a>): the fence style or styles, and how a fence meets a house's upgrade pieces (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/783">#783</a>).</p>
+<h2 id="backyard-pool">Backyard pool<a class="headerlink" href="#backyard-pool" title="Permanent link">&para;</a></h2>
+<p>The pool a delivered <code>pool</code> gift leaves in a back yard (<a href="../world/#backyard-pool">World &amp; Neighborhood → Backyard pool</a>) has <strong>two approved Blender models</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/741">#741</a>), and <strong>the game picks one at random for each pool</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/926">#926</a>). Both are open-topped, above-ground pools with one plain wall and three low steps up the outside, one adult dog tall (<code>PoolPlacement.PoolHeight</code>), with the water below the rim at <code>PoolPlacement</code>'s water height. They are sized by their <strong>water</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Pool</th>
+<th>Water</th>
+<th>Footprint, steps included</th>
+<th style="text-align: right;">Triangles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Round</td>
+<td>5.0 m across</td>
+<td>5.21 × 5.99 m</td>
+<td style="text-align: right;">914</td>
+</tr>
+<tr>
+<td>Oval</td>
+<td>6.0 × 3.0 m, 0.45 m corners</td>
+<td>6.21 × 3.97 m</td>
+<td style="text-align: right;">600</td>
+</tr>
+</tbody>
+</table>
+<p>Full sizes are in <code>art-source/blender/items/pool/README.md</code>. Swimming is <a href="https://github.com/derekwinters/lucas-doggiehood/issues/921">#921</a>.</p>
+<blockquote>
+<p><strong>How the spec is changing (#741).</strong> It used to say the pool is sized from the rendered adult dog: one dog tall and two dogs wide, the graybox's size (<a href="../world/#backyard-pool">World &amp; Neighborhood → Backyard pool</a>) → it now says the real pool comes in two approved shapes sized by their water, a 5 m round pool and a 6 × 3 m oval, picked at random per pool, still one dog tall → because Derek reviewed the renders on #741: a pool at the graybox's size, and then one three dogs wide, were both too skinny, and he set the water sizes himself and approved both shapes.</p>
+</blockquote>
+<p><strong><code>PoolPlacement</code> must be updated before the models go in the game</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/926">#926</a>). Its clear space is still the graybox's 2.54 m circle. Each model needs its own footprint kept clear, and the oval needs a <strong>rectangular</strong> clearance (with the pool's yaw), not a circle, because it is 6.21 m long but only 3.97 m deep.</p>
+<p><strong>Invariant — each pool model, steps included, stays within its recorded footprint and never stands taller than <code>PoolPlacement.PoolHeight</code></strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/741">#741</a>), so the space placement keeps clear always holds the whole pool.</p>
 <h2 id="build-checklist">Build checklist<a class="headerlink" href="#build-checklist" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[x] Textured trees committed as source (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/816">#816</a>)</li>
@@ -2073,6 +2123,8 @@
 <li>[ ] Yard trees render the textured models, placement unchanged; no street trees (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/811">#811</a>)</li>
 <li>[ ] The six in-use props are placed by the rules above, lamps unlit (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/812">#812</a>)</li>
 <li>[ ] Fences build from the Blender pieces (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/813">#813</a>)</li>
+<li>[x] Backyard pool models (round and oval) committed as source, renders approved by Derek (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/741">#741</a>)</li>
+<li>[ ] Pools render one of the two models at random, with <code>PoolPlacement</code> clearing each model's footprint (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/926">#926</a>)</li>
 <li>[ ] Every invariant on this page has a test that enforces it, including that no reference-only model is under <code>Assets/</code></li>
 </ul>
 
