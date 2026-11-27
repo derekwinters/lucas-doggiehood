@@ -119,7 +119,37 @@ PlayBow: 84 frames (2.80 s) at 30 fps, ground speed 0.000 m/s
   first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m
   -> OK
 
+Swim: 24 frames (0.80 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  3  min +0.0422  (f3, back_foot_R)
+    f  4-  7  min +0.0312  (f7, back_foot_R)
+    f  8- 11  min +0.0300  (f8, back_foot_R)
+    f 12- 15  min +0.0419  (f15, back_foot_L)
+    f 16- 19  min +0.0316  (f19, back_foot_L)
+    f 20- 23  min +0.0301  (f20, back_foot_L)
+    f 24- 24  min +0.0466  (f24, back_foot_R)
+  head and nose above the water line z = 0.589 (not checked against the ground): lowest +0.7025 (f5, tongue), clearance 0.1139
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+Shake: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0-  4  min -0.0000  (f4, back_foot_L)
+    f  5-  9  min -0.0000  (f9, back_foot_L)
+    f 10- 14  min -0.0000  (f14, back_foot_L)
+    f 15- 19  min -0.0000  (f15, back_foot_L)
+    f 20- 24  min -0.0000  (f20, back_foot_L)
+    f 25- 29  min -0.0000  (f25, back_foot_L)
+    f 30- 30  min -0.0000  (f30, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  0- 30  paw low +0.0000..+0.0000  slide 0.0000
+    FR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
+    HL f  0- 30  paw low -0.0000..-0.0000  slide 0.0000
+    HR f  0- 30  paw low -0.0000..-0.0000  slide 0.0000
+  first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m
+  -> OK
+
 glTF read back (dog_frenchton_anim.gltf): OK
-viewer/dog_anim.json: 2.29 MB (self-contained glTF JSON, buffer + images as data URIs)
+viewer/dog_anim.json: 2.43 MB (self-contained glTF JSON, buffer + images as data URIs)
 
 ALL OK

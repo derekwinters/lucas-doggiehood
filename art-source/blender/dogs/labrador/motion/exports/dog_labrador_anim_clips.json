@@ -178,6 +178,42 @@
     "ok": true,
     "end_pose_error_deg": 0.0
    }
+  },
+  "Swim": {
+   "loop": true,
+   "frames": 24,
+   "fps": 30,
+   "duration_s": 0.8,
+   "ground_speed_mps": 0.0,
+   "water_line_m": 0.96,
+   "notes": "dog-paddle in place: the front legs paddle alternately under the chest, the hind legs kick (diagonals together), the head is held up with the chin clear of the water line, the tail streams out behind as a rudder; no paw is planted: checked against the water line z = 0.960 m, not the ground",
+   "check": {
+    "clip": "Swim",
+    "frames": 24,
+    "ground_speed_mps": 0.0,
+    "lowest_m": 0.0517,
+    "water_line_m": 0.96,
+    "head_clearance_m": 0.1923,
+    "ok": true
+   }
+  },
+  "Shake": {
+   "loop": false,
+   "frames": 30,
+   "fps": 30,
+   "duration_s": 1.0,
+   "ground_speed_mps": 0.0,
+   "notes": "shake dry, about 1 s: a wave of roll at 5 Hz runs from the head through the shoulders, ribs and hips to the tail, the ears flap and the stance braces a little; starts and ends standing, all four paws planted",
+   "check": {
+    "clip": "Shake",
+    "frames": 30,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0,
+    "worst_plant_slide_m": 0.0,
+    "worst_plant_height_m": 0.0,
+    "ok": true,
+    "end_pose_error_deg": 0.0
+   }
   }
  },
  "all_checks_ok": true
