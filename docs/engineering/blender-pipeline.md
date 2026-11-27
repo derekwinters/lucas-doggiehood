@@ -71,6 +71,7 @@ Everything exports as **glTF 2.0**. FBX is not used.
 | Trees | `python3 art-source/blender/environment/trees/export_trees_tex.py art-source/blender/environment/trees/exports` | 10 `.gltf` + `.bin` pairs and `trees_textured_stats.json` |
 | Street props | `python3 art-source/blender/environment/street-props/export_props.py` | 26 `.gltf` + `.bin` pairs and `street_props_stats.json` |
 | Chew bone | `python3 art-source/blender/items/chew-bone/export_chew_bone.py` | `chew_bone.gltf` + `.bin`, its two textures and `chew_bone_stats.json` |
+| Dog ball | `python3 art-source/blender/items/ball/export_ball.py` | 6 `.gltf` + `.bin` pairs, one per felt colour (`ball_<colour>`, material `DH_Item_Ball_<Colour>`), and `ball_stats.json` |
 
 **Houses** export as self-contained `.glb` files, each in its base's render scheme. A shingle or tile roof embeds the scheme's pre-tinted roof texture (`textures/roof_<style>_<HEX>.png`) with no `baseColorFactor`, so the roof carries one tint. Every other house surface is a flat material colour.
 
