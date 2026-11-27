@@ -1,0 +1,244 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v5.3.43",
+  "version": "2.0",
+  "extras": {
+   "dh_note": "Doggiehood cushion (#412), design build pending approval; pivot at the footprint centre on the ground; long side along X; a dog rests on the top at about 0.29 m"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "item_cushion"
+  }
+ ],
+ "materials": [
+  {
+   "name": "DH_Item_cushion_fabric",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.8148465752601624,
+     0.18116424977779388,
+     0.11443537473678589,
+     1
+    ],
+    "metallicFactor": 0,
+    "roughnessFactor": 0.9200000166893005
+   }
+  },
+  {
+   "name": "DH_Item_cushion_piping",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.8962693810462952,
+     0.7758222222328186,
+     0.5972017645835876,
+     1
+    ],
+    "metallicFactor": 0,
+    "roughnessFactor": 0.800000011920929
+   }
+  },
+  {
+   "name": "DH_Item_cushion_button",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.8962693810462952,
+     0.7758222222328186,
+     0.5972017645835876,
+     1
+    ],
+    "metallicFactor": 0,
+    "roughnessFactor": 0.550000011920929
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "item_cushion",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1
+     },
+     "indices": 2,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 3,
+      "NORMAL": 4
+     },
+     "indices": 5,
+     "material": 1
+    },
+    {
+     "attributes": {
+      "POSITION": 6,
+      "NORMAL": 7
+     },
+     "indices": 8,
+     "material": 2
+    }
+   ]
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1504,
+   "max": [
+    0.6679999828338623,
+    0.29492440819740295,
+    0.46799999475479126
+   ],
+   "min": [
+    -0.6679999828338623,
+    0,
+    -0.46799999475479126
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1504,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5123,
+   "count": 8400,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5126,
+   "count": 816,
+   "max": [
+    0.6902016401290894,
+    0.11732050776481628,
+    0.4891110956668854
+   ],
+   "min": [
+    -0.6902016401290894,
+    0.08267949521541595,
+    -0.4891110956668854
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 816,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5123,
+   "count": 4896,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 186,
+   "max": [
+    0.3659999966621399,
+    0.27191585302352905,
+    0.1847274750471115
+   ],
+   "min": [
+    -0.3659999966621399,
+    0.2570962607860565,
+    -0.1847274750471115
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5126,
+   "count": 186,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5123,
+   "count": 900,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 18048,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 18048,
+   "byteOffset": 18048,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 16800,
+   "byteOffset": 36096,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9792,
+   "byteOffset": 52896,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9792,
+   "byteOffset": 62688,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9792,
+   "byteOffset": 72480,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2232,
+   "byteOffset": 82272,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2232,
+   "byteOffset": 84504,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1800,
+   "byteOffset": 86736,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 88536,
+   "uri": "item_cushion.bin"
+  }
+ ]
+}

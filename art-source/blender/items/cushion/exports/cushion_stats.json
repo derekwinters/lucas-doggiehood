@@ -1,0 +1,32 @@
+{
+ "name": "item_cushion",
+ "tris": {
+  "fabric": 2800,
+  "piping": 1632,
+  "button": 300,
+  "total": 4732
+ },
+ "tri_backstop": 6000,
+ "size_xyz_m": [
+  1.3804,
+  0.9782,
+  0.2949
+ ],
+ "size_note": "length (X) x depth (Blender Y / glTF Z) x height",
+ "slab_footprint_m": [
+  1.4,
+  1.0
+ ],
+ "rest_top_m": 0.2947,
+ "seam_height_m": 0.1,
+ "units": "metres; Blender axes front -Y up +Z (glTF: front +Z, up +Y)",
+ "pivot": "centre of the footprint, on the ground",
+ "materials": [
+  "DH_Item_cushion_button",
+  "DH_Item_cushion_fabric",
+  "DH_Item_cushion_piping"
+ ],
+ "gltf_bytes": 3951,
+ "bin_bytes": 88536,
+ "checks_ok": true
+}
