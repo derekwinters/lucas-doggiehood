@@ -1,0 +1,93 @@
+{
+ "toy_duck": {
+  "tris": 1608,
+  "tri_budget": 6000,
+  "size_xyz_m": [
+   0.3348,
+   0.54,
+   0.395
+  ],
+  "bounds_min_m": [
+   -0.1674,
+   -0.27,
+   0.0
+  ],
+  "bounds_max_m": [
+   0.1674,
+   0.27,
+   0.395
+  ],
+  "materials": {
+   "DH_Toy_plush_blue": {
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.0252,
+     0.147,
+     0.7084,
+     1
+    ]
+   },
+   "DH_Toy_plush_navy": {
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.013,
+     0.0595,
+     0.305,
+     1
+    ]
+   },
+   "DH_Toy_plush_orange": {
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     0.2542,
+     0.0116,
+     1
+    ]
+   },
+   "DH_Toy_eye_white": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.9216,
+     0.8963,
+     0.8388,
+     1
+    ]
+   },
+   "DH_Toy_eye_black": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.007,
+     0.007,
+     0.007,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/toy_fleece_color.png",
+   "../textures/toy_fleece_normal.png"
+  ],
+  "checks": {
+   "one_node_and_mesh": true,
+   "material_names": true,
+   "uris": true,
+   "plush_textured": true,
+   "single_sided": true,
+   "triangle_budget": true,
+   "pivot": true
+  },
+  "gltf_bytes": 7853,
+  "bin_bytes": 45392
+ }
+}
