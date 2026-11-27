@@ -149,13 +149,14 @@ def write_screen_boxes(out_dir, houses, cam):
             mw = ob.matrix_world
             for v in ob.data.vertices:
                 p = mw @ v.co
-                if p.y > 0.5:
-                    x, y = SD.project(cam, p.x, p.y, p.z)
+                if p.y > cam["view"]["y"] + 0.5:
+                    x, y = SD.project_view(cam["view"], p.x, p.y, p.z)
                     xs.append(x)
                     ys.append(y)
-        boxes[k] = [min(xs), min(ys), max(xs), max(ys)]
+        if xs:
+            boxes[k] = [max(0, min(xs)), max(0, min(ys)), min(SD.W, max(xs)), min(SD.H, max(ys))]
     with open(os.path.join(out_dir, "house_screen_boxes.json"), "w") as f:
-        json.dump({"boxes": boxes, "notes": B.NOTES}, f, indent=1)
+        json.dump({"boxes": boxes, "notes": B.NOTES, "view": cam["view"]}, f, indent=1)
 
 
 def main():
@@ -163,12 +164,18 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("--scale", type=float, default=0.5)
     ap.add_argument("--focal", type=float, default=None)
+    ap.add_argument("--lens", type=float, default=None, help="render lens (mm); reframed unless --cam-y")
+    ap.add_argument("--cam-y", type=float, default=None)
+    ap.add_argument("--cam-z", type=float, default=None)
+    ap.add_argument("--max-gap", type=float, default=None)
     ap.add_argument("--samples", type=int, default=16)
     ap.add_argument("--only", default="splash,turnaround")
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     only = set(a.only.split(","))
-    cam, houses = B.build("render", a.focal)
+    cam0 = SD.camera(a.focal)
+    v = SD.view(cam0, a.lens, a.cam_y, a.cam_z)
+    cam, houses = B.build("render", a.focal, v, a.max_gap)
     setup_render(a.scale, a.samples)
     write_screen_boxes(a.out_dir, houses, cam)
     if "splash" in only:

@@ -97,6 +97,38 @@ def camera(focal_px=None):
     }
 
 
+# --------------------------------------------------------------------------
+# The splash view: the render camera
+# --------------------------------------------------------------------------
+# The world is laid out by the solved camera above (FOCAL_PX). The camera that renders the
+# splash may be a wider lens moved forward along the street ("reframed"): it keeps the same
+# height, level aim and lens shift, so the horizon, the vanishing point and every line along
+# the street stay where the painting has them, while things far down the street shrink
+# faster and the house fronts (which face the road) turn more toward the camera.
+VIEW_REF_HOUSES = ("red", "green")   # the near houses a reframed view keeps the same size
+VIEW_LENS_MM = 18.0                  # the default splash view (see README, "Camera options")
+
+
+def view(cam, lens_mm=None, y=None, z=None):
+    """The render camera: lens (mm on a 36 mm sensor), position (0, y, z). y defaults to the
+    distance that keeps the near houses' fronts their painted size."""
+    lens = lens_mm or VIEW_LENS_MM
+    fv = lens * W / 36.0
+    if y is None:
+        ref = sum(depth_of(cam, h["ground"]) for h in HOUSES if h["key"] in VIEW_REF_HOUSES) / len(VIEW_REF_HOUSES)
+        y = ref * (1 - fv / cam["f"])
+    z = cam["h"] if z is None else z
+    return {"lens_mm": lens, "f": fv, "y": y, "z": z, "cx": cam["cx"], "vy": cam["vy"],
+            "shift_x": cam["shift_x"], "shift_y": cam["shift_y"], "sensor_mm": 36.0,
+            "hfov_deg": math.degrees(2 * math.atan(W / 2 / fv))}
+
+
+def project_view(v, X, Y, Z):
+    """World point -> screen (x, y) in the render camera."""
+    d = Y - v["y"]
+    return (v["cx"] + v["f"] * X / d, v["vy"] - v["f"] * (Z - v["z"]) / d)
+
+
 def depth_of(cam, y_ground):
     """Distance along the street (m) of a ground line drawn at screen y."""
     return cam["f"] * cam["h"] / (y_ground - cam["vy"])

@@ -90,7 +90,8 @@ const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.position.set(0.22, 0.75, 0.62).multiplyScalar(50);   // behind the splash camera, above
 scene.add(sun);
 
-const vfov = 2 * Math.atan(H / 2 / CAM.f) * 180 / Math.PI;
+const V = CAM.view;   // the splash view: lens, position (Blender y along the street, z up)
+const vfov = 2 * Math.atan(H / 2 / V.f) * 180 / Math.PI;
 const camera = new THREE.PerspectiveCamera(vfov, W / H, 0.1, 2000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -100,8 +101,8 @@ function splash() {
   // the painting's camera: level, looking down the street, lens shifted so the horizon
   // and the vanishing point sit where the painting puts them
   camera.fov = vfov; camera.aspect = W / H;
-  camera.position.set(0, CAM.h, 0);
-  controls.target.set(0, CAM.h, -60);
+  camera.position.set(0, V.z, -V.y);
+  controls.target.set(0, V.z, -V.y - 60);
   camera.lookAt(controls.target);
   camera.setViewOffset(W, H, W / 2 - CAM.cx, H / 2 - CAM.vy, W, H);
   camera.updateProjectionMatrix();
@@ -181,8 +182,10 @@ def main():
         glb = base64.b64encode(f.read()).decode()
     with open(os.path.join(exp, "splash_camera.json")) as f:
         cam = json.load(f)
-    note = (f"{cam['lens_mm']:.1f} mm lens on a 36 mm sensor ({cam['hfov_deg']:.1f} deg wide), "
-            f"{cam['h']:.1f} m above the sidewalk, level, vanishing point at ({cam['cx']:.0f}, {cam['vy']:.0f}) px")
+    v = cam["view"]
+    note = (f"{v['lens_mm']:.0f} mm lens on a 36 mm sensor ({v['hfov_deg']:.0f} deg wide), "
+            f"{v['z']:.1f} m above the sidewalk and {v['y']:.1f} m down the street from the painting's eye point, "
+            f"level, vanishing point at ({v['cx']:.0f}, {v['vy']:.0f}) px as painted")
     html = (TEMPLATE.replace("__GLB__", glb).replace("__CAMJSON__", json.dumps(cam))
             .replace("__CAMNOTE__", note))
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)

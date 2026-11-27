@@ -39,6 +39,7 @@ STEP_PAD = 0.18          # steps run this far past the door frame on each side
 PATH_W = 1.1             # front path width
 WING_ROOF_T = 0.22       # wing roof slab thickness
 FRONT_SETBACK = 3.2      # a house's front wall stands this far behind the sidewalk's lawn edge
+FAR_GAP_MAX = 4.0        # the default splash view pulls far houses up to this gap from the one before (m)
 LOT_GAP = 1.5            # the least gap between neighbouring houses' footprints along the street
 YARD_TREE = 1.6          # a tree or bush painted inside a house's new footprint moves this far in front of it
 PROP_MARGIN = 0.3
@@ -636,7 +637,7 @@ def world_footprint(root):
     return (min(p.x for p in pts), max(p.x for p in pts), min(p.y for p in pts), max(p.y for p in pts))
 
 
-def face_street(houses, cam):
+def face_street(houses, cam, max_gap=None):
     """Turn every house so its front wall is parallel to the street and its door faces the
     road, put its front FRONT_SETBACK behind the sidewalk, keep each door at its painted
     distance along the street, and push houses apart (keeping their order) where their
@@ -647,18 +648,23 @@ def face_street(houses, cam):
         lawn = cam["lawn_l"] if side == "L" else cam["lawn_r"]
         keys = sorted((h["key"] for h in SD.HOUSES if h["side"] == side), key=lambda k: houses[k].location.y)
         prev_max = None
+        carry = 0.0
         for k in keys:
             r = houses[k]
             r.rotation_euler.z = street * math.pi / 2      # local -Y (the front) -> world +X / -X
             r.location.x = lawn - street * FRONT_SETBACK
+            r.location.y += carry
             x0, x1, _, _ = local_extent(r)
             # along the street: world y = loc.y + x (left) or loc.y - x (right)
             lo, hi = (r.location.y + x0, r.location.y + x1) if side == "L" else (r.location.y - x1, r.location.y - x0)
             shift = 0.0
             if prev_max is not None and lo < prev_max + LOT_GAP:
                 shift = prev_max + LOT_GAP - lo
-                r.location.y += shift
-            moved[k] = shift
+            elif prev_max is not None and max_gap is not None and lo > prev_max + max_gap:
+                shift = prev_max + max_gap - lo                # pull a far house closer
+            r.location.y += shift
+            carry += shift
+            moved[k] = carry
             prev_max = hi + shift
     bpy.context.view_layer.update()
     return moved
@@ -720,17 +726,18 @@ def clear_props(houses, cam):
 # --------------------------------------------------------------------------
 # Camera, light, scene
 # --------------------------------------------------------------------------
-def add_camera(cam, name="splash_camera"):
+def add_camera(v, name="splash_camera"):
+    """The render camera from a splash view (SD.view)."""
     c = bpy.data.cameras.new(name)
     c.sensor_fit = "HORIZONTAL"
-    c.sensor_width = cam["sensor_mm"]
-    c.lens = cam["lens_mm"]
-    c.shift_x = cam["shift_x"]
-    c.shift_y = cam["shift_y"]
+    c.sensor_width = v["sensor_mm"]
+    c.lens = v["lens_mm"]
+    c.shift_x = v["shift_x"]
+    c.shift_y = v["shift_y"]
     c.clip_start = 0.1
     c.clip_end = 1000
     o = bpy.data.objects.new(name, c)
-    o.location = (0.0, 0.0, cam["h"])
+    o.location = (0.0, v["y"], v["z"])
     o.rotation_euler = (math.radians(90), 0.0, 0.0)
     bpy.context.scene.collection.objects.link(o)
     return o
@@ -748,8 +755,11 @@ def add_light():
     return o
 
 
-def build(mode="render", focal_px=None):
-    """Build the street. Returns (camera dict, {house key: root empty}, notes)."""
+def build(mode="render", focal_px=None, view=None, max_gap=None):
+    """Build the street. view: SD.view(...) for the render camera (default view if None);
+    max_gap: cap on the gap between neighbouring houses along a side (m; None = FAR_GAP_MAX,
+    0 = no cap, the painting's spacing). Returns
+    (camera dict with the view under "view", {house key: root empty})."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     MODE["m"] = mode
     _MATS.clear()
@@ -767,12 +777,14 @@ def build(mode="render", focal_px=None):
         root.children.link(coll)
         houses[h["key"]] = build_house(h, cam, coll, depths[h["key"]])
     bpy.context.view_layer.update()
-    moved = face_street(houses, cam)
+    moved = face_street(houses, cam, FAR_GAP_MAX if max_gap is None else (max_gap or None))
     build_lots(houses, cam)
     props = clear_props(houses, cam)
     NOTES.clear()
     NOTES.update(moved=moved, props=props)
-    camo = add_camera(cam)
+    v = view or SD.view(cam)
+    cam["view"] = v
+    camo = add_camera(v)
     sc.camera = camo
     add_light()
     w = bpy.data.worlds.new("world")
