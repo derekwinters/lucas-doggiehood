@@ -136,14 +136,14 @@ Shake: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
   lowest vertex of the whole dog, per frame range (m; 0 = ground):
     f  0-  4  min -0.0000  (f0, front_paw_R)
     f  5-  9  min -0.0000  (f9, back_foot_R)
-    f 10- 14  min -0.0000  (f12, front_paw_R)
+    f 10- 14  min -0.0000  (f12, back_foot_R)
     f 15- 19  min -0.0000  (f17, back_foot_R)
     f 20- 24  min -0.0000  (f20, back_foot_L)
     f 25- 29  min -0.0000  (f29, front_paw_R)
     f 30- 30  min -0.0000  (f30, front_paw_R)
   planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
-    FL f  0- 30  paw low -0.0000..+0.0000  slide 0.0001
-    FR f  0- 30  paw low -0.0000..+0.0001  slide 0.0001
+    FL f  0- 30  paw low -0.0000..+0.0001  slide 0.0002
+    FR f  0- 30  paw low -0.0000..+0.0001  slide 0.0002
     HL f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
     HR f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
   first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m

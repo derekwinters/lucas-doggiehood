@@ -531,12 +531,12 @@ SHAKE_N = 30                # 1 s
 SHAKE_HZ = 5.0              # the shake's frequency
 SHAKE_LAG = 1.2             # frames each link of the wave trails the one before it
 # the wave, head to tail: (bone, roll about the body's long axis, side-to-side yaw), degrees
-SHAKE_WAVE = (("head", 16.0, 6.0), ("neck", 8.0, 3.0), ("spine_3", 6.0, 0.0), ("spine_2", 5.0, 0.0),
-              ("spine_1", 4.0, 0.0), ("hips", 4.0, 0.0))
+SHAKE_WAVE = (("head", 16.0, 6.0), ("neck", 8.0, 3.0), ("spine_3", 12.0, 0.0), ("spine_2", 10.0, 0.0),
+              ("spine_1", 8.0, 0.0), ("hips", 9.0, 0.0))
 SHAKE_TAIL = ((8.0, 22.0), (4.0, 18.0), (2.0, 15.0), (0.0, 12.0))   # tail_1..4: (lift, swing), degrees
 SHAKE_EAR = dict(lift=10.0, out=25.0, flap=30.0, tip=20.0, lag=1.0)  # ear lift, outward bias, flap, tip flop
 SHAKE_JAW = 5.0             # the lips loosen
-SHAKE_CROUCH_OF_LEG = 0.04  # the stance drops by this fraction of the front leg's height (bracing)
+SHAKE_CROUCH_OF_LEG = 0.09  # the stance drops by this fraction of the front leg's height (bracing)
 SHAKE_DELAY = len(SHAKE_WAVE) + 1.5   # links in the wave, the tail's last segment included
 SHAKE_DUR = SHAKE_N - 2 - SHAKE_DELAY * SHAKE_LAG
 

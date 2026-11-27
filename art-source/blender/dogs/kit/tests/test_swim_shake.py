@@ -53,6 +53,8 @@ WAVE = ("head", "neck", "spine_3", "spine_2", "spine_1", "hips", "tail_1")   # h
 EAR_BONES = ("ear_L_1", "ear_L_2", "ear_R_1", "ear_R_2")
 TAIL_BONES = ("tail_1", "tail_2", "tail_3", "tail_4")
 ONSET_DEG = 0.5
+TORSO = ("spine_3", "spine_2", "spine_1", "hips")   # shoulders, ribs, hips
+TORSO_SWING_MIN_DEG = 14.0  # each torso link swings at least this far peak to peak (Derek: "shake more")
 TOL = 1e-9
 
 CLIPS_PROBE = r'''
@@ -309,6 +311,14 @@ class SwimShakeClips(unittest.TestCase):
             # an oscillation, not one lean: it swings both ways several times
             sign = [v > 0 for v in roll[b] if abs(v) > ONSET_DEG]
             self.assertGreaterEqual(sum(1 for x, y in zip(sign, sign[1:]) if x != y), 4, "%s oscillates" % b)
+
+    def test_shake_twists_the_body_vigorously(self):
+        # Derek's review (#934): "Have the body shake more" - the torso's roll is the shake, so each
+        # link through the shoulders, ribs and hips swings well past the first pass's 6-12 degrees
+        sets = self.base()["sets"]
+        for b in TORSO:
+            r = series(sets, "Shake", b, 1)
+            self.assertGreater(max(r) - min(r), TORSO_SWING_MIN_DEG, "%s swings %.1f deg" % (b, max(r) - min(r)))
 
     def test_shake_flaps_the_ears(self):
         sets = self.base()["sets"]

@@ -143,10 +143,10 @@ Shake: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
     f 25- 29  min -0.0000  (f25, back_foot_L)
     f 30- 30  min -0.0000  (f30, front_paw_L)
   planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
-    FL f  0- 30  paw low -0.0000..+0.0001  slide 0.0004
-    FR f  0- 30  paw low +0.0000..+0.0002  slide 0.0004
-    HL f  0- 30  paw low -0.0000..+0.0000  slide 0.0001
-    HR f  0- 30  paw low -0.0000..+0.0000  slide 0.0002
+    FL f  0- 30  paw low -0.0000..+0.0003  slide 0.0006
+    FR f  0- 30  paw low +0.0000..+0.0004  slide 0.0005
+    HL f  0- 30  paw low -0.0000..+0.0000  slide 0.0002
+    HR f  0- 30  paw low -0.0000..+0.0000  slide 0.0005
   first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m
   -> OK
 

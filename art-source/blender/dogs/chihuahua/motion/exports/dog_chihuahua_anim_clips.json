@@ -209,8 +209,8 @@
     "frames": 30,
     "ground_speed_mps": 0.0,
     "lowest_m": -0.0,
-    "worst_plant_slide_m": 0.0004,
-    "worst_plant_height_m": 0.0002,
+    "worst_plant_slide_m": 0.0006,
+    "worst_plant_height_m": 0.0004,
     "ok": true,
     "end_pose_error_deg": 0.0
    }

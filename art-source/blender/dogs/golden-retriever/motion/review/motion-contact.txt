@@ -136,12 +136,12 @@ Swim: 24 frames (0.80 s) at 30 fps, ground speed 0.000 m/s
 
 Shake: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
   lowest vertex of the whole dog, per frame range (m; 0 = ground):
-    f  0-  4  min -0.0000  (f2, back_foot_L)
+    f  0-  4  min -0.0000  (f4, front_paw_R)
     f  5-  9  min -0.0000  (f9, front_paw_R)
-    f 10- 14  min -0.0000  (f14, front_paw_R)
+    f 10- 14  min -0.0000  (f10, front_paw_R)
     f 15- 19  min -0.0000  (f16, front_paw_R)
     f 20- 24  min -0.0000  (f22, front_paw_R)
-    f 25- 29  min -0.0000  (f28, back_foot_L)
+    f 25- 29  min -0.0000  (f25, front_paw_R)
     f 30- 30  min -0.0000  (f30, back_foot_R)
   planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
     FL f  0- 30  paw low -0.0000..+0.0000  slide 0.0000
