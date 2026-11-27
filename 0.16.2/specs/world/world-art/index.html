@@ -1977,7 +1977,18 @@
 <p><strong>Later:</strong> mowing lawns as a chore, with grass that looks lightly overgrown when due, is an idea for the future and not part of this page (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/820">#820</a>).</p>
 <h2 id="roads">Roads<a class="headerlink" href="#roads" title="Permanent link">&para;</a></h2>
 <p>The Kenney road tiles are replaced by a Blender road kit covering every road tile type in the <a href="../tile-catalog/">Tile Catalog</a>. It keeps today's road width (6 m), the sidewalk offsets and the crosswalk positions exactly.</p>
-<p><strong>Open</strong> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/802">#802</a>): the asphalt texture, lane paint, curbs and crosswalk markings. The approved street-prop road decals (crosswalk, stop line, manhole cover, storm drain) are reference only.</p>
+<p><strong>Approved look (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/802">#802</a>):</strong> look A, "Fresh blacktop", for all 15 road tile types, source in <code>art-source/blender/environment/roads/</code>. The approved street-prop road decals (crosswalk, stop line, manhole cover, storm drain) are reference only.</p>
+<p><strong>Road layout rules (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/837">#837</a>):</strong></p>
+<ul>
+<li><strong>Stops.</strong> One Core rule decides which intersection approaches stop: at a <strong>tee</strong>, only the stem (the side street) stops; at a <strong>four-way</strong>, every approach stops (an all-way stop). Stop lines and <a href="#street-props">stop signs</a> are both placed from that rule, so a stop line always has a sign and a sign always has a stop line.</li>
+<li><strong>Cul-de-sacs</strong> keep today's rounded dead end. There is no wide paved turning circle, so the walk network is unchanged.</li>
+<li><strong>Intersection corners</strong> stay square.</li>
+<li><strong>Paved landings:</strong> crosswalk landings and box corners are paved across the 0.75 m grass verge, so a dog never crosses grass to reach a crosswalk.</li>
+</ul>
+<p><strong>Invariant — a stop line is drawn only where a stop sign stands, and every stop sign has its stop line.</strong></p>
+<blockquote>
+<p><strong>How the spec is changing (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/837">#837</a>).</strong> The road look was Open, stop signs went on "each side-street approach" with the streets undecided, and the road kit drew a stop line on every approach → the road look is approved, a tee stops only its stem and a four-way is an all-way stop, and stop lines follow the signs → because Derek agreed on 2026-11-26.</p>
+</blockquote>
 <h2 id="sidewalks-front-walkways-and-driveways">Sidewalks, front walkways and driveways<a class="headerlink" href="#sidewalks-front-walkways-and-driveways" title="Permanent link">&para;</a></h2>
 <p>Sidewalks and front walkways keep every width and position in <a href="../sidewalks/">Sidewalks &amp; Walk Network</a> (sidewalk 2 m, grass verge 0.75 m).</p>
 <p><strong>Driveways.</strong> A house with a <a href="../house-design/#garage-level-2">garage</a> gets a <strong>driveway</strong>: ground decoration in front of the garage only (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/817">#817</a>). It adds <strong>no walk-network edge</strong>. Dogs still reach the front door by the front walkway, which stays the only way on or off a lot (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/128">#128</a>).</p>
@@ -2008,7 +2019,7 @@
 <tr>
 <td>Stop sign</td>
 <td><code>stop_sign</code></td>
-<td>One on each side-street approach of every intersection, on the right-hand corner. It is the only sign in the game.</td>
+<td>One on each stopping approach (a tee's stem, every approach of a four-way; see <a href="#roads">Roads</a>), on the right-hand corner. It is the only sign in the game.</td>
 </tr>
 <tr>
 <td>Lamp post (lantern)</td>
