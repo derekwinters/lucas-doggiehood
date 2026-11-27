@@ -1,0 +1,357 @@
+{
+ "name": "Chihuahua (adult) concept, round 1",
+ "units": "metres, Blender axes (front -Y, up +Z); glTF files are Y-up (front +Z)",
+ "files": {
+  "dog_chihuahua_default.gltf": {
+   "tris": 3830,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_default_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25709,
+   "bin_bytes": 161508
+  },
+  "dog-chihuahua-viewer.glb": {
+   "tris": 3830,
+   "errors": [],
+   "bytes": 1499652
+  },
+  "dog_chihuahua_black.gltf": {
+   "tris": 3830,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Black",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_black_color.png",
+    "../textures/dog_fur_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25701,
+   "bin_bytes": 161508
+  },
+  "dog_chihuahua_lod1.gltf": {
+   "tris": 1382,
+   "errors": [],
+   "materials": [
+    "DH_Dog_Fur_Default",
+    "DH_Dog_Soft",
+    "DH_Dog_Gloss"
+   ],
+   "images": [
+    "../textures/dog_fur_lod1_default_color.png",
+    "../textures/dog_fur_lod1_normal.png",
+    "../textures/dog_trim_color.png"
+   ],
+   "joints": 32,
+   "gltf_bytes": 25937,
+   "bin_bytes": 71076
+  }
+ },
+ "budget": {
+  "full": 4000,
+  "lod1": 1500
+ },
+ "sit_contact_m": {
+  "full": {
+   "haunches": -0.0,
+   "hocks": -0.0,
+   "hind_feet": -0.0016,
+   "front_paws": -0.0011,
+   "tail": 0.001,
+   "lowest": -0.0016,
+   "lowest_any_part": -0.0016
+  },
+  "lod1": {
+   "haunches": 0.0003,
+   "hocks": -0.0058,
+   "hind_feet": -0.0017,
+   "front_paws": -0.0028,
+   "tail": 0.0011,
+   "lowest": -0.0058,
+   "lowest_any_part": -0.0058
+  }
+ },
+ "full": {
+  "total_tris": 3830,
+  "size_xyz_m": [
+   0.475,
+   0.787,
+   0.942
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 1521,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 242,
+    "2": 131,
+    "3": 336,
+    "4": 812
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_chihuahua_body",
+    "tris": 3014,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_chihuahua_tongue",
+    "tris": 96,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_chihuahua_ear_L",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_chihuahua_eye_L",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_chihuahua_ear_R",
+    "tris": 96,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_chihuahua_eye_R",
+    "tris": 136,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_chihuahua_nose",
+    "tris": 80,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_chihuahua_collar",
+    "tris": 176,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "measurements_m": {
+  "nose_to_rump": 0.741,
+  "nose_to_tail_tip": 0.787,
+  "top_of_head": 0.942,
+  "width_incl_ears": 0.475,
+  "back_height": 0.472,
+  "in_game_stand_in_wlh": [
+   1.26,
+   1.5,
+   1.58
+  ]
+ },
+ "lod1": {
+  "total_tris": 1382,
+  "size_xyz_m": [
+   0.475,
+   0.787,
+   0.942
+  ],
+  "bones": 32,
+  "skin_weights": {
+   "vertices": 478,
+   "max_influences": 4,
+   "influence_histogram": {
+    "1": 76,
+    "2": 39,
+    "3": 151,
+    "4": 212
+   },
+   "max_sum_error": 2.220446049250313e-16
+  },
+  "parts": {
+   "body": {
+    "object": "dog_chihuahua_body_lod1",
+    "tris": 940,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default",
+     "DH_Dog_Soft"
+    ]
+   },
+   "tongue": {
+    "object": "dog_chihuahua_tongue_lod1",
+    "tris": 48,
+    "skinned": false,
+    "bone": "jaw",
+    "materials": [
+     "DH_Dog_Soft"
+    ]
+   },
+   "ear_L": {
+    "object": "dog_chihuahua_ear_L_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_L": {
+    "object": "dog_chihuahua_eye_L_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "ear_R": {
+    "object": "dog_chihuahua_ear_R_lod1",
+    "tris": 60,
+    "skinned": true,
+    "bone": null,
+    "materials": [
+     "DH_Dog_Fur_Default"
+    ]
+   },
+   "eye_R": {
+    "object": "dog_chihuahua_eye_R_lod1",
+    "tris": 64,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "nose": {
+    "object": "dog_chihuahua_nose_lod1",
+    "tris": 36,
+    "skinned": false,
+    "bone": "head",
+    "materials": [
+     "DH_Dog_Gloss"
+    ]
+   },
+   "collar": {
+    "object": "dog_chihuahua_collar_lod1",
+    "tris": 110,
+    "skinned": false,
+    "bone": "neck",
+    "materials": [
+     "DH_Dog_Gloss",
+     "DH_Dog_Soft"
+    ]
+   }
+  }
+ },
+ "textures": {
+  "dog_fur_black_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 475207
+  },
+  "dog_fur_default_color.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 587644
+  },
+  "dog_fur_lod1_black_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 193639
+  },
+  "dog_fur_lod1_default_color.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 225616
+  },
+  "dog_fur_lod1_mask.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 295187
+  },
+  "dog_fur_lod1_normal.png": {
+   "px": [
+    512,
+    512
+   ],
+   "bytes": 262700
+  },
+  "dog_fur_mask.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 779715
+  },
+  "dog_fur_normal.png": {
+   "px": [
+    1024,
+    1024
+   ],
+   "bytes": 724750
+  },
+  "dog_trim_color.png": {
+   "px": [
+    256,
+    256
+   ],
+   "bytes": 7150
+  }
+ },
+ "skeleton": "dog_chihuahua_skeleton.json",
+ "all_checks_ok": true
+}
