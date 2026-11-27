@@ -13,9 +13,9 @@ Parts (all in the one mesh):
   bolster   a puffy tube swept round the rim; its top dips at the front so a dog steps in
   cushion   the flat padded top a dog lies on, tucked under the bolster on every side
 
-Materials: DH_Item_Bed_Cover (bolster) and DH_Item_Bed_Base (base) share the light canvas map,
-each multiplied by its own colour (glTF baseColorFactor); DH_Item_Bed_Cushion is the cream
-fleece. UVs are in metres / TILE, so the weave keeps one size everywhere.
+Materials: DH_Item_Bed_Cover (bolster) and DH_Item_Bed_Base (base) share the neutral canvas map,
+each multiplied by its palette colour (glTF baseColorFactor); DH_Item_Bed_Cushion is the cream
+fleece, never tinted. UVs are in metres / TILE, so the weave keeps one size everywhere.
 
   build() -> the dog_bed object (in the current scene)
 """
@@ -28,6 +28,7 @@ sys.path.insert(0, HERE)
 # The committed house kit (art-source/blender): reset_scene, attach_point, hex_rgba, tri_count.
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..")))
 import bpy  # noqa: E402
+import check_bed as C  # noqa: E402
 import dh_house_kit as K  # noqa: E402
 
 NAME = "dog_bed"
@@ -57,10 +58,27 @@ PROFILE_SEGMENTS = 10       # points round the bolster cross-section
 EDGE_SEGMENTS = 2           # segments per rounded slab edge
 TILE = 0.30                 # metres per texture repeat
 
-COLOURS = {                 # name: (texture, tint hex or None, roughness)
-    "DH_Item_Bed_Cover": ("cover", "#6E5B82", 0.92),     # heather plum canvas
-    "DH_Item_Bed_Base": ("cover", "#4B4057", 0.95),      # darker plum canvas
-    "DH_Item_Bed_Cushion": ("fleece", None, 0.98),       # cream sherpa fleece
+# The cover colours (Derek on #411: "make the color dynamic", ~10 colours). The cover and base maps
+# are neutral, so a bed's colour is its materials' base colour (glTF baseColorFactor): the cover
+# takes the hex, the base takes it darkened by check_bed.BASE_DARKEN. The cushion is fixed cream.
+# export_bed.py writes this list to bed_colours.json; the export itself is in DEFAULT_COLOUR.
+PALETTE = (                 # (name, cover hex), in sheet order
+    ("Heather Plum", "#6E5B82"),
+    ("Denim Blue", "#4A7AAD"),
+    ("Dove Grey", "#A9ADB2"),
+    ("Charcoal", "#3F4248"),
+    ("Rust", "#B5603A"),
+    ("Cranberry", "#8E2F45"),
+    ("Mustard", "#C9A03E"),
+    ("Dusty Rose", "#C48A8F"),
+    ("Teal", "#2F7A7E"),
+    ("Cocoa", "#6B4A35"),
+)
+DEFAULT_COLOUR = "Heather Plum"
+SLOTS = {                   # material: (texture, palette slot or None for untinted, roughness)
+    "DH_Item_Bed_Cover": ("cover", "cover", 0.92),
+    "DH_Item_Bed_Base": ("cover", "base", 0.95),
+    "DH_Item_Bed_Cushion": ("fleece", None, 0.98),
 }
 NORMAL_STRENGTH = 1.0
 TEX_DIR = os.path.join(HERE, "textures")
@@ -124,7 +142,7 @@ def _smooth(t):
 class Builder:
     def __init__(self):
         self.verts, self.faces, self.mats, self.uvs = [], [], [], []
-        self.mat_names = list(COLOURS)
+        self.mat_names = list(SLOTS)
 
     def v(self, co):
         self.verts.append(tuple(co))
@@ -225,9 +243,25 @@ def bolster(b, mat):
 # ---------------------------------------------------------------------------
 # materials
 # ---------------------------------------------------------------------------
-def materials(tex_dir=TEX_DIR):
+def palette():
+    """[{name, cover, base}] in PALETTE order; base is the cover darkened by BASE_DARKEN."""
+    return [{"name": n, "cover": h, "base": C.darken(h)} for n, h in PALETTE]
+
+
+def colour(name):
+    return [c for c in palette() if c["name"] == name][0]
+
+
+def materials(tex_dir=TEX_DIR, colour_name=DEFAULT_COLOUR):
+    """The three materials, tinted with a palette colour. The default colour keeps the plain
+    names (the export); any other colour gets its own copies, suffixed with the colour, so beds
+    of different colours can share a scene (the review renders)."""
+    col = colour(colour_name)
     out = []
-    for name, (tex, tint, rough) in COLOURS.items():
+    for slot_name, (tex, slot, rough) in SLOTS.items():
+        tint = col[slot] if slot else None
+        own = slot and colour_name != DEFAULT_COLOUR
+        name = "%s_%s" % (slot_name, colour_name.replace(" ", "")) if own else slot_name
         mat = bpy.data.materials.get(name)
         if mat is None:
             mat = bpy.data.materials.new(name)
@@ -262,7 +296,7 @@ def materials(tex_dir=TEX_DIR):
 
 
 # ---------------------------------------------------------------------------
-def build(tex_dir=TEX_DIR):
+def build(tex_dir=TEX_DIR, colour_name=DEFAULT_COLOUR):
     if not os.path.isfile(os.path.join(tex_dir, "bed_cover_color.png")):
         import dh_bed_tex
         dh_bed_tex.build_all(tex_dir)
@@ -274,7 +308,7 @@ def build(tex_dir=TEX_DIR):
     rounded_slab(b, "DH_Item_Bed_Cushion", D["w"], D["d"], D["corner_r"], D["base_h"] - D["bolster_sink"],
                  D["rest_z"], D["cushion_edge_r"], inset=inset)
     me = b.mesh(NAME)
-    for mat in materials(tex_dir):
+    for mat in materials(tex_dir, colour_name):
         me.materials.append(mat)
     ob = bpy.data.objects.new(NAME, me)
     bpy.context.scene.collection.objects.link(ob)

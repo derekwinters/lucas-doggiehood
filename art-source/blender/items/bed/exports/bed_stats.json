@@ -31,6 +31,8 @@
   "back_and_sides": 0.37,
   "front": 0.25
  },
+ "colour": "Heather Plum",
+ "palette": "bed_colours.json (10 colours)",
  "materials": {
   "DH_Item_Bed_Cover": {
    "baseColorFactor": [
@@ -45,9 +47,9 @@
   },
   "DH_Item_Bed_Base": {
    "baseColorFactor": [
-    0.0704,
+    0.0742,
     0.0513,
-    0.0953,
+    0.1046,
     1
    ],
    "baseColorTexture": true,
@@ -79,7 +81,8 @@
   "pivot": [],
   "budget": [],
   "flat_top": [],
-  "gltf": []
+  "gltf": [],
+  "palette": []
  },
  "all_checks_ok": true
 }

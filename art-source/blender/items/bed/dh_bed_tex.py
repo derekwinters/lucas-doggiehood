@@ -3,8 +3,8 @@ periodic (FFT) noise, tangent-space normal maps derived from height.
 
 Two 512 x 512 colour + normal pairs, written into this folder's textures/ (or <root>/textures/):
   cover    the bolster and base cover: a plain-weave canvas (THREADS threads per repeat) with
-           slubby yarn and faint mottling. Light and near-neutral on purpose: the material
-           multiplies it by the cover colour (exported as glTF baseColorFactor).
+           slubby yarn and faint mottling. Light and neutral grey on purpose: the material
+           multiplies it by the bed's palette colour (exported as glTF baseColorFactor).
   fleece   the cushion top: a soft sherpa fleece of small nubbly curls, cream, used as is.
 
 Deterministic: fixed seeds; the PNGs carry no metadata chunks.
@@ -72,7 +72,7 @@ def cover(size=SIZE):
     slub = np.where(over, slub_u, slub_v)
     mottle = T._periodic_noise((size, size), 3, 3, rng, octaves=3)
     g = COVER_BASE + COVER_WEAVE * (h - 0.5) + COVER_SLUB * (slub - 0.5) + COVER_MOTTLE * (mottle - 0.5)
-    rgb = np.dstack([g, g, g * 0.985]) * 255.0
+    rgb = np.dstack([g, g, g]) * 255.0
     return rgb, h + 0.35 * slub
 
 

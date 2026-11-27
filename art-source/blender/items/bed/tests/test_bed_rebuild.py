@@ -7,7 +7,7 @@ Invariant - every committed model is reproducible from its script in the repo
 (docs/engineering/blender-pipeline.md). Needs bpy==5.3.0: a different bpy can change the bytes.
 
 export_bed.py is run DH_REBUILDS times (default 2), each in a fresh process, into a temporary
-folder; every export, texture and the stats file must match the committed one. Nothing is
+folder; every export, texture, the stats file and the colour palette must match the committed one. Nothing is
 written into the repository.
 """
 import hashlib
@@ -20,7 +20,7 @@ import unittest
 
 TESTS = os.path.dirname(os.path.abspath(__file__))
 BED = os.path.dirname(TESTS)
-OUTPUTS = ("exports/dog_bed.gltf", "exports/dog_bed.bin", "exports/bed_stats.json",
+OUTPUTS = ("bed_colours.json", "exports/dog_bed.gltf", "exports/dog_bed.bin", "exports/bed_stats.json",
            "textures/bed_cover_color.png", "textures/bed_cover_normal.png",
            "textures/bed_fleece_color.png", "textures/bed_fleece_normal.png")
 

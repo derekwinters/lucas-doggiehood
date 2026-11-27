@@ -54,14 +54,51 @@ slab. On the bed it should lie on the cushion at `ATTACH_REST`, 0.18 m up.
 | `export_bed.py` | Writes `textures/`, `exports/dog_bed.gltf` + `.bin` and `exports/bed_stats.json`, then reads the glTF back and runs every check. Prints `ALL OK`, or `FAILED` and exits 1 |
 | `render_bed.py` | Review renders (see below) |
 | `export_viewer.py` | A self-contained `viewer.html` (mesh and textures embedded, three.js r128 from cdnjs, drag to orbit) for review. Written to `out/`, not committed |
-| `tests/` | `test_bed_checks.py` (the checks, no Blender), `test_bed_model.py` (builds the bed and measures it), `test_bed_rebuild.py` (re-exports in fresh processes and requires the committed bytes) |
+| `bed_colours.json` | The 10-colour palette (name, cover hex, base hex) and how to tint with it, written by `export_bed.py` from `PALETTE` in `dh_bed.py`. Generated; do not edit by hand |
+| `tests/` | `test_bed_checks.py` (the checks, no Blender), `test_bed_palette.py` (the palette rules, and that the export and `bed_colours.json` agree), `test_bed_model.py` (builds the bed and measures it), `test_bed_rebuild.py` (re-exports in fresh processes and requires the committed bytes, the palette included) |
 | `exports/` | `dog_bed.gltf`, `dog_bed.bin`, `bed_stats.json` |
 | `textures/` | `bed_cover_color.png`, `bed_cover_normal.png`, `bed_fleece_color.png`, `bed_fleece_normal.png` |
 
-**Materials.** `DH_Item_Bed_Cover` (bolster, heather plum `#6E5B82`) and `DH_Item_Bed_Base` (base,
-darker plum `#4B4057`) share the canvas map, each multiplied by its own colour, which is exported
-as `baseColorFactor`. `DH_Item_Bed_Cushion` is the cream fleece map, used as it is. The `.gltf`
-references the images as `../textures/<name>.png` and embeds none, like the street props.
+**Materials.** `DH_Item_Bed_Cover` (the bolster) and `DH_Item_Bed_Base` (the base) share one
+neutral grey canvas map. Each is multiplied by its colour, which is exported as `baseColorFactor`.
+`DH_Item_Bed_Cushion` is the cream fleece map, used as it is. The `.gltf` references the images as
+`../textures/<name>.png` and embeds none, like the street props.
+
+## Colours (Derek, #411 review: "make the color dynamic")
+
+The colour is not baked in. The canvas map is neutral grey, so a bed's colour is simply the base
+colour of two materials. This is the same idea as the house roofs, where one greyscale mask takes
+the scheme colour as Base Color. One export and one set of textures serve every colour.
+
+**To tint a bed (#932):** take a colour from `bed_colours.json`. Set the base colour
+(`baseColorFactor`) of `DH_Item_Bed_Cover` to its `cover`, and of `DH_Item_Bed_Base` to its `base`.
+Leave `DH_Item_Bed_Cushion` alone. The JSON holds sRGB hex; the glTF stores linear values, as any
+glTF importer expects. The exported `dog_bed.gltf` is in the default colour, Heather Plum.
+
+| # | Name | Cover | Base |
+|---|---|---|---|
+| 1 | **Heather Plum** (default) | `#6E5B82` | `#4D405B` |
+| 2 | Denim Blue | `#4A7AAD` | `#345579` |
+| 3 | Dove Grey | `#A9ADB2` | `#76797D` |
+| 4 | Charcoal | `#3F4248` | `#2C2E32` |
+| 5 | Rust | `#B5603A` | `#7F4329` |
+| 6 | Cranberry | `#8E2F45` | `#632130` |
+| 7 | Mustard | `#C9A03E` | `#8D702B` |
+| 8 | Dusty Rose | `#C48A8F` | `#896164` |
+| 9 | Teal | `#2F7A7E` | `#215558` |
+| 10 | Cocoa | `#6B4A35` | `#4B3425` |
+
+The base is always the cover × 0.70 (`BASE_DARKEN`), like the houses' derived colours.
+`check_bed.palette_errors()` enforces the rules, and `export_bed.py` fails if any break:
+- exactly 10 colours, with unique names and valid hex;
+- every two covers at least ΔE 15 apart (CIE76; the closest pair is about ΔE 22);
+- every cover at least ΔE 20 from the lawn, so no bed disappears into the grass (green is
+  deliberately absent);
+- every base darker than its cover.
+
+**Open: who picks a bed's colour.** At random, per owner, by the player when the bed is delivered,
+or always the default. That is a design decision for Derek and Lucas, and it belongs to #932 or a
+spec change. Nothing here assumes one.
 
 ## Regenerating
 
@@ -69,8 +106,8 @@ From the repository root, with `pip install bpy==5.3.0` (plus numpy and Pillow):
 
 ```
 python3 art-source/blender/items/bed/export_bed.py                 # textures, exports, checks (a few seconds)
-python3 -m unittest discover -s art-source/blender/items/bed/tests # 34 tests, a few seconds
-python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet]
+python3 -m unittest discover -s art-source/blender/items/bed/tests # 48 tests, a few seconds
+python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet,colours]
 python3 art-source/blender/items/bed/export_viewer.py [out.html]
 ```
 
@@ -91,11 +128,16 @@ and go to `out/` by default, which is git-ignored.
   1.4 × 1.0 m slab outlined in red for comparison, and `ATTACH_REST` marked. The viewer shows the
   same two outlines.
 - **`sheet`**: all four on one page.
+- **`colours`**: all 10 palette colours at the game camera on the lawn, labelled with name and hex,
+  plus a row of close-ups.
 
 **The lying pose is a render-only stand-in.** The dog kit has no lying clip yet (#933). The renders
 pose the Lab's exported skeleton by hand (`LIE` in `render_bed.py`) in a prone lie: chest down,
 front legs folded forward, hind legs folded under, tail curled to the side. That is the pose #933
 describes. It is not exported and is not the #933 clip.
+
+`export_viewer.py`'s viewer has a row of swatch buttons that retint the bed live, starting on
+Heather Plum.
 
 The renders are not committed yet. As the pipeline says, only renders Derek approves are copied into
 `review/` and committed.
@@ -105,7 +147,7 @@ The renders are not committed yet. As the pipeline says, only renders Derek appr
 1. **An adult Lab still nearly fills the bed.** The Lab is 1.46 m from nose to rump, and the bed is
    1.60 × 1.15 m. Lying prone it now fits on the cushion, with its rump against the back bolster and
    its head over the front.
-2. **Colour.** The plum nods to the graybox bed's purple (`#6C4FC4`) in a realistic fabric shade.
-   It is one constant per material in `COLOURS` (`dh_bed.py`) if Derek wants another colour.
+2. **Colour choice is Open** (see Colours above). Heather Plum is the default only because it is
+   what the export is tinted with. It nods to the graybox bed's purple (`#6C4FC4`).
 3. **Orientation in Unity** is still Open on #776, as it is for every Blender model. The slab's
    long side runs along Unity X, and the bed's long side runs along X too.

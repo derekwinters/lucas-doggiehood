@@ -88,3 +88,84 @@ def gltf_errors(j, gltf_path, tex_dir):
     if not any(n.get("name") == REST_NODE for n in j.get("nodes", [])):
         errs.append("no %s node" % REST_NODE)
     return errs
+
+
+# ---------------------------------------------------------------------------
+# The colour palette (bed_colours.json): the cover and base maps are neutral, so a bed's colour
+# is its materials' base colour. Each entry is {name, cover, base}; base = darken(cover).
+PALETTE_SIZE = 10
+BASE_DARKEN = 0.70           # the base is the cover colour x this (cf. the houses' DERIVED_DARKEN)
+LAWN_HEX = "#8E9E68"         # the review renders' lawn
+MIN_DELTA_E = 15.0           # every two covers differ by at least this (CIE76, Lab)
+MIN_LAWN_DELTA_E = 20.0      # every cover stands out from the lawn by at least this
+
+
+def _rgb(h):
+    h = h.lstrip("#")
+    return [int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4)]
+
+
+def _lin(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def is_hex(h):
+    return isinstance(h, str) and len(h) == 7 and h[0] == "#" and all(c in "0123456789ABCDEFabcdef" for c in h[1:])
+
+
+def hex_linear(h):
+    """The linear RGB a hex colour exports as (glTF baseColorFactor)."""
+    return [_lin(c) for c in _rgb(h)]
+
+
+def darken(h, f=BASE_DARKEN):
+    return "#" + "".join("%02X" % int(round(c * 255 * f)) for c in _rgb(h))
+
+
+def luminance(h):
+    r, g, b = hex_linear(h)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def lab(h):
+    r, g, b = hex_linear(h)
+    x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+    y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+
+    def f(t):
+        return t ** (1 / 3) if t > 216 / 24389 else (24389 / 27 * t + 16) / 116
+    fx, fy, fz = f(x), f(y), f(z)
+    return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+
+def delta_e(a, b):
+    return sum((p - q) ** 2 for p, q in zip(lab(a), lab(b))) ** 0.5
+
+
+def palette_errors(doc):
+    errs = []
+    cols = doc.get("colours", [])
+    if len(cols) != PALETTE_SIZE:
+        errs.append("%d colours, not %d" % (len(cols), PALETTE_SIZE))
+    names = [c.get("name") for c in cols]
+    if len(set(names)) != len(names):
+        errs.append("duplicate colour names")
+    if doc.get("default") not in names:
+        errs.append("default %r is not in the palette" % doc.get("default"))
+    good = []
+    for c in cols:
+        if not (is_hex(c.get("cover")) and is_hex(c.get("base"))):
+            errs.append("%s: cover/base is not a #RRGGBB hex" % c.get("name"))
+            continue
+        if luminance(c["base"]) >= luminance(c["cover"]):
+            errs.append("%s: base %s is not darker than cover %s" % (c["name"], c["base"], c["cover"]))
+        if delta_e(c["cover"], LAWN_HEX) < MIN_LAWN_DELTA_E:
+            errs.append("%s: cover %s is too close to the lawn" % (c["name"], c["cover"]))
+        good.append(c)
+    for i, a in enumerate(good):
+        for b in good[i + 1:]:
+            de = delta_e(a["cover"], b["cover"])
+            if de < MIN_DELTA_E:
+                errs.append("%s and %s are too alike (delta E %.1f)" % (a["name"], b["name"], de))
+    return errs

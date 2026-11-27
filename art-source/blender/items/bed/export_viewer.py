@@ -1,6 +1,7 @@
 """A self-contained web viewer for the exported dog bed (#411): one HTML file with the mesh and
-textures embedded, three.js r128 from cdnjs and a small built-in orbit control (drag to turn,
-wheel or pinch to zoom). For review only; the glTF in exports/ is the source of truth.
+textures embedded, three.js r128 from cdnjs, a small built-in orbit control (drag to turn,
+wheel or pinch to zoom) and a row of swatch buttons that retint the cover and base live with the
+bed_colours.json palette (default first). For review only; the glTF in exports/ is the source of truth.
 
   python3 art-source/blender/items/bed/export_viewer.py [out.html]
 
@@ -79,19 +80,28 @@ PAGE = r"""<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dog Bed Viewer</title>
 <style>
-:root { --bg: #F1ECE3; --ink: #28241F; --sub: #69625A; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1E1C1A; --ink: #EDE8E0; --sub: #A9A196; } }
-:root[data-theme="dark"] { --bg: #1E1C1A; --ink: #EDE8E0; --sub: #A9A196; }
+:root { --bg: #F1ECE3; --ink: #28241F; --sub: #69625A; --chip: #FFFFFFCC; --line: #CFC7BA; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1E1C1A; --ink: #EDE8E0; --sub: #A9A196;
+  --chip: #2A2724CC; --line: #4A453F; } }
+:root[data-theme="dark"] { --bg: #1E1C1A; --ink: #EDE8E0; --sub: #A9A196; --chip: #2A2724CC; --line: #4A453F; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
   font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
 #c { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
 header { position: fixed; top: 0; left: 0; right: 0; padding: 14px 16px; pointer-events: none; }
 h1 { margin: 0; font-size: 18px; }
 p { margin: 4px 0 0; color: var(--sub); font-size: 13px; max-width: 46em; }
+#swatches { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px 14px; display: flex; flex-wrap: wrap;
+  gap: 8px; align-items: center; }
+#swatches button { display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--chip); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+#swatches button[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+#swatches i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.25); }
+#current { font-size: 13px; color: var(--sub); width: 100%; }
 </style></head><body>
 <canvas id="c"></canvas>
 <header><h1>Dog bed (#411)</h1>
-<p>__SUB__ Drag to turn, scroll or pinch to zoom. The ground grid is 0.5 m; the dark outline on the ground is the bed's __FOOT__ m footprint; the red outline, floating above the bed, is today's __SLAB__ m graybox slab for comparison.</p></header>
+<p>__SUB__ Pick a cover colour below. Drag to turn, scroll or pinch to zoom. The ground grid is 0.5 m; the dark outline on the ground is the bed's __FOOT__ m footprint; the red outline, floating above the bed, is today's __SLAB__ m graybox slab for comparison.</p></header>
+<nav id="swatches" aria-label="Cover colour"><div id="current"></div></nav>
 <script src="__THREE__"></script>
 <script>
 const M = __MODEL__;
@@ -118,6 +128,25 @@ const mats = M.materials.map(m => {
   if (m.normal) { mat.normalMap = tex[m.normal]; mat.normalScale.set(1, -1); }
   return mat;
 });
+// cover colours (bed_colours.json): cover and base material colours are the palette's linear RGB
+const P = __PALETTE__;
+const byName = Object.fromEntries(M.materials.map((m, i) => [m.name, mats[i]]));
+const nav = document.getElementById("swatches"), current = document.getElementById("current");
+function tint(c) {
+  byName["DH_Item_Bed_Cover"].color.fromArray(c.cover_linear);
+  byName["DH_Item_Bed_Base"].color.fromArray(c.base_linear);
+  current.textContent = c.name + "  " + c.cover + "  (base " + c.base + ")";
+  for (const b of nav.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.name === c.name));
+}
+for (const c of P.colours) {
+  const b = document.createElement("button");
+  b.type = "button"; b.dataset.name = c.name; b.title = c.cover;
+  const dot = document.createElement("i"); dot.style.background = c.cover;
+  b.append(dot, document.createTextNode(c.name));
+  b.addEventListener("click", () => tint(c));
+  nav.insertBefore(b, current);
+}
+tint(P.colours.find(c => c.name === P.default));
 for (const p of M.prims) {
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(p.pos, 3));
@@ -174,6 +203,13 @@ def main(out):
                  ("__FW__", C.FOOTPRINT_W), ("__FD__", C.FOOTPRINT_D), ("__SW__", C.SLAB_W), ("__SD__", C.SLAB_D),
                  ("__SY__", SLAB_LINE_Y)):
         html = html.replace(k, str(v))
+    with open(os.path.join(HERE, "bed_colours.json")) as fh:
+        pal = json.load(fh)
+    for c in pal["colours"]:
+        c["cover_linear"] = [round(v, 6) for v in C.hex_linear(c["cover"])]
+        c["base_linear"] = [round(v, 6) for v in C.hex_linear(c["base"])]
+    html = html.replace("__PALETTE__", json.dumps({"default": pal["default"], "colours": pal["colours"]},
+                                                  separators=(",", ":")))
     html = html.replace(
         "__MODEL__", json.dumps(m, separators=(",", ":")))
     os.makedirs(os.path.dirname(out), exist_ok=True)

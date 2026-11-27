@@ -1,6 +1,6 @@
 """Review renders for the dog bed (#411) (EEVEE, headless). Renders are not byte-reproducible.
 
-  python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet]
+  python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet,colours]
 
 Writes <out_dir>/<shot>.png (default: this folder's out/, git-ignored). Run export_bed.py first:
 the renders import exports/dog_bed.gltf, so they show exactly what was exported.
@@ -14,6 +14,8 @@ the renders import exports/dog_bed.gltf, so they show exactly what was exported.
   footprint    top view with the bed's 1.60 x 1.15 m footprint and, for comparison, today's
                1.4 x 1.0 m graybox slab drawn over the bed, and the measured size
   sheet        the four above on one page (renders any that are missing)
+  colours      every palette colour (dh_bed.PALETTE): the beds side by side at the game camera,
+               labelled with name and hex, plus a row of close-ups
 
 The dog is the approved Labrador (dogs/labrador/exports/dog_labrador_yellow.gltf). The dog kit has
 no lying clip yet (#933), so LIE below is a render-only stand-in: a prone lie (chest, elbows and
@@ -295,6 +297,71 @@ def footprint():
         os.path.join(OUT, "footprint.png"))
 
 
+COLOUR_COLS = 5                    # colours sheet: beds per row at the game camera
+COLOUR_PITCH = (2.6, 3.2)          # colours sheet: bed spacing across / up the screen, in metres
+COLOUR_W = 3200                    # colours sheet: width in pixels
+COLOUR_TILE = (320, 250)           # colours sheet: one close-up tile
+
+
+def colours():
+    """All PALETTE colours: the beds on the lawn at the game camera, labelled with name and hex,
+    then a row of perspective close-ups. Built straight from dh_bed (build(colour_name=...))."""
+    pal = BD.palette()
+    res = (COLOUR_W, int(COLOUR_W * 0.42))
+    path = os.path.join(TMP, "colours_game.png")
+    scene(path, res)
+    # lay the beds out in screen rows (the camera's right and up on the ground); each bed keeps
+    # its own orientation, as it would in the game
+    yaw = math.radians(GAME_YAW)
+    right, up = Vector((math.cos(yaw), math.sin(yaw), 0)), Vector((-math.sin(yaw), math.cos(yaw), 0))
+    beds = []
+    for i, c in enumerate(pal):
+        col, row = i % COLOUR_COLS, i // COLOUR_COLS
+        ob = BD.build(colour_name=c["name"])
+        ob.location = right * ((col - (COLOUR_COLS - 1) / 2) * COLOUR_PITCH[0]) - up * ((row - 0.5) * COLOUR_PITCH[1])
+        beds.append(ob)
+    bpy.context.view_layer.update()
+    cam = R.camera(beds, GAME_YAW, GAME_PITCH, res, margin=1.12)
+    R.render()
+    game = Image.open(path).convert("RGB")
+    d = ImageDraw.Draw(game)
+    for ob, c in zip(beds, pal):
+        pts = [project(cam, res, (ob.location.x + sx * C.FOOTPRINT_W / 2, ob.location.y + sy * C.FOOTPRINT_D / 2, 0))
+               for sx in (-1, 1) for sy in (-1, 1)]
+        x, y = sum(p[0] for p in pts) / 4, max(p[1] for p in pts)
+        f = font(30, True)
+        for k, (text, ff) in enumerate(((c["name"], f), (c["cover"] + "  /  base " + c["base"], font(22)))):
+            box = d.textbbox((x, y + 14 + k * 38), text, font=ff, anchor="mt")
+            d.rectangle((box[0] - 8, box[1] - 4, box[2] + 8, box[3] + 6), fill=(255, 255, 255))
+            d.text((x, y + 14 + k * 38), text, fill=INK, font=ff, anchor="mt")
+    tiles = []
+    for c in pal:
+        tp = os.path.join(TMP, "colour_%s.png" % c["name"].replace(" ", ""))
+        scene(tp, COLOUR_TILE)
+        ob = BD.build(colour_name=c["name"])
+        R.camera([ob], -32, 30, COLOUR_TILE, margin=1.10, ortho=False, lens=70)
+        R.render()
+        t = Image.open(tp).convert("RGB")
+        lab = Image.new("RGB", (t.width, t.height + 62), BG)
+        lab.paste(t, (0, 0))
+        dd = ImageDraw.Draw(lab)
+        dd.text((t.width / 2, t.height + 8), c["name"], fill=INK, font=font(22, True), anchor="mt")
+        dd.text((t.width / 2, t.height + 36), c["cover"], fill=SUB, font=font(18), anchor="mt")
+        tiles.append(lab)
+    tw = COLOUR_W // len(tiles)
+    row_h = int(tiles[0].height * tw / tiles[0].width)
+    out = Image.new("RGB", (COLOUR_W, game.height + 70 + row_h), BG)
+    out.paste(game, (0, 0))
+    ImageDraw.Draw(out).text((24, game.height + 18), "Close-ups (perspective 3/4, the same light), left to right in "
+                             "palette order", fill=INK, font=font(28, True))
+    for i, t in enumerate(tiles):
+        out.paste(t.resize((tw, row_h), Image.LANCZOS), (i * tw, game.height + 70))
+    header(out, "Dog bed colours (#411): the %d-colour palette" % len(pal),
+           "Game camera (orthographic, 45 deg, yaw -40) on the lawn. Each colour tints the neutral cover map "
+           "(base = cover x %.2f); the cream cushion never changes. Default: %s"
+           % (C.BASE_DARKEN, BD.DEFAULT_COLOUR), h=110).save(os.path.join(OUT, "colours.png"))
+
+
 def sheet():
     parts = {"gamecam-close": None, "closeup-dog": None, "turnaround": None, "footprint": None}
     for k in parts:
@@ -339,4 +406,6 @@ if __name__ == "__main__":
         footprint()
     if want("sheet"):
         sheet()
+    if want("colours"):
+        colours()
     print("renders ->", OUT)

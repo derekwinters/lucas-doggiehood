@@ -1,10 +1,11 @@
 """Export the dog bed (#411): textures, then exports/dog_bed.gltf + .bin (images by relative URI
-into textures/, like the street props) and exports/bed_stats.json. Reads the .gltf back and
+into textures/, like the street props, tinted with the default palette colour),
+exports/bed_stats.json and bed_colours.json (the 10-colour palette). Reads the .gltf back and
 runs every check in check_bed.py; prints ALL OK, or FAILED and exits 1.
 
   python3 art-source/blender/items/bed/export_bed.py [outroot]
 
-outroot defaults to this folder (the committed textures/ and exports/). Two runs give
+outroot defaults to this folder (the committed textures/, exports/ and bed_colours.json). Two runs give
 byte-identical files on bpy 5.3.0 (tests/test_bed_rebuild.py).
 """
 import json
@@ -48,8 +49,25 @@ def rest_samples(rest):
     return zs
 
 
+def palette_doc():
+    return {
+        "source": "art-source/blender/items/bed/dh_bed.py PALETTE",
+        "generated_by": "art-source/blender/items/bed/export_bed.py",
+        "how_to_tint": ("The cover and base maps are neutral grey. Tint a bed by setting the base colour "
+                        "(glTF baseColorFactor) of DH_Item_Bed_Cover to 'cover' and of DH_Item_Bed_Base to "
+                        "'base'. DH_Item_Bed_Cushion is never tinted. The exported glTF is in the default colour."),
+        "base_darken": C.BASE_DARKEN,
+        "default": BD.DEFAULT_COLOUR,
+        "colours": BD.palette(),
+    }
+
+
 def main():
     os.makedirs(EXP, exist_ok=True)
+    pal = palette_doc()
+    with open(os.path.join(ROOT, "bed_colours.json"), "w") as fh:
+        json.dump(pal, fh, indent=2)
+        fh.write("\n")
     BT.build_all(TEX)
     K.reset_scene()
     ob = BD.build(tex_dir=TEX)
@@ -69,6 +87,7 @@ def main():
         "budget": C.budget_errors(tris) + C.budget_errors(tris, C.TARGET_TRIS),
         "flat_top": C.flat_top_errors(rest_samples(rest), BD.DIMS["rest_z"]),
         "gltf": C.gltf_errors(j, path, TEX),
+        "palette": C.palette_errors(pal),
     }
     mats = {}
     for m in j["materials"]:
@@ -89,6 +108,8 @@ def main():
         "rest_point_m": [round(v, 4) for v in rest],
         "rest_area_m": list(C.REST_AREA_MIN),
         "bolster_top_m": {"back_and_sides": BD.DIMS["back_top"], "front": BD.DIMS["front_top"]},
+        "colour": BD.DEFAULT_COLOUR,
+        "palette": "bed_colours.json (%d colours)" % len(pal["colours"]),
         "materials": mats,
         "images": sorted(im["uri"] for im in j.get("images", [])),
         "gltf_bytes": os.path.getsize(path),
