@@ -1,0 +1,39 @@
+{
+ "chew_bone": {
+  "label": "Chew bone",
+  "units": "metres, Blender axes (long axis X, up +Z); the glTF file is Y-up",
+  "tris": 300,
+  "budget": 6000,
+  "size_xyz_m": [
+   0.291,
+   0.097,
+   0.055
+  ],
+  "dims_m": {
+   "length": 0.2924,
+   "end_width": 0.0998,
+   "knob_d": 0.055,
+   "shaft_d_mid": 0.0327,
+   "shaft_d_end": 0.0447
+  },
+  "dog_scale": 1.72,
+  "materials": {
+   "DH_Item_ChewBone": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "doubleSided": false,
+    "roughness": 0.62
+   }
+  },
+  "images": [
+   "../textures/chew_bone_color.png",
+   "../textures/chew_bone_normal.png"
+  ],
+  "uris_ok": true,
+  "textured_ok": true,
+  "single_sided_ok": true,
+  "gltf_bytes": 2041,
+  "bin_bytes": 10568,
+  "budget_ok": true
+ }
+}

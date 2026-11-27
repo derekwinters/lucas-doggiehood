@@ -15,6 +15,7 @@ All model source lives in **`art-source/blender/`, outside `Assets/`**, so Unity
 | `art-source/blender/` | The house kit: `dh_house_kit.py`, `dh_scene.py`, `base_house_1.py` … `base_house_10.py`, `piece_*.py`, the export and render scripts, `colour-schemes.json`, roof `textures/`, `exports/` and `review/` |
 | `art-source/blender/environment/trees/` | The textured trees: generators, shared `textures/`, `exports/`, `review/` |
 | `art-source/blender/environment/street-props/` | The street props: generators, shared `textures/`, `exports/`, `review/` |
+| `art-source/blender/items/<item>/` | One folder per item (for example the chew bone, [#923](https://github.com/derekwinters/lucas-doggiehood/issues/923)): generator, `textures/`, `exports/`, `review/`, `tests/` |
 
 Each folder has a `README.md` with its measurements, triangle counts and open concerns. Render scratch output goes to an `out/` folder, which `art-source/blender/.gitignore` ignores at any depth.
 
@@ -41,6 +42,7 @@ Every model is built from scratch from named dimensions. There is no `.blend` fi
 - **`dh_scene.py`** fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.
 - **Trees** (`environment/trees/`): `dh_tree_tex.py` paints the leaf atlases and bark maps; `dh_trees_tex.py` builds the trees. They reuse the branch helpers in `dh_env.py`.
 - **Street props** (`environment/street-props/`): `dh_prop_tex.py` paints the surface textures and the label atlas; `dh_props.py` builds the props.
+- **Items** (`items/<item>/`): `items/chew-bone/dh_chew_bone.py` builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (`dogs/kit/dh_dog_mesh.py`), and paints its texture.
 
 The environment scripts import the committed house kit by relative path (`../..` from `trees/`, and `../trees` plus `../..` from `street-props/`). No script imports a copy of another folder's modules.
 
@@ -54,7 +56,7 @@ The environment scripts import the committed house kit by relative path (`../..`
 - **Pivot:** a base pivots at the centre of its wall footprint on the ground; a piece pivots on its attach point; a tree or prop pivots on the ground at its trunk, post base or footprint centre.
 - **Attach points** are empties named `ATTACH_<NAME>` (`ATTACH_ADDITION`, `ATTACH_DECK`, `ATTACH_PATIO`), parented to their mesh so they export as glTF nodes.
 - **Object names:** `base_house_<N>_finished`, `base_house_<N>_framing`, `piece_<type>`, `tree_<kind>_<size>`, and the prop's key (for example `stop_sign`).
-- **Material names** carry their set and slot: `DH_<Scheme>_<slot>` for houses (for example `DH_SageCottage_siding`), `DH_Tree_*` for trees and `DH_Prop_*` for props. A house paints only through its scheme's slots.
+- **Material names** carry their set and slot: `DH_<Scheme>_<slot>` for houses (for example `DH_SageCottage_siding`), `DH_Tree_*` for trees, `DH_Prop_*` for props and `DH_Item_*` for items. A house paints only through its scheme's slots.
 
 The final names in `Assets/` and in the Core part catalog are **Open** ([#775](https://github.com/derekwinters/lucas-doggiehood/issues/775), [#777](https://github.com/derekwinters/lucas-doggiehood/issues/777)).
 
@@ -68,6 +70,7 @@ Everything exports as **glTF 2.0**. FBX is not used.
 | Colour schemes | `python3 art-source/blender/export_colour_schemes.py` | `colour-schemes.json` |
 | Trees | `python3 art-source/blender/environment/trees/export_trees_tex.py art-source/blender/environment/trees/exports` | 10 `.gltf` + `.bin` pairs and `trees_textured_stats.json` |
 | Street props | `python3 art-source/blender/environment/street-props/export_props.py` | 26 `.gltf` + `.bin` pairs and `street_props_stats.json` |
+| Chew bone | `python3 art-source/blender/items/chew-bone/export_chew_bone.py` | `chew_bone.gltf` + `.bin`, its two textures and `chew_bone_stats.json` |
 
 **Houses** export as self-contained `.glb` files, each in its base's render scheme. A shingle or tile roof embeds the scheme's pre-tinted roof texture (`textures/roof_<style>_<HEX>.png`) with no `baseColorFactor`, so the roof carries one tint. Every other house surface is a flat material colour.
 
