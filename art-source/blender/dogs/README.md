@@ -8,7 +8,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys; `test_curled_tail.py`: the optional `TAIL_SWING` and `SIT_POSE["tail_on_ground"]`; `test_collar_ray.py`: the optional `COLLAR["ray"]` |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys; `test_curled_tail.py`: the optional `TAIL_SWING` and `SIT_POSE["tail_on_ground"]`; `test_collar_ray.py`: the optional `COLLAR["ray"]`; `test_swim_shake.py`: the Swim and Shake clips, the Swim water-line check and the optional `SWIM` |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
 | `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
@@ -23,7 +23,8 @@ It follows `docs/engineering/blender-pipeline.md`.
 >   and dicts of them. No imports, functions or Blender calls. `kit/dh_breed.py` refuses anything
 >   else when it loads the file.
 > - **Every breed gets the same checks with no per-breed code:** the triangle budgets, the
->   sit-contact check, the per-frame motion contact and foot-slide check, and the glTF read-back.
+>   sit-contact check, the per-frame motion contact and foot-slide check, the Swim water-line
+>   check, and the glTF read-back.
 > - **The kit holds no breed's numbers.** A value that differs between breeds goes in `breed.py`.
 
 ## Building a breed
@@ -113,9 +114,9 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      are exactly as before. The German Shepherd is the example (`kit/tests/test_erect_ears.py`,
      `kit/tests/test_sit_down_tail.py`).
    - **Optional keys for a tail curled over the back:** `TAIL_SWING` (a top-level field) scales the
-     clips' tail rotations per world axis in Idle, Walk, Run, TailWag, PlayBow and the "wag" test
-     pose: their lifts are written for a tail carried out behind and would drive a curl into the
-     back, so a curled tail keeps the side-to-side wag and drops most of the lift. The sit's tail is
+     clips' tail rotations per world axis in Idle, Walk, Run, TailWag, PlayBow, Swim, Shake and the
+     "wag" test pose: their lifts are written for a tail carried out behind and would drive a curl
+     into the back, so a curled tail keeps the side-to-side wag and drops most of the lift. The sit's tail is
      not scaled. `SIT_POSE["tail_on_ground"]: False` carries the tail in the sit instead of laying
      it on the ground: the tail leaves the sit's contact groups (the model's sit check, `solve-sit`
      and the SitDown / SitIdle touches) and the sit check instead requires it to stay at least 1 cm
@@ -123,6 +124,16 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      starts the collar's skin-finding rays nearer, when a curled tail would be the first thing they
      meet. Leave them out and everything is exactly as before. The Puggle is the example
      (`kit/tests/test_curled_tail.py`, `kit/tests/test_collar_ray.py`).
+   - **Optional — `SWIM`** (the Swim clip, #934): `{"water_z": m, "paddle": m}`, the water line's
+     height in the clip (the same frame as the ground at z = 0; the game puts the water surface
+     there) and the front paws' half stroke, fore and aft (the hind kick is 0.8 of it). Leave it
+     out, or leave out either key, and the kit takes it from the breed's own skeleton: the water
+     line at the rest height of the base of the neck (the `neck` bone's head, `SPINE["neck"]`) and
+     the half stroke at 0.2 of the front leg's height (shoulder joint to paw joint). Set it when a
+     breed should ride higher or lower in the water or paddle bigger or smaller; the Swim
+     water-line check then holds the head and nose above the new line. None of the 8 approved
+     breeds sets it yet. Every other clip is the same with or without it
+     (`kit/tests/test_swim_shake.py`).
 3. **Solve the sit:** run `build_breed.py <breed> solve-sit` and paste the printed `SIT` into
    `breed.py`. Re-run it whenever the shape or the rig changes.
 4. **Build:** run `build_breed.py <breed>`. Both steps must print `ALL OK`. If a check fails,
@@ -143,9 +154,15 @@ hocks, hind feet, front paws and tail within 1 cm of the ground — a tail carri
 
 `motion` (`kit/export_anim.py`) checks **every frame of every clip on the skinned mesh**: nothing
 more than 1 cm below the ground, planted paws within 1 cm of it and sliding less than 1 cm against
-it; loops ending on their first frame; SitDown ending on the breed's `SIT` and PlayBow starting
-and ending standing; no IK target out of reach; and the **glTF read-back** (one skin, 32 joints,
-every clip with every frame sampled, the file's skinned mesh matching Blender's within 2 mm).
+it; loops ending on their first frame; SitDown ending on the breed's `SIT`, and PlayBow and Shake
+starting and ending standing; no IK target out of reach; and the **glTF read-back** (one skin, 32
+joints, every clip with every frame sampled, the file's skinned mesh matching Blender's within
+2 mm). **Swim is checked against the water line instead of the ground** (the
+**water-line check**): the head and nose (the skin weighted to `head` and `jaw`, the nose, the
+eyes and the tongue; the ears and collar may get wet) stay above the breed's water line in every
+frame, and nothing is checked against z = 0 because no paw is planted. The report prints each
+breed's water line and the head's lowest clearance above it, and the clips JSON carries the
+water line as Swim's `water_line_m`.
 
 ## The kit
 
@@ -165,10 +182,10 @@ every clip with every frame sampled, the file's skinned mesh matching Blender's 
 | `render_dog.py`, `dh_dog_render.py` | The review sheets (EEVEE) and their shared helpers |
 | `dh_dog_anim.py` | Pose helpers, planar leg IK and the action baker |
 | `dh_dog_gait.py` | The in-place walk / run generator |
-| `dh_dog_clips.py` | The clips, one `make_<clip>` each (gait data from the breed) |
-| `dh_dog_check.py` | The per-frame ground-contact check on the skinned mesh |
+| `dh_dog_clips.py` | The clips, one `make_<clip>` each (gait data from the breed): Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow, Swim, Shake |
+| `dh_dog_check.py` | The per-frame ground-contact check on the skinned mesh, and Swim's water-line check |
 | `export_anim.py` | Bakes every clip, checks it, exports and reads the glTF back |
-| `render_motion.py` | The motion review videos and contact sheets (EEVEE) |
+| `render_motion.py` | The motion review videos and contact sheets (EEVEE); Swim's have no floor, a see-through water surface at the water line, and its sheet's red line is the water line |
 
 `kit/tests/test_breed_generality.py` (about 5 minutes) proves the kit is general: it writes a
 throwaway breed into a temporary folder — the Golden's data with legs 0.8× as long, ears 1.3× as
@@ -254,4 +271,35 @@ before (`tail_1` over 35° peak to peak, the tip sweeping over 0.5 m):
 
 ```
 python3 art-source/blender/dogs/kit/tests/test_tail_wag.py
+```
+
+The kit's clips (`kit/dh_dog_clips.py`), all at 30 fps and in place:
+
+| Clip | Kind | What it is |
+|---|---|---|
+| Idle | loop, 4 s | breathing, a head look, ear twitches, a tail sway; paws planted |
+| Walk | loop | four-beat walk from the breed's `GAITS["Walk"]` |
+| Run | loop | transverse gallop from the breed's `GAITS["Run"]` |
+| SitDown | one-shot | standing to the breed's `SIT` |
+| SitIdle | loop | breathing and a lazy tail sweep in the sit |
+| TailWag | loop, 1 s | the happy wag (the invariants above) |
+| PlayBow | one-shot | bow down, bounce, back up |
+| Swim | loop, 0.8 s | dog-paddle in place (#934): the front legs paddle alternately under the chest (a loop: back and down on the stroke, forward and up with the paw curled on the recovery), the hind legs kick (each diagonal pair together), the front of the body rides a little high, the head is held up with the chin clear of the water, the ears float back and the tail streams out behind as a rudder. No paw is planted; the game moves the dog |
+| Shake | one-shot, 1 s | shake dry (#934): a 5 Hz wave of roll runs from the head through the neck, shoulders, ribs and hips to the tail (each link a little later than the one before), the ears flap and the stance braces a little; starts and ends standing, all four paws planted throughout. Its ear and tail rotations go through `EARS["swing"]` and `TAIL_SWING`, so erect ears and a curled tail need no code of their own |
+
+> **Invariant — Swim is checked against the water line, not the ground (#934).** The head and
+> nose stay above the breed's water line (`SWIM["water_z"]`, or the base of the neck) in every
+> frame, and the clip loops on its first frame. Shake keeps the normal ground, contact and
+> foot-slide checks.
+
+`kit/tests/test_swim_shake.py` (about 30 s, needs `bpy`) drives both clips on a bare armature (the
+registry, Shake's length, planted paws, still first and last frames, the head-to-tail order of the
+wave, the ear flap and the `EARS["swing"]` / `TAIL_SWING` scaling; Swim's loop, its alternating
+paddle and kick and the `SWIM` key with and without it, and that no other clip changes), checks the
+water-line check on made-up frames (a clear head passes with the paws below the ground; a chin or
+nose below the line fails; Shake keeps the ground check), and bakes both clips on the Golden and
+requires them to pass with no IK clamps:
+
+```
+python3 art-source/blender/dogs/kit/tests/test_swim_shake.py
 ```

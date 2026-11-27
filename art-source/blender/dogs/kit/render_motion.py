@@ -10,7 +10,8 @@ outdir defaults to <breed>/motion/review/.
 <Clip> is a clip name from dh_dog_clips (Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow,
 LieDown, RestIdle). Frames are rendered once per clip and the loops are repeated by ffmpeg, so
 every pass of the loop is identical. For Walk and Run the floor's grid moves with the ground at
-the clip's ground speed, so planted paws should look glued to it.
+the clip's ground speed, so planted paws should look glued to it. Swim has no floor: a
+see-through water surface sits at the breed's water line (and the sheet's red line marks it).
 """
 import math
 import os
@@ -48,6 +49,9 @@ RES = (1280, 720)
 BG = "#E9E4DA"
 FLOOR_A, FLOOR_B = "#C9C1B3", "#C0B7A8"
 TILE = 0.5
+WATER = "#5E9FC4"
+WATER_ALPHA = 0.45
+WATER_SIZE = 40
 
 
 def ffmpeg():
@@ -92,6 +96,35 @@ def floor_grid(size=40):
     ob = bpy.data.objects.new("floor", me)
     bpy.context.scene.collection.objects.link(ob)
     return ob
+
+
+def water_plane(z):
+    """A see-through water surface at height z (Swim's water line), so the legs show under it."""
+    me = bpy.data.meshes.new("water")
+    s = WATER_SIZE / 2
+    me.from_pydata([(-s, -s, z), (s, -s, z), (s, s, z), (-s, s, z)], [], [(0, 1, 2, 3)])
+    m = bpy.data.materials.new("water")
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = R.hex_lin(WATER)
+    b.inputs["Roughness"].default_value = 0.15
+    b.inputs["Alpha"].default_value = WATER_ALPHA
+    try:
+        m.surface_render_method = "BLENDED"
+    except AttributeError:
+        m.blend_method = "BLEND"
+    me.materials.append(m)
+    ob = bpy.data.objects.new("water", me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def swim_stage(meta, floor):
+    """For a swimming clip: no floor, a water surface at its water line."""
+    if meta.get("water_z") is None:
+        return
+    floor.hide_render = True
+    water_plane(meta["water_z"])
 
 
 def stage(rig, out_png, samples=8, sun_angle=14):
@@ -148,6 +181,7 @@ def video(name, outdir):
     rig, meta = build_clip(name)
     tmp = os.path.join(outdir, "_frames_%s" % name)
     sc, floor = stage(rig, os.path.join(tmp, "x.png"))
+    swim_stage(meta, floor)
     act = bpy.data.actions[meta["name"]]
     cam = frame_camera(rig, act, meta["frames"], yaw=-52, pitch=16, margin=0.92)
     loop = meta["loop"]
@@ -173,6 +207,9 @@ def sheet(name, outdir, n=None):
     rig, meta = build_clip(name)
     tmp = os.path.join(outdir, "_sheet_%s" % name)
     sc, floor = stage(rig, os.path.join(tmp, "x.png"), samples=16)
+    water = meta.get("water_z")
+    if water is not None:
+        floor.hide_render = True          # the sheet's red line marks the water line instead
     act = bpy.data.actions[meta["name"]]
     cam = frame_camera(rig, act, meta["frames"], yaw=-90, pitch=0, ortho=True, margin=1.06)
     N = meta["frames"]
@@ -180,7 +217,7 @@ def sheet(name, outdir, n=None):
     frames = sorted({int(round(i * N / n)) for i in range(n)})
     paths = render_frames(rig, meta, cam, floor, tmp, frames)
     plants = meta.get("plants", {})
-    y0 = project(cam, (0, 0, 0))[1]
+    y0 = project(cam, (0, 0, water or 0.0))[1]
     tw, th, lab = 640, 360, 44
     cols = 4 if len(frames) > 9 else (4 if len(frames) == 8 else 3)
     rows = (len(frames) + cols - 1) // cols
@@ -190,9 +227,13 @@ def sheet(name, outdir, n=None):
     d = ImageDraw.Draw(sheet_im)
     d.text((16, 12), "%s - side view, one cycle (%d frames, %.2f s), ground speed %.2f m/s" %
            (name, N, N / A.FPS, meta.get("ground_speed", 0.0)), fill=(40, 36, 32), font=font(30, True))
-    d.text((16, 54), "Red line: ground z = 0 (orthographic camera, level with the ground). Paws: P = planted, "
-           "- = swinging, for LF RF LH RH (L = the dog's left, the side facing the camera).",
-           fill=(105, 98, 90), font=font(19))
+    if water is None:
+        legend = ("Red line: ground z = 0 (orthographic camera, level with the ground). Paws: P = planted, "
+                  "- = swinging, for LF RF LH RH (L = the dog's left, the side facing the camera).")
+    else:
+        legend = ("Red line: the water line z = %.3f m (orthographic side camera); the head and nose must stay "
+                  "above it. No paw is planted (- for LF RF LH RH)." % water)
+    d.text((16, 54), legend, fill=(105, 98, 90), font=font(19))
     names = {"FL": "LF", "FR": "RF", "HL": "LH", "HR": "RH"}
     for i, (f, p) in enumerate(zip(frames, paths)):
         im = Image.open(p).convert("RGB")
@@ -216,6 +257,7 @@ def sheet(name, outdir, n=None):
 def still(name, frame, out):
     rig, meta = build_clip(name)
     sc, floor = stage(rig, out)
+    swim_stage(meta, floor)
     act = bpy.data.actions[meta["name"]]
     cam = frame_camera(rig, act, meta["frames"], yaw=-52, pitch=16, margin=0.92)
     rig.arm.animation_data.action = act

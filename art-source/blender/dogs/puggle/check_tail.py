@@ -3,7 +3,7 @@ every clip.
 
   python3 art-source/blender/dogs/puggle/check_tail.py [out_file]
 
-Bakes the 7 clips exactly as the kit's motion step does (dh_dog_clips on the default coat) and, on
+Bakes every clip exactly as the kit's motion step does (dh_dog_clips on the default coat) and, on
 the skinned mesh in every frame, measures:
   - back clearance: the signed distance (m) of every vertex of the curl (vertices whose strongest
     bone is tail_2, tail_3 or tail_4) from the back's surface (the faces whose vertices all belong to

@@ -7,13 +7,15 @@ Writes, under <breed>/motion/ (<NAME> is the breed's NAME, e.g. dog_golden):
                                         glTF animations (30 fps, sampled every frame), textures by
                                         relative URI from ../../textures/ (the breed's textures/)
   exports/<NAME>_anim_clips.json        per clip: frames, duration, loop, ground speed, footfalls, checks
+                                        (Swim: water_line_m, the water surface's height in the clip)
   viewer/dog_anim.json                  the same glTF with the buffer and images embedded as base64
                                         data URIs (colour map JPEG 1024, normal map PNG 1024), saved
                                         as .json for a web host that refuses .gltf/.glb (git-ignored)
   review/motion-contact.txt             the per-clip contact report
 
 Checks (exit non-zero on failure):
-  - per clip, every frame, skinned: nothing more than 1 cm below z = 0; planted paws within 1 cm
+  - per clip, every frame, skinned: nothing more than 1 cm below z = 0 (Swim instead: the head and
+    nose above the breed's water line, the clip's water_line_m); planted paws within 1 cm
     of the ground and sliding less than 1 cm against the ground (which moves at the clip's
     ground speed); SitDown's last frame touches with rump/haunches, hocks, hind feet, front paws
     and tail like the approved SIT;
@@ -208,7 +210,7 @@ def main():
         S = K.sample(rig, act, m["frames"])
         samples[m["name"]] = S
         lines, errs, summ = K.check_clip(rig, m["name"], m["frames"], m.get("ground_speed", 0.0),
-                                         m.get("plants"), m.get("touch"), samples=S)
+                                         m.get("plants"), m.get("touch"), samples=S, water=m.get("water_z"))
         # pose continuity at the ends
         q0, qN = frame_quats(rig, act, 0), frame_quats(rig, act, m["frames"])
         if m["loop"]:
@@ -244,6 +246,8 @@ def main():
     for m, s in zip(metas, summary):
         e = {"loop": m["loop"], "frames": m["frames"], "fps": A.FPS, "duration_s": round(m["frames"] / A.FPS, 4),
              "ground_speed_mps": m.get("ground_speed", 0.0)}
+        if "water_z" in m:
+            e["water_line_m"] = round(m["water_z"], 4)
         if "stride_m" in m:
             e["stride_m"] = round(m["stride_m"], 4)
             e["footfalls_touchdown_phase"] = m["footfalls"]

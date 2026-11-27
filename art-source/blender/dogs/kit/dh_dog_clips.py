@@ -10,6 +10,10 @@ frame number), and in place: the root never travels in X/Y.
   SitIdle    loop   in the SIT pose: breathing, head look, ear twitch, tail sweep on the ground
   TailWag    loop   standing happy wag: the tail whips; body, breathing and face as calm as Idle
   PlayBow    once   bow down (elbows near the ground, rump up, tail wagging, bounce), back up
+  Swim       loop   dog-paddle in place: front legs paddle alternately, hind legs kick, head up, tail
+                    as a rudder; checked against the breed's water line (SWIM), not the ground
+  Shake      once   shake dry: a wave of roll from the head through the shoulders, ribs and hips to
+                    the tail, ears flapping; standing, all four paws planted throughout
   LieDown    once   SIT -> lying (sphinx) rest   [optional]
   RestIdle   loop   lying rest loop               [optional]
 """
@@ -183,7 +187,7 @@ def make_run(rig):
 
 
 # =========================================================================== registry
-ORDER = ["Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow", "LieDown", "RestIdle"]
+ORDER = ["Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow", "Swim", "Shake", "LieDown", "RestIdle"]
 
 
 def make(rig, name):
@@ -438,3 +442,144 @@ def make_play_bow(rig):
                 plants={"HL": [(0, N)], "HR": [(0, N)]},
                 notes="front end drops (forearms along the ground, elbows just above it), rump up, "
                       "tail high and wagging, a few chest bounces, then back up to standing")
+
+
+# =========================================================================== Swim
+SWIM_N = 24                 # 0.8 s: one stroke of each front leg
+WATER_BONE = "neck"         # default water line: the rest height of this bone's head (the base of the neck)
+PADDLE_OF_LEG = 0.2         # default half stroke: this fraction of the front leg's height (shoulder to paw)
+SWIM_PHASE = {"FL": 0.0, "FR": 0.5, "HR": 0.0, "HL": 0.5}     # left and right alternate; diagonals together
+# each leg's paddle loop, in units of the half stroke P: the loop's centre forward (-Y) / up of the
+# leg's rest paw, its half height, its fore-and-aft scale, and the paw's curl on the recovery (deg)
+SWIM_LOOP = {"F": dict(fwd=0.45, up=1.3, depth=0.6, scale=1.0, curl=55.0, curl0=10.0, k=0.85),
+             "H": dict(fwd=-0.35, up=0.9, depth=0.45, scale=0.8, curl=25.0, curl0=5.0, k=0.5)}
+SWIM_PITCH = -8.0           # hips: the front of the body rides up (degrees, + = front down)
+SWIM_BOB = 0.08             # root bob, in units of the half stroke (two per loop: each front stroke)
+
+
+def swim_params(rig):
+    """(water line z, half stroke) from the breed's optional SWIM, else from its rig."""
+    sw = getattr(B, "SWIM", None) or {}
+    water = sw.get("water_z")
+    if water is None:
+        water = rig.arm.data.bones[WATER_BONE].head_local.z
+    paddle = sw.get("paddle")
+    if paddle is None:
+        r = rig.rest["FL"]
+        paddle = PADDLE_OF_LEG * (float(r["J"][0][1]) - r["paw"].z)
+    return water, paddle
+
+
+def swim_body(rig, ph, P):
+    br = s1(ph, 2, 0.1)                                  # each front stroke heaves the chest a little
+    rig.root(0, 0, SWIM_BOB * P * br)
+    rig.set("hips", SWIM_PITCH + 1.0 * br)
+    rig.set("spine_1", 0, 0, 1.0 * s1(ph, 1, 0.20))
+    rig.set("spine_2", -0.6 * br, 0, 1.0 * s1(ph, 1, 0.20))
+    rig.set("spine_3", -2.0 + 0.6 * br, 0, 0)
+    # head held up, the nose level and clear of the water; a small nod with each stroke
+    rig.set("neck", -16.0 + 1.5 * s1(ph, 2, 0.25), 0, 1.0 * s1(ph, 1, 0.3))
+    rig.set("head", 10.0 - 1.0 * s1(ph, 2, 0.25), 0, 0)
+    rig.set("jaw", JAW)
+    # ears float back and out a little, bobbing with the strokes
+    for sd, sg in (("L", -1), ("R", 1)):
+        rig.set("ear_%s_1" % sd, 12 + 3 * s1(ph, 2, 0.35), sg * 10, 0)
+        rig.set("ear_%s_2" % sd, 6 + 3 * s1(ph, 2, 0.45), 0, 0)
+    # tail: a rudder, streaming out behind near the surface, swaying slowly
+    for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
+        tail(rig, b, (16, 4, 0, -2)[i], 0, (5, 6, 7, 8)[i] * s1(ph, 1, 0.30 + 0.07 * i))
+
+
+def swim_leg_target(rig, leg, ph, P):
+    """(paw joint target, paw pitch) for a leg's paddle at phase ph: a loop under the body, fixed to
+    the leg's posed top joint. The power stroke pushes back (+Y) low, the recovery comes forward
+    high with the paw curled."""
+    r = rig.rest[leg]
+    c = SWIM_LOOP[leg[0]]
+    th = TAU * (ph - SWIM_PHASE[leg])
+    top = rig.joint(A.LEGS[leg][0])
+    rest_top = Vector((r["x"], float(r["J"][0][0]), float(r["J"][0][1])))
+    a = c["scale"] * P
+    centre = top + (r["paw"] - rest_top) + Vector((0, -c["fwd"] * P, c["up"] * P))
+    pj = centre + Vector((0, -a * math.cos(th), -c["depth"] * P * math.sin(th)))
+    paw_d = c["curl0"] + c["curl"] * 0.5 * (1 - math.sin(th))
+    return pj, paw_d
+
+
+def make_swim(rig):
+    N = SWIM_N
+    water, P = swim_params(rig)
+
+    def pose(f):
+        ph = f / N
+        swim_body(rig, ph, P)
+        rig.update()
+        for leg in A.LEGS:
+            pj, paw_d = swim_leg_target(rig, leg, ph, P)
+            rig.solve_leg(leg, pj, paw_d, k=SWIM_LOOP[leg[0]]["k"], tag="Swim f%d" % f)
+
+    rig.bake("Swim", N, pose)
+    return dict(name="Swim", frames=N, loop=True, ground_speed=0.0, water_z=water, paddle=P,
+                notes="dog-paddle in place: the front legs paddle alternately under the chest, the hind "
+                      "legs kick (diagonals together), the head is held up with the chin clear of the "
+                      "water line, the tail streams out behind as a rudder; no paw is planted: checked "
+                      "against the water line z = %.3f m, not the ground" % water)
+
+
+# =========================================================================== Shake
+SHAKE_N = 30                # 1 s
+SHAKE_HZ = 5.0              # the shake's frequency
+SHAKE_LAG = 1.2             # frames each link of the wave trails the one before it
+# the wave, head to tail: (bone, roll about the body's long axis, side-to-side yaw), degrees
+SHAKE_WAVE = (("head", 16.0, 6.0), ("neck", 8.0, 3.0), ("spine_3", 6.0, 0.0), ("spine_2", 5.0, 0.0),
+              ("spine_1", 4.0, 0.0), ("hips", 4.0, 0.0))
+SHAKE_TAIL = ((8.0, 22.0), (4.0, 18.0), (2.0, 15.0), (0.0, 12.0))   # tail_1..4: (lift, swing), degrees
+SHAKE_EAR = dict(lift=10.0, out=25.0, flap=30.0, tip=20.0, lag=1.0)  # ear lift, outward bias, flap, tip flop
+SHAKE_JAW = 5.0             # the lips loosen
+SHAKE_CROUCH_OF_LEG = 0.04  # the stance drops by this fraction of the front leg's height (bracing)
+SHAKE_DELAY = len(SHAKE_WAVE) + 1.5   # links in the wave, the tail's last segment included
+SHAKE_DUR = SHAKE_N - 2 - SHAKE_DELAY * SHAKE_LAG
+
+
+def shake_link(f, i):
+    """(envelope 0..1, oscillation -1..1) of wave link i (0 = the head) at frame f: each link
+    shakes for SHAKE_DUR frames, starting SHAKE_LAG frames after the one before it."""
+    t = f - 1 - i * SHAKE_LAG
+    u = t / SHAKE_DUR
+    if u <= 0 or u >= 1:
+        return 0.0, 0.0
+    return math.sin(math.pi * u) ** 2, math.sin(TAU * SHAKE_HZ * t / A.FPS)
+
+
+def make_shake(rig):
+    N = SHAKE_N
+    r = rig.rest["FL"]
+    crouch = SHAKE_CROUCH_OF_LEG * (float(r["J"][0][1]) - r["paw"].z)
+
+    def pose(f):
+        u = f / N
+        rig.root(0, 0, -crouch * math.sin(math.pi * u) ** 2 if 0 < u < 1 else 0.0)
+        for i, (bone, roll, yaw) in enumerate(SHAKE_WAVE):
+            e, o = shake_link(f, i)
+            rig.set(bone, 0, roll * e * o, yaw * e * o)
+        e, o = shake_link(f, 0)
+        rig.set("jaw", JAW + SHAKE_JAW * e)
+        # the ears fly out with the head's roll and flop a frame behind it
+        el, ol = shake_link(f - SHAKE_EAR["lag"], 0)
+        et, ot = shake_link(f - 2 * SHAKE_EAR["lag"], 0)
+        for sd, sg in (("L", -1), ("R", 1)):
+            rig.set("ear_%s_1" % sd, SHAKE_EAR["lift"] * el, sg * SHAKE_EAR["out"] * el + SHAKE_EAR["flap"] * el * ol, 0)
+            rig.set("ear_%s_2" % sd, 0, SHAKE_EAR["tip"] * et * ot, 0)
+        # the tail: the end of the wave, swinging side to side
+        for k, (lift, swing) in enumerate(SHAKE_TAIL):
+            e, o = shake_link(f, len(SHAKE_WAVE) + 0.5 * k)
+            tail(rig, "tail_%d" % (k + 1), lift * e, 0, swing * e * o)
+        rig.update()
+        plant_all(rig, "Shake f%d" % f)
+
+    rig.bake("Shake", N, pose, loop=False)
+    return dict(name="Shake", frames=N, loop=False, ground_speed=0.0,
+                plants={leg: [(0, N)] for leg in A.LEGS},
+                notes="shake dry, about 1 s: a wave of roll at %.0f Hz runs from the head through the "
+                      "shoulders, ribs and hips to the tail, the ears flap and the stance braces a "
+                      "little; starts and ends standing, all four paws planted" % SHAKE_HZ)
