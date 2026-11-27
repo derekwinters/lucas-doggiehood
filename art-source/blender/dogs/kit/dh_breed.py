@@ -43,7 +43,9 @@ REQUIRED = (
 #                sets shorter, less clumped strands and a flatter normal map (../labrador/breed.py)
 #   FUR_PATCHES  dark / light patches over the coat's dark channel: a saddle, a mask
 #                (dh_dog_tex._patches; ../german-shepherd/breed.py); "pale" patches lay white
-#                markings over the feathering channel and clear the dark one (../beagle/breed.py)
+#                markings over the feathering channel and clear the dark one (../beagle/breed.py);
+#                "plain" patches clear the feathering channel, so a coat has no paler underside
+#                apart from its own "pale" markings (../frenchton/breed.py)
 #   TAIL_SWING   multipliers on the clips' tail rotations per world axis (Idle, Walk, Run, TailWag,
 #                PlayBow and the "wag" test pose; not the sit): a tail curled over the back drops
 #                the lifts that would drive it into the back (../puggle/breed.py)

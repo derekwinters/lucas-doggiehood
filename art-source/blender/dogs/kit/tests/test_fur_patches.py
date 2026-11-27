@@ -1,5 +1,6 @@
 """The optional FUR_PATCHES breed field lays a pattern (a saddle, a mask) over the coat's dark channel,
-and with "op": "pale" white markings over its feathering channel; without it a breed gets exactly the
+with "op": "pale" white markings over its feathering channel, and with "op": "plain" the kit's own
+feathering cleared to the main coat colour; without it a breed gets exactly the
 masks it got before.
 
   python3 art-source/blender/dogs/kit/tests/test_fur_patches.py               (a few seconds)
@@ -42,6 +43,7 @@ print("PROBE " + json.dumps({
     "z_lo_e": dig(e1[P[:, 2] < 1.0]),
     "z_hi_f_min": float(f1[P[:, 2] > 1.2].min()), "z_hi_e_max": float(e1[P[:, 2] > 1.2].max()),
     "z_lo_f": dig(f1[P[:, 2] < 1.0]), "f_mean": float(f1.mean()),
+    "e": dig(e1), "z_hi_f_max": float(f1[P[:, 2] > 1.2].max()),
 }))
 '''
 
@@ -99,6 +101,27 @@ class FurPatches(unittest.TestCase):
         body = ("body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear")
         got = self.probe([{"regions": body, "z": (1.1, 1.2), "op": "pale", "strength": 0.5}])
         self.assertGreaterEqual(got["z_hi_f_min"], 0.5 - 1e-9)
+
+    def test_plain_patch_clears_the_feathering_channel_only(self):
+        # "plain" scales the feathering channel down by the patch's strength (the kit's paler
+        # chest, belly, leg backs and tail underside become the main coat colour, so a solid coat
+        # can carry only its own white markings); the dark channel and texels outside are unchanged
+        base = self.probe(None)
+        body = ("body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear")
+        got = self.probe([{"regions": body, "z": (1.1, 1.2), "op": "plain"}])
+        self.assertGreater(base["z_hi_f_max"], 0.5, "the probe has no feathering to clear")
+        self.assertLess(got["z_hi_f_max"], 0.01, "a full-strength plain patch left feathering on")
+        self.assertEqual(got["e"], base["e"], "a plain patch changed the dark channel")
+        self.assertEqual(got["z_lo_f"], base["z_lo_f"], "a plain patch changed texels outside its z range")
+
+    def test_plain_patch_respects_its_strength_and_a_later_pale_patch_wins(self):
+        base = self.probe(None)
+        body = ("body", "head", "tail", "fleg", "bleg", "thigh", "paw", "ear")
+        half = self.probe([{"regions": body, "z": (1.1, 1.2), "op": "plain", "strength": 0.5}])
+        self.assertAlmostEqual(half["z_hi_f_max"], 0.5 * base["z_hi_f_max"], delta=0.02)
+        both = self.probe([{"regions": body, "z": (1.1, 1.2), "op": "plain"},
+                           {"regions": body, "z": (1.1, 1.2), "op": "pale"}])
+        self.assertGreater(both["z_hi_f_min"], 0.99, "a pale patch after a plain one did not whiten")
 
     def test_fur_patches_is_not_a_required_field(self):
         sys.path.insert(0, KIT)

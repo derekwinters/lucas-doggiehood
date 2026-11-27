@@ -59,8 +59,9 @@ STRAND = {"fine": (0.10, 0.8), "mid": (0.35, 2.0), "clump": (1.1, 3.5), "low": (
           "mix": (0.40, 0.35, 0.35), "normal": 0.40, "contrast": 0.32}
 STRAND.update(getattr(B, "FUR_STRAND", {}))
 # Optional coat pattern: patches laid over the coat's ear/dark channel (a saddle, a mask),
-# lightening it (an ear's inner face), or "pale" white markings over the feathering channel (a
-# blaze, white legs, a tail tip). A breed without FUR_PATCHES bakes exactly as before.
+# lightening it (an ear's inner face), "pale" white markings over the feathering channel (a
+# blaze, white legs, a tail tip), or "plain" clearing the feathering channel (a solid coat with no
+# paler underside). A breed without FUR_PATCHES bakes exactly as before.
 PATCHES = list(getattr(B, "FUR_PATCHES", []))
 
 # trim palette regions (u0, v0, u1, v1) in UV space
@@ -343,8 +344,9 @@ def _patches(P, N, w, f, e, low):
     |x| < x_max and where the normal's component n = (axis, from, to) ramps; its edge is `soft` m wide and moved up to
     `wobble` m by the coat's low-frequency noise. "dark" patches raise e to at least their
     strength; "light" ones scale e down by their strength; "pale" ones (white markings) raise f
-    to at least their strength and scale e down by it, so the marking shows over a saddle.
-    Returns (f, e); f is unchanged unless a patch is "pale"."""
+    to at least their strength and scale e down by it, so the marking shows over a saddle; "plain"
+    ones scale f down by their strength (the kit's paler underside becomes the main coat colour)
+    and leave e alone. Returns (f, e); f is unchanged unless a patch is "pale" or "plain"."""
     x, y, z = P[:, 0], P[:, 1], P[:, 2]
     lo = np.zeros(len(P)) if low is None else low
     for p in PATCHES:
@@ -369,6 +371,8 @@ def _patches(P, N, w, f, e, low):
         elif op == "pale":
             f = np.maximum(f, cov)
             e = e * (1 - cov)
+        elif op == "plain":
+            f = f * (1 - cov)
         else:
             e = e * (1 - cov)
     return f, e
