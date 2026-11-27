@@ -1,0 +1,135 @@
+{
+ "object": "ball",
+ "tris": 1520,
+ "tri_budget": 6000,
+ "diameter_m": 0.25,
+ "real_diameter_m": 0.067,
+ "size_xyz_m": [
+  0.25,
+  0.25,
+  0.25
+ ],
+ "bbox_min_m": [
+  -0.125,
+  -0.125,
+  0.0
+ ],
+ "bbox_max_m": [
+  0.125,
+  0.125,
+  0.25
+ ],
+ "budget_ok": true,
+ "size_ok": true,
+ "pivot_ok": true,
+ "variants": {
+  "blue": {
+   "hex": "#2F7FD8",
+   "file": "ball_blue.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Blue"
+   ],
+   "images": [
+    "../textures/ball_felt_blue_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1974,
+   "bin_bytes": 36608
+  },
+  "orange": {
+   "hex": "#F2711C",
+   "file": "ball_orange.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Orange"
+   ],
+   "images": [
+    "../textures/ball_felt_orange_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1982,
+   "bin_bytes": 36608
+  },
+  "red": {
+   "hex": "#D8302A",
+   "file": "ball_red.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Red"
+   ],
+   "images": [
+    "../textures/ball_felt_red_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1970,
+   "bin_bytes": 36608
+  },
+  "magenta": {
+   "hex": "#E0358F",
+   "file": "ball_magenta.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Magenta"
+   ],
+   "images": [
+    "../textures/ball_felt_magenta_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1986,
+   "bin_bytes": 36608
+  },
+  "purple": {
+   "hex": "#7A4FC9",
+   "file": "ball_purple.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Purple"
+   ],
+   "images": [
+    "../textures/ball_felt_purple_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1982,
+   "bin_bytes": 36608
+  },
+  "navy": {
+   "hex": "#24409A",
+   "file": "ball_navy.gltf",
+   "object": "ball",
+   "materials": [
+    "DH_Item_Ball_Navy"
+   ],
+   "images": [
+    "../textures/ball_felt_navy_color.png",
+    "../textures/ball_felt_normal.png"
+   ],
+   "uris_ok": true,
+   "textured_ok": true,
+   "single_sided_ok": true,
+   "roughness": 0.92,
+   "gltf_bytes": 1974,
+   "bin_bytes": 36608
+  }
+ }
+}
