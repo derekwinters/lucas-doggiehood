@@ -32,6 +32,10 @@ Starting scope is **comfort items** — dog beds, cushions, blankets. ([#51](htt
 
 Once delivered, the dog periodically decides — on its own, no player tap/trigger, consistent with dogs already behaving autonomously — to walk over to the comfort item and settle onto it. The dog actually paths there over the [walk network](world/sidewalks.md) (sidewalks, crosswalks, its house's front walkway) from wherever it is, then enters the "Rest" pose **on arrival** — it never teleports into the pose. ([#52](https://github.com/derekwinters/lucas-doggiehood/issues/52), [#112](https://github.com/derekwinters/lucas-doggiehood/issues/112)) See the "Rest" pose in [Dog Behavior](dogs/behavior.md#animations).
 
+**The blanket model** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). The blanket is a soft wool plaid throw built as a Blender source asset in `art-source/blender/items/blanket/`, outside `Assets/`. It lies rumpled on the grass, with fringed short ends and one corner folded back to show its cream fleece underside. It measures **1.37 × 0.92 m** (fringe included) and is at most 7 cm tall. It has 3,428 triangles, and its **pivot is on the ground** at the centre of its footprint. Until [#932](https://github.com/derekwinters/lucas-doggiehood/issues/932) imports the model, the game still shows the blue graybox slab.
+
+**Invariant — the blanket never leaves the graybox slab footprint** ([#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)). Every vertex of the blanket lies within the 1.4 × 1.0 m slab that `DecorationView` draws today, centred on the item's position and on or above the ground. That way the model goes where the slab went, and placement and the pool's clearance (`PoolPlacement.DecorationFootprintRadius`) do not change. The export's read-back check and `tests/test_blanket.py` enforce this.
+
 ## Build checklist
 
 - [ ] Decoration requests are scoped to a single dog's own yard; no shared-space decorating exists
