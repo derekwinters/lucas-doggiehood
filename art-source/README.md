@@ -28,6 +28,15 @@ The generator scripts, exports, textures and approved review renders for the hou
 Blender Python scripts, not a third-party pack, and the cleanup below does not apply to
 them. How they are built and exported: `docs/engineering/blender-pipeline.md`.
 
+### `splash/` — the splash art, rebuilt as layers (source)
+The splash image (`Assets/Art/Splash/cover-art.png`) rebuilt as separate reusable
+layers (#841). So far: the DOGGIEHOOD title as a layered vector SVG, a flat
+screen-print version and 6000 px transparent PNGs, built by `splash/build_title.py`
+from the Fredoka font (SIL OFL 1.1, licence in `splash/fonts/`); and the background and
+environment (sky, sun, clouds, street, houses, trees, props) as full-frame vector layers,
+built by `splash/build_scene.py`. Our own work, like
+`blender/`; the cleanup below does not apply. Details: `splash/README.md`.
+
 ## Cleanup later (TODO)
 
 This is a raw dump kept so the assets aren't lost — it is **not** the final home.
