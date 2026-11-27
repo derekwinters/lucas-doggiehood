@@ -11,8 +11,8 @@ the renders import exports/dog_bed.gltf, so they show exactly what was exported.
   closeup      the bed alone, perspective 3/4 from the front left
   closeup_dog  the same close-up with the Labrador lying on it
   turnaround   front, left side, back and top views of the bed alone (orthographic)
-  footprint    top view with today's 1.4 x 1.0 m graybox slab drawn over the bed, and the
-               measured size
+  footprint    top view with the bed's 1.60 x 1.15 m footprint and, for comparison, today's
+               1.4 x 1.0 m graybox slab drawn over the bed, and the measured size
   sheet        the four above on one page (renders any that are missing)
 
 The dog is the approved Labrador (dogs/labrador/exports/dog_labrador_yellow.gltf). The dog kit has
@@ -58,7 +58,7 @@ STATS = os.path.join(HERE, "exports", "bed_stats.json")
 DOG_GLTF = os.path.join(ART, "dogs", "labrador", "exports", "dog_labrador_yellow.gltf")
 HOUSE = os.path.join(ART, "exports", "base-01-level1.glb")
 GAME_YAW, GAME_PITCH = -40, 45
-CLOSE_HALF = (1.05, 0.85, 0.9)    # the zoomed game-camera shot frames this half-box round the bed
+CLOSE_HALF = (1.15, 0.95, 0.9)    # the zoomed game-camera shot frames this half-box round the bed
 LAWN = "#8E9E68"
 BED_AT = (-6.2, -1.2, 0.0)        # beside base 1's chimney gable (-X), the side the game camera sees
 F1 = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -258,26 +258,40 @@ def footprint():
     path = os.path.join(TMP, "footprint.png")
     scene(path, res, floor_hex="#E4DED3")
     bm, rest = bed()
-    frame = R.box_object((-C.SLAB_W / 2 - 0.25, -C.SLAB_D / 2 - 0.25, 0), (C.SLAB_W / 2 + 0.25, C.SLAB_D / 2 + 0.25, 0))
+    frame = R.box_object((-C.FOOTPRINT_W / 2 - 0.3, -C.FOOTPRINT_D / 2 - 0.3, 0),
+                         (C.FOOTPRINT_W / 2 + 0.3, C.FOOTPRINT_D / 2 + 0.3, 0))
     cam = R.camera(bm + [frame], 0, 90, res, margin=1.05)
     R.render()
     img = Image.open(path).convert("RGB")
     d = ImageDraw.Draw(img)
-    hw, hd = C.SLAB_W / 2, C.SLAB_D / 2
-    corners = [project(cam, res, (x, y, 0.36)) for x, y in ((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd))]
-    d.line(corners + [corners[0]], fill=SLAB_RGB, width=4)
+
+    def outline(w, h, rgb, width):
+        c = [project(cam, res, (x, y, 0.4)) for x, y in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2))]
+        d.line(c + [c[0]], fill=rgb, width=width)
+        return c
+    bed_c = outline(C.FOOTPRINT_W, C.FOOTPRINT_D, INK, 3)
+    corners = outline(C.SLAB_W, C.SLAB_D, SLAB_RGB, 4)
     rp = project(cam, res, tuple(rest.matrix_world.translation))
     d.ellipse((rp[0] - 9, rp[1] - 9, rp[0] + 9, rp[1] + 9), fill=(40, 90, 200), outline=(255, 255, 255), width=2)
     d.text((rp[0] + 14, rp[1] - 12), "ATTACH_REST", fill=(40, 90, 200), font=font(22, True))
     (x0, y0), (x1, _), (_, y1) = corners[3], corners[2], corners[1]
-    d.text(((x0 + x1) / 2, y0 - 40), "slab 1.40 m", fill=SLAB_RGB, font=font(26, True), anchor="mm")
-    d.text((x1 + 18, (y0 + y1) / 2), "1.00 m", fill=SLAB_RGB, font=font(26, True), anchor="lm")
+    def tag(xy, text, anchor):
+        f = font(24, True)
+        box = d.textbbox(xy, text, font=f, anchor=anchor)
+        d.rectangle((box[0] - 6, box[1] - 4, box[2] + 6, box[3] + 4), fill=(255, 255, 255), outline=SLAB_RGB, width=2)
+        d.text(xy, text, fill=SLAB_RGB, font=f, anchor=anchor)
+    tag(((x0 + x1) / 2, y0 + 26), "today's slab %.2f m" % C.SLAB_W, "mm")
+    tag((x1 - 16, (y0 + y1) / 2), "%.2f m" % C.SLAB_D, "rm")
+    (bx0, by0), (bx1, _), (_, by1) = bed_c[3], bed_c[2], bed_c[1]
+    d.text(((bx0 + bx1) / 2, by0 - 34), "bed %.2f m" % C.FOOTPRINT_W, fill=INK, font=font(26, True), anchor="mm")
+    d.text((bx1 + 16, (by0 + by1) / 2), "%.2f m" % C.FOOTPRINT_D, fill=INK, font=font(26, True), anchor="lm")
     s = stats()
     ok = not s["checks"]["footprint"] and not s["checks"]["pivot"]
     d.text((24, res[1] - 44), "Front (step-in edge) is at the bottom of this view", fill=SUB, font=font(21))
     header(img, "Dog bed footprint check",
-           "Red: today's graybox slab, %.1f x %.1f m. Bed measures %.3f x %.3f m, pivot centred on the ground: %s"
-           % (C.SLAB_W, C.SLAB_D, s["size_xyz_m"][0], s["size_xyz_m"][1], "fits" if ok else "FAILS")).save(
+           "Black: bed %.2f x %.2f m (measured %.3f x %.3f, %s). Red: today's %.1f x %.1f m slab"
+           % (C.FOOTPRINT_W, C.FOOTPRINT_D, s["size_xyz_m"][0], s["size_xyz_m"][1], "fits" if ok else "FAILS",
+              C.SLAB_W, C.SLAB_D)).save(
         os.path.join(OUT, "footprint.png"))
 
 

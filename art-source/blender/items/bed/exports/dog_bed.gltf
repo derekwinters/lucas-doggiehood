@@ -20,7 +20,7 @@
 			"name":"ATTACH_REST",
 			"translation":[
 				0,
-				0.17000000178813934,
+				0.18000000715255737,
 				0
 			]
 		},
@@ -186,177 +186,177 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":845,
+			"count":627,
 			"max":[
-				0.699999988079071,
-				0.3400000035762787,
-				0.5
+				0.800000011920929,
+				0.36413079500198364,
+				0.574999988079071
 			],
 			"min":[
-				-0.699999988079071,
-				0.054999999701976776,
-				-0.5
+				-0.800000011920929,
+				0.06359725445508957,
+				-0.574999988079071
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":845,
+			"count":627,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":845,
+			"count":627,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":4608,
+			"count":3360,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":4,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"max":[
-				0.699999988079071,
-				0.07000000029802322,
-				0.5
+				0.800000011920929,
+				0.07500000298023224,
+				0.574999988079071
 			],
 			"min":[
-				-0.699999988079071,
+				-0.800000011920929,
 				0,
-				-0.5
+				-0.574999988079071
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":5,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":6,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":7,
 			"componentType":5123,
-			"count":2304,
+			"count":1008,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":8,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"max":[
-				0.5550000071525574,
-				0.17000000178813934,
-				0.35499998927116394
+				0.6349999904632568,
+				0.18000000715255737,
+				0.4099999964237213
 			],
 			"min":[
-				-0.5550000071525574,
-				0.054999999701976776,
-				-0.35499998927116394
+				-0.6349999904632568,
+				0.05999999865889549,
+				-0.4099999964237213
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":9,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":10,
 			"componentType":5126,
-			"count":520,
+			"count":245,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":11,
 			"componentType":5123,
-			"count":2304,
+			"count":1008,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":10140,
+			"byteLength":7524,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":10140,
-			"byteOffset":10140,
+			"byteLength":7524,
+			"byteOffset":7524,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":6760,
-			"byteOffset":20280,
+			"byteLength":5016,
+			"byteOffset":15048,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":9216,
-			"byteOffset":27040,
+			"byteLength":6720,
+			"byteOffset":20064,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":6240,
-			"byteOffset":36256,
+			"byteLength":2940,
+			"byteOffset":26784,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":6240,
-			"byteOffset":42496,
+			"byteLength":2940,
+			"byteOffset":29724,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4160,
-			"byteOffset":48736,
+			"byteLength":1960,
+			"byteOffset":32664,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4608,
-			"byteOffset":52896,
+			"byteLength":2016,
+			"byteOffset":34624,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":6240,
-			"byteOffset":57504,
+			"byteLength":2940,
+			"byteOffset":36640,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":6240,
-			"byteOffset":63744,
+			"byteLength":2940,
+			"byteOffset":39580,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4160,
-			"byteOffset":69984,
+			"byteLength":1960,
+			"byteOffset":42520,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4608,
-			"byteOffset":74144,
+			"byteLength":2016,
+			"byteOffset":44480,
 			"target":34963
 		}
 	],
@@ -368,7 +368,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":78752,
+			"byteLength":46496,
 			"uri":"dog_bed.bin"
 		}
 	]

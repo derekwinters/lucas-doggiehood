@@ -38,7 +38,7 @@ def export_gltf(path, ob):
 
 def rest_samples(rest):
     dg = bpy.context.evaluated_depsgraph_get()
-    rw, rd = BD.DIMS["rest_area"]
+    rw, rd = C.REST_AREA_MIN
     zs = []
     for i in range(RAY_GRID):
         for k in range(RAY_GRID):
@@ -66,7 +66,7 @@ def main():
     checks = {
         "footprint": C.footprint_errors(size),
         "pivot": C.pivot_errors(lo, hi),
-        "budget": C.budget_errors(tris),
+        "budget": C.budget_errors(tris) + C.budget_errors(tris, C.TARGET_TRIS),
         "flat_top": C.flat_top_errors(rest_samples(rest), BD.DIMS["rest_z"]),
         "gltf": C.gltf_errors(j, path, TEX),
     }
@@ -82,10 +82,12 @@ def main():
         "object": BD.NAME,
         "tris": tris,
         "budget_tris": C.BUDGET_TRIS,
+        "target_tris": C.TARGET_TRIS,
         "size_xyz_m": [round(v, 4) for v in size],
-        "slab_footprint_m": [C.SLAB_W, C.SLAB_D],
+        "footprint_m": [C.FOOTPRINT_W, C.FOOTPRINT_D],
+        "todays_slab_m": [C.SLAB_W, C.SLAB_D],
         "rest_point_m": [round(v, 4) for v in rest],
-        "rest_area_m": list(BD.DIMS["rest_area"]),
+        "rest_area_m": list(C.REST_AREA_MIN),
         "bolster_top_m": {"back_and_sides": BD.DIMS["back_top"], "front": BD.DIMS["front_top"]},
         "materials": mats,
         "images": sorted(im["uri"] for im in j.get("images", [])),

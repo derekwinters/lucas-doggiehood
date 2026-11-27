@@ -2,29 +2,34 @@
  "name": "Dog bed (#411)",
  "units": "metres, Blender axes (front -Y, up +Z); the glTF file is Y-up (front +Z)",
  "object": "dog_bed",
- "tris": 3072,
+ "tris": 1792,
  "budget_tris": 6000,
+ "target_tris": 2000,
  "size_xyz_m": [
-  1.4,
-  1.0,
-  0.34
+  1.6,
+  1.15,
+  0.3641
  ],
- "slab_footprint_m": [
+ "footprint_m": [
+  1.6,
+  1.15
+ ],
+ "todays_slab_m": [
   1.4,
   1.0
  ],
  "rest_point_m": [
   0.0,
   0.0,
-  0.17
+  0.18
  ],
  "rest_area_m": [
-  0.8,
-  0.4
+  0.95,
+  0.5
  ],
  "bolster_top_m": {
-  "back_and_sides": 0.34,
-  "front": 0.23
+  "back_and_sides": 0.37,
+  "front": 0.25
  },
  "materials": {
   "DH_Item_Bed_Cover": {
@@ -67,8 +72,8 @@
   "../textures/bed_fleece_color.png",
   "../textures/bed_fleece_normal.png"
  ],
- "gltf_bytes": 5551,
- "bin_bytes": 78752,
+ "gltf_bytes": 5601,
+ "bin_bytes": 46496,
  "checks": {
   "footprint": [],
   "pivot": [],

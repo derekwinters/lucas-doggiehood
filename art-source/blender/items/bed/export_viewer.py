@@ -19,11 +19,14 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..", "dogs", "kit")))
 import export_viewer as GV  # noqa: E402  (load / accessor: the dog kit's glTF reader)
+sys.path.insert(0, HERE)
+import check_bed as C  # noqa: E402  (the footprint and today's slab)
 
 GLTF = os.path.join(HERE, "exports", "dog_bed.gltf")
 THREE = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
 JPEG_QUALITY = 90
 ROUND = 5
+SLAB_LINE_Y = 0.40          # today's slab outline floats this high, just above the bolster
 
 
 def data_uri(path, colour):
@@ -88,7 +91,7 @@ p { margin: 4px 0 0; color: var(--sub); font-size: 13px; max-width: 46em; }
 </style></head><body>
 <canvas id="c"></canvas>
 <header><h1>Dog bed (#411)</h1>
-<p>__SUB__ Drag to turn, scroll or pinch to zoom. The ground grid is 0.5 m; the red outline is today's 1.4 x 1.0 m graybox slab.</p></header>
+<p>__SUB__ Drag to turn, scroll or pinch to zoom. The ground grid is 0.5 m; the dark outline on the ground is the bed's __FOOT__ m footprint; the red outline, floating above the bed, is today's __SLAB__ m graybox slab for comparison.</p></header>
 <script src="__THREE__"></script>
 <script>
 const M = __MODEL__;
@@ -124,10 +127,13 @@ for (const p of M.prims) {
   scene.add(new THREE.Mesh(g, mats[p.mat]));
 }
 const grid = new THREE.GridHelper(4, 8, 0x9a9184, 0xc9c1b4); grid.position.y = -0.001; scene.add(grid);
-const hw = 0.7, hd = 0.5, y = 0.002;
-const slab = new THREE.BufferGeometry().setFromPoints([[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd], [-hw, -hd]]
-  .map(([x, z]) => new THREE.Vector3(x, y, z)));
-scene.add(new THREE.Line(slab, new THREE.LineBasicMaterial({color: 0xd63031})));
+function outline(w, d, y, color) {
+  const g = new THREE.BufferGeometry().setFromPoints([[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]]
+    .map(([x, z]) => new THREE.Vector3(x * w / 2, y, z * d / 2)));
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({color})));
+}
+outline(__FW__, __FD__, 0.002, 0x28241f);   // the bed's footprint, on the ground
+outline(__SW__, __SD__, __SY__, 0xd63031);  // today's graybox slab, above the bolster so it shows
 // a minimal orbit control: yaw/pitch round the bed, distance by wheel or pinch
 const target = new THREE.Vector3(0, 0.12, 0);
 let yaw = -0.7, pitch = 0.55, dist = 3.2;
@@ -163,7 +169,12 @@ def main(out):
         s = json.load(fh)
     sub = ("Padded bolster bed with a flat fleece cushion: %d triangles, %.2f x %.2f x %.2f m, cushion top at %.2f m."
            % (s["tris"], *s["size_xyz_m"], s["rest_point_m"][2]))
-    html = PAGE.replace("__THREE__", THREE).replace("__SUB__", sub).replace(
+    html = PAGE.replace("__THREE__", THREE).replace("__SUB__", sub)
+    for k, v in (("__FOOT__", "%.2f x %.2f" % (C.FOOTPRINT_W, C.FOOTPRINT_D)), ("__SLAB__", "%.1f x %.1f" % (C.SLAB_W, C.SLAB_D)),
+                 ("__FW__", C.FOOTPRINT_W), ("__FD__", C.FOOTPRINT_D), ("__SW__", C.SLAB_W), ("__SD__", C.SLAB_D),
+                 ("__SY__", SLAB_LINE_Y)):
+        html = html.replace(k, str(v))
+    html = html.replace(
         "__MODEL__", json.dumps(m, separators=(",", ":")))
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as fh:

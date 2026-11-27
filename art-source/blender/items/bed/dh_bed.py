@@ -9,7 +9,7 @@ footprint centre. One mesh object, `dog_bed`, plus one empty:
                 lies. Parented to the bed, so it exports as a glTF node.
 
 Parts (all in the one mesh):
-  base      a low padded base under everything, the full footprint, rounded edges
+  base      a low padded base under everything, the full footprint, rounded top edge
   bolster   a puffy tube swept round the rim; its top dips at the front so a dog steps in
   cushion   the flat padded top a dog lies on, tucked under the bolster on every side
 
@@ -34,26 +34,26 @@ NAME = "dog_bed"
 REST_NAME = "ATTACH_REST"
 
 DIMS = {
-    "w": 1.40,              # outer footprint along X (the slab's 1.4 m)
-    "d": 1.00,              # outer footprint along Y (the slab's 1.0 m)
-    "corner_r": 0.26,       # plan corner radius of the outer outline
-    "base_h": 0.07,         # base pad thickness
-    "base_edge_r": 0.025,   # base pad edge rounding
-    "bolster_w": 0.18,      # bolster cross-section width
+    "w": 1.60,              # outer footprint along X (Derek on #411: ~15% over the slab's 1.4 m)
+    "d": 1.15,              # outer footprint along Y (the slab's 1.0 m, ~15% bigger)
+    "corner_r": 0.30,       # plan corner radius of the outer outline
+    "base_h": 0.075,        # base pad thickness
+    "base_edge_r": 0.025,   # base pad top edge rounding (its bottom edge sits on the ground, square)
+    "bolster_w": 0.20,      # bolster cross-section width
     "bolster_sink": 0.015,  # bolster bottom sits this far into the base
-    "back_top": 0.34,       # bolster top at the back and sides (today's slab is 0.35 tall)
-    "front_top": 0.23,      # bolster top at the front dip
+    "back_top": 0.37,       # bolster top at the back and sides
+    "front_top": 0.25,      # bolster top at the front dip
     "dip_start": 0.35,      # front dip begins where -sin(angle round the bed) passes this
     "bolster_round": 2.6,   # bolster cross-section superellipse exponent (2 = ellipse)
-    "rest_z": 0.17,         # cushion top: where the dog lies
+    "rest_z": 0.18,         # cushion top: where the dog lies
     "cushion_tuck": 0.035,  # cushion runs this far under the bolster on each side
     "cushion_edge_r": 0.05, # cushion top edge rounding (the puffy edge)
-    "rest_area": (0.80, 0.40),  # the flat area round ATTACH_REST that a dog lies on (w, d)
 }
 
-PLAN_SEGMENTS = 64          # points round the outline (bolster path, base and cushion rings)
+PLAN_SEGMENTS = 56          # points round the bolster's path
+SLAB_PLAN_SEGMENTS = 48     # points round the base and cushion outlines
 CORNER_WEIGHT = 2.0         # corners get this many times the points per metre of the straights
-PROFILE_SEGMENTS = 12       # points round the bolster cross-section
+PROFILE_SEGMENTS = 10       # points round the bolster cross-section
 EDGE_SEGMENTS = 2           # segments per rounded slab edge
 TILE = 0.30                 # metres per texture repeat
 
@@ -150,15 +150,13 @@ class Builder:
         return me
 
 
-def rounded_slab(b, mat, w, d, corner_r, z0, z1, r_bot, r_top, inset=0.0):
-    """A closed slab over a rounded-rectangle plan from z0 to z1, its bottom and top edges
-    rounded by r_bot / r_top, with flat fan caps. inset shrinks the plan on every side."""
-    plan, perim = rrect(w - 2 * inset, d - 2 * inset, max(corner_r - inset, 0.0), PLAN_SEGMENTS)
-    # cross-section from the bottom cap edge to the top cap edge: (inward offset, z)
-    prof = []
-    for k in range(EDGE_SEGMENTS + 1):
-        a = math.pi / 2 * k / EDGE_SEGMENTS
-        prof.append((r_bot * (1 - math.sin(a)), z0 + r_bot * (1 - math.cos(a))))
+def rounded_slab(b, mat, w, d, corner_r, z0, z1, r_top, inset=0.0):
+    """A slab over a rounded-rectangle plan from z0 to z1: a straight side, the top edge rounded
+    by r_top, and a flat fan cap on top. It has no bottom: the base sits on the ground and the
+    cushion inside the base, so a bottom would never be seen. inset shrinks the plan on every side."""
+    plan, perim = rrect(w - 2 * inset, d - 2 * inset, max(corner_r - inset, 0.0), SLAB_PLAN_SEGMENTS)
+    # cross-section from the bottom edge to the top cap edge: (inward offset, z)
+    prof = [(0.0, z0)]
     for k in range(EDGE_SEGMENTS + 1):
         a = math.pi / 2 * k / EDGE_SEGMENTS
         prof.append((r_top * (1 - math.cos(a)), z1 - r_top + r_top * math.sin(a)))
@@ -186,7 +184,6 @@ def rounded_slab(b, mat, w, d, corner_r, z0, z1, r_bot, r_top, inset=0.0):
             co = {c: (0.0, 0.0), ring[i]: pi[:2], ring[j]: pj[:2]}
             b.face(tri, mat, [(co[t][0] / TILE, co[t][1] / TILE) for t in tri])
     cap(rings[-1], z1, True)
-    cap(rings[0], z0, False)
 
 
 def bolster(b, mat):
@@ -271,12 +268,11 @@ def build(tex_dir=TEX_DIR):
         dh_bed_tex.build_all(tex_dir)
     D = DIMS
     b = Builder()
-    rounded_slab(b, "DH_Item_Bed_Base", D["w"], D["d"], D["corner_r"], 0.0, D["base_h"],
-                 D["base_edge_r"], D["base_edge_r"])
+    rounded_slab(b, "DH_Item_Bed_Base", D["w"], D["d"], D["corner_r"], 0.0, D["base_h"], D["base_edge_r"])
     bolster(b, "DH_Item_Bed_Cover")
     inset = D["bolster_w"] - D["cushion_tuck"]
     rounded_slab(b, "DH_Item_Bed_Cushion", D["w"], D["d"], D["corner_r"], D["base_h"] - D["bolster_sink"],
-                 D["rest_z"], 0.01, D["cushion_edge_r"], inset=inset)
+                 D["rest_z"], D["cushion_edge_r"], inset=inset)
     me = b.mesh(NAME)
     for mat in materials(tex_dir):
         me.materials.append(mat)

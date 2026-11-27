@@ -6,11 +6,11 @@ padded top a dog can lie on.
 
 Needs bpy (==5.3.0). The bed is built in a fresh process (dh_bed.build()) and measured there:
 its world bounds, its triangle count, the ATTACH_REST empty, and rays cast straight down over
-the rest area (DIMS["rest_area"], centred on ATTACH_REST), which must all land on the cushion at
+the rest area (check_bed.REST_AREA_MIN, centred on ATTACH_REST), which must all land on the cushion at
 the rest height. Textures go to a temporary folder; nothing is written into the repository.
 
-Invariant - the bed never leaves today's slab footprint (1.4 x 1.0 m), so placing a bed instead
-of the graybox slab moves nothing.
+Invariant - the bed never leaves its declared footprint (1.60 x 1.15 m), so whatever places it
+can reserve that rectangle and know the bed stays inside it.
 """
 import importlib.util
 import json
@@ -42,7 +42,9 @@ hi = [max(p[i] for p in pts) for i in range(3)]
 rest = [o for o in ob.children_recursive if o.name == BD.REST_NAME]
 rest_loc = list(rest[0].matrix_world.translation) if rest else None
 dg = bpy.context.evaluated_depsgraph_get()
-rw, rd = BD.DIMS["rest_area"]
+sys.path.insert(0, %(bed)r)
+import check_bed as C
+rw, rd = C.REST_AREA_MIN
 c = Vector(rest_loc) if rest else Vector((0, 0, 0))
 zs = []
 n = 9
@@ -90,7 +92,7 @@ class BuiltBed(unittest.TestCase):
     def test_object_name(self):
         self.assertEqual(self.m["name"], "dog_bed")
 
-    def test_fits_the_slab_footprint(self):
+    def test_fits_its_footprint(self):
         self.assertEqual(C.footprint_errors(self.size()), [], self.size())
 
     def test_pivots_on_the_ground_at_the_footprint_centre(self):
@@ -99,13 +101,16 @@ class BuiltBed(unittest.TestCase):
     def test_within_the_triangle_backstop(self):
         self.assertEqual(C.budget_errors(self.m["tris"]), [], self.m["tris"])
 
+    def test_within_the_beds_triangle_target(self):
+        self.assertEqual(C.budget_errors(self.m["tris"], C.TARGET_TRIS), [], self.m["tris"])
+
     def test_rest_point_is_on_the_cushion_top_at_the_centre_line(self):
         rest = self.m["rest"]
         self.assertIsNotNone(rest, "no ATTACH_REST empty")
         self.assertAlmostEqual(rest[0], 0.0, places=3)
         self.assertAlmostEqual(rest[2], self.m["rest_z"], places=3)
         # the cushion sits inside the bolster, so the rest point is inside the footprint
-        self.assertLess(abs(rest[1]), C.SLAB_D / 2)
+        self.assertLess(abs(rest[1]), C.FOOTPRINT_D / 2)
 
     def test_the_rest_area_is_flat_at_the_rest_height(self):
         self.assertEqual(C.flat_top_errors(self.m["zs"], self.m["rest_z"]), [], self.m["zs"])

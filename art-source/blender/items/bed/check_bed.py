@@ -6,13 +6,19 @@ strings, empty when the check passes.
 """
 import os
 
-# Today's graybox slab (DecorationView: localScale 1.4 x 0.35 x 1.0, long side along X).
+# The bed's footprint (long side along X). Derek on #411: about 15% bigger than today's slab.
+FOOTPRINT_W = 1.60
+FOOTPRINT_D = 1.15
+# The bed must also fill at least this share of each side of its footprint.
+FOOTPRINT_FILL = 0.96
+# Today's graybox slab (DecorationView: localScale 1.4 x 0.35 x 1.0), kept for comparison renders.
 SLAB_W = 1.4
 SLAB_D = 1.0
-# "About today's slab footprint": the bed must also fill at least this share of each side.
-SLAB_FILL = 0.96
-# The provisional per-mesh triangle backstop (#799).
+# The provisional per-mesh triangle backstop (#799), and the bed's own, lower target (Derek on #411).
 BUDGET_TRIS = 6000
+TARGET_TRIS = 2000
+# The flat area round ATTACH_REST that a dog lies on must be at least this big (w, d), in metres.
+REST_AREA_MIN = (0.95, 0.50)
 # Pivot: on the ground at the footprint centre, within this many metres.
 PIVOT_TOL = 0.002
 # The rest area: every sample within this many metres of the rest height.
@@ -24,10 +30,11 @@ REST_NODE = "ATTACH_REST"
 def footprint_errors(size_xyz):
     w, d = size_xyz[0], size_xyz[1]
     errs = []
-    if w > SLAB_W + 1e-6 or d > SLAB_D + 1e-6:
-        errs.append("footprint %.3f x %.3f m is outside the %.1f x %.1f m slab" % (w, d, SLAB_W, SLAB_D))
-    if w < SLAB_W * SLAB_FILL or d < SLAB_D * SLAB_FILL:
-        errs.append("footprint %.3f x %.3f m fills less than %d%% of the slab" % (w, d, round(SLAB_FILL * 100)))
+    if w > FOOTPRINT_W + 1e-6 or d > FOOTPRINT_D + 1e-6:
+        errs.append("size %.3f x %.3f m is outside the %.2f x %.2f m footprint" % (w, d, FOOTPRINT_W, FOOTPRINT_D))
+    if w < FOOTPRINT_W * FOOTPRINT_FILL or d < FOOTPRINT_D * FOOTPRINT_FILL:
+        errs.append("size %.3f x %.3f m fills less than %d%% of the footprint"
+                    % (w, d, round(FOOTPRINT_FILL * 100)))
     return errs
 
 
@@ -41,9 +48,9 @@ def pivot_errors(lo, hi):
     return errs
 
 
-def budget_errors(tris):
-    if tris > BUDGET_TRIS:
-        return ["%d triangles is over the %d backstop (#799)" % (tris, BUDGET_TRIS)]
+def budget_errors(tris, limit=BUDGET_TRIS):
+    if tris > limit:
+        return ["%d triangles is over the limit of %d" % (tris, limit)]
     return []
 
 

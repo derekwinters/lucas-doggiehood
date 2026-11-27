@@ -8,26 +8,41 @@ folder is outside `Assets/`. Showing it in the game is #932, after Derek approve
 The bed has a low padded base, a puffy bolster round the rim and a flat cream fleece cushion
 tucked inside it. The bolster's top dips at the front, so it reads as the side a dog steps in from.
 
+> **The bed is bigger than today's slab (Derek, #411 review).** The issue first asked for "about
+> today's slab footprint (1.4 × 1.0 m), so placement doesn't change". After the first renders Derek
+> asked for the bed to be a little bigger, so an adult dog fits it better. It is now
+> **1.60 × 1.15 m**, about 15% bigger on each side. Placement no longer stays exactly as it is:
+> #932 has to reserve the larger footprint. `YardPlacement` puts slots 2 m apart along the
+> slab's 1.0 m side, so if the bed keeps the slab's orientation (Open on #776), two beds side by
+> side are 0.85 m apart instead of 1.0 m.
+
 ## Size, pivot and triangles
 
 All numbers come from `exports/bed_stats.json`, which `export_bed.py` writes.
 
 | | |
 |---|---|
-| Footprint | **1.40 × 1.00 m** (X × Y), exactly today's graybox slab (`DecorationView` scale 1.4 × 0.35 × 1.0), long side along X like the slab |
-| Height | 0.34 m to the bolster top at the back and sides, 0.23 m at the front dip (the slab is 0.35 m) |
-| Cushion top (rest height) | **0.17 m**, flat over at least 0.80 × 0.40 m round the centre |
+| Footprint | **1.60 × 1.15 m** (X × Y), long side along X like today's graybox slab (`DecorationView` scale 1.4 × 0.35 × 1.0) |
+| Height | 0.36 m to the bolster top at the back and sides, 0.25 m at the front dip (the slab is 0.35 m) |
+| Cushion top (rest height) | **0.18 m**, flat over at least 0.95 × 0.50 m round the centre |
 | Pivot | on the ground at the footprint centre |
 | Front | the step-in edge faces −Y in Blender, which is +Z in the glTF |
-| Triangles | **3,072** in one mesh, against the provisional per-mesh backstop of 6,000 (#799) |
-| Rest point | `ATTACH_REST` empty at (0, 0, 0.17) on the cushion top, a child of the mesh, exported as a glTF node (glTF position (0, 0.17, 0)) |
+| Triangles | **1,792** in one mesh. The bed's own target is 2,000 (Derek, #411 review), well under the provisional per-mesh backstop of 6,000 (#799) |
+| Rest point | `ATTACH_REST` empty at (0, 0, 0.18) on the cushion top, a child of the mesh, exported as a glTF node (glTF position (0, 0.18, 0)) |
 
-**Invariant — the bed never leaves today's slab footprint (1.4 × 1.0 m).** Swapping the slab for
-the bed moves nothing. `export_bed.py` fails if the bed is bigger than the slab, or fills less than
-96% of either side.
+**Where the triangles go.** The bolster sweep has 56 × 10 sides (1,120 triangles). The base and
+cushion each have 48 sides with a straight side, a 2-step rounded top edge and a flat top (336
+each). Neither has a bottom: the base sits on the ground and the cushion inside the base, so a
+bottom is never seen. The first round had 3,072 triangles at 64 × 12 and with bottoms.
 
-**For #932.** Today a resting dog stays at ground height inside the 0.35 m slab. On the bed it
-should lie on the cushion at `ATTACH_REST`, 0.17 m up.
+**Invariant — the bed never leaves its declared footprint (1.60 × 1.15 m).** Whatever places it
+can reserve that rectangle and know the bed stays inside it. `export_bed.py` fails if the bed is
+bigger than the footprint or fills less than 96% of either side. It also fails if the bed is over
+the 2,000-triangle target or the rest area is smaller than 0.95 × 0.50 m.
+
+**For #932.** The footprint grew from the slab's 1.4 × 1.0 m to 1.60 × 1.15 m, so placement and
+yard clearances need the new size. Today a resting dog stays at ground height inside the 0.35 m
+slab. On the bed it should lie on the cushion at `ATTACH_REST`, 0.18 m up.
 
 ## Files
 
@@ -35,7 +50,7 @@ should lie on the cushion at `ATTACH_REST`, 0.17 m up.
 |---|---|
 | `dh_bed.py` | The generator: `DIMS`, `build()`. Base, bolster sweep and cushion in one mesh, plus `ATTACH_REST` |
 | `dh_bed_tex.py` | The textures (numpy + Pillow, fixed seeds): a plain-weave canvas (light, tinted per material) and a sherpa fleece, each 512² colour + normal |
-| `check_bed.py` | The checks as plain functions: slab footprint, pivot, triangle backstop, flat rest area, glTF read-back (image URIs inside `textures/`, `DH_Item_Bed_` material names, `ATTACH_REST` node) |
+| `check_bed.py` | The checks as plain functions: footprint (and today's slab, for comparison), pivot, triangle backstop and target, flat rest area, glTF read-back (image URIs inside `textures/`, `DH_Item_Bed_` material names, `ATTACH_REST` node) |
 | `export_bed.py` | Writes `textures/`, `exports/dog_bed.gltf` + `.bin` and `exports/bed_stats.json`, then reads the glTF back and runs every check. Prints `ALL OK`, or `FAILED` and exits 1 |
 | `render_bed.py` | Review renders (see below) |
 | `export_viewer.py` | A self-contained `viewer.html` (mesh and textures embedded, three.js r128 from cdnjs, drag to orbit) for review. Written to `out/`, not committed |
@@ -54,7 +69,7 @@ From the repository root, with `pip install bpy==5.3.0` (plus numpy and Pillow):
 
 ```
 python3 art-source/blender/items/bed/export_bed.py                 # textures, exports, checks (a few seconds)
-python3 -m unittest discover -s art-source/blender/items/bed/tests # 30 tests, a few seconds
+python3 -m unittest discover -s art-source/blender/items/bed/tests # 34 tests, a few seconds
 python3 art-source/blender/items/bed/render_bed.py [out_dir] [--only gamecam,closeup,closeup_dog,turnaround,footprint,sheet]
 python3 art-source/blender/items/bed/export_viewer.py [out.html]
 ```
@@ -72,7 +87,9 @@ and go to `out/` by default, which is git-ignored.
   lying on it. It renders the whole lot, then the same camera zoomed in.
 - **`closeup`** / **`closeup_dog`**: a perspective 3/4 close-up of the bed alone, then with the Lab.
 - **`turnaround`**: front, side, back and a 3/4 view from above.
-- **`footprint`**: a top view with the 1.4 × 1.0 m slab outlined in red and `ATTACH_REST` marked.
+- **`footprint`**: a top view with the bed's 1.60 × 1.15 m footprint outlined in black, today's
+  1.4 × 1.0 m slab outlined in red for comparison, and `ATTACH_REST` marked. The viewer shows the
+  same two outlines.
 - **`sheet`**: all four on one page.
 
 **The lying pose is a render-only stand-in.** The dog kit has no lying clip yet (#933). The renders
@@ -85,10 +102,9 @@ The renders are not committed yet. As the pipeline says, only renders Derek appr
 
 ## Open concerns
 
-1. **An adult Lab fills the bed.** The Lab is 1.46 m from nose to rump, and the bed is 1.40 × 1.00 m.
-   Lying prone it covers the cushion, and its rump and head rest on the bolster. That suits a dog
-   bed, but a bigger bed would mean a bigger footprint than today's slab, so it would no longer be
-   "placement doesn't change".
+1. **An adult Lab still nearly fills the bed.** The Lab is 1.46 m from nose to rump, and the bed is
+   1.60 × 1.15 m. Lying prone it now fits on the cushion, with its rump against the back bolster and
+   its head over the front.
 2. **Colour.** The plum nods to the graybox bed's purple (`#6C4FC4`) in a realistic fabric shade.
    It is one constant per material in `COLOURS` (`dh_bed.py`) if Derek wants another colour.
 3. **Orientation in Unity** is still Open on #776, as it is for every Blender model. The slab's
