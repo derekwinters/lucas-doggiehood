@@ -1,0 +1,180 @@
+{
+ "fps": 30,
+ "units": "metres; Blender axes front -Y up +Z (glTF: front +Z, up +Y)",
+ "clips": {
+  "Idle": {
+   "loop": true,
+   "frames": 120,
+   "fps": 30,
+   "duration_s": 4.0,
+   "ground_speed_mps": 0.0,
+   "notes": "breathing (3 per loop), head looks left then right, left ear double twitch, right ear twitch, tail sway (2 per loop); all four paws planted",
+   "check": {
+    "clip": "Idle",
+    "frames": 120,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0,
+    "worst_plant_slide_m": 0.0,
+    "worst_plant_height_m": 0.0,
+    "ok": true
+   }
+  },
+  "Walk": {
+   "loop": true,
+   "frames": 24,
+   "fps": 30,
+   "duration_s": 0.8,
+   "ground_speed_mps": 0.6,
+   "stride_m": 0.48,
+   "footfalls_touchdown_phase": {
+    "HL": 0.0,
+    "FL": 0.22,
+    "HR": 0.5,
+    "FR": 0.72
+   },
+   "duty_factor": {
+    "HL": 0.62,
+    "HR": 0.62,
+    "FL": 0.64,
+    "FR": 0.64
+   },
+   "notes": "four-beat lateral-sequence walk; touchdowns LH 0.00, LF 0.22, RH 0.50, RF 0.72 of the cycle; duty 0.62 hind / 0.64 fore",
+   "check": {
+    "clip": "Walk",
+    "frames": 24,
+    "ground_speed_mps": 0.6,
+    "lowest_m": -0.0001,
+    "worst_plant_slide_m": 0.0012,
+    "worst_plant_height_m": 0.0004,
+    "ok": true
+   }
+  },
+  "Run": {
+   "loop": true,
+   "frames": 13,
+   "fps": 30,
+   "duration_s": 0.4333,
+   "ground_speed_mps": 2.56,
+   "stride_m": 1.1093,
+   "footfalls_touchdown_phase": {
+    "HR": 0.0,
+    "HL": 0.11,
+    "FR": 0.4,
+    "FL": 0.5
+   },
+   "duty_factor": {
+    "HR": 0.3,
+    "HL": 0.3,
+    "FR": 0.3,
+    "FL": 0.3
+   },
+   "notes": "transverse gallop, right-hind lead: touchdowns RH 0.00, LH 0.11, RF 0.40, LF 0.50; duty 0.30; gathered suspension 0.80-1.00",
+   "check": {
+    "clip": "Run",
+    "frames": 13,
+    "ground_speed_mps": 2.56,
+    "lowest_m": -0.0001,
+    "worst_plant_slide_m": 0.0009,
+    "worst_plant_height_m": 0.0005,
+    "ok": true
+   }
+  },
+  "SitDown": {
+   "loop": false,
+   "frames": 54,
+   "fps": 30,
+   "duration_s": 1.8,
+   "ground_speed_mps": 0.0,
+   "notes": "standing -> SIT: the hips tilt and the root drops together (shoulders keep their height), hind paws step forward under the body, front paws step back; last frame is dh_dog_rig SIT exactly",
+   "check": {
+    "clip": "SitDown",
+    "frames": 54,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0018,
+    "touch_m": {
+     "54": {
+      "haunches": -0.0002,
+      "hocks": -0.0005,
+      "hind_feet": -0.0013,
+      "front_paws": 0.0019
+     }
+    },
+    "ok": true,
+    "end_pose_error_deg": 0.0
+   }
+  },
+  "SitIdle": {
+   "loop": true,
+   "frames": 90,
+   "fps": 30,
+   "duration_s": 3.0,
+   "ground_speed_mps": 0.0,
+   "notes": "the SIT pose with 2 breaths, a head look left then right, ear twitches and a lazy tail sweep along the ground; paws stay planted",
+   "check": {
+    "clip": "SitIdle",
+    "frames": 90,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0013,
+    "worst_plant_slide_m": 0.0,
+    "worst_plant_height_m": 0.0039,
+    "touch_m": {
+     "0": {
+      "haunches": -0.0002,
+      "hocks": -0.0005,
+      "hind_feet": -0.0013,
+      "front_paws": 0.0019
+     },
+     "22": {
+      "haunches": -0.0002,
+      "hocks": -0.0005,
+      "hind_feet": -0.0013,
+      "front_paws": 0.0019
+     },
+     "67": {
+      "haunches": -0.0002,
+      "hocks": -0.0005,
+      "hind_feet": -0.0013,
+      "front_paws": 0.0019
+     }
+    },
+    "ok": true
+   }
+  },
+  "TailWag": {
+   "loop": true,
+   "frames": 30,
+   "fps": 30,
+   "duration_s": 1.0,
+   "ground_speed_mps": 0.0,
+   "notes": "standing happy wag: 3 wags per second, the tail whips side to side while the body stands still (the hips and spine follow by about a degree, no bounce), calm breathing and mouth as in Idle, head up, ears back; paws planted",
+   "check": {
+    "clip": "TailWag",
+    "frames": 30,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0,
+    "worst_plant_slide_m": 0.0,
+    "worst_plant_height_m": 0.0,
+    "ok": true
+   }
+  },
+  "PlayBow": {
+   "loop": false,
+   "frames": 84,
+   "fps": 30,
+   "duration_s": 2.8,
+   "ground_speed_mps": 0.0,
+   "notes": "front end drops (forearms along the ground, elbows just above it), rump up, tail high and wagging, a few chest bounces, then back up to standing",
+   "check": {
+    "clip": "PlayBow",
+    "frames": 84,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0001,
+    "worst_plant_slide_m": 0.0004,
+    "worst_plant_height_m": 0.0001,
+    "ok": true,
+    "end_pose_error_deg": 0.0
+   }
+  }
+ },
+ "all_checks_ok": true
+}

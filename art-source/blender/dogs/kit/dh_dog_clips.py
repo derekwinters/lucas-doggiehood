@@ -21,6 +21,7 @@ from mathutils import Matrix, Quaternion, Vector
 import dh_dog as D
 import dh_dog_anim as A
 import dh_dog_gait as G
+import dh_dog_rig as RG
 
 TAU = 2 * math.pi
 JAW = D.JAW_REST_OPEN_DEG
@@ -48,6 +49,11 @@ def plant_all(rig, tag, k=0.85):
         rig.solve_leg(leg, r["paw0"], 0.0, k=k, tag=tag)
 
 
+def tail(rig, bone, rx=0.0, ry=0.0, rz=0.0):
+    """A clip's tail rotation, scaled by the breed's optional TAIL_SWING (a curled tail)."""
+    rig.set(bone, *RG.tail_swing(bone, rx, ry, rz))
+
+
 # =========================================================================== Idle
 IDLE_N = 120
 
@@ -72,7 +78,7 @@ def idle_body(rig, ph, look=1.0):
     rig.set("ear_R_2", 0, 8 * tw_r, 0)
     # tail: gentle sway, each segment lagging
     for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-        rig.set(b, 0.8 * br if i == 0 else 0, 0, (6 - i) * s1(ph, 2, 0.06 * i))
+        tail(rig, b, 0.8 * br if i == 0 else 0, 0, (6 - i) * s1(ph, 2, 0.06 * i))
 
 
 def make_idle(rig):
@@ -110,7 +116,7 @@ def walk_body(rig, ph):
         rig.set("ear_%s_2" % s, 3 * c1(ph, 2, 0.38), 0, 0)
     # tail: carried a bit higher, sways once per cycle with a travelling lag
     for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-        rig.set(b, (10, 3, 0, 0)[i], 0, (9, 8, 7, 6)[i] * s1(ph, 1, 0.30 + 0.07 * i))
+        tail(rig, b, (10, 3, 0, 0)[i], 0, (9, 8, 7, 6)[i] * s1(ph, 1, 0.30 + 0.07 * i))
 
 
 def gait(rig, name, g, body):
@@ -159,7 +165,7 @@ def run_body(rig, ph):
         rig.set("ear_%s_2" % s, 18 + 10 * s1(ph, 1, 0.65), 0, 0)
     # tail streams out behind, waving with a travelling lag
     for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-        rig.set(b, (26, 4, -6, -8)[i] + (5, 6, 7, 8)[i] * s1(ph, 1, 0.75 + 0.08 * i), 0,
+        tail(rig, b, (26, 4, -6, -8)[i] + (5, 6, 7, 8)[i] * s1(ph, 1, 0.75 + 0.08 * i), 0,
                 (3, 3, 4, 4)[i] * s1(ph, 1, 0.2 + 0.08 * i))
 
 
@@ -273,7 +279,7 @@ def make_sit_down(rig):
 
     rig.bake("SitDown", N, pose, loop=False)
     return dict(name="SitDown", frames=N, loop=False, ground_speed=0.0,
-                touch={N: ["haunches", "hocks", "hind_feet", "front_paws", "tail"]},
+                touch={N: list(RG.SIT_TOUCH)},
                 notes="standing -> SIT: the hips tilt and the root drops together (shoulders keep "
                       "their height), hind paws step forward under the body, front paws step back; "
                       "last frame is dh_dog_rig SIT exactly")
@@ -315,9 +321,7 @@ def make_sit_idle(rig):
     rig.bake("SitIdle", N, pose)
     return dict(name="SitIdle", frames=N, loop=True, ground_speed=0.0,
                 plants={leg: [(0, N)] for leg in A.LEGS},
-                touch={0: ["haunches", "hocks", "hind_feet", "front_paws", "tail"],
-                       N // 4: ["haunches", "hocks", "hind_feet", "front_paws", "tail"],
-                       3 * N // 4: ["haunches", "hocks", "hind_feet", "front_paws", "tail"]},
+                touch={0: list(RG.SIT_TOUCH), N // 4: list(RG.SIT_TOUCH), 3 * N // 4: list(RG.SIT_TOUCH)},
                 notes="the SIT pose with 2 breaths, a head look left then right, ear twitches and a "
                       "lazy tail sweep along the ground; paws stay planted")
 
@@ -351,7 +355,7 @@ def make_tail_wag(rig):
             rig.set("ear_%s_2" % sd, 6, 0, 0)
         # tail: up and wagging hard, each segment lagging (whip)
         for i, b in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-            rig.set(b, (34, 8, 2, 0)[i], 0, (26, 18, 15, 12)[i] * s1(ph, 3, 0.04 * i))
+            tail(rig, b, (34, 8, 2, 0)[i], 0, (26, 18, 15, 12)[i] * s1(ph, 3, 0.04 * i))
         rig.update()
         plant_all(rig, "TailWag f%d" % f)
 
@@ -399,7 +403,7 @@ def make_play_bow(rig):
         # tail high and wagging (faster while bowed)
         amp = (0.25 + 0.75 * b) * A.smooth(f / 8.0) * (1 - A.smooth((f - (N - 9)) / 8.0))
         for i, t in enumerate(("tail_1", "tail_2", "tail_3", "tail_4")):
-            rig.set(t, (20, 10, 6, 2)[i] * b, 0, (22, 16, 12, 10)[i] * math.sin(TAU * (f / 10.0 - 0.04 * i)) * amp)
+            tail(rig, t, (20, 10, 6, 2)[i] * b, 0, (22, 16, 12, 10)[i] * math.sin(TAU * (f / 10.0 - 0.04 * i)) * amp)
         rig.update()
         # hind paws planted
         for leg in ("HL", "HR"):

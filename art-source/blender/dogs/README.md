@@ -8,12 +8,13 @@ It follows `docs/engineering/blender-pipeline.md`.
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys; `test_curled_tail.py`: the optional `TAIL_SWING` and `SIT_POSE["tail_on_ground"]`; `test_collar_ray.py`: the optional `COLLAR["ray"]` |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
 | `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
 | `beagle/` | The approved Beagle (#905): `breed.py`, its outputs (tricolour default and lemon-and-white light coats), and `render_compare.py` (beside the Lab and the Shepherd) |
 | `french-bulldog/` | The approved French Bulldog (#915): `breed.py`, its outputs (one coat: fawn with a black mask), and `render_compare.py` (beside the Lab and the Shepherd) |
+| `puggle/` | The approved Puggle (#909): `breed.py`, its outputs (fawn default, black and apricot light coats), `render_compare.py` (beside the Beagle and the Lab) and `check_tail.py` (the curled tail stays clear of the back in every clip) |
 
 > **Invariants**
 > - **A breed definition holds data only:** numbers, strings, booleans, `None`, and tuples, lists
@@ -106,6 +107,17 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      low-carried tail clear of the ground during SitDown. Leave them out and the ears and SitDown
      are exactly as before. The German Shepherd is the example (`kit/tests/test_erect_ears.py`,
      `kit/tests/test_sit_down_tail.py`).
+   - **Optional keys for a tail curled over the back:** `TAIL_SWING` (a top-level field) scales the
+     clips' tail rotations per world axis in Idle, Walk, Run, TailWag, PlayBow and the "wag" test
+     pose: their lifts are written for a tail carried out behind and would drive a curl into the
+     back, so a curled tail keeps the side-to-side wag and drops most of the lift. The sit's tail is
+     not scaled. `SIT_POSE["tail_on_ground"]: False` carries the tail in the sit instead of laying
+     it on the ground: the tail leaves the sit's contact groups (the model's sit check, `solve-sit`
+     and the SitDown / SitIdle touches) and the sit check instead requires it to stay at least 1 cm
+     clear of the ground; `SIT["tail"]` is then the breed's choice. `COLLAR["ray"]` (default 0.6 m)
+     starts the collar's skin-finding rays nearer, when a curled tail would be the first thing they
+     meet. Leave them out and everything is exactly as before. The Puggle is the example
+     (`kit/tests/test_curled_tail.py`, `kit/tests/test_collar_ray.py`).
 3. **Solve the sit:** run `build_breed.py <breed> solve-sit` and paste the printed `SIT` into
    `breed.py`. Re-run it whenever the shape or the rig changes.
 4. **Build:** run `build_breed.py <breed>`. Both steps must print `ALL OK`. If a check fails,
@@ -121,8 +133,8 @@ double-sided); one skin with the 32 expected joints and parents; body and ears s
 4 weights summing to 1; leg, head and tail weights only where they belong (`SANITY`); accessories
 parented to their bones; no animations; the file's own skinned default pose on the ground and
 matching Blender's within 2 mm; **triangles within `BUDGET`**; the **sit-contact** invariant (rump,
-hocks, hind feet, front paws and tail within 1 cm of the ground, nothing more than 1 cm below) on
-the full model and the LOD; the viewer `.glb` under 3 MB.
+hocks, hind feet, front paws and tail within 1 cm of the ground — a tail carried in the sit at least
+1 cm above it instead — nothing more than 1 cm below) on the full model and the LOD; the viewer `.glb` under 3 MB.
 
 `motion` (`kit/export_anim.py`) checks **every frame of every clip on the skinned mesh**: nothing
 more than 1 cm below the ground, planted paws within 1 cm of it and sliding less than 1 cm against
@@ -199,10 +211,23 @@ runs across the head and the right ear is the left's mirror image with each texe
 `["tail_lag"]` SitDown's tail lifts 18° and trails the hips by 6 frames as before; with them it
 lifts and trails by the breed's values and still finishes sat on the same frame.
 
+`kit/tests/test_curled_tail.py` (a few seconds, needs `bpy`, builds no dog: it drives the clips'
+pose functions on a bare armature and records every bone rotation) checks the curled-tail keys.
+Without `TAIL_SWING` every clip sets exactly the rotations it did; with it the tail bones' rotations
+in Idle, Walk, Run, TailWag, PlayBow and the "wag" test pose are scaled per axis and nothing else
+changes, and SitDown, SitIdle and the sit pose are untouched. Without `SIT_POSE["tail_on_ground"]`
+the sit's contact groups, `solve-sit`'s fits, the SitDown / SitIdle touches and the sit check's
+messages are as before; with it `False` the tail leaves all of them and a tail within 1 cm of the
+ground fails the sit check. `kit/tests/test_collar_ray.py` (a few seconds, needs `bpy`) lofts the
+collar around a stand-in neck with a ball in the way of the old rays: without `COLLAR["ray"]` the
+strap reaches out to the ball as before; with it set nearer, the strap stays on the neck.
+
 ```
 python3 art-source/blender/dogs/kit/tests/test_fur_patches.py
 python3 art-source/blender/dogs/kit/tests/test_erect_ears.py
 python3 art-source/blender/dogs/kit/tests/test_sit_down_tail.py
+python3 art-source/blender/dogs/kit/tests/test_curled_tail.py
+python3 art-source/blender/dogs/kit/tests/test_collar_ray.py
 ```
 
 ### Clip invariants

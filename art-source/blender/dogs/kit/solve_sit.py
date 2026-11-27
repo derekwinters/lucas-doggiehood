@@ -7,6 +7,7 @@ Adjusts, in turn, until every contact group's lowest vertex is within 2 mm of th
   shoulder   (front legs, about vertical) -> the front paws touch
   hock_z / foot_pitch                    -> the hind leg lies on the ground: hock and rear foot touch
   tail       (tail_1)                    -> the tail lies on the ground instead of in it
+                                            (not for a tail carried in the sit: SIT_POSE["tail_on_ground"])
 The hip tilt (SIT["hips"]) and the stifle height are chosen, not solved.
 Starts from the breed's current SIT and prints the new SIT dict to paste into its breed.py.
 Deterministic (fixed start, fixed steps).
@@ -25,6 +26,13 @@ if __name__ == "__main__":
 import bpy  # noqa: E402,F401  (loads bmesh / mathutils)
 import dh_dog as D  # noqa: E402
 import dh_dog_rig as RG  # noqa: E402
+
+
+# (SIT key, contact group, probe step, sign), fitted in turn; a tail carried in the sit
+# (SIT_POSE["tail_on_ground"] False) is not fitted: its SIT["tail"] is the breed's choice
+FITS = [f for f in (("drop", "haunches", 0.01, 1), ("hips", "front_paws", 1.0, 1), ("hock_z", "hocks", 0.005, 1),
+                    ("foot_pitch", "hind_feet", 0.5, 1), ("tail", "tail", 1.0, 1))
+        if f[1] in RG.SIT_TOUCH]
 
 
 def main():
@@ -50,11 +58,8 @@ def main():
                 return
             p[key] -= max(-0.5, min(0.5, c / slope)) if key == "drop" else max(-8, min(8, c / slope))
     for _ in range(4):
-        fit("drop", "haunches", 0.01, 1)
-        fit("hips", "front_paws", 1.0, 1)
-        fit("hock_z", "hocks", 0.005, 1)
-        fit("foot_pitch", "hind_feet", 0.5, 1)
-        fit("tail", "tail", 1.0, 1)
+        for key, group, step, sign in FITS:
+            fit(key, group, step, sign)
     c = meas()
     print("SIT = {%s}" % ", ".join('"%s": %s' % (k, round(v, 4)) for k, v in p.items()))
     print("contacts:", {k: round(v, 4) for k, v in c.items()})

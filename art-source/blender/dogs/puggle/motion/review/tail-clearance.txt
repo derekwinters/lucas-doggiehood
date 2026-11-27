@@ -1,0 +1,12 @@
+Puggle - curled tail clearance (skinned mesh, every frame)
+back = signed distance of the curl (tail_2..4 vertices) from the back's surface (hips, spine_1, spine_2, thighs); ground = lowest tail vertex. Metres; must stay above 0.010.
+
+Idle     120 frames   back +0.0983 (f50)   ground +0.5774 (f30)   OK
+Walk      24 frames   back +0.0971 (f3)   ground +0.5579 (f6)   OK
+Run       13 frames   back +0.0958 (f1)   ground +0.5201 (f10)   OK
+SitDown   54 frames   back +0.0979 (f34)   ground +0.1478 (f48)   OK
+SitIdle   90 frames   back +0.0946 (f22)   ground +0.1478 (f0)   OK
+TailWag   30 frames   back +0.0944 (f7)   ground +0.5660 (f5)   OK
+PlayBow   84 frames   back +0.0954 (f59)   ground +0.5775 (f0)   OK
+
+ALL OK
