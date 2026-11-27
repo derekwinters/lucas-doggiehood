@@ -78,12 +78,14 @@ def lerp(a, b, t):
 class Rig:
     """The built dog plus pose helpers."""
 
-    def __init__(self, coat=None, lod=False):
+    def __init__(self, coat=None, lod=False, materials=True):
+        """materials=False builds without materials (no textures needed: solve_lie.py runs before
+        a new breed's first export)."""
         bpy.ops.wm.read_factory_settings(use_empty=True)
         sc = bpy.context.scene
         sc.render.fps = FPS
         sc.render.fps_base = 1.0
-        self.parts = D.build(coat, lod=lod)
+        self.parts = D.build(coat, lod=lod, materials=materials)
         self.arm = D.build.armature
         self.W = D.build.weights
         self.arm.animation_data_create()

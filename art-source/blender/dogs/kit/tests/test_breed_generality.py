@@ -16,9 +16,10 @@ colours, made as data only (no per-breed code):
   - its own name, so every file name differs,
   - walk and run ground speeds 0.8x (same cycle length, so a stride in proportion to the legs; with
     the Golden's stride the shorter front legs cannot reach and the IK-reach check fails).
-Its sit is re-solved with the kit's solve_sit.py (the sit depends on the proportions), then the
-kit's model and motion exports must run every check and report ALL OK: triangle budgets, the
-sit-contact check, the per-frame motion contact and foot-slide check, and the glTF read-back.
+Its sit and its lie are re-solved with the kit's solve_sit.py and solve_lie.py (both depend on the
+proportions), then the kit's model and motion exports must run every check and report ALL OK:
+triangle budgets, the sit-contact check, the per-frame motion contact and foot-slide check, the
+lying-contact check, and the glTF read-back.
 """
 import ast
 import importlib.util
@@ -166,6 +167,12 @@ class KitBuildsAnotherBreed(unittest.TestCase):
             line = [ln for ln in out.splitlines() if ln.startswith("SIT = ")][-1]
             d["SIT"] = ast.literal_eval(line[len("SIT = "):])
             write_breed(folder, d)
+            # ... and the lie
+            code, out = run([os.path.join(KIT, "build_breed.py"), folder, "solve-lie"])
+            self.assertEqual(code, 0, out[-3000:])
+            line = [ln for ln in out.splitlines() if ln.startswith("LIE = ")][-1]
+            d["LIE"] = ast.literal_eval(line[len("LIE = "):])
+            write_breed(folder, d)
             # 2. model + motion: every check must run and pass
             code, out = run([os.path.join(KIT, "build_breed.py"), folder, "model", "motion"])
             self.assertEqual(code, 0, out[-6000:])
@@ -190,15 +197,17 @@ class KitBuildsAnotherBreed(unittest.TestCase):
             clips = json.load(open(os.path.join(folder, "motion", "exports", "dog_testbreed_anim_clips.json")))
             self.assertTrue(clips["all_checks_ok"])
             self.assertEqual(set(clips["clips"]), {"Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow",
-                                                  "Swim", "Shake"})
+                                                  "Swim", "Shake", "LieDown", "LieIdle"})
             for name, c in clips["clips"].items():
                 self.assertTrue(c["check"]["ok"], name)
             report = open(os.path.join(folder, "motion", "review", "motion-contact.txt")).read()
+            self.assertIn("Lying contact (the LIE pose", report)
             self.assertIn("glTF read back (dog_testbreed_anim.gltf): OK", report)
             print("\nthrowaway breed: back height %.3f m (Golden %.3f), %d tris (LOD %d), SIT %s"
                   % (stats["measurements_m"]["back_height"], gold["measurements_m"]["back_height"],
                      stats["full"]["total_tris"], stats["lod1"]["total_tris"], d["SIT"]))
             print("sit contact (full):", stats["sit_contact_m"]["full"])
+            print("LIE %s, lying contact: %s" % (d["LIE"], clips["lie_contact_m"]))
             print("worst plant slide per clip:", {k: c["check"].get("worst_plant_slide_m") for k, c in
                                                    clips["clips"].items()})
         finally:

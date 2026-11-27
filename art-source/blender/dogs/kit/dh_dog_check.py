@@ -156,7 +156,7 @@ def check_clip(rig, name, frames, speed=0.0, plants=None, touch=None, chunk=None
             body = P["body"]
             got = {}
             for g in groups:
-                bs = RG.CONTACT_GROUPS[g]
+                bs = RG.GROUPS[g]
                 got[g] = float(body[np.isin(dom, bs), 2].min())
             lines.append("  frame %d contact (lowest skinned vertex per group): %s" %
                          (f, "  ".join("%s %+.4f" % kv for kv in got.items())))

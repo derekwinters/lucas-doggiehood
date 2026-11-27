@@ -355,6 +355,71 @@ def poses(sit_params=None):
     return P
 
 
+# Lie (the breed's LIE, solved per breed by solve_lie.py): the "Rest" pose, lying down like a
+# sphinx. The hips tilt by LIE["hips"] about the hip joint (+ = nose down) and the root drops by
+# LIE["drop"], so the chest rests on the ground. Each front leg runs back from the shoulder to the
+# elbow at LIE["elbow_z"], forward along the ground to the wrist at LIE["wrist_z"]; the pastern
+# lies forward, level, and the paw is flat. Each hind leg folds as in the sit (_sit_hind): stifle
+# at LIE["stifle_z"], hock resting at LIE["hock_z"], rear foot forward along the ground at
+# LIE["foot_pitch"]. The neck turns back by the hip tilt, so the head keeps its standing angle; the
+# tail is LIE["tail"] (tail_1), LIE["tail_2"] and LIE["tail_3"]. The hip tilt and the stifle
+# height are chosen, the rest solved. The lie is not one of poses(): the model's files and its
+# skeleton report stay as they were.
+#
+# Invariant - in the lie the chest, elbows, front paws, hocks and hind feet all rest on the ground
+# (lowest vertices within 1 cm of z = 0), and nothing goes below it by more than 1 cm. The tail is
+# not a lying contact (a short or curled tail cannot reach the ground lying down); it only must
+# not sink.
+LIE = dict(B.LIE)
+
+
+def _lie_front(p=None):
+    """Front-leg rotations for the lie. Returns {bone: x-rotation} (relative, degrees)."""
+    p = p or LIE
+    th = p["hips"]
+    piv = np.array(list(SP["hips"][0]))
+
+    def rot(pt, deg, c=piv):
+        a = math.radians(deg)
+        d = np.array(pt) - c
+        return c + np.array([d[0] * math.cos(a) - d[1] * math.sin(a), d[0] * math.sin(a) + d[1] * math.cos(a)])
+    jn = ["front_shoulder", "front_elbow", "front_wrist", "front_paw", "front_toe"]
+    rest = [np.array(J[n]) for n in jn]
+    L = [np.linalg.norm(rest[i + 1] - rest[i]) for i in range(4)]
+    phi_rest = [_ang(rest[i + 1] - rest[i]) for i in range(4)]
+    shoulder = rot(rest[0], th) + np.array([0, p["drop"]])
+    # upper arm: back (+y) and down to the elbow height
+    dz = max(-L[0], min(L[0], p["elbow_z"] - shoulder[1]))
+    elbow = shoulder + np.array([math.sqrt(L[0] ** 2 - dz ** 2), dz])
+    # forearm: forward (-y) along the ground to the wrist height
+    dz = max(-L[1], min(L[1], p["wrist_z"] - elbow[1]))
+    wrist = elbow + np.array([-math.sqrt(L[1] ** 2 - dz ** 2), dz])
+    phis = [_ang(elbow - shoulder), _ang(wrist - elbow), 180.0, phi_rest[3]]   # pastern level, paw flat
+    out, acc = {}, th
+    for i, n in enumerate(("shoulder", "elbow", "wrist", "paw")):
+        d = (phis[i] - phi_rest[i]) - acc
+        d = (d + 180) % 360 - 180
+        out[n] = d
+        acc += d
+    return out
+
+
+def lie_spec(p=None):
+    """The lie as a pose spec {bone: {rot, loc}} (as poses()), for LIE or the parameters p."""
+    p = p or LIE
+    spec = {"jaw": dict(rot=(D.JAW_REST_OPEN_DEG, 0, 0)), "root": dict(loc=(0, 0, p["drop"])),
+            "hips": dict(rot=(p["hips"], 0, 0)), "neck": dict(rot=(-p["hips"], 0, 0)),
+            "tail_1": dict(rot=(p["tail"], 0, 0)), "tail_2": dict(rot=(p["tail_2"], 0, 0)),
+            "tail_3": dict(rot=(p["tail_3"], 0, 0))}
+    hind, front = _sit_hind(p), _lie_front(p)
+    for s in "LR":
+        for n, d in front.items():
+            spec["front_%s_%s" % (n, s)] = dict(rot=(d, 0, 0))
+        for n, d in hind.items():
+            spec["back_%s_%s" % (n, s)] = dict(rot=(d, 0, 0))
+    return spec
+
+
 def tail_swing(bone, rx, ry, rz):
     """A tail rotation from the clips scaled by the breed's optional TAIL_SWING (per world axis):
     the clips are written for a tail carried out behind, and a tail curled over the back would be
@@ -424,15 +489,35 @@ def sit_contact_errors(c, tol):
     return errs
 
 
-def contacts(body, W):
-    """Lowest deformed vertex (world z, m) of each contact group, grouped by each
-    vertex's strongest bone. body = the skinned body object as currently posed."""
+# The lie's own contact groups (kept out of CONTACT_GROUPS, so the model's sit report is unchanged)
+# and the groups that must rest on the ground in the lie.
+LIE_GROUPS = {
+    "chest": ("spine_2", "spine_3"),
+    "elbows": ("front_elbow_L", "front_elbow_R"),
+}
+GROUPS = dict(CONTACT_GROUPS, **LIE_GROUPS)
+LIE_TOUCH = ["chest", "elbows", "front_paws", "hocks", "hind_feet"]
+
+
+def lie_contact_errors(c, tol):
+    """The lying-contact check's failures for measured contacts c ({group: lowest z}, plus
+    "lowest*" keys): every LIE_TOUCH group on the ground, nothing below it."""
+    errs = ["lie: %s at z=%+.4f (more than %.0f cm off the ground)" % (k, c[k], tol * 100)
+            for k in LIE_TOUCH if k in c and abs(c[k]) > tol]
+    errs += ["lie: %s at z=%+.4f sinks below the ground" % (k, v)
+             for k, v in c.items() if k.startswith("lowest") and v < -tol]
+    return errs
+
+
+def contacts(body, W, groups=None):
+    """Lowest deformed vertex (world z, m) of each contact group (default CONTACT_GROUPS), grouped
+    by each vertex's strongest bone. body = the skinned body object as currently posed."""
     dg = bpy.context.evaluated_depsgraph_get()
     oe = body.evaluated_get(dg)
     me = oe.to_mesh()
     co = np.array([(oe.matrix_world @ v.co)[:] for v in me.vertices])
     oe.to_mesh_clear()
     dom = np.array(BONE_NAMES)[W.argmax(1)]
-    out = {g: float(co[np.isin(dom, bs), 2].min()) for g, bs in CONTACT_GROUPS.items()}
+    out = {g: float(co[np.isin(dom, bs), 2].min()) for g, bs in (groups or CONTACT_GROUPS).items()}
     out["lowest"] = float(co[:, 2].min())
     return out

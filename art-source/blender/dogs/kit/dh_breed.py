@@ -33,7 +33,7 @@ REQUIRED = (
     "BACK_PAW", "PAW", "LOFT_STYLE", "FIELD",
     "HINGE", "LIP_RUN", "LIP_DROP", "LIP_BAND", "MOUTH_MAX_OPEN_DEG", "MOUTH_ZONE", "JAW_TIP", "TONGUE",
     "EARS", "EYES", "NOSE", "COLLAR",
-    "SPINE", "TAIL_BONES", "JOINTS", "TORSO_CHAIN", "SIT", "SIT_POSE",
+    "SPINE", "TAIL_BONES", "JOINTS", "TORSO_CHAIN", "SIT", "SIT_POSE", "LIE",
     "SANITY", "MEASURE",
     "COATS", "COAT_LABELS", "FUR_FLOW", "FUR_MARKINGS", "TRIM_COLOURS",
     "GAITS", "SIT_DOWN", "PLAY_BOW", "RENDER",
@@ -56,7 +56,8 @@ REQUIRED = (
 #   EARS["side"]   the ear loft's side axis (default +Y, a hanging ear); an erect ear's width runs across
 #   EARS["swing"]  multipliers on the clips' ear rotations per world axis (an erect ear: (-x, -y, z))
 #   SIT_DOWN["tail_lift"], SIT_DOWN["tail_lag"]  how far the tail swings clear on the way down
-#                (default 18 deg) and how many frames it trails the hips (default 6)
+#                (default 18 deg) and how many frames it trails the hips (default 6), in SitDown
+#                and LieDown
 #   SIT_POSE["tail_on_ground"]  False: the tail is carried in the sit (a curled tail) instead of
 #                lying on the ground: it leaves the sit's contact groups and must stay 1 cm clear of
 #                the ground; SIT["tail"] is then chosen, not solved (default True)

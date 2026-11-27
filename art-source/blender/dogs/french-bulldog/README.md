@@ -176,7 +176,7 @@ None. The French Bulldog is breed data only, so the other breeds cannot change.
 | `exports/dog_frenchie_default.gltf` (+ `.bin`) | The adult: armature + skinned body and ears + rigid pieces |
 | `exports/dog_frenchie_lod1.gltf` (+ `.bin`) | The LOD, with its own 512 fur atlas |
 | `exports/dog_frenchie_skeleton.json`, `exports/dog_stats.json` | Bones and attachments; triangles, sizes, weights, sit contact, check results |
-| `motion/exports/dog_frenchie_anim.gltf` (+ `.bin`), `dog_frenchie_anim_clips.json` | The model with all 7 clips, and per-clip metadata and checks |
+| `motion/exports/dog_frenchie_anim.gltf` (+ `.bin`), `dog_frenchie_anim_clips.json` | The model with all 11 clips (Swim and Shake added in #934; LieDown and LieIdle, the lying clips, added in #933), and per-clip metadata and checks |
 | `motion/review/<clip>.mp4`, `walk-contact-sheet.png`, `run-contact-sheet.png`, `motion-contact.txt` | Motion review |
 | `review/turnaround.png`, `gamecam.png`, `face-closeup.png`, `coats-and-puppy.png`, `sit.png`, `frenchie-vs-lab-vs-shepherd.png` | The main review sheets |
 | `review/mouth.png`, `hips.png`, `joins.png`, `chest.png`, `rig.png`, `pivot-check.png`, `lod1.png` | The detail sheets |

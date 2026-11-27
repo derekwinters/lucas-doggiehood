@@ -18,9 +18,14 @@ Checks (exit non-zero on failure):
     nose above the breed's water line, the clip's water_line_m); planted paws within 1 cm
     of the ground and sliding less than 1 cm against the ground (which moves at the clip's
     ground speed); SitDown's last frame touches with rump/haunches, hocks, hind feet, front paws
-    and tail like the approved SIT;
+    and tail like the approved SIT; LieDown's last frame and LieIdle touch with chest, elbows,
+    front paws, hocks, hind feet and tail like the breed's LIE;
+  - the lying contact: the LIE pose itself, on the skinned mesh: chest, elbows, front paws, hocks,
+    hind feet and tail within 1 cm of the ground (a carried tail at least 1 cm above it), nothing
+    of any part more than 1 cm below it;
   - loops end on their first frame; one-shot clips start (and PlayBow also ends) on the standing
-    rest pose and SitDown ends on dh_dog_rig SIT exactly (bone rotations within 0.01 deg);
+    rest pose, SitDown ends on dh_dog_rig SIT and LieDown on dh_dog_rig LIE exactly (bone
+    rotations within 0.01 deg);
   - the glTF read back: one skin, 32 joints, every clip present with frames+1 samples per channel,
     and the file's own skinned mesh at sampled frames matches Blender's (lowest point within 2 mm).
 """
@@ -96,8 +101,29 @@ def reference_poses(rig):
     rig.update()
     sit = pose_quats(rig)
     rig.reset()
+    rig.apply_spec(RG.lie_spec())
     rig.update()
-    return rest, sit
+    lie = pose_quats(rig)
+    rig.reset()
+    rig.update()
+    return rest, {"SitDown": ("SIT", sit), "LieDown": ("LIE", lie)}
+
+
+def lying_contact(rig):
+    """The LIE pose on the skinned mesh: (report lines, errors, contacts)."""
+    rig.reset()
+    rig.apply_spec(RG.lie_spec())
+    rig.update()
+    c = RG.contacts(rig.parts["body"], rig.W, RG.GROUPS)
+    c["lowest_any_part"] = min(float(v[:, 2].min()) for v in K.frame_points(rig).values())
+    rig.reset()
+    rig.update()
+    c = {k: round(v, 4) for k, v in c.items() if k in RG.LIE_TOUCH or k.startswith("lowest")}
+    errs = RG.lie_contact_errors(c, K.TOL)
+    lines = ["Lying contact (the LIE pose, skinned; lowest vertex per group, m): %s"
+             % "  ".join("%s %+.4f" % kv for kv in c.items()),
+             "  -> %s" % ("OK" if not errs else "FAIL: " + "; ".join(errs))]
+    return lines, errs, c
 
 
 def export(rig, path):
@@ -190,7 +216,7 @@ def viewer_json(j):
 
 def main():
     rig = A.Rig()
-    rest, sit = reference_poses(rig)
+    rest, ends = reference_poses(rig)
     metas = []
     for name in C.ORDER:
         try:
@@ -220,10 +246,10 @@ def main():
                 errs.append("%s does not loop" % m["name"])
         else:
             d0 = max_diff(q0, rest)
-            ref = sit if m["name"] == "SitDown" else rest
+            label, ref = ends.get(m["name"], ("standing rest pose", rest))
             d1 = max_diff(qN, ref)
             lines.insert(-1, "  first frame vs standing rest pose %.4f deg / %.5f m; last frame vs %s %.4f deg / %.5f m"
-                         % (d0[0], d0[1], "SIT" if m["name"] == "SitDown" else "standing rest pose", d1[0], d1[1]))
+                         % (d0[0], d0[1], label, d1[0], d1[1]))
             if d0[0] > 0.01 or d1[0] > 0.01 or d0[1] > 1e-4 or d1[1] > 1e-4:
                 errs.append("%s does not start/end on its reference pose" % m["name"])
             summ["end_pose_error_deg"] = round(d1[0], 5)
@@ -234,6 +260,10 @@ def main():
         summ["ok"] = not errs
         summary.append(summ)
         print("\n".join(lines))
+    lines, errs, lie_c = lying_contact(rig)
+    report += lines + [""]
+    failures += errs
+    print("\n".join(lines))
     if rig.clamped:
         report.append("IK reach clamps: %s" % rig.clamped[:20])
         failures.append("IK could not reach %d targets" % len(rig.clamped))
@@ -262,7 +292,7 @@ def main():
         json.dump(j, fh, indent=1)
     with open(os.path.join(EXP, CLIPS_JSON), "w") as fh:
         json.dump({"fps": A.FPS, "units": "metres; Blender axes front -Y up +Z (glTF: front +Z, up +Y)",
-                   "clips": info, "all_checks_ok": not failures}, fh, indent=1)
+                   "clips": info, "lie_contact_m": lie_c, "all_checks_ok": not failures}, fh, indent=1)
     vj = viewer_json(j)
     vp = os.path.join(VIEW, "dog_anim.json")
     with open(vp, "w") as fh:

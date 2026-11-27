@@ -7,8 +7,8 @@
 
 outdir defaults to <breed>/motion/review/.
 
-<Clip> is a clip name from dh_dog_clips (Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow,
-LieDown, RestIdle). Frames are rendered once per clip and the loops are repeated by ffmpeg, so
+<Clip> is a clip name from dh_dog_clips (Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow, Swim, Shake,
+LieDown, LieIdle). Frames are rendered once per clip and the loops are repeated by ffmpeg, so
 every pass of the loop is identical. For Walk and Run the floor's grid moves with the ground at
 the clip's ground speed, so planted paws should look glued to it. Swim has no floor: a
 see-through water surface sits at the breed's water line (and the sheet's red line marks it).

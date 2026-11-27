@@ -214,7 +214,81 @@
     "ok": true,
     "end_pose_error_deg": 0.0
    }
+  },
+  "LieDown": {
+   "loop": false,
+   "frames": 66,
+   "fps": 30,
+   "duration_s": 2.2,
+   "ground_speed_mps": 0.0,
+   "notes": "standing -> LIE: the hind end folds down first (hind paws step in under the body), then the front paws walk out and the chest lowers onto the ground; the head keeps its angle; last frame is dh_dog_rig LIE exactly",
+   "check": {
+    "clip": "LieDown",
+    "frames": 66,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0013,
+    "touch_m": {
+     "66": {
+      "chest": 0.0008,
+      "elbows": -0.0002,
+      "front_paws": 0.0,
+      "hocks": 0.0,
+      "hind_feet": -0.0013
+     }
+    },
+    "ok": true,
+    "end_pose_error_deg": 0.0
+   }
+  },
+  "LieIdle": {
+   "loop": true,
+   "frames": 120,
+   "fps": 30,
+   "duration_s": 4.0,
+   "ground_speed_mps": 0.0,
+   "notes": "the LIE pose with 2 slow breaths, one right-ear flick and one lazy tail swish; paws, elbows, hocks and chest stay on the ground",
+   "check": {
+    "clip": "LieIdle",
+    "frames": 120,
+    "ground_speed_mps": 0.0,
+    "lowest_m": -0.0024,
+    "worst_plant_slide_m": 0.0,
+    "worst_plant_height_m": 0.0013,
+    "touch_m": {
+     "0": {
+      "chest": 0.0008,
+      "elbows": -0.0002,
+      "front_paws": 0.0,
+      "hocks": 0.0,
+      "hind_feet": -0.0013
+     },
+     "30": {
+      "chest": 0.0008,
+      "elbows": -0.0002,
+      "front_paws": 0.0,
+      "hocks": 0.0,
+      "hind_feet": -0.0013
+     },
+     "90": {
+      "chest": 0.0008,
+      "elbows": -0.0002,
+      "front_paws": 0.0,
+      "hocks": 0.0,
+      "hind_feet": -0.0013
+     }
+    },
+    "ok": true
+   }
   }
+ },
+ "lie_contact_m": {
+  "hocks": 0.0,
+  "hind_feet": -0.0013,
+  "front_paws": 0.0,
+  "chest": 0.0008,
+  "elbows": -0.0002,
+  "lowest": -0.0013,
+  "lowest_any_part": -0.0013
  },
  "all_checks_ok": true
 }
