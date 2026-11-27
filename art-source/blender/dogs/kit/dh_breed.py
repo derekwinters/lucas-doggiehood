@@ -47,8 +47,11 @@ REQUIRED = (
 #                "plain" patches clear the feathering channel, so a coat has no paler underside
 #                apart from its own "pale" markings (../frenchton/breed.py)
 #   TAIL_SWING   multipliers on the clips' tail rotations per world axis (Idle, Walk, Run, TailWag,
-#                PlayBow and the "wag" test pose; not the sit): a tail curled over the back drops
-#                the lifts that would drive it into the back (../puggle/breed.py)
+#                PlayBow, Shake and the "wag" test pose; not the sit): a tail curled over the back
+#                drops the lifts that would drive it into the back (../puggle/breed.py)
+#   SWIM         the Swim clip: {"water_z": the water line's height (m), "paddle": the front paws'
+#                half stroke (m)}; either key left out comes from the breed's skeleton (the rest
+#                height of the neck bone's head; 0.2 of the front leg's height) (dh_dog_clips.swim_params)
 # and optional keys inside required fields:
 #   EARS["side"]   the ear loft's side axis (default +Y, a hanging ear); an erect ear's width runs across
 #   EARS["swing"]  multipliers on the clips' ear rotations per world axis (an erect ear: (-x, -y, z))

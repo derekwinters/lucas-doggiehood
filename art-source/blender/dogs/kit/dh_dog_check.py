@@ -9,6 +9,10 @@ For each frame of an action it evaluates the deformed body, ears and rigid piece
     lowest vertex.
 Fails (returns errors) when anything sinks more than TOL below z = 0, a planted paw is more than
 TOL off the ground, or a planted paw slides more than SLIDE_TOL.
+
+A swimming clip (Swim, #934) is checked against its water line instead of the ground: given
+`water` (the line's height, m), the head and nose (HEAD_BONES' skin and the HEAD_PARTS) must stay
+above it in every frame, and nothing is checked against z = 0 (the dog is in deep water).
 """
 import numpy as np
 import bpy
@@ -18,6 +22,10 @@ import dh_dog_rig as RG
 
 TOL = 0.010
 SLIDE_TOL = 0.010
+# the head and nose of the water-line check: the skin weighted mostly to these bones, and these parts
+# (the ears and the collar may get wet)
+HEAD_BONES = ("head", "jaw")
+HEAD_PARTS = ("nose", "eye_L", "eye_R", "tongue")
 PAW_BONES = {"FL": ("front_paw_L",), "FR": ("front_paw_R",), "HL": ("back_foot_L",), "HR": ("back_foot_R",)}
 
 
@@ -52,8 +60,9 @@ def sample(rig, act, frames):
     return res
 
 
-def check_clip(rig, name, frames, speed=0.0, plants=None, touch=None, chunk=None, samples=None):
-    """Returns (report lines, errors, summary dict)."""
+def check_clip(rig, name, frames, speed=0.0, plants=None, touch=None, chunk=None, samples=None, water=None):
+    """Returns (report lines, errors, summary dict). With `water` (a swimming clip's water line,
+    m) the head and nose must stay above it instead of the dog staying above the ground."""
     act = bpy.data.actions[name]
     S = samples or sample(rig, act, frames)
     dom = np.array(RG.BONE_NAMES)[rig.W.argmax(1)]
@@ -80,7 +89,32 @@ def check_clip(rig, name, frames, speed=0.0, plants=None, touch=None, chunk=None
         lines.append("    f%3d-%3d  min %+.4f  (f%d, %s)" % (a, b, z, f, where))
     zmin = min(l[0] for l in low)
     summ["lowest_m"] = round(zmin, 4)
-    if zmin < -TOL:
+    if water is not None:
+        hb = np.isin(dom, HEAD_BONES)
+        head = []
+        for f, P in enumerate(S):
+            best = (1e9, "")
+            for k, v in P.items():
+                if k == "body":
+                    z = v[hb, 2]
+                    where = "head"
+                elif k in HEAD_PARTS:
+                    z, where = v[:, 2], k
+                else:
+                    continue
+                if len(z) and float(z.min()) < best[0]:
+                    best = (float(z.min()), where)
+            head.append(best)
+        hz, hwhere = min(head)
+        hf = head.index((hz, hwhere))
+        lines.append("  head and nose above the water line z = %.3f (not checked against the ground): lowest "
+                     "%+.4f (f%d, %s), clearance %.4f" % (water, hz, hf, hwhere, hz - water))
+        summ["water_line_m"] = round(water, 4)
+        summ["head_clearance_m"] = round(hz - water, 4)
+        if hz < water:
+            errs.append("%s f%d: %s at %+.4f, %.4f m below the water line z = %.3f"
+                        % (name, hf, hwhere, hz, water - hz, water))
+    elif zmin < -TOL:
         errs.append("%s: lowest vertex %+.4f m (sinks more than %.0f cm)" % (name, zmin, TOL * 100))
     # planted paws
     if plants:

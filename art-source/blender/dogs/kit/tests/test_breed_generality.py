@@ -189,7 +189,8 @@ class KitBuildsAnotherBreed(unittest.TestCase):
             self.assertLess(stats["measurements_m"]["back_height"], gold["measurements_m"]["back_height"] - 0.1)
             clips = json.load(open(os.path.join(folder, "motion", "exports", "dog_testbreed_anim_clips.json")))
             self.assertTrue(clips["all_checks_ok"])
-            self.assertEqual(set(clips["clips"]), {"Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow"})
+            self.assertEqual(set(clips["clips"]), {"Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow",
+                                                  "Swim", "Shake"})
             for name, c in clips["clips"].items():
                 self.assertTrue(c["check"]["ok"], name)
             report = open(os.path.join(folder, "motion", "review", "motion-contact.txt")).read()

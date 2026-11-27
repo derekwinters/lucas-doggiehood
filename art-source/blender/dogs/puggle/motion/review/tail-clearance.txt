@@ -8,5 +8,7 @@ SitDown   54 frames   back +0.0979 (f34)   ground +0.1478 (f48)   OK
 SitIdle   90 frames   back +0.0946 (f22)   ground +0.1478 (f0)   OK
 TailWag   30 frames   back +0.0944 (f7)   ground +0.5660 (f5)   OK
 PlayBow   84 frames   back +0.0954 (f59)   ground +0.5775 (f0)   OK
+Swim      24 frames   back +0.0968 (f3)   ground +0.5461 (f10)   OK
+Shake     30 frames   back +0.0967 (f20)   ground +0.5390 (f14)   OK
 
 ALL OK
