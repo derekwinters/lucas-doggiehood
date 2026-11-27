@@ -1,75 +1,152 @@
 {
- "toy_duck": {
-  "tris": 1608,
+ "toy_disc": {
+  "design": "disc",
+  "label": "Flying disc",
+  "tris": 1440,
   "tri_budget": 6000,
   "size_xyz_m": [
-   0.3348,
-   0.54,
-   0.395
+   0.452,
+   0.452,
+   0.05
   ],
   "bounds_min_m": [
-   -0.1674,
-   -0.27,
+   -0.226,
+   -0.226,
    0.0
   ],
   "bounds_max_m": [
-   0.1674,
-   0.27,
-   0.395
+   0.226,
+   0.226,
+   0.05
   ],
+  "covers_centre": true,
   "materials": {
-   "DH_Toy_plush_blue": {
+   "DH_Toy_disc_plastic": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.0137,
+     0.1878,
+     0.807,
+     1
+    ]
+   }
+  },
+  "images": [],
+  "checks": {
+   "one_node_and_mesh": true,
+   "material_names": true,
+   "uris": true,
+   "plush_textured": true,
+   "single_sided": true,
+   "triangle_budget": true,
+   "pivot": true,
+   "outward_faces": true
+  },
+  "gltf_bytes": 1666,
+  "bin_bytes": 35232
+ },
+ "toy_chew_cone": {
+  "design": "chew_cone",
+  "label": "Rubber chew cone",
+  "tris": 2752,
+  "tri_budget": 6000,
+  "size_xyz_m": [
+   0.2298,
+   0.2298,
+   0.2835
+  ],
+  "bounds_min_m": [
+   -0.1149,
+   -0.1149,
+   0.0
+  ],
+  "bounds_max_m": [
+   0.1149,
+   0.1149,
+   0.2835
+  ],
+  "covers_centre": true,
+  "materials": {
+   "DH_Toy_cone_rubber": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.3231,
+     0.0723,
+     0.8714,
+     1
+    ]
+   }
+  },
+  "images": [],
+  "checks": {
+   "one_node_and_mesh": true,
+   "material_names": true,
+   "uris": true,
+   "plush_textured": true,
+   "single_sided": true,
+   "triangle_budget": true,
+   "pivot": true,
+   "outward_faces": true
+  },
+  "gltf_bytes": 1684,
+  "bin_bytes": 63968
+ },
+ "toy_hotdog": {
+  "design": "hotdog",
+  "label": "Plush hot dog",
+  "tris": 1660,
+  "tri_budget": 6000,
+  "size_xyz_m": [
+   0.236,
+   0.502,
+   0.1689
+  ],
+  "bounds_min_m": [
+   -0.118,
+   -0.251,
+   0.0
+  ],
+  "bounds_max_m": [
+   0.118,
+   0.251,
+   0.1689
+  ],
+  "covers_centre": true,
+  "materials": {
+   "DH_Toy_hotdog_bun": {
     "doubleSided": false,
     "baseColorTexture": true,
     "normalTexture": true,
     "baseColorFactor": [
-     0.0252,
-     0.147,
-     0.7084,
+     0.8148,
+     0.3968,
+     0.0953,
      1
     ]
    },
-   "DH_Toy_plush_navy": {
+   "DH_Toy_hotdog_sausage": {
     "doubleSided": false,
     "baseColorTexture": true,
     "normalTexture": true,
     "baseColorFactor": [
-     0.013,
-     0.0595,
-     0.305,
+     0.4564,
+     0.0666,
+     0.0284,
      1
     ]
    },
-   "DH_Toy_plush_orange": {
+   "DH_Toy_hotdog_mustard": {
     "doubleSided": false,
     "baseColorTexture": true,
     "normalTexture": true,
     "baseColorFactor": [
      1,
-     0.2542,
-     0.0116,
-     1
-    ]
-   },
-   "DH_Toy_eye_white": {
-    "doubleSided": false,
-    "baseColorTexture": false,
-    "normalTexture": false,
-    "baseColorFactor": [
-     0.9216,
-     0.8963,
-     0.8388,
-     1
-    ]
-   },
-   "DH_Toy_eye_black": {
-    "doubleSided": false,
-    "baseColorTexture": false,
-    "normalTexture": false,
-    "baseColorFactor": [
-     0.007,
-     0.007,
-     0.007,
+     0.6445,
+     0.0137,
      1
     ]
    }
@@ -85,9 +162,153 @@
    "plush_textured": true,
    "single_sided": true,
    "triangle_budget": true,
-   "pivot": true
+   "pivot": true,
+   "outward_faces": true
   },
-  "gltf_bytes": 7853,
-  "bin_bytes": 45392
+  "gltf_bytes": 5381,
+  "bin_bytes": 42984
+ },
+ "toy_rubber_chicken": {
+  "design": "rubber_chicken",
+  "label": "Rubber chicken",
+  "tris": 1532,
+  "tri_budget": 6000,
+  "size_xyz_m": [
+   0.2108,
+   0.813,
+   0.1445
+  ],
+  "bounds_min_m": [
+   -0.1054,
+   -0.4065,
+   0.0
+  ],
+  "bounds_max_m": [
+   0.1054,
+   0.4065,
+   0.1445
+  ],
+  "covers_centre": true,
+  "materials": {
+   "DH_Toy_chicken_yellow": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     1,
+     0.6308,
+     0.0242,
+     1
+    ]
+   },
+   "DH_Toy_chicken_orange": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     1,
+     0.2542,
+     0.0116,
+     1
+    ]
+   },
+   "DH_Toy_chicken_comb": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.7835,
+     0.0561,
+     0.0232,
+     1
+    ]
+   },
+   "DH_Toy_chicken_eye": {
+    "doubleSided": false,
+    "baseColorTexture": false,
+    "normalTexture": false,
+    "baseColorFactor": [
+     0.007,
+     0.007,
+     0.007,
+     1
+    ]
+   }
+  },
+  "images": [],
+  "checks": {
+   "one_node_and_mesh": true,
+   "material_names": true,
+   "uris": true,
+   "plush_textured": true,
+   "single_sided": true,
+   "triangle_budget": true,
+   "pivot": true,
+   "outward_faces": true
+  },
+  "gltf_bytes": 5449,
+  "bin_bytes": 46760
+ },
+ "toy_rope_knot": {
+  "design": "rope_knot",
+  "label": "Knotted rope",
+  "tris": 4456,
+  "tri_budget": 6000,
+  "size_xyz_m": [
+   0.2692,
+   0.776,
+   0.1619
+  ],
+  "bounds_min_m": [
+   -0.1346,
+   -0.388,
+   0.0
+  ],
+  "bounds_max_m": [
+   0.1346,
+   0.388,
+   0.1619
+  ],
+  "covers_centre": true,
+  "materials": {
+   "DH_Toy_rope_orange": {
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     1,
+     0.2542,
+     0.0116,
+     1
+    ]
+   },
+   "DH_Toy_rope_blue": {
+    "doubleSided": false,
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColorFactor": [
+     0.0252,
+     0.147,
+     0.7084,
+     1
+    ]
+   }
+  },
+  "images": [
+   "../textures/toy_fleece_color.png",
+   "../textures/toy_fleece_normal.png"
+  ],
+  "checks": {
+   "one_node_and_mesh": true,
+   "material_names": true,
+   "uris": true,
+   "plush_textured": true,
+   "single_sided": true,
+   "triangle_budget": true,
+   "pivot": true,
+   "outward_faces": true
+  },
+  "gltf_bytes": 3678,
+  "bin_bytes": 107512
  }
 }

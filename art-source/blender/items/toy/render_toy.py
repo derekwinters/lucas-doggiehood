@@ -1,21 +1,25 @@
-"""Review renders and the web-viewer GLB for the dog toy (#332).
+"""Review renders and the web-viewer GLBs for the five dog toys (#332).
 
-  toy-grass.png      the toy on the approved lawn beside the approved adult
-                     Labrador, at the game camera (ortho, pitch 45, yaw -40)
-  toy-sidewalk.png   the same on the approved sidewalk
-  toy-closeup.png    the toy from four sides, beside today's 0.6 m graybox
-                     lost-item sphere, with a 10 cm scale bar
-  glb/toy_duck.glb   self-contained (textures embedded) for a three.js viewer
+  toy-lineup-grass.png      all five in a row beside the approved adult Labrador
+  toy-lineup-sidewalk.png   on the lawn, and on the sidewalk, at the game camera
+                            (ortho, pitch 45, yaw -40), numbered and named
+  toy-<design>-closeup.png  each toy from four sides beside today's 0.6 m graybox
+                            lost-item sphere, with a 10 cm scale bar
+  glb/toy_<design>.glb      one self-contained GLB per design (textures embedded),
+                            for a three.js viewer
 
-Each game-camera sheet has three panels: the whole frame at the closest zoom
-(CameraController.MinZoom, 6 m orthographic half-height) and a crop at the
-default zoom (DefaultZoom, 18 m), both at 1:1 pixels on a 1080-pixel-tall
-landscape screen, plus a closer view of the dog and the toy.
+Each line-up sheet has three panels: a closer view with name tags, a crop at the
+closest game zoom (CameraController.MinZoom, 6 m orthographic half-height) and
+one at the default zoom (DefaultZoom, 18 m), both at 1:1 pixels on a
+1080-pixel-tall landscape screen.
 
 Run export_toy.py first (the renders read its textures). Renders are not
-byte-reproducible. Without a GPU, EEVEE runs on Mesa's lavapipe.
+byte-reproducible. Without a GPU, EEVEE runs on Mesa's lavapipe, which can
+crash with no message after several renders in one process: render a few
+views per command (for example --views lineup, then --views closeup with two
+or three --designs at a time).
 
-Usage: python3 render_toy.py [OUT_DIR] [--views grass,sidewalk,closeup,glb] [--samples 48]
+Usage: python3 render_toy.py [OUT_DIR] [--views lineup,closeup,glb] [--designs disc,...] [--samples 48]
 OUT_DIR defaults to this folder's out/ (git-ignored).
 """
 import math
@@ -35,12 +39,15 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 import dh_house_kit as K  # noqa: E402
 import dh_toy as T  # noqa: E402
 
-FLAGS = {"--views", "--samples"}      # each takes one value
+FLAGS = {"--views", "--samples", "--designs"}      # each takes one value
 args = [a for i, a in enumerate(sys.argv[1:], 1) if a not in FLAGS and sys.argv[i - 1] not in FLAGS]
 OUT = os.path.abspath(args[0]) if args else os.path.join(HERE, "out")
-VIEWS = {"grass", "sidewalk", "closeup", "glb"}
+VIEWS = {"lineup", "closeup", "glb"}
 SAMPLES = 48
+DESIGNS = list(T.DESIGNS)
 for i, a in enumerate(sys.argv):
+    if a == "--designs":
+        DESIGNS = sys.argv[i + 1].split(",")
     if a == "--views":
         VIEWS = set(sys.argv[i + 1].split(","))
     if a == "--samples":
@@ -61,18 +68,10 @@ HOUSE = os.path.join(ART, "exports", "base-01-level1.glb")
 HOUSE_AT = (-7.0, 13.0, 0.0)         # base 1's facade on the 9.5 m front line (it is 7 m deep)
 DOG = os.path.join(ART, "dogs", "labrador", "exports", "dog_labrador_yellow.gltf")
 
-# Where the toy and the dog stand (world metres; the road runs along X at y = 0,
-# the sidewalk is y 3.75..5.75, the front lawn is beyond it)
-SPOTS = {"grass": {"toy": (0.9, 8.0), "toy_yaw": -30.0, "dog": (-0.5, 7.9), "dog_yaw": -60.0},
-         "sidewalk": {"toy": (0.9, 4.75), "toy_yaw": 25.0, "dog": (-0.5, 4.9), "dog_yaw": -95.0}}
-
 # The game camera (Assets/Scripts/Core/Cameras): ortho, pitch 45, zoom = ortho half-height
 SCREEN = (1920, 1080)                # a 1080-pixel-tall landscape phone screen
 MIN_ZOOM, DEFAULT_ZOOM = 6.0, 18.0   # CameraController.MinZoom / DefaultZoom
-CROP = (960, 540)                    # the default-zoom crop, at 1:1 pixels
-CLOSE = (960, 540)                   # the closer dog-and-toy view
-CLOSE_ZOOM = 1.3                     # ortho half-height of the closer view (closer than the game allows)
-CLOSE_AIM_Z = 0.5                    # aim a little above the ground, at the dog's middle
+CROP = (960, 540)                    # the game-zoom crops, at 1:1 pixels
 SPHERE_D = 0.6                       # LostItemView.SphereScale: today's graybox lost item
 SPHERE_HEX = "#FFFFFF"
 SPHERE_AT = (0.0, 0.75, SPHERE_D / 2)   # behind the toy, so every close-up view shows both
@@ -107,8 +106,8 @@ def import_gltf(path, at=(0, 0, 0), yaw=0.0):
     return new
 
 
-def toy(at=(0, 0, 0), yaw=0.0):
-    ob = T.build(TEX)
+def toy(design, at=(0, 0, 0), yaw=0.0):
+    ob = T.build(TEX, design)
     ob.location = at
     ob.rotation_euler.z = math.radians(yaw)
     bpy.context.view_layer.update()
@@ -130,18 +129,6 @@ def game_camera(target, zoom, res):
     return cam
 
 
-def street_scene(path, res, surface):
-    K.reset_scene()
-    K.setup_render(path, res=res, samples=SAMPLES)
-    import_gltf(GROUND, at=GROUND_AT)
-    import_gltf(ROAD)
-    import_gltf(PAVING)
-    import_gltf(HOUSE, at=HOUSE_AT)
-    sp = SPOTS[surface]
-    import_gltf(DOG, at=sp["dog"] + (0.0,), yaw=sp["dog_yaw"])
-    toy(sp["toy"] + (0.0,), sp["toy_yaw"])
-
-
 def header(img, title, sub):
     out = Image.new("RGB", (img.width, img.height + HEADER_H), PAPER)
     out.paste(img, (0, HEADER_H))
@@ -158,59 +145,35 @@ def caption(img, text):
     return out
 
 
-def street_sheet(surface):
-    sp = SPOTS[surface]
-    target = sp["toy"] + (0.0,)
-    parts = {}
-    for key, zoom in (("min", MIN_ZOOM), ("default", DEFAULT_ZOOM)):
-        p = os.path.join(TMP, "%s_%s.png" % (surface, key))
-        street_scene(p, SCREEN, surface)
-        game_camera(target, zoom, SCREEN)
-        K.render()
-        parts[key] = Image.open(p).convert("RGB")
-    p = os.path.join(TMP, "%s_close.png" % surface)
-    street_scene(p, CLOSE, surface)
-    mid = tuple((a + b) / 2 for a, b in zip(sp["toy"], sp["dog"])) + (CLOSE_AIM_Z,)
-    game_camera(mid, CLOSE_ZOOM, CLOSE)
-    K.render()
-    close = Image.open(p).convert("RGB")
-    cx, cy = SCREEN[0] // 2, SCREEN[1] // 2
-    crop = parts["default"].crop((cx - CROP[0] // 2, cy - CROP[1] // 2, cx + CROP[0] // 2, cy + CROP[1] // 2))
-    top = caption(parts["min"], "Closest game zoom (MinZoom 6 m), whole 1920 x 1080 screen at 1:1")
-    left = caption(crop, "Default zoom (18 m), centre crop at 1:1")
-    right = caption(close, "Closer (zoom 1.3 m, past the game's limit): beside the adult Labrador")
-    sheet = Image.new("RGB", (SCREEN[0], top.height + left.height), PAPER)
-    sheet.paste(top, (0, 0))
-    sheet.paste(left, (0, top.height))
-    sheet.paste(right, (CROP[0], top.height))
-    size = "%.2f x %.2f x %.2f m" % tuple(stats_size())
-    sheet = header(sheet, "Dog toy (#332): squeaky plush duck on the %s" % ("lawn" if surface == "grass" else surface),
-                   "Game camera (ortho, pitch 45, yaw -40). Toy %s, %d triangles. Dog: approved adult Labrador, "
-                   "yellow coat." % (size, stats_tris()))
-    sheet.save(os.path.join(OUT, "toy-%s.png" % surface))
-
-
-def _stats():
+def _stats(design):
     import json
-    return json.load(open(os.path.join(HERE, "exports", "toy_stats.json")))[T.NAME]
+    return json.load(open(os.path.join(HERE, "exports", "toy_stats.json")))[T.object_name(design)]
 
 
-def stats_size():
-    return _stats()["size_xyz_m"]
+def stats_size(design):
+    return _stats(design)["size_xyz_m"]
 
 
-def stats_tris():
-    return _stats()["tris"]
+def stats_tris(design):
+    return _stats(design)["tris"]
 
 
-def closeup():
+def number_of(design):
+    return list(T.DESIGNS).index(design) + 1
+
+
+def label_of(design):
+    return "%d. %s" % (number_of(design), T.DESIGNS[design]["label"])
+
+
+def closeup(design):
     tiles = []
     for i, (name, yaw, pitch) in enumerate(CLOSEUP_VIEWS):
-        p = os.path.join(TMP, "close_%d.png" % i)
+        p = os.path.join(TMP, "close_%s_%d.png" % (design, i))
         K.reset_scene()
         K.setup_render(p, res=CLOSEUP_TILE, bg=STUDIO_BG, samples=SAMPLES)
         K.ground_plane(20, STUDIO_FLOOR)
-        ob = toy()
+        ob = toy(design)
         bpy.ops.mesh.primitive_uv_sphere_add(radius=SPHERE_D / 2, location=SPHERE_AT)
         ball = bpy.context.active_object
         ball.data.materials.append(K.material("graybox", SPHERE_HEX))
@@ -228,26 +191,115 @@ def closeup():
     sheet = Image.new("RGB", (w * 2, h * 2), PAPER)
     for i, t in enumerate(tiles):
         sheet.paste(t, ((i % 2) * w, (i // 2) * h))
-    size = "%.2f wide x %.2f long x %.2f tall m" % tuple(stats_size())
-    sheet = header(sheet, "Dog toy (#332): squeaky plush duck, close-up",
-                   "%s, %d triangles. White: today's 0.6 m graybox lost-item sphere, for size." % (size, stats_tris()))
-    sheet.save(os.path.join(OUT, "toy-closeup.png"))
+    size = "%.2f wide x %.2f long x %.2f tall m" % tuple(stats_size(design))
+    sheet = header(sheet, "Dog toy (#332): %s, close-up" % label_of(design),
+                   "%s, %d triangles. White: today's 0.6 m graybox lost-item sphere, for size."
+                   % (size, stats_tris(design)))
+    sheet.save(os.path.join(OUT, "toy-%s-closeup.png" % design))
 
 
-def glb():
+def glb(design):
     K.reset_scene()
-    ob = toy()
+    ob = toy(design)
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
-    bpy.ops.export_scene.gltf(filepath=os.path.join(GLB, T.NAME + ".glb"), export_format="GLB",
+    bpy.ops.export_scene.gltf(filepath=os.path.join(GLB, T.object_name(design) + ".glb"), export_format="GLB",
                               use_selection=True, export_apply=True, export_yup=True)
+
+
+# ---------------------------------------------------------------------------
+# Line-up: every toy in a row beside the dog, at the game camera
+# ---------------------------------------------------------------------------
+LINEUP_ROW_Y = {"grass": 8.0, "sidewalk": 4.75}   # lawn beyond the sidewalk / the sidewalk's centre line
+LINEUP_DOG_X = -1.3
+LINEUP_DOG_YAW = -80.0
+LINEUP_X0 = 0.0              # first toy
+LINEUP_STEP = 0.95           # metres between toys along the street
+LINEUP_TOY_YAW = -20.0
+LINEUP_CLOSE = (1920, 820)
+LINEUP_CLOSE_ZOOM = 1.75     # ortho half-height of the closer view (closer than the game allows)
+LINEUP_AIM_Z = 0.3
+TAG_UP_PX = {"close": 70, "game": 26}
+TAG_PT = {"close": 22, "game": 15}
+
+
+def _tag(d, xy, text, pt, up):
+    x, y = xy
+    f = font(pt, True)
+    w = d.textlength(text, font=f)
+    box = (x - w / 2 - 7, y - up - pt - 6, x + w / 2 + 7, y - up + 4)
+    d.rounded_rectangle(box, 6, fill=(255, 255, 255), outline=(120, 112, 100))
+    d.text((box[0] + 7, box[1] + 3), text, fill=INK, font=f)
+
+
+def _project(cam, res, p):
+    from bpy_extras.object_utils import world_to_camera_view
+    q = world_to_camera_view(bpy.context.scene, cam, Vector(p))
+    return q.x * res[0], (1 - q.y) * res[1]
+
+
+def lineup_scene(path, res, surface, designs):
+    K.reset_scene()
+    K.setup_render(path, res=res, samples=SAMPLES)
+    import_gltf(GROUND, at=GROUND_AT)
+    import_gltf(ROAD)
+    import_gltf(PAVING)
+    import_gltf(HOUSE, at=HOUSE_AT)
+    y = LINEUP_ROW_Y[surface]
+    import_gltf(DOG, at=(LINEUP_DOG_X, y, 0.0), yaw=LINEUP_DOG_YAW)
+    spots = []
+    for i, d in enumerate(designs):
+        at = (LINEUP_X0 + i * LINEUP_STEP, y, 0.0)
+        toy(d, at, LINEUP_TOY_YAW)
+        spots.append((d, at))
+    return spots
+
+
+def lineup_sheet(surface, designs):
+    y = LINEUP_ROW_Y[surface]
+    mid = ((LINEUP_DOG_X + LINEUP_X0 + (len(designs) - 1) * LINEUP_STEP) / 2, y, LINEUP_AIM_Z)
+    panels = {}
+    for key, zoom, res in (("close", LINEUP_CLOSE_ZOOM, LINEUP_CLOSE), ("min", MIN_ZOOM, SCREEN),
+                           ("default", DEFAULT_ZOOM, SCREEN)):
+        p = os.path.join(TMP, "lineup_%s_%s.png" % (surface, key))
+        spots = lineup_scene(p, res, surface, designs)
+        cam = game_camera(mid, zoom, res)
+        K.render()
+        im = Image.open(p).convert("RGB")
+        pts = [(d, _project(cam, res, at)) for d, at in spots]
+        if key != "close":
+            cx, cy = res[0] // 2, res[1] // 2
+            box = (cx - CROP[0] // 2, cy - CROP[1] // 2, cx + CROP[0] // 2, cy + CROP[1] // 2)
+            im = im.crop(box)
+            pts = [(d, (x - box[0], y_ - box[1])) for d, (x, y_) in pts]
+        dr = ImageDraw.Draw(im)
+        kind = "close" if key == "close" else "game"
+        for d, xy in pts:
+            text = label_of(d) if key == "close" else str(number_of(d))
+            _tag(dr, xy, text, TAG_PT[kind], TAG_UP_PX[kind])
+        panels[key] = im
+    top = caption(panels["close"], "Closer (zoom %.2f m, past the game's limit), beside the adult Labrador"
+                  % LINEUP_CLOSE_ZOOM)
+    left = caption(panels["min"], "Closest game zoom (MinZoom 6 m), centre crop at 1:1")
+    right = caption(panels["default"], "Default zoom (18 m), centre crop at 1:1")
+    sheet = Image.new("RGB", (LINEUP_CLOSE[0], top.height + left.height), PAPER)
+    sheet.paste(top, (0, 0))
+    sheet.paste(left, (0, top.height))
+    sheet.paste(right, (CROP[0], top.height))
+    facts = "   ".join("%d. %d tris, %.2f x %.2f x %.2f m" % ((number_of(d), stats_tris(d))
+                                                            + tuple(stats_size(d))) for d in designs)
+    sheet = header(sheet, "Dog toys (#332) on the %s, game camera (ortho, pitch 45, yaw -40)"
+                   % ("lawn" if surface == "grass" else "sidewalk"), facts)
+    sheet.save(os.path.join(OUT, "toy-lineup-%s.png" % surface))
 
 
 if __name__ == "__main__":
     if "glb" in VIEWS:
-        glb()
+        for d in DESIGNS:
+            glb(d)
     if "closeup" in VIEWS:
-        closeup()
-    for s in ("grass", "sidewalk"):
-        if s in VIEWS:
-            street_sheet(s)
+        for d in DESIGNS:
+            closeup(d)
+    if "lineup" in VIEWS:
+        for s in ("grass", "sidewalk"):
+            lineup_sheet(s, DESIGNS)
