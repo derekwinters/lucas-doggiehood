@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.17.0](https://github.com/derekwinters/lucas-doggiehood/compare/v0.16.2...v0.17.0) (2026-11-28)
+
+
+### Features
+
+* **art:** add backyard pool Blender models ([#950](https://github.com/derekwinters/lucas-doggiehood/issues/950)) ([9f9c21f](https://github.com/derekwinters/lucas-doggiehood/commit/9f9c21f84dbbeac1c851883000f500c16a201a52))
+* **art:** add Blender blanket model ([#944](https://github.com/derekwinters/lucas-doggiehood/issues/944)) ([cf9bbb2](https://github.com/derekwinters/lucas-doggiehood/commit/cf9bbb24f73fbe039ca9f5732d683a1bc3120451)), closes [#413](https://github.com/derekwinters/lucas-doggiehood/issues/413)
+* **art:** add Blender dog ball model ([#951](https://github.com/derekwinters/lucas-doggiehood/issues/951)) ([2b362f4](https://github.com/derekwinters/lucas-doggiehood/commit/2b362f403b89aac6b91d8bbcdf7319a460727de8))
+* **art:** add Blender dog toy models ([#952](https://github.com/derekwinters/lucas-doggiehood/issues/952)) ([7028a54](https://github.com/derekwinters/lucas-doggiehood/commit/7028a54fc3a395edf6ebca7bba9d9a989758a103)), closes [#332](https://github.com/derekwinters/lucas-doggiehood/issues/332)
+* **art:** add chew bone Blender model ([#945](https://github.com/derekwinters/lucas-doggiehood/issues/945)) ([76bf29b](https://github.com/derekwinters/lucas-doggiehood/commit/76bf29becaeda3fcb5875a56aa162609445115ab))
+* **art:** add delivery truck Blender model ([#939](https://github.com/derekwinters/lucas-doggiehood/issues/939)) ([23d82ea](https://github.com/derekwinters/lucas-doggiehood/commit/23d82ea12366780b8d1006fce0119d2638fa3697))
+* **art:** add LieDown and LieIdle dog clips for all 8 breeds ([#953](https://github.com/derekwinters/lucas-doggiehood/issues/953)) ([7a25d76](https://github.com/derekwinters/lucas-doggiehood/commit/7a25d76e2dd1c82657fdfda538a263c81d9bbe2e))
+* **art:** add Swim and Shake clips for all 8 dog breeds ([#954](https://github.com/derekwinters/lucas-doggiehood/issues/954)) ([f0a1a78](https://github.com/derekwinters/lucas-doggiehood/commit/f0a1a7805b0aa3ab3de8d9f606a8dd34610dcda7)), closes [#934](https://github.com/derekwinters/lucas-doggiehood/issues/934)
+* **art:** add the Blender dog bed model ([#948](https://github.com/derekwinters/lucas-doggiehood/issues/948)) ([b67a558](https://github.com/derekwinters/lucas-doggiehood/commit/b67a55820fc78a71ab5e13eb8f314adb2031869c))
+* **art:** bug model with a looping wing-flap clip ([#940](https://github.com/derekwinters/lucas-doggiehood/issues/940)) ([ddee8aa](https://github.com/derekwinters/lucas-doggiehood/commit/ddee8aa88026e36340fe5d3fdad3e8d3b822c8ef))
+* **art:** build the delivery package as a Blender source asset ([#941](https://github.com/derekwinters/lucas-doggiehood/issues/941)) ([14d9d56](https://github.com/derekwinters/lucas-doggiehood/commit/14d9d562adca2ea38ad1745086a00a4a8897ac1e))
+* **art:** rebuild the splash art as separate layers ([#938](https://github.com/derekwinters/lucas-doggiehood/issues/938)) ([9273d6b](https://github.com/derekwinters/lucas-doggiehood/commit/9273d6b362ea2450757226e25c3c27a2f8dc789a))
+
+
+### Bug Fixes
+
+* **art:** calm the Tail Wag clip so mostly the tail moves ([#896](https://github.com/derekwinters/lucas-doggiehood/issues/896)) ([3084f95](https://github.com/derekwinters/lucas-doggiehood/commit/3084f95db11b4f853f8d2e84765fbd2ad39985e1)), closes [#895](https://github.com/derekwinters/lucas-doggiehood/issues/895)
+* **art:** make dog rebuilds byte-identical ([#897](https://github.com/derekwinters/lucas-doggiehood/issues/897)) ([766a7cf](https://github.com/derekwinters/lucas-doggiehood/commit/766a7cfd461555aa94112084f1aa595a6e254c2c))
+
 ## [0.16.2](https://github.com/derekwinters/lucas-doggiehood/compare/v0.16.1...v0.16.2) (2026-10-16)
 
 
