@@ -42,7 +42,7 @@ Every model is built from scratch from named dimensions. There is no `.blend` fi
 - **`dh_scene.py`** fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.
 - **Trees** (`environment/trees/`): `dh_tree_tex.py` paints the leaf atlases and bark maps; `dh_trees_tex.py` builds the trees. They reuse the branch helpers in `dh_env.py`.
 - **Street props** (`environment/street-props/`): `dh_prop_tex.py` paints the surface textures and the label atlas; `dh_props.py` builds the props.
-- **Items** (`items/<item>/`): `items/chew-bone/dh_chew_bone.py` builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (`dogs/kit/dh_dog_mesh.py`), and paints its texture.
+- **Items** (`items/<item>/`): `items/chew-bone/dh_chew_bone.py` builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (`dogs/kit/dh_dog_mesh.py`), and paints its texture. `items/pool/dh_pool.py` builds the two approved backyard pools, round and oval, from the water sizes in `items/pool/pool_core.py` ([#741](https://github.com/derekwinters/lucas-doggiehood/issues/741)).
 
 The environment scripts import the committed house kit by relative path (`../..` from `trees/`, and `../trees` plus `../..` from `street-props/`). No script imports a copy of another folder's modules.
 
@@ -72,6 +72,7 @@ Everything exports as **glTF 2.0**. FBX is not used.
 | Street props | `python3 art-source/blender/environment/street-props/export_props.py` | 26 `.gltf` + `.bin` pairs and `street_props_stats.json` |
 | Chew bone | `python3 art-source/blender/items/chew-bone/export_chew_bone.py` | `chew_bone.gltf` + `.bin`, its two textures and `chew_bone_stats.json` |
 | Dog ball | `python3 art-source/blender/items/ball/export_ball.py` | 6 `.gltf` + `.bin` pairs, one per felt colour (`ball_<colour>`, material `DH_Item_Ball_<Colour>`), and `ball_stats.json` |
+| Backyard pools | `python3 art-source/blender/items/pool/export_pool.py` | Self-contained `pool_circle.glb` and `pool_oval.glb`, each with its `_stats.json` (`--shape circle` or `--shape oval` writes one) |
 
 **Houses** export as self-contained `.glb` files, each in its base's render scheme. A shingle or tile roof embeds the scheme's pre-tinted roof texture (`textures/roof_<style>_<HEX>.png`) with no `baseColorFactor`, so the roof carries one tint. Every other house surface is a flat material colour.
 
