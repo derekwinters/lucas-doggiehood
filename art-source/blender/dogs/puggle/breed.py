@@ -206,6 +206,13 @@ SIT = {"hips": -43.0212, "drop": -0.29, "shoulder": -8.0, "stifle_z": 0.08, "hoc
 # hips and stays clear of the ground, so SIT["tail"] is chosen, not solved
 SIT_POSE = {"spine_3": 4, "neck": 28, "head": 24, "tail_2": 0, "tail_3": 0, "tail_on_ground": False}
 
+# ----------------------------------------------------------------------------- lie pose (Rest)
+# Solved against the skinned mesh by kit/solve_lie.py (paste its output here after changing the
+# shape or the rig). The hip tilt, the stifle height and tail_2 / tail_3 are chosen; the rest are
+# solved. The tail is carried, as in the sit (SIT_POSE["tail_on_ground"]), so
+# LIE["tail"] is chosen too.
+LIE = {"hips": 0.0, "drop": -0.2383, "elbow_z": 0.082, "wrist_z": 0.0605, "stifle_z": 0.08, "hock_z": 0.0208, "foot_pitch": 26.9228, "tail": 0.0, "tail_2": 0, "tail_3": 0}
+
 # ----------------------------------------------------------------------------- checks
 SANITY = {"head_min_z": 0.48, "tail_min_y": 0.14}
 # Puggle: the back is measured behind the skull and ahead of the curled tail

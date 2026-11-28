@@ -186,6 +186,12 @@ SIT = {"hips": -60.7943, "drop": -0.5414, "shoulder": -8.0, "stifle_z": 0.1, "ho
 # the neck and head counter-rotate so the head is level; the tail lies on the ground (degrees)
 SIT_POSE = {"spine_3": 4, "neck": 28, "head": 24, "tail_2": 12, "tail_3": 6}
 
+# ----------------------------------------------------------------------------- lie pose (Rest)
+# Solved against the skinned mesh by kit/solve_lie.py (paste its output here after changing the
+# shape or the rig). The hip tilt, the stifle height and tail_2 / tail_3 are chosen; the rest are
+# solved.
+LIE = {"hips": 0.0, "drop": -0.5197, "elbow_z": 0.0805, "wrist_z": 0.076, "stifle_z": 0.1, "hock_z": 0.0388, "foot_pitch": 15.3206, "tail": -18.0, "tail_2": 12, "tail_3": 6}
+
 # ----------------------------------------------------------------------------- checks
 # weight sanity: head / jaw weights only above head_min_z, tail weights only behind tail_min_y
 SANITY = {"head_min_z": 0.85, "tail_min_y": 0.45}

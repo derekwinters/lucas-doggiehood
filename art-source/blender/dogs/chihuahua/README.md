@@ -147,8 +147,8 @@ hip tilt of −54° (the Beagle −43°, the others −60°).
 
 **`motion` → `ALL OK`.** Every frame of every clip is checked on the skinned mesh, and **no IK
 target is out of reach** (no clamps). TailWag is the kit's calm wag, and its two invariants hold.
-All 7 clips are in `motion/exports/dog_chihuahua_anim.gltf`: Idle, Walk, Run, SitDown, SitIdle,
-TailWag and PlayBow.
+All 11 clips are in `motion/exports/dog_chihuahua_anim.gltf`: Idle, Walk, Run, SitDown, SitIdle,
+TailWag, PlayBow, Swim and Shake (#934), and the lying clips LieDown and LieIdle (added in #933).
 
 | Clip | Frames | Ground speed | Lowest point | Worst planted-paw slide / height |
 |---|---|---|---|---|
@@ -200,7 +200,7 @@ the Labrador and the German Shepherd rebuild byte for byte unchanged.
 | `exports/dog_chihuahua_default.gltf` / `_black` (+ `.bin`) | The adult in each coat: armature + skinned body and ears + rigid pieces |
 | `exports/dog_chihuahua_lod1.gltf` (+ `.bin`) | The LOD, default coat, with its own 512 fur atlas |
 | `exports/dog_chihuahua_skeleton.json`, `exports/dog_stats.json` | Bones and attachments; triangles, sizes, weights, sit contact, check results |
-| `motion/exports/dog_chihuahua_anim.gltf` (+ `.bin`), `dog_chihuahua_anim_clips.json` | The default-coat model with all 7 clips, and per-clip metadata and checks |
+| `motion/exports/dog_chihuahua_anim.gltf` (+ `.bin`), `dog_chihuahua_anim_clips.json` | The default-coat model with all 11 clips (Swim and Shake added in #934; LieDown and LieIdle, the lying clips, added in #933), and per-clip metadata and checks |
 | `motion/review/<clip>.mp4`, `walk-contact-sheet.png`, `run-contact-sheet.png`, `motion-contact.txt` | Motion review |
 | `review/turnaround.png`, `gamecam.png`, `face-closeup.png`, `coats-and-puppy.png`, `sit.png`, `chihuahua-vs-beagle-vs-lab.png` | The main review sheets |
 | `review/mouth.png`, `hips.png`, `joins.png`, `chest.png`, `rig.png`, `pivot-check.png`, `lod1.png` | The detail sheets |

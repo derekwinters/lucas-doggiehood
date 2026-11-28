@@ -8,6 +8,7 @@ folder holding a breed.py. Steps (default: model motion):
   model                 export_dog.py: textures, exports, every model check, stats (prints ALL OK)
   motion                export_anim.py: the clips, per-frame contact checks, glTF read-back (ALL OK)
   solve-sit             solve_sit.py: print a new SIT for breed.py (after changing the shape or rig)
+  solve-lie             solve_lie.py: print a new LIE for breed.py (the lying pose; same rule)
   viewer                export_viewer.py: web-viewer data (git-ignored)
   render <shot> [dir]   render_dog.py: one review sheet (see render_dog.py for the shots)
   video <Clip> [dir]    render_motion.py: one clip's review video
@@ -23,6 +24,7 @@ import sys
 
 KIT = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = {"model": "export_dog.py", "motion": "export_anim.py", "solve-sit": "solve_sit.py",
+           "solve-lie": "solve_lie.py",
            "viewer": "export_viewer.py", "render": "render_dog.py", "video": "render_motion.py",
            "sheet": "render_motion.py"}
 ARGS = {"render": (1, 2), "video": (1, 2), "sheet": (1, 2)}      # (required, optional) arguments

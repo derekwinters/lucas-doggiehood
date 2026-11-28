@@ -197,6 +197,12 @@ TORSO_CHAIN = [(0.60, 0.82), (0.42, 0.80), (0.13, 0.80), (-0.17, 0.82), (-0.335,
 SIT = {"hips": -60.7943, "drop": -0.5414, "shoulder": -8.0, "stifle_z": 0.1, "hock_z": 0.0406, "foot_pitch": 14.715, "tail": 92.9265}
 SIT_POSE = {"spine_3": 4, "neck": 28, "head": 24, "tail_2": 12, "tail_3": 6}
 
+# ----------------------------------------------------------------------------- lie pose (Rest)
+# Solved against the skinned mesh by kit/solve_lie.py (paste its output here after changing the
+# shape or the rig). The hip tilt, the stifle height and tail_2 / tail_3 are chosen; the rest are
+# solved.
+LIE = {"hips": 0.0, "drop": -0.5197, "elbow_z": 0.0841, "wrist_z": 0.0735, "stifle_z": 0.1, "hock_z": 0.0406, "foot_pitch": 14.715, "tail": 8.736, "tail_2": 12, "tail_3": 6}
+
 # ----------------------------------------------------------------------------- checks
 SANITY = {"head_min_z": 0.85, "tail_min_y": 0.45}
 MEASURE = {"rump_min_abs_x": 0.10, "back_y": (0.0, 0.6)}

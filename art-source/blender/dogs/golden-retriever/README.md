@@ -247,8 +247,8 @@ invariants, "the wag lives in the tail" and "a wag is not a pant", are in `../RE
 > because Derek found it "still panting really heavily" and asked to "keep the body movement
 > simple, almost as subtle as when it's just standing."
 
-Lie-down (`LieDown`, `RestIdle`) is not part of this; the kit's `dh_dog_clips.py` lists them as optional
-and does not build them.
+The lying clips, LieDown (standing to the breed's `LIE`, once) and LieIdle (a loop in the `LIE`),
+were added later for every breed (#933); their checks are in `../README.md`.
 
 | Path | What it is |
 |---|---|

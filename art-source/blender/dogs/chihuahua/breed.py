@@ -202,6 +202,12 @@ TORSO_CHAIN = [(0.2612, 0.3798), (0.1775, 0.36), (0.0427, 0.36), (-0.0968, 0.369
 SIT = {"hips": -54.0199, "drop": -0.235, "shoulder": -8.0, "stifle_z": 0.055, "hock_z": -0.0085, "foot_pitch": 37.8667, "tail": 178.5769}
 SIT_POSE = {'spine_3': 4, 'neck': 20, 'head': 18, 'tail_2': -30, 'tail_3': -30}
 
+# ----------------------------------------------------------------------------- lie pose (Rest)
+# Solved against the skinned mesh by kit/solve_lie.py (paste its output here after changing the
+# shape or the rig). The hip tilt, the stifle height and tail_2 / tail_3 are chosen; the rest are
+# solved.
+LIE = {"hips": 0.0, "drop": -0.2074, "elbow_z": 0.0369, "wrist_z": 0.0386, "stifle_z": 0.055, "hock_z": -0.0085, "foot_pitch": 37.8667, "tail": -116.1646, "tail_2": -30, "tail_3": -30}
+
 # ----------------------------------------------------------------------------- checks
 # Chihuahua: the sickle tail's tip comes forward over the back, so tail weights may reach further
 # forward than the hips

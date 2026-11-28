@@ -1,14 +1,14 @@
 # Dogs: one shared kit, one folder per breed
 
 Every dog model is built by the same scripts in `kit/`. A breed is a folder here holding a
-**`breed.py` of plain data** — its proportions, shapes, colours, sit, gaits and names — plus the
+**`breed.py` of plain data** — its proportions, shapes, colours, sit, lie, gaits and names — plus the
 outputs the kit writes for it. Nothing here is imported by Unity (the folder is outside `Assets/`).
 It follows `docs/engineering/blender-pipeline.md`.
 
 | Folder | What it is |
 |---|---|
 | `kit/` | The shared pipeline: shape library, field meshing, skin, rig, textures, exports and checks, motion clips, review renders (see the table below) |
-| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys; `test_curled_tail.py`: the optional `TAIL_SWING` and `SIT_POSE["tail_on_ground"]`; `test_collar_ray.py`: the optional `COLLAR["ray"]`; `test_swim_shake.py`: the Swim and Shake clips, the Swim water-line check and the optional `SWIM` |
+| `kit/tests/` | `test_breed_generality.py`: builds a deliberately different throwaway breed and checks it passes everything; `test_rebuild_determinism.py`: rebuilds the Golden in fresh processes and requires the committed bytes; `test_tail_wag.py`: the TailWag invariant below; `test_fur_strand.py`: the optional `FUR_STRAND` field; `test_fur_patches.py`: the optional `FUR_PATCHES` field; `test_erect_ears.py`: the optional `EARS["side"]` / `EARS["swing"]` keys; `test_sit_down_tail.py`: the optional `SIT_DOWN["tail_lift"]` / `SIT_DOWN["tail_lag"]` keys; `test_curled_tail.py`: the optional `TAIL_SWING` and `SIT_POSE["tail_on_ground"]`; `test_collar_ray.py`: the optional `COLLAR["ray"]`; `test_swim_shake.py`: the Swim and Shake clips, the Swim water-line check and the optional `SWIM`; `test_lie_clips.py`: the `LIE` pose, the LieDown and LieIdle clips and the lying-contact check |
 | `golden-retriever/` | The approved Golden Retriever (#855): `breed.py`, its outputs, and its round-comparison extras |
 | `labrador/` | The approved Labrador Retriever (#898): `breed.py`, its outputs (yellow, black and chocolate coats), and `render_compare.py` (the Lab beside the Golden) |
 | `german-shepherd/` | The approved German Shepherd (#903): `breed.py`, its outputs (black-and-tan default and solid black coats), and `render_compare.py` (beside the Lab and the Golden) |
@@ -24,7 +24,7 @@ It follows `docs/engineering/blender-pipeline.md`.
 >   else when it loads the file.
 > - **Every breed gets the same checks with no per-breed code:** the triangle budgets, the
 >   sit-contact check, the per-frame motion contact and foot-slide check, the Swim water-line
->   check, and the glTF read-back.
+>   check, the lying-contact check, and the glTF read-back.
 > - **The kit holds no breed's numbers.** A value that differs between breeds goes in `breed.py`.
 
 ## Building a breed
@@ -37,6 +37,7 @@ python3 art-source/blender/dogs/kit/build_breed.py golden-retriever             
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever model            # textures, exports, checks, stats
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever motion           # clips, contact checks, read-back
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever solve-sit        # print a new SIT for breed.py
+python3 art-source/blender/dogs/kit/build_breed.py golden-retriever solve-lie        # print a new LIE for breed.py
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever render <shot> [out_dir]
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever video <Clip> [out_dir]
 python3 art-source/blender/dogs/kit/build_breed.py golden-retriever sheet <Walk|Run> [out_dir]
@@ -82,12 +83,21 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      (which `TORSO` ring it hugs).
    - **Skeleton:** `SPINE`, `TAIL_BONES`, `JOINTS` (leg joints), `TORSO_CHAIN`.
    - **Sit:** `SIT_POSE` (the head and tail counter-rotations), then `SIT` from step 3.
+   - **Lie (the Rest pose):** `LIE`, from step 3. It lies like a sphinx: the hips tilt by `"hips"`
+     (+ = nose down) and the root drops by `"drop"` so the chest rests on the ground; each front
+     leg runs back from the shoulder to the elbow at `"elbow_z"`, forward along the ground to the
+     wrist at `"wrist_z"`, then the pastern lies forward, level, and the paw is flat; each hind
+     leg folds as in the sit (`"stifle_z"`, `"hock_z"`, `"foot_pitch"`); the neck turns back by
+     the hip tilt so the head keeps its standing angle; `"tail"`, `"tail_2"`, `"tail_3"` are the
+     tail bones. `"hips"`, `"stifle_z"`, `"tail_2"` and `"tail_3"` are chosen: tilt the hips nose
+     down, or raise the stifle, when the haunches would sink (the Frenchton).
    - **Checks and measurements:** `SANITY` (where head and tail weights may go), `MEASURE`.
    - **Coat:** `COATS` (any number; the first is the default, used by the LOD, the viewer and the
      motion export), `COAT_LABELS`, `FUR_FLOW`, `FUR_MARKINGS` (where feathering and ear colour
      start), `TRIM_COLOURS`.
    - **Motion:** `GAITS` (Walk and Run: frames, ground speed, footfalls, duty factors, lifts), and
-     the size-dependent heights in `SIT_DOWN` and `PLAY_BOW`.
+     the size-dependent heights in `SIT_DOWN` and `PLAY_BOW`. LieDown uses `SIT_DOWN`'s paw step
+     heights and its optional tail keys too (the tail clears the ground the same way).
    - **Review renders:** `RENDER` (framing boxes, captions, and optional "before" rows from scripts
      kept in the breed's own folder, as the Golden's `render_round2.py` / `render_round3.py`).
    - **Optional — `FUR_STRAND`** (the fur strand look). Leave it out and the breed gets the
@@ -110,7 +120,7 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      across the head (default: front-to-back, a hanging ear); `EARS["swing"]` scales the clips' ear
      rotations per world axis, so an erect ear lays back where a hanging ear swings back;
      `SIT_DOWN["tail_lift"]` (default 18°) and `SIT_DOWN["tail_lag"]` (default 6 frames) keep a
-     low-carried tail clear of the ground during SitDown. Leave them out and the ears and SitDown
+     low-carried tail clear of the ground during SitDown (and LieDown). Leave them out and the ears and SitDown
      are exactly as before. The German Shepherd is the example (`kit/tests/test_erect_ears.py`,
      `kit/tests/test_sit_down_tail.py`).
    - **Optional keys for a tail curled over the back:** `TAIL_SWING` (a top-level field) scales the
@@ -134,8 +144,10 @@ argument (`python3 kit/export_dog.py golden-retriever`).
      water-line check then holds the head and nose above the new line. None of the 8 approved
      breeds sets it yet. Every other clip is the same with or without it
      (`kit/tests/test_swim_shake.py`).
-3. **Solve the sit:** run `build_breed.py <breed> solve-sit` and paste the printed `SIT` into
-   `breed.py`. Re-run it whenever the shape or the rig changes.
+3. **Solve the sit and the lie:** run `build_breed.py <breed> solve-sit` and paste the printed
+   `SIT` into `breed.py`, then `build_breed.py <breed> solve-lie` and paste the printed `LIE`
+   (it also prints the lying contacts and whether they pass). Re-run both whenever the shape or
+   the rig changes.
 4. **Build:** run `build_breed.py <breed>`. Both steps must print `ALL OK`. If a check fails,
    change the breed's data, not the kit.
 5. **Render the review sheets** one shot per command into `review/` and `motion/review/`, for
@@ -154,8 +166,10 @@ hocks, hind feet, front paws and tail within 1 cm of the ground — a tail carri
 
 `motion` (`kit/export_anim.py`) checks **every frame of every clip on the skinned mesh**: nothing
 more than 1 cm below the ground, planted paws within 1 cm of it and sliding less than 1 cm against
-it; loops ending on their first frame; SitDown ending on the breed's `SIT`, and PlayBow and Shake
-starting and ending standing; no IK target out of reach; and the **glTF read-back** (one skin, 32
+it; loops ending on their first frame; SitDown ending on the breed's `SIT`, LieDown on its `LIE`, and PlayBow and
+Shake starting and ending standing; the **lying contact** (the `LIE` pose and LieDown's last
+frame and LieIdle: chest, elbows, front paws, hocks and hind feet within 1 cm of the ground, nothing
+of any part more than 1 cm below it); no IK target out of reach; and the **glTF read-back** (one skin, 32
 joints, every clip with every frame sampled, the file's skinned mesh matching Blender's within
 2 mm). **Swim is checked against the water line instead of the ground** (the
 **water-line check**): the head and nose (the skin weighted to `head` and `jaw`, the nose, the
@@ -163,6 +177,12 @@ eyes and the tongue; the ears and collar may get wet) stay above the breed's wat
 frame, and nothing is checked against z = 0 because no paw is planted. The report prints each
 breed's water line and the head's lowest clearance above it, and the clips JSON carries the
 water line as Swim's `water_line_m`.
+
+> **Invariant — lying down, the dog rests on the ground and nothing goes into it (#933).** In the
+> `LIE` pose, at the end of LieDown and all through LieIdle, the chest, elbows, front paws, hocks
+> and hind feet rest on the ground (lowest vertex within 1 cm of it), and no part of the dog is
+> more than 1 cm below it on any frame. The tail is not a lying contact (a short or curled tail
+> cannot reach the ground lying down); it only must not sink.
 
 ## The kit
 
@@ -179,17 +199,18 @@ water line as Swim's `water_line_m`.
 | `export_dog.py` | Bakes the textures, writes the exports, reads every file back, writes the stats and skeleton |
 | `export_viewer.py` | glTF reader used by the checks; on its own, writes web-viewer data (git-ignored) |
 | `solve_sit.py` | Re-derives a breed's `SIT` from the skinned mesh's ground contact |
+| `solve_lie.py` | Re-derives a breed's `LIE` (the lying pose) the same way, and prints its lying contacts |
 | `render_dog.py`, `dh_dog_render.py` | The review sheets (EEVEE) and their shared helpers |
 | `dh_dog_anim.py` | Pose helpers, planar leg IK and the action baker |
 | `dh_dog_gait.py` | The in-place walk / run generator |
-| `dh_dog_clips.py` | The clips, one `make_<clip>` each (gait data from the breed): Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow, Swim, Shake |
-| `dh_dog_check.py` | The per-frame ground-contact check on the skinned mesh, and Swim's water-line check |
+| `dh_dog_clips.py` | The clips, one `make_<clip>` each (gait data from the breed): Idle, Walk, Run, SitDown, SitIdle, TailWag, PlayBow, Swim, Shake, LieDown and LieIdle |
+| `dh_dog_check.py` | The per-frame ground-contact check on the skinned mesh, Swim's water-line check and the lying-contact check |
 | `export_anim.py` | Bakes every clip, checks it, exports and reads the glTF back |
 | `render_motion.py` | The motion review videos and contact sheets (EEVEE); Swim's have no floor, a see-through water surface at the water line, and its sheet's red line is the water line |
 
 `kit/tests/test_breed_generality.py` (about 5 minutes) proves the kit is general: it writes a
 throwaway breed into a temporary folder — the Golden's data with legs 0.8× as long, ears 1.3× as
-big, two different coats and strides in proportion to the shorter legs — solves its sit, builds it
+big, two different coats and strides in proportion to the shorter legs — solves its sit and its lie, builds it
 and requires `ALL OK` from both steps. (With the Golden's own stride on the shorter legs the
 `motion` step fails its IK-reach check: gaits are breed data and must suit the proportions.)
 Nothing it writes stays in the repository.
@@ -251,6 +272,18 @@ python3 art-source/blender/dogs/kit/tests/test_erect_ears.py
 python3 art-source/blender/dogs/kit/tests/test_sit_down_tail.py
 python3 art-source/blender/dogs/kit/tests/test_curled_tail.py
 python3 art-source/blender/dogs/kit/tests/test_collar_ray.py
+```
+
+`kit/tests/test_lie_clips.py` (a few seconds; the data tests need no Blender, the rest need `bpy`
+but build no dog: they pose a bare armature) checks the lie: every breed defines `LIE` and it is a
+required field; the `LIE` pose puts the elbows, wrists, stifles and hocks at the breed's heights,
+lays the pastern level and the paw flat, and keeps the head at its standing angle; LieDown starts
+standing and its last frame is the `LIE` exactly; LieIdle closes on its first frame, breathes no
+faster than once per 2 s and moves the tail or an ear now and then (still for at least half the
+loop); and the lying-contact check reports a group off the ground or anything sinking.
+
+```
+python3 art-source/blender/dogs/kit/tests/test_lie_clips.py
 ```
 
 ### Clip invariants

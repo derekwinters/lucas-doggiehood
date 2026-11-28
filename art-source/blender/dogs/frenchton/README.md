@@ -216,7 +216,7 @@ before: every other breed in this folder rebuilds byte-identical with it.
 | `exports/dog_frenchton_lod1.gltf` (+ `.bin`) | The LOD, default coat, with its own 512 fur atlas |
 | `exports/dog_frenchton_skeleton.json` | Bones in Blender and glTF axes, accessory attachments, the test poses |
 | `exports/dog_stats.json` | Triangles per piece, sizes, bones, weight statistics, file sizes, sit contact, check results |
-| `motion/exports/dog_frenchton_anim.gltf` (+ `.bin`) | The default-coat model with all 7 clips as named glTF animations; textures from `../../textures/` |
+| `motion/exports/dog_frenchton_anim.gltf` (+ `.bin`) | The default-coat model with all 11 clips (Swim and Shake added in #934; LieDown and LieIdle, the lying clips, added in #933) as named glTF animations; textures from `../../textures/` |
 | `motion/exports/dog_frenchton_anim_clips.json` | Per clip: frames, duration, loop, ground speed, stride, footfalls, duty factor, notes and check results |
 | `motion/review/<clip>.mp4` | 1280×720 3/4 view of each clip |
 | `motion/review/walk-contact-sheet.png`, `run-contact-sheet.png` | Side-view contact sheets |

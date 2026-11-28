@@ -206,6 +206,12 @@ TORSO_CHAIN = [(0.401, 0.5022), (0.2849, 0.4734), (0.0979, 0.4734), (-0.0956, 0.
 SIT = {'hips': -45.5543, 'drop': -0.2854, 'shoulder': -8.0, 'stifle_z': 0.075, 'hock_z': 0.0208, 'foot_pitch': 28.2212, 'tail': -9.664}
 SIT_POSE = {"spine_3": 4, "neck": 28, "head": 24, "tail_2": 12, "tail_3": 8}
 
+# ----------------------------------------------------------------------------- lie pose (Rest)
+# Solved against the skinned mesh by kit/solve_lie.py (paste its output here after changing the
+# shape or the rig). The hip tilt, the stifle height and tail_2 / tail_3 are chosen; the rest are
+# solved.
+LIE = {"hips": 8.0, "drop": -0.2779, "elbow_z": 0.0791, "wrist_z": 0.0584, "stifle_z": 0.11, "hock_z": 0.0239, "foot_pitch": 26.2438, "tail": -18.0, "tail_2": 12, "tail_3": 8}
+
 # ----------------------------------------------------------------------------- checks
 SANITY = {"head_min_z": 0.47, "tail_min_y": 0.32}
 # Frenchton: the back is measured behind the skull and ahead of the croup

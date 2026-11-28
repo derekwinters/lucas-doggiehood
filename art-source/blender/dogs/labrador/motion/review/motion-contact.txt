@@ -151,7 +151,43 @@ Shake: 30 frames (1.00 s) at 30 fps, ground speed 0.000 m/s
   first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs standing rest pose 0.0000 deg / 0.00000 m
   -> OK
 
+LieDown: 66 frames (2.20 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0- 10  min -0.0000  (f10, back_foot_R)
+    f 11- 21  min -0.0000  (f12, front_paw_R)
+    f 22- 32  min -0.0013  (f30, back_foot_R)
+    f 33- 43  min -0.0013  (f33, back_foot_R)
+    f 44- 54  min -0.0013  (f46, back_foot_R)
+    f 55- 65  min -0.0013  (f55, back_foot_R)
+    f 66- 66  min -0.0013  (f66, back_foot_R)
+  frame 66 contact (lowest skinned vertex per group): chest +0.0008  elbows -0.0002  front_paws +0.0000  hocks +0.0000  hind_feet -0.0013
+  first frame vs standing rest pose 0.0000 deg / 0.00000 m; last frame vs LIE 0.0000 deg / 0.00000 m
+  -> OK
+
+LieIdle: 120 frames (4.00 s) at 30 fps, ground speed 0.000 m/s
+  lowest vertex of the whole dog, per frame range (m; 0 = ground):
+    f  0- 19  min -0.0013  (f0, back_foot_R)
+    f 20- 39  min -0.0020  (f39, front_elbow_R)
+    f 40- 59  min -0.0024  (f45, front_elbow_R)
+    f 60- 79  min -0.0013  (f60, back_foot_R)
+    f 80- 99  min -0.0020  (f99, front_elbow_R)
+    f100-119  min -0.0024  (f105, front_elbow_R)
+    f120-120  min -0.0013  (f120, back_foot_R)
+  planted paws (flat part of each stance): height of the paw's lowest vertex, slide of its contact vertices vs the ground (m)
+    FL f  0-120  paw low +0.0000..+0.0000  slide 0.0000
+    FR f  0-120  paw low +0.0001..+0.0001  slide 0.0000
+    HL f  0-120  paw low -0.0007..-0.0007  slide 0.0000
+    HR f  0-120  paw low -0.0013..-0.0013  slide 0.0000
+  frame 0 contact (lowest skinned vertex per group): chest +0.0008  elbows -0.0002  front_paws +0.0000  hocks +0.0000  hind_feet -0.0013
+  frame 30 contact (lowest skinned vertex per group): chest +0.0008  elbows -0.0002  front_paws +0.0000  hocks +0.0000  hind_feet -0.0013
+  frame 90 contact (lowest skinned vertex per group): chest +0.0008  elbows -0.0002  front_paws +0.0000  hocks +0.0000  hind_feet -0.0013
+  loop: last frame vs first 0.0000 deg, root 0.00000 m
+  -> OK
+
+Lying contact (the LIE pose, skinned; lowest vertex per group, m): hocks +0.0000  hind_feet -0.0013  front_paws +0.0000  chest +0.0008  elbows -0.0002  lowest -0.0013  lowest_any_part -0.0013
+  -> OK
+
 glTF read back (dog_labrador_anim.gltf): OK
-viewer/dog_anim.json: 2.60 MB (self-contained glTF JSON, buffer + images as data URIs)
+viewer/dog_anim.json: 2.90 MB (self-contained glTF JSON, buffer + images as data URIs)
 
 ALL OK

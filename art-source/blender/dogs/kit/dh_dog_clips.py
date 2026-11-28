@@ -1,6 +1,6 @@
 """The motion clips (first pass). Each make_<clip>(rig) bakes one Blender action on the breed's
 armature and returns its metadata. Gait timing, speeds and size-dependent heights come from the
-breed (GAITS, SIT_DOWN, PLAY_BOW); the choreography is shared. All clips are 30 fps, deterministic (pure functions of the
+breed (GAITS, SIT_DOWN, PLAY_BOW, LIE); the choreography is shared. All clips are 30 fps, deterministic (pure functions of the
 frame number), and in place: the root never travels in X/Y.
 
   Idle       loop   idle breathing, head look, ear twitch, tail sway
@@ -14,8 +14,8 @@ frame number), and in place: the root never travels in X/Y.
                     as a rudder; checked against the breed's water line (SWIM), not the ground
   Shake      once   shake dry: a wave of roll from the head through the shoulders, ribs and hips to
                     the tail, ears flapping; standing, all four paws planted throughout
-  LieDown    once   SIT -> lying (sphinx) rest   [optional]
-  RestIdle   loop   lying rest loop               [optional]
+  LieDown    once   standing -> the breed's LIE (lying like a sphinx; last frame == dh_dog_rig LIE exactly)
+  LieIdle    loop   in the LIE pose: slow breathing, an ear flick and a lazy tail swish
 """
 import math
 
@@ -187,7 +187,7 @@ def make_run(rig):
 
 
 # =========================================================================== registry
-ORDER = ["Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow", "Swim", "Shake", "LieDown", "RestIdle"]
+ORDER = ["Idle", "Walk", "Run", "SitDown", "SitIdle", "TailWag", "PlayBow", "Swim", "Shake", "LieDown", "LieIdle"]
 
 
 def make(rig, name):
@@ -583,3 +583,123 @@ def make_shake(rig):
                 notes="shake dry, about 1 s: a wave of roll at %.0f Hz runs from the head through the "
                       "shoulders, ribs and hips to the tail, the ears flap and the stance braces a "
                       "little; starts and ends standing, all four paws planted" % SHAKE_HZ)
+
+
+# =========================================================================== Lie (the Rest pose)
+LIE_DOWN_N = 66     # 2.2 s: the rear folds down first, the front walks out and lowers, settle
+LIE_IDLE_N = 120    # 4 s: two slow breaths
+LIE_HIND = (4, 38)  # frames over which the hind end lowers ...
+LIE_FRONT = (16, 54)    # ... and the front end (it follows, so the dog does not pitch onto its chest)
+
+
+def lie_targets(rig):
+    """World paw targets of the breed's LIE pose: {leg: (paw joint, paw pitch, lower pitch)}."""
+    rig.reset()
+    rig.apply_spec(RG.lie_spec())
+    rig.update()
+    out = {leg: rig.leg_state(leg) for leg in A.LEGS}
+    rig.reset()
+    rig.update()
+    return out
+
+
+def lie_tilt(sh, sf):
+    """Hip tilt (degrees) with the hind end at lie progress sh and the front end at sf: the
+    breed's LIE tilt plus the tilt that keeps the shoulders up while the hind end is lower."""
+    lie = RG.LIE
+    span = abs(RG.J["front_shoulder"][0] - RG.SP["hips"][0][0])
+    dz = lie["drop"] * (sh - sf)
+    return lie["hips"] * sf + math.degrees(math.asin(max(-1.0, min(1.0, dz / span))))
+
+
+def lie_body(rig, sh, sf, st):
+    """Body bones on the way down: hind end at progress sh, front end at sf, tail at st (0 standing
+    .. 1 LIE). The head keeps its standing angle; the tail keeps its world angle, swings clear of
+    the ground (SIT_DOWN's optional "tail_lift") and lands in the LIE's tail."""
+    lie = RG.LIE
+    th = lie_tilt(sh, sf)
+    rig.root(0, 0, lie["drop"] * sh)
+    rig.set("hips", th)
+    rig.set("neck", -th)
+    rig.set("jaw", JAW)
+    lift = B.SIT_DOWN.get("tail_lift", 18)
+    rig.set("tail_1", -th + (lie["tail"] + lie["hips"]) * st + lift * math.sin(math.pi * st))
+    for b in ("tail_2", "tail_3"):
+        rig.set(b, lie[b] * st)
+
+
+def make_lie_down(rig):
+    tg = lie_targets(rig)
+    rest = rig.rest
+    N = LIE_DOWN_N
+    (h0, h1), (f0, f1) = LIE_HIND, LIE_FRONT
+    hl, fl = B.SIT_DOWN["hind_step_lift"], B.SIT_DOWN["front_step_lift"]
+    # each paw's step, as a window of its end's progress (paw path start, end, lift)
+    steps = {"HL": (0.10, 0.55, hl), "HR": (0.25, 0.70, hl), "FL": (0.05, 0.55, fl), "FR": (0.25, 0.75, fl)}
+
+    def pose(f):
+        if f >= N:
+            rig.apply_spec(RG.lie_spec())
+            return
+        sh = A.smoother((f - h0) / (h1 - h0))
+        sf = A.smoother((f - f0) / (f1 - f0))
+        # the tail lands when the body is level again: while the hind end is the lower, the
+        # rump (and the tail root) sits lower than in the LIE
+        lag = B.SIT_DOWN.get("tail_lag", 6)
+        st = A.smooth((f - h0 - lag) / (f1 - h0 - lag))
+        lie_body(rig, sh, sf, st)
+        if f > f1:      # settle: the head finishes with a tiny nod into place
+            rig.set("head", 2.5 * math.sin(math.pi * (f - f1) / (N - f1)) ** 2)
+        rig.update()
+        for leg, (a, b, lift) in steps.items():
+            s = sh if leg[0] == "H" else sf
+            u = (s - a) / (b - a)
+            pj1, pd1, ld1 = tg[leg]
+            pj = step_path(rest[leg]["paw0"], pj1, u, lift)
+            k = A.smoother(u)
+            if leg[0] == "F":
+                rig.solve_leg(leg, pj, pd1 * k, lower_d=ld1 * k, tag="LieDown f%d" % f)
+            else:
+                # the rear foot lowers onto the hock as the haunches go down (follows the body)
+                kh = A.smoother((s - 0.15) / 0.85)
+                rig.solve_leg(leg, pj, pd1 * k, lower_d=ld1 * kh, tag="LieDown f%d" % f)
+
+    rig.bake("LieDown", N, pose, loop=False)
+    return dict(name="LieDown", frames=N, loop=False, ground_speed=0.0,
+                touch={N: list(RG.LIE_TOUCH)},
+                notes="standing -> LIE: the hind end folds down first (hind paws step in under the "
+                      "body), then the front paws walk out and the chest lowers onto the ground; the "
+                      "head keeps its angle; last frame is dh_dog_rig LIE exactly")
+
+
+def make_lie_idle(rig):
+    tg = lie_targets(rig)
+    spec = RG.lie_spec()
+    lie = RG.LIE
+    N = LIE_IDLE_N
+
+    def pose(f):
+        ph = f / N
+        rig.apply_spec(spec)
+        br = s1(ph, 2)                                  # two slow breaths per loop
+        rig.set("spine_2", -0.6 * br)
+        rig.set("spine_3", 0.8 * br)
+        rig.set("neck", -lie["hips"] - 0.4 * br)
+        rig.set("jaw", JAW + 1.0 * br)
+        tw = bump(ph, 0.30, 0.05)                       # the right ear flicks once
+        rig.set("ear_R_1", 4 * tw, 16 * tw, 0)
+        rig.set("ear_R_2", 0, 8 * tw, 0)
+        sw = bump(ph, 0.72, 0.20)                       # one lazy swish of the tail
+        rig.set("tail_1", lie["tail"], 0, 12 * sw)
+        rig.set("tail_2", lie["tail_2"], 0, 6 * bump(ph, 0.74, 0.20))
+        rig.update()
+        for leg in ("FL", "FR"):                        # the breathing chest moves the shoulders
+            pj, pd, ld = tg[leg]
+            rig.solve_leg(leg, pj, pd, lower_d=ld, tag="LieIdle f%d" % f)
+
+    rig.bake("LieIdle", N, pose)
+    return dict(name="LieIdle", frames=N, loop=True, ground_speed=0.0,
+                plants={leg: [(0, N)] for leg in A.LEGS},
+                touch={0: list(RG.LIE_TOUCH), N // 4: list(RG.LIE_TOUCH), 3 * N // 4: list(RG.LIE_TOUCH)},
+                notes="the LIE pose with 2 slow breaths, one right-ear flick and one lazy tail swish; "
+                      "paws, elbows, hocks and chest stay on the ground")
