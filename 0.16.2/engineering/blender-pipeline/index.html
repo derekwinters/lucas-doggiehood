@@ -2003,7 +2003,7 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <li><strong><code>dh_scene.py</code></strong> fits the pieces to each base, builds the decorative driveway as its own object, and holds the level-4 placement rule used for the clearance tables.</li>
 <li><strong>Trees</strong> (<code>environment/trees/</code>): <code>dh_tree_tex.py</code> paints the leaf atlases and bark maps; <code>dh_trees_tex.py</code> builds the trees. They reuse the branch helpers in <code>dh_env.py</code>.</li>
 <li><strong>Street props</strong> (<code>environment/street-props/</code>): <code>dh_prop_tex.py</code> paints the surface textures and the label atlas; <code>dh_props.py</code> builds the props.</li>
-<li><strong>Items</strong> (<code>items/&lt;item&gt;/</code>): <code>items/chew-bone/dh_chew_bone.py</code> builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (<code>dogs/kit/dh_dog_mesh.py</code>), and paints its texture.</li>
+<li><strong>Items</strong> (<code>items/&lt;item&gt;/</code>): <code>items/chew-bone/dh_chew_bone.py</code> builds the chew bone from one signed distance field, meshed with the dog kit's surface nets (<code>dogs/kit/dh_dog_mesh.py</code>), and paints its texture. <code>items/pool/dh_pool.py</code> builds the two approved backyard pools, round and oval, from the water sizes in <code>items/pool/pool_core.py</code> (<a href="https://github.com/derekwinters/lucas-doggiehood/issues/741">#741</a>).</li>
 </ul>
 <p>The environment scripts import the committed house kit by relative path (<code>../..</code> from <code>trees/</code>, and <code>../trees</code> plus <code>../..</code> from <code>street-props/</code>). No script imports a copy of another folder's modules.</p>
 <p><strong>Determinism.</strong> The generators seed their randomness (for example per tree name, or a fixed seed per texture), so the same script produces the same model every run.</p>
@@ -2058,6 +2058,11 @@ python3 art-source/blender/export_houses.py art-source/blender/exports
 <td>Dog ball</td>
 <td><code>python3 art-source/blender/items/ball/export_ball.py</code></td>
 <td>6 <code>.gltf</code> + <code>.bin</code> pairs, one per felt colour (<code>ball_&lt;colour&gt;</code>, material <code>DH_Item_Ball_&lt;Colour&gt;</code>), and <code>ball_stats.json</code></td>
+</tr>
+<tr>
+<td>Backyard pools</td>
+<td><code>python3 art-source/blender/items/pool/export_pool.py</code></td>
+<td>Self-contained <code>pool_circle.glb</code> and <code>pool_oval.glb</code>, each with its <code>_stats.json</code> (<code>--shape circle</code> or <code>--shape oval</code> writes one)</td>
 </tr>
 </tbody>
 </table>
